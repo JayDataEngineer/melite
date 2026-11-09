@@ -110,6 +110,12 @@ export interface SpecField {
     /** THE STACK'S MEDIA HINT ('video' | 'audio'; images default): the
      * cell's picker kind + accept posture — typed stacks, one rail. */
     media?: string;
+    /** THE ADVANCED FOLD (2026-11-09, the vid2vid modal cure): the
+     * mod leaf seats this row BEHIND its disclosure row at the stack's
+     * end — a real, editable seat, never dropped. The DECL owns the
+     * judgment (a seat the operator tunes per run must NOT carry the
+     * flag); the leaf renders the grammar, never a name list. */
+    advanced?: boolean;
 }
 /** One DECLARED input edge: `name` is the schema param the edge feeds
  *  (the flowKinds key), `kind` the lane kind it carries (image/text/

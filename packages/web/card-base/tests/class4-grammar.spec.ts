@@ -227,7 +227,12 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    on the leaf's seats), preview.tsx:208
     //    dead artifact / :237 history names / :257 strip filename /
     //    :309 film thumb name, square.tsx:233 held raw value,
-    //    mods.tsx:799,938,969 caption labels.
+    //    mods.tsx caption labels.
+    //    (2026-11-09 SHRINK RECEIPT: the three per-arm caption
+    //    idioms — the old mods.tsx :799/:938/:969 — consolidated into
+    //    ONE shared leafStack renderer, so the three caption seats
+    //    are now two: the shared field caption + the named-presence
+    //    arm's own. The drag hint and the lora upload label hold.)
     //  - embedded field faces (S7g class: the reference renders the
     //    embedded control raw, settings-form fields.tsx:96-105; the
     //    labeled row's bubble voice is infoGlyph, rows.tsx:15-22):
@@ -249,7 +254,7 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     expect(seatsIn(seats, 'atoms.tsx', 'element'), 'atoms.tsx').toBe(5)
     expect(seatsIn(seats, 'axes.tsx', 'element'), 'axes.tsx').toBe(1)
     expect(seatsIn(seats, 'form.tsx', 'element'), 'form.tsx').toBe(5)
-    expect(seatsIn(seats, 'mods.tsx', 'element'), 'mods.tsx').toBe(5)
+    expect(seatsIn(seats, 'mods.tsx', 'element'), 'mods.tsx').toBe(4)
     expect(seatsIn(seats, 'preview.tsx', 'element'), 'preview.tsx').toBe(4)
     expect(seatsIn(seats, 'square.tsx', 'element'), 'square.tsx').toBe(3)
     expect(seats.filter((s) => s.kind === 'element' && !['atoms.tsx', 'axes.tsx', 'form.tsx', 'mods.tsx', 'preview.tsx', 'square.tsx'].includes(s.rel)),
@@ -266,10 +271,14 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    2026-11-15): the row's Input carries the band hint (0–2,
     //    blank = the door's 1) — the embedded field face, the same
     //    rest-channel idiom as the leaf's range Input above.
+    //  - the posture chips (the 2026-11-09 sections law): each chip
+    //    Pill carries the section's declared tooltip verbatim — the
+    //    one-line hover idiom, the same caption voice as the field
+    //    captions above (the long teaching rides hover, not prose).
     //  - preview.tsx:170 the StaleBadge capsule (the S7j Pill
     //    conversion kept the hover hint — TrajectoryToolbar class).
     expect(seatsIn(seats, 'atoms.tsx', 'component'), 'atoms.tsx rest channel').toBe(3)
-    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(3)
+    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(4)
     expect(seatsIn(seats, 'preview.tsx', 'component'), 'preview.tsx rest channel').toBe(1)
     expect(seats.filter((s) => s.kind === 'component' && !['atoms.tsx', 'mods.tsx', 'preview.tsx'].includes(s.rel)),
       'no rest-channel title seat outside the argued files').toEqual([])

@@ -295,3 +295,60 @@ describe("P0-3 — the served resolution field defaults auto (the film's own tie
     assert.ok(options.some((o) => o["value"] === "768p" && o["value"] === "768p"), "the explicit tiers still serve for overrides");
   });
 });
+
+// ── THE VID2VID MODAL CURE (operator 2026-11-09: "WEIRD LONG
+// DESCRIPTIONS" — the served section WAS an 897-char teaching
+// paragraph rendered verbatim as the mod leaf's caption). This
+// describe judges the DECL's own face law at the served row (depth:
+// the real declaration, never a copied literal) — the leaf-side
+// arms (verbatim render, one caption node) live in card-base's
+// mods-leaf.spec.tsx. ──
+describe("the edit door's served caption + advanced partition (the vid2vid modal cure, 2026-11-09)", () => {
+  it("THE CAPTION IS ONE LINE: the served section names the door in a single short line — the teaching text rides the field tooltips and the agent docs, never the modal", () => {
+    const kind = (def.mods ?? []).find((k) => k.kind === "edit") as { section?: string };
+    assert.ok(kind, "the card declares the edit kind");
+    const section = kind.section;
+    assert.ok(typeof section === "string" && section.length > 0, "the edit kind declares a section caption");
+    assert.ok(!section.includes("\n"), "the caption is one line (no newline runs)");
+    assert.ok(section.length <= 80, `the caption stays one short line at the leaf width (got ${section.length} chars)`);
+    assert.ok(section.startsWith("Video edit —"), "the caption names the door first");
+  });
+
+  it("THE ADVANCED PARTITION IS THE PLAN TRIO: the DECL marks exactly seed/steps/resolution advanced — the every-run dials stay on the open stack", () => {
+    const { fields } = editKind();
+    const advanced = fields.filter((f) => f["advanced"] === true).map((f) => String(f["name"]));
+    assert.deepEqual(advanced, ["seed", "steps", "resolution"],
+      "the plan trio folds behind the leaf's disclosure; nothing else hides");
+    for (const seat of ["denoise", "mask_source", "edit_prompt", "source_clip", "carry"]) {
+      const f = fields.find((x) => x["name"] === seat);
+      assert.ok(f, `${seat} serves`);
+      assert.notEqual(f["advanced"], true, `${seat} is an every-run dial — never folded`);
+    }
+  });
+
+  it("THE GROUPED COLUMN IS THE DECL'S OWN THREE SEATS: every field names one group — Source & Window / Mask / Identity & Polish, in first-seen order — the leaf's one-column grammar (2026-11-09)", () => {
+    const { fields } = editKind();
+    const ordered: string[] = [];
+    for (const f of fields) {
+      // THE FOLD IS NOT A GROUP (the Plan trio rides behind the
+      // disclosure, never in the column — the group law judges the
+      // open stack only)
+      if (f["advanced"] === true) continue;
+      const g = f["group"];
+      assert.ok(typeof g === "string" && g !== "", `${String(f["name"])} names its group`);
+      if (!ordered.includes(String(g))) ordered.push(String(g));
+    }
+    assert.deepEqual(ordered, ["Source & Window", "Mask", "Identity & Polish"],
+      "the three groups ride in the field's declared order — the leaf renders named sections, never a second column");
+    // THE MASK DIAL TRIO GRIDS: the mask group declares 3 columns —
+    // grow/blur/threshold sit one row (the form's own grid law,
+    // first-seen `columns` wins)
+    const maskFirst = fields.find((f) => f["group"] === "Mask");
+    assert.equal(maskFirst?.["columns"], 3, "the mask group grids its dial trio on one row");
+    // THE PICKER'S ROOM: the chain-run seat spans two of the
+    // Identity group's three columns — beside the continuation
+    // switch, one row where two stood (the clip arm's density law)
+    const chainRun = fields.find((f) => f["name"] === "chain_run");
+    assert.equal(chainRun?.["width"], 2, "the chain-run picker rides beside its switch");
+  });
+});

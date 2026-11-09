@@ -4757,6 +4757,7 @@ window.__ModuleLoader__.load({
 		const EDIT_FIELDS = [
 			{
 				name: "source_clip",
+				group: "Source & Window",
 				label: "Source clip",
 				type: "file",
 				media: "video",
@@ -4764,7 +4765,16 @@ window.__ModuleLoader__.load({
 				tooltip: "The clip the edit rides. Binds ONE staged leaf: the VHS window loader + the core LoadVideo both read it by staged name, and the timeline reads it back off the native VIDEO wire."
 			},
 			{
+				name: "carry",
+				group: "Source & Window",
+				label: "Carry (all seams)",
+				type: "boolean",
+				default: true,
+				tooltip: "THE SPLIT LAW (the one concept the edit door adds): ON (the default) the edit runs the WHOLE film — segments split on the source film's own timeline and each continues from the last frame of the previous, joined with the derived AV-legal overlap (39/90/141/192/243 frames — the engine's law, never typed). OFF cuts the joins: each segment stands alone. Frame arithmetic (window_start/window_length) is the expert override, never the agent's job — typing it wrong repaired 90 of 243 frames once (run-e79f3b304e4b)."
+			},
+			{
 				name: "edit_prompt",
+				group: "Source & Window",
 				label: "Edit prompt",
 				type: "text",
 				default: "",
@@ -4772,6 +4782,8 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "mask_source",
+				group: "Mask",
+				columns: 3,
 				label: "Mask source",
 				type: "select",
 				default: "region",
@@ -4797,6 +4809,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "region_prompt",
+				group: "Mask",
 				label: "Region prompt",
 				type: "text",
 				default: "",
@@ -4805,6 +4818,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "mask",
+				group: "Mask",
 				label: "Mask PNG",
 				type: "image",
 				default: "",
@@ -4813,6 +4827,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "mask_video",
+				group: "Mask",
 				label: "Mask video",
 				type: "file",
 				media: "video",
@@ -4822,6 +4837,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "mask_grow",
+				group: "Mask",
 				label: "Mask grow px",
 				type: "number",
 				visible_when: "mask_source!=whole-frame",
@@ -4833,6 +4849,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "mask_blur",
+				group: "Mask",
 				label: "Mask blur px",
 				type: "number",
 				visible_when: "mask_source!=whole-frame",
@@ -4844,6 +4861,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "detection_threshold",
+				group: "Mask",
 				label: "Detection threshold",
 				type: "number",
 				visible_when: "mask_source=region",
@@ -4855,6 +4873,8 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "reference",
+				group: "Identity & Polish",
+				columns: 3,
 				label: "Identity anchors",
 				type: "select",
 				default: "self",
@@ -4869,6 +4889,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "still",
+				group: "Identity & Polish",
 				label: "Replacement still",
 				type: "image",
 				default: "",
@@ -4877,6 +4898,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "mannequin",
+				group: "Identity & Polish",
 				label: "Mannequin video",
 				type: "file",
 				media: "video",
@@ -4886,6 +4908,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "denoise",
+				group: "Identity & Polish",
 				label: "Denoise",
 				type: "number",
 				default: .32,
@@ -4896,20 +4919,15 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "keep_audio",
+				group: "Identity & Polish",
 				label: "Keep source audio",
 				type: "boolean",
 				default: true,
 				tooltip: "ON: the source soundtrack rides the edit unchanged. OFF (full denoise only): the soundtrack is generated fresh with the edit — a partial pass never drops it (the hold is the point)."
 			},
 			{
-				name: "carry",
-				label: "Carry",
-				type: "boolean",
-				default: true,
-				tooltip: "THE SPLIT LAW (the one concept the edit door adds): ON (the default) the edit runs the WHOLE film — segments split on the source film's own timeline and each continues from the last frame of the previous, joined with the derived AV-legal overlap (39/90/141/192/243 frames — the engine's law, never typed). OFF cuts the joins: each segment stands alone. Frame arithmetic (window_start/window_length) is the expert override, never the agent's job — typing it wrong repaired 90 of 243 frames once (run-e79f3b304e4b)."
-			},
-			{
 				name: "refine",
+				group: "Identity & Polish",
 				label: "Refine pass",
 				type: "boolean",
 				default: false,
@@ -4918,6 +4936,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "scale",
+				group: "Identity & Polish",
 				label: "Refine scale",
 				type: "number",
 				default: 2,
@@ -4929,6 +4948,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "continuation",
+				group: "Identity & Polish",
 				label: "Continuation",
 				type: "boolean",
 				default: false,
@@ -4937,6 +4957,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "extend_seconds",
+				group: "Identity & Polish",
 				label: "Extend seconds",
 				type: "number",
 				default: 2.33,
@@ -4948,13 +4969,16 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "chain_run",
+				group: "Identity & Polish",
 				label: "Prior chain run",
 				type: "chain-run",
 				default: "",
+				width: 2,
 				tooltip: "THE UPSCALE POSTURE'S SEAT: the prior chain run resumed as the deferred 2x pass (denoise 0.24, steps 20); empty = a fresh edit."
 			},
 			{
 				name: "segment_crf",
+				group: "Identity & Polish",
 				label: "Segment CRF",
 				type: "number",
 				default: 18,
@@ -4967,6 +4991,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "window_start",
+				group: "Source & Window",
 				label: "Window start (frames)",
 				type: "number",
 				default: 0,
@@ -4978,6 +5003,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "window_length",
+				group: "Source & Window",
 				label: "Window length (frames)",
 				type: "number",
 				default: 0,
@@ -4995,6 +5021,7 @@ window.__ModuleLoader__.load({
 				min: 0,
 				max: 4294967295,
 				step: 1,
+				advanced: true,
 				tooltip: "The chain plan base_seed (the reference runs 0; the sampler seed stays the doc seed)."
 			},
 			{
@@ -5005,10 +5032,12 @@ window.__ModuleLoader__.load({
 				min: 1,
 				max: 30,
 				step: 1,
+				advanced: true,
 				tooltip: "The chain plan default_steps (reference 6; the sampler steps stay the doc marriage)."
 			},
 			{
 				name: "clip_seconds",
+				group: "Identity & Polish",
 				label: "Clip seconds",
 				type: "number",
 				default: 6,
@@ -5020,6 +5049,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				name: "overlap_frames",
+				group: "Identity & Polish",
 				label: "Overlap frames",
 				type: "number",
 				default: 39,
@@ -5034,6 +5064,7 @@ window.__ModuleLoader__.load({
 				label: "Plan resolution",
 				type: "select",
 				default: "auto",
+				advanced: true,
 				options: [
 					{
 						value: "auto",
@@ -6121,29 +6152,55 @@ window.__ModuleLoader__.load({
 		*  carry reframe the strip head's mutation updaters ride; the
 		*  parity arm in the form's wall (leaf-v2v-face.spec.tsx) judges
 		*  both doors against one fixture. */
-		/** The carry menu's three rows — the §0.9 vocabulary, the same
-		*  labels the strip head's carry menu serves (one dictionary). */
+		/** The split seat's three states — ONE vocabulary everywhere (the
+		*  operator's 2026-11-09 segmented law: "There is ONE knob for
+		*  carry" — the collapsed anchor hid the two carry modes): all
+		*  three states render VISIBLE as a segmented control, never behind
+		*  a dropdown. The labels are the strip seam editor's own compact
+		*  words (CallCard's seamModeRow, verbatim from studioCopy) — the
+		*  leaf's split seat, the leaf's per-window override, and the
+		*  strip's per-seam editor all speak Stock / Carry / Carry +
+		*  keyframe; the long teaching ("no carry", "22-frame overlap")
+		*  rides the tips, verbatim. The long splitCarry rows stay on the
+		*  strip head's own split menu — its door, its words. */
 		const CARRY_ROWS = [
 			{
 				id: "cut",
-				label: studioCopy.splitCarryStock
+				label: studioCopy.seamModeStock,
+				tip: studioCopy.seamModeStockTip
 			},
 			{
 				id: "extend",
-				label: studioCopy.splitCarryCarry
+				label: studioCopy.seamModeCarry,
+				tip: studioCopy.seamModeCarryTip
 			},
 			{
 				id: "carry+keyframe",
-				label: studioCopy.splitCarryKeyframe
+				label: studioCopy.seamModeCarryKeyframe,
+				tip: studioCopy.seamModeCarryKeyframeTip
 			}
 		];
-		/** the carry's own label (the three-row universe is closed — a
-		*  Record, never a find-with-fallback that can reach nothing). */
-		const CARRY_LABEL = {
-			cut: studioCopy.splitCarryStock,
-			extend: studioCopy.splitCarryCarry,
-			"carry+keyframe": studioCopy.splitCarryKeyframe
-		};
+		/** The per-seam rows — the strip seam editor's own compact
+		*  vocabulary (CallCard's seamModeRow, verbatim labels + tips): the
+		*  leaf's per-window override speaks the same three states as the
+		*  strip head, never a second spelling. */
+		const SEAM_ROWS = [
+			{
+				id: "cut",
+				label: studioCopy.seamModeStock,
+				tip: studioCopy.seamModeStockTip
+			},
+			{
+				id: "extend",
+				label: studioCopy.seamModeCarry,
+				tip: studioCopy.seamModeCarryTip
+			},
+			{
+				id: "carry+keyframe",
+				label: studioCopy.seamModeCarryKeyframe,
+				tip: studioCopy.seamModeCarryKeyframeTip
+			}
+		];
 		/**
 		* THE FACE'S OWN APPEARANCE (inline, the paint/bbox/orbit law —
 		* stroke 95: an embedded leaf face styles ITSELF, never a css
@@ -6161,7 +6218,7 @@ window.__ModuleLoader__.load({
 		const FACE = {
 			display: "flex",
 			flexDirection: "column",
-			gap: 6,
+			gap: 4,
 			minWidth: 0
 		};
 		const HEAD = {
@@ -6198,7 +6255,25 @@ window.__ModuleLoader__.load({
 			display: "flex",
 			alignItems: "center",
 			gap: 4,
-			padding: "2px 2px 0"
+			padding: "2px 2px 0",
+			flexWrap: "wrap"
+		};
+		/** the segmented three-state (split seat + per-seam rows share the
+		*  recipe — inline, the face's own appearance law above). */
+		const SEGMENT = {
+			display: "inline-flex",
+			gap: 4,
+			flexWrap: "wrap",
+			alignItems: "center"
+		};
+		/** the per-seam override seat — the compact twin of the strip's
+		*  seamModeRow, under its own window's row. */
+		const SEAM_SEAT = {
+			display: "flex",
+			gap: 4,
+			flexWrap: "wrap",
+			alignItems: "center",
+			marginTop: 4
 		};
 		const REFUSAL = {
 			fontSize: 9,
@@ -6210,7 +6285,6 @@ window.__ModuleLoader__.load({
 		function V2vLeafFace(props) {
 			const [splitAtSec, setSplitAtSec] = (0, react.useState)("");
 			const [carry, setCarry] = (0, react.useState)("cut");
-			const [menuOpen, setMenuOpen] = (0, react.useState)(false);
 			const [refusal, setRefusal] = (0, react.useState)(null);
 			const calls = props.value.calls;
 			const secs = (frames) => (frames / (props.value.fps || 24)).toFixed(2);
@@ -6226,6 +6300,21 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				setRefusal(null);
+				props.onChange(next);
+			};
+			/** THE PER-SEAM OVERRIDE (operator 2026-11-09: "no per-window
+			*  seam editor in the leaf" — the data carried per-seam
+			*  transition, the engine reads it, the split sets it, but the
+			*  leaf offered no control to change an EXISTING seam): every
+			*  non-first window carries the same compact 3-state segmented
+			*  the strip head serves, bound to THAT row's transition and
+			*  committed through onChange (the leaf's own envelope channel —
+			*  one truth, two views of one draft). */
+			const setSeam = (i, value) => {
+				const next = calls.map((w, j) => j === i ? {
+					...w,
+					transition: value
+				} : w);
 				props.onChange(next);
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -6249,10 +6338,30 @@ window.__ModuleLoader__.load({
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
 						style: WINDOWS,
 						"data-v2v-windows": true,
-						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 							style: WINDOW,
 							"data-v2v-window": i,
-							children: studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "cut" : "", c.text ?? "")
+							children: [studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", c.text ?? ""), i > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: SEAM_SEAT,
+								"data-v2v-seam": i,
+								role: "group",
+								"aria-label": `${studioCopy.seamModeAria} — W${i + 1}`,
+								children: SEAM_ROWS.map((row) => {
+									const active = (c.transition ?? "extend") === row.id;
+									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: active ? "primary" : "outline",
+										size: "sm",
+										"data-testid": `v2v-seam-${i}-${row.id}`,
+										"aria-pressed": active,
+										"aria-label": `${studioCopy.seamModeAria}: ${row.label}`,
+										title: row.tip,
+										onClick: () => {
+											setSeam(i, row.id);
+										},
+										children: row.label
+									}, row.id);
+								})
+							}) : null]
 						}, i))
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -6279,29 +6388,25 @@ window.__ModuleLoader__.load({
 									setSplitAtSec(e.target.value);
 								}
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-								open: menuOpen,
-								onClose: () => {
-									setMenuOpen(false);
-								},
-								compact: true,
-								portal: true,
-								items: CARRY_ROWS,
-								selectedId: carry,
-								onSelect: (id) => {
-									setMenuOpen(false);
-									setCarry(id);
-								},
-								anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "outline",
-									size: "sm",
-									"data-testid": "v2v-split-carry",
-									"aria-label": studioCopy.splitCarryLabel,
-									title: studioCopy.splitCarryTip,
-									onClick: () => {
-										setMenuOpen(!menuOpen);
-									},
-									children: CARRY_LABEL[carry]
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: SEGMENT,
+								role: "group",
+								"aria-label": studioCopy.splitCarryLabel,
+								"data-testid": "v2v-split-carry",
+								children: CARRY_ROWS.map((row) => {
+									const active = carry === row.id;
+									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: active ? "primary" : "outline",
+										size: "sm",
+										"data-testid": `v2v-split-carry-${row.id}`,
+										"aria-pressed": active,
+										"aria-label": `${studioCopy.splitCarryLabel}: ${row.label}`,
+										title: row.tip,
+										onClick: () => {
+											setCarry(row.id);
+										},
+										children: row.label
+									}, row.id);
 								})
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {

@@ -38,11 +38,11 @@
  *        the fields NEVER render flat on the card form.
  */
 import { createElement as h, useEffect, useState } from 'react';
-import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
+import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineRegular, Input, Menu, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from './card.module.css';
 import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
-import { coerceFieldEdit, fieldRequired, fieldVisible, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
+import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 import { modCommitWrite } from '@melite/contracts/formSpec';
 import { LORA_ACCEPT } from '@melite/contracts/loraExtensions';
 import { SpecMenuSelect } from "./atoms.js";
@@ -1070,6 +1070,11 @@ function ModLeaf(props) {
     const [uploadName, setUploadName] = useState('');
     const [uploadStrength, setUploadStrength] = useState('');
     const [uploadBusy, setUploadBusy] = useState(false);
+    // THE ADVANCED FOLD (the Plan trio, 2026-11-09 — the operator's
+    // modal burn): fields the DECL marks `advanced` start folded. One
+    // state per open leaf; the row is the studio's own disclosure
+    // grammar (studio.tsx's folds ride the same primitive).
+    const [advancedOpen, setAdvancedOpen] = useState(false);
     /** the picked file's own suffix — a stem rename keeps it (the
      *  door's one-segment filename IS the seated row's id). */
     const uploadExt = () => pendingFile === null ? /* v8 ignore next -- the '' fallback is a type fence: applyUpload is the sole reader of this suffix and its own guard refuses a null pendingFile before the call (uploadBusy/pendingFile === null early return), so the state is always a picked file here; a second suffix reader over a cleared seat would re-arm it */ '' : (/\.[A-Za-z0-9]+$/.exec(pendingFile.name)?.[0] ?? '');
@@ -1218,6 +1223,132 @@ function ModLeaf(props) {
     // SpecFieldRow rides; a required-when state shows its demand
     // BEFORE the Run press, never at phase 1)
     const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? h('span', { className: css.specRequired }, ' *') : null;
+    // THE FIELD ROW, WRITTEN ONCE (2026-11-09, the modal cure): every
+    // leaf arm renders the same rows — the split arm's knobs column, the
+    // v2v strip and the faceless column had carried two verbatim copies;
+    // the strip arm makes three, so the body extracts instead. The
+    // UNWRAPPED SQUARE law and the CHAIN-RUN seat are unchanged.
+    const fieldRow = (f) => {
+        const sq = own.square(f);
+        // THE CHAIN-RUN SEAT (the upscale leaf's picker): a `chain-run`
+        // field renders the LIVE picker, never the bare text atom (the
+        // free-text burn's cure — the picker's own degrade law lives in
+        // it).
+        const atom = f.type === 'chain-run'
+            ? h(ChainRunPicker, {
+                f,
+                value: onDraft.draftParams[f.name],
+                onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }); },
+                ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
+            })
+            : h(SpecAtom, {
+                f,
+                value: onDraft.draftParams[f.name],
+                // the leaf's patch boundary (see the hybrid arm)
+                onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }); },
+                // THE DUPLICATE-LABEL LAW: the caption span above owns
+                // the visible name — the square paints none (2026-11-12,
+                // the operator burn: every seat listed twice in the Replace leaf)
+                hideSquareLabel: true,
+                ...(sq !== undefined ? { square: sq } : {}),
+            });
+        return sq !== undefined
+            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom)
+            : h('label', { className: css.modField }, f.label ?? f.name, leafStar(f), atom);
+    };
+    const fieldRows = (fields) => fields.map((f) => h('div', { key: f.name }, fieldRow(f)));
+    // THE ADVANCED PARTITION (the Plan trio law, 2026-11-09 — the
+    // operator's modal burn named the raw 0–4294967295 seed slider):
+    // fields the DECL marks `advanced` ride BEHIND the disclosure row at
+    // the stack's end — real, editable seats, never dropped. The flag is
+    // DECL-owned (the contract's SpecField), never a leaf-side name list.
+    const mainFields = leafFields.filter((f) => f.advanced !== true);
+    const advancedFields = leafFields.filter((f) => f.advanced === true);
+    // (LAZY — `own` seats below this block; the fold renders through
+    // the same call the arms make, never at helper-definition time.)
+    const advancedFold = () => advancedFields.length > 0
+        ? h('div', { key: 'advanced', className: css.modLeafAdvanced, 'data-leaf-advanced': advancedFields.map((f) => f.name).join(',') }, h(DisclosureRow, {
+            icon: h(IconSlidersTwoOutlineRegular, { size: 14 }),
+            title: chromeCopy.advancedFoldTitle,
+            open: advancedOpen,
+            expandable: true,
+            // the reference law (studio.tsx folds ride it): the whole
+            // title row is the toggle target.
+            expandOnRowClick: true,
+            onToggle: () => { setAdvancedOpen(!advancedOpen); },
+        }, h('div', { className: css.modLeafFields }, fieldRows(advancedFields))))
+        : null;
+    // the stack a leaf arm renders: the visible main rows + the advanced
+    // fold behind them
+    // THE GROUPED COLUMN (2026-11-09, the vid2vid modal cure, cure 3):
+    // a DECL that names `group` on its rows renders ONE column of NAMED
+    // sections — "Source & Window" / "Mask" / "Identity & Polish" —
+    // through the card form's own group grammar (groupFields, spec.ts;
+    // the form rides the same call at form.tsx). The group grid keeps
+    // the form's grid law (pairs on a row, the DECL's first-seen
+    // `columns` wins; prompts and slot seats span the full row — the
+    // textarea law's leaf spelling). Rows the DECL leaves ungrouped keep
+    // the leaf's plain single-column stack — DECL-owned layout, opt-in,
+    // every kind that declares nothing renders exactly as before.
+    // THE LEAF SPAN (the grouped column's density law, 2026-11-09):
+    // prose + menus need the row (a prompt or a trigger truncated to
+    // a third of the modal teaches nothing); every dial, slot and
+    // switch grids beside its companions at its declared width (the
+    // form's width grammar — the DECL's own `width`, first-seen
+    // `columns` wins the grid). The slot square beside the Carry
+    // switch, the continuation beside the chain-run picker: one row
+    // where two stood, and the modal stops scrolling.
+    const leafSpan = (f) => f.type === 'text' || f.type === 'textarea' || f.type === 'select'
+        ? { gridColumn: '1 / -1', minWidth: '0' }
+        : { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}`, minWidth: '0' };
+    const groupCols = (fields) => Math.max(1, Math.floor(fields.find((f) => typeof f.columns === 'number' && f.columns >= 1)?.columns ?? 2));
+    const leafStack = () => {
+        const groups = groupFields(mainFields, onDraft.draftParams);
+        const fold = advancedFold();
+        const open = groups.find((g) => g.group === null);
+        const body = [];
+        if (open !== undefined) {
+            body.push(h('div', { key: 'group-open', className: css.modLeafFields }, open.fields.map((f) => h('div', { key: f.name }, fieldRow(f)))));
+        }
+        for (const g of groups) {
+            if (g.group === null)
+                continue;
+            body.push(h('section', { key: 'group-' + g.group, className: css.modLeafGroup, 'data-leaf-group': g.group }, h('h4', { className: css.modGroupTitle }, g.group), h('div', {
+                className: css.modLeafFields,
+                style: { gridTemplateColumns: `repeat(${groupCols(g.fields)}, minmax(0, 1fr))` },
+            }, g.fields.map((f) => h('div', { key: f.name, style: leafSpan(f) }, fieldRow(f))))));
+        }
+        return fold !== null ? [...body, fold] : body;
+    };
+    // THE POSTURE CHIPS (2026-11-09, the auditor's cure 2 — the
+    // coexistence proof: Continuation ON × mask_source=video rendered
+    // together with no warning, and the ENGINE refused the pair later;
+    // the leaf never taught the law). The DECL's own served `sections`
+    // (ModifierSection, formSpec.ts — h3's Extend/repair/upscale cells)
+    // ride as CLIENT DRAFT-PATCHERS: one press seeds the lawful
+    // companion values into the live draft (extend → continuation +
+    // whole-frame mask + self anchors + denoise 1), and the
+    // visible_when rows re-seat in the same open modal. NOT checkboxes
+    // (the §0.8 re-rule stands): a chip STARTS a posture, the dials
+    // finish it; the flow face's own section seats are untouched.
+    const postureChips = () => {
+        const cells = k.sections ?? [];
+        return cells.length > 0
+            ? h('div', { className: css.modChips, role: 'group', 'aria-label': chromeCopy.postureChipsLabel, 'data-leaf-chips': cells.map((s) => s.id).join(',') }, cells.map((s) => h(Pill, {
+                key: s.id,
+                ...(s.tooltip !== undefined && s.tooltip !== '' ? { title: s.tooltip } : {}),
+                onClick: () => { onDraft.setDraftParams({ ...onDraft.draftParams, ...s.patch }); },
+            }, s.label)))
+            : null;
+    };
+    // THE SECTION CAPTION (the kind's declared ONE-LINE name for the
+    // stack — the contract's own wording for `section`, formSpec.ts).
+    // The long teaching text is DECL copy's job through the field
+    // tooltips and the agent docs; the rendered caption stays one short
+    // line (the dom wall mods-leaf.spec.tsx judges the length).
+    const sectionCaption = () => k.section !== undefined
+        ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'filter' }, k.section)
+        : null;
     // the FIELD-kind leaf's own provider: the mod's image inputs get
     // the three verbs (upload/drop/pick) exactly like a card's
     const own = useSquareProvider((name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }); }, 
@@ -1435,130 +1566,73 @@ function ModLeaf(props) {
                     })()
                     : null);
             })()
-            : // THE ACTION-CARD SPLIT (the operator's 2026-10-08 law: the
-                // leaf is "based on the action card package, instead of one
-                // long vertical stack" — the SAME grammar as CardDrill's
-                // params-left / preview-right): a face-bearing leaf seats
-                // the canvas LEFT and the knobs RIGHT; a faceless leaf keeps
-                // the single column (nothing to split around).
-                (bboxCanvas || paintField !== undefined || orbitCanvas || v2vWindows)
-                    ? h('div', { className: css.modLeafSplit }, h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : v2vWindows ? 'v2v' : 'paint' }, 
-                    // THE REGION CAPTION (the operator's correction,
-                    // 2026-10-08: "BBOX IS NOT MANUAL, IT IS AUTOMATED" —
-                    // Impact Pack's boxes come from the DETECTOR, so this
-                    // canvas is NOT a box filter; it is an optional search
-                    // REGION scoping the selection. No region (or Clear)
-                    // runs over the WHOLE image).
-                    bboxCanvas && props.bboxFace !== undefined
-                        ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'region' }, 'Region — optional (scopes the search; clear = whole image)')
-                        : null, bboxCanvas && props.bboxFace !== undefined
-                        ? h('div', { className: css.modField, 'data-leaf-canvas': 'bbox' }, h(props.bboxFace, {
-                            referenceUrl: props.paintReferenceValue,
-                            value: draftQuad(),
-                            onChange: writeQuad,
-                        }))
-                        : null, paintField !== undefined && props.paintFace !== undefined
-                        ? h('div', { className: css.modField, 'data-leaf-canvas': 'paint' }, h(props.paintFace, {
-                            referenceUrl: props.paintReferenceValue,
-                            value: typeof onDraft.draftParams[paintField.name] === 'string' ? onDraft.draftParams[paintField.name] : '',
-                            onChange: (dataUrl) => { onDraft.setDraftParams({ ...onDraft.draftParams, [paintField.name]: dataUrl }); },
-                        }))
-                        : null, orbitCanvas && props.orbitFace !== undefined
-                        ? h('div', { className: css.modField, 'data-leaf-canvas': 'orbit' }, h(props.orbitFace, {
-                            value: draftPose(),
-                            onChange: (pose) => { onDraft.setDraftParams({ ...onDraft.draftParams, orbit: pose.orbit, tilt: pose.tilt, dolly: pose.dolly }); },
-                        }))
-                        : null, v2vWindows && props.v2vFace !== undefined && props.v2vCommit !== undefined
-                        ? h('div', { className: css.modField, 'data-leaf-canvas': 'v2v' }, h(props.v2vFace, {
-                            // the ROW's own windows + film clock — the
-                            // same calls the timeline strip draws (ONE
-                            // truth, two views of one draft)
-                            value: {
-                                calls: Array.isArray(props.values.calls) ? props.values.calls : [],
-                                fps: typeof props.values.fps === 'number' && Number.isFinite(props.values.fps) ? props.values.fps : 24,
-                            },
-                            onChange: (calls) => { props.v2vCommit('calls', calls); },
-                        }))
-                        : null), h('div', { className: css.modLeafFields }, 
-                    // THE SECTION CAPTION (2026-10-08, the operator's
-                    // demand — "SAM2 AND SAM3 DON'T HAVE BBOX FILTER"):
-                    // the kind's declared one-line name for what the
-                    // stack IS, seated above the fields — the detector
-                    // arms' chips + confidence ARE the bbox filter, and
-                    // the caption says so (a caption-less stack reads as
-                    // loose inputs).
-                    k.section !== undefined
-                        ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'filter' }, k.section)
-                        : null, leafFields.map((f) => h('div', { key: f.name }, (() => {
-                        // THE UNWRAPPED SQUARE (same law as the hybrid arm
-                        // above): a slot-shaped entry field is caption +
-                        // atom siblings, never label-wrapped — else the row
-                        // caption opens the OS file dialog through the
-                        // square's hidden input.
-                        const sq = own.square(f);
-                        // THE CHAIN-RUN SEAT (the upscale leaf's picker): a
-                        // `chain-run` field renders the LIVE picker, never
-                        // the bare text atom (the free-text burn's cure —
-                        // the picker's own degrade law lives in it).
-                        const atom = f.type === 'chain-run'
-                            ? h(ChainRunPicker, {
-                                f,
-                                value: onDraft.draftParams[f.name],
-                                onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }); },
-                                ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
-                            })
-                            : h(SpecAtom, {
-                                f,
-                                value: onDraft.draftParams[f.name],
-                                // the leaf's patch boundary (see the hybrid arm)
-                                onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }); },
-                                // THE DUPLICATE-LABEL LAW: the caption span above owns
-                                // the visible name — the square paints none (2026-11-12,
-                                // the operator burn: every seat listed twice in the
-                                // Replace leaf)
-                                hideSquareLabel: true,
-                                ...(sq !== undefined ? { square: sq } : {}),
-                            });
-                        return sq !== undefined
-                            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom)
-                            : h('label', { className: css.modField }, f.label ?? f.name, leafStar(f), atom);
-                    })())), own.wireMenu))
-                    : h('div', { className: css.modLeafFields }, 
-                    // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
-                    // shape): a canvas the kind declares but the host did not
-                    // deliver can never mount — this arm renders the plain
-                    // fields alone. The section caption rides here too (the
-                    // filter's name never depends on the host's faces).
-                    k.section !== undefined
-                        ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'filter' }, k.section)
-                        : null, leafFields.map((f) => h('div', { key: f.name }, (() => {
-                        const sq = own.square(f);
-                        // THE CHAIN-RUN SEAT (see the canvas-present arm above):
-                        // the picker rides BOTH plain arms — the face's presence
-                        // never decides the run seat's shape.
-                        const atom = f.type === 'chain-run'
-                            ? h(ChainRunPicker, {
-                                f,
-                                value: onDraft.draftParams[f.name],
-                                onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }); },
-                                ...(props.loadChainRuns !== undefined ? { loadChainRuns: props.loadChainRuns } : {}),
-                            })
-                            : h(SpecAtom, {
-                                f,
-                                value: onDraft.draftParams[f.name],
-                                // the leaf's patch boundary (see the hybrid arm)
-                                onEdit: (name, v) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: coerceFieldEdit(f, v) }); },
-                                // THE DUPLICATE-LABEL LAW: the caption span above owns
-                                // the visible name — the square paints none (2026-11-12,
-                                // the operator burn: every seat listed twice in the
-                                // Replace leaf)
-                                hideSquareLabel: true,
-                                ...(sq !== undefined ? { square: sq } : {}),
-                            });
-                        return sq !== undefined
-                            ? h('div', { className: css.modField }, h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name, leafStar(f)), atom)
-                            : h('label', { className: css.modField }, f.label ?? f.name, leafStar(f), atom);
-                    })())), own.wireMenu), 
+            : // THE WINDOWS STRIP, NOT A HALF (2026-11-09, the operator's
+                // modal burn: "IT'S SPLIT UP INTO TWO SIDES … LITERALLY HALF
+                // THE PAGE IS BLANK"): the windows list + its split seat are
+                // a COMPACT STRIP, not a canvas — one W1 row stood in a
+                // 408px column holding ~100px of content while every field
+                // crammed into the other half. The strip rides FULL-WIDTH
+                // above the field stack; the split seat stays INSIDE the
+                // face, with the list it cuts. The seam marks stay (the
+                // seam wall mods-v2v-face.spec.tsx reads the stage/canvas
+                // nodes; the face embeds above the fields — the same law,
+                // one column now). (The guard repeats the face checks — the
+                // `v2vWindows` alias narrows the booleans, not the props'
+                // component fields, and h() needs the component.)
+                props.v2vFace !== undefined && props.v2vCommit !== undefined && v2vWindows
+                    ? h('div', { className: css.modLeaf, 'data-leaf-shape': 'v2v-strip' }, h('div', { className: css.modLeafStage, 'data-leaf-stage': 'v2v' }, h('div', { className: css.modField, 'data-leaf-canvas': 'v2v' }, h(props.v2vFace, {
+                        // the ROW's own windows + film clock — the same
+                        // calls the timeline strip draws (ONE truth, two
+                        // views of one draft)
+                        value: {
+                            calls: Array.isArray(props.values.calls) ? props.values.calls : [],
+                            fps: typeof props.values.fps === 'number' && Number.isFinite(props.values.fps) ? props.values.fps : 24,
+                        },
+                        onChange: (calls) => { props.v2vCommit('calls', calls); },
+                    }))), sectionCaption(), postureChips(), leafStack(), own.wireMenu)
+                    : // THE ACTION-CARD SPLIT (the operator's 2026-10-08 law: the
+                        // leaf is "based on the action card package, instead of one
+                        // long vertical stack" — the SAME grammar as CardDrill's
+                        // params-left / preview-right): a CANVAS-bearing leaf seats
+                        // the canvas LEFT and the knobs RIGHT; a faceless leaf keeps
+                        // the single column. The v2v windows face is NOT a canvas —
+                        // its strip arm above rides the one column (the 2026-11-09
+                        // cure; a compact strip never earned a modal half).
+                        (bboxCanvas || paintField !== undefined || orbitCanvas)
+                            ? h('div', { className: css.modLeafSplit }, h('div', { className: css.modLeafStage, 'data-leaf-stage': bboxCanvas ? 'bbox' : orbitCanvas ? 'orbit' : 'paint' }, 
+                            // THE REGION CAPTION (the operator's correction,
+                            // 2026-10-08: "BBOX IS NOT MANUAL, IT IS AUTOMATED" —
+                            // Impact Pack's boxes come from the DETECTOR, so this
+                            // canvas is NOT a box filter; it is an optional search
+                            // REGION scoping the selection. No region (or Clear)
+                            // runs over the WHOLE image).
+                            bboxCanvas && props.bboxFace !== undefined
+                                ? h('div', { className: css.modStageCaption, 'data-stage-caption': 'region' }, 'Region — optional (scopes the search; clear = whole image)')
+                                : null, bboxCanvas && props.bboxFace !== undefined
+                                ? h('div', { className: css.modField, 'data-leaf-canvas': 'bbox' }, h(props.bboxFace, {
+                                    referenceUrl: props.paintReferenceValue,
+                                    value: draftQuad(),
+                                    onChange: writeQuad,
+                                }))
+                                : null, paintField !== undefined && props.paintFace !== undefined
+                                ? h('div', { className: css.modField, 'data-leaf-canvas': 'paint' }, h(props.paintFace, {
+                                    referenceUrl: props.paintReferenceValue,
+                                    value: typeof onDraft.draftParams[paintField.name] === 'string' ? onDraft.draftParams[paintField.name] : '',
+                                    onChange: (dataUrl) => { onDraft.setDraftParams({ ...onDraft.draftParams, [paintField.name]: dataUrl }); },
+                                }))
+                                : null, orbitCanvas && props.orbitFace !== undefined
+                                ? h('div', { className: css.modField, 'data-leaf-canvas': 'orbit' }, h(props.orbitFace, {
+                                    value: draftPose(),
+                                    onChange: (pose) => { onDraft.setDraftParams({ ...onDraft.draftParams, orbit: pose.orbit, tilt: pose.tilt, dolly: pose.dolly }); },
+                                }))
+                                : null), h('div', { className: css.modLeafFields }, sectionCaption(), postureChips(), leafStack(), own.wireMenu))
+                            : h('div', { className: css.modLeafFields }, 
+                            // THE EMBEDDED CANVAS (stroke 95, the faceless-fallback
+                            // shape): a canvas the kind declares but the host did not
+                            // deliver can never mount — this arm renders the plain
+                            // fields alone. The section caption rides here too (the
+                            // filter's name never depends on the host's faces).
+                            sectionCaption(), postureChips(), leafStack(), own.wireMenu), 
     // THE MOD-KIND KNOB LAW (E2-7 — the operator's burn: "WHY AM I
     // SEEING CONTROLNET STRENGTH FLOOR OUTSIDE OF THE CONTROLNET
     // MOD?"): the kind's own scalars seat HERE, inside the mod's

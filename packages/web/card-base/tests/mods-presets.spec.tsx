@@ -101,7 +101,7 @@ function pickMenuRow(label: string, rowLabel: string): void {
   fireEvent.click(item as HTMLElement)
 }
 
-test('THE FACE IS THE FIELD GRAMMAR — NO posture layer renders for a sections-carrying kind (the checkbox row was invented UI; the cells are the agent lane\'s)', () => {
+test('THE FACE IS THE FIELD GRAMMAR + THE CHIP ROW — the checkbox face stays dead, the sanctioned posture layer rides as draft-patcher Pills inside the leaf (operator 2026-11-09)', () => {
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit: vi.fn(), onPatch: undefined }))
   openLeafViaPicker('Video edit')
   // the four axes render as the kind's own seats, inside the modal
@@ -109,15 +109,21 @@ test('THE FACE IS THE FIELD GRAMMAR — NO posture layer renders for a sections-
   expect(menuTrigger('Identity anchors')).toBeTruthy()
   expect(denoiseInput()).toBeTruthy()
   expect(modal().getByText('Refine pass')).toBeTruthy()
-  // NO invented layer anywhere: no checkbox row, no section labels,
-  // no native checks beside the grammar (operator 2026-11-08)
+  // THE CHECKBOX FACE STAYS DEAD (operator 2026-11-08): no checkbox
+  // row, no native checks beside the grammar — the invented layer's
+  // SHAPES never return
   expect(document.querySelector('[data-mod-sections]')).toBe(null)
   expect(document.querySelector('[data-mod-section]')).toBe(null)
   expect(document.querySelector('[data-testid="cb-mod-section-row"]')).toBe(null)
-  expect(modal().queryByText('Repair a region')).toBe(null)
-  expect(modal().queryByText('Identity swap')).toBe(null)
   const dlg = screen.getByRole('dialog')
   expect(dlg.querySelectorAll('input[type="checkbox"]').length).toBe(0)
+  // THE CHIPS ARE THE POSTURE LAYER (operator 2026-11-09): the
+  // declared sections render as Pills INSIDE the leaf — verbatim
+  // labels, press = a draft patch, never a checkbox
+  const chips = dlg.querySelector('[data-leaf-chips]')
+  expect(chips, 'the section chip row renders inside the leaf').not.toBeNull()
+  expect(chips?.getAttribute('data-leaf-chips'), 'the declared section ids ride the chip row').toContain('repair-region')
+  expect(modal().getByText('Repair a region')).toBeTruthy()
 })
 
 test('THE MASK SLOT — the Mask source menu opens it dynamically: static-png seats the staged PNG, whole-frame closes the region seats (the operator\'s ruling, stated as the bag\'s first axis)', () => {

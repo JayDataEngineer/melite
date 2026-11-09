@@ -21,27 +21,38 @@
  *  both doors against one fixture. */
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
-import { Button, Input, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { studioCopy } from './studioCopy.ts'
 import { splitCallsAt, type SplitCarry } from './v2vSplit.ts'
 import type { DocCall } from './docModel.ts'
 import type { V2vWindowView } from '@melite/contracts'
 
-/** The carry menu's three rows — the §0.9 vocabulary, the same
- *  labels the strip head's carry menu serves (one dictionary). */
-const CARRY_ROWS: Array<{ id: SplitCarry; label: string }> = [
-  { id: 'cut', label: studioCopy.splitCarryStock },
-  { id: 'extend', label: studioCopy.splitCarryCarry },
-  { id: 'carry+keyframe', label: studioCopy.splitCarryKeyframe },
+/** The split seat's three states — ONE vocabulary everywhere (the
+ *  operator's 2026-11-09 segmented law: "There is ONE knob for
+ *  carry" — the collapsed anchor hid the two carry modes): all
+ *  three states render VISIBLE as a segmented control, never behind
+ *  a dropdown. The labels are the strip seam editor's own compact
+ *  words (CallCard's seamModeRow, verbatim from studioCopy) — the
+ *  leaf's split seat, the leaf's per-window override, and the
+ *  strip's per-seam editor all speak Stock / Carry / Carry +
+ *  keyframe; the long teaching ("no carry", "22-frame overlap")
+ *  rides the tips, verbatim. The long splitCarry rows stay on the
+ *  strip head's own split menu — its door, its words. */
+const CARRY_ROWS: Array<{ id: SplitCarry; label: string; tip: string }> = [
+  { id: 'cut', label: studioCopy.seamModeStock, tip: studioCopy.seamModeStockTip },
+  { id: 'extend', label: studioCopy.seamModeCarry, tip: studioCopy.seamModeCarryTip },
+  { id: 'carry+keyframe', label: studioCopy.seamModeCarryKeyframe, tip: studioCopy.seamModeCarryKeyframeTip },
 ]
 
-/** the carry's own label (the three-row universe is closed — a
- *  Record, never a find-with-fallback that can reach nothing). */
-const CARRY_LABEL: Record<SplitCarry, string> = {
-  cut: studioCopy.splitCarryStock,
-  extend: studioCopy.splitCarryCarry,
-  'carry+keyframe': studioCopy.splitCarryKeyframe,
-}
+/** The per-seam rows — the strip seam editor's own compact
+ *  vocabulary (CallCard's seamModeRow, verbatim labels + tips): the
+ *  leaf's per-window override speaks the same three states as the
+ *  strip head, never a second spelling. */
+const SEAM_ROWS: Array<{ id: SplitCarry; label: string; tip: string }> = [
+  { id: 'cut', label: studioCopy.seamModeStock, tip: studioCopy.seamModeStockTip },
+  { id: 'extend', label: studioCopy.seamModeCarry, tip: studioCopy.seamModeCarryTip },
+  { id: 'carry+keyframe', label: studioCopy.seamModeCarryKeyframe, tip: studioCopy.seamModeCarryKeyframeTip },
+]
 
 /**
  * THE FACE'S OWN APPEARANCE (inline, the paint/bbox/orbit law —
@@ -57,7 +68,7 @@ const CARRY_LABEL: Record<SplitCarry, string> = {
  * windows rendered as a browser-default <ol> with decimal
  * numerals and list indent inside the mod popup's 11px stage
  * column, and the split seat wrapped as unstyled inline blocks.) */
-const FACE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }
+const FACE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }
 const HEAD: CSSProperties = { fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.7 }
 const HINT: CSSProperties = { fontSize: 9, lineHeight: 1.35, color: 'var(--dsw-alias-label-tertiary)' }
 const WINDOWS: CSSProperties = { margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }
@@ -71,14 +82,19 @@ const WINDOW: CSSProperties = {
   lineHeight: 1.4,
   overflowWrap: 'anywhere',
 }
-const SPLIT_SEAT: CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, padding: '2px 2px 0' }
+const SPLIT_SEAT: CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, padding: '2px 2px 0', flexWrap: 'wrap' }
+/** the segmented three-state (split seat + per-seam rows share the
+ *  recipe — inline, the face's own appearance law above). */
+const SEGMENT: CSSProperties = { display: 'inline-flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }
+/** the per-seam override seat — the compact twin of the strip's
+ *  seamModeRow, under its own window's row. */
+const SEAM_SEAT: CSSProperties = { display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }
 const REFUSAL: CSSProperties = { fontSize: 9, lineHeight: 1.35, color: 'var(--dsw-alias-state-error-primary)', overflowWrap: 'anywhere' }
 
 /** The windows face itself: the spans list + the split seat. */
 export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: number }, onChange: (calls: V2vWindowView[]) => void }) {
   const [splitAtSec, setSplitAtSec] = useState('')
   const [carry, setCarry] = useState<SplitCarry>('cut')
-  const [menuOpen, setMenuOpen] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
   const calls = props.value.calls as DocCall[]
   const secs = (frames: number): string => (frames / (props.value.fps || 24)).toFixed(2)
@@ -95,6 +111,19 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
     props.onChange(next as V2vWindowView[])
   }
 
+  /** THE PER-SEAM OVERRIDE (operator 2026-11-09: "no per-window
+   *  seam editor in the leaf" — the data carried per-seam
+   *  transition, the engine reads it, the split sets it, but the
+   *  leaf offered no control to change an EXISTING seam): every
+   *  non-first window carries the same compact 3-state segmented
+   *  the strip head serves, bound to THAT row's transition and
+   *  committed through onChange (the leaf's own envelope channel —
+   *  one truth, two views of one draft). */
+  const setSeam = (i: number, value: SplitCarry): void => {
+    const next = calls.map((w, j) => (j === i ? { ...w, transition: value } : w))
+    props.onChange(next as V2vWindowView[])
+  }
+
   return (
     <div style={FACE} data-v2v-face="windows">
       <div style={HEAD} data-v2v-head={true}>{studioCopy.v2vFormHead}</div>
@@ -104,7 +133,25 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
         : <ol style={WINDOWS} data-v2v-windows={true}>
             {calls.map((c, i) => (
               <li key={i} style={WINDOW} data-v2v-window={i}>
-                {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'cut') : '', c.text ?? '')}
+                {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', c.text ?? '')}
+                {i > 0
+                  ? <div style={SEAM_SEAT} data-v2v-seam={i} role="group" aria-label={`${studioCopy.seamModeAria} — W${i + 1}`}>
+                      {SEAM_ROWS.map((row) => {
+                        const active = (c.transition ?? 'extend') === row.id
+                        return (
+                          <Button key={row.id} variant={active ? 'primary' : 'outline'} size="sm"
+                            data-testid={`v2v-seam-${i}-${row.id}`}
+                            aria-pressed={active}
+                            aria-label={`${studioCopy.seamModeAria}: ${row.label}`}
+                            title={row.tip}
+                            onClick={() => { setSeam(i, row.id) }}
+                          >
+                            {row.label}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  : null}
               </li>
             ))}
           </ol>}
@@ -122,28 +169,22 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
           onInput={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
           onChange={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
         />
-        <Menu
-          open={menuOpen}
-          onClose={() => { setMenuOpen(false) }}
-          compact
-          portal
-          items={CARRY_ROWS}
-          selectedId={carry}
-          onSelect={(id: string) => {
-            setMenuOpen(false)
-            setCarry(id as SplitCarry)
-          }}
-          anchor={
-            <Button variant="outline" size="sm"
-              data-testid="v2v-split-carry"
-              aria-label={studioCopy.splitCarryLabel}
-              title={studioCopy.splitCarryTip}
-              onClick={() => { setMenuOpen(!menuOpen) }}
-            >
-              {CARRY_LABEL[carry]}
-            </Button>
-          }
-        />
+        <div style={SEGMENT} role="group" aria-label={studioCopy.splitCarryLabel} data-testid="v2v-split-carry">
+          {CARRY_ROWS.map((row) => {
+            const active = carry === row.id
+            return (
+              <Button key={row.id} variant={active ? 'primary' : 'outline'} size="sm"
+                data-testid={`v2v-split-carry-${row.id}`}
+                aria-pressed={active}
+                aria-label={`${studioCopy.splitCarryLabel}: ${row.label}`}
+                title={row.tip}
+                onClick={() => { setCarry(row.id) }}
+              >
+                {row.label}
+              </Button>
+            )
+          })}
+        </div>
         <Button variant="primary" size="sm"
           data-testid="v2v-split-cut"
           aria-label={studioCopy.v2vFormCutAria}

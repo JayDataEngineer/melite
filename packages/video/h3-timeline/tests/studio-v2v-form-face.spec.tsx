@@ -12,7 +12,8 @@
  * - THE FACE — the operator's REAL doc shape (the edit bag with its
  *   axes + the loras bag CO-ARMED + one long window at 24fps) opens
  *   the edit leaf and the FORM CARRIES THE WINDOWS: the list, the
- *   split seat (timestamp input + carry menu + the cut verb).
+ *   split seat (timestamp input + the VISIBLE three-state segmented
+ *   + the cut verb).
  * - THE SPLIT LANDS THROUGH THE FORM — 2 seconds + carry pressed in
  *   the form commits the next calls array through the bench door
  *   (two windows, the seam at the lattice-snapped frame, the
@@ -33,6 +34,7 @@ import { VideoTimelineStudio } from "../src/ui/studio/component.tsx"
 import { V2vLeafFace } from "../src/ui/studio/V2vLeafFace.tsx"
 import { splitCallsAt } from "../src/ui/studio/v2vSplit.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
+import type { V2vWindowView } from "@melite/contracts"
 
 // happy-dom returns zero rects (no layout) — the bar's ClientX→frame
 // doors need a viewport width, as every real browser provides.
@@ -110,12 +112,23 @@ async function openEditLeaf(): Promise<void> {
   }, { timeout: 4000 })
 }
 
-/** the form's own carry menu row (the strip door's matcher law: the
- *  stock row CONTAINS the word — match the row that STARTS with it). */
-async function pickCarryRow(): Promise<void> {
+/** the split seat's segmented carry pick (the operator's 2026-11-09
+ *  segmented law: all three states render VISIBLE — the pick is a
+ *  button press, never a menu row). */
+function pickCarrySegment(which: "cut" | "extend" | "carry+keyframe"): void {
+  const btn = document.querySelector(`[data-testid="v2v-split-carry-${which}"]`)
+  assert.ok(btn, `the ${which} segment renders in the split seat's segmented control`)
+  fireEvent.click(btn as HTMLElement)
+}
+
+/** the STRIP door's own carry menu row (the strip head keeps its
+ *  menu — only the leaf face went segmented; the strip door's
+ *  matcher law: the stock row CONTAINS the word — match the row
+ *  that STARTS with it). */
+async function pickStripCarryRow(): Promise<void> {
   const row = await screen.findAllByRole("menuitem")
     .then((items) => items.find((n) => n.textContent?.toLowerCase().startsWith("carry") && !n.textContent?.toLowerCase().includes("keyframe")))
-  assert.ok(row, "the Carry row serves in the form's carry menu")
+  assert.ok(row, "the Carry row serves in the strip's carry menu")
   fireEvent.click(row)
 }
 
@@ -137,9 +150,17 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     const windows = dlg.querySelectorAll("[data-v2v-window]")
     assert.equal(windows.length, 1, `the doc's one window lists in the form — got ${windows.length}`)
     assert.ok(windows[0]!.textContent?.includes("W1"), `the window row names itself — got "${windows[0]!.textContent}"`)
-    // THE SPLIT SEAT (the operator's named seat: timestamp + carry + verb)
+    // THE SPLIT SEAT (the operator's named seat: timestamp + the
+    // VISIBLE three-state segmented + verb — no collapsed anchor
+    // hiding the carry modes)
     assert.ok(dlg.querySelector('[data-testid="v2v-split-at"]'), "the timestamp input renders in the form")
-    assert.ok(dlg.querySelector('[data-testid="v2v-split-carry"]'), "the carry-mode menu renders in the form")
+    assert.ok(dlg.querySelector('[data-testid="v2v-split-carry"]'), "the carry segmented control renders in the form")
+    for (const [id, label, tip] of [["cut", "Stock", "stock — no context carry"], ["extend", "Carry", "the latent tail continues across the seam at the proven 22-frame overlap"], ["carry+keyframe", "Carry + keyframe", "the previous window's final frame is pinned as this window's first frame"]] as const) {
+      const seg = dlg.querySelector(`[data-testid="v2v-split-carry-${id}"]`)
+      assert.ok(seg, `the ${id} segment renders visible (never behind a menu)`)
+      assert.ok(seg!.textContent?.includes(label), `the ${id} segment carries its studioCopy seamMode label verbatim — got "${seg!.textContent}"`)
+      assert.ok((seg as HTMLElement).title.includes(tip), `the ${id} segment's tip teaches verbatim — got "${(seg as HTMLElement).title}"`)
+    }
     assert.ok(dlg.querySelector('[data-testid="v2v-split-cut"]'), "the split verb renders in the form")
     // THE FIELDS HOLD (the additive law — the face rides ABOVE the
     // grammar, it does not replace it)
@@ -155,9 +176,9 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     const at = document.querySelector('[data-testid="v2v-split-at"]') as HTMLInputElement
     fireEvent.change(at, { target: { value: "2" } })
     fireEvent.input(at, { target: { value: "2" } })
-    // pick the carry: extend (the 22-frame overlap)
-    fireEvent.click(document.querySelector('[data-testid="v2v-split-carry"]') as HTMLElement)
-    await pickCarryRow()
+    // pick the carry: extend (the 22-frame overlap) — a VISIBLE
+    // segment press, never a menu row
+    pickCarrySegment("extend")
     // press the cut IN THE FORM
     fireEvent.click(document.querySelector('[data-testid="v2v-split-cut"]') as HTMLElement)
     await waitFor(() => {
@@ -200,7 +221,7 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     assert.ok(withKeyframe !== null, "the three-window split serves")
     assert.equal(withKeyframe!.length, 4, "the split grows the doc by one window")
     assert.equal(withKeyframe![1]!.transition, "carry+keyframe",
-      "the seam states the THIRD carry (the menu's last row)")
+      "the seam states the THIRD carry (the segmented control's last state)")
     assert.ok(withKeyframe![2]!.start_frame >= THREE[1]!.start_frame,
       "the window after the seam rebases by the cut price (never left behind)")
     // THE STOCK CARRY keeps the split's own default seam
@@ -259,9 +280,11 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     }, { timeout: 4000 })
     assert.equal(commits.length, 0, "the refused split lands nothing")
     u2()
-    // THE CLOCK FALLBACK + THE TEXTLESS ROW + THE MENU'S DISMISS:
+    // THE CLOCK FALLBACK + THE TEXTLESS ROW + THE VISIBLE THREE:
     // fps 0 falls to the film clock's 24; a window with no text
-    // renders its row whole; the carry menu closes on outside press
+    // renders its row whole; the segmented control's three states
+    // render WITHOUT opening anything (the collapsed-anchor burn:
+    // no menu to open, no dismiss to need)
     const { unmount: u3 } = render(
       <V2vLeafFace
         value={{ calls: [
@@ -276,16 +299,15 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     )
     assert.ok(document.querySelector('[data-v2v-window="0"]')?.textContent?.includes("0.00s"),
       "fps 0 falls to the 24 clock (never a divide-by-zero)")
-    assert.ok(document.querySelector('[data-v2v-window="1"]')?.textContent?.includes("cut"),
-      "a seamless window's row states the stock seam (cut) in the list")
-    fireEvent.click(document.querySelector('[data-testid="v2v-split-carry"]') as HTMLElement)
-    await waitFor(() => {
-      assert.ok(screen.getAllByRole("menuitem").length > 0, "the carry menu opens")
-    }, { timeout: 4000 })
-    fireEvent.pointerDown(document.body)
-    await waitFor(() => {
-      assert.equal(screen.queryAllByRole("menuitem").length, 0, "the outside press dismisses the menu")
-    }, { timeout: 4000 })
+    assert.ok(document.querySelector('[data-v2v-window="1"]')?.textContent?.includes("extend"),
+      "an UNSTATED seam's row states the engine's own default (carry) in the list — the old 'cut' label lied about the seam the engine renders")
+    // THE VISIBLE THREE: every state present with zero gestures —
+    // the operator's "ONE knob" burn dies here, not in a menu
+    for (const id of ["cut", "extend", "carry+keyframe"] as const) {
+      assert.ok(document.querySelector(`[data-testid="v2v-split-carry-${id}"]`),
+        `the ${id} state renders visible with no menu opened`)
+    }
+    assert.equal(screen.queryAllByRole("menuitem").length, 0, "no menu owns the carry states anymore")
     // THE PRESS AT fps 0: the frame math falls to the 24 clock and
     // the split lands (1s × 24 = 24, snapped to the lattice's 22 —
     // the first window splits, three windows become four)
@@ -321,7 +343,7 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
       assert.ok(el, "the strip's carry menu renders")
       return el as HTMLElement
     }, { timeout: 4000 }))
-    await pickCarryRow()
+    await pickStripCarryRow()
     fireEvent.click(await waitFor(() => {
       const el = document.querySelector('[data-testid="tl-add-cut"]')
       assert.ok(el, "the strip's cut door renders")
@@ -339,8 +361,7 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     const at = document.querySelector('[data-testid="v2v-split-at"]') as HTMLInputElement
     fireEvent.change(at, { target: { value: "1.5" } })
     fireEvent.input(at, { target: { value: "1.5" } })
-    fireEvent.click(document.querySelector('[data-testid="v2v-split-carry"]') as HTMLElement)
-    await pickCarryRow()
+    pickCarrySegment("extend")
     fireEvent.click(document.querySelector('[data-testid="v2v-split-cut"]') as HTMLElement)
     const formDoc = await waitFor(() => lastCallsWrite(formSaved), { timeout: 4000 })
     assert.deepEqual(formDoc, PURE,
@@ -379,8 +400,8 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     assert.ok(row.style.borderRadius !== "", "the window row is rounded (the panel card voice)")
     assert.equal(row.style.fontVariantNumeric, "tabular-nums", "the span numerals align (W2 · 2.00s–4.00s reads as a column)")
     // THE SPLIT SEAT: one flex row — the timestamp input fills, the
-    // carry menu and the split button ride beside it (never unstyled
-    // inline blocks wrapping under each other)
+    // carry segmented control and the split button ride beside it
+    // (never unstyled inline blocks wrapping under each other)
     const seat = document.querySelector("[data-v2v-split-seat]") as HTMLElement
     assert.equal(seat.style.display, "flex", "the split seat lays out as one row")
     const at = document.querySelector('[data-testid="v2v-split-at"]') as HTMLInputElement
@@ -396,6 +417,51 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     const refusal = document.querySelector("[data-v2v-refusal]") as HTMLElement
     assert.ok(refusal !== null, "the refused press states itself")
     assert.equal(refusal.style.color, "var(--dsw-alias-state-error-primary)", "the refusal carries the error token")
+    unmount()
+  })
+
+  it("THE PER-SEAM OVERRIDE (operator 2026-11-09: 'no per-window seam editor in the leaf') — every non-first window carries its own compact 3-state segmented, and a press commits ONLY that seam through onChange", () => {
+    const commits: V2vWindowView[][] = []
+    const { unmount } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: "a", start_frame: 0, end_frame: 107 },
+          { text: "b", start_frame: 107, end_frame: 214 },
+          { text: "c", start_frame: 214, end_frame: 321, transition: "cut" },
+        ] as DocCall[], fps: 24 }}
+        onChange={(next) => { commits.push(next as V2vWindowView[]) }}
+      />,
+    )
+    // THE FIRST WINDOW HAS NO SEAM (nothing joins into W1 — no
+    // control, never an orphan seat)
+    assert.equal(document.querySelector("[data-v2v-seam='0']"), null, "W1 carries no seam seat")
+    // THE OTHERS DO — all three states visible, compact, the
+    // strip's own vocabulary (seamMode labels, verbatim)
+    for (const i of [1, 2]) {
+      const seat = document.querySelector(`[data-v2v-seam='${i}']`)
+      assert.ok(seat, `W${i + 1} carries its seam seat`)
+      for (const [id, label] of [["cut", "Stock"], ["extend", "Carry"], ["carry+keyframe", "Carry + keyframe"]] as const) {
+        const btn = seat!.querySelector(`[data-testid="v2v-seam-${i}-${id}"]`)
+        assert.ok(btn, `W${i + 1}'s ${id} state renders visible`)
+        assert.ok(btn!.textContent?.includes(label), `W${i + 1}'s ${id} state carries its studioCopy label verbatim — got "${btn!.textContent}"`)
+      }
+    }
+    // THE DEFAULTS: W2's unstated seam reads the engine's carry
+    // (never the old 'cut' lie); W3's stated cut reads cut
+    const pressed = (i: number, id: string): boolean =>
+      (document.querySelector(`[data-testid="v2v-seam-${i}-${id}"]`) as HTMLElement)?.getAttribute("aria-pressed") === "true"
+    assert.ok(pressed(1, "extend"), "W2's unstated seam presses Carry (the engine's default)")
+    assert.ok(pressed(2, "cut"), "W3's stated cut presses Stock")
+    // THE COMMIT: pressing keyframe on W2 restates ONLY W2's seam
+    // (W1 untouched, W3's cut untouched — the per-window override,
+    // never a global rewrite)
+    fireEvent.click(document.querySelector('[data-testid="v2v-seam-1-carry+keyframe"]') as HTMLElement)
+    assert.equal(commits.length, 1, "the seam press commits through onChange")
+    const [w1, w2, w3] = commits[0] as unknown as DocCall[]
+    assert.equal(w1!.transition, undefined, "W1 still carries no seam")
+    assert.equal(w2!.transition, "carry+keyframe", "W2's seam restates to carry+keyframe")
+    assert.equal(w3!.transition, "cut", "W3's seam is untouched")
+    assert.equal(w2!.start_frame, 107, "the override restates the seam only — the span is untouched")
     unmount()
   })
 })

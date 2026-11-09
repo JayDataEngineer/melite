@@ -6,7 +6,7 @@ import { Button, Input, Menu, Pill, Switch } from '@deepseek-ai/dsh-client-ui-pr
 import { InputSquare, estateInputUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
-import { type SourceRowProps, type SquareHost, useSquareProvider } from './square-provider.tsx'
+import { acceptOfField, type SourceRowProps, type SquareHost, useSquareProvider } from './square-provider.tsx'
 import { chromeCopy } from './locales/chromeCopy.ts'
 
 export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
@@ -408,6 +408,13 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
         // the aria seat stays even under the hidden caption (the
         // SourceRow idiom: readers keep the name, sighted get one)
         ...(hideSquareLabel === true ? { ariaLabel: f.label !== '' ? f.label : f.name } : {}),
+        // THE SEAT'S OWN VOCABULARY (the vid2vid modal cure,
+        // 2026-11-09): the square's hidden file input accepts the
+        // FIELD's media family — a video seat offers video files,
+        // never the image triad. acceptOfField is the ONE derivation
+        // (the provider's menu door already rode it); the square's
+        // own dormant input now rides the same law.
+        accept: acceptOfField(f),
         value: shown,
         ...square.verbs,
       }),

@@ -360,7 +360,13 @@ select option {
  * color law: aliases with fallbacks, no literals). */
 .specChips { display: flex; flex-wrap: wrap; gap: 4px; }
 
-.modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
+/* THE PRIMITIVE'S SIZING LAW (Modal.module.css:5 — "consumers cap
+ * growth with max-height: 100%, never their own viewport calc"): the
+ * leaf modal caps against the overlay's padding box. The old
+ * min(80vh, 760px) viewport calc clipped the modal at 720px while the
+ * overlay allowed ~852px at the same frame — 7 of 16 rows below the
+ * fold at open (the operator's 2026-11-09 modal burn, measured). */
+.modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: 100%; overflow-y: auto; padding: 4px 4px 8px; }
 
 /* THE ACTION-CARD SPLIT (CardDrill's grammar: preview LEFT, knobs
  * RIGHT): the canvas column holds its own (the face sizes itself),
@@ -371,10 +377,26 @@ select option {
 .modStageCaption { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 @media (max-width: 720px) { .modLeafSplit { grid-template-columns: minmax(0, 1fr); } }
 
-.modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
-.modLeafFields { display: grid; gap: 8px; }
+.modLeaf { display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
+.modLeafFields { display: grid; gap: 6px; }
 .modLeafActions { display: flex; gap: 8px; }
-.modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+.modField { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+/* THE GROUPED COLUMN (2026-11-09, the vid2vid modal cure): the DECL's
+ * `group` rows partition the stack — one column, named sections, the
+ * card form's own group grammar (groupFields, form.tsx) over the
+ * leaf's rows. The group grid rides the form's grid law (pairs on a
+ * row; the DECL's first-seen `columns` wins). */
+.modLeafGroup { display: flex; flex-direction: column; gap: 4px; }
+.modGroupTitle { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; margin: 0; }
+/* THE POSTURE CHIPS (the served preset cells, client draft-patchers):
+ * one press seeds the lawful companion values — never checkboxes, the
+ * §0.8 re-rule stands; the chips START a posture, the dials finish it. */
+.modChips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+/* THE ADVANCED FOLD (2026-11-09, the Plan-trio cure): the DECL-marked
+ * advanced rows fold behind a disclosure row at the stack's end — the
+ * dashed top edge reads as the section boundary (the modSection
+ * grammar), the disclosure row itself rides the DSH primitive. */
+.modLeafAdvanced { border-top: 1px dashed var(--border, rgba(128,128,128,.25)); padding-top: 6px; }
 /* THE ONE-ROW SEAT (2026-11-15, the operator's layout order: "the
  * strength and the lora picker ... on the same row"): two fields share
  * a row — the picker takes the width, the strength dial keeps its

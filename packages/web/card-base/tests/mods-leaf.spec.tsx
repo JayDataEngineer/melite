@@ -1471,3 +1471,173 @@ test('THE RETIRED KIND SAVES AGAINST ITS LAST SERVE: a re-serve without the open
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'detail', strength: 0.8 }])
   expect(onPatch).toHaveBeenCalledWith({ loras: [{ id: 'detail', strength: 0.8 }] })
 })
+
+// ── THE VID2VID MODAL CURE (operator 2026-11-09: "This looks
+// horrible … it's split up into two sides … LITERALLY HALF THE PAGE
+// IS BLANK, THERE IS WEIRD LONG DESCRIPTIONS"): three laws, one per
+// named defect — the windows strip is ONE column (never a modal
+// half), the stage caption renders as the ONE declared line (the
+// long teaching is DECL tooltip/doc copy, never a paragraph wall),
+// and a video seat's file input carries the video vocabulary. The
+// arms ride the constructed-kind harness (the seam wall
+// mods-v2v-face.spec.tsx judges the generic seam; these judge the
+// shapes the cure landed). ──
+
+const EDIT_STRIP = {
+  kind: 'edit', label: 'Video edit', param_key: 'edit', cardinality: 'list', max_stack: 1,
+  leaf_face: 'v2v-windows',
+  section: 'Video edit — mask, anchor, denoise, refine in one bag.',
+  // THE SERVED POSTURE CELLS (the coexistence cure's data): the DECL's
+  // own sections ride the leaf as draft-patchers.
+  sections: [
+    { id: 'extend', label: 'Extend', tooltip: 'Seed the extend posture — continuation with a whole-frame mask and full denoise.', patch: { continuation: true, mask_source: 'whole-frame', reference: 'self', denoise: 1 } },
+    { id: 'repair', label: 'Repair region', tooltip: 'Seed the repair posture — a tracked region at partial denoise.', patch: { mask_source: 'region', reference: 'self', denoise: 0.32 } },
+  ],
+  fields: [
+    { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', group: 'Source & Window' },
+    { name: 'edit_prompt', label: 'Edit prompt', type: 'text', default: '', group: 'Source & Window' },
+    { name: 'mask_source', label: 'Mask source', type: 'select', default: 'region', options: ['region', 'whole-frame'], group: 'Mask' },
+    { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 1, step: 0.01, group: 'Identity & Polish' },
+    { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, visible_when: 'continuation=true', group: 'Identity & Polish' },
+    { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, advanced: true },
+    { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, advanced: true },
+  ],
+} as unknown as ModifierKind
+
+/** THE FACE STUB (the seam judge's probe — mods-v2v-face's own
+ *  grammar): one marker node, no verbs. */
+function StripStub(props: mod.V2vWindowsFaceProps) {
+  void props
+  return h('div', { 'data-strip-stub': 'v2v' })
+}
+
+test('THE ONE-COLUMN LAW (the vid2v modal cure): a v2v-windows leaf renders the windows strip FULL-WIDTH above the fields — no two-pane split, one W1 row never owns a modal half', () => {
+  render(h(ModifiersSection, {
+    kinds: [EDIT_STRIP],
+    values: { calls: [{ text: 'a', start_frame: 0, end_frame: 107 }], fps: 24 },
+    onEdit: vi.fn(), onPatch: vi.fn(),
+    v2vFace: StripStub as never,
+    v2vCommit: () => {},
+  }))
+  openCreate('Video edit')
+  const dialog = screen.getByRole('dialog')
+  // THE DEAD HALF DIES: no split grid in the modal context — the
+  // strip rides the single column
+  expect(dialog.querySelector('[class*="modLeafSplit"]'), 'the two-pane split is gone from the v2v leaf').toBeNull()
+  // THE STRIP SEAT: the stage node holds the face, and the shape
+  // mark names the landed grammar
+  const stage = dialog.querySelector('[data-leaf-stage="v2v"]')
+  expect(stage, 'the strip seats in its stage node').toBeTruthy()
+  expect(dialog.querySelector('[data-leaf-shape="v2v-strip"]'), 'the strip shape is marked').toBeTruthy()
+  expect(stage!.querySelector('[data-strip-stub="v2v"]'), 'the face rides inside the strip').toBeTruthy()
+  // ORDER: the strip precedes the caption + field stack (the strip
+  // is a header band, not a sibling pane)
+  const caption = dialog.querySelector('[data-stage-caption="filter"]')
+  expect(caption).toBeTruthy()
+  expect(stage!.compareDocumentPosition(caption!) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+})
+
+test('THE CAPTION IS THE DECLARED LINE (the wall-of-text cure): the section renders VERBATIM as the one caption node — never padded, never clamped, one seat', () => {
+  render(h(ModifiersSection, { kinds: [EDIT_STRIP], values: {}, onEdit: vi.fn(), onPatch: vi.fn() }))
+  openCreate('Video edit')
+  const dialog = screen.getByRole('dialog')
+  const captions = dialog.querySelectorAll('[data-stage-caption="filter"]')
+  expect(captions.length, 'exactly one caption seat in the leaf').toBe(1)
+  // VERBATIM (the DECL owns brevity — the leaf never edits copy
+  // silently; the served length is judged at the declaration's own
+  // wall, h3 edit-matrix):
+  expect(captions[0]!.textContent).toBe('Video edit — mask, anchor, denoise, refine in one bag.')
+  // THE ONE-LINE BAND: the caption node renders a single text run —
+  // no child elements (a paragraph wall would carry children or a
+  // multi-node run)
+  expect(captions[0]!.children.length, 'the caption is one text run, not a paragraph stack').toBe(0)
+})
+
+test('THE SEAT\'S OWN VOCABULARY (the wrong-accept cure): a video seat\'s hidden file input offers video files — the image triad stays on image seats', () => {
+  const VIDEO_SEAT = {
+    kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+    fields: [
+      { name: 'clip', label: 'Source clip', type: 'file', media: 'video', default: '' },
+      { name: 'image', label: 'Image source', type: 'image', default: '' },
+    ],
+  } as unknown as ModifierKind
+  render(h(ModifiersSection, { kinds: [VIDEO_SEAT], values: {}, onEdit: vi.fn(), onPatch: vi.fn() }))
+  openCreate('Mask')
+  const dialog = screen.getByRole('dialog')
+  // THE SQUARES' OWN INPUTS (the provider's menu input re-targets at
+  // click time; the seat's dormant input is the DOM fact judged here
+  // — scoped to the per-field source rows)
+  const accepts = [...dialog.querySelectorAll('[data-source-row] input[type="file"]')].map((i) => i.getAttribute('accept'))
+  expect(accepts, 'both seats render their square input').toHaveLength(2)
+  expect(accepts, 'the video seat offers the video vocabulary (never the image triad)').toContain('video/mp4,video/webm,video/quicktime')
+  expect(accepts, 'the image seat keeps the image triad').toContain('image/png,image/jpeg,image/webp')
+})
+
+test('THE ADVANCED FOLD (the Plan-trio cure): DECL-marked advanced rows fold behind the disclosure at the stack\'s end — real seats, revealed by the row, never dropped', () => {
+  render(h(ModifiersSection, { kinds: [EDIT_STRIP], values: {}, onEdit: vi.fn(), onPatch: vi.fn() }))
+  openCreate('Video edit')
+  const dialog = screen.getByRole('dialog')
+  // FOLDED: the advanced rows are absent from the DOM — the main
+  // stack reads clean
+  expect(screen.queryByLabelText('Plan seed', { selector: 'input' })).toBeNull()
+  const fold = dialog.querySelector('[data-leaf-advanced]')
+  expect(fold, 'the fold rides the leaf').toBeTruthy()
+  expect(fold!.getAttribute('data-leaf-advanced'), 'the fold names the DECL\'s own advanced rows').toBe('seed,steps')
+  // REVEALED: the disclosure opens the real, editable seats (the
+  // number-box selector — the mixed knob's range input shares the
+  // label)
+  fireEvent.click(screen.getByText('Advanced'))
+  expect(screen.getByLabelText('Plan seed', { selector: 'input[type="number"]' })).toBeTruthy()
+  expect(screen.getByLabelText('Plan steps', { selector: 'input[type="number"]' })).toBeTruthy()
+})
+
+test('THE GROUPED COLUMN (the one-column cure, part 2): a DECL that names groups renders ONE column of NAMED sections — headers in DECL first-seen order, never a second column', () => {
+  render(h(ModifiersSection, { kinds: [EDIT_STRIP], values: {}, onEdit: vi.fn(), onPatch: vi.fn() }))
+  openCreate('Video edit')
+  const dialog = screen.getByRole('dialog')
+  // THE HEADERS, IN THE DECL'S OWN ORDER (groupFields partitions by
+  // first appearance — the card form's own grammar)
+  const headers = [...dialog.querySelectorAll('[data-leaf-group] [class*="modGroupTitle"]')].map((n) => n.textContent)
+  expect(headers, 'the DECL\'s groups name the sections, in declared order').toEqual(['Source & Window', 'Mask', 'Identity & Polish'])
+  // THE MEMBERSHIP: each group's section holds exactly its own rows —
+  // denoise and the continuation rider live in Identity & Polish, the
+  // clip and prompt in Source & Window
+  const members = (grp: string): string[] =>
+    [...dialog.querySelectorAll(`[data-leaf-group="${grp}"] [class*="modField"]`)].map((n) => n.textContent ?? '')
+  expect(members('Source & Window').join('|')).toContain('Source clip')
+  expect(members('Identity & Polish').join('|')).toContain('Denoise')
+  // THE RIDER SEATS WITH ITS GROUP: extend_seconds is visible_when-gated
+  // OFF at the default draft — absent until the posture lands (the
+  // chip arm proves the flip)
+  expect(members('Identity & Polish').join('|'), 'the gated rider stays hidden at the default draft').not.toContain('Extend seconds')
+  // NO SECOND COLUMN: the grouped sections stack in one column — the
+  // split grid never returns
+  expect(dialog.querySelector('[class*="modLeafSplit"]'), 'the split grid is gone').toBeNull()
+})
+
+test('THE POSTURE CHIP SEEDS THE LAWFUL COMPANIONS (the coexistence cure): a served section row rides as a draft-patcher — one press seats continuation AND its whole-frame mask, and the gated rider re-seats in the same modal', () => {
+  render(h(ModifiersSection, { kinds: [EDIT_STRIP], values: {}, onEdit: vi.fn(), onPatch: vi.fn() }))
+  openCreate('Video edit')
+  const dialog = screen.getByRole('dialog')
+  // THE ROW: the DECL's sections render as chips (the DSH Pill — a
+  // BUTTON, never the §0.8 checkbox crime)
+  const chips = dialog.querySelector('[data-leaf-chips]')
+  expect(chips, 'the posture chip row rides the leaf').toBeTruthy()
+  expect(chips!.getAttribute('data-leaf-chips'), 'the chips name the DECL\'s own section ids').toBe('extend,repair')
+  expect(dialog.querySelector('[data-leaf-chips] input[type="checkbox"]'), 'a chip is a press, not a checkbox').toBeNull()
+  // THE SEAT: pressing Extend applies the section's OWN patch — the
+  // lawful companions land together in the draft (denoise 1, the
+  // whole-frame mask source, continuation on), and the visible_when
+  // rider (extend_seconds rides continuation=true) re-seats in the
+  // SAME open modal — no second editor, the draft is the judge
+  fireEvent.click(screen.getByText('Extend'))
+  expect((screen.getByLabelText('Denoise', { selector: 'input[type="number"]' }) as HTMLInputElement).value, 'the patch carried denoise 1').toBe('1')
+  expect(screen.getByLabelText('Mask source').textContent, 'the patch carried the whole-frame mask — the coexistence burn\'s exact cure').toContain('Whole Frame')
+  const members = [...dialog.querySelectorAll('[data-leaf-group="Identity & Polish"] [class*="modField"]')].map((n) => n.textContent ?? '')
+  expect(members.join('|'), 'the gated rider re-seats after the patch').toContain('Extend seconds')
+  // THE SECOND CHIP: the repair posture re-seats the mask source back
+  // to a tracked region (each chip is its OWN lawful patch — the last
+  // press wins, the draft stays coherent)
+  fireEvent.click(screen.getByText('Repair region'))
+  expect(screen.getByLabelText('Mask source').textContent, 'the repair chip re-seats the region mask').toContain('Region')
+})

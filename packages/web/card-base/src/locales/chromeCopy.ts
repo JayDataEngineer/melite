@@ -101,6 +101,10 @@ export const chromeCopy = {
     `${p.run} — ${p.kind}, ${p.scenes} ${p.scenes === 1 ? 'scene' : 'scenes'}`,
   /** Chain-run picker's free-text affordance (the advanced fallback — a placeholder AND accessible name). */
   chainRunAdvancedLabel: 'Advanced — paste a run id',
+  /** The mod leaf's advanced fold row (2026-11-09, the Plan-trio cure): fields the DECL marks `advanced` fold behind this one-word title. */
+  advancedFoldTitle: 'Advanced',
+  /** The mod leaf's posture-chip row (2026-11-09, the coexistence cure): the DECL's served sections ride as client draft-patchers — one press seeds the lawful companion values. */
+  postureChipsLabel: 'Starting postures',
   /** Chain-run picker's honest empty (the store check found no checkpointed run). */
   chainRunEmptyNote: 'No chain runs yet — a swap, repair, extend or refine press leaves its scenes here.',
   /** Named-presence popup title: "Name the <kind label>" (the add gesture opens one field, never a knob wall). */

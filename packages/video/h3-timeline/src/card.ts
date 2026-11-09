@@ -242,7 +242,15 @@ const EDIT_MOD: DeclaredModifierKind = {
     'ComfyUI-KJNodes',
     'comfyui-h3-oneclick-swap',
   ],
-  section: 'Video edit — ONE bag, the whole edit matrix: state the MASK (a per-frame SAM3 region with tuning seats, the whole frame, or one staged PNG resized to the chain), the IDENTITY ANCHORS (the source itself, or a still + mannequin pair), the DENOISE pole (partial holds the unmasked region and its sound; 1 re-renders the masked side whole), and the REFINE switch (the learned second pass rides this chain\'s own latents, same run). A continuation is a posture of this door (continuation ON: fresh seconds appended at full denoise, joined into one film); a deferred 2x upscale of a PRIOR chain run is a posture of this door too (chain_run stated: the prior run resumes its checkpointed scenes through the requeue loop); a new camera is the Reshoot door — it refuses here naming its door. The classic refine posture composes here: blank mask + partial denoise + refine on. Film runs leave this arm empty.',
+  // THE SECTION CAPTION (the contract's own law, formSpec.ts: `section`
+  // is the kind's declared ONE-LINE name for what the field stack IS —
+  // it renders verbatim as the mod leaf's caption row). The 897-char
+  // teaching paragraph that stood here until 2026-11-09 (the operator's
+  // modal burn: "WEIRD LONG DESCRIPTIONS") was agent documentation, not
+  // UI copy — its content lives where it belongs: the field rows'
+  // tooltips (EDIT_FIELDS, editDecl.ts) and the agent docs
+  // (src/agents/AGENT.md, the edit-bag/Reshoot routing law).
+  section: 'Video edit — mask, anchor, denoise, refine in one bag.',
   // THE DECLARATION DATA lives in the client-safe leaf (editDecl.ts,
   // 2026-11-09): the studio rail projects the SAME field rows the
   // card serves, and a client value-import of THIS module refuses
