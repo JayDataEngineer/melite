@@ -18,6 +18,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
+import * as cardMod from "../src/card.ts";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
@@ -334,5 +335,36 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
       assert.equal(ofClass(out, cls).length, 0, `the [] film composes no ${cls}`);
     }
     assert.ok(ofClass(out, "SaveVideo").length > 0, "the [] film still delivers its SaveVideo");
+  });
+});
+
+const editFields = (): Array<{ name?: string; tooltip?: string }> => {
+  const mod = (cardMod as unknown as { EDIT_MOD?: { fields?: Array<{ name?: string; tooltip?: string }> } }).EDIT_MOD;
+  return mod?.fields ?? [];
+};
+describe("THE DEFECT-BOARD DOC PASS (D-10 + D-12, 2026-11-16: 'the bundle names the fields and their presence, not their units' / 'the single most useful v2v door for wardrobe work — discoverable only by pressing it')", () => {
+  it("D-10 THE UNITS ARE STATED: mask_grow and mask_blur name their geometry (px at the EDIT tier) and the transfer rule", () => {
+    const fields = editFields();
+    const grow = fields.find((f) => f.name === "mask_grow");
+    const blur = fields.find((f) => f.name === "mask_blur");
+    if (grow?.tooltip === undefined || blur?.tooltip === undefined) throw new Error("mask_grow/mask_blur rows not found");
+    for (const t of [grow.tooltip, blur.tooltip]) {
+      if (!/UNITS .*px at the EDIT geometry — the plan's resolution tier/.test(t)) {
+        throw new Error("units clause missing: " + t.slice(0, 80));
+      }
+      if (!/never the latent and never the output upscale|applied after the grow/.test(t)) {
+        throw new Error("the geometry discrimination is missing");
+      }
+    }
+    if (!/px-per-short-side/.test(grow.tooltip)) throw new Error("the transfer rule is missing from mask_grow");
+  });
+
+  it("D-12 THE QUOTABLE LINE: region_prompt's tooltip states the text-conditioned door — no reference image unless a specific person or mark", () => {
+    const fields = editFields();
+    const region = fields.find((f) => f.name === "region_prompt");
+    if (region?.tooltip === undefined) throw new Error("region_prompt row not found");
+    if (!/region_prompt selects the region by text; the edit prompt redraws inside it; no reference image is required unless the new content must be a specific person or a specific mark/.test(region.tooltip)) {
+      throw new Error("the board's quotable line is not verbatim on the tooltip");
+    }
   });
 });

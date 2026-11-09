@@ -169,7 +169,7 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     // cell with its anchors unstated — the arm-name safety the peer
     // bags carried, stated as the parameter law that replaces it.
     if (denoise >= 1 && mask.source !== 'whole-frame' && reference.mode === 'self') {
-        throw new Error(`h3-timeline edit: denoise ${denoise} on the self anchor with a mask — an unguided full re-render of the masked region (the identity-swap cell with its anchors unstated; the subject drifts with no replacement identity to hold). State reference still+mannequin (the swap posture) or the partial window (denoise < 1, the repair posture)`);
+        throw new Error(`h3-timeline edit: denoise ${denoise} on the self anchor with a mask — an unguided full re-render of the masked region (the identity-swap cell with its anchors unstated; the subject drifts with no replacement identity to hold). THE MISSING FIELD IS 'mannequin' — the motion video seated beside 'still' under reference still+mannequin ('still' alone is not a posture: the enum is self | still+mannequin; a stated 'still' seat is read only under still+mannequin), or take the partial window (denoise < 1, the repair posture). With mask_source 'region' a plate is OPTIONAL — region_prompt selects the region by text and the edit prompt redraws inside it; a reference image is required only when the new content must be a specific person or a specific mark`);
     }
     // THE IDENTITY BOIL (F3-17's fold): near-full denoise, no anchor
     // but the source itself, nothing held — that is a style boil with
@@ -195,9 +195,16 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     // taught frame arithmetic; the cure the operator asked to READ
     // is carry — leave the window unstated and the film splits
     // itself. The expert override stays open (a legal rung rides).
+    // THE 2 S DECREE RIDER (defect board D-3, 2026-11-16: the
+    // operator's "2 seconds for the refine flows" is 48 f at the
+    // film clock and 48 f CANNOT exist — the engine serves 22+17k
+    // frames, so the 2 s class's rung IS 56 f = 2.33 s, the
+    // memory-safe ceiling at refine 2x; the decree rounds UP to it,
+    // and the refusal must SAY so, never leave "the nearest" as the
+    // only number an agent can read).
     if (windowLength > 0 && !isGridLength(Math.round(windowLength))) {
         const nearest = gridSnap(Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, Math.round(windowLength))));
-        throw new Error(`h3-timeline edit: window_length ${windowLength}f is not on the film's grid — ${nearest}f is the nearest, or leave the window unstated and carry: true (the default) splits the film automatically (never type frame numbers)`);
+        throw new Error(`h3-timeline edit: window_length ${windowLength}f is not on the film's grid — ${nearest}f is the nearest${nearest === 56 && windowLength < 56 ? ' and it IS the ceiling of the 2 s class (48 f cannot exist: the engine serves 22+17k frames, so the "2 seconds" decree rounds UP to the 56 f rung = 2.33 s, the memory-safe window at refine 2x)' : ''}, or leave the window unstated and carry: true (the default) splits the film automatically (never type frame numbers)`);
     }
     // ── THE UPSCALE DIAL (the fourth dial — FRICTION_3's DESIGN
     // PROPOSAL: "I flip a switch for refine, it opens up a submenu

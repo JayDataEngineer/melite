@@ -4814,7 +4814,7 @@ window.__ModuleLoader__.load({
 				type: "text",
 				default: "",
 				visible_when: "mask_source=region",
-				tooltip: "The free-text SAM3 detection target naming the region — \"hands\", \"a person\", \"a face\" are param VALUES, never card kinds. The mask tracks every matching object frame by frame. RIDES ONLY the region mask source (refuses empty there)."
+				tooltip: "The free-text SAM3 detection target naming the region — \"hands\", \"a person\", \"a face\", \"the leotard\" are param VALUES, never card kinds. The mask tracks every matching object frame by frame. RIDES ONLY the region mask source (refuses empty there). THE TEXT-CONDITIONED DOOR (defect board D-12): with mask_source \"region\", region_prompt selects the region by text; the edit prompt redraws inside it; no reference image is required unless the new content must be a specific person or a specific mark."
 			},
 			{
 				name: "mask",
@@ -4845,7 +4845,7 @@ window.__ModuleLoader__.load({
 				min: 0,
 				max: 96,
 				step: 1,
-				tooltip: "Pixels the mask grows before the edit (seam ring protection; 0 edits exactly the detected region — the grow-0 seam test). Thin structures (handles, caps) lost to a coarse track grow here first — the tuning seat the coarse-mask burn asked for."
+				tooltip: "Pixels the mask grows before the edit (seam ring protection; 0 edits exactly the detected region — the grow-0 seam test). UNITS (defect board D-10): px at the EDIT geometry — the plan's resolution tier (e.g. 768×1344), never the latent and never the output upscale; to transfer a setting between resolutions, scale by the same px-per-short-side ratio (grow 8 at 768 short side ≈ grow 12 at 1152). Thin structures (handles, caps) lost to a coarse track grow here first."
 			},
 			{
 				name: "mask_blur",
@@ -4857,7 +4857,7 @@ window.__ModuleLoader__.load({
 				min: 0,
 				max: 48,
 				step: 1,
-				tooltip: "Edge softness of the grown mask (blur radius): 0 is a hard edge, a few px feathers the boundary into the hold — the second tuning seat the coarse-mask burn asked for."
+				tooltip: "Edge softness of the grown mask (blur radius): 0 is a hard edge, a few px feathers the boundary into the hold. UNITS (defect board D-10): px at the EDIT geometry — the plan's resolution tier, applied after the grow; same px-per-short-side transfer rule as mask_grow."
 			},
 			{
 				name: "detection_threshold",

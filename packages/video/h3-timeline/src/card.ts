@@ -221,7 +221,7 @@ const RESHOOT_MOD: DeclaredModifierKind = {
  *  dials of the bag, served by their own preset chips; the one
  *  door this family refuses to fold is Reshoot (a different
  *  chain, never a mask/denoise variation). */
-const EDIT_MOD: DeclaredModifierKind = {
+export const EDIT_MOD: DeclaredModifierKind = {
   kind: 'edit',
   label: 'Video edit',
   param_key: 'edit',

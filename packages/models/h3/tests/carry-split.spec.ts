@@ -449,3 +449,49 @@ describe("THE UNPROBED STAMP ABSENCE (every probe arm's own posture: no stamp, n
     );
   });
 });
+
+describe("THE DEFECT-BOARD MESSAGE PASS (D-6 + D-3, 2026-11-16: a refusal that does not name the missing field is a lecture — the board's own burn: 'an agent reads this and cannot tell whether it set reference wrong or omitted a sibling field')", () => {
+  it("D-6 THE MISSING FIELD IS NAMED: the identity-swap refusal says 'mannequin', the enum's two postures, and the text-conditioned carve", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Edit({
+        source_clip: "clips/take.mp4", edit_prompt: "swap the face", denoise: 1, mask: "masks/f.png",
+        mask_source: "region", region_prompt: "face",
+      }, { source: "region", prompt: "face", detectionThreshold: 0.5 } as never, { mode: "self" } as never, { width: 1344, height: 768 }, FACTS, g, "run_d6"),
+      /THE MISSING FIELD IS 'mannequin' — the motion video seated beside 'still' under reference still\+mannequin \('still' alone is not a posture: the enum is self \| still\+mannequin/i,
+      "the refusal names the field, never a posture lecture alone",
+    );
+    assert.throws(
+      () => renderH3Edit({
+        source_clip: "clips/take.mp4", edit_prompt: "swap the face", denoise: 1, mask: "masks/f.png",
+        mask_source: "region", region_prompt: "face",
+      }, { source: "region", prompt: "face", detectionThreshold: 0.5 } as never, { mode: "self" } as never, { width: 1344, height: 768 }, FACTS, g, "run_d6b"),
+      /With mask_source 'region' a plate is OPTIONAL — region_prompt selects the region by text and the edit prompt redraws inside it; a reference image is required only when the new content must be a specific person or a specific mark/,
+      "the text-conditioned carve rides the same sentence (the board's D-12 inference killer)",
+    );
+  });
+
+  it("D-3 THE 2 S DECREE RIDER: 48 f refuses naming 56 f AS THE CEILING of the 2 s class (the decree rounds UP — 48 f cannot exist)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Edit({
+        source_clip: "clips/take.mp4", edit_prompt: "clean the jacket", denoise: 0.32, mask: "masks/j.png",
+        window_length: 48,
+      }, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, { width: 1344, height: 768 }, FACTS, g, "run_d3"),
+      /window_length 48f is not on the film's grid — 56f is the nearest and it IS the ceiling of the 2 s class \(48 f cannot exist: the engine serves 22\+17k frames, so the "2 seconds" decree rounds UP to the 56 f rung = 2\.33 s, the memory-safe window at refine 2x\)/,
+      "the 48 press hears the whole law: nearest + ceiling + why",
+    );
+  });
+
+  it("the rider is CLASS-SCOPED (a 300 f press hears only the nearest — no 2 s talk)", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Edit({
+        source_clip: "clips/take.mp4", edit_prompt: "clean the jacket", denoise: 0.32, mask: "masks/j.png",
+        window_length: 300,
+      }, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, { width: 1344, height: 768 }, FACTS, g, "run_d3b"),
+      /window_length 300f is not on the film's grid — \d+f is the nearest, or leave the window unstated/,
+      "the old voice rides whole for the non-2s press",
+    );
+  });
+});
