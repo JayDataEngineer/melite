@@ -3,7 +3,7 @@ import { renderH3ChainUpscale } from './chainUpscale.js';
 import { renderH3Extend } from './extend.js';
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
 import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.js';
-import { resolveCarryOverlap, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES } from './timelineContract.js';
+import { resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES } from './timelineContract.js';
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */
 const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors';
@@ -198,6 +198,46 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         throw new Error(`h3-timeline edit: 'source_clip' names no media — the edit rides a staged clip (ONE leaf: the VHS window loader + the core LoadVideo read it by staged name)`);
     }
     const [srcFrames, srcAudio] = loadVideo(g, sourceClip, Math.round(windowLength), Math.round(windowStart));
+    // ── THE CALLS→EDIT SEAM TRANSLATION (audit item 5; board row 4's
+    // acceptance: "The film already has windows on the timeline. The
+    // edit door should split on those … and join with the same
+    // overlap"). When the entry states NO window (0/0 — the default
+    // carry press) and the doc's calls[] carry AUTHORED windows (two
+    // or more spans), the edit's plan shots ARE the calls' spans:
+    // one shot per window at the window's own length, each seam
+    // carrying what its call states — transition 'cut' →
+    // context_length 0 (the engine's cut preset), any carry
+    // transition → the derived AV join (resolveCarryOverlap: 39 under
+    // carry, 0 when the entry states carry: false — a keyframe is a
+    // gen-side anchor; a masked edit carries, and the shot's id
+    // STATES the translation, never a silent downgrade). The shot
+    // lengths are the windows' own spans — the engine's plan node
+    // judges each against its lattice and refuses loud naming the
+    // shot. A single call is the un-split film: the source-sliced
+    // default press stands, nothing changes. A stated expert window
+    // rules over the calls (the override is the expert's, not
+    // derived). ──
+    const callsRaw = Array.isArray(p.calls) ? p.calls : [];
+    const windows = callsRaw.filter((c) => typeof c === 'object' && c !== null);
+    const authored = windowStart === 0 && windowLength === 0 && windows.length >= 2
+        && windows.every((c) => {
+            const start = Number(c['start_frame']);
+            const end = Number(c['end_frame']);
+            return Number.isFinite(start) && Number.isFinite(end) && end - start >= 1;
+        });
+    const carryJoin = resolveCarryOverlap(entry);
+    const seamShots = authored
+        ? windows.map((c, i) => {
+            const span = Math.max(1, Math.round(Number(c['end_frame']) - Number(c['start_frame'])));
+            const cut = c['transition'] === 'cut' || !entryCarries(entry);
+            return {
+                id: `w${i + 1}${cut ? '-cut' : '-carry'}`,
+                prompt,
+                length: span,
+                ...(i === 0 ? {} : { context_length: cut ? 0 : carryJoin }),
+            };
+        })
+        : null;
     // ── the mask dial's own derivation (outside the body, the
     // presets' posture: repair's SAM3 chain, swap's staged PNG) ──
     let regionMasks;
@@ -249,10 +289,15 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         windowStart,
         picture1: anchorFrame,
         srcFrames, srcAudio,
-        // the ignored literal fallback — the plan node's SOURCE-SLICED
-        // shots ride plan_json_input (the swap/repair semantics)
-        planJson: JSON.stringify({ shots: [{ id: 'edit', prompt }] }),
-        planFromSource: true,
+        // the plan's shot law: AUTHORED shots (the calls' spans + the
+        // stated seams) rule as the literal — the plan node must not
+        // re-slice the source over them; the un-split film keeps the
+        // source-sliced default press (the literal is the ignored
+        // fallback, plan_json_input rides)
+        planJson: seamShots !== null
+            ? JSON.stringify({ shots: seamShots })
+            : JSON.stringify({ shots: [{ id: 'edit', prompt }] }),
+        planFromSource: seamShots === null,
         denoise,
         ...(refineOn
             ? { upscale: { mode: 'scale by multiplier', scale, modelName: REFINE_UPSCALE_MODEL } }

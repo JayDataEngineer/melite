@@ -17,6 +17,8 @@ import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { renderH3Repair, renderH3Swap, renderH3Edit, renderH3Extend } from "../src/index.ts";
 import { AV_CONTINUITY_OVERLAPS, CARRY_JOIN_OVERLAP, entryCarries, resolveCarryOverlap } from "../src/timelineContract.ts";
+import { CALL_TRANSITIONS } from "../src/timelineContract.ts";
+import { schema as h3schema } from "../src/schema.ts";
 import type { H3Facts } from "../src/actions.ts";
 
 const FACTS: H3Facts = {
@@ -228,5 +230,38 @@ describe("THE CALLS→EDIT SEAM TRANSLATION (audit item 5 — the timeline's aut
     );
     assert.deepEqual(shots, [{ id: "edit", prompt: "clean the jacket" }]);
     assert.equal(literalRules, false);
+  });
+});
+
+describe("THE SEAM VOCABULARY (the carry+keyframe audit's owed wall — a typo'd seam never composes as carry in silence)", () => {
+  // transitionOverlap treats ANY non-'cut' string as the carry join,
+  // so the schema's walk judges every stated transition against the
+  // CALL_TRANSITIONS roster. The arms drive the REAL walk (the
+  // schema carrier), not the resolver alone.
+  const WALK = (transition: string | undefined): unknown => {
+    // the span geometry is seam-relative (timelineContract's one grid):
+    // a carried window's authored span is 17k (119f here — its 22f seam
+    // is the generation head); a cut window is judged verbatim, 22+17k
+    // (124f here). First window is always verbatim.
+    const calls: Array<Record<string, unknown>> = [
+      { text: "a", start_frame: 0, end_frame: 124 },
+      { text: "b", start_frame: 124, end_frame: transition === "cut" ? 248 : 243 },
+    ]
+    if (transition !== undefined) calls[1]!.transition = transition
+    return h3schema({ calls });
+  };
+
+  it("the three stated seams walk clean (cut, extend, carry+keyframe) and unstated = carry", () => {
+    for (const legal of CALL_TRANSITIONS) {
+      assert.doesNotThrow(() => WALK(legal), `'${legal}' is the vocabulary`);
+    }
+    assert.doesNotThrow(() => WALK(undefined), "unstated is the carry default");
+  });
+
+  it("anything else refuses at the walk, naming the value and the vocabulary", () => {
+    for (const bad of ["cary", "stock", "cut ", "CUT", "dissolve", ""]) {
+      assert.throws(() => WALK(bad), /is not a seam this timeline composes/, `'${bad}' must refuse`);
+      assert.throws(() => WALK(bad), new RegExp(`'${bad.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}'`), "the refusal names the value");
+    }
   });
 });

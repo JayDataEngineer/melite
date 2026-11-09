@@ -498,6 +498,13 @@ export const CALL_KEYS = new Set([
     'ref_image', 'image_name', 'ref_images', 'ref_videos', 'ref_audios',
     'beats', 'last_frame', 'first_frame_prev_sec', 'seam_carry',
 ]);
+/** THE SEAM VOCABULARY (one home): the three transitions a call
+ *  may state — 'cut' (context 0), 'extend' (the carry join), and
+ *  'carry+keyframe' (the carry join + a gen-side image anchor).
+ *  `transitionOverlap` treats ANY non-'cut' string as carry, so
+ *  the schema's walk judges every stated transition against THIS
+ *  roster — a typo'd seam never composes as carry in silence. */
+export const CALL_TRANSITIONS = ['cut', 'extend', 'carry+keyframe'];
 export const LEGACY_KNOB_KEY = {
     sampling_steps: 'steps',
     sampler: 'sampler_name',

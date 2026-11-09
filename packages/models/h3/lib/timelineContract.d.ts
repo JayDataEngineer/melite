@@ -277,6 +277,13 @@ export declare const SECOND_PASS_KNOBS: ReadonlySet<string>;
  *  ('unknown per-call key(s)') instead of round-tripping a phantom;
  *  the studio drops legacy rows at hydration with a named warn. */
 export declare const CALL_KEYS: ReadonlySet<string>;
+/** THE SEAM VOCABULARY (one home): the three transitions a call
+ *  may state — 'cut' (context 0), 'extend' (the carry join), and
+ *  'carry+keyframe' (the carry join + a gen-side image anchor).
+ *  `transitionOverlap` treats ANY non-'cut' string as carry, so
+ *  the schema's walk judges every stated transition against THIS
+ *  roster — a typo'd seam never composes as carry in silence. */
+export declare const CALL_TRANSITIONS: readonly ["cut", "extend", "carry+keyframe"];
 export declare const LEGACY_KNOB_KEY: {
     readonly sampling_steps: "steps";
     readonly sampler: "sampler_name";

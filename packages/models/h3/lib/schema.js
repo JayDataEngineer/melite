@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { samplingExtra } from '@melite/comfyui-card-kit/fields';
 import { bag } from '@melite/contracts/extraKeys';
 import { coerceWireArrays } from '@melite/comfyui-card-kit';
-import { CALL_KEYS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
+import { CALL_KEYS, CALL_TRANSITIONS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
 export const FAMILIES = ['t4r', 't4_open', 't4_chain'];
@@ -640,6 +640,16 @@ export function schema(v) {
                 }
             }
             const transition = typeof c.transition === 'string' ? c.transition : undefined;
+            // THE SEAM VOCABULARY GATE (the carry+keyframe audit's owed
+            // wall): a transition outside the three this timeline
+            // composes ('cut' | 'extend' | 'carry+keyframe') is a typo or
+            // a foreign dialect — transitionOverlap would silently treat
+            // ANY non-'cut' string as a carry join, so a typo'd seam
+            // composed as carry with no refusal. Judge at the walk, name
+            // the value and the vocabulary.
+            if (transition !== undefined && !CALL_TRANSITIONS.includes(transition)) {
+                throw new Error(`calls[${i}].transition '${transition}' is not a seam this timeline composes — the vocabulary is ${CALL_TRANSITIONS.map((t) => `'${t}'`).join(', ')} (unstated = carry)`);
+            }
             // THE GRID GATE (§26, the walk arm): a call's knobs.length pin
             // bypasses every snap arm downstream — validate at the walk so
             // `validate` refuses what the engine would kill at GPU cost.
