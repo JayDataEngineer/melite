@@ -1,7 +1,7 @@
 /** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { type FormSpecDoc } from './spec.js';
+import { type FormSpecDoc } from './spec.ts';
 /** One dynamic-parameter section: a title riding the master form's
  * own group chrome, a stable testid for the behaviorals, and its
  * rows. */

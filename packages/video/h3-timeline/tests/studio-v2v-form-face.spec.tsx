@@ -464,4 +464,46 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     assert.equal(w2!.start_frame, 107, "the override restates the seam only — the span is untouched")
     unmount()
   })
+
+  it("THE PER-ROW SPLIT SEAT (operator 2026-11-09: 'the ability in EVERY window to set the split time by seconds') — every window row carries its own seconds field + split verb, seconds stated INTO that row (a value past the row's own end refuses, never resolves into another window)", () => {
+    const commits: V2vWindowView[][] = []
+    const { unmount } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 180, transition: "cut" },
+        ] as DocCall[], fps: 24 }}
+        onChange={(next) => { commits.push(next as V2vWindowView[]) }}
+      />,
+    )
+    // EVERY row carries the seat — W1 and W2 alike (the operator's
+    // word: EVERY window, not one global field)
+    for (const i of [0, 1]) {
+      assert.ok(document.querySelector(`[data-v2v-row-split='${i}']`), `W${i + 1} carries its split seat`)
+      assert.ok(document.querySelector(`[data-testid='v2v-row-split-at-${i}']`), `W${i + 1}'s seconds input renders`)
+    }
+    // 2s INTO W2 (start 90, a CUT window) = frame 138 → the lattice
+    // snaps to 146 (both halves legal: left 56f cut, right 34f
+    // carried-shaped), W1 untouched — the press splits THAT row only
+    const input = document.querySelector("[data-testid='v2v-row-split-at-1']") as HTMLInputElement
+    fireEvent.change(input, { target: { value: "2" } })
+    fireEvent.input(input, { target: { value: "2" } })
+    fireEvent.click(document.querySelector("[data-testid='v2v-row-split-1']") as HTMLElement)
+    assert.equal(commits.length, 1, "the row press commits through onChange")
+    const next = commits[0] as unknown as DocCall[]
+    assert.equal(next.length, 3, "W2 became its own two halves")
+    assert.equal(next[0]!.end_frame, 90, "W1 is untouched")
+    assert.equal(next[1]!.end_frame, 146, "the left half ends at the snapped frame")
+    assert.equal(next[2]!.start_frame, 146, "the right half starts at the snapped frame")
+    // PAST-THE-ROW SECONDS REFUSE LOUD: 10s into W2 exceeds its own
+    // 90f span — no split, never a silent resolve into another
+    // window, the refusal voices
+    commits.length = 0
+    fireEvent.change(input, { target: { value: "10" } })
+    fireEvent.input(input, { target: { value: "10" } })
+    fireEvent.click(document.querySelector("[data-testid='v2v-row-split-1']") as HTMLElement)
+    assert.equal(commits.length, 0, "past-the-row seconds never commit")
+    assert.ok(document.querySelector("[data-v2v-refusal]"), "the refusal voices loud")
+    unmount()
+  })
 })

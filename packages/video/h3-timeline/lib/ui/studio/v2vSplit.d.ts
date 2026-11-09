@@ -1,4 +1,4 @@
-import type { DocCall } from './docModel.js';
+import type { DocCall } from './docModel.ts';
 /** The three carry states the split seat states (§0.9's vocabulary,
  * the same three the call card's seam seat and the strip head's
  * carry menu serve). */

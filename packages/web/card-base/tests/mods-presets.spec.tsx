@@ -101,7 +101,7 @@ function pickMenuRow(label: string, rowLabel: string): void {
   fireEvent.click(item as HTMLElement)
 }
 
-test('THE FACE IS THE FIELD GRAMMAR + THE CHIP ROW — the checkbox face stays dead, the sanctioned posture layer rides as draft-patcher Pills inside the leaf (operator 2026-11-09)', () => {
+test('THE FACE IS THE FIELD GRAMMAR — the checkbox face stays dead AND the chip row stays dead (the §-1 axiom, operator 2026-11-09: the field grammar is the ONLY posture face)', () => {
   render(h(ModifiersSection, { kinds: [EDIT], values: {}, onEdit: vi.fn(), onPatch: undefined }))
   openLeafViaPicker('Video edit')
   // the four axes render as the kind's own seats, inside the modal
@@ -117,13 +117,13 @@ test('THE FACE IS THE FIELD GRAMMAR + THE CHIP ROW — the checkbox face stays d
   expect(document.querySelector('[data-testid="cb-mod-section-row"]')).toBe(null)
   const dlg = screen.getByRole('dialog')
   expect(dlg.querySelectorAll('input[type="checkbox"]').length).toBe(0)
-  // THE CHIPS ARE THE POSTURE LAYER (operator 2026-11-09): the
-  // declared sections render as Pills INSIDE the leaf — verbatim
-  // labels, press = a draft patch, never a checkbox
-  const chips = dlg.querySelector('[data-leaf-chips]')
-  expect(chips, 'the section chip row renders inside the leaf').not.toBeNull()
-  expect(chips?.getAttribute('data-leaf-chips'), 'the declared section ids ride the chip row').toContain('repair-region')
-  expect(modal().getByText('Repair a region')).toBeTruthy()
+  // THE CHIP FACE STAYS DEAD TOO (operator 2026-11-09, the §-1
+  // axiom: "N posture chips for one operation is the disease this
+  // plan exists to kill" — timeline plan §-1 point 2). The DECL's
+  // sections are engine-side starting cells; NO pill row renders,
+  // and no section label reaches the leaf's chrome
+  expect(dlg.querySelector('[data-leaf-chips]'), 'no chip row renders inside the leaf').toBeNull()
+  expect(modal().queryByText('Repair a region')).toBe(null)
 })
 
 test('THE MASK SLOT — the Mask source menu opens it dynamically: static-png seats the staged PNG, whole-frame closes the region seats (the operator\'s ruling, stated as the bag\'s first axis)', () => {

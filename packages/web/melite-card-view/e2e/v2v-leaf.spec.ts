@@ -22,7 +22,7 @@ import { callBench, collectPageErrors, settle } from './tour.ts'
  *     triad; the RENDERED file inputs carry the same mapping; the
  *     video mask posture seats a video-vocabulary mask square.
  *  3. VISUAL BASELINES — the leaf photographs per posture (default,
- *     video mask, extend chip); the baselines are committed, so any
+ *     video mask, continuation field); the baselines are committed, so any
  *     regression in the leaf's pixels reds the wall.
  *
  * THE SCRATCH-SESSION LAW (the 2026-11-09 incident): the leaf's
@@ -223,7 +223,7 @@ test.describe('THE ADD-VIDEO-EDIT LEAF · the 2026-11-09 cure, proved in pixels'
     }
   })
 
-  test('ARM 3 — VISUAL BASELINES: the leaf photographs per posture (default, video mask, extend chip)', async ({ page }) => {
+  test('ARM 3 — VISUAL BASELINES: the leaf photographs per posture (default, video mask, continuation field)', async ({ page }) => {
     test.skip(skippedForeign, 'foreign reopened conversation — see beforeEach')
     const modal = page.locator('[class*="modLeafModal"]').first()
     // THE DEFAULT POSTURE
@@ -238,9 +238,14 @@ test.describe('THE ADD-VIDEO-EDIT LEAF · the 2026-11-09 cure, proved in pixels'
       await page.waitForTimeout(1200)
       await expect(modal).toHaveScreenshot('v2v-leaf-mask-video.png', { animations: 'disabled' })
     }
-    // THE EXTEND POSTURE (the chip row's draft patch)
-    await page.locator('[data-leaf-chips] button', { hasText: 'Extend' }).first().click()
+    // THE EXTEND POSTURE THROUGH THE FIELD GRAMMAR (the §-1 axiom:
+    // no chip row — the Continuation boolean IS the extend seat, and
+    // its visible_when rider re-seating in the same modal is the
+    // draft proof)
+    const contField = page.locator('[class*="modLeafModal"] [class*="modField"]', { hasText: 'Continuation' }).locator('input, button, [role="switch"]').first()
+    await contField.click()
     await page.waitForTimeout(1200)
+    await expect(modal.getByText('Extend seconds')).toBeVisible()
     await expect(modal).toHaveScreenshot('v2v-leaf-extend.png', { animations: 'disabled' })
   })
 })

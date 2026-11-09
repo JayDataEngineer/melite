@@ -271,14 +271,13 @@ describe('THE S7 CLASS-4 WALL · card-base · TIP GRAMMAR', () => {
     //    2026-11-15): the row's Input carries the band hint (0–2,
     //    blank = the door's 1) — the embedded field face, the same
     //    rest-channel idiom as the leaf's range Input above.
-    //  - the posture chips (the 2026-11-09 sections law): each chip
-    //    Pill carries the section's declared tooltip verbatim — the
-    //    one-line hover idiom, the same caption voice as the field
-    //    captions above (the long teaching rides hover, not prose).
+    //    (2026-11-09 SHRINK RECEIPT: the posture-chip Pill seat that
+    //    rode here is DEAD — the chip row is the §-1 axiom's named
+    //    disease, killed for good; the count returns to 3.)
     //  - preview.tsx:170 the StaleBadge capsule (the S7j Pill
     //    conversion kept the hover hint — TrajectoryToolbar class).
     expect(seatsIn(seats, 'atoms.tsx', 'component'), 'atoms.tsx rest channel').toBe(3)
-    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(4)
+    expect(seatsIn(seats, 'mods.tsx', 'component'), 'mods.tsx rest channel').toBe(3)
     expect(seatsIn(seats, 'preview.tsx', 'component'), 'preview.tsx rest channel').toBe(1)
     expect(seats.filter((s) => s.kind === 'component' && !['atoms.tsx', 'mods.tsx', 'preview.tsx'].includes(s.rel)),
       'no rest-channel title seat outside the argued files').toEqual([])

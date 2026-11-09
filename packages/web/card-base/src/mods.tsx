@@ -39,7 +39,7 @@
  */
 import { createElement as h, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
-import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineRegular, Input, Menu, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
@@ -1499,29 +1499,13 @@ function ModLeaf(props: {
     }
     return fold !== null ? [...body, fold] : body
   }
-  // THE POSTURE CHIPS (2026-11-09, the auditor's cure 2 — the
-  // coexistence proof: Continuation ON × mask_source=video rendered
-  // together with no warning, and the ENGINE refused the pair later;
-  // the leaf never taught the law). The DECL's own served `sections`
-  // (ModifierSection, formSpec.ts — h3's Extend/repair/upscale cells)
-  // ride as CLIENT DRAFT-PATCHERS: one press seeds the lawful
-  // companion values into the live draft (extend → continuation +
-  // whole-frame mask + self anchors + denoise 1), and the
-  // visible_when rows re-seat in the same open modal. NOT checkboxes
-  // (the §0.8 re-rule stands): a chip STARTS a posture, the dials
-  // finish it; the flow face's own section seats are untouched.
-  const postureChips = (): ReturnType<typeof h> | null => {
-    const cells = k.sections ?? []
-    return cells.length > 0
-      ? h('div', { className: css.modChips, role: 'group', 'aria-label': chromeCopy.postureChipsLabel, 'data-leaf-chips': cells.map((s) => s.id).join(',') },
-          cells.map((s) => h(Pill, {
-            key: s.id,
-            ...(s.tooltip !== undefined && s.tooltip !== '' ? { title: s.tooltip } : {}),
-            onClick: () => { onDraft.setDraftParams({ ...onDraft.draftParams, ...s.patch }) },
-          }, s.label)),
-        )
-      : null
-  }
+  // THE POSTURE CHIPS ARE DEAD (operator 2026-11-09, the §-1 axiom:
+  // "N posture chips for one operation is the disease this plan
+  // exists to kill" — the timeline plan §-1 point 2, and the
+  // 2026-11-08 re-rule "the field grammar is the face"). The DECL's
+  // served `sections` stay engine-side starting cells (agent docs +
+  // wire vocabulary); they render NOWHERE in the leaf. The fields
+  // compose postures directly.
   // THE SECTION CAPTION (the kind's declared ONE-LINE name for the
   // stack — the contract's own wording for `section`, formSpec.ts).
   // The long teaching text is DECL copy's job through the field
@@ -1817,7 +1801,6 @@ function ModLeaf(props: {
                   onChange: (calls: V2vWindowsFaceProps['value']['calls']) => { props.v2vCommit!('calls', calls) },
                 }))),
             sectionCaption(),
-            postureChips(),
             leafStack(),
             own.wireMenu,
           )
@@ -1868,7 +1851,6 @@ function ModLeaf(props: {
             ),
             h('div', { className: css.modLeafFields },
               sectionCaption(),
-              postureChips(),
               leafStack(),
               own.wireMenu,
             ))
@@ -1879,7 +1861,6 @@ function ModLeaf(props: {
           // fields alone. The section caption rides here too (the
           // filter's name never depends on the host's faces).
           sectionCaption(),
-          postureChips(),
           leafStack(),
           own.wireMenu,
         ),

@@ -84,10 +84,18 @@ const SEGMENT = { display: 'inline-flex', gap: 4, flexWrap: 'wrap', alignItems: 
 /** the per-seam override seat — the compact twin of the strip's
  *  seamModeRow, under its own window's row. */
 const SEAM_SEAT = { display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 };
+/** the per-row split seat — seconds INTO this row (one recipe on
+ *  every window row, the global seat's own words). */
+const ROW_SPLIT = { display: 'flex', gap: 4, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' };
 const REFUSAL = { fontSize: 9, lineHeight: 1.35, color: 'var(--dsw-alias-state-error-primary)', overflowWrap: 'anywhere' };
 /** The windows face itself: the spans list + the split seat. */
 export function V2vLeafFace(props) {
     const [splitAtSec, setSplitAtSec] = useState('');
+    /** every window row's own split-time-in-seconds field (the
+     *  operator's 2026-11-09 order: "the ability in EVERY window to
+     *  set the split time by seconds" — seconds stated INTO that
+     *  row, never one global field only). */
+    const [rowSec, setRowSec] = useState({});
     const [carry, setCarry] = useState('cut');
     const [refusal, setRefusal] = useState(null);
     const calls = props.value.calls;
@@ -99,6 +107,32 @@ export function V2vLeafFace(props) {
             return;
         }
         const next = splitCallsAt(calls, Math.round(stated * (props.value.fps || 24)), carry);
+        if (next === null) {
+            setRefusal(studioCopy.v2vFormRefusal);
+            return;
+        }
+        setRefusal(null);
+        props.onChange(next);
+    };
+    /** THE PER-ROW SPLIT PRESS: the stated seconds are INTO the named
+     *  row (frame = row.start + s·fps) — a value past the row's own
+     *  end REFUSES (it never silently resolves into another window,
+     *  the boundary law the global seat rides); grid legality stays
+     *  splitCallsAt's own refusal. */
+    const pressRow = (i) => {
+        const raw = rowSec[i] ?? '';
+        const stated = Number(raw);
+        const row = calls[i];
+        if (raw.trim() === '' || !Number.isFinite(stated) || stated < 0 || row === undefined) {
+            setRefusal(studioCopy.v2vFormRefusal);
+            return;
+        }
+        const frame = Math.round(row.start_frame + stated * (props.value.fps || 24));
+        if (frame <= row.start_frame || frame >= row.end_frame) {
+            setRefusal(studioCopy.v2vFormRefusal);
+            return;
+        }
+        const next = splitCallsAt(calls, frame, carry);
         if (next === null) {
             setRefusal(studioCopy.v2vFormRefusal);
             return;
@@ -120,7 +154,7 @@ export function V2vLeafFace(props) {
     };
     return (_jsxs("div", { style: FACE, "data-v2v-face": "windows", children: [_jsx("div", { style: HEAD, "data-v2v-head": true, children: studioCopy.v2vFormHead }), _jsx("div", { style: HINT, "data-v2v-hint": true, children: studioCopy.v2vFormHint }), calls.length === 0
                 ? _jsx("div", { style: HINT, "data-v2v-empty": true, children: studioCopy.v2vFormEmptyNote })
-                : _jsx("ol", { style: WINDOWS, "data-v2v-windows": true, children: calls.map((c, i) => (_jsxs("li", { style: WINDOW, "data-v2v-window": i, children: [studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', c.text ?? ''), i > 0
+                : _jsx("ol", { style: WINDOWS, "data-v2v-windows": true, children: calls.map((c, i) => (_jsxs("li", { style: WINDOW, "data-v2v-window": i, children: [studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', c.text ?? ''), _jsxs("div", { style: ROW_SPLIT, "data-v2v-row-split": i, children: [_jsx(Input, { type: "number", min: 0, step: 0.1, style: { flex: '1 1 56px', minWidth: 0, width: 56 }, "data-testid": `v2v-row-split-at-${i}`, "aria-label": `${studioCopy.v2vFormSplitLabel} — W${i + 1}`, title: studioCopy.v2vFormSplitTip, placeholder: studioCopy.v2vFormSplitPlaceholder, value: rowSec[i] ?? '', onInput: (e) => { setRowSec({ ...rowSec, [i]: e.target.value }); }, onChange: (e) => { setRowSec({ ...rowSec, [i]: e.target.value }); } }), _jsx(Button, { variant: "outline", size: "sm", "data-testid": `v2v-row-split-${i}`, "aria-label": `${studioCopy.v2vFormCutAria} — W${i + 1}`, title: studioCopy.v2vFormSplitTip, onClick: () => { pressRow(i); }, children: studioCopy.v2vFormCutAria })] }), i > 0
                                 ? _jsx("div", { style: SEAM_SEAT, "data-v2v-seam": i, role: "group", "aria-label": `${studioCopy.seamModeAria} — W${i + 1}`, children: SEAM_ROWS.map((row) => {
                                         const active = (c.transition ?? 'extend') === row.id;
                                         return (_jsx(Button, { variant: active ? 'primary' : 'outline', size: "sm", "data-testid": `v2v-seam-${i}-${row.id}`, "aria-pressed": active, "aria-label": `${studioCopy.seamModeAria}: ${row.label}`, title: row.tip, onClick: () => { setSeam(i, row.id); }, children: row.label }, row.id));

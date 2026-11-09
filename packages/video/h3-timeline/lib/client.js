@@ -6275,6 +6275,15 @@ window.__ModuleLoader__.load({
 			alignItems: "center",
 			marginTop: 4
 		};
+		/** the per-row split seat — seconds INTO this row (one recipe on
+		*  every window row, the global seat's own words). */
+		const ROW_SPLIT = {
+			display: "flex",
+			gap: 4,
+			alignItems: "center",
+			marginTop: 4,
+			flexWrap: "wrap"
+		};
 		const REFUSAL = {
 			fontSize: 9,
 			lineHeight: 1.35,
@@ -6284,6 +6293,11 @@ window.__ModuleLoader__.load({
 		/** The windows face itself: the spans list + the split seat. */
 		function V2vLeafFace(props) {
 			const [splitAtSec, setSplitAtSec] = (0, react.useState)("");
+			/** every window row's own split-time-in-seconds field (the
+			*  operator's 2026-11-09 order: "the ability in EVERY window to
+			*  set the split time by seconds" — seconds stated INTO that
+			*  row, never one global field only). */
+			const [rowSec, setRowSec] = (0, react.useState)({});
 			const [carry, setCarry] = (0, react.useState)("cut");
 			const [refusal, setRefusal] = (0, react.useState)(null);
 			const calls = props.value.calls;
@@ -6295,6 +6309,32 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				const next = splitCallsAt(calls, Math.round(stated * (props.value.fps || 24)), carry);
+				if (next === null) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				setRefusal(null);
+				props.onChange(next);
+			};
+			/** THE PER-ROW SPLIT PRESS: the stated seconds are INTO the named
+			*  row (frame = row.start + s·fps) — a value past the row's own
+			*  end REFUSES (it never silently resolves into another window,
+			*  the boundary law the global seat rides); grid legality stays
+			*  splitCallsAt's own refusal. */
+			const pressRow = (i) => {
+				const raw = rowSec[i] ?? "";
+				const stated = Number(raw);
+				const row = calls[i];
+				if (raw.trim() === "" || !Number.isFinite(stated) || stated < 0 || row === void 0) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				const frame = Math.round(row.start_frame + stated * (props.value.fps || 24));
+				if (frame <= row.start_frame || frame >= row.end_frame) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				const next = splitCallsAt(calls, frame, carry);
 				if (next === null) {
 					setRefusal(studioCopy.v2vFormRefusal);
 					return;
@@ -6341,27 +6381,71 @@ window.__ModuleLoader__.load({
 						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 							style: WINDOW,
 							"data-v2v-window": i,
-							children: [studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", c.text ?? ""), i > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								style: SEAM_SEAT,
-								"data-v2v-seam": i,
-								role: "group",
-								"aria-label": `${studioCopy.seamModeAria} — W${i + 1}`,
-								children: SEAM_ROWS.map((row) => {
-									const active = (c.transition ?? "extend") === row.id;
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: active ? "primary" : "outline",
-										size: "sm",
-										"data-testid": `v2v-seam-${i}-${row.id}`,
-										"aria-pressed": active,
-										"aria-label": `${studioCopy.seamModeAria}: ${row.label}`,
-										title: row.tip,
-										onClick: () => {
-											setSeam(i, row.id);
+							children: [
+								studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", c.text ?? ""),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									style: ROW_SPLIT,
+									"data-v2v-row-split": i,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+										type: "number",
+										min: 0,
+										step: .1,
+										style: {
+											flex: "1 1 56px",
+											minWidth: 0,
+											width: 56
 										},
-										children: row.label
-									}, row.id);
-								})
-							}) : null]
+										"data-testid": `v2v-row-split-at-${i}`,
+										"aria-label": `${studioCopy.v2vFormSplitLabel} — W${i + 1}`,
+										title: studioCopy.v2vFormSplitTip,
+										placeholder: studioCopy.v2vFormSplitPlaceholder,
+										value: rowSec[i] ?? "",
+										onInput: (e) => {
+											setRowSec({
+												...rowSec,
+												[i]: e.target.value
+											});
+										},
+										onChange: (e) => {
+											setRowSec({
+												...rowSec,
+												[i]: e.target.value
+											});
+										}
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "outline",
+										size: "sm",
+										"data-testid": `v2v-row-split-${i}`,
+										"aria-label": `${studioCopy.v2vFormCutAria} — W${i + 1}`,
+										title: studioCopy.v2vFormSplitTip,
+										onClick: () => {
+											pressRow(i);
+										},
+										children: studioCopy.v2vFormCutAria
+									})]
+								}),
+								i > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									style: SEAM_SEAT,
+									"data-v2v-seam": i,
+									role: "group",
+									"aria-label": `${studioCopy.seamModeAria} — W${i + 1}`,
+									children: SEAM_ROWS.map((row) => {
+										const active = (c.transition ?? "extend") === row.id;
+										return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: active ? "primary" : "outline",
+											size: "sm",
+											"data-testid": `v2v-seam-${i}-${row.id}`,
+											"aria-pressed": active,
+											"aria-label": `${studioCopy.seamModeAria}: ${row.label}`,
+											title: row.tip,
+											onClick: () => {
+												setSeam(i, row.id);
+											},
+											children: row.label
+										}, row.id);
+									})
+								}) : null
+							]
 						}, i))
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {

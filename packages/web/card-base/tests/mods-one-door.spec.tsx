@@ -62,7 +62,7 @@ describe('THE ONE-DOOR LAW — one mod system, one entry (the plus box, like Lor
     expect(chipRow(), 'the section chip row must not render — the + box is the only door').toBeNull()
   })
 
-  test('ARM 2 — a section-carrying kind enters through the PICKER, the leaf serves its FIELD GRAMMAR, and the sections ride the chip row INSIDE (the 2026-11-09 re-rule: the chips are the sanctioned posture layer — draft-patcher Pills, never the checkbox face)', async () => {
+  test('ARM 2 — a section-carrying kind enters through the PICKER, and the leaf serves its FIELD GRAMMAR (the §-1 axiom: NO posture layer inside — chips, checkboxes, every N-seats-for-one-verb face are the disease the timeline plan exists to kill)', async () => {
     openSection([EDIT])
     fireEvent.click(plusBox())
     // the kind picker menu (portal): every declared kind, one label —
@@ -70,8 +70,9 @@ describe('THE ONE-DOOR LAW — one mod system, one entry (the plus box, like Lor
     const item = await screen.findByText('Edit region')
     fireEvent.click(item)
     // the leaf opens on the kind's OWN seats — the field grammar the
-    // estate serves for every kind. The §0.8 posture switches stay
-    // dead (operator 2026-11-08: invented UI over the grammar).
+    // estate serves for every kind. The §0.8 posture switches died
+    // with the checkbox face (operator 2026-11-08: invented UI over
+    // the grammar); the named cells are engine-side, never rendered.
     await waitFor(() => { expect(screen.getByRole('dialog')).toBeTruthy() })
     const dlg = screen.getByRole('dialog')
     expect(dlg.textContent).toContain('Mask source')
@@ -80,11 +81,12 @@ describe('THE ONE-DOOR LAW — one mod system, one entry (the plus box, like Lor
     // the invented layer's SHAPES never return
     expect(document.querySelector('[data-testid="cb-mod-section-row"]')).toBe(null)
     expect(dlg.querySelectorAll('input[type="checkbox"]').length).toBe(0)
-    // THE CHIPS ARE THE POSTURE LAYER (operator 2026-11-09: k.sections
-    // render as draft-patcher Pills INSIDE the leaf, labels verbatim)
-    const chips = dlg.querySelector('[data-leaf-chips]')
-    expect(chips, 'the section chip row renders inside the leaf').not.toBeNull()
-    expect(chips?.getAttribute('data-leaf-chips'), 'the leaf chips carry the kind own declared section ids').toBe(EDIT.sections.map((s) => s.id).join(','))
+    // THE CHIP FACE STAYS DEAD TOO (operator 2026-11-09, the §-1
+    // axiom verbatim — timeline plan §-1 point 2: "N posture chips
+    // for one operation is the disease this plan exists to kill";
+    // the DECL's sections are engine-side starting cells, never leaf
+    // UI — re-introducing the row reds this arm)
+    expect(dlg.querySelector('[data-leaf-chips]'), 'no chip row renders inside the leaf — the field grammar is the face').toBeNull()
     // and the OUTSIDE face still carries no chip row
     expect(chipRow()).toBeNull()
   })

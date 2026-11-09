@@ -1498,6 +1498,7 @@ const EDIT_STRIP = {
     { name: 'edit_prompt', label: 'Edit prompt', type: 'text', default: '', group: 'Source & Window' },
     { name: 'mask_source', label: 'Mask source', type: 'select', default: 'region', options: ['region', 'whole-frame'], group: 'Mask' },
     { name: 'denoise', label: 'Denoise', type: 'number', default: 0.32, min: 0.05, max: 1, step: 0.01, group: 'Identity & Polish' },
+    { name: 'continuation', label: 'Continuation', type: 'boolean', default: false, group: 'Identity & Polish' },
     { name: 'extend_seconds', label: 'Extend seconds', type: 'number', default: 2.33, visible_when: 'continuation=true', group: 'Identity & Polish' },
     { name: 'seed', label: 'Plan seed', type: 'number', default: 0, min: 0, max: 4294967295, step: 1, advanced: true },
     { name: 'steps', label: 'Plan steps', type: 'number', default: 6, min: 1, max: 30, step: 1, advanced: true },
@@ -1615,29 +1616,26 @@ test('THE GROUPED COLUMN (the one-column cure, part 2): a DECL that names groups
   expect(dialog.querySelector('[class*="modLeafSplit"]'), 'the split grid is gone').toBeNull()
 })
 
-test('THE POSTURE CHIP SEEDS THE LAWFUL COMPANIONS (the coexistence cure): a served section row rides as a draft-patcher — one press seats continuation AND its whole-frame mask, and the gated rider re-seats in the same modal', () => {
+test('THE POSTURE CHIP ROW IS DEAD, THE FIELD GRAMMAR SEEDS THE COMPANIONS (§-1 axiom, operator 2026-11-09): no chip row renders — flipping the Continuation FIELD re-seats the gated rider in the same modal', () => {
   render(h(ModifiersSection, { kinds: [EDIT_STRIP], values: {}, onEdit: vi.fn(), onPatch: vi.fn() }))
   openCreate('Video edit')
   const dialog = screen.getByRole('dialog')
-  // THE ROW: the DECL's sections render as chips (the DSH Pill — a
-  // BUTTON, never the §0.8 checkbox crime)
-  const chips = dialog.querySelector('[data-leaf-chips]')
-  expect(chips, 'the posture chip row rides the leaf').toBeTruthy()
-  expect(chips!.getAttribute('data-leaf-chips'), 'the chips name the DECL\'s own section ids').toBe('extend,repair')
-  expect(dialog.querySelector('[data-leaf-chips] input[type="checkbox"]'), 'a chip is a press, not a checkbox').toBeNull()
-  // THE SEAT: pressing Extend applies the section's OWN patch — the
-  // lawful companions land together in the draft (denoise 1, the
-  // whole-frame mask source, continuation on), and the visible_when
-  // rider (extend_seconds rides continuation=true) re-seats in the
-  // SAME open modal — no second editor, the draft is the judge
-  fireEvent.click(screen.getByText('Extend'))
-  expect((screen.getByLabelText('Denoise', { selector: 'input[type="number"]' }) as HTMLInputElement).value, 'the patch carried denoise 1').toBe('1')
-  expect(screen.getByLabelText('Mask source').textContent, 'the patch carried the whole-frame mask — the coexistence burn\'s exact cure').toContain('Whole Frame')
-  const members = [...dialog.querySelectorAll('[data-leaf-group="Identity & Polish"] [class*="modField"]')].map((n) => n.textContent ?? '')
-  expect(members.join('|'), 'the gated rider re-seats after the patch').toContain('Extend seconds')
-  // THE SECOND CHIP: the repair posture re-seats the mask source back
-  // to a tracked region (each chip is its OWN lawful patch — the last
-  // press wins, the draft stays coherent)
-  fireEvent.click(screen.getByText('Repair region'))
-  expect(screen.getByLabelText('Mask source').textContent, 'the repair chip re-seats the region mask').toContain('Region')
+  // THE CHIP ROW IS DEAD (timeline plan §-1 point 2: "N posture
+  // chips for one operation is the disease this plan exists to
+  // kill" — the DECL's sections are engine-side, never leaf UI)
+  expect(dialog.querySelector('[data-leaf-chips]'), 'no posture chip row renders — the field grammar is the face').toBeNull()
+  // THE COMPANIONS THROUGH THE GRAMMAR: flipping the Continuation
+  // boolean re-seats the visible_when rider (extend_seconds rides
+  // continuation=true) in the SAME open modal — no chip, no second
+  // editor, the draft is the judge
+  const members = (): string[] =>
+    [...dialog.querySelectorAll('[data-leaf-group="Identity & Polish"] [class*="modField"]')].map((n) => n.textContent ?? '')
+  expect(members().join('|'), 'the gated rider stays hidden at the default draft').not.toContain('Extend seconds')
+  const contField = [...dialog.querySelectorAll('[data-leaf-group="Identity & Polish"] [class*="modField"]')]
+    .find((n) => (n.textContent ?? '').includes('Continuation'))
+  expect(contField, 'the Continuation boolean seats in its group').toBeTruthy()
+  const cont = contField!.querySelector('input, button, [role="switch"]') as HTMLElement | null
+  expect(cont, 'the Continuation boolean renders its Switch control').toBeTruthy()
+  fireEvent.click(cont!)
+  expect(members().join('|'), 'the continuation flip re-seats the rider').toContain('Extend seconds')
 })

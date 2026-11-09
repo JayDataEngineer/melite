@@ -89,11 +89,19 @@ const SEGMENT: CSSProperties = { display: 'inline-flex', gap: 4, flexWrap: 'wrap
 /** the per-seam override seat — the compact twin of the strip's
  *  seamModeRow, under its own window's row. */
 const SEAM_SEAT: CSSProperties = { display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }
+/** the per-row split seat — seconds INTO this row (one recipe on
+ *  every window row, the global seat's own words). */
+const ROW_SPLIT: CSSProperties = { display: 'flex', gap: 4, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }
 const REFUSAL: CSSProperties = { fontSize: 9, lineHeight: 1.35, color: 'var(--dsw-alias-state-error-primary)', overflowWrap: 'anywhere' }
 
 /** The windows face itself: the spans list + the split seat. */
 export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: number }, onChange: (calls: V2vWindowView[]) => void }) {
   const [splitAtSec, setSplitAtSec] = useState('')
+  /** every window row's own split-time-in-seconds field (the
+   *  operator's 2026-11-09 order: "the ability in EVERY window to
+   *  set the split time by seconds" — seconds stated INTO that
+   *  row, never one global field only). */
+  const [rowSec, setRowSec] = useState<Record<number, string>>({})
   const [carry, setCarry] = useState<SplitCarry>('cut')
   const [refusal, setRefusal] = useState<string | null>(null)
   const calls = props.value.calls as DocCall[]
@@ -106,6 +114,30 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
       return
     }
     const next = splitCallsAt(calls, Math.round(stated * (props.value.fps || 24)), carry)
+    if (next === null) { setRefusal(studioCopy.v2vFormRefusal); return }
+    setRefusal(null)
+    props.onChange(next as V2vWindowView[])
+  }
+
+  /** THE PER-ROW SPLIT PRESS: the stated seconds are INTO the named
+   *  row (frame = row.start + s·fps) — a value past the row's own
+   *  end REFUSES (it never silently resolves into another window,
+   *  the boundary law the global seat rides); grid legality stays
+   *  splitCallsAt's own refusal. */
+  const pressRow = (i: number) => {
+    const raw = rowSec[i] ?? ''
+    const stated = Number(raw)
+    const row = calls[i]
+    if (raw.trim() === '' || !Number.isFinite(stated) || stated < 0 || row === undefined) {
+      setRefusal(studioCopy.v2vFormRefusal)
+      return
+    }
+    const frame = Math.round(row.start_frame + stated * (props.value.fps || 24))
+    if (frame <= row.start_frame || frame >= row.end_frame) {
+      setRefusal(studioCopy.v2vFormRefusal)
+      return
+    }
+    const next = splitCallsAt(calls, frame, carry)
     if (next === null) { setRefusal(studioCopy.v2vFormRefusal); return }
     setRefusal(null)
     props.onChange(next as V2vWindowView[])
@@ -134,6 +166,29 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
             {calls.map((c, i) => (
               <li key={i} style={WINDOW} data-v2v-window={i}>
                 {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', c.text ?? '')}
+                <div style={ROW_SPLIT} data-v2v-row-split={i}>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    style={{ flex: '1 1 56px', minWidth: 0, width: 56 }}
+                    data-testid={`v2v-row-split-at-${i}`}
+                    aria-label={`${studioCopy.v2vFormSplitLabel} — W${i + 1}`}
+                    title={studioCopy.v2vFormSplitTip}
+                    placeholder={studioCopy.v2vFormSplitPlaceholder}
+                    value={rowSec[i] ?? ''}
+                    onInput={(e: unknown) => { setRowSec({ ...rowSec, [i]: (e as { target: { value: string } }).target.value }) }}
+                    onChange={(e: unknown) => { setRowSec({ ...rowSec, [i]: (e as { target: { value: string } }).target.value }) }}
+                  />
+                  <Button variant="outline" size="sm"
+                    data-testid={`v2v-row-split-${i}`}
+                    aria-label={`${studioCopy.v2vFormCutAria} — W${i + 1}`}
+                    title={studioCopy.v2vFormSplitTip}
+                    onClick={() => { pressRow(i) }}
+                  >
+                    {studioCopy.v2vFormCutAria}
+                  </Button>
+                </div>
                 {i > 0
                   ? <div style={SEAM_SEAT} data-v2v-seam={i} role="group" aria-label={`${studioCopy.seamModeAria} — W${i + 1}`}>
                       {SEAM_ROWS.map((row) => {
