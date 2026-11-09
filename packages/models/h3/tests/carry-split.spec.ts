@@ -312,3 +312,68 @@ describe("THE SEAM VOCABULARY (the carry+keyframe audit's owed wall — a typo'd
     }
   });
 });
+
+describe("D-5 THE PROBED WINDOW (defect board 2026-11-16: the refine 2x press on a 56 f clip refused \"a 144 f window\" — the unstated window planned the 6 s default and never read the film)", () => {
+  /** The edit cell's refine ceiling seat: entry + film params, the
+   *  unstated-window posture (window_length absent — the plan slice
+   *  governs) unless an override says otherwise. */
+  const REFINE_ENTRY = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    source_clip: "clips/take.mp4", edit_prompt: "clean the jacket", denoise: 0.32, mask: "masks/j.png",
+    refine: true, ...extra,
+  });
+  const compose = (entry: Record<string, unknown>): Record<string, Node> => {
+    const g = new GraphBuilder();
+    EDIT(g, entry, "run_d5");
+    return out(g);
+  };
+
+  it("THE CURE: a 56 f probed film composes refine 2x unstated — the plan slice never outlives the film (the blind 144 f refusal is dead)", () => {
+    const o = compose(REFINE_ENTRY({ __source_frames: 56 }));
+    assert.ok(ofClass(o, "VHS_LoadVideo").length > 0, "the edit chain still composes whole");
+  });
+
+  it("the probe judges the frames REMAINING past the window's start (56 f film, window_start 48 — 8 f serve)", () => {
+    assert.doesNotThrow(() => compose(REFINE_ENTRY({ __source_frames: 56, window_start: 48 })));
+  });
+
+  it("a film that OUTLIVES the plan slice still refuses at the slice (400 f probed, unstated window → the 144 f first segment)", () => {
+    assert.throws(
+      () => compose(REFINE_ENTRY({ __source_frames: 400 })),
+      /a 144 f window at refine 2x is TOO LONG — the 2x pass was measured OOM at 141 f/,
+      "the true positive keeps firing",
+    );
+    assert.throws(
+      () => compose(REFINE_ENTRY({ __source_frames: 400 })),
+      /the source probed 400 f and outlives the 144 f plan slice, so the slice itself judged/,
+      "the refusal states WHICH length judged — the provenance is the cure's receipt",
+    );
+  });
+
+  it("a STATED window wins over the probe (the author's word: 175 f stated on a 400 f film refuses 175, never the min)", () => {
+    assert.throws(
+      () => compose(REFINE_ENTRY({ __source_frames: 400, window_length: 175 })),
+      /a 175 f window at refine 2x is TOO LONG/,
+      "the stated window is the author's, probed or not",
+    );
+  });
+
+  it("NO STAMP = the conservative plan keeps its old voice verbatim (an unprobed source never silently passes)", () => {
+    assert.throws(
+      () => compose(REFINE_ENTRY({})),
+      /a 144 f window at refine 2x is TOO LONG — the 2x pass was measured OOM at 141 f \(H3 memory grows with the window; whichever sizing mode upsizes, a window that dies is a window too long\)\. Cut the window \(window_length \/ clip_seconds\) or lower scale below 2 for a same-size pass$/,
+      "the unprobed refusal stays whole — no provenance clause, no leniency",
+    );
+  });
+
+  it("a wrong-typed stamp refuses loud (the door's number is never guessed around)", () => {
+    assert.throws(
+      () => compose(REFINE_ENTRY({ __source_frames: "lots" })),
+      /'__source_frames' is stated as "lots" — the compose door's probed-length stamp is a positive frame count/,
+      "a wrong-typed probed length never silently reads as unprobed",
+    );
+  });
+
+  it("a film shorter than the OOM line composes at ANY probed length (100 f, unstated — min\(144, 100\) = 100)", () => {
+    assert.doesNotThrow(() => compose(REFINE_ENTRY({ __source_frames: 100 })));
+  });
+});

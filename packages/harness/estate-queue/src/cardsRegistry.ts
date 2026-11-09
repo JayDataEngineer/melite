@@ -425,6 +425,62 @@ function refuseSilentSource(card: string, params: Record<string, unknown>): void
   }
 }
 
+/** THE PROBED-LENGTH STAMP (defect board D-5, 2026-11-16: the
+ *  operator's refine 2x press on a 56 f clip refused "a 144 f
+ *  window" — the edit cell planned the unstated 6 s default and
+ *  never read the film): every h3 bag row carrying a locally
+ *  readable source_clip gets the probe's TRUE frame count stamped
+ *  onto the compose copy (`__source_frames`), so the render's
+ *  window judges the film the run will actually serve, never the
+ *  blind plan slice. Rows resuming a prior run (chain_run) read no
+ *  local clip — skipped, exactly like the silent-source belt. A
+ *  source that resolves nowhere or probes unreadable stamps
+ *  NOTHING (the render's conservative clip_seconds plan keeps
+ *  judging — the belt, never an invented length). The stamp rides
+ *  ONLY the compose copy: touched rows are cloned, so the caller's
+ *  body — the saved doc — never carries the key. */
+function stampH3SourceFrames(card: string, params: Record<string, unknown>, roots: readonly string[]): void {
+  if (card !== "h3-timeline") return;
+  for (const lane of H3_SOUND_CARRYING_BAGS) {
+    const bag = params[lane];
+    if (!Array.isArray(bag) || bag.length === 0) continue;
+    let cloned: Record<string, unknown>[] | null = null;
+    for (let i = 0; i < bag.length; i++) {
+      const row = bag[i];
+      if (row === null || typeof row !== "object" || Array.isArray(row)) continue;
+      const rec = row as Record<string, unknown>;
+      if (resumesPriorRun(rec)) continue;
+      const leaf = typeof rec["source_clip"] === "string" ? rec["source_clip"].trim() : "";
+      if (leaf === "") continue;
+      const frames = probeSourceFrames(leaf, roots);
+      if (frames === null) continue;
+      if (cloned === null) cloned = bag.slice() as Record<string, unknown>[];
+      cloned[i] = { ...rec, __source_frames: frames };
+    }
+    if (cloned !== null) params[lane] = cloned;
+  }
+}
+
+/** Probe a bag source's true frame count at the film clock: the
+ *  video stream's stts sample count, else duration × 24 (the F36
+ *  refusal's own spelling). Null = unresolvable or unreadable —
+ *  never an invented length. */
+function probeSourceFrames(leaf: string, roots: readonly string[]): number | null {
+  const bytes = bagSourceBytesViaRoots(leaf, roots);
+  if (bytes === null) return null;
+  let probed: ProbeResult;
+  try {
+    probed = probeMedia(bytes);
+  } catch {
+    return null;
+  }
+  const video = probed.streams.find((stream) => stream.codec_type === "video");
+  const frames: number | undefined =
+    video?.frames ?? (probed.duration_s !== undefined ? Math.round(probed.duration_s * 24) : undefined);
+  if (frames === undefined || frames <= 0) return null;
+  return frames;
+}
+
 /** THE REFINE WINDOW RANGE REFUSAL (qa8 F36): chaining a refined
  *  output with a start_seconds past the clip's end used to crash
  *  VHS mid-run (`both buffer length (0) and count (-1) must not be
@@ -2235,6 +2291,12 @@ export class CardRegistryService extends Service {
     // and the file named (the run door's own envelope walk, so the
     // validate seat hears the same sentence).
     refuseSilentSource(prep.card, prep.params);
+    // THE PROBED-LENGTH STAMP (defect board D-5): the same walk's
+    // positive face — a locally readable source's TRUE frame count
+    // rides the compose copy so the render judges the film, never
+    // the blind clip_seconds plan slice (the 56 f clip's refine 2x
+    // press refused "a 144 f window" before this stamp).
+    stampH3SourceFrames(prep.card, prep.params, this.stateRoots());
     // THE REFINE WINDOW RANGE REFUSAL (F36): a window whose
     // start_seconds runs past its own source clip refuses here,
     // zero GPU, with the clip and the probed length named. The

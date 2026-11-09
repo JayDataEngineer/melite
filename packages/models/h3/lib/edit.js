@@ -34,6 +34,24 @@ const statedNumber = (p, k, d) => {
     }
     return v;
 };
+/** THE PROBED SOURCE LENGTH (defect board D-5): the compose door
+ * stamps the source clip's probed frame count (`__source_frames`)
+ * onto the compose copy of every h3 bag row it can read. Returns
+ * the frames REMAINING past this window's start — the widest
+ * window the film can actually serve — or undefined when the door
+ * could not probe (unresolvable or unreadable): the conservative
+ * clip_seconds plan keeps judging, never a silent pass. A
+ * wrong-typed stamp refuses like any other seat — the door's
+ * number is never guessed around. */
+const probedSourceFrames = (entry, windowStart) => {
+    const n = entry.__source_frames;
+    if (n === undefined)
+        return undefined;
+    if (typeof n !== 'number' || !Number.isFinite(n) || n <= 0) {
+        throw new Error(`h3-timeline edit: '__source_frames' is stated as ${JSON.stringify(n)} — the compose door's probed-length stamp is a positive frame count; a wrong-typed value never silently reads as unprobed`);
+    }
+    return Math.max(0, Math.round(n) - Math.round(windowStart));
+};
 /** THE VIDEO-EDIT MATRIX RENDERER: composes one free cell of the
  * mask × reference × denoise matrix on the family's one chain
  * spine. Validates the safety law, derives the dial's own mask and
@@ -198,11 +216,26 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     const refineOn = entry.refine === true;
     const scale = statedNumber(entry, 'scale', 2);
     if (refineOn) {
+        // THE PROBED WINDOW (defect board D-5, 2026-11-16: the operator's
+        // refine 2x press on a 56 f clip refused "a 144 f window" — the
+        // unstated window planned the 6 s default and never read the
+        // film): the window the 2x pass actually upsizes is the plan's
+        // FIRST SEGMENT, never wider than the film itself. The compose
+        // door stamps the source's probed frame count (__source_frames)
+        // on the compose copy; with it a film shorter than the plan
+        // composes unstated (56 f judged, not the blind 144). Without it
+        // (an unresolvable or unreadable source) the conservative
+        // clip_seconds plan keeps its own voice — never a silent pass.
+        const planFrames = Math.round(statedNumber(entry, 'clip_seconds', 6) * 24);
+        const probed = probedSourceFrames(entry, windowStart);
         const windowFrames = windowLength > 0
             ? Math.round(windowLength)
-            : Math.round(statedNumber(entry, 'clip_seconds', 6) * 24);
+            : Math.min(planFrames, probed ?? planFrames);
         if (scale >= 2 && windowFrames > REFINE_2X_OOM_FRAMES) {
-            throw new Error(`h3-timeline edit: a ${windowFrames} f window at refine ${scale}x is TOO LONG — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (H3 memory grows with the window; whichever sizing mode upsizes, a window that dies is a window too long). Cut the window (window_length / clip_seconds) or lower scale below 2 for a same-size pass`);
+            throw new Error(`h3-timeline edit: a ${windowFrames} f window at refine ${scale}x is TOO LONG — the 2x pass was measured OOM at ${REFINE_2X_OOM_FRAMES} f (H3 memory grows with the window; whichever sizing mode upsizes, a window that dies is a window too long). Cut the window (window_length / clip_seconds) or lower scale below 2 for a same-size pass` +
+                (probed !== undefined && windowFrames === planFrames
+                    ? ` — the source probed ${probed + Math.round(windowStart)} f and outlives the ${planFrames} f plan slice, so the slice itself judged`
+                    : ``));
         }
     }
     if (mask.source === 'static-png' && mask.image.trim() === '') {

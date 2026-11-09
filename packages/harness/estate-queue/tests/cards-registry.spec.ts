@@ -1051,6 +1051,58 @@ describe.skipIf(!ESTATE_STORE_SEATED)("phase1Card + phase2Card (the two phases, 
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it("THE PROBED-LENGTH STAMP (defect board D-5, 2026-11-16): a locally readable h3 bag source's TRUE frame count rides the compose copy — and never the caller's saved doc", async () => {
+    // The burn: the operator's refine 2x press on a 56 f clip
+    // refused "a 144 f window" — the edit cell planned the unstated
+    // 6 s default and never read the film. The door now stamps the
+    // probe's true count (__source_frames) onto the compose copy of
+    // every h3 bag row it can read, so the render judges the film.
+    // NON-POLLUTION is half the law: touched rows are CLONED — the
+    // caller's body (the saved bench doc) never carries the key.
+    const dir = mkdtempSync(join(tmpdir(), "d5-stamp-"));
+    // 56 frames — the 2 s class's rung, the press's own clip
+    const clip = join(dir, "take56.mp4");
+    writeFileSync(clip, craftTimedMp4(928, 1344, 56));
+    const row: Record<string, unknown> = {
+      source_clip: clip, edit_prompt: "clean the leaves", mask_source: "region", region_prompt: "leaves", denoise: 0.32,
+    };
+    try {
+      const p1 = await svc.phase1Card({ edit: [row] }, "h3-timeline");
+      const stamped = (p1.params["edit"] as Array<Record<string, unknown>>)[0]!;
+      expect(stamped["__source_frames"]).toBe(56);
+      expect("__source_frames" in row).toBe(false);
+      // a SECOND lane stamps too — the belt's whole bag list, one law
+      const p1b = await svc.phase1Card(
+        { refine: [{ source_clip: clip, refine_prompt: "sharpen" }] },
+        "h3-timeline",
+      );
+      expect(((p1b.params["refine"] as Array<Record<string, unknown>>)[0]!)["__source_frames"]).toBe(56);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  it("AN UNRESOLVABLE SOURCE STAMPS NOTHING (the render's conservative clip_seconds plan keeps its voice — never an invented length)", async () => {
+    const p1 = await svc.phase1Card({
+      edit: [{
+        source_clip: "/nonexistent/take.mp4", edit_prompt: "clean the leaves",
+        mask_source: "region", region_prompt: "leaves", denoise: 0.32,
+      }],
+    }, "h3-timeline");
+    expect("__source_frames" in ((p1.params["edit"] as Array<Record<string, unknown>>)[0]!)).toBe(false);
+  });
+  it("A chain_run RESUME ROW STAMPS NOTHING (the upscale posture resumes a prior run's scenes and reads no local clip)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "d5-resume-"));
+    const clip = join(dir, "take56.mp4");
+    writeFileSync(clip, craftTimedMp4(928, 1344, 56));
+    try {
+      const p1 = await svc.phase1Card({
+          edit: [{ source_clip: clip, chain_run: "chain-a", denoise: 0.24 }],
+      }, "h3-timeline");
+      expect("__source_frames" in ((p1.params["edit"] as Array<Record<string, unknown>>)[0]!)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("THE TRIM START RANGE REFUSAL (friction F3-08, TRM-P0-9): a trim whose start_seconds runs past the source clip's end refuses at the door in words — never the silent empty-clip done", async () => {
     // The burn (the Phase-3 violation log): start_seconds 99 on a
     // 3.75s clip composed GREEN — the run answered done and the
