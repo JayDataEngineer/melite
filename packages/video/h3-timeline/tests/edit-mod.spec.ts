@@ -146,6 +146,33 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
       },
       /the video mask dial names no media.*length-match the clip/i,
     );
+    assert.throws(
+      () => {
+        const entry = {
+          ...EDIT_ENTRY(), mask_source: "video", mask_video: undefined,
+          region_prompt: undefined, mask: undefined,
+        };
+        const walked = def.schema({ edit: [entry] }) as Record<string, unknown>;
+        const g = new GraphBuilder();
+        def.compose(walked, model, g, "run_edit_vmask_unset");
+      },
+      /the video mask dial names no media.*length-match the clip/i,
+    );
+  });
+
+  it("the video dial's unstated grow/blur fall to their defaults (16/0)", () => {
+    const entry = {
+      ...EDIT_ENTRY(), mask_source: "video", mask_video: "masks/take_mask.mp4",
+      mask_grow: undefined, mask_blur: undefined,
+    };
+    const walked = def.schema({ edit: [entry] }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked, model, g, "run_edit_vmask_defaults");
+    const out = graphOf(g);
+    const grow = ofClass(out, "GrowMaskWithBlur");
+    assert.equal(grow.length, 1, "the grow seat rides the video door");
+    assert.equal(grow[0]![1].inputs.expand, 16, "an unstated grow falls to 16 on the video door");
+    assert.equal(grow[0]![1].inputs.blur_radius, 0, "an unstated blur falls to 0");
   });
 
   it("the still+mannequin dial seats both reference loaders", () => {
