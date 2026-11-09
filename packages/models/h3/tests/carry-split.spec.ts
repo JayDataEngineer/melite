@@ -155,3 +155,78 @@ describe("the resolver's own law (unit plane — one home, every cell consumes i
     assert.throws(() => resolveCarryOverlap({ overlap_frames: "lots" }), /whole number of frames/);
   });
 });
+
+describe("THE CALLS→EDIT SEAM TRANSLATION (audit item 5 — the timeline's authored windows reach the edit run)", () => {
+  /** The edit door composed over a doc whose calls carry authored
+   *  windows — the plan node's ChainPlanModern inputs read back. */
+  const editPlan = (p: Record<string, unknown>, entry: Record<string, unknown>): {
+    shots: Array<{ id: string; length: number; context_length?: number }>;
+    literalRules: boolean;
+    o: Record<string, Node>;
+  } => {
+    const g = new GraphBuilder();
+    renderH3Edit(entry, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, p, FACTS, g, "run_seam");
+    const o = out(g);
+    const plan = ofClass(o, "MiniMaxH3ChainPlanModern")[0]![1];
+    const shots = (JSON.parse(String(plan.inputs.plan_json)) as { shots: Array<{ id: string; length: number; context_length?: number }> }).shots;
+    return { shots, literalRules: !("plan_json_input" in plan.inputs), o };
+  };
+  const EDIT_ENTRY = (): Record<string, unknown> => ({
+    source_clip: "clips/take.mp4", edit_prompt: "clean the jacket", denoise: 0.32, mask: "masks/j.png",
+  });
+  const TWO_WINDOWS = (transition: string): Array<Record<string, unknown>> => [
+    { text: "a", start_frame: 0, end_frame: 56 },
+    { text: "b", start_frame: 56, end_frame: 112, transition },
+  ];
+
+  it("TWO AUTHORED WINDOWS + a carry seam: the plan shots ARE the calls' spans, the seam carries 39, the LITERAL rules (no source re-slice over them)", () => {
+    const { shots, literalRules, o } = editPlan({ calls: TWO_WINDOWS("extend"), ...FILM }, EDIT_ENTRY());
+    assert.equal(shots.length, 2, "one shot per authored window");
+    assert.deepEqual(shots[0], { id: "w1-carry", prompt: "clean the jacket", length: 56 }, "shot 1 states its span and the translation in its id");
+    assert.deepEqual(shots[1], { id: "w2-carry", prompt: "clean the jacket", length: 56, context_length: 39 }, "the carry seam rides the AV-legal join");
+    assert.equal(literalRules, true, "plan_json_input is ABSENT — the authored shots rule, the plan node must not re-slice");
+    assert.equal(loadCap(o), 0, "the whole film still rides the loader — the SHOTS slice the plan, the loader never cuts");
+  });
+
+  it("A CUT SEAM carries 0 (the engine's cut preset), its id states it", () => {
+    const { shots } = editPlan({ calls: TWO_WINDOWS("cut"), ...FILM }, EDIT_ENTRY());
+    assert.equal(shots[1]!.context_length, 0);
+    assert.equal(shots[1]!.id, "w2-cut");
+  });
+
+  it("carry+keyframe translates to the CARRY join, STATED in the id (a keyframe is a gen-side anchor; a masked edit carries — never a silent downgrade)", () => {
+    const { shots } = editPlan({ calls: TWO_WINDOWS("carry+keyframe"), ...FILM }, EDIT_ENTRY());
+    assert.equal(shots[1]!.context_length, 39);
+    assert.equal(shots[1]!.id, "w2-carry", "the translation is legible on the plan itself");
+  });
+
+  it("carry: false on the ENTRY cuts every authored seam (the entry's global law wins over the calls' own)", () => {
+    const { shots } = editPlan({ calls: TWO_WINDOWS("extend"), ...FILM }, { ...EDIT_ENTRY(), carry: false });
+    assert.equal(shots[1]!.context_length, 0);
+    assert.equal(shots[1]!.id, "w2-cut");
+  });
+
+  it("A SINGLE CALL is the un-split film: the source-sliced default press stands (nothing changes)", () => {
+    const { shots, literalRules } = editPlan({ calls: [{ text: "a", start_frame: 0, end_frame: 243 }], ...FILM }, EDIT_ENTRY());
+    assert.deepEqual(shots, [{ id: "edit", prompt: "clean the jacket" }], "the ignored fallback literal");
+    assert.equal(literalRules, false, "plan_json_input rides — the plan node slices engine-side");
+  });
+
+  it("A STATED EXPERT WINDOW rules over the calls (the override is the expert's, never derived)", () => {
+    const { shots, literalRules } = editPlan(
+      { calls: TWO_WINDOWS("extend"), ...FILM },
+      { ...EDIT_ENTRY(), window_start: 0, window_length: 141 },
+    );
+    assert.deepEqual(shots, [{ id: "edit", prompt: "clean the jacket" }]);
+    assert.equal(literalRules, false);
+  });
+
+  it("A MALFORMED call span stands the translation DOWN (never a composed guess over broken windows)", () => {
+    const { shots, literalRules } = editPlan(
+      { calls: [{ text: "a", start_frame: 0, end_frame: 56 }, { text: "b" }], ...FILM },
+      EDIT_ENTRY(),
+    );
+    assert.deepEqual(shots, [{ id: "edit", prompt: "clean the jacket" }]);
+    assert.equal(literalRules, false);
+  });
+});

@@ -29,7 +29,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..
  * wrapper flow's leaf + registry row died 2026-11-14,
  * flows-are-compositions — the card faces are the corpus now.) */
 const SERVED: readonly [string, string][] = [
+  // (the card's field declarations — the pairings' home — moved to
+  // the client-safe leaf editDecl.ts at the 2026-11-09 rail cure;
+  // the census follows the truth: the leaf IS the served field
+  // surface, card.ts keeps the captions)
   ["card tooltip", join(ROOT, "packages", "video", "h3-timeline", "src", "card.ts")],
+  ["edit declaration", join(ROOT, "packages", "video", "h3-timeline", "src", "editDecl.ts")],
   ["family skill", join(ROOT, "packages", "engines", "comfyui-cordis", "models", "video", "h3", "agents", "skills", "extend-flow", "SKILL.md")],
 ];
 
