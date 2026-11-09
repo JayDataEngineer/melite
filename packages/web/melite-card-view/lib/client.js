@@ -21153,6 +21153,68 @@ window.__ModuleLoader__.load({
 			extend: studioCopy.splitCarryCarry,
 			"carry+keyframe": studioCopy.splitCarryKeyframe
 		};
+		/**
+		* THE FACE'S OWN APPEARANCE (inline, the paint/bbox/orbit law —
+		* stroke 95: an embedded leaf face styles ITSELF, never a css
+		* module in the emit closure and never the host's stylesheet; the
+		* v2vFace.ts export law "no CSS" stays true). The recipes are the
+		* studio's established vocabulary: the callRefs panel card for
+		* each window row, the modStageCaption voice for the head, the
+		* seamModeRow layout for the split seat — dsw tokens for every
+		* color, the face reads native in any host. (The appearance
+		* audit, operator 2026-11-09: "the modal that appears for vid2vid
+		* … looks awful" — the face previously shipped ZERO styling: the
+		* windows rendered as a browser-default <ol> with decimal
+		* numerals and list indent inside the mod popup's 11px stage
+		* column, and the split seat wrapped as unstyled inline blocks.) */
+		const FACE = {
+			display: "flex",
+			flexDirection: "column",
+			gap: 6,
+			minWidth: 0
+		};
+		const HEAD = {
+			fontSize: 10,
+			fontWeight: 600,
+			letterSpacing: "0.06em",
+			textTransform: "uppercase",
+			opacity: .7
+		};
+		const HINT = {
+			fontSize: 9,
+			lineHeight: 1.35,
+			color: "var(--dsw-alias-label-tertiary)"
+		};
+		const WINDOWS = {
+			margin: 0,
+			padding: 0,
+			listStyle: "none",
+			display: "flex",
+			flexDirection: "column",
+			gap: 4
+		};
+		const WINDOW = {
+			borderRadius: 6,
+			border: "1px solid var(--dsw-alias-border-l1)",
+			background: "var(--dsw-alias-bg-layer-1)",
+			padding: "4px 6px",
+			fontVariantNumeric: "tabular-nums",
+			fontSize: 10,
+			lineHeight: 1.4,
+			overflowWrap: "anywhere"
+		};
+		const SPLIT_SEAT = {
+			display: "flex",
+			alignItems: "center",
+			gap: 4,
+			padding: "2px 2px 0"
+		};
+		const REFUSAL = {
+			fontSize: 9,
+			lineHeight: 1.35,
+			color: "var(--dsw-alias-state-error-primary)",
+			overflowWrap: "anywhere"
+		};
 		/** The windows face itself: the spans list + the split seat. */
 		function V2vLeafFace(props) {
 			const [splitAtSec, setSplitAtSec] = (0, react.useState)("");
@@ -21176,33 +21238,44 @@ window.__ModuleLoader__.load({
 				props.onChange(next);
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: FACE,
 				"data-v2v-face": "windows",
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: HEAD,
 						"data-v2v-head": true,
 						children: studioCopy.v2vFormHead
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: HINT,
 						"data-v2v-hint": true,
 						children: studioCopy.v2vFormHint
 					}),
 					calls.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: HINT,
 						"data-v2v-empty": true,
 						children: studioCopy.v2vFormEmptyNote
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
+						style: WINDOWS,
 						"data-v2v-windows": true,
 						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+							style: WINDOW,
 							"data-v2v-window": i,
 							children: studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "cut" : "", c.text ?? "")
 						}, i))
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						style: SPLIT_SEAT,
 						"data-v2v-split-seat": true,
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 								type: "number",
 								min: 0,
 								step: .1,
+								style: {
+									flex: "1 1 72px",
+									minWidth: 0
+								},
 								"data-testid": "v2v-split-at",
 								"aria-label": studioCopy.v2vFormSplitLabel,
 								title: studioCopy.v2vFormSplitTip,
@@ -21252,6 +21325,7 @@ window.__ModuleLoader__.load({
 						]
 					}),
 					refusal !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: REFUSAL,
 						"data-v2v-refusal": true,
 						children: refusal
 					}) : null
