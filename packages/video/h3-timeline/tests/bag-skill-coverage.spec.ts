@@ -82,7 +82,9 @@ const bandOf = (band: string): [number, number] => {
 
 const bounded = (kind: Kind): FieldRow[] =>
   (kind.fields ?? []).filter(
-    (f) => typeof f.min === "number" && typeof f.max === "number",
+    // P1-5 (defect board row 5): an internal seat is ADMITTED but
+    // never SERVED — the skill deliberately teaches nothing about it
+    (f) => typeof f.min === "number" && typeof f.max === "number" && (f as { internal?: unknown }).internal !== true,
   );
 
 describe("every served mod bag has a skill leaf an agent can read", () => {
@@ -293,14 +295,18 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     const section = edit.slice(recipe!.index);
     assert.match(section, /params\.edit = \[\{/,
       "the recipe binds through params.edit (the ONE bag, never a legacy spelling)");
-    const starts = [...section.matchAll(/window_start:\s*(\d+)/g)].map((m) => Number(m[1]));
-    assert.ok(starts.length >= 2, "the recipe shows BOTH shapes (a whole-clip press and a splice-aware press)");
-    assert.ok(starts.includes(68) && starts.includes(77),
-      "the splice-aware recipe rides the SAME 68 f step the film walk teaches (window 90, overlap 22)");
-    assert.match(section, /replaces the same slot|same slot in the\s+assembly/i,
-      "the recipe says the edited window drops back into its slot");
-    assert.match(section, /never weld an?\s+(?:edit|repair) window onto a different step/i,
-      "the recipe forbids the seam drift");
+    // P1-4 (defect board row 4, the operator's five-times demand): the
+    // worked recipe teaches the CARRY PRESS — the whole film, one
+    // statement, zero frame numbers. The board's own acceptance test:
+    // "does the agent type window_start? If yes, the interface failed."
+    assert.equal([...section.matchAll(/window_start:\s*\d+/g)].length, 0,
+      "the recipe types NO frame numbers — the old 68/77 hand-computed recipes are the burn this law buries");
+    assert.match(section, /carry: true/,
+      "the recipe states the one new concept (carry: true)");
+    assert.match(section, /WHOLE film/i,
+      "the recipe runs the whole film — segments split on the film's own timeline");
+    assert.match(section, /same statement/i,
+      "the composed-film case and the single-clip case are the SAME press");
     // and the thin alias leaves POINT at the one home - an agent
     // reading a legacy spelling is never left holding a retired
     // recipe of its own.

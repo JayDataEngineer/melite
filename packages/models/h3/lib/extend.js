@@ -1,5 +1,5 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
-import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, } from './timelineContract.js';
+import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from './timelineContract.js';
 export { solveWindowComposition } from './timelineContract.js';
 // the last-frame spelling re-exported from its ONE home (timelineContract —
 // actions.ts reads it there too; the public face keeps this name)
@@ -41,7 +41,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     }
     const seed = num(entry, 'seed', 0);
     const steps = num(entry, 'steps', 6);
-    const overlapFrames = num(entry, 'overlap_frames', 39);
+    const overlapFrames = resolveCarryOverlap(entry);
     const resolution = resolvePlanTier(entry, p);
     const statedFrames = Math.round(num(entry, 'extend_seconds', 56 / 24) * 24);
     // THE COMPOSITION DOOR: one window keeps the landed grid law

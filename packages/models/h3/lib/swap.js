@@ -1,3 +1,4 @@
+import { resolveCarryOverlap } from './timelineContract.js';
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js';
 /** The swap entry's required media + text seats (the reshoot idiom:
  *  an armed doc with an empty seat refuses loud naming the seat). */
@@ -44,7 +45,7 @@ export function renderH3Swap(entry, p, facts, g, runId) {
     renderMaskedEditChain(g, {
         p, facts,
         clipSeconds,
-        overlapFrames: num(entry, 'overlap_frames', 39),
+        overlapFrames: resolveCarryOverlap(entry),
         resolution, seed, steps,
         roles: str(entry, 'roles'),
         sourceClip: str(entry, 'source_clip'),

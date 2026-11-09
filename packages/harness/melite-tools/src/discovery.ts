@@ -569,17 +569,26 @@ function servedFields(
   where: string,
 ): readonly SpecField[] | undefined {
   if (rows === undefined) return undefined
-  return rows.map((row, i) => {
-    const name = row['name']
-    const label = row['label']
-    const type = row['type']
-    if (typeof name !== 'string' || typeof label !== 'string' || typeof type !== 'string') {
-      throw new Error(
-        `form-spec: ${where} field ${i} must carry string name/label/type — ${JSON.stringify(row).slice(0, 120)}`,
-      )
-    }
-    return { ...row, name, label, type }
-  })
+  return rows
+    // INTERNAL ROWS (defect board row 5, 2026-11-08 — "keep them
+    // internal"): a field carrying internal: true stays ADMITTED
+    // (the compose door reads the declaration's own surface, so the
+    // expert override and the preset patches still compose) but is
+    // never SERVED — the agent's field listing and the studio form
+    // stop teaching the second dialect (window_start and friends).
+    // One home: this filter. Admission never consults it.
+    .filter((row) => row['internal'] !== true)
+    .map((row, i) => {
+      const name = row['name']
+      const label = row['label']
+      const type = row['type']
+      if (typeof name !== 'string' || typeof label !== 'string' || typeof type !== 'string') {
+        throw new Error(
+          `form-spec: ${where} field ${i} must carry string name/label/type — ${JSON.stringify(row).slice(0, 120)}`,
+        )
+      }
+      return { ...row, name, label, type }
+    })
 }
 
 /** The pick-option narrow (the served kind's option rows: value +

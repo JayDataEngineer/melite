@@ -56,6 +56,7 @@
 // one clock — the reference's 15 packs many 6s clips; ours renders
 // the clip itself).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { resolveCarryOverlap } from './timelineContract.js'
 import type { H3Facts } from './actions.js'
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
 
@@ -119,7 +120,7 @@ export function renderH3Swap(
   renderMaskedEditChain(g, {
     p, facts,
     clipSeconds,
-    overlapFrames: num(entry, 'overlap_frames', 39),
+    overlapFrames: resolveCarryOverlap(entry),
     resolution, seed, steps,
     roles: str(entry, 'roles'),
     sourceClip: str(entry, 'source_clip'),

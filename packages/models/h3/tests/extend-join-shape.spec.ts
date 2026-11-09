@@ -290,8 +290,8 @@ describe("THE NON-EMPTY TAIL (the 2026-11-19 live burn: \"Extend is completely b
     // breaks silently, so the door refuses loud naming the policy.
     assert.throws(
       () => composeExtend({ extend_seconds: 379 / 24, overlap_frames: 38 }, "run_overlap_38"),
-      /overlap_frames 38 — the multi-window composition law carries the policy's 39f context overlap.*re-state overlap_frames 39/s,
-      "a multi-window extend under a 38f knob refuses naming the policy's 39",
+      /overlap_frames 38 is not a boundary the engine accepts.*39, 90, 141, 192, or 243/s,
+      "a 38f knob now refuses AT COMPOSE with the engine's AV-continuity law (the P1-4 resolver: every boundary is derived or vocabulary-legal — the multi-window 39-pin law still binds downstream for legal values that are not 39)",
     );
   });
 });

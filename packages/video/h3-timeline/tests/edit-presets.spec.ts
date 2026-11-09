@@ -256,6 +256,15 @@ describe("the edit bag's section chips (stage 3: named cells over the ONE schema
     assert.ok(guards.length >= 12, `the edit kind declares its guards (found ${guards.length}, the floor is the twelve of B-2)`);
     for (const f of guards) {
       const name = (f as { name?: string }).name ?? ""
+      // P1-5 (defect board row 5): an internal seat never reaches the
+      // wire AT ALL — its submenu law rides only the declaration (the
+      // expert override door); the verbatim-served law binds every
+      // SERVED field's guard
+      if ((f as { internal?: unknown }).internal === true) {
+        assert.equal(servedFields.find((x) => x.name === name), undefined,
+          `the internal '${name}' seat is never served — the second dialect is off the agent's face`)
+        continue
+      }
       assert.equal(servedVw(name), (f as { visible_when?: string }).visible_when,
         `the wire serves the '${name}' submenu law verbatim`)
     }

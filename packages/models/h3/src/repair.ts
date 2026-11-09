@@ -42,7 +42,7 @@
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
-import { assertGridLength } from './timelineContract.js'
+import { assertGridLength, resolveCarryOverlap } from './timelineContract.js'
 
 /** The repair entry's required seats (the reshoot idiom: an armed
  * doc with an empty seat refuses loud naming the seat). The third
@@ -133,7 +133,7 @@ export function renderH3Repair(
   renderMaskedEditChain(g, {
     p, facts,
     clipSeconds,
-    overlapFrames: num(entry, 'overlap_frames', 39),
+    overlapFrames: resolveCarryOverlap(entry),
     resolution, seed, steps,
     roles: '',
     sourceClip: str(entry, 'source_clip'),

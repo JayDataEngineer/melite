@@ -199,12 +199,12 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     );
   });
 
-  it("THE GRID LAW refuses an off-grid stated window naming the nearest legal value", () => {
+  it("THE GRID LAW refuses an off-grid stated window naming the nearest rung AND the carry cure (row 8's phrasing law)", () => {
     const g = new GraphBuilder();
     assert.throws(
       () => renderH3Edit({ ...ENTRY(), window_length: 60 }, STATIC_PNG, SELF, {}, FACTS, g, "run_grid"),
-      /off-grid.*nearest legal: 56f/s,
-      "the window law binds the free cells exactly as it binds repair",
+      /not on the film's grid.*56f is the nearest.*carry: true .*splits the film automatically/s,
+      "the window law binds the free cells exactly as it binds repair — and the refusal teaches the cure, not frame arithmetic",
     );
   });
 

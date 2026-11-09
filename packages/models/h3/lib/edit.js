@@ -3,7 +3,7 @@ import { renderH3ChainUpscale } from './chainUpscale.js';
 import { renderH3Extend } from './extend.js';
 import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
 import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.js';
-import { assertGridLength } from './timelineContract.js';
+import { resolveCarryOverlap, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES } from './timelineContract.js';
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */
 const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors';
@@ -149,8 +149,15 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     if (windowStart < 0 || windowLength < 0) {
         throw new Error(`h3-timeline edit: window_start ${windowStart} / window_length ${windowLength} — a window seat never goes negative (frames at the film clock, 24 fps; 0/0 is the whole clip)`);
     }
-    if (windowLength > 0)
-        assertGridLength(Math.round(windowLength), 'h3-timeline edit window_length');
+    // THE INTENT-PHRASED GRID REFUSAL (defect board row 8, the
+    // rider on row 4's land): arithmetic voicing ("nearest legal")
+    // taught frame arithmetic; the cure the operator asked to READ
+    // is carry — leave the window unstated and the film splits
+    // itself. The expert override stays open (a legal rung rides).
+    if (windowLength > 0 && !isGridLength(Math.round(windowLength))) {
+        const nearest = gridSnap(Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, Math.round(windowLength))));
+        throw new Error(`h3-timeline edit: window_length ${windowLength}f is not on the film's grid — ${nearest}f is the nearest, or leave the window unstated and carry: true (the default) splits the film automatically (never type frame numbers)`);
+    }
     // ── THE UPSCALE DIAL (the fourth dial — FRICTION_3's DESIGN
     // PROPOSAL: "I flip a switch for refine, it opens up a submenu
     // for scaling"): refine ON adds the learned second pass to THIS
@@ -233,7 +240,7 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     renderMaskedEditChain(g, {
         p, facts,
         clipSeconds: num(entry, 'clip_seconds', 6),
-        overlapFrames: num(entry, 'overlap_frames', 39),
+        overlapFrames: resolveCarryOverlap(entry),
         resolution: resolvePlanTier(entry, p),
         seed: num(entry, 'seed', 0),
         steps: num(entry, 'steps', 6),

@@ -155,18 +155,26 @@ loop — a different mechanism than the refine switch).
      HQ scene segments the resumed run re-encodes (the adapter's
      own seat; 18 is its default). Rides ONLY the upscale posture —
      a fresh edit never states it.
-   - `window_start` (0–100000, 0) — frames at the film clock (24 fps)
-     to skip before the edit window.
-   - `window_length` (0–100000, 0) — frames in the window; 0 runs to
-     the end of the clip. A stated length must land on the engine
-     grid 22+17k (56, 73, 90…) or it refuses naming the nearest.
-   - `clip_seconds` (2.5–15, 6) — the plan's own render budget; its
-     widget band [2.5, 15] is the law.
-   - `overlap_frames` (22–56, step 17, 39) — the plan's window
-     overlap; the engine's combo is exactly [22, 39, 56].
-   - `resolution` (select, '736p') — the plan's resolution tier:
-     480p quick preview, 576p, 736p (the reference default), 768p,
-     1080p (~2.5× slower and much more memory).
+   - `carry` (boolean, true) — THE ONE SPLIT CONCEPT. ON (the
+     default): the edit runs the WHOLE film — the engine splits it
+     into segments on the film's own timeline and each segment
+     continues from the last frame of the previous, joined with the
+     derived AV-legal overlap (39/90/141/192/243 frames — the
+     engine's continuity law, DERIVED, never typed). OFF: the joins
+     cut — each segment stands alone. NEVER type frame arithmetic:
+     `window_start` / `window_length` / `clip_seconds` /
+     `overlap_frames` are internal engine seats now (an unstated
+     window IS the whole film; an off-grid or out-of-vocabulary
+     value refuses at compose, naming the cure — `carry: true`).
+     The burn this law buries: an agent once typed
+     `window_length: 90` on a 243 f film, repaired 90 of 243
+     frames, and reported it as a repair pass (run-e79f3b304e4b);
+     another typed `overlap_frames: 22` and the engine refused
+     eight nodes deep (run-1f91718b7cde).
+   - `resolution` (select, 'auto') — the plan's resolution tier.
+     AUTO (the default) derives the source film's own tier - never
+     state it unless you deliberately want another regime (480p
+     quick preview, 576p, 736p, 768p, 1080p ~2.5× slower).
    - `seed` (0–4294967295, 0) — the chain plan's `base_seed`; the
      sampler seed stays the doc seed.
    - `steps` (1–30, 6) — the chain plan's `default_steps`; the sampler
@@ -178,9 +186,9 @@ loop — a different mechanism than the refine switch).
 
 ## Worked recipe (two real shapes)
 
-**A. One region in a short clip - the default press.** Source
-`demo_clip.mp4` (6.0 s = 144 f, 24 fps). The hands are wrong from
-3.2 s. Seat one edit entry and nothing else:
+**A. One region on a clip - the default press, the WHOLE film.** Source
+`demo_clip.mp4` (6.0 s, 24 fps). The hands are wrong from 3.2 s.
+Seat one edit entry and nothing else:
 
 ```
 params.edit = [{
@@ -189,35 +197,30 @@ params.edit = [{
   region_prompt: "hands",
   mask_source: "region", reference: "self",
   denoise: 0.32, keep_audio: true, mask_grow: 16, detection_threshold: 0.5,
-  window_start: 77, window_length: 90, clip_seconds: 3.75,
-  overlap_frames: 22, resolution: "736p", seed: 0, steps: 6
+  carry: true, seed: 0, steps: 6
 }]
 ```
 
-`window_start` 77 = 3.21 s, so the window covers 3.21-6.96 s - the
-whole end of the clip, one press, no splice. Everything outside the
-tracked mask (and the audio) is held from the source. 90 f at 736p
-is the green window; do not widen it to "just get the start of the
-clip too" - `window_start: 0` with 144 f is two windows and two
-presses.
+`carry: true` (the default — stating it is optional) runs the WHOLE
+film: the engine splits it into segments on the film's own timeline,
+each segment continues from the last frame of the previous, and the
+joined film comes back in ONE press. No frame numbers, no splice, no
+second press. Everything outside the tracked mask (and the audio) is
+held from the source. THE LAW: if you find yourself computing
+`window_start` from a timestamp, STOP - that arithmetic is the burn
+this door was rebuilt to make impossible. State the transformation
+once; the film's own timeline does the splitting.
 
-**B. A region on a composed film - the splice-aware press.** The
-film was built from 90 f windows at step 68 f (`start_seconds`
-0 / 2.833 / 5.667 ...), so seams sit at 3.75 s, 6.583 s, ... To fix
-the hands in the window that starts at 2.833 s, use that window's
-own numbers:
-
-```
-window_start: 68, window_length: 90, clip_seconds: 3.75, overlap_frames: 22
-```
-
-The edit run returns ONE 90 f clip; it replaces the same slot in the
-assembly. This door does not splice: re-join with the same 22 f
-overlap the film was built with (or trim the overlap in an editor) -
-never weld an edit window onto a different step, the seam drifts by
-the difference. A region that straddles a seam needs the window on
-both sides; press them in order and keep each window's own
-`window_start`.
+**B. A region on a composed film - the same press.** A film built
+from windows at any step, seams anywhere, hands wrong in the middle
+of it: the SAME entry as A. The engine's plan reads the source film
+itself (its spans, its geometry, its soundtrack) and re-joins with
+the derived AV-legal overlap - there are no seam numbers to copy, no
+window slots to replace, no editor re-join. The composed-film case
+and the single-clip case are now literally the same statement. (The
+old splice craft - copy the build's own `window_start`/`overlap`
+numbers by hand - is RETIRED: it repaired 90 of 243 frames once and
+called itself a repair pass.)
 
 ## The seam craft (measured, one home)
 

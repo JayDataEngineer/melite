@@ -116,10 +116,15 @@ describe('P0-3 — the tier-from-clip pin (defect board row 3: "an agent should 
 
   it('resolvePlanTier: absence and auto both DERIVE the pin; a stated tier rides VERBATIM (the override the admission still judges)', () => {
     const p = { width: 1344, height: 768 }
-    expect(resolvePlanTier({}, p)).toBe('768p', 'absence derives')
-    expect(resolvePlanTier({ resolution: '' }, p)).toBe('768p', 'empty derives')
-    expect(resolvePlanTier({ resolution: 'auto' }, p)).toBe('768p', 'auto derives')
-    expect(resolvePlanTier({ resolution: '736p' }, p)).toBe('736p', 'a stated override stays verbatim — the admission owns its warning')
-    expect(resolvePlanTier({}, {})).toBe('768p', 'no doc geometry → the schema-declared film defaults pin')
+    // absence derives
+    expect(resolvePlanTier({}, p)).toBe('768p')
+    // empty derives
+    expect(resolvePlanTier({ resolution: '' }, p)).toBe('768p')
+    // auto derives
+    expect(resolvePlanTier({ resolution: 'auto' }, p)).toBe('768p')
+    // a stated override stays verbatim — the admission owns its warning
+    expect(resolvePlanTier({ resolution: '736p' }, p)).toBe('736p')
+    // no doc geometry → the schema-declared film defaults pin
+    expect(resolvePlanTier({}, {})).toBe('768p')
   })
 })

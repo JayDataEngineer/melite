@@ -21,6 +21,68 @@ export const REF_CAPS = {
     // the loader row the compose fills.
     refmods: 8,
 };
+/** THE AV-CONTINUITY LAW, one TS home (defect board row 4, the
+ * "derive the carry value" rider). The engine's own vocabulary is
+ * AV_TRANSITION_CONTEXT_LENGTHS = (39, 90, 141, 192, 243)
+ * (vendor/comfyui_extensions/ComfyUI-MiniMaxH3-Context-Loop/
+ * contracts_v05.py:55); on a generated-audio carry join (the edit
+ * chain's own mode — context > 0) any other positive boundary
+ * refuses AT THE NODE, eight graphs deep
+ * (run-1f91718b7cde: "H3 AV generated-audio continuity requires an
+ * exact shared video/audio boundary: 39, 90, 141, 192, or 243
+ * context frames"). The compose door judges THIS vocabulary at zero
+ * GPU so no agent ever discovers it by a burned run; 0 (the cut
+ * join, carry: false — the engine's own "cut / independent" preset,
+ * contracts_v05.py:158-162) is the one legal value outside it. */
+export const AV_CONTINUITY_OVERLAPS = [39, 90, 141, 192, 243];
+/** The derived carry join (defect board row 4: "join with the same
+ * overlap" — the smallest legal boundary, the least context spent;
+ * the engine's own reference value and the chain's historical
+ * default, now DERIVED instead of typed). */
+export const CARRY_JOIN_OVERLAP = 39;
+/** The carry statement's admission (defect board row 4: "expose
+ * exactly one new concept — carry: true"). ABSENT = carry, THE
+ * DEFAULT — the gen seam's own law (docModel.ts: "'extend'
+ * (ABSENT = carry, THE DEFAULT)"): the film splits on its own
+ * timeline and every segment continues from the last frame of the
+ * previous. Stated false = the cut join (each segment stands
+ * alone; the engine's cut preset, context 0).
+ * @param entry the edit-bag entry carrying the carry seat
+ * @returns true when segments join with context carry */
+export function entryCarries(entry) {
+    const raw = entry['carry'];
+    if (raw === undefined)
+        return true;
+    if (typeof raw === 'boolean')
+        return raw;
+    throw new Error(`h3-timeline edit: carry must be a boolean (true = continue each segment from the last frame of the previous; false = cut the joins) — saw ${JSON.stringify(raw)}`);
+}
+/** THE CARRY-OVERLAP RESOLVER (defect board row 4 — the door the
+ * operator asked for five times): the join boundary is DERIVED from
+ * the engine's AV-continuity vocabulary, never hand-typed. Unstated
+ * → the derived 39 (carry on) or 0 (carry: false); an explicitly
+ * stated overlap_frames — the expert override, admitted but never
+ * served — must be 0 or one of the five legal boundaries and
+ * REFUSES HERE, at the compose door, quoting the engine's law and
+ * naming the stated value, so the run-1f91718b7cde class (a
+ * boundary typed legal-looking, refused eight nodes deep) is dead
+ * at zero GPU.
+ * @param entry the edit-bag entry (overlap_frames / carry seats)
+ * @returns the join boundary in frames: 0, 39, 90, 141, 192 or 243 */
+export function resolveCarryOverlap(entry) {
+    const stated = entry['overlap_frames'];
+    if (stated === undefined || stated === '')
+        return entryCarries(entry)
+            ? CARRY_JOIN_OVERLAP
+            : 0;
+    const n = typeof stated === 'number' ? stated : Number(stated);
+    if (!Number.isFinite(n) || Math.round(n) !== n) {
+        throw new Error(`h3-timeline edit: overlap_frames must be a whole number of frames — saw ${JSON.stringify(stated)}`);
+    }
+    if (n === 0 || AV_CONTINUITY_OVERLAPS.includes(n))
+        return n;
+    throw new Error(`h3-timeline edit: overlap_frames ${n} is not a boundary the engine accepts — H3 AV generated-audio continuity requires an exact shared video/audio boundary: 39, 90, 141, 192, or 243 frames (0 = the cut join, carry: false; run-1f91718b7cde refused this eight nodes deep). Leave overlap_frames unstated and carry: true (the default) derives the join — never type a boundary`);
+}
 /** THE MEDIA-SHAPE PREDICATE (the guide seats' admission law, one
  *  owner for every door that judges it): a guide value names MEDIA —
  *  a $spell, a data: URI, a path/URL (slash), or an extension — never

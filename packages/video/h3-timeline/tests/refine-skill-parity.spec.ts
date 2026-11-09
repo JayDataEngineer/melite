@@ -73,7 +73,9 @@ describe("the refine name's surviving homes (the collapse, slice 4)", () => {
   it("ARM 2 — the surviving DIAL TABLE: every bounded edit dial quotes the card's own band and default", () => {
     const md = readSkill("edit");
     const bounded = (editKind.fields ?? []).filter(
-      (f) => typeof f.min === "number" && typeof f.max === "number",
+      // P1-5: internal seats are admitted-but-unserved; the skill's
+      // dial table teaches only the agent-visible rows
+      (f) => typeof f.min === "number" && typeof f.max === "number" && (f as { internal?: unknown }).internal !== true,
     );
     expect(bounded.length, "the edit kind serves bounded dials to judge").toBeGreaterThan(6);
     for (const row of bounded) {

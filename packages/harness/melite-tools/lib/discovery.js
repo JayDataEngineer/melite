@@ -473,7 +473,16 @@ function isFormSpecDoc(e) {
 function servedFields(rows, where) {
     if (rows === undefined)
         return undefined;
-    return rows.map((row, i) => {
+    return rows
+        // INTERNAL ROWS (defect board row 5, 2026-11-08 — "keep them
+        // internal"): a field carrying internal: true stays ADMITTED
+        // (the compose door reads the declaration's own surface, so the
+        // expert override and the preset patches still compose) but is
+        // never SERVED — the agent's field listing and the studio form
+        // stop teaching the second dialect (window_start and friends).
+        // One home: this filter. Admission never consults it.
+        .filter((row) => row['internal'] !== true)
+        .map((row, i) => {
         const name = row['name'];
         const label = row['label'];
         const type = row['type'];
