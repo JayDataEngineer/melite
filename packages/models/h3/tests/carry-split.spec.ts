@@ -96,10 +96,21 @@ describe("P1-4 carry split — segments come from the film, the boundary from th
     assert.equal(planOverlap(out(g)), 39, "carry: true derives the AV-legal join");
   });
 
-  it("CARRY FALSE cuts the joins: the plan rides 0 (the engine's own cut preset — context 0 skips the AV law)", () => {
-    const g = new GraphBuilder();
-    renderH3Repair({ ...REPAIR(), carry: false }, FILM, FACTS, g, "carry_off");
-    assert.equal(planOverlap(out(g)), 0, "carry: false = each segment stands alone");
+  it("CARRY FALSE on a PLAN-HEAD seat refuses AT COMPOSE naming the live vocabulary and the authored-windows cure (the bench burn 2026-11-16, run-84806ec44694's cell B: 0 on H3OneClickSwapPlan died at submit — 'the input allows 3 values (22, 39, 56)')", () => {
+    // the cut join (0) serves AUTHORED windows' context_length; the
+    // source-slicing plan head carries only the AV-legal 39 — the
+    // press that used to compose 0 onto the widget now dies HERE,
+    // at zero GPU, with the door named
+    assert.throws(
+      () => renderH3Repair({ ...REPAIR(), carry: false }, FILM, FACTS, new GraphBuilder(), "carry_off"),
+      /\[22, 39, 56\].*39.*CUT \(0\) serves AUTHORED windows/s,
+      "carry: false under the plan head must refuse quoting the live engine word + the cure",
+    );
+    assert.throws(
+      () => renderH3Repair({ ...REPAIR(), carry: false }, FILM, FACTS, new GraphBuilder(), "carry_off"),
+      /split the film on the timeline first/s,
+      "the refusal names the door: authored windows, then carry: false",
+    );
   });
 
   it("THE AV LAW DIES AT COMPOSE: a stated overlap outside the vocabulary REFUSES before any graph executes", () => {
@@ -124,10 +135,15 @@ describe("P1-4 carry split — segments come from the film, the boundary from th
     );
   });
 
-  it("THE EXPERT OVERRIDE STAYS: a stated legal boundary rides verbatim, a stated window still cuts the loader", () => {
-    const g = new GraphBuilder();
-    renderH3Repair({ ...REPAIR(), overlap_frames: 90 }, FILM, FACTS, g, "expert_90");
-    assert.equal(planOverlap(out(g)), 90, "90 is engine-legal and rides as stated");
+  it("THE EXPERT OVERRIDE RIDES THE SEAT IT SERVES: a stated boundary belongs to AUTHORED seams (never the plan head), a stated window still cuts the loader (the bench-burn cure's other half)", () => {
+    // a stated 90 on the PLAN-HEAD seat (repair composes no authored
+    // shots) refuses at compose — the live widget carries [22, 39, 56]
+    // and would 400 the submit (run-84806ec44694's class)
+    assert.throws(
+      () => renderH3Repair({ ...REPAIR(), overlap_frames: 90 }, FILM, FACTS, new GraphBuilder(), "expert_90"),
+      /\[22, 39, 56\]/,
+      "a stated AV boundary never rides the plan head's own slicing",
+    );
 
     const g2 = new GraphBuilder();
     renderH3Repair({ ...REPAIR(), window_length: 90 }, FILM, FACTS, g2, "expert_win");
@@ -225,6 +241,18 @@ describe("THE CALLS→EDIT SEAM TRANSLATION (audit item 5 — the timeline's aut
     const { shots } = editPlan({ calls: TWO_WINDOWS("extend"), ...FILM }, { ...EDIT_ENTRY(), carry: false });
     assert.equal(shots[1]!.context_length, 0);
     assert.equal(shots[1]!.id, "w2-cut");
+  });
+
+  it("THE AUTHORED CUT COMPOSES WITH A LEGAL WIDGET (the submit-death no wall judged, 2026-11-16): carry: false over authored windows rides the cut on the SHOTS' context_length while the plan head's overlap widget carries the node's own 39 — the inert widget must still pass validate_prompt's [22, 39, 56]", () => {
+    const { shots, o } = editPlan({ calls: TWO_WINDOWS("extend"), ...FILM }, { ...EDIT_ENTRY(), carry: false });
+    assert.equal(shots[1]!.context_length, 0, "the cut rides the shot's own context (the engine's cut preset)");
+    assert.equal(planOverlap(o), 39, "the plan head's widget rides a legal choice (39, the node's own default) — 0 there died at submit eight nodes deep");
+  });
+
+  it("A STATED AV BOUNDARY rides an AUTHORED seam's context verbatim (the expert's seat is the shot, never the plan head)", () => {
+    const { shots, o } = editPlan({ calls: TWO_WINDOWS("extend"), ...FILM }, { ...EDIT_ENTRY(), overlap_frames: 90 });
+    assert.equal(shots[1]!.context_length, 90, "the stated boundary rides the seam it serves");
+    assert.equal(planOverlap(o), 39, "the plan head's widget stays legal — the boundary never lands on the slicing seat");
   });
 
   it("A SINGLE CALL is the un-split film: the source-sliced default press stands (nothing changes)", () => {

@@ -277,10 +277,26 @@ if (addressOutsideCensus.length > 0) {
 //      against that grid — and only its `tooltip` prose bytes are
 //      stripped. Legacy rosters and upload-marker rosters still
 //      empty (the original mask shape).
+//   M2a THE ESTATE CHAIN EXEMPTION (the bench burn 2026-11-16,
+//      run-84806ec44694's cell B): the estate's OWN vendored h3
+//      chain packs ride the melite-* exemption — their combo rosters
+//      are the engine's VALIDATION VOCABULARY the compose guards
+//      against (H3OneClickSwapPlan.overlap_frames [22, 39, 56] died
+//      at submit while the tracked double carried an empty roster:
+//      the mask hid the live word the pin needed to judge). Exempt
+//      rows ride verbatim, exactly like melite-* rows.
 // The derivation wall byte-judges both masks on the fixture.
+const ESTATE_CHAIN_PACKS = [
+  "custom_nodes.comfyui-h3-oneclick-swap",
+  "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "custom_nodes.ComfyUI-MiniMaxH3Mod",
+  "custom_nodes.comfyui-h3-motion-context",
+  "custom_nodes.comfyui-minimax-h3-timeline-director",
+];
 const isThirdPartyPack = (pythonModule) =>
   typeof pythonModule === "string" && pythonModule.startsWith("custom_nodes.") &&
-  !pythonModule.startsWith("custom_nodes.melite-");
+  !pythonModule.startsWith("custom_nodes.melite-") &&
+  !ESTATE_CHAIN_PACKS.includes(pythonModule);
 const comboRoster = (spec) => {
   // both /object_info combo spellings: a legacy array roster head, or
   // a string head with the roster in the detail object

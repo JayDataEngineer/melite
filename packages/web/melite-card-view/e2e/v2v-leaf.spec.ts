@@ -101,15 +101,25 @@ async function openEditLeaf(page: Page): Promise<void> {
   await page.waitForTimeout(1200)
 }
 
-/** THE BENCH GATE: every window in the leaf must carry the seed's
- *  own line — foreign content fails loud (never shot, never driven). */
+/** THE BENCH GATE: the leaf's windows must be the seed doc's own —
+ *  foreign content fails loud (never shot, never driven). THE SEED
+ *  PROSE IS DEAD ON THIS FACE (the REPLACED law, operator 2026-11-16:
+ *  "WHY DO I SEE THE DEFAULT CALL ON THE REPAIR VIDEO TO VIDEO. I
+ *  SAID REPLACED" — the starter's invitation never paints on a v2v
+ *  window row), so the gate rides the SPAN's own shape: W1 named,
+ *  the seed's 0–175f window at 24fps = 0.00s–7.29s, and the seed
+ *  line paints NOWHERE (its presence is itself the regression the
+ *  wall arms red on). */
+const SEED_SPAN = 'W1 · 0.00s–7.29s'
 async function gateLeafOnSeed(page: Page): Promise<number> {
   const windows = await page.evaluate(() =>
     [...document.querySelectorAll('[class*="modLeafModal"] [data-v2v-window]')].map((w) => w.textContent ?? ''),
   )
   expect(windows.length, 'the leaf lists the seed doc windows').toBeGreaterThan(0)
-  const foreign = windows.filter((t) => !t.includes(SEED_LINE))
+  const foreign = windows.filter((t) => !t.startsWith(SEED_SPAN))
   expect(foreign, `FOREIGN BENCH CONTENT in the leaf — the lane's scratch conversation is not the reopened one; refusing to judge or drive it: ${JSON.stringify(foreign)}`).toEqual([])
+  const prose = windows.filter((t) => t.includes(SEED_LINE))
+  expect(prose, `THE DEFAULT CALL PAINTS ON THE VID2VID FACE — the starter's invitation must stand down (the REPLACED law): ${JSON.stringify(prose)}`).toEqual([])
   return windows.length
 }
 

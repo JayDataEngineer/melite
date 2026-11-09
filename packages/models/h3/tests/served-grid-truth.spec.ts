@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isGridLength, GRID_MAX_FRAMES } from "../src/timelineContract.ts";
 import { solveWindowComposition } from "../src/extend.ts";
-import { PLAN_CLIP_BAND } from "../src/chainEdit.ts";
+import { PLAN_CLIP_BAND, PLAN_OVERLAP_CHOICES } from "../src/chainEdit.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
@@ -149,5 +149,26 @@ describe("the served grid literals (every surface vs the code's own law)", () =>
       `the clamp's floor ${PLAN_CLIP_BAND.min} is the engine's own clip_seconds min ${row[1]?.min} — an engine band move must red here`);
     assert.equal(row[1]?.max, PLAN_CLIP_BAND.max,
       `the clamp's ceiling ${PLAN_CLIP_BAND.max} is the engine's own clip_seconds max ${row[1]?.max}`);
+  });
+
+  it("THE OVERLAP PIN RIDES THE ENGINE'S WORD: PLAN_OVERLAP_CHOICES equals the boot census's H3OneClickSwapPlan overlap_frames options (the bench burn 2026-11-16, run-84806ec44694's cell B: carry:false landed 0 on the widget and validate_prompt refused it — 'the input allows 3 values (22, 39, 56)')", () => {
+    // The plan-head feed guards against the LIVE combo vocabulary;
+    // this pin must match the engine's own options or the wall reds
+    // and the pin follows — an engine-side vocabulary move can never
+    // silently re-open the submit death the feed cured.
+    const boot = JSON.parse(readFileSync(
+      join(ROOT, "tests", "walls", "fixtures", "object_info.boot.json"), "utf8",
+    )) as { H3OneClickSwapPlan?: { input?: { required?: Record<string, unknown> } } };
+    const row = boot.H3OneClickSwapPlan?.input?.required?.overlap_frames as
+      unknown[] | undefined;
+    assert.ok(Array.isArray(row), "the boot census carries H3OneClickSwapPlan (the vocabulary's truth home — regen the fixture if pruned)");
+    // both combo spellings: the legacy array roster head, or the
+    // modern detail object's options — the mask law's own twin
+    const roster = Array.isArray(row[0])
+      ? row[0]
+      : ((row[1] as { options?: number[] } | undefined)?.options ?? null);
+    assert.ok(Array.isArray(roster), "the overlap row carries its option roster (the estate chain exemption M2a keeps the live vocabulary in the double)");
+    assert.deepEqual(roster, [...PLAN_OVERLAP_CHOICES],
+      `the feed's vocabulary [${PLAN_OVERLAP_CHOICES.join(", ")}] is the engine's own overlap_frames options [${roster?.join(", ")}] — an engine vocabulary move must red here`);
   });
 })

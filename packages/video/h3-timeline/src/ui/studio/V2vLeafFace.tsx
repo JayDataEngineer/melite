@@ -25,6 +25,7 @@ import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { studioCopy } from './studioCopy.ts'
 import { splitCallsAt, type SplitCarry } from './v2vSplit.ts'
 import type { DocCall } from './docModel.ts'
+import { isStarterCallText } from './commissions.ts'
 import type { V2vWindowView } from '@melite/contracts'
 
 /** The split seat's three states — ONE vocabulary everywhere (the
@@ -165,7 +166,7 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
         : <ol style={WINDOWS} data-v2v-windows={true}>
             {calls.map((c, i) => (
               <li key={i} style={WINDOW} data-v2v-window={i}>
-                {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', c.text ?? '')}
+                {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', isStarterCallText(c.text ?? '') ? '' : (c.text ?? ''))}
                 <div style={ROW_SPLIT} data-v2v-row-split={i}>
                   <Input
                     type="number"

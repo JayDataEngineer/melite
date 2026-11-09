@@ -420,6 +420,29 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     unmount()
   })
 
+  it("THE STARTER PROSE STANDS DOWN IN THE FORM (operator 2026-11-16: 'WHY DO I SEE THE DEFAULT CALL ON THE REPAIR VIDEO TO VIDEO. I SAID REPLACED') — the starter placeholder's 'describe the action' invitation never paints on a window row (the edit composes from the mod's own prompt seat); the SPAN stays (geometry is the edit's authoring surface) and AUTHORED prose still paints", () => {
+    const STARTER_TEXT = "A single shot — describe the action, camera, and mood."
+    const { container, unmount } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: STARTER_TEXT, start_frame: 0, end_frame: 175 },
+          { text: "she walks on, the light shifts", start_frame: 175, end_frame: 262, transition: "cut" },
+        ] as DocCall[], fps: 24 }}
+        onChange={() => {}}
+      />,
+    )
+    const rows = container.querySelectorAll("[data-v2v-window]")
+    assert.equal(rows.length, 2, "both window rows render — the span is the shape, never a casualty")
+    // THE STARTER ROW: no invitation prose, the span still names itself
+    assert.ok(rows[0]!.textContent?.includes("W1"), `the starter's row keeps its span — got "${rows[0]!.textContent}"`)
+    assert.ok(!rows[0]!.textContent?.includes(STARTER_TEXT),
+      `the starter's 'describe the action' invitation paints NOWHERE on the v2v face — got "${rows[0]!.textContent}"`)
+    // THE AUTHORED ROW: doc truth paints verbatim (never hidden)
+    assert.ok(rows[1]!.textContent?.includes("she walks on, the light shifts"),
+      `authored prose paints on its window row — got "${rows[1]!.textContent}"`)
+    unmount()
+  })
+
   it("THE PER-SEAM OVERRIDE (operator 2026-11-09: 'no per-window seam editor in the leaf') — every non-first window carries its own compact 3-state segmented, and a press commits ONLY that seam through onChange", () => {
     const commits: V2vWindowView[][] = []
     const { unmount } = render(

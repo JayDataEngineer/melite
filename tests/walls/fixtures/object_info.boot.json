@@ -4208,7 +4208,7 @@
  },
  "H3ConditioningSyncFromLatents": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Synchronize H3 pass-2 conditioning from the original and upscaled latents. Resizes match-sized picture refs and keyframes while keeping Core H3 max-sized pictures invariant, filters or retains motion refs according to the conditioner policy (or an explicit override), updates changed H/W metadata, and leaves reference time and audio conditioning untouched. The target may use a longer de-rope clock; only batch and video channels must match. Build a new Guider from the returned output.",
   "display_name": "H3 Conditioning Sync From Latents",
   "has_intermediate_output": false,
   "input": {
@@ -4222,18 +4222,26 @@
    },
    "required": {
     "method": [
-     "COMBO",
+     [
+      "nearest",
+      "nearest-exact",
+      "bilinear",
+      "bicubic"
+     ],
      {
       "default": "bilinear",
-      "options": [],
       "tooltip": "Spatial interpolation used for match-sized picture refs, eligible video refs, and keyframe latents. Max pictures, time, and audio are unchanged."
      }
     ],
     "motion_ref_mode": [
-     "COMBO",
+     [
+      "conditioning_policy",
+      "exclude_video_keep_audio",
+      "keep_video_native",
+      "resize_video"
+     ],
      {
       "default": "conditioning_policy",
-      "options": [],
       "tooltip": "conditioning_policy automatically follows Upscale Reference Conditioning. Explicit modes are available for standalone/A-B use."
      }
     ],
@@ -4309,7 +4317,7 @@
  },
  "H3OneClickSwapPlan": {
   "category": "conditioning/minimax/context_loop",
-  "description": "",
+  "description": "Splits a source video into overlapping H3 clips and writes the character-swap prompt for each clip.",
   "display_name": "H3 One-Click Swap Plan",
   "has_intermediate_output": false,
   "input": {
@@ -4384,10 +4392,13 @@
      }
     ],
     "overlap_frames": [
-     "COMBO",
+     [
+      22,
+      39,
+      56
+     ],
      {
       "default": 39,
-      "options": [],
       "tooltip": "Frames each clip repeats from the previous clip."
      }
     ],
@@ -4395,10 +4406,15 @@
      "IMAGE"
     ],
     "resolution": [
-     "COMBO",
+     [
+      "480p",
+      "576p",
+      "736p",
+      "768p",
+      "1080p"
+     ],
      {
       "default": "736p",
-      "options": [],
       "tooltip": "Short edge of the generated video; the shape follows the source video. 480p is a quick preview; 1080p is about 2.5x slower than 736p and needs much more memory."
      }
     ],
@@ -6233,6 +6249,8 @@
     "available_loras": [
      [
       "None",
+      "a.safetensors",
+      "anima/(@PXCN0,Pixel art)Pixel Anim_V5400.safetensors",
       "h3/H3-PK-Parasyte-Turbo.safetensors",
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
@@ -6247,6 +6265,7 @@
       "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
+      "krea-2/Shapstraction_krea2_3441818_epoch_10.safetensors",
       "krea-2/krea2_darkbrush.safetensors",
       "krea-2/krea2_dotmatrix.safetensors",
       "krea-2/krea2_kidsdrawing.safetensors",
@@ -6259,7 +6278,10 @@
       "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
       "krea-2/krea2_vintagetarot.safetensors",
       "krea-2/krea2filterbypass3.safetensors",
+      "minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
+      "my_lora.safetensors",
       "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors",
+      "qwen-img-edit-21/qwen-image-2.1-prompt-adherence.safetensors",
       "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
       "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors",
       "qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
@@ -6669,6 +6691,8 @@
     ],
     "lora_name": [
      [
+      "a.safetensors",
+      "anima/(@PXCN0,Pixel art)Pixel Anim_V5400.safetensors",
       "h3/H3-PK-Parasyte-Turbo.safetensors",
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
@@ -6683,6 +6707,7 @@
       "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
+      "krea-2/Shapstraction_krea2_3441818_epoch_10.safetensors",
       "krea-2/krea2_darkbrush.safetensors",
       "krea-2/krea2_dotmatrix.safetensors",
       "krea-2/krea2_kidsdrawing.safetensors",
@@ -6695,7 +6720,10 @@
       "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
       "krea-2/krea2_vintagetarot.safetensors",
       "krea-2/krea2filterbypass3.safetensors",
+      "minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
+      "my_lora.safetensors",
       "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors",
+      "qwen-img-edit-21/qwen-image-2.1-prompt-adherence.safetensors",
       "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
       "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors",
       "qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
@@ -6786,6 +6814,8 @@
    "required": {
     "lora_name": [
      [
+      "a.safetensors",
+      "anima/(@PXCN0,Pixel art)Pixel Anim_V5400.safetensors",
       "h3/H3-PK-Parasyte-Turbo.safetensors",
       "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
@@ -6800,6 +6830,7 @@
       "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "h3/minimax_h3_turbo_v4_step600_ema.safetensors",
+      "krea-2/Shapstraction_krea2_3441818_epoch_10.safetensors",
       "krea-2/krea2_darkbrush.safetensors",
       "krea-2/krea2_dotmatrix.safetensors",
       "krea-2/krea2_kidsdrawing.safetensors",
@@ -6812,7 +6843,10 @@
       "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
       "krea-2/krea2_vintagetarot.safetensors",
       "krea-2/krea2filterbypass3.safetensors",
+      "minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2.safetensors",
+      "my_lora.safetensors",
       "qwen-img-edit-21/qwen-image-2.1-consistency.safetensors",
+      "qwen-img-edit-21/qwen-image-2.1-prompt-adherence.safetensors",
       "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
       "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors",
       "qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
@@ -7705,7 +7739,7 @@
  },
  "MiniMaxH3ChainAssemble": {
   "category": "conditioning/minimax/context_loop",
-  "description": "",
+  "description": "Assemble either source or upscaled H3 manifests into one MP4 and mux the selected source or generated audio. Upscale manifests publish under their child profile and share the same optional output copy and assembly filters.",
   "display_name": "MiniMax H3 Context Loop Assemble",
   "has_intermediate_output": false,
   "input": {
@@ -7724,18 +7758,22 @@
      }
     ],
     "boundary_tone_match": [
-     "COMBO",
+     [
+      "off",
+      "auto"
+     ],
      {
       "default": "off",
-      "options": [],
       "tooltip": "Optional assembly-only boundary correction. auto compares the protected overlap with the first generated frames, detects a coherent exposure/contrast step, and applies a small capped tone curve only after that step. Accepted corrections are carried through later overlaps so they do not create a new seam. This never reruns diffusion."
      }
     ],
     "color_stabilization": [
-     "COMBO",
+     [
+      "off",
+      "scene_1_anchor"
+     ],
      {
       "default": "off",
-      "options": [],
       "tooltip": "Optional assembly-only temporal grade. scene_1_anchor measures the first scene as a fixed color reference, applies no new change at a join, then gently ramps a capped exposure/saturation correction over 72 frames. It uses one assembly encode, never blends pixels for color, and does not affect motion or audio sync. Off preserves the existing stream-copy/blend behavior."
      }
     ],
@@ -7754,10 +7792,12 @@
      }
     ],
     "generated_audio_join": [
-     "COMBO",
+     [
+      "av_overlap",
+      "delivered_only"
+     ],
      {
       "default": "av_overlap",
-      "options": [],
       "tooltip": "av_overlap preserves normal AV boundary ownership (default). delivered_only concatenates each saved scene's trimmed audio, ignoring regenerated overlaps from third-party audio refiners. Recovery only: may leave hard audio cuts. Does not change timing, source audio, checkpoints or sampling."
      }
     ],
@@ -7786,10 +7826,14 @@
      }
     ],
     "audio_source": [
-     "COMBO",
+     [
+      "plan",
+      "source",
+      "generated",
+      "none"
+     ],
      {
       "default": "plan",
-      "options": [],
       "tooltip": "Keep plan for automatic audio: generated assembles checkpointed H3 sound, source recovers the track supplied once upstream, and none makes a silent MP4. The other choices are explicit assembly overrides."
      }
     ],
@@ -7847,7 +7891,7 @@
  },
  "MiniMaxH3ChainCheckpointManager": {
   "category": "conditioning/minimax/context_loop",
-  "description": "",
+  "description": "Browse checkpoint scenes and inferred revision branches across H3 runs; preview saved media, inspect exact video/audio context dependencies and storage, emit the selected generated lineage for standalone upscaling or pin it locally to this workflow. Local output does not activate a project branch or restore a Plan. Separately, load any branch into a connected Plan, delete inactive leaves, or roll back the active branch tip after a complete deletion preview.",
   "display_name": "MiniMax H3 Checkpoint Manager",
   "has_intermediate_output": false,
   "input": {
@@ -7897,7 +7941,7 @@
  },
  "MiniMaxH3ChainCurrent": {
   "category": "conditioning/minimax/context_loop",
-  "description": "",
+  "description": "Expose the current shot's prompt, seed, dimensions, valid length, steps, and source-audio reference/target window.",
   "display_name": "MiniMax H3 Context Loop Current Shot",
   "has_intermediate_output": false,
   "input": {
@@ -8003,7 +8047,7 @@
  },
  "MiniMaxH3ChainPass2Prepare": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Adapt a video-only learned upscale into a joint MiniMax H3 pass-2 latent. Rejoins the saved audio, applies MiniMax CONST re-noise to the open video region only, protects a Drift-Control AV prefix from the previous HQ latent when available, inverse-scales for Disable Noise sampling, and locks audio so pass 2 cannot rewrite speech.",
   "display_name": "MiniMax H3 Pass-2 AV Prepare",
   "has_intermediate_output": false,
   "input": {
@@ -8092,7 +8136,7 @@
  },
  "MiniMaxH3ChainUpscaleAdapter": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Turn Checkpoint Manager's selected generated lineage into a resumable child upscale loop without a source Plan or changes to the source run.",
   "display_name": "MiniMax H3 Checkpoint Upscale Adapter",
   "has_intermediate_output": false,
   "input": {
@@ -8103,20 +8147,26 @@
    },
    "optional": {
     "start_mode": [
-     "COMBO",
+     [
+      "resume",
+      "fresh_range"
+     ],
      {
       "default": "resume",
-      "options": [],
       "tooltip": "resume verifies earlier saved HQ scenes in this pass. fresh_range processes only start_clip through end_clip, without requiring earlier HQ outputs. Original scene numbers and source audio are retained; any initial Drift-Control prefix uses the saved source latent. Earlier takes are kept. To continue a cancelled fresh range, select resume and its next unfinished scene."
      }
     ]
    },
    "required": {
     "backend": [
-     "COMBO",
+     [
+      "h3_latent",
+      "ltx_2_5",
+      "custom",
+      "pixel"
+     ],
      {
       "default": "h3_latent",
-      "options": [],
       "tooltip": "Backend label for this child recipe. pixel is an experimental IMAGE-only pass: it does not require or splice Drift-Control HQ latents. Other backends retain latent continuity checks."
      }
     ],
@@ -8227,7 +8277,7 @@
  },
  "MiniMaxH3ChainUpscaleCurrent": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Verify and load one source scene checkpoint lazily for an H3, LTX, or custom upscale body.",
   "display_name": "MiniMax H3 Upscale Current Scene",
   "has_intermediate_output": false,
   "input": {
@@ -8329,7 +8379,7 @@
  },
  "MiniMaxH3ChainUpscaleLoopEnd": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Advance the child upscale graph scene by scene and emit a mergeable manifest after the selected range completes.",
   "display_name": "MiniMax H3 Upscale Loop End",
   "has_intermediate_output": false,
   "input": {
@@ -8425,7 +8475,7 @@
  },
  "MiniMaxH3ChainUpscaleReferenceConditioning": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Automatically restore a scene-local H3 reference payload or replace it with a connected pass-2 Tagged Ref line and, when given the upscaled video latent plus H3 video VAE, rebuild all resolution-dependent pass-2 picture conditioning. The motion policy filters both Qwen presentation and native H3 reference blocks. No Plan or Source Timeline wiring is required.",
   "display_name": "MiniMax H3 Upscale Reference Conditioning",
   "has_intermediate_output": false,
   "input": {
@@ -8437,34 +8487,50 @@
      }
     ],
     "override_ref_image_size": [
-     "COMBO",
+     [
+      "inherit",
+      "match",
+      "max"
+     ],
      {
       "default": "inherit",
-      "options": [],
       "tooltip": "Picture sizing for cached, rebuilt, or connected refs. inherit preserves the saved match/max policy. Reconstruction defaults to max when no saved policy is available. match/max explicitly overrides it. Changing cached sizing requires video_vae."
      }
     ],
     "override_reference_policy": [
-     "COMBO",
+     [
+      "strict",
+      "soft",
+      "disabled"
+     ],
      {
       "default": "strict",
-      "options": [],
       "tooltip": "Prompt/tag validation for connected pass-2 Tagged refs."
      }
     ],
     "override_semantic_anchor_mode": [
-     "COMBO",
+     [
+      "inherit",
+      "timestamped_video",
+      "picture_storyboard"
+     ],
      {
       "default": "inherit",
-      "options": [],
       "tooltip": "Semantic-anchor presentation: timestamped video or picture storyboard, as in Tagged Scene Options. Explicit changes rebuild both presentation and prompt labels. Use a new upscale profile when changing this setting."
      }
     ],
     "override_semantic_anchor_size": [
-     "COMBO",
+     [
+      "inherit",
+      "384",
+      "512",
+      "768",
+      "1024",
+      "1280",
+      "source"
+     ],
      {
       "default": "inherit",
-      "options": [],
       "tooltip": "Qwen semantic-anchor size, separate from native picture sizing. inherit keeps saved settings (or a connected anchor bundle). An explicit size rebuilds cached anchors from verified source media; source keeps their original size. Use a new upscale profile when changing this setting."
      }
     ],
@@ -8503,18 +8569,23 @@
      }
     ],
     "missing_cache": [
-     "COMBO",
+     [
+      "text_only",
+      "error"
+     ],
      {
       "default": "text_only",
-      "options": [],
       "tooltip": "Missing caches are first rebuilt from saved reference identities and archived media, using the connected VAEs. If recovery is unavailable, text_only falls back to text; error reports the missing source or VAE without dropping refs."
      }
     ],
     "motion_ref_mode": [
-     "COMBO",
+     [
+      "exclude_video_keep_audio",
+      "keep_video_native",
+      "resize_video"
+     ],
      {
       "default": "exclude_video_keep_audio",
-      "options": [],
       "tooltip": "Pass-2 motion-reference policy. The default removes both native video-ref latents and their Qwen presentation, while keeping paired audio."
      }
     ],
@@ -8577,7 +8648,7 @@
  },
  "MiniMaxH3ChainUpscaleSegmentSave": {
   "category": "conditioning/minimax/context_loop/upscale",
-  "description": "",
+  "description": "Persist one trimmed HQ scene plus a self-contained assembly checkpoint; always retain the small HQ tail needed by a following Drift-Control scene and optionally retain the complete large HQ latent.",
   "display_name": "MiniMax H3 Upscale Segment Save",
   "has_intermediate_output": false,
   "input": {
@@ -8652,16 +8723,18 @@
  },
  "MiniMaxH3ContexMaskGridPreview": {
   "category": "conditioning/minimax/context_loop/masking",
-  "description": "",
+  "description": "Preview and snap a video mask to H3's effective 32x32 source-pixel generation cells.",
   "display_name": "MiniMax H3 Masking \u00b7 Grid Preview",
   "has_intermediate_output": false,
   "input": {
    "optional": {
     "mask_meaning": [
-     "COMBO",
+     [
+      "white = generate",
+      "white = preserve"
+     ],
      {
       "default": "white = generate",
-      "options": [],
       "tooltip": "Use the same white-pixel convention here and on Apply Target Mask. The overlay always shows the effective generation region."
      }
     ]
@@ -8678,10 +8751,14 @@
      }
     ],
     "cell_selection": [
-     "COMBO",
+     [
+      "runtime exact (latent max)",
+      "any pixel coverage",
+      "50% pixel coverage",
+      "full pixel coverage"
+     ],
      {
       "default": "runtime exact (latent max)",
-      "options": [],
       "tooltip": "Runtime exact matches H3 latent reduction. Coverage modes provide deliberate conservative or strict alternatives."
      }
     ],
@@ -8776,7 +8853,7 @@
  },
  "MiniMaxH3ContexMaskedTarget": {
   "category": "conditioning/minimax/context_loop/masking",
-  "description": "",
+  "description": "Attach causal, token-aligned H3 video/audio denoise masks to a real source AV target for inpainting and temporal edits. Ordinary AV extension needs no user mask.",
   "display_name": "MiniMax H3 Masking \u00b7 Apply Target Mask",
   "has_intermediate_output": false,
   "input": {
@@ -8788,20 +8865,25 @@
      }
     ],
     "mask_conversion": [
-     "COMBO",
+     [
+      "H3 exact (causal/token max)"
+     ],
      {
       "default": "H3 exact (causal/token max)",
-      "options": [],
       "tooltip": "H3 exact maps pixel masks with the video VAE's causal 1/4/4/4/4 frame groups and 2x2 latent-token max coverage."
      }
     ]
    },
    "required": {
     "audio_mode": [
-     "COMBO",
+     [
+      "preserve source audio",
+      "generate all audio",
+      "follow video mask",
+      "custom audio mask"
+     ],
      {
       "default": "preserve source audio",
-      "options": [],
       "tooltip": "Preserve or generate all source audio, map the video mask onto time, or use the optional custom audio mask."
      }
     ],
@@ -8812,10 +8894,12 @@
      }
     ],
     "mask_meaning": [
-     "COMBO",
+     [
+      "white = generate",
+      "white = preserve"
+     ],
      {
       "default": "white = generate",
-      "options": [],
       "tooltip": "Choose whether white pixels regenerate or remain protected."
      }
     ],
@@ -9290,7 +9374,7 @@
  },
  "MiniMaxH3MotionContext": {
   "category": "conditioning/minimax",
-  "description": "",
+  "description": "Pin a run of consecutive frames from a previous clip as never-denoised conditioning rows, so the model reads real motion instead of guessing it from a single still. With context_latent wired, both picture and sound are sliced from the previous clip's latent, skipping the decode and re-encode that cost a little quality at every link. A last_frame anchor on the incoming conditioning is kept and pinned alongside the head.",
   "display_name": "H3 Motion Context",
   "has_intermediate_output": false,
   "input": {
@@ -9334,10 +9418,14 @@
      "CONDITIONING"
     ],
     "context_length": [
-     "COMBO",
+     [
+      "22",
+      "5",
+      "39",
+      "56"
+     ],
      {
       "default": "22",
-      "options": [],
       "tooltip": "Frames of the previous clip's picture to carry over. Only these lengths are whole numbers of latent steps, so only these are offered. 5 is just barely fluid, 22 is nearly seamless. Longer windows pin more motion but come off the front of the delivered clip, so 56 spends 2.3 seconds of the render on frames you throw away."
      }
     ],
@@ -9384,7 +9472,7 @@
  },
  "MiniMaxH3MotionContextLoadLatent": {
   "category": "conditioning/minimax",
-  "description": "",
+  "description": "Load a latent saved by H3 Motion Context Save Latent, for the context_latent input only.",
   "display_name": "H3 Motion Context Load Latent",
   "has_intermediate_output": false,
   "input": {
@@ -9431,7 +9519,7 @@
  },
  "MiniMaxH3MotionContextSaveLatent": {
   "category": "conditioning/minimax",
-  "description": "",
+  "description": "Save the sampler's AV latent so the next run's Motion Context node can pin audio from it via the matching Load node.",
   "display_name": "H3 Motion Context Save Latent",
   "has_intermediate_output": false,
   "input": {
@@ -9485,7 +9573,7 @@
  },
  "MiniMaxH3MotionContextTrim": {
   "category": "conditioning/minimax",
-  "description": "",
+  "description": "Remove the leading pinned frames from a decoded H3 clip, trimming picture and sound by the same duration.",
   "display_name": "H3 Motion Context Trim",
   "has_intermediate_output": false,
   "input": {
@@ -9561,7 +9649,7 @@
   "api_node": false,
   "category": "MiniMax-H3/mod",
   "deprecated": false,
-  "description": "",
+  "description": "Inject a loader bundle of RefMods into a MiniMax H3 conditioning. Accepts both the pack's MINIMAX_H3_COND and the built-in CONDITIONING and returns the same type.",
   "dev_only": false,
   "display_name": "Apply H3 RefMod",
   "essentials_category": null,
@@ -9574,7 +9662,9 @@
      {
       "default": "(none)",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "(none)"
+      ],
       "tooltip": "Optional shared graph preset \u2014 leave on '(none)' to use the curve widgets above. Selecting one loads direction/shape/value from a saved debug-grid PNG (graph embedded in its metadata) or a legacy .json, in models/refmods/graph_presets/. Share the preset PNG itself to share a curve. New presets appear after a restart."
      }
     ],
@@ -9609,7 +9699,11 @@
      {
       "default": "shuffle",
       "multiselect": false,
-      "options": []
+      "options": [
+       "shuffle",
+       "subset",
+       "legacy_subset"
+      ]
      }
     ]
    },
@@ -9629,7 +9723,13 @@
      {
       "default": "constant",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "constant",
+       "concept_at_start",
+       "concept_at_middle",
+       "concept_at_end",
+       "concept_at_ends"
+      ],
       "tooltip": "Weighting envelope across THIS MOD'S OWN ref frames (stacked images / video-ref latent frames) \u2014 i.e. WHICH reference content dominates, NOT where the concept appears in the output video (ref tokens are not bound to output time; for output-timing control use the 'H3 RefMod Step Curve' node instead, which runs over the denoise timeline). 'constant' (default) = every ref frame at full strength (official-ref parity). The old default 'concept_at_end' fades early stack frames toward blur, roughly HALVING average strength on multi-frame mods. Old saved workflows keep their saved values."
      }
     ],
@@ -9638,7 +9738,19 @@
      {
       "default": "linear",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "linear",
+       "ease",
+       "sigmoid",
+       "tanh",
+       "quadratic",
+       "cubic",
+       "exponential",
+       "stair",
+       "elastic",
+       "bump",
+       "dip"
+      ],
       "tooltip": "How the weighting travels between its endpoints: 'linear', 'ease' (smoothstep), 'sigmoid'/'tanh' (S-curves, tanh with a steeper knee), 'quadratic', 'cubic', 'exponential', 'stair' (stepped), 'elastic' (overshoots), 'bump'/'dip' (peak/trough mid-stack). Only matters when curve_direction != constant."
      }
     ],
@@ -9748,16 +9860,19 @@
      "VAE"
     ],
     "budget_policy": [
-     "COMBO",
-     {
-      "options": []
-     }
+     [
+      "error",
+      "truncate"
+     ]
     ],
     "concept_type": [
-     "COMBO",
-     {
-      "options": []
-     }
+     [
+      "voice",
+      "singing",
+      "music_style",
+      "sound_fx",
+      "ambience"
+     ]
     ],
     "description": [
      "STRING",
@@ -9835,7 +9950,7 @@
   "api_node": false,
   "category": "MiniMax-H3/mod",
   "deprecated": false,
-  "description": "",
+  "description": "Turn one or more references of the same concept into a RefMod. Stills plug into ref_image_1, video frames into ref_video_1, and the next slot of that type appears. refs are stacked into one video-kind mod, so a multi-image moodboard keeps each ref's own content instead of averaging away. 'training' mode (default) compresses the refs to a grid and refines it \u2014 good identity at a fraction of the tokens; 'encode' stores the full-res encode (max identity, MB-size mod). Flip 'merge' on to extract a collection as ONE consensus latent (joint refinement against every ref) instead of a stack.",
   "dev_only": false,
   "display_name": "Create H3 RefMod",
   "essentials_category": null,
@@ -9854,7 +9969,10 @@
      {
       "default": "truncate",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "truncate",
+       "error"
+      ],
       "tooltip": "On max_tokens overflow: truncate uses the existing frame reduction; error stops without saving. 0 max_tokens disables the cap."
      }
     ],
@@ -9863,7 +9981,12 @@
      {
       "default": "manual",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "manual",
+       "identity_encode",
+       "style_experimental",
+       "motion_sequence"
+      ],
       "tooltip": "manual preserves controls. identity_encode: Full Reference, resolution=1024, steps=0, merge/motion_only off. style_experimental: Compressed Reference, pool=8x8, steps=150, merge/motion_only off. motion_sequence: Compressed Reference, pool=16x16, merge/motion_only off; preserves frame limit and Refinement Steps. It keeps appearance, not frame differences."
      }
     ],
@@ -9950,7 +10073,19 @@
      {
       "default": "generic",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "generic",
+       "identity",
+       "pose_motion",
+       "clothing",
+       "background",
+       "voice",
+       "singing",
+       "music_style",
+       "sound_fx",
+       "ambience",
+       "style"
+      ],
       "tooltip": "Metadata only; does not select a learning algorithm. What this mod represents \u2014 'identity' (a specific person/character), 'pose_motion' (a pose/dance/gesture/camera move), 'clothing', 'background', 'style', or 'generic'. Stored in the mod and used by the loaders' prompt_hint output (merges concept_type + description into a string you can concat onto your CLIP prompt). 'identity' in training mode with a small grid also triggers a warning nudging you toward 'encode' mode or a bigger grid \u2014 pooling is lossy in exactly the way that destroys facial identity."
      }
     ],
@@ -10006,7 +10141,12 @@
      {
       "default": "Compressed Reference",
       "multiselect": false,
-      "options": [],
+      "options": [
+       "Compressed Reference",
+       "Full Reference",
+       "training",
+       "encode"
+      ],
       "tooltip": "Compressed Reference pools the latent and optionally refines its reconstruction. Full Reference stores the VAE encode, subject to resolution/frame/token limits. Neither mode trains H3 weights. Legacy mode values remain accepted."
      }
     ],
@@ -10216,66 +10356,90 @@
      }
     ],
     "components_1": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_2": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_3": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_4": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_5": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_6": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_7": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
     "components_8": [
-     "COMBO",
+     [
+      "All",
+      "Visual",
+      "Audio"
+     ],
      {
       "default": "All",
-      "options": [],
       "tooltip": "Select the modalities to load from this slot. Excluded tensors are not loaded. Also applies to standalone RefMods."
      }
     ],
@@ -10459,58 +10623,178 @@
      }
     ],
     "mod_1": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 1 to load, or (none)."
      }
     ],
     "mod_2": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 2 to load, or (none)."
      }
     ],
     "mod_3": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 3 to load, or (none)."
      }
     ],
     "mod_4": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 4 to load, or (none)."
      }
     ],
     "mod_5": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 5 to load, or (none)."
      }
     ],
     "mod_6": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 6 to load, or (none)."
      }
     ],
     "mod_7": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 7 to load, or (none)."
      }
     ],
     "mod_8": [
-     "COMBO",
+     [
+      "(none)",
+      "A1_face",
+      "SaveImage.0_edit_00001_",
+      "SaveImage.0_gen_00001_",
+      "bake-variance-probe-anchor",
+      "camp-c3-mod-anchor",
+      "face",
+      "face-upscaled",
+      "face_rail",
+      "face_rail_nude",
+      "mod",
+      "s18_headshot",
+      "vanellope_example",
+      "youth_bare_headshot",
+      "youth_grey_headshot"
+     ],
      {
-      "options": [],
       "tooltip": "RefMod 8 to load, or (none)."
      }
     ],
@@ -15898,6 +16182,8 @@
       "rt_detr_v4-x-hgnet_fp32.safetensors",
       "scail2_14B_fp8_scaled.safetensors",
       "seedvr2_3b_fp16.safetensors",
+      "seedvr2_ema_3b_fp16.safetensors",
+      "seedvr2_ema_3b_fp8_e4m3fn.safetensors",
       "trellis_2_int8_convrot.safetensors",
       "z_image_turbo_int8_convrot.safetensors"
      ]
@@ -16475,6 +16761,7 @@
       "Wan2_1_VAE_bf16.safetensors",
       "Wan2_2_VAE_bf16.safetensors",
       "ae.safetensors",
+      "ema_vae_fp16.safetensors",
       "flux2-vae.safetensors",
       "flux2-vae_small.safetensors",
       "minimax_h3_audio_vae_fp32.safetensors",

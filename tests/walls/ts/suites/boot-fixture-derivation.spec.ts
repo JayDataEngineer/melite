@@ -188,9 +188,23 @@ describe("THE BOOT FIXTURE, DERIVED (E8: the double is a census-derived artifact
 // upload-flag combos, upstream option/tooltip prose in the
 // third-party rows) red all three arms named.
 const MEDIA_EXT = /\.(mp3|wav|flac|ogg|m4a|mp4|webm|mov|mkv|avi|png|jpe?g|gif|webp)$/i;
+/** THE ESTATE CHAIN EXEMPTION (M2a, the bench burn 2026-11-16): the
+ *  estate's own vendored h3 chain packs ride the melite-* exemption —
+ *  their combo rosters are the engine's validation vocabulary, not
+ *  upstream prose (the overlap [22, 39, 56] the plan-head feed guards
+ *  against rode masked-empty while the live engine refused 0 at
+ *  submit). */
+const ESTATE_CHAIN_PACKS = [
+  "custom_nodes.comfyui-h3-oneclick-swap",
+  "custom_nodes.ComfyUI-MiniMaxH3-Context-Loop",
+  "custom_nodes.ComfyUI-MiniMaxH3Mod",
+  "custom_nodes.comfyui-h3-motion-context",
+  "custom_nodes.comfyui-minimax-h3-timeline-director",
+];
 const isThirdPartyPack = (pythonModule: unknown): boolean =>
   typeof pythonModule === "string" && pythonModule.startsWith("custom_nodes.") &&
-  !pythonModule.startsWith("custom_nodes.melite-");
+  !pythonModule.startsWith("custom_nodes.melite-") &&
+  !ESTATE_CHAIN_PACKS.includes(pythonModule);
 /** Both /object_info combo spellings: a legacy array roster head, or
  *  a string head with the roster in the detail object. */
 const comboRoster = (spec: unknown): unknown[] | null => {

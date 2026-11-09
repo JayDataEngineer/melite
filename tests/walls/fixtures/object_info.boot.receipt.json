@@ -1,11 +1,11 @@
 {
- "derived_at": "2026-11-09T14:23:50.497Z",
+ "derived_at": "2026-11-09T21:27:15.376Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "a5e360fd87df6db5a98ac8a8ea66f2bb86b9b7e9fdfb4aa5d80325856b4d7de1",
-  "mtime_ms": 1793627614299.66,
-  "class_count": 1813,
+  "sha256": "43e19d0e086f770903963bb59accb3f5019ccece469e540aeb712573dd0df8c6",
+  "mtime_ms": 1794259360470.0173,
+  "class_count": 1817,
   "origin": "capture"
  },
  "bootstrap_seed": {
@@ -23,11 +23,30 @@
  },
  "delta": {
   "added": [],
-  "pruned": [
-   "TextEncodeQwenImageEditPlus",
-   "VAEEncode"
+  "pruned": [],
+  "updated": [
+   "H3ConditioningSyncFromLatents",
+   "H3OneClickSwapPlan",
+   "MiniMaxH3ChainAssemble",
+   "MiniMaxH3ChainCheckpointManager",
+   "MiniMaxH3ChainCurrent",
+   "MiniMaxH3ChainPass2Prepare",
+   "MiniMaxH3ChainUpscaleAdapter",
+   "MiniMaxH3ChainUpscaleCurrent",
+   "MiniMaxH3ChainUpscaleLoopEnd",
+   "MiniMaxH3ChainUpscaleReferenceConditioning",
+   "MiniMaxH3ChainUpscaleSegmentSave",
+   "MiniMaxH3ContexMaskGridPreview",
+   "MiniMaxH3ContexMaskedTarget",
+   "MiniMaxH3MotionContext",
+   "MiniMaxH3MotionContextLoadLatent",
+   "MiniMaxH3MotionContextSaveLatent",
+   "MiniMaxH3MotionContextTrim",
+   "MiniMaxH3RefModApply",
+   "MiniMaxH3RefModAudioExtract",
+   "MiniMaxH3RefModExtract",
+   "MiniMaxH3RefModsLoader"
   ],
-  "updated": [],
-  "reordered_keys": 26
+  "reordered_keys": 0
  }
 }

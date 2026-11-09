@@ -268,6 +268,38 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the default call bar under a m
     // the no-calls face's row (not this arm's — the lane is not empty)
   })
 
+  // ── THE V2V STAND-DOWN (operator 2026-11-16, verbatim: "WHY DO I
+  // SEE THE DEFAULT CALL ON THE REPAIR VIDEO TO VIDEO. I SAID
+  // REPLACED. I NEED A TEST RIGHT NOW TO ASSERT THE DEFAULT TIMELINE
+  // BOTTOM PART GOES AWAY WHEN WE DO THE VID2VID") — the armed EDIT
+  // bag's lane (queue 11's REPLACED law, commit 581fa13ce) stands the
+  // starter placeholder down exactly as the dormant face does: the
+  // section IS the video-to-video shape, and the starter's
+  // "describe the action" invitation is prose the armed run never
+  // reads (the edit composes from the mod's own prompt seat). The
+  // REPLACEMENT is total on the starter row: no clip, the v2v label
+  // + hint, the add door dead (queue 11's second block). AUTHORED
+  // windows still paint — the span doors are the edit's authoring
+  // surface (ARM V2).
+  it("ARM V1 — under the armed EDIT bag the STARTER placeholder paints NOTHING: the default timeline bottom part GOES AWAY (the REPLACED law, verbatim)", () => {
+    const { container } = render(strip([EDIT], [STARTER]))
+    expect(container.querySelectorAll("[data-prompt-clip]"))
+      .toHaveLength(0)
+    // the lane names its face: the v2v head + hint, the dictionary's words
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsV2vLabel)
+    expect(container.textContent).toContain(studioCopy.callsV2vHint)
+    // the commission row still paints — the run's real inputs ride the rail
+    expect(container.querySelector('[data-commission-lane="edit"]')).not.toBeNull()
+  })
+
+  it("ARM V2 — under the armed EDIT bag AUTHORED windows still paint (the span doors are the v2v face's authoring surface, never casualties)", () => {
+    const { container } = render(strip([EDIT], [AUTHORED]))
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(1)
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsV2vLabel)
+  })
+
   it("ARM K — STACKED rows carry entry-qualified ids (two adapters = two addressable rows, no shared identity)", () => {
     const { container } = render(strip([lorasRow("h3_lightx2v_turbo"), lorasRow("h3_camera_dolly")]))
     const lanes = [...container.querySelectorAll("[data-commission-lane]")]

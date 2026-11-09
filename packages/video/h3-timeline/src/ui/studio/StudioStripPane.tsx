@@ -320,7 +320,14 @@ export function StudioStripPane({
   // The bar row's text is the clip-header composite (clipHeader wraps
   // the call's prose), so the placeholder judges its SOURCE call —
   // barPrompts[i] ↔ calls[i], one row per call in order.
-  const shownPrompts = callsFace.face === "dormant"
+  // (THE V2V STAND-DOWN, operator 2026-11-16: "WHY DO I SEE THE
+  // DEFAULT CALL ON THE REPAIR VIDEO TO VIDEO. I SAID REPLACED" —
+  // the armed EDIT bag's face stands the starter down exactly as the
+  // dormant face does: the lane IS the video-to-video shape and the
+  // starter's "describe the action" prose is an invitation the armed
+  // run never reads (the edit composes from the mod's own prompt
+  // seat). The span doors stay live — AUTHORED windows still paint.)
+  const shownPrompts = callsFace.face === "dormant" || callsFace.face === "v2v"
     ? barPrompts.filter((_p, i) => !(calls[i] !== undefined && isStarterCallText(calls[i]!.text ?? "")))
     : barPrompts
 
