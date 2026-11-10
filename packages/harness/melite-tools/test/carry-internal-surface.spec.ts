@@ -67,15 +67,29 @@ describe('P1-5 internal surface — the second dialect is off the agent\'s face,
     }
   })
 
-  it('THE PRESET PATCHES STILL RIDE THE INTERNAL KEYS (admission reads the declaration — the refine-2x chip patches clip_seconds, and it keeps composing)', () => {
+  it('THE ONE-DIAL FACE NEVER NEEDS THE INTERNAL KEYS (the 2026-11-17 dissolution — every section patch rides served fields only; the expert override stays open at the compose door)', () => {
     // the cell presets are DECLARED patches against the kind's own
-    // fields; a preset naming an internal key is the proof the
-    // compose door still admits what the agent's face no longer
-    // teaches (the expert override, served as one click)
+    // fields; until the one-dial dissolution the refine-2x chip
+    // patched the INTERNAL clip_seconds (the proof an internal key
+    // stayed admissible). The derivation killed that need: the
+    // probe-capped judge owns the window, the chip's press is
+    // {refine, scale} and nothing else. Internal keys remain
+    // ADMITTED (the arm above declares them; the expert-override
+    // compose arms in h3-timeline's carry-split suite wall the
+    // stated-window door) — but no one-click face states them.
     const sections = (declared!['sections'] as Array<Record<string, unknown>>) ?? []
+    expect(sections.length, 'the section chips serve').toBeGreaterThan(0)
+    const internalRows = new Set<string>(INTERNAL_ROWS)
+    for (const s of sections) {
+      const patch = (s['patch'] ?? {}) as Record<string, unknown>
+      for (const key of Object.keys(patch)) {
+        expect(internalRows.has(key),
+          `section ${String(s.id)} patches '${key}' — a one-click face never states the second dialect (the doors derive or the probe judges)`).toBe(false)
+      }
+    }
     const refine2x = sections.find((s) => s.id === 'refine-2x')
     expect(refine2x, 'the refine-2x preset stays declared').not.toBeUndefined()
-    const patch = refine2x!['patch'] as Record<string, unknown>
-    expect(patch['clip_seconds'], 'the preset patches the internal clip_seconds — internal never means refused').toBe(2.5)
+    expect(Object.keys((refine2x!['patch'] ?? {}) as Record<string, unknown>).sort(),
+      'the 2x press is the switch and the scale — the seven-key pattern is dead').toEqual(['refine', 'scale'])
   })
 })

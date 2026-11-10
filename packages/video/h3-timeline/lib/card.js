@@ -232,7 +232,7 @@ export const EDIT_MOD = {
         { id: 'repair-region', label: 'Repair', tooltip: 'The repair section: identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound. The mask is RECEIVED: one staged PNG (the track run\u2019s pixel-max union is the recommended bridge; the chain resizes it to its own geometry in-graph) — the repair refuses without one.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
         { id: 'identity-swap', label: 'Swap', tooltip: 'The swap section (one, per §0.7 — clothing vs identity is prompt words, never two pills): the region tracked frame by frame, identity carried by a replacement still + a mannequin video (the motion carrier — any video clip may be bound; the source clip itself is a valid mannequin when the motion is already in the shot, no track run required); denoise seeds 1 (full re-render of the masked side). A still+mannequin swap of a DIFFERENT person needs near-full noise (measured: 0.5 = none, 1.0 = full); 0.55 keeps the source\'s motion by keeping its identity — the garment read, never the recast.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
         { id: 'whole-frame-restyle', label: 'Whole-frame restyle', tooltip: 'Nothing held: the whole frame re-renders at partial denoise anchored to the source itself — stay under 0.8 (the identity-boil floor refuses beyond it on this anchor).', patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.6 } },
-        { id: 'refine-2x', label: 'Refine 2x', tooltip: "The second-pass posture: blank mask (the whole frame), self-anchored, partial denoise at the design window (2.5 s — a >=2x window past the measured 141 f OOM refuses) — and the refine switch ON at 2x: the learned upscale rides the edit's own latents in the same run.", patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true } },
+        { id: 'refine-2x', label: 'Upscale 2x', tooltip: "ONE dial: the posture composes itself — whole-frame, self-anchored, denoise 0.32, 56 f windows under the measured 141 f 2x ceiling, the learned upscale riding the edit's own latents in the same run. ANY staged video rides the source seat — an outside clip is not a special case, no run id, no pattern. State a seat only to override (a prompt steers the re-render; a stated window rides its own judgement).", patch: { refine: true, scale: 2 } },
         { id: 'extend-continuation', label: 'Extend', tooltip: "The continuation posture: blank mask, self-anchored, full denoise — fresh seconds appended to the source's last frame (the forced seam) and joined with the prior into one film; state extend_seconds.", patch: { continuation: true, mask_source: 'whole-frame', reference: 'self', denoise: 1 } },
         { id: 'upscale-2x', label: 'Upscale prior run 2x', tooltip: "Re-render a finished run at double size: pick it in 'Prior chain run' — its saved scenes resume one by one and upscale (denoise 0.24, steps 20; a blank prompt reuses the run's own scene prompts). An unknown run name refuses loud at the execute door.", patch: { chain_run: 'prior-chain-run-name', denoise: 0.24, steps: 20 } },
     ],
@@ -621,7 +621,18 @@ export const ACTION_BINDINGS = {
                 throw new Error('h3-timeline: Video edit and Reshoot are both armed — the edit branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the edit arm for a reshoot, or empty the Reshoot arm for a video edit.');
             }
             const entry = editBagRef[0];
-            const maskSource = typeof entry.mask_source === 'string' ? entry.mask_source : 'region';
+            // THE PATTERN DISSOLUTION (§-1, the operator's burn
+            // 2026-11-17: "tired of needing to break patterns for the
+            // refine flow"): under the refine switch the mask DERIVES to
+            // whole-frame — unstated, or the DECL's region default with
+            // no region_prompt text (presence is never authorship) — the
+            // cell the seven-key chip used to hand-author. A STATED mask
+            // (a masked refine) rides as authored.
+            const statedMaskSource = typeof entry.mask_source === 'string' ? entry.mask_source : '';
+            const regionPromptText = typeof entry.region_prompt === 'string' ? entry.region_prompt : '';
+            const maskSource = entry.refine === true && (statedMaskSource === '' || (statedMaskSource === 'region' && regionPromptText.trim() === ''))
+                ? 'whole-frame'
+                : (statedMaskSource || 'region');
             const mask = maskSource === 'static-png'
                 ? { source: 'static-png', image: typeof entry.mask === 'string' ? entry.mask : '' }
                 : maskSource === 'whole-frame'

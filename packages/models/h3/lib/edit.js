@@ -74,16 +74,27 @@ const probedSourceFrames = (entry, windowStart) => {
  * window seats — each loud, each naming the dial to state */
 export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     const prompt = seatString(entry, 'edit_prompt');
-    // THE UPSCALE CARVE-OUT: under the loop posture (chain_run
-    // stated) a blank prompt is lawful — the second pass reuses the
-    // SOURCE RUN'S own per-scene prompts (the conditioning node's
-    // documented posture); a bound prompt overrides every scene's
-    // pass-2 text.
+    const refineOn = entry.refine === true;
+    // THE SECOND-PASS CARVE-OUTS (blank prompt is lawful under BOTH
+    // second-pass postures): the loop posture (chain_run stated)
+    // reuses the SOURCE RUN'S own per-scene prompts (the conditioning
+    // node's documented posture; a bound prompt overrides every
+    // scene's pass-2 text); the same-run switch (refine) asks no
+    // ACTION at all — the pass re-renders the edit's own latents
+    // self-anchored, so the one-dial posture (§-1) composes with no
+    // authored text.
     const chainRun = seatString(entry, 'chain_run');
-    if (prompt.trim() === '' && chainRun.trim() === '') {
-        throw new Error(`h3-timeline edit: 'edit_prompt' names no action — the edit needs its text (what the masked region or frame should become; agent-composed, user-confirmed)`);
+    if (prompt.trim() === '' && chainRun.trim() === '' && !refineOn) {
+        throw new Error(`h3-timeline edit: 'edit_prompt' names no action — the edit needs its text (what the masked region or frame should become; agent-composed, user-confirmed); blank is lawful only under a second pass (refine asks no action — it upscales the edit's own latents)`);
     }
-    const denoise = statedNumber(entry, 'denoise', 1);
+    // THE ONE-DIAL DENOISE DERIVATION (§-1, the operator's
+    // pattern-burn 2026-11-17: "tired of needing to break patterns
+    // for the refine flow"): unstated denoise under the refine switch
+    // derives the design window 0.32 — the 1 default is the fresh
+    // edit's full-noise pole, which the switch's own partial law
+    // refuses a branch later (the seven-key pattern the chip used to
+    // hand-author). A stated denoise rides (presence is authorship).
+    const denoise = statedNumber(entry, 'denoise', refineOn ? 0.32 : 1);
     if (!(denoise > 0 && denoise <= 1)) {
         throw new Error(`h3-timeline edit: denoise ${denoise} — the pole lives (0, 1] (partial holds the unmasked region, 1 re-renders the masked one whole); state the dial inside the band`);
     }
@@ -220,7 +231,8 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     // opinion.
     // `scale` is INERT when refine is off (resolve default-fills it —
     // the default-fill burn's law: presence is never authorship). ──
-    const refineOn = entry.refine === true;
+    // ── THE UPSCALE DIAL: refine ON adds the learned second pass to
+    // THIS chain (see the derivation at the denoise read above) ──
     const scale = statedNumber(entry, 'scale', 2);
     if (refineOn) {
         // THE PROBED WINDOW (defect board D-5, 2026-11-16: the operator's
@@ -233,6 +245,10 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         // composes unstated (56 f judged, not the blind 144). Without it
         // (an unresolvable or unreadable source) the conservative
         // clip_seconds plan keeps its own voice — never a silent pass.
+        // (the window needs NO derivation: the probe-capped plan slice
+        // already composes every ≤141 f film unstated — min(144,
+        // probed) — and the unprobed belt keeps its conservative voice;
+        // the D-5 law owns this seat, walled in carry-split.spec.ts)
         const planFrames = Math.round(statedNumber(entry, 'clip_seconds', 6) * 24);
         const probed = probedSourceFrames(entry, windowStart);
         const windowFrames = windowLength > 0

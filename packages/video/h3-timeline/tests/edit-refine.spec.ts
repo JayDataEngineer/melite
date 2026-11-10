@@ -248,3 +248,89 @@ describe("D-4 THE REFINE-2X FLOOR RELAX (defect board 2026-11-16: at scale 2 the
     );
   });
 });
+
+// ── THE ONE-DIAL DISSOLUTION (§-1; the operator 2026-11-17: "I am
+// tired of needing to break patterns for the refine flow"). Until
+// this cure the 2x press demanded the SEVEN-KEY PATTERN the chip
+// hand-authored; now {refine: true, scale: 2} over ANY staged video
+// composes the posture itself. These arms fire through the card's
+// OWN door (schema → compose → serialized graph): the mask
+// derivation (the DECL's region default is not authorship), the
+// outside video (a staged leaf is a staged leaf), the OOM guard,
+// and the resume door untouched beside the new face.
+describe("THE ONE-DIAL DISSOLUTION — the 2x press composes itself", () => {
+  const ONE_DIAL = (): Record<string, unknown> => ({
+    source_clip: "uploads/client-delivery.mp4",
+    edit_prompt: "",
+    refine: true,
+    scale: 2,
+    // the probe stamp the compose door itself puts there in a real
+    // press (the belt case — no stamp, unreadable source — is
+    // walled in carry-split.spec.ts, D-5's own arm)
+    __source_frames: 56,
+  });
+
+  it("THE ONE-DIAL COMPOSE through the card door: no mask_source, no denoise, no window, no prompt — the learned pass rides at the derived posture", () => {
+    const out = compose(ONE_DIAL());
+    const handoffs = ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff");
+    assert.equal(handoffs.length, 1, "the one-dial press reaches the learned pass");
+    assert.ok(
+      ofClass(out, "BasicScheduler").some(([, n]) => n.inputs.denoise === 0.32),
+      "denoise derives 0.32 — the operator never states the partial window",
+    );
+    assert.equal(ofClass(out, "SAM3_VideoTrack").length, 0,
+      "the mask derives whole-frame — no region tracker rides unstated");
+    assert.equal(
+      JSON.stringify(out).includes("CheckpointLoaderSimple"),
+      false,
+      "the SAM3 checkpoint never loads — the derived posture carries no mask machinery",
+    );
+  });
+
+  it("AN OUTSIDE VIDEO IS NOT A SPECIAL CASE: an uploads/ leaf composes identically to an estate clip — no run vocabulary rides", () => {
+    const out = compose(ONE_DIAL());
+    assert.equal(
+      JSON.stringify(out).includes("h3_chains"),
+      false,
+      "no chain-store path rides a video-in 2x — the run hunt is gone from the graph itself",
+    );
+    assert.equal(ofClass(out, "MiniMaxH3ChainCheckpointManager").length, 0,
+      "no checkpoint resume node — this is the encode-fresh path by construction");
+  });
+
+  it("THE DECL'S REGION DEFAULT IS NOT AUTHORSHIP: region + empty region_prompt under refine derives whole-frame; a STATED region rides as authored", () => {
+    const derived = compose({ ...ONE_DIAL(), mask_source: "region", region_prompt: "" });
+    assert.equal(ofClass(derived, "SAM3_VideoTrack").length, 0,
+      "the default-filled region with no text derives whole-frame (presence is never authorship)");
+    const authored = compose({
+      ...ONE_DIAL(),
+      mask_source: "region",
+      region_prompt: "the face",
+      edit_prompt: "keep the face, sharpen the rest",
+    });
+    assert.equal(ofClass(authored, "SAM3_VideoTrack").length, 1,
+      "a STATED region (a masked refine) rides as authored");
+  });
+
+  it("THE OOM GUARD still fires through the door on authored windows: 7 s at scale 2 over a film that outlives it refuses naming the 141 f ceiling and both cures", () => {
+    assert.throws(
+      () => compose({ ...ONE_DIAL(), clip_seconds: 7, __source_frames: 1000 }),
+      /168 f window at refine 2x is TOO LONG.*141 f.*Cut the window .* or lower scale below 2/s,
+      "the dissolution dissolved the pattern, never the ceiling",
+    );
+  });
+
+  it("THE RESUME DOOR UNTOUCHED beside the new face: chain_run still composes the deferred loop through the same door", () => {
+    const out = compose({
+      source_clip: "",
+      edit_prompt: "",
+      chain_run: "run-prior",
+      denoise: 0.24,
+      steps: 20,
+    });
+    assert.equal(ofClass(out, "MiniMaxH3ChainUpscaleAdapter").length, 1,
+      "the checkpoint resume still serves — the shortcut the advanced seat names");
+    assert.equal(ofClass(out, "MiniMaxH3ChainAssemble")[0]![1].inputs.filename, "run_edit_refine/upscale",
+      "the loop's assemble name rides untouched");
+  });
+});

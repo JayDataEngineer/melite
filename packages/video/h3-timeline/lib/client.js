@@ -5082,7 +5082,7 @@ window.__ModuleLoader__.load({
 				type: "boolean",
 				default: false,
 				visible_when: "chain_run=null",
-				tooltip: "THE FOURTH DIAL — the refine switch: ON adds the learned second pass to THIS chain (the 3D-conv latent upscale + the low-sigma refine pass ride the edit's OWN latents — same run, no re-encode of a saved clip; partial denoise only). Blank mask + partial denoise + refine on = the classic refine posture."
+				tooltip: "THE FOURTH DIAL — the refine switch: ON adds the learned second pass to THIS chain (the 3D-conv latent upscale + the low-sigma refine pass ride the edit's OWN latents — same run, no re-encode of a saved clip; partial denoise only). THE ONE-DIAL LAW: unstated seats derive the posture — whole-frame mask, self anchors, denoise 0.32, 56 f windows at scale ≥ 2 — so {refine: true} alone IS the 2x upscale of any staged video (an outside clip rides the same source seat; no run id, no pattern). State a seat only to override; blank prompt is lawful (the pass asks no action)."
 			},
 			{
 				name: "scale",
@@ -5124,8 +5124,9 @@ window.__ModuleLoader__.load({
 				type: "chain-run",
 				default: "",
 				width: 2,
-				placeholder: "Empty = a fresh edit — or pick a finished run for the 2x pass",
-				tooltip: "Re-render a finished run at 2x: pick it and its saved scenes upscale. Empty = a fresh edit, the field does nothing."
+				advanced: true,
+				placeholder: "Empty = a fresh edit — or pick a finished run for the 2x resume",
+				tooltip: "The RESUME shortcut: re-render a finished run at 2x from its saved pre-codec latents (zero re-encode loss, exact conditioning/seed state). Empty = a fresh edit, the field does nothing. For any video WITHOUT a run — an outside clip, an export whose run is gone — leave this empty and flip the Refine pass dial instead (the one-dial 2x)."
 			},
 			{
 				name: "segment_crf",

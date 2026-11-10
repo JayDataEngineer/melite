@@ -69,6 +69,10 @@ const STAGED: Record<string, Record<string, unknown>> = {
   "identity-swap": { still: "stills/girl.png", mannequin: "clips/mannequin.mp4", region_prompt: "the person" },
   "repair-region": { mask: "masks/hands_union.png" },
   "whole-frame-restyle": {},
+  // (D-5) the compose door stamps the staged file's probed length
+  // itself in a real press; the spec stages the stamp for the same
+  // truth — a readable 56 f film, the single-window 2x posture
+  "refine-2x": { __source_frames: 56 },
 };
 
 describe("the edit bag's section chips (stage 3: named cells over the ONE schema)", () => {
@@ -87,7 +91,13 @@ describe("the edit bag's section chips (stage 3: named cells over the ONE schema
       { mask_source: "static-png", reference: "self", denoise: 0.32, keep_audio: true },
       { mask_source: "region", reference: "still+mannequin", denoise: 1 },
       { mask_source: "whole-frame", reference: "self", denoise: 0.6 },
-      { mask_source: "whole-frame", reference: "self", denoise: 0.32, refine: true, scale: 2, clip_seconds: 2.5, keep_audio: true },
+      // THE PATTERN-DEATH CERTIFICATE (2026-11-17, the one-dial
+      // dissolution): this cell authored SEVEN keys — mask,
+      // reference, denoise, refine, scale, window, sound — every
+      // one a refusal lesson for a missed key. The door derives
+      // them now; the press is the switch and the scale, nothing
+      // else. A key reappearing here reds this arm BY NAME.
+      { refine: true, scale: 2 },
       { continuation: true, mask_source: "whole-frame", reference: "self", denoise: 1 },
       { chain_run: "prior-chain-run-name", denoise: 0.24, steps: 20 },
     ], "each section's payload, verbatim — the pole, the scale, the sound seat are the section");
@@ -314,12 +324,16 @@ describe("the edit door's served caption + advanced partition (the vid2vid modal
     assert.ok(section.startsWith("Video edit —"), "the caption names the door first");
   });
 
-  it("THE ADVANCED PARTITION IS THE PLAN TRIO: the DECL marks exactly seed/steps/resolution advanced — the every-run dials stay on the open stack", () => {
+  it("THE ADVANCED PARTITION IS THE PLAN TRIO + THE RESUME SEAT: the DECL marks exactly seed/steps/resolution/chain_run advanced — the every-run dials stay on the open stack", () => {
     const { fields } = editKind();
     const advanced = fields.filter((f) => f["advanced"] === true).map((f) => String(f["name"]));
-    assert.deepEqual(advanced, ["seed", "steps", "resolution"],
-      "the plan trio folds behind the leaf's disclosure; nothing else hides");
-    for (const seat of ["denoise", "mask_source", "edit_prompt", "source_clip", "carry"]) {
+    // RE-PIN 2026-11-17 (the run-hunt burn): chain_run joins the
+    // disclosure — it is the RESUME shortcut over a prior run's
+    // saved latents, never an every-run dial; fresh edits stopped
+    // being interrogated for a run id on the open stack.
+    assert.deepEqual(advanced, ["chain_run", "seed", "steps", "resolution"],
+      "the plan trio + the resume seat fold behind the leaf's disclosure; nothing else hides");
+    for (const seat of ["denoise", "mask_source", "edit_prompt", "source_clip", "carry", "refine"]) {
       const f = fields.find((x) => x["name"] === seat);
       assert.ok(f, `${seat} serves`);
       assert.notEqual(f["advanced"], true, `${seat} is an every-run dial — never folded`);
