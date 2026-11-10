@@ -6,10 +6,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MAX_PPF, clamp } from "./MotionTimelineBarLayout.js";
 /** Ruler ticks over the content (bar line 790): seconds coverage of
- *  the frames plus the trailing lead-out room. */
+ *  the frames — BOUNDED AT THE AXIS END (D-19, the v2v lane-mirror
+ *  audit 2026-11-18): the lead-out stays scrollable/droppable room,
+ *  but its tick labels used to run to the content width, so a short
+ *  axis under heavy lead-out read as a longer film — the ruler
+ *  impersonated duration the film does not have. */
 export function buildTicks(contentW, effPpf, totalFrames, fps) {
     const viewSec = totalFrames / Math.max(1, fps);
-    const fullSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
+    const contentSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
+    // the film's own length is the ceiling — never the room's
+    const fullSec = Math.min(contentSec, viewSec);
     const stepSec = viewSec <= 4 ? 0.5 : Math.max(1, Math.ceil(viewSec / 16));
     const ticks = [];
     for (let s = 0; s <= fullSec + 1e-6; s += stepSec)

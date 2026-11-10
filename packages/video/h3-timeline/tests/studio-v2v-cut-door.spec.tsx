@@ -25,9 +25,12 @@
  * - THE JOURNEY — the real studio: the press lands a two-window doc,
  *   the second half transition "cut" (§0.5's split law, ridden
  *   through the strip's own button).
- * - THE EMPTY DOC REFUSES — under v2v with zero windows the press
- *   refuses LOUD (the only verb is cutting; the stock append is an
- *   ADD the face bars).
+ * - THE DERIVED WHOLE-FILM WINDOW (D-19) — under v2v with zero
+ *   authored spans the lane paints the run's ONE implicit window
+ *   (the whole film, derived join — the lane mirrors the chain); the
+ *   first press (Add cut / the divide seat) authors REAL spans
+ *   through the split law; geometry gestures on the row refuse LOUD
+ *   (the pre-cure path dropped them SILENT — the named disease).
  * - THE DIVIDE RIDES THE CARRY — the per-window divide ("cut in the
  *   middle to split the clips into context carry") routes the same
  *   carry-riding verb as the strip head's door.
@@ -39,7 +42,7 @@
 import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
+import { StudioStripPane, V2V_DERIVED_WINDOW_UUID } from "../src/ui/studio/StudioStripPane.tsx"
 import { callsLaneFace, deriveCommissions } from "../src/ui/studio/commissions.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { STARTER_CALLS, type DocCall } from "../src/ui/studio/docModel.ts"
@@ -74,7 +77,10 @@ const UPSACLE_PARAMS = { upscale: [{ scale: 2 }] }
 function strip(over?: Record<string, unknown>) {
   const rec: Record<string, unknown[]> = {
     addCall: [] as Array<[number] | [number, (() => void) | undefined]>,
+    firstCut: [] as Array<[number, number, (() => void) | undefined]>,
     promptUpdate: [] as unknown[],
+    promptMove: [] as unknown[],
+    promptDelete: [] as unknown[],
     seam: [] as unknown[],
   }
   const els = render(
@@ -97,11 +103,12 @@ function strip(over?: Record<string, unknown>) {
       handleKeyframeMove={() => {}}
       handleKeyframeDelete={() => {}}
       handlePromptUpdate={(id, t) => { rec.promptUpdate.push([id, t]) }}
-      handlePromptMove={() => {}}
+      handlePromptMove={(id, s, e) => { rec.promptMove.push([id, s, e]) }}
       handlePromptResize={() => {}}
-      handlePromptDelete={() => {}}
+      handlePromptDelete={(id) => { rec.promptDelete.push([id]) }}
       handleExtend={() => {}}
       addCallAt={(f: number, onRefuse?: () => void) => { rec.addCall.push([f, onRefuse]) }}
+      addFirstWindowCut={(extent: number, at: number, onRefuse?: () => void) => { rec.firstCut.push([extent, at, onRefuse]) }}
       setCallTransition={(i, t) => { rec.seam.push([i, t]) }}
       handleTimelineSelect={() => {}}
       layerA={{} as never}
@@ -217,18 +224,123 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     els.unmount()
   })
 
-  it("THE EMPTY DOC REFUSES — under v2v with zero windows the press refuses LOUD; no verb fires", () => {
+  it("THE DERIVED WINDOW — zero authored spans under the armed edit paint the run's one implicit window, and the first press authors REAL spans (D-19)", async () => {
+    // THE PAINT: the empty doc's lane is no longer an empty lane —
+    // the v2v run composes one implicit window (the whole film,
+    // derived join), and the lane MIRRORS it where the cut doors
+    // live. The row is display prose for what the compose WILL
+    // build; it is not the starter's return (nothing authored,
+    // nothing persists).
     const { els, rec } = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 56,
+      frameIdx: 28,
+    })
+    const derivedRow = els.container.querySelector(`[data-prompt-clip="${V2V_DERIVED_WINDOW_UUID}"]`)
+    assert.ok(derivedRow instanceof HTMLElement,
+      "the derived whole-film window paints as a lane row in the authoring lane")
+    assert.ok(els.container.textContent?.includes(studioCopy.v2vDerivedWindowText),
+      "the derived row speaks its own words (the whole-film derived join)")
+    // THE FIRST PRESS: Add cut on the derived window routes the
+    // first-window cut verb — extent = the whole film's frames, at =
+    // the playhead — NEVER the stock append (an ADD the face bars)
+    // and never a silent no-op.
+    fireEvent.click(els.container.querySelector('[data-testid="tl-add-cut"]')!)
+    assert.equal(rec.firstCut.length, 1,
+      "the press routes the first-window cut verb once (addFirstWindowCut)")
+    assert.deepEqual(rec.firstCut[0]!.slice(0, 2), [56, 28],
+      "extent = the derived window's own frames (56), at = the playhead (28)")
+    assert.equal(rec.addCall.length, 0,
+      "the stock addCallAt verb NEVER fires for the derived window")
+    // THE DEFAULT CARRY frames nothing ("cut" is the no-reframe
+    // mode — the reframe proof rides the carry-selected arm below)
+    assert.equal(rec.seam.length, 0,
+      "the default carry (cut) frames no seam on the first press")
+    els.unmount()
+    // THE STATED TIMESTAMP rides the same door: split-at 1.625s on a
+    // 24fps film cuts at frame 39 — ON the authoring lattice (22+17,
+    // the only frames a legal split lands on) — stated through the
+    // REAL form doors (tl-split-at input + the carry menu)
+    const at2s = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 56,
+      frameIdx: 10,
+    })
+    const splitAt = at2s.els.container.querySelector('[data-testid="tl-split-at"]') as HTMLInputElement | null
+    assert.ok(splitAt, "the seconds input renders for the derived window's first cut")
+    fireEvent.change(splitAt, { target: { value: "1.625" } })
+    fireEvent.click(at2s.els.container.querySelector('[data-testid="tl-split-carry"]')!)
+    const carryRow = (await screen.findAllByRole("menuitem"))
+      .find((n) => n.textContent?.toLowerCase().includes("22-frame"))
+    assert.ok(carryRow, "the carry row (22-frame overlap) serves in the menu")
+    fireEvent.click(carryRow)
+    fireEvent.click(at2s.els.container.querySelector('[data-testid="tl-add-cut"]')!)
+    assert.deepEqual(at2s.rec.firstCut[0]!.slice(0, 2), [56, 39],
+      "the stated timestamp overrides the playhead for the first cut (1.625s × 24fps = frame 39, lattice-legal)")
+    assert.deepEqual(at2s.rec.seam, [[1, "extend"]],
+      "the selected carry mode (Carry — 22-frame overlap, the 'extend' seam) frames the new seam")
+    at2s.els.unmount()
+    // THE DEAD AXIS: barTotal 0 (no film, no edit extent) paints NO
+    // derived row — there is nothing to mirror and nothing to cut
+    const dead = strip({
       calls: [] as never,
       barPrompts: [] as never,
       barTotal: 0,
       frameIdx: 0,
     })
-    fireEvent.click(els.container.querySelector('[data-testid="tl-add-cut"]')!)
+    assert.equal(dead.els.container.querySelector(`[data-prompt-clip="${V2V_DERIVED_WINDOW_UUID}"]`), null,
+      "a zero-length axis paints no derived window (never an invented span)")
+    dead.els.unmount()
+  })
+
+  it("THE DERIVED WINDOW IS READ-ONLY — geometry gestures on it refuse LOUD; the stock handlers never see them (the silent-drop disease)", () => {
+    const { els, rec } = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 56,
+      frameIdx: 28,
+    })
+    // A REAL body drag on the derived row: the kit's pointer session
+    // (pointerdown on the clip, pointermove on window) commits
+    // through onPromptMove — the pane's guard must answer BEFORE the
+    // stock handler, LOUD, in the shared refusal slot.
+    const derivedRow = els.container.querySelector(`[data-prompt-clip="${V2V_DERIVED_WINDOW_UUID}"]`)!
+    fireEvent.pointerDown(derivedRow, { clientX: 200, buttons: 1 })
+    fireEvent.pointerMove(window, { clientX: 320, buttons: 1 })
+    fireEvent.pointerUp(window)
+    assert.equal(rec.promptMove.length, 0,
+      "the derived window never moves — the stock handler sees no gesture (the pre-cure path resolved uuid −1 and dropped it SILENT)")
+    assert.ok(els.container.textContent?.includes(studioCopy.v2vDerivedReadonly),
+      "the read-only refusal speaks LOUD in the shared laneErr slot")
+    els.unmount()
+  })
+
+  it("THE DERIVED DIVIDE — the divide seat on the derived row authors the first spans at its midpoint (the same verb, the same carry)", () => {
+    // 107 = 22+17·5 (the authoring lattice) — the derived window
+    // inherits the lattice law, and the divide cuts its midpoint
+    // (round(107/2) = 54). The seat rides the derived row's own uuid
+    // (the kit arms it iff onPromptSplit is wired); the pre-cure
+    // path resolved no call for the uuid and dropped the press
+    // SILENT — the named disease. The carry stays at its default
+    // ("cut") — the reframe is the timestamp arm's proof.
+    const { els, rec } = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 107,
+      frameIdx: 10,
+    })
+    const divide = els.container.querySelector(`[data-split-toggle="${V2V_DERIVED_WINDOW_UUID}"] button`)
+    assert.ok(divide, "the divide seat renders on the derived row (the §0.5 verb arms on it too)")
+    fireEvent.click(divide)
+    assert.equal(rec.firstCut.length, 1, "the derived divide routes the first-window cut verb")
+    assert.deepEqual(rec.firstCut[0]!.slice(0, 2), [107, 54],
+      "extent = the derived window's frames, at = its midpoint (round(107/2) = 54)")
     assert.equal(rec.addCall.length, 0,
-      "no verb fires — under v2v the stock append is an ADD the face bars")
-    assert.ok(els.container.textContent?.includes(studioCopy.splitEmptyRefusal),
-      "the face's own refusal speaks in the shared laneErr slot")
+      "the stock addCallAt verb NEVER fires for the derived divide")
+    assert.equal(rec.seam.length, 0,
+      "the default carry (cut) frames no seam — the reframe is the timestamp arm's proof")
     els.unmount()
   })
 

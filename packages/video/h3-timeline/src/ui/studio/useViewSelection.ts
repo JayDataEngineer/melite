@@ -22,7 +22,7 @@
  */
 import { useRef, useState } from "react"
 import type { DocCall, LayerA } from "./docModel.ts"
-import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT, DOC_LENGTH_DEFAULT } from "@melite/models-h3/timelineContract"
 
 /** Selection shared with the bar clips (tenant §2). */
 export interface TimelineSelection {
@@ -119,7 +119,15 @@ export function useViewSelection(calls: DocCall[], layerA: LayerA, stageId: stri
   // the timeline vocabulary's 16 booked a 64-frame clip at 4.0s
   // while the compose stamped 2.67s).
   const fps = layerA.fps ?? DOC_FPS_DEFAULT
-  const totalFrames = calls.length ? calls[calls.length - 1]!.end_frame : 1
+  // THE `: 1` COLLAPSE IS DEAD (D-19, the v2v lane-mirror audit
+  // 2026-11-18): an empty-calls axis booked a 1-frame envelope — a
+  // sliver strip under a 40s lead-out ruler on every never-run doc.
+  // The last tier books the DOC'S OWN plan floor — the length row's
+  // default (DOC_LENGTH_DEFAULT, the schema row's own seed, the same
+  // number the walk fills for span-less calls), or the stated dial
+  // when the doc carries one. Every upstream tier (the edit bag's
+  // own extent, the film probe) still wins first.
+  const totalFrames = calls.length ? calls[calls.length - 1]!.end_frame : (layerA.length ?? DOC_LENGTH_DEFAULT)
   return {
     frameIdx, setFrameIdx, selected, setSelected,
     callCardRefs, handleTimelineSelect, fps, totalFrames,

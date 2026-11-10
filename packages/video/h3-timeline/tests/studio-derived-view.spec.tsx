@@ -38,6 +38,7 @@ function view(opts?: {
   fps?: number
   totalFrames?: number
   artifactIndex?: { byName: ReadonlyMap<string, string> }
+  docParams?: Record<string, unknown>
 }) {
   return renderHook(() => useDerivedView({
     upstreams: opts?.upstreams,
@@ -51,6 +52,7 @@ function view(opts?: {
     fps: opts?.fps ?? 24,
     totalFrames: opts?.totalFrames ?? 96,
     artifactIndex: opts?.artifactIndex,
+    docParams: opts?.docParams,
   }))
 }
 
@@ -318,6 +320,38 @@ describe("bar-space memos (film map on/off)", () => {
     act(() => { r2.current.setFilmDurSec(10) })
     assert.equal(r2.current.barTotal, 240)
     expect(result.current.filmDurSec).toBe(10)
+  })
+
+  it("THE VERB'S OWN EXTENT (D-19) — an armed edit window sizes the axis BEFORE any prior film", () => {
+    // the stated window wins over the map: a fresh never-run armed
+    // doc books its OWN stated window, never a past run's 390
+    const { result } = view({
+      filmMap: MAP,
+      docParams: { edit: [{ edit_prompt: "make it rain", window_length: 56 }] },
+    })
+    assert.equal(result.current.barTotal, 56,
+      "the armed edit's stated window_length is the face's input extent — before the film map's 390")
+    // window_start rides when stated (the verb's own geometry)
+    const started = view({
+      filmMap: MAP,
+      docParams: { edit: [{ edit_prompt: "make it rain", window_start: 10, window_length: 56 }] },
+    })
+    assert.equal(started.result.current.barTotal, 66,
+      "a stated window_start sums into the extent (10 + 56)")
+    // zero/absent length is not a stated window — the chain falls to
+    // the map (the tier order, never a silent junk extent)
+    const unstated = view({
+      filmMap: MAP,
+      docParams: { edit: [{ edit_prompt: "make it rain" }] },
+    })
+    assert.equal(unstated.result.current.barTotal, 390,
+      "no stated window: the film map still sizes the axis")
+    const zeroed = view({
+      filmMap: MAP,
+      docParams: { edit: [{ edit_prompt: "make it rain", window_length: 0 }] },
+    })
+    assert.equal(zeroed.result.current.barTotal, 390,
+      "a zero window_length is NOT a stated window (the door holds grid legality)")
   })
 })
 

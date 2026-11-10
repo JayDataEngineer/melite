@@ -185,6 +185,56 @@ describe("addCallAt", () => {
   })
 })
 
+describe("addFirstWindowCut (D-19 — the derived whole-film first cut)", () => {
+  it("materializes BOTH halves in one write — the split law's lattice, the right half's reflow, the cut seam", () => {
+    // the derived window is the whole film [0, 56): a 28f gesture
+    // snaps to the lattice's nearest legal split (22 — left 22
+    // uncarried, right 34 carried), and the right half reflows by
+    // the cut conversion (+22) to end 78
+    const { result } = harness([])
+    act(() => { result.current.addFirstWindowCut(56, 28) })
+    const calls = result.current.calls
+    assert.equal(calls.length, 2, "the first cut writes BOTH halves in ONE setCalls")
+    assert.deepEqual(
+      [calls[0]!.start_frame, calls[0]!.end_frame, calls[0]!.text],
+      [0, 22, ""],
+      "the left half is a genuine first window on the grid",
+    )
+    assert.deepEqual(
+      [calls[1]!.start_frame, calls[1]!.end_frame, calls[1]!.transition],
+      [22, 78, "cut"],
+      "the right half carries the CUT seam and the reflowed end (22+34+22)",
+    )
+    // the extent rounds — a fractional film total never mints junk
+    const frac = harness([])
+    act(() => { frac.result.current.addFirstWindowCut(55.6, 28) })
+    assert.equal(frac.result.current.calls[1]!.end_frame, 78,
+      "a fractional extent rounds to the frame (55.6 → 56) before the lattice")
+  })
+
+  it("REFUSES LOUD when no legal split serves the derived window — the doc stays empty, the same array", () => {
+    // [0, 34): left must be 22 (the only uncarried lattice point
+    // inside), right 12 is not carried-legal → no split serves
+    const onRefuse = vi.fn()
+    const { result } = harness([])
+    const before = result.current.calls
+    act(() => { result.current.addFirstWindowCut(34, 17, onRefuse) })
+    assert.equal(onRefuse.mock.calls.length, 1, "onRefuse fires ONCE (never a silent no-op)")
+    assert.ok(result.current.calls === before,
+      "the empty doc keeps its identity — the derived window keeps painting")
+  })
+
+  it("GUARDS the occupied doc LOUD — authored spans cut through addCallAt, never here", () => {
+    const onRefuse = vi.fn()
+    const { result } = harness([A])
+    const before = result.current.calls
+    act(() => { result.current.addFirstWindowCut(56, 28, onRefuse) })
+    assert.equal(onRefuse.mock.calls.length, 1,
+      "the occupied doc refuses loud (the disease class this cure names is the silent drop)")
+    assert.ok(result.current.calls === before, "the authored doc is untouched")
+  })
+})
+
 describe("setCallGuide", () => {
   it("wires a guide; clearing detaches (the key drops)", () => {
     const { result } = harness([A])

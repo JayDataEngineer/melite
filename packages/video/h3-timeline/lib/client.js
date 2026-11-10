@@ -617,11 +617,17 @@ window.__ModuleLoader__.load({
 			*  no legal frame (the 22f base / 17f step windows): the grid's
 			*  shortest halves don't fit — the shared laneErr slot's voice. */
 			splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
-			/** (queue 11 part 2, the empty doc under v2v) the face's own
-			* refusal: the only verb is cutting and there is no window to cut —
-			* the stock append is an ADD the face bars (the operator: "This
-			* section would no longer allow people to add clips"). */
-			splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
+			/** (D-19, the v2v lane-mirror cure 2026-11-18) the derived
+			* whole-film window's OWN readout — the one span the armed edit
+			* composes when no windows are authored, painted in the authoring
+			* lane so the cut doors have their object. The words mirror the
+			* commission row's carry seat (the same truth, the lane's voice). */
+			v2vDerivedWindowText: "whole film — derived join (Add cut authors the first spans)",
+			/** (D-19) the derived window is READ-ONLY: a geometry gesture on it
+			*  (drag body / drag edge / delete) answers LOUD in the shared
+			*  laneErr slot — never a silent snap-back. The cut doors (Add cut,
+			*  the divide seat) are the verbs that author real spans. */
+			v2vDerivedReadonly: "the whole-film window is derived — it mirrors the run; Add cut (or the divide seat) authors the first real spans",
 			/** (queue 11 reopened, the FORM seat) the video2video leaf face's
 			*  own words — the windows list + the split-by-timestamp seat the
 			*  operator named ("NO WINDOWS IN THE FORM!"): the same copy law
@@ -735,8 +741,13 @@ window.__ModuleLoader__.load({
 			/** The calls lane head under the armed edit bag (the windows are
 			*  the run's own video-to-video spans). */
 			callsV2vLabel: "Video-to-video — windows & cuts",
-			/** The calls lane's empty hint under the armed edit bag. */
-			callsV2vHint: "Video edit is armed — each window is one video-to-video span; Add cut divides the window at the playhead into two (a cut seam, never a chain — wherever the playhead sits)",
+			/** The calls lane's empty hint under the armed edit bag. (D-19
+			*  re-word 2026-11-18: the pre-cure sentence promised "Add cut
+			*  divides the window" while the empty doc held no window — a verb
+			*  with no object. The hint now states the whole-film truth; with
+			*  the derived window painting, the lane is empty only when the
+			*  axis itself has no extent — the belt, never the working state.) */
+			callsV2vHint: "Video edit is armed — the run edits the whole film as one window; author spans with Add cut (each window is one video-to-video span, cut seams only — never a chain)",
 			/** The strip head's visible cut door (the queue-11 law: the
 			*  ability to add cuts is a CONTROL on the face, never a hidden
 			*  gesture). */
@@ -1432,10 +1443,15 @@ window.__ModuleLoader__.load({
 		* playhead-anchored scroll, frame<->px. Bodies below are the bar's.
 		*/
 		/** Ruler ticks over the content (bar line 790): seconds coverage of
-		*  the frames plus the trailing lead-out room. */
+		*  the frames — BOUNDED AT THE AXIS END (D-19, the v2v lane-mirror
+		*  audit 2026-11-18): the lead-out stays scrollable/droppable room,
+		*  but its tick labels used to run to the content width, so a short
+		*  axis under heavy lead-out read as a longer film — the ruler
+		*  impersonated duration the film does not have. */
 		function buildTicks(contentW, effPpf, totalFrames, fps) {
 			const viewSec = totalFrames / Math.max(1, fps);
-			const fullSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
+			const contentSec = contentW / Math.max(1, effPpf) / Math.max(1, fps);
+			const fullSec = Math.min(contentSec, viewSec);
 			const stepSec = viewSec <= 4 ? .5 : Math.max(1, Math.ceil(viewSec / 16));
 			const ticks = [];
 			for (let s = 0; s <= fullSec + 1e-6; s += stepSec) ticks.push(Math.round(s * 10) / 10);
@@ -5662,6 +5678,11 @@ window.__ModuleLoader__.load({
 			"audio:sfx": "sfx",
 			"audio:music": "music"
 		};
+		/** (D-19) the derived whole-film window's reserved row uuid — a
+		*  stable id the door guards and the wall pin; it can never collide
+		*  with a call's uuid (callsToPrompts mints row ids off the call's
+		*  own identity, never this spelling). */
+		const V2V_DERIVED_WINDOW_UUID = "v2v-derived-whole-film";
 		/** THE DEP LAW (2026-09-22, the From-media freeze): the provider's
 		*  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an
 		*  inline arrow in the component is a fresh identity every render,
@@ -5672,7 +5693,7 @@ window.__ModuleLoader__.load({
 		const loadAudioMedia = async (_kind, signal) => {
 			return (await (0, _melite_card_base_client.fetchMediaLibrary)("all", signal)).filter((r) => AUDIO_ROW_RE.test(r.url) || AUDIO_ROW_RE.test(r.name));
 		};
-		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, commissions, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView, setCallTransition }) {
+		function StudioStripPane({ calls, fps, barPrompts, barLanes, barAudioClips, barTotal, frameIdx, commissions, callPreviews, selectedBarId, filmMap, handleBarFrame, handleScrubStart, handleScrubEnd, handleKeyframeMove, handleKeyframeDelete, handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete, handleExtend, addCallAt, addFirstWindowCut, handleTimelineSelect, layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip, updateAudioClip, setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView, setCallTransition }) {
 			const pickLane = (0, react.useRef)("music");
 			const [laneErr, setLaneErr] = (0, react.useState)(null);
 			const laneField = (lane) => ({
@@ -5782,6 +5803,18 @@ window.__ModuleLoader__.load({
 			});
 			const callsFace = callsLaneFace(commissions);
 			const shownPrompts = callsFace.face !== "plain" ? barPrompts.filter((_p, i) => !(calls[i] !== void 0 && isStarterCallText(calls[i].text ?? ""))) : barPrompts;
+			const lanePrompts = callsFace.face === "v2v" && calls.length === 0 && barTotal > 0 ? [{
+				uuid: V2V_DERIVED_WINDOW_UUID,
+				text: studioCopy.v2vDerivedWindowText,
+				start_frame: 0,
+				end_frame: barTotal,
+				color: null
+			}] : shownPrompts;
+			const derivedGuard = (id) => {
+				if (id !== "v2v-derived-whole-film") return false;
+				setLaneErr(studioCopy.v2vDerivedReadonly);
+				return true;
+			};
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
@@ -5816,7 +5849,17 @@ window.__ModuleLoader__.load({
 			};
 			const addCutAtPlayhead = () => {
 				if (calls.length === 0) {
-					setLaneErr(studioCopy.splitEmptyRefusal);
+					const stated = Number(splitAtSec);
+					const atStated = splitAtSec.trim() !== "" && Number.isFinite(stated) && stated >= 0 ? Math.round(stated * (filmMap?.fps ?? fps)) : null;
+					const at = atStated !== null ? atStated : docFromFilm(frameIdx);
+					const extent = docFromFilm(barTotal);
+					const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, {
+						text: "",
+						start_frame: 0,
+						end_frame: extent
+					}), true, at) !== null;
+					addFirstWindowCut(extent, at, () => setLaneErr(studioCopy.splitRefusal));
+					if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry);
 					return;
 				}
 				const stated = Number(splitAtSec);
@@ -5943,7 +5986,7 @@ window.__ModuleLoader__.load({
 						children: kfErr
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
-						prompts: shownPrompts,
+						prompts: lanePrompts,
 						keyframes: kfChips,
 						frameIdx,
 						totalFrames: barTotal,
@@ -5957,9 +6000,18 @@ window.__ModuleLoader__.load({
 						onKeyframeDelete: handleKeyframeDelete,
 						onTrackAdd: openTrackAdd,
 						onPromptUpdate: callsFace.face === "dormant" ? refuseCallsEdit : callsFace.face === "v2v" ? refuseV2vProse : handlePromptUpdate,
-						onPromptMove: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e)),
-						onPromptResize: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e)),
-						onPromptDelete: callsFace.face === "dormant" ? refuseCallsEdit : handlePromptDelete,
+						onPromptMove: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => {
+							if (derivedGuard(id)) return;
+							handlePromptMove(id, docFromFilm(s), docFromFilm(e));
+						},
+						onPromptResize: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => {
+							if (derivedGuard(id)) return;
+							handlePromptResize(id, docFromFilm(s), docFromFilm(e));
+						},
+						onPromptDelete: callsFace.face === "dormant" ? refuseCallsEdit : (id) => {
+							if (derivedGuard(id)) return;
+							handlePromptDelete(id);
+						},
 						onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
 						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
 						packed: true,
@@ -5975,6 +6027,18 @@ window.__ModuleLoader__.load({
 							if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut");
 						},
 						onPromptSplit: callsFace.face === "dormant" ? void 0 : (id) => {
+							if (id === "v2v-derived-whole-film") {
+								const extent = docFromFilm(barTotal);
+								const mid = Math.round(extent / 2);
+								const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, {
+									text: "",
+									start_frame: 0,
+									end_frame: extent
+								}), true, mid) !== null;
+								addFirstWindowCut(extent, mid, () => setLaneErr(studioCopy.splitRefusal));
+								if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry);
+								return;
+							}
 							const idx = barPrompts.findIndex((p) => p.uuid === id);
 							/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
 							if (idx < 0) return;
@@ -8865,7 +8929,7 @@ window.__ModuleLoader__.load({
 				callCardRefs,
 				handleTimelineSelect,
 				fps: layerA.fps ?? 24,
-				totalFrames: calls.length ? calls[calls.length - 1].end_frame : 1,
+				totalFrames: calls.length ? calls[calls.length - 1].end_frame : layerA.length ?? 56,
 				sub,
 				enterSub,
 				exitSub,
@@ -18087,6 +18151,60 @@ window.__ModuleLoader__.load({
 					}];
 				});
 			};
+			/** THE DERIVED WHOLE-FILM FIRST CUT (D-19, the v2v lane-mirror
+			*  audit 2026-11-18): under an armed edit bag with zero authored
+			*  spans, the lane paints the run's one implicit window (the whole
+			*  film, derived — the same one the commission row mirrors) and the
+			*  cut doors gain their object. This arm materializes the FIRST cut
+			*  in one write: the synthetic whole-film window [0, extent) runs
+			*  through the SAME split law addCallAt's interior path rides
+			*  (snapSplitFrame's lattice, the carried right half's reflow, the
+			*  CUT seam) — the two halves are genuine calls rows, the doc's
+			*  authored span is born, and every later gesture rides the stock
+			*  arms. A frame with no legal split refuses loud through
+			*  `onRefuse` and the doc stays empty (the derived window keeps
+			*  painting — never a silent no-op). The empty doc is the ONLY
+			*  state this arm serves: a doc with authored spans cuts through
+			*  addCallAt, never here. */
+			const addFirstWindowCut = (extent, at, onRefuse) => {
+				let refused = false;
+				setCalls((prev) => {
+					if (prev.length > 0) {
+						if (!refused) {
+							refused = true;
+							onRefuse?.();
+						}
+						return prev;
+					}
+					const cur = {
+						text: "",
+						start_frame: 0,
+						end_frame: Math.max(1, Math.round(extent))
+					};
+					const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(0, cur), true, Math.round(at));
+					if (split === null) {
+						if (!refused) {
+							refused = true;
+							onRefuse?.();
+						}
+						return prev;
+					}
+					const rightEnd = reflowSeamSpan({
+						...cur,
+						start_frame: split,
+						transition: "extend"
+					}, 1, "cut");
+					return [{
+						...cur,
+						end_frame: split
+					}, {
+						...cur,
+						start_frame: split,
+						end_frame: rightEnd,
+						transition: "cut"
+					}];
+				});
+			};
 			/** Wire a call's guide source. Empty = none (the planner's
 			* contract: blank guide keys never materialize — clearing the input
 			* detaches the guide; sources are typed, not dropped-then-wired
@@ -18230,6 +18348,7 @@ window.__ModuleLoader__.load({
 			return {
 				handleExtend,
 				addCallAt,
+				addFirstWindowCut,
 				setCallGuide,
 				setCallTransition,
 				setCallRefs,
@@ -18477,7 +18596,17 @@ window.__ModuleLoader__.load({
 			*  run whose metadata carries no probed map still sizes the bar from
 			*  the rendered film, never from the plan frames. */
 			const [filmDurSec, setFilmDurSec] = (0, react.useState)(0);
-			const barTotal = filmMap?.totalFrames ?? (filmDurSec > 0 ? Math.round(filmDurSec * (filmMap?.fps ?? fps)) : totalFrames);
+			const barTotal = (0, react.useMemo)(() => {
+				const bag = docParams?.edit;
+				if (!Array.isArray(bag) || bag.length === 0) return void 0;
+				const entry = bag[0];
+				if (typeof entry !== "object" || entry === null) return void 0;
+				const rec = entry;
+				const length = Number(rec.window_length);
+				if (!Number.isFinite(length) || length <= 0) return void 0;
+				const start = Number(rec.window_start);
+				return (Number.isFinite(start) && start > 0 ? Math.round(start) : 0) + Math.round(length);
+			}, [docParams]) ?? filmMap?.totalFrames ?? (filmDurSec > 0 ? Math.round(filmDurSec * (filmMap?.fps ?? fps)) : totalFrames);
 			const barPrompts = (0, react.useMemo)(() => filmMap ? prompts.map((p) => ({
 				...p,
 				start_frame: filmFromDoc(p.start_frame),
@@ -18828,6 +18957,7 @@ window.__ModuleLoader__.load({
 					handlePromptDelete,
 					handleExtend: mut.handleExtend,
 					addCallAt: mut.addCallAt,
+					addFirstWindowCut: mut.addFirstWindowCut,
 					setCallTransition: mut.setCallTransition,
 					handleTimelineSelect: view.handleTimelineSelect,
 					layerA,

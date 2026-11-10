@@ -436,6 +436,7 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
             handlePromptDelete={handlePromptDelete}
             handleExtend={mut.handleExtend}
             addCallAt={mut.addCallAt}
+            addFirstWindowCut={mut.addFirstWindowCut}
             setCallTransition={mut.setCallTransition}
             handleTimelineSelect={view.handleTimelineSelect}
             layerA={layerA}

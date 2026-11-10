@@ -217,11 +217,17 @@ export const studioCopy = {
      *  no legal frame (the 22f base / 17f step windows): the grid's
      *  shortest halves don't fit — the shared laneErr slot's voice. */
     splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
-    /** (queue 11 part 2, the empty doc under v2v) the face's own
-     * refusal: the only verb is cutting and there is no window to cut —
-     * the stock append is an ADD the face bars (the operator: "This
-     * section would no longer allow people to add clips"). */
-    splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
+    /** (D-19, the v2v lane-mirror cure 2026-11-18) the derived
+     * whole-film window's OWN readout — the one span the armed edit
+     * composes when no windows are authored, painted in the authoring
+     * lane so the cut doors have their object. The words mirror the
+     * commission row's carry seat (the same truth, the lane's voice). */
+    v2vDerivedWindowText: "whole film — derived join (Add cut authors the first spans)",
+    /** (D-19) the derived window is READ-ONLY: a geometry gesture on it
+     *  (drag body / drag edge / delete) answers LOUD in the shared
+     *  laneErr slot — never a silent snap-back. The cut doors (Add cut,
+     *  the divide seat) are the verbs that author real spans. */
+    v2vDerivedReadonly: "the whole-film window is derived — it mirrors the run; Add cut (or the divide seat) authors the first real spans",
     /** (queue 11 reopened, the FORM seat) the video2video leaf face's
      *  own words — the windows list + the split-by-timestamp seat the
      *  operator named ("NO WINDOWS IN THE FORM!"): the same copy law
@@ -335,8 +341,13 @@ export const studioCopy = {
     /** The calls lane head under the armed edit bag (the windows are
      *  the run's own video-to-video spans). */
     callsV2vLabel: "Video-to-video — windows & cuts",
-    /** The calls lane's empty hint under the armed edit bag. */
-    callsV2vHint: "Video edit is armed — each window is one video-to-video span; Add cut divides the window at the playhead into two (a cut seam, never a chain — wherever the playhead sits)",
+    /** The calls lane's empty hint under the armed edit bag. (D-19
+     *  re-word 2026-11-18: the pre-cure sentence promised "Add cut
+     *  divides the window" while the empty doc held no window — a verb
+     *  with no object. The hint now states the whole-film truth; with
+     *  the derived window painting, the lane is empty only when the
+     *  axis itself has no extent — the belt, never the working state.) */
+    callsV2vHint: "Video edit is armed — the run edits the whole film as one window; author spans with Add cut (each window is one video-to-video span, cut seams only — never a chain)",
     /** The strip head's visible cut door (the queue-11 law: the
      *  ability to add cuts is a CONTROL on the face, never a hidden
      *  gesture). */

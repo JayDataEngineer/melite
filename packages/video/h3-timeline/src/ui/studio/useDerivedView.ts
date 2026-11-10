@@ -252,11 +252,31 @@ export function useDerivedView(args: {
    *  run whose metadata carries no probed map still sizes the bar from
    *  the rendered film, never from the plan frames. */
   const [filmDurSec, setFilmDurSec] = useState(0)
+  // THE VERB'S OWN EXTENT (D-19, the v2v lane-mirror audit 2026-11-18,
+  // per P0-3's landed law "default the plan tier to the source clip's
+  // own geometry"): the armed edit bag's own window states the face's
+  // input extent — window_length (>0 = a stated window; the door holds
+  // it to the engine grid) plus window_start when stated. The v2v
+  // face's axis sizes from the VERB'S INPUT before borrowing any prior
+  // run's output: a fresh never-run armed doc books its own stated
+  // window, not a past film and never the plan floor.
+  const editExtent = useMemo(() => {
+    const bag = docParams?.edit
+    if (!Array.isArray(bag) || bag.length === 0) return undefined
+    const entry: unknown = bag[0]
+    if (typeof entry !== "object" || entry === null) return undefined
+    const rec = entry as Record<string, unknown>
+    const length = Number(rec.window_length)
+    if (!Number.isFinite(length) || length <= 0) return undefined
+    const start = Number(rec.window_start)
+    return (Number.isFinite(start) && start > 0 ? Math.round(start) : 0) + Math.round(length)
+  }, [docParams])
   // (audit F2) the no-map fallback sizes the axis from the FILM's own
   // probed duration — multiply by the film's fps, not the doc rail's
   // (they diverge the moment fps is edited after a run).
   // (fps is always a number — the doc rail's Layer A fps — no `?? 24`.)
-  const barTotal = filmMap?.totalFrames
+  const barTotal = editExtent
+    ?? filmMap?.totalFrames
     ?? (filmDurSec > 0 ? Math.round(filmDurSec * (filmMap?.fps ?? fps)) : totalFrames)
   const barPrompts = useMemo(() => filmMap
     ? prompts.map((p) => ({ ...p, start_frame: filmFromDoc(p.start_frame), end_frame: filmFromDoc(p.end_frame) }))

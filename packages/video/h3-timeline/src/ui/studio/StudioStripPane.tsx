@@ -35,6 +35,11 @@ import { studioCopy } from "./studioCopy.ts"
 const AUDIO_ROW_RE = /\.(mp3|wav|flac|ogg|m4a|aac|aif|aiff|opus|webm)(\?|$)/i
 type LaneCls = "dialogue" | "sfx" | "music"
 const LANE_OF: Record<string, LaneCls> = { "audio:dialogue": "dialogue", "audio:sfx": "sfx", "audio:music": "music" }
+/** (D-19) the derived whole-film window's reserved row uuid — a
+ *  stable id the door guards and the wall pin; it can never collide
+ *  with a call's uuid (callsToPrompts mints row ids off the call's
+ *  own identity, never this spelling). */
+export const V2V_DERIVED_WINDOW_UUID = "v2v-derived-whole-film"
 /** THE DEP LAW (2026-09-22, the From-media freeze): the provider's
  *  modal effect keys on the loadMedia FUNCTION'S IDENTITY — an
  *  inline arrow in the component is a fresh identity every render,
@@ -55,7 +60,7 @@ export function StudioStripPane({
   handleBarFrame, handleScrubStart, handleScrubEnd,
   handleKeyframeMove, handleKeyframeDelete,
   handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete,
-  handleExtend, addCallAt, handleTimelineSelect,
+  handleExtend, addCallAt, addFirstWindowCut, handleTimelineSelect,
   layerA, refAudiosBlocked, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
   updateAudioClip,
   setLayerAKey, artifactIndex, docFromFilm, keyframes, addKeyframeWithImage, enterKfView, enterAudioView,
@@ -90,6 +95,11 @@ export function StudioStripPane({
   /** (§0.5) the second arg is the no-legal-split refusal — the strip
    *  routes it to the shared laneErr slot (the mutation owns the law). */
   addCallAt: (frame: number, onRefuse?: () => void) => void
+  /** (D-19, the v2v lane-mirror cure) the derived whole-film window's
+   *  first cut — the ONLY state this arm serves is the empty-calls
+   *  doc under the armed edit bag (the mutation owns the law; the
+   *  refusal is the same no-legal-split voice). */
+  addFirstWindowCut: (extent: number, at: number, onRefuse?: () => void) => void
   handleTimelineSelect: (id: string | null) => void
   layerA: LayerA
   /** THE BLOCKER (2026-09-22): reference audio wired on any call —
@@ -345,6 +355,39 @@ export function StudioStripPane({
     ? barPrompts.filter((_p, i) => !(calls[i] !== undefined && isStarterCallText(calls[i]!.text ?? "")))
     : barPrompts
 
+  // THE DERIVED WHOLE-FILM WINDOW (D-19, the v2v lane-mirror audit
+  // 2026-11-18 — the founding axiom: the lane MIRRORS the chain). The
+  // armed edit with zero authored spans composes ONE implicit window
+  // (the whole film, derived join) — the lane paints it in the
+  // AUTHORING lane where the cut doors live, read from the bag + the
+  // axis extent (never an invented span): Add cut and the divide seat
+  // gain their object, and the first press materializes REAL calls
+  // rows through the split law (addFirstWindowCut). The row is
+  // READ-ONLY — a geometry gesture on it answers LOUD (the derived
+  // window mirrors the run; cuts author the spans). This is NOT the
+  // starter's return: nothing is authored, nothing persists, no prose
+  // is invited — the row paints exactly what the compose will build
+  // and dies the moment authored spans exist.
+  const derivedV2vActive = callsFace.face === "v2v" && calls.length === 0 && barTotal > 0
+  const lanePrompts = derivedV2vActive
+    ? [{
+        uuid: V2V_DERIVED_WINDOW_UUID,
+        text: studioCopy.v2vDerivedWindowText,
+        start_frame: 0,
+        end_frame: barTotal,
+        color: null,
+      }]
+    : shownPrompts
+  // the derived window's own verbs: the loud read-only refusal for
+  // geometry gestures (the stock handlers resolve no call and would
+  // drop the gesture SILENT — the disease class), and the first cut
+  // for the two cut doors.
+  const derivedGuard = (id: string): boolean => {
+    if (id !== V2V_DERIVED_WINDOW_UUID) return false
+    setLaneErr(studioCopy.v2vDerivedReadonly)
+    return true
+  }
+
   const kfChips = barLanes.map((k, i) => {
     const docFrame = keyframes[i]?.frame
     const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null
@@ -451,11 +494,33 @@ export function StudioStripPane({
     if (willSplit && splitCarry !== "cut") setCallTransition(containingIdx + 1, splitCarry)
   }
   const addCutAtPlayhead = () => {
-    // THE EMPTY DOC REFUSES (the v2v law's own edge): under the face
-    // the ONLY verb is cutting — with no window to cut there is
-    // nothing to add, and the raw append the stock verb falls to is
-    // an ADD the face bars. The refusal rides the shared loud slot.
-    if (calls.length === 0) { setLaneErr(studioCopy.splitEmptyRefusal); return }
+    // THE DERIVED WHOLE-FILM FIRST CUT (D-19, the v2v lane-mirror
+    // cure): the empty doc under the armed edit bag now HAS its
+    // object — the lane paints the run's one implicit window (the
+    // whole film), and the press materializes REAL calls rows through
+    // the split law (addFirstWindowCut): the same timestamp override,
+    // the same no-legal-split refusal, the same carry reframe. The
+    // pre-cure refusal ("nothing to cut") described a lane this face
+    // no longer paints; the door NEVER falls to the stock append (an
+    // ADD the face bars — addFirstWindowCut splits or refuses, never
+    // appends).
+    if (calls.length === 0) {
+      const stated = Number(splitAtSec)
+      const atStated = splitAtSec.trim() !== "" && Number.isFinite(stated) && stated >= 0
+        ? Math.round(stated * (filmMap?.fps ?? fps))
+        : null
+      const at = atStated !== null ? atStated : docFromFilm(frameIdx)
+      const extent = docFromFilm(barTotal)
+      // the carry reframe rides the same predictor law as the stock
+      // cut: the seam write fires ONLY when the split will land (a
+      // refused cut leaves the doc empty — a reframe against nothing
+      // would hit a row that does not exist)
+      const shape = isCarriedShape(0, { text: "", start_frame: 0, end_frame: extent })
+      const willSplit = snapSplitFrame(0, extent, shape, true, at) !== null
+      addFirstWindowCut(extent, at, () => setLaneErr(studioCopy.splitRefusal))
+      if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry)
+      return
+    }
     const stated = Number(splitAtSec)
     const atStated = splitAtSec.trim() !== "" && Number.isFinite(stated) && stated >= 0
       ? Math.round(stated * (filmMap?.fps ?? fps))
@@ -582,7 +647,7 @@ export function StudioStripPane({
         <div data-testid="tl-strip-kf-error" className={s.fileErr} role="alert">{kfErr}</div>
       )}
     <MotionTimelineBar
-      prompts={shownPrompts}
+      prompts={lanePrompts}
       keyframes={kfChips}
       frameIdx={frameIdx}
       totalFrames={barTotal}
@@ -618,11 +683,15 @@ export function StudioStripPane({
       onPromptUpdate={callsFace.face === "dormant" ? refuseCallsEdit
         : callsFace.face === "v2v" ? refuseV2vProse
           : handlePromptUpdate}
+      // (D-19) the derived window guards: the stock handlers resolve
+      // no call for the derived row's uuid and would drop the gesture
+      // SILENT — the read-only answer is LOUD, in the shared slot.
       onPromptMove={callsFace.face === "dormant" ? refuseCallsEdit
-        : (id, s, e) => handlePromptMove(id, docFromFilm(s), docFromFilm(e))}
+        : (id, s, e) => { if (derivedGuard(id)) return; handlePromptMove(id, docFromFilm(s), docFromFilm(e)) }}
       onPromptResize={callsFace.face === "dormant" ? refuseCallsEdit
-        : (id, s, e) => handlePromptResize(id, docFromFilm(s), docFromFilm(e))}
-      onPromptDelete={callsFace.face === "dormant" ? refuseCallsEdit : handlePromptDelete}
+        : (id, s, e) => { if (derivedGuard(id)) return; handlePromptResize(id, docFromFilm(s), docFromFilm(e)) }}
+      onPromptDelete={callsFace.face === "dormant" ? refuseCallsEdit
+        : (id) => { if (derivedGuard(id)) return; handlePromptDelete(id) }}
       // (D3's ghost, 2026-11-06) the tail pull arrives in FILM
       // frames; the doc write rides the INVERSE map — never a raw
       // linear delta. With a scaled window (film 162 ↔ doc 132) the
@@ -706,6 +775,20 @@ export function StudioStripPane({
         callsFace.face === "dormant"
           ? undefined
           : (id: string) => {
+              // (D-19) the derived window's divide is the FIRST CUT:
+              // the row is not a call (barPrompts holds no uuid for
+              // it) — routing it through the stock path would hit the
+              // -1 type fence and drop SILENT. The same cut verb, the
+              // derived window's own midpoint.
+              if (id === V2V_DERIVED_WINDOW_UUID) {
+                const extent = docFromFilm(barTotal)
+                const mid = Math.round(extent / 2)
+                const shape = isCarriedShape(0, { text: "", start_frame: 0, end_frame: extent })
+                const willSplit = snapSplitFrame(0, extent, shape, true, mid) !== null
+                addFirstWindowCut(extent, mid, () => setLaneErr(studioCopy.splitRefusal))
+                if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry)
+                return
+              }
               const idx = barPrompts.findIndex((p) => p.uuid === id)
               /* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
               if (idx < 0) return

@@ -196,7 +196,13 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // ("NO WINDOWS IN THE FORM!"): the popup lists the windows and
     // carries its own split-by-timestamp seat, the same vocabulary
     // the strip head serves (one dictionary, two doors).
-    assert.equal(ids.length, 128, `the dictionary holds 128 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-18 (machine clock, D-19 — the derived whole-film
+    // window): 128 → 129. -1 +2: splitEmptyRefusal DIED (the empty
+    // doc no longer refuses — the lane paints the run's one implicit
+    // window and Add cut authors the first real spans through it);
+    // v2vDerivedWindowText + v2vDerivedReadonly were BORN (the
+    // derived row's paint + its loud read-only refusal).
+    assert.equal(ids.length, 129, `the dictionary holds 129 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

@@ -99,6 +99,14 @@ export declare function transitionOverlap(transition?: string): number;
  *  carrier row's declared default — so no second literal can
  *  drift beside it. */
 export declare const DOC_FPS_DEFAULT: 24;
+/** The doc's LENGTH row default — the schema row's own (56f, the
+ *  engine grid's design window 22+17·2), the same seed the walk
+ *  fills for span-less calls. One owner, the same law as
+ *  DOC_FPS_DEFAULT: the studio's axis fallback reads THIS, never a
+ *  second literal (the D-19 cure retired the `: 1` collapse — an
+ *  empty-calls axis books the doc's own plan floor, never a
+ *  1-frame sliver strip). */
+export declare const DOC_LENGTH_DEFAULT: 56;
 /** THE LANE-LAW RETIREMENT (2026-11-15, the operator's gate-11 burn:
  *  "WHY DO I SEE THIS BUG … I. NEVER. WANT. TO SEE. THE TESTS GO ALL
  *  GREEN. AND THIS ERROR TO EVER APPEAR AGAIN") — THE DEAD-KEY LAW IS

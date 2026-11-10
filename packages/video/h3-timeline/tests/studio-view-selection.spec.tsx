@@ -14,7 +14,7 @@ import { nextSelectionAfterDelete, useViewSelection } from "../src/ui/studio/use
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import type { TimelineSelection } from "../src/ui/studio/useViewSelection.ts"
 import { hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
-import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT, DOC_LENGTH_DEFAULT } from "@melite/models-h3/timelineContract"
 
 const CALLS: DocCall[] = [
   { text: "a", start_frame: 0, end_frame: 48 },
@@ -81,10 +81,18 @@ describe("the view seam (fps + duration + ref registries)", () => {
     assert.equal(result.current.frameIdx, 0)
   })
 
-  it("an empty doc still spans one frame (the bar never divides by zero)", () => {
+  it("an empty doc books the plan floor — the `: 1` collapse is dead (D-19, never a sliver axis)", () => {
     const { result } = renderHook(() => useViewSelection([], hydrateLayerA({ fps: 30 }), "stage-a"))
-    assert.equal(result.current.totalFrames, 1)
+    // the SCHEMA ROW's own length seed (DOC_LENGTH_DEFAULT — the same
+    // number the walk fills for span-less calls), never a 1-frame
+    // envelope that painted the bar as a sliver under a long ruler
+    assert.equal(result.current.totalFrames, DOC_LENGTH_DEFAULT)
     assert.equal(result.current.fps, 30)
+    // a stated length dial wins over the floor (the doc's own plan)
+    const { result: stated } = renderHook(() =>
+      useViewSelection([], hydrateLayerA({ fps: 30, length: 120 }), "stage-a"))
+    assert.equal(stated.current.totalFrames, 120,
+      "the stated length row sizes the empty-calls axis")
   })
 
   it("the ref registries start empty and accept the rail's mounts", () => {

@@ -88,6 +88,48 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
     })
   }
 
+  /** THE DERIVED WHOLE-FILM FIRST CUT (D-19, the v2v lane-mirror
+   *  audit 2026-11-18): under an armed edit bag with zero authored
+   *  spans, the lane paints the run's one implicit window (the whole
+   *  film, derived — the same one the commission row mirrors) and the
+   *  cut doors gain their object. This arm materializes the FIRST cut
+   *  in one write: the synthetic whole-film window [0, extent) runs
+   *  through the SAME split law addCallAt's interior path rides
+   *  (snapSplitFrame's lattice, the carried right half's reflow, the
+   *  CUT seam) — the two halves are genuine calls rows, the doc's
+   *  authored span is born, and every later gesture rides the stock
+   *  arms. A frame with no legal split refuses loud through
+   *  `onRefuse` and the doc stays empty (the derived window keeps
+   *  painting — never a silent no-op). The empty doc is the ONLY
+   *  state this arm serves: a doc with authored spans cuts through
+   *  addCallAt, never here. */
+  const addFirstWindowCut = (extent: number, at: number, onRefuse?: () => void) => {
+    let refused = false
+    setCalls((prev) => {
+      // a doc with authored spans cuts through addCallAt, never here
+      // — the refusal is LOUD (never a silent no-op: the disease
+      // class this cure names)
+      if (prev.length > 0) {
+        if (!refused) { refused = true; onRefuse?.() }
+        return prev
+      }
+      const cur: DocCall = { text: "", start_frame: 0, end_frame: Math.max(1, Math.round(extent)) }
+      // the first window carries nothing (isCarriedShape(0, ·) is
+      // false); the right half is a carried window authored at index 1
+      // — the same shape flags addCallAt's split path states
+      const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(0, cur), true, Math.round(at))
+      if (split === null) {
+        if (!refused) { refused = true; onRefuse?.() }
+        return prev
+      }
+      const rightEnd = reflowSeamSpan({ ...cur, start_frame: split, transition: "extend" }, 1, "cut")
+      return [
+        { ...cur, end_frame: split },
+        { ...cur, start_frame: split, end_frame: rightEnd, transition: "cut" as const },
+      ]
+    })
+  }
+
   /** Wire a call's guide source. Empty = none (the planner's
    * contract: blank guide keys never materialize — clearing the input
    * detaches the guide; sources are typed, not dropped-then-wired
@@ -243,7 +285,7 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
     })
   }
   return {
-    handleExtend, addCallAt,
+    handleExtend, addCallAt, addFirstWindowCut,
     setCallGuide, setCallTransition, setCallRefs,
     setCallSpan, setCallKnob,
   }
