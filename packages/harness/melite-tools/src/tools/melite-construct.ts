@@ -1341,17 +1341,37 @@ export function meliteConstruct(
         // flow re-runs the stage — no [done] no-op to diagnose.
         if ((v as { stale?: unknown }).stale === true) {
           lines.push('stale: params changed — the stage\'s done mark is cleared; the next flow re-runs it (its old artifact stays readable as last_run)')
-        } else if (v.verb === 'patch') {
-          // THE KEEP-DONE VOICE (W-9 / RG-P4-1b, 2026-11-05 — the
-          // patch-same-value drift: the estate keeps the done mark on
-          // a same-value patch — bench.ts:1376 compares canonical
-          // spellings and clears runStatus only on a real change — but
-          // the idempotent patch answered nothing about the mark while
-          // the press skip taught "patch params to re-run" as if any
-          // patch re-runs. The patch that changed nothing says so:
-          // the mark stands, and only a VALUE change (or a clear)
-          // re-arms the stage).
-          lines.push('no value change — done mark stands; patch a VALUE or clear the mark to re-run')
+        }
+        if (v.verb === 'patch') {
+          // THE DIFF VOICE (defect board D-22, 2026-11-10: three
+          // writes landed on a never-run stage and every one
+          // answered "no value change" — `stale` only voices when a
+          // done mark existed to clear, so its ABSENCE read as
+          // equality and a landed write was reported as a dropped
+          // one). The patch's answer now carries the change truth
+          // itself: a landed write reports its diff — "patched:
+          // seed 46601 → 46602" — and "no value change" is
+          // reserved for an actual equality (the only case where
+          // the done mark may stand).
+          const changed = (v as { changed?: unknown }).changed
+          const diff = (v as { diff?: unknown }).diff
+          if (changed === true) {
+            const parts = Array.isArray(diff) ? diff.map(String) : []
+            lines.push(parts.length > 0
+              ? 'patched: ' + parts.join(' · ')
+              : 'patched — the stored params moved (a derived field changed; the doc on disk is the truth)')
+          } else if ((v as { stale?: unknown }).stale !== true) {
+            // THE KEEP-DONE VOICE (W-9 / RG-P4-1b, 2026-11-05 — the
+            // patch-same-value drift: the estate keeps the done mark on
+            // a same-value patch — bench.ts compares canonical
+            // spellings and clears runStatus only on a real change — but
+            // the idempotent patch answered nothing about the mark while
+            // the press skip taught "patch params to re-run" as if any
+            // patch re-runs. The patch that changed nothing says so:
+            // the mark stands, and only a VALUE change (or a clear)
+            // re-arms the stage).
+            lines.push('no value change — done mark stands; patch a VALUE or clear the mark to re-run')
+          }
         }
         // THE SPELL VOICE, RENDERED (the compose-time spell gate,
         // 2026-10-21): the payload names every $-token and its one
@@ -1807,7 +1827,18 @@ export function meliteConstruct(
           // closable teaching line the next mutation can still cure).
           const compile = stale === true ? await compileVerdictOf(estate, bench, signal) : undefined
           return out({ rev: r.rev, stage: r.stage, patched: r.patched,
-            ...(stale ? { stale: true } : { keep_done: true }),
+            ...(stale ? { stale: true } : {}),
+            // D-22 (the board, 2026-11-10): `keep_done` keyed on
+            // "not stale" was the tool-side twin of the lie — a
+            // LANDED write on a never-run stage (no mark to clear,
+            // stale absent) answered keep_done and the render said
+            // "no value change". The estate's answer now carries the
+            // change truth; the keep-done voice keys on an actual
+            // equality (changed === false), and a landed write
+            // carries its diff.
+            ...(r['changed'] === true
+              ? { changed: true, ...(Array.isArray(r['diff']) && r['diff'].length > 0 ? { diff: (r['diff'] as unknown[]).map(String) } : {}) }
+              : (stale ? {} : { keep_done: true })),
             ...(spellLines.length > 0 ? { spells: spellLines } : {}),
             ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}),
             ...(compile !== undefined ? { ...compile } : {}),

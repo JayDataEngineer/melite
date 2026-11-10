@@ -247,6 +247,17 @@ export interface BenchPatchRow {
      *  composes (the done mark cleared — the skip law cannot fold
      *  it). Absent when the patch was idempotent. */
     readonly stale?: true;
+    /** D-22 (the board, 2026-11-10): a LANDED write answered "no
+     *  value change" on a never-run stage — `stale` only voices when a
+     *  done mark EXISTED to clear, so the render read its absence as
+     *  equality. The change truth now rides the row itself: true iff
+     *  the stored params moved under this patch, mark or no mark. */
+    readonly changed?: boolean;
+    /** The moved leaves, pathed and spelled ("seed 46601 → 46602",
+     *  "ref_mods removed", "edit[0].denoise 0.32 → 0.33", plus the
+     *  element-merge carry note for record arrays). Empty iff the
+     *  patch wrote back exactly what was stored. */
+    readonly diff?: readonly string[];
 }
 /** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
  *  (the telemetry law's other half, 2026-10-08): run outcomes ride
@@ -258,6 +269,30 @@ export interface BenchPatchRow {
  *  under the old every-write-bumps law, so every outcome here also
  *  ticked the rev. Outcomes refuse with the redirect voice. */
 export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission, migrate?: LaneMigration, reseat?: FamilyReseat, lineage?: readonly string[]): Promise<BenchPatchRow>;
+/** THE ELEMENT MERGE (defect board D-23, 2026-11-10): a partial
+ *  `edit[0]` patch replaced the whole array element — `carry`,
+ *  `keep_audio` and the bag's `seed` vanished from the stored bag
+ *  while the tool's own description said "merge onto the stage".
+ *  Record arrays (the bench's bags — edit[], calls[], every lane's
+ *  one-element array of knobs) now merge ELEMENT-WISE: the arrival
+ *  merges onto the stored element under the same law as the top
+ *  level (null deletes a key, a stated key wins, an unstated key
+ *  carries). Anything else — scalar arrays, shape-mismatched
+ *  arrays, plain values — rides VERBATIM: array-of-records is the
+ *  only shape whose silent loss ever burned a press, and inventing
+ *  merge semantics for lists (index-less unions) is a silent error
+ *  in the other direction. */
+export declare function mergeParamValue(stored: unknown, arrival: unknown): unknown;
+/** The diff's one-line spellings — leaf paths with before → after
+ *  (D-22): "seed 46601 → 46602", "ref_mods removed", the nested
+ *  "edit[0].denoise 0.32 → 0.33", and the carry note that makes an
+ *  element merge legible ("edit[0]: carry, keep_audio, seed
+ *  carried"). Long values are spelled as their JSON, trimmed. */
+export declare function diffParams(pre: Record<string, unknown>, post: Record<string, unknown>, wrote: Record<string, unknown>): string[];
+/** Canonical params spelling for the staleness compare — sorted
+ * keys, recursively (a params view is a shallow record of scalars
+ * and one-deep records; this spells both orders identically). */
+export declare function canonicalParams(view: Record<string, unknown>): string;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
     readonly draft_id: DraftId;

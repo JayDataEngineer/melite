@@ -20,6 +20,10 @@ export interface DraftPatchRow {
     reason?: string;
     patched?: string[];
     rev?: number;
+    /** D-22 (one law, both transports): true iff the stored params
+     *  moved under this patch; the moved leaves ride `diff`. */
+    changed?: boolean;
+    diff?: readonly string[];
 }
 /** draft_id_ok: 1..96 chars of [A-Za-z0-9_-] (the composer mint). */
 /** One listed draft — the index row (recency-ordered by the caller).

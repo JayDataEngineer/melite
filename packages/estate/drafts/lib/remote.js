@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService, remoteErrorOf, } from "@deepseek-ai/dsh-typert-protocol";
-import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow } from "./bench.js";
+import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow, canonicalParams, diffParams, mergeParamValue } from "./bench.js";
 import { STAGE_PATCH_KEYS, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
 import { FLOW_ID_RE } from "@melite/contracts";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
@@ -874,6 +874,10 @@ let DraftsRemoteService = (() => {
             // when the body carries no params arm) — judged as half of the
             // (params, inputs) PAIR before either assignment rides.
             let pendingParams;
+            let patchDiff = [];
+            let patchChanged = false;
+            let preMerge = null;
+            let patchIncoming = null;
             // NON-RECORD PARAMS REFUSE (audit S-E1, 2026-10-22): this arm
             // used to fall through its own record guard — a string, number,
             // array (the batch-P corruption family) or boolean body answered
@@ -900,6 +904,9 @@ let DraftsRemoteService = (() => {
                 const merged = stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
                     ? { ...stage["params"] }
                     : {};
+                // D-22: the diff's "before" — the pre-patch VALUES, kept whole
+                // (one law, both transports: the bench verb's own capture).
+                preMerge = structuredClone(merged);
                 // THE STORE-SEAT UNWRAP (the bench audit's gap 10, 2026-10-10):
                 // every other params-bearing door (add, patch, load) unwraps the
                 // wire's {item:[…]} array shape before it stores, so storage
@@ -908,14 +915,18 @@ let DraftsRemoteService = (() => {
                 // two different stored rows — and the wrapped shape is poison
                 // for every reader downstream.
                 const incoming = unwrapItemArrays(patch["params"]);
+                patchIncoming = incoming;
                 for (const k of Object.keys(incoming)) {
                     if (incoming[k] === null)
                         delete merged[k];
                     // THE HOST-PATH CURRENCY ARM: buy any host-absolute media
                     // path into uploads-door currency before it lands (the row
                     // the next run composes and the preview both read).
+                    // D-23: record arrays MERGE element-wise (the bench verb's
+                    // own law — one law, both transports); everything else lands
+                    // verbatim after the currency walk.
                     else
-                        merged[k] = await currencyWalk(incoming[k]);
+                        merged[k] = mergeParamValue(merged[k], await currencyWalk(incoming[k]));
                 }
                 // ONE LAW, BOTH TRANSPORTS (operator 2026-11-11, attempt 11 —
                 // "ALL I DID WAS CHANGE THE QWEN TTS MODEL"): the lane-shift
@@ -1043,6 +1054,14 @@ let DraftsRemoteService = (() => {
                     delete stage["params"];
                 else
                     stage["params"] = strippedForAdmission(typeof stage["card"] === "string" ? stage["card"] : "", pendingParams);
+                // D-22 (one law, both transports): the answer owns its change
+                // truth — the diff walks only the keys the caller wrote, and
+                // `changed` is the canonical inequality, mark or no mark.
+                const storedView = isObj(stage["params"]) ? stage["params"] : {};
+                if (preMerge !== null) {
+                    patchDiff = diffParams(preMerge, storedView, patchIncoming ?? {});
+                    patchChanged = canonicalParams(storedView) !== canonicalParams(preMerge);
+                }
             }
             if ("inputOutputs" in patch)
                 stage["inputOutputs"] = patch["inputOutputs"];
@@ -1120,6 +1139,8 @@ let DraftsRemoteService = (() => {
                 delivered: true,
                 patched: Object.keys(patch).sort(),
                 rev,
+                changed: patchChanged,
+                diff: patchDiff,
             };
         }
     };

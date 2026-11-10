@@ -485,7 +485,8 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
     const svc = new DraftsRemoteService(ctx);
     assert.deepEqual(
       await svc.remoteExportPatch(draftIdOf("bench-ad"), "s_0", { params: { a: 1 } }, 0, sig),
-      { draftId: "bench-ad", stageId: "s_0", delivered: true, patched: ["params"], rev: 1 },
+      { draftId: "bench-ad", stageId: "s_0", delivered: true, patched: ["params"], rev: 1,
+        changed: true, diff: ["a = 1"] },
     );
   });
 });
@@ -596,6 +597,8 @@ describe("drafts/patch: missing doc/stage is delivered:false + reason", () => {
       delivered: true,
       patched: ["params"],
       rev: 1,
+      changed: true,
+      diff: ["extra = 9"],
     });
     const doc = await svc.get(draftIdOf("bench-two"), sig);
     const stages = doc["stages"] as Array<Record<string, unknown>>;
@@ -643,6 +646,8 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
       delivered: true,
       patched: ["inputOutputs", "inputs"],
       rev: 1,
+      changed: false,
+      diff: [],
     });
     const doc = await svc.get(draftIdOf("bench-io"), sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
@@ -1316,6 +1321,8 @@ describe("the bench verbs' rows over the remote", () => {
       rev: 2,
       stage: "s_0",
       patched: ["steps"],
+      changed: true,
+      diff: ["steps = 8"],
     });
     const removed = await svc.removeStage("v", { stage: "s_0", expect_rev: 2 }, sig);
     assert.deepEqual(removed, { draft_id: "bench-v", session: "v", rev: 3, stage: "s_0" });
@@ -1459,6 +1466,8 @@ describe("the bench @Remote adapters delegate with row fidelity", () => {
       rev: 2,
       stage: "s_0",
       patched: ["prompt"],
+      changed: true,
+      diff: ['prompt = $prompt'],
     });
     const rewired = await svc.remoteExportRewire(
       "p",

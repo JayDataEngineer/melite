@@ -550,6 +550,38 @@ describe('melite_construct mutations — every verb', () => {
     assert.ok(!rendered.includes('params changed'), 'the CHANGED line never prints for a same-value patch: ' + rendered)
   })
 
+  test('D-22 (THE DIFF VOICE): a landed write renders its diff — "no value change" is reserved for an actual equality', async () => {
+    // The board's burn (2026-11-10, s_89 — never run): three writes
+    // landed, every one answered "no value change" because `stale`
+    // only voices when a done mark EXISTED to clear. The row now
+    // carries the change truth itself; the render reports the diff.
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 72, stage: 's_89', patched: ['seed'], changed: true, diff: ['seed 46601 → 46602'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's_89', params: { seed: 46602 }, expect_rev: 71 }, exec()) as Record<string, unknown>
+    assert.equal(out.changed, true, 'the change truth rides the answer — a never-run stage has no mark to clear, stale alone cannot voice it')
+    assert.equal(out.stale, undefined)
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's_89' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(rendered.includes('patched: seed 46601 → 46602'), 'the render reports the landed write as a diff: ' + rendered)
+    assert.ok(!rendered.includes('no value change'), 'a LANDED write is never reported as a non-event: ' + rendered)
+  })
+
+  test('D-23 (THE CARRY VOICE): an element-merged bag renders the leaf diff and the carry receipt', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 73, stage: 's_89', patched: ['edit'], changed: true, diff: ['edit[0].denoise 0.32 → 0.33', 'edit[0]: carry, keep_audio, seed carried (element merge)'] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's_89', params: { edit: [{ denoise: 0.33 }] }, expect_rev: 72 }, exec()) as Record<string, unknown>
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's_89' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(rendered.includes('edit[0].denoise 0.32 → 0.33'), 'the nested leaf is spelled: ' + rendered)
+    assert.ok(rendered.includes('carry, keep_audio, seed carried'), 'the carry the caller did NOT write is voiced — the silent drop was D-23: ' + rendered)
+  })
+
   test('W-9 arm 2: a real change still renders the existing params-CHANGED line — the changed voice survives the keep-done cure', async () => {
     // The keep-done else-branch must never shadow the params-CHANGED
     // line: a real value change clears the mark (bench.ts:1377-1380)

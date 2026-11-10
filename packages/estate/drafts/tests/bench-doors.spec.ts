@@ -308,3 +308,115 @@ test("a non-object outcome.result refuses bench/bad-body at the row, and the bat
   expect(doc.rev).toBe(0);
   expect((doc.stages as Array<Record<string, unknown>>)).toHaveLength(1);
 });
+
+// ── D-22 + D-23 (defect board, 2026-11-10): the patch answer owns
+//    its change truth, and a record-array element MERGES ──────────
+
+describe("the drafts/patch door: the diff voice (D-22) and the element merge (D-23)", () => {
+  /** Boot a real DraftsRemoteService over the json+domain stack. */
+  async function bootRemote(): Promise<{ svc: DraftsRemoteService; drafts: Domain<DraftsDomainSpec> }> {
+    const { ctx, domain } = await bootCtx();
+    return { svc: new DraftsRemoteService(ctx), drafts: domain };
+  }
+
+  test("a LANDED scalar write on a never-run stage reports changed + the diff — never 'no value change' (D-22)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_89", params: { seed: 46601 } }] });
+    const answer = await svc.patch(MAIN, "s_89", { params: { seed: 46602 } }, 0, sig);
+    // never-run stage: no done mark existed, so stale stays absent —
+    // but the CHANGE is the answer's own field now
+    expect((answer as { stale?: unknown }).stale).toBeUndefined();
+    expect((answer as { changed?: unknown }).changed).toBe(true);
+    expect((answer as { diff?: unknown }).diff).toEqual(["seed 46601 → 46602"]);
+  });
+
+  test("a null-unset reports the removal in the diff (D-22)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_89", params: { ref_mods: "tight", seed: 8 } }] });
+    const answer = await svc.patch(MAIN, "s_89", { params: { ref_mods: null } }, 0, sig);
+    expect((answer as { diff?: unknown }).diff).toEqual(["ref_mods removed"]);
+    const doc = await svc.get(MAIN, sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect(stage["params"]).toEqual({ seed: 8 });
+  });
+
+  test("a nested edit[0] patch MERGES onto the element — carry, keep_audio and seed SURVIVE (D-23)", async () => {
+    const { svc, drafts } = await bootRemote();
+    const bag = {
+      carry: true, denoise: 0.32, edit_prompt: "her pale rose leotard keeps its colour",
+      keep_audio: true, mask_source: "region", reference: "self", resolution: "768x1344",
+      seed: 46601, source_clip: "beach.mp4", window_length: 56,
+    };
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_89", params: { edit: [bag] } }] });
+    const answer = await svc.patch(
+      MAIN, "s_89",
+      { params: { edit: [{ denoise: 0.33, edit_prompt: bag.edit_prompt, mask_source: "region", reference: "self", resolution: "768x1344", source_clip: "beach.mp4", window_length: 56 }] } },
+      0, sig,
+    );
+    const doc = await svc.get(MAIN, sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    const merged = (stage["params"] as { edit: Array<Record<string, unknown>> }).edit[0]!;
+    // the board's exact burn: carry, keep_audio and the bag's seed
+    // VANISHED under element replacement. They survive the merge.
+    expect(merged["carry"]).toBe(true);
+    expect(merged["keep_audio"]).toBe(true);
+    expect(merged["seed"]).toBe(46601);
+    expect(merged["denoise"]).toBe(0.33);
+    // the answer voices the leaf diff AND the carry receipt
+    const diff = (answer as { diff?: unknown }).diff as string[];
+    expect(diff).toContain("edit[0].denoise 0.32 → 0.33");
+    expect(diff.some((d) => d.startsWith("edit[0]: ") && d.includes("carry") && d.includes("keep_audio") && d.includes("seed"))).toBe(true);
+  });
+
+  test("an idempotent patch answers changed:false with an empty diff — 'no value change' reserved for equality (D-22)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { steps: 8 } }] });
+    // the done mark rides the TELEMETRY face (the ensure seed strips
+    // run memory by law — a fresh bench never claims runs it never made)
+    await svc.patch(MAIN, "s_0", { runStatus: "done" }, 0, sig);
+    const answer = await svc.patch(MAIN, "s_0", { params: { steps: 8 } }, 0, sig);
+    expect((answer as { changed?: unknown }).changed).toBe(false);
+    expect((answer as { diff?: unknown }).diff).toEqual([]);
+    expect((answer as { stale?: unknown }).stale).toBeUndefined();
+    // the done mark STANDS on a true equality
+    const doc = await svc.get(MAIN, sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect(stage["runStatus"]).toBe("done");
+  });
+
+  test("a scalar array stays VERBATIM — the element merge is for record bags only", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { refs: ["a.png", "b.png"] } }] });
+    await svc.patch(MAIN, "s_0", { params: { refs: ["c.png"] } }, 0, sig);
+    const doc = await svc.get(MAIN, sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect((stage["params"] as { refs: string[] }).refs).toEqual(["c.png"]);
+  });
+});
+
+describe("the bench verb's own patch arm: D-22/D-23 (the agent transport — melite_construct patch)", () => {
+  test("a LANDED write on a never-run stage reports changed + diff through patchBench (D-22)", async () => {
+    const { ctx, domain } = await bootCtx();
+    const svc = new BenchRemoteService(ctx);
+    await svc.ensure({ session: "d22", stages: [{ id: "s_89", params: { seed: 46601 } }] }, sig);
+    const row = await svc.patch("d22", { stage: "s_89", params: { seed: 46602 }, expect_rev: 0 }, sig);
+    expect((row as { stale?: unknown }).stale).toBeUndefined();
+    expect((row as { changed?: unknown }).changed).toBe(true);
+    expect((row as { diff?: unknown }).diff).toEqual(["seed 46601 → 46602"]);
+  });
+
+  test("a partial edit[0] patch MERGES through patchBench — carry/keep_audio/seed SURVIVE (D-23)", async () => {
+    const { ctx, domain } = await bootCtx();
+    const svc = new BenchRemoteService(ctx);
+    const bag = { carry: true, denoise: 0.32, keep_audio: true, seed: 46601, source_clip: "a.mp4" };
+    await svc.ensure({ session: "d23", stages: [{ id: "s_89", params: { edit: [bag] } }] }, sig);
+    await svc.patch("d23", { stage: "s_89", params: { edit: [{ denoise: 0.33 }] }, expect_rev: 0 }, sig);
+    const doc = await svc.get("d23", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    const merged = (stage["params"] as { edit: Array<Record<string, unknown>> }).edit[0]!;
+    expect(merged["carry"]).toBe(true);
+    expect(merged["keep_audio"]).toBe(true);
+    expect(merged["seed"]).toBe(46601);
+    expect(merged["denoise"]).toBe(0.33);
+  });
+});

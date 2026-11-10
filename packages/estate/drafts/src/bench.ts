@@ -1172,6 +1172,17 @@ export interface BenchPatchRow {
    *  composes (the done mark cleared — the skip law cannot fold
    *  it). Absent when the patch was idempotent. */
   readonly stale?: true;
+  /** D-22 (the board, 2026-11-10): a LANDED write answered "no
+   *  value change" on a never-run stage — `stale` only voices when a
+   *  done mark EXISTED to clear, so the render read its absence as
+   *  equality. The change truth now rides the row itself: true iff
+   *  the stored params moved under this patch, mark or no mark. */
+  readonly changed?: boolean;
+  /** The moved leaves, pathed and spelled ("seed 46601 → 46602",
+   *  "ref_mods removed", "edit[0].denoise 0.32 → 0.33", plus the
+   *  element-merge carry note for record arrays). Empty iff the
+   *  patch wrote back exactly what was stored. */
+  readonly diff?: readonly string[];
 }
 
 /** patch — params merge with CAS + log. THE ONE OUTCOME DOOR
@@ -1221,6 +1232,7 @@ export async function patchBench(
   const added: string[] = [];
   let paramsChanged = false;
   let staleCleared = false;
+  let diffLines: readonly string[] = [];
   // THE FAMILY RESEAT'S RECEIPT, hoisted (the row below rides it; the
   // reseat itself runs inside the params arm above).
   let reseatDropped: readonly string[] | undefined;
@@ -1242,6 +1254,11 @@ export async function patchBench(
     // is a lie (it describes a run of params that no longer exist)
     // and the skip-done law must not skip what changed.
     const beforeCanonical = canonicalParams(cur);
+    // D-22: the diff's "before" is the VALUES, not the canonical
+    // spelling — the answer must name "seed 46601 → 46602", so the
+    // pre-patch view is kept whole (params are JSON; a structural
+    // clone is the exact copy).
+    const prePatch = structuredClone(cur);
     for (const k of Object.keys(paramsIn)) {
       if (Object.prototype.hasOwnProperty.call(cur, k)) before[k] = cur[k];
       else added.push(k);
@@ -1257,7 +1274,7 @@ export async function patchBench(
       // params_before, so undo resurrects a deleted key.
       const v: unknown = (paramsIn as Record<string, unknown>)[k];
       if (v === null) delete cur[k];
-      else cur[k] = v;
+      else cur[k] = mergeParamValue(cur[k], v);
     }
     // admission on the MERGED view (the row's card + the params the
     // NEXT run would compose — a patch that lands poison is as bad
@@ -1387,6 +1404,11 @@ export async function patchBench(
       delete st["runStatus"];
       staleCleared = true;
     }
+    // D-22: the answer owns the change truth. The diff walks ONLY
+    // the keys the caller wrote (derived moves — migration, reseat,
+    // strip — are the door's own law, voiced by their own fields);
+    // a key written back as its stored value contributes no line.
+    diffLines = diffParams(prePatch, stored, paramsIn);
   }
   if (paramsIn === undefined) {
     throw new RemoteError(
@@ -1410,13 +1432,129 @@ export async function patchBench(
     patched: Object.keys(paramsIn).sort(),
     ...(reseatDropped !== undefined ? { dropped: reseatDropped } : {}),
     ...(staleCleared ? { stale: true } : {}),
+    changed: paramsChanged,
+    diff: diffLines,
   };
+}
+
+/** THE ELEMENT MERGE (defect board D-23, 2026-11-10): a partial
+ *  `edit[0]` patch replaced the whole array element — `carry`,
+ *  `keep_audio` and the bag's `seed` vanished from the stored bag
+ *  while the tool's own description said "merge onto the stage".
+ *  Record arrays (the bench's bags — edit[], calls[], every lane's
+ *  one-element array of knobs) now merge ELEMENT-WISE: the arrival
+ *  merges onto the stored element under the same law as the top
+ *  level (null deletes a key, a stated key wins, an unstated key
+ *  carries). Anything else — scalar arrays, shape-mismatched
+ *  arrays, plain values — rides VERBATIM: array-of-records is the
+ *  only shape whose silent loss ever burned a press, and inventing
+ *  merge semantics for lists (index-less unions) is a silent error
+ *  in the other direction. */
+export function mergeParamValue(stored: unknown, arrival: unknown): unknown {
+  if (!Array.isArray(stored) || !Array.isArray(arrival)) return arrival;
+  const allRecords = (xs: unknown[]): boolean =>
+    xs.every((x) => x !== null && typeof x === "object" && !Array.isArray(x));
+  if (!allRecords(stored) || !allRecords(arrival)) return arrival;
+  const merged: unknown[] = stored.slice();
+  for (let i = 0; i < arrival.length; i++) {
+    const slot = merged[i];
+    merged[i] = slot !== null && typeof slot === "object" && !Array.isArray(slot)
+      ? mergeRecord(slot as Record<string, unknown>, arrival[i] as Record<string, unknown>)
+      : arrival[i];
+  }
+  return merged;
+}
+
+/** One record onto another, the patch law spelled recursively:
+ *  null deletes, a stated key wins, an unstated key carries. */
+function mergeRecord(
+  base: Record<string, unknown>,
+  arrival: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const k of Object.keys(arrival)) {
+    const v = arrival[k];
+    if (v === null) delete out[k];
+    else if (
+      out[k] !== null && typeof out[k] === "object" && !Array.isArray(out[k]) &&
+      v !== null && typeof v === "object" && !Array.isArray(v)
+    ) {
+      out[k] = mergeRecord(out[k] as Record<string, unknown>, v as Record<string, unknown>);
+    } else if (
+      Array.isArray(out[k]) && Array.isArray(v)
+    ) {
+      out[k] = mergeParamValue(out[k], v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/** The diff's one-line spellings — leaf paths with before → after
+ *  (D-22): "seed 46601 → 46602", "ref_mods removed", the nested
+ *  "edit[0].denoise 0.32 → 0.33", and the carry note that makes an
+ *  element merge legible ("edit[0]: carry, keep_audio, seed
+ *  carried"). Long values are spelled as their JSON, trimmed. */
+export function diffParams(
+  pre: Record<string, unknown>,
+  post: Record<string, unknown>,
+  wrote: Record<string, unknown>,
+): string[] {
+  const spell = (v: unknown): string => {
+    const s = typeof v === "string" ? v : JSON.stringify(v) ?? String(v);
+    return s.length > 60 ? s.slice(0, 57) + "…" : s;
+  };
+  const lines: string[] = [];
+  const walk = (path: string, a: unknown, b: unknown): void => {
+    if (JSON.stringify(a) === JSON.stringify(b)) return;
+    if (b === undefined) {
+      lines.push(`${path} removed`);
+      return;
+    }
+    if (a === undefined) {
+      lines.push(`${path} = ${spell(b)}`);
+      return;
+    }
+    const aRec = a !== null && typeof a === "object" && !Array.isArray(a);
+    const bRec = b !== null && typeof b === "object" && !Array.isArray(b);
+    if (aRec && bRec) {
+      const keys = new Set([...Object.keys(a as Record<string, unknown>), ...Object.keys(b as Record<string, unknown>)]);
+      for (const k of keys) walk(`${path}.${k}`, (a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]);
+      return;
+    }
+    if (Array.isArray(a) && Array.isArray(b)) {
+      const n = Math.max(a.length, b.length);
+      for (let i = 0; i < n; i++) walk(`${path}[${i}]`, a[i], b[i]);
+      return;
+    }
+    lines.push(`${path} ${spell(a)} → ${spell(b)}`);
+  };
+  for (const k of Object.keys(wrote).sort()) {
+    walk(k, pre[k], post[k]);
+    // D-23's receipt: an element merge that CARRIED unstated keys
+    // says which — the carry is the write the caller did not make.
+    const pv = pre[k];
+    const wv = wrote[k];
+    if (Array.isArray(pv) && Array.isArray(wv)) {
+      for (let i = 0; i < wv.length && i < pv.length; i++) {
+        const el = wv[i];
+        if (el === null || typeof el !== "object" || Array.isArray(el)) continue;
+        const slot = pv[i];
+        if (slot === null || typeof slot !== "object" || Array.isArray(slot)) continue;
+        const carried = Object.keys(slot as Record<string, unknown>)
+          .filter((ck) => !(ck in (el as Record<string, unknown>)));
+        if (carried.length > 0) lines.push(`${k}[${i}]: ${carried.join(", ")} carried (element merge)`);
+      }
+    }
+  }
+  return lines;
 }
 
 /** Canonical params spelling for the staleness compare — sorted
  * keys, recursively (a params view is a shallow record of scalars
  * and one-deep records; this spells both orders identically). */
-function canonicalParams(view: Record<string, unknown>): string {
+export function canonicalParams(view: Record<string, unknown>): string {
   const walk = (v: unknown): unknown => {
     if (v !== null && typeof v === "object" && !Array.isArray(v)) {
       const out: Record<string, unknown> = {};
