@@ -600,3 +600,104 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     }, { timeout: 4000 })
   })
 })
+
+// ── THE V2V PROMPT SEAT (the no-UI burn, operator 2026-11-10:
+// "THERE IS NO USER INTERFACE FOR THE ACTUAL PROMPT THAT GOES — THE
+// AGENT MAKES ONE, THEN I GET NO UI FOR IT"). The edit bag's
+// edit_prompt lived only in a drill-down leaf; the user's surface
+// (the strip's v2v lane) rendered windows and cuts and NO prompt.
+// These arms judge the seat: the agent's authored text RENDERS on
+// the strip, typing MERGES into the one storage (other bag fields
+// preserved), and an agent-side patch RESEEDS the seat.
+describe("THE V2V PROMPT SEAT — the prompt that goes, on the surface the user lives on", () => {
+  const BAG = { edit: [{ edit_prompt: "the anime girl in the reference", denoise: 0.32, reference: "still+mannequin" }] }
+
+  it("the seat renders the agent's authored prompt verbatim under the v2v face — and never under the plain face", () => {
+    const seen: unknown[] = []
+    const v2v = strip({ layerA: BAG as never, setLayerAKey: ((n: string, v: unknown) => { seen.push([n, v]) }) as never })
+    const input = v2v.els.container.querySelector('[data-testid="tl-v2v-prompt-input"]')
+    assert.ok(input instanceof HTMLInputElement, "the prompt seat renders as an input on the strip")
+    assert.equal(input.value, "the anime girl in the reference", "the agent's text lands in the seat verbatim")
+    assert.ok(screen.getByText(studioCopy.v2vPromptLabel), "the seat names what it is")
+    v2v.els.unmount()
+    const plain = strip({ commissions: [] })
+    assert.equal(plain.els.container.querySelector('[data-testid="tl-v2v-prompt"]'), null,
+      "no edit armed: no prompt seat (the plain calls prose is the surface)")
+    plain.els.unmount()
+    assert.deepEqual(seen, [], "rendering alone writes nothing")
+  })
+
+  it("typing commits into the ONE storage, MERGING — other bag fields preserved, never replaced", () => {
+    const seen: unknown[] = []
+    const v2v = strip({ layerA: BAG as never, setLayerAKey: ((n: string, v: unknown) => { seen.push([n, v]) }) as never })
+    const input = v2v.els.container.querySelector('[data-testid="tl-v2v-prompt-input"]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: "her wardrobe is the tape bands, no leotard" } })
+    fireEvent.blur(input)
+    assert.equal(seen.length, 1, "blur commits once")
+    const [name, bag] = seen[0] as [string, Array<Record<string, unknown>>]
+    assert.equal(name, "edit", "the write targets the edit bag key")
+    assert.equal(bag.length, 1)
+    assert.equal(bag[0]!.edit_prompt, "her wardrobe is the tape bands, no leotard", "the new prompt rides")
+    assert.equal(bag[0]!.denoise, 0.32, "the bag's other fields ride MERGED — never replaced")
+    assert.equal(bag[0]!.reference, "still+mannequin")
+    v2v.els.unmount()
+  })
+
+  it("an unchanged draft never writes; an agent-side patch reseeds the seat", () => {
+    const seen: unknown[] = []
+    const cap = ((n: string, v: unknown) => { seen.push([n, v]) }) as never
+    const v2v = strip({ layerA: BAG as never, setLayerAKey: cap })
+    const input = v2v.els.container.querySelector('[data-testid="tl-v2v-prompt-input"]') as HTMLInputElement
+    fireEvent.blur(input) // untouched draft: no write
+    assert.deepEqual(seen, [], "an unchanged draft never writes")
+    // the agent patches the prompt behind the user's back — the seat
+    // reseed shows the new truth
+    v2v.els.rerender(
+      <StudioStripPane
+        calls={[{ text: "a", start_frame: 0, end_frame: 56 }] as never}
+        refAudiosBlocked={false}
+        fps={24}
+        barPrompts={[P1] as never}
+        barLanes={[] as never}
+        barAudioClips={[]}
+        commissions={deriveCommissions(EDIT_PARAMS)}
+        barTotal={56}
+        frameIdx={28}
+        callPreviews={{}}
+        selectedBarId={null}
+        filmMap={null}
+        handleBarFrame={() => {}}
+        handleScrubStart={() => {}}
+        handleScrubEnd={() => {}}
+        handleKeyframeMove={() => {}}
+        handleKeyframeDelete={() => {}}
+        handlePromptUpdate={() => {}}
+        handlePromptMove={() => {}}
+        handlePromptResize={() => {}}
+        handlePromptDelete={() => {}}
+        handleExtend={() => {}}
+        addCallAt={() => {}}
+        addFirstWindowCut={() => {}}
+        setCallTransition={() => {}}
+        handleTimelineSelect={() => {}}
+        layerA={{ edit: [{ edit_prompt: "the agent rewrote this mid-session" }] } as never}
+        addAudioClip={() => {}}
+        takeAudioFile={() => {}}
+        moveAudioClip={() => {}}
+        deleteAudioClip={() => {}}
+        updateAudioClip={() => {}}
+        setLayerAKey={cap}
+        artifactIndex={{ byUrl: new Map() }}
+        docFromFilm={(f: number) => f}
+        keyframes={[] as never}
+        addKeyframeWithImage={() => "k" }
+        enterKfView={() => {}}
+        enterAudioView={() => {}}
+      />,
+    )
+    const reseeded = v2v.els.container.querySelector('[data-testid="tl-v2v-prompt-input"]') as HTMLInputElement
+    assert.equal(reseeded.value, "the agent rewrote this mid-session",
+      "the seat reseeds from the one storage — the agent's patch is the user's next view")
+    v2v.els.unmount()
+  })
+})

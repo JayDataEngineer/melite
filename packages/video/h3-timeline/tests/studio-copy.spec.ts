@@ -202,7 +202,11 @@ describe("SOURCE — the copy dictionary owns the static faces", () => {
     // window and Add cut authors the first real spans through it);
     // v2vDerivedWindowText + v2vDerivedReadonly were BORN (the
     // derived row's paint + its loud read-only refusal).
-    assert.equal(ids.length, 129, `the dictionary holds 129 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
+    // RE-PIN 2026-11-10 (the no-UI burn): 129 → 132 — the v2v prompt
+    // seat's three keys (label/placeholder/tip) were BORN; the strip
+    // renders all three (the one text the run carries finally has a
+    // seat on the user's surface).
+    assert.equal(ids.length, 132, `the dictionary holds 132 copy ids (found ${ids.length}) — re-pin this wall when copy is added or removed`)
     // RE-PIN 2026-10-16 (the square-grammar residue): 102 → 101.
     // removePack died with the strip Button (187eaf607 deleted the
     // verb; SourceRow's onEdit("") owns the detach) — a fossil id

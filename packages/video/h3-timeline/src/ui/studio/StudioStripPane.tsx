@@ -8,7 +8,7 @@
  * lane itself (double-click pins, drag moves) and gains the SUBVIEW
  * DOOR in its header: one button, the rail swaps to the editor.
  */
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button, Input, Menu } from "@deepseek-ai/dsh-client-ui-primitives"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
@@ -451,6 +451,28 @@ export function StudioStripPane({
   const [splitAtSec, setSplitAtSec] = useState("")
   const [splitCarry, setSplitCarry] = useState<"cut" | "extend" | "carry+keyframe">("cut")
   const [carryMenuOpen, setCarryMenuOpen] = useState(false)
+  // ── THE V2V PROMPT SEAT's binding ──────────────────────────────
+  // The armed edit bag's prompt, seeded from the one storage and
+  // RESEEDED whenever the bag moves underneath (the agent patches
+  // the prompt mid-session — the seat shows the new truth, never a
+  // stale draft). Commit merges into the bag's last entry: other
+  // fields ride PRESERVED (the merge-patch law), never replaced.
+  const editBag = layerA.edit
+  const v2vPromptOf = (): string => {
+    const entry = editBag?.[editBag.length - 1]
+    return entry !== undefined && typeof entry["edit_prompt"] === "string" ? entry["edit_prompt"] as string : ""
+  }
+  const [v2vPromptDraft, setV2vPromptDraft] = useState<string>(v2vPromptOf)
+  useEffect(() => { setV2vPromptDraft(v2vPromptOf()) }, [editBag])
+  const commitV2vPrompt = (): void => {
+    if (v2vPromptDraft === v2vPromptOf()) return
+    const base = editBag ?? []
+    const entry = base[base.length - 1] ?? {}
+    const next = base.length === 0
+      ? [{ edit_prompt: v2vPromptDraft }]
+      : [...base.slice(0, -1), { ...entry, edit_prompt: v2vPromptDraft }]
+    setLayerAKey("edit", next)
+  }
   // (THE V2V FACE, queue 11) the strip's own visible cut door — the
   // operator's law: "THE ABILITY TO ADD CUTS" is a CONTROL on the
   // face, never a hidden gesture. THE PRESS ALWAYS CUTS (the visual
@@ -555,6 +577,41 @@ export function StudioStripPane({
       }
       hint={studioCopy.stripHint}
     />
+    {/* THE V2V PROMPT SEAT (the no-UI burn, operator 2026-11-10:
+        "THERE IS NO USER INTERFACE FOR THE ACTUAL PROMPT THAT GOES —
+        THE AGENT MAKES ONE, THEN I GET NO UI FOR IT"). Under the v2v
+        face the calls' prose stands down and the edit bag's prompt
+        lived only in a drill-down leaf — the one text the run
+        carries had NO seat on the user's surface. This row IS the
+        seat: first thing under the header, full width, the agent's
+        authored text visible verbatim, editable in place. Writes
+        ride setLayerAKey('edit', …) — the same one storage the leaf
+        and the agent's patch write (ONE bench). Draft locally,
+        commit on blur/Enter: a per-keystroke doc write is churn the
+        prose seat never owed. */}
+    {callsFace.face === "v2v" && (
+      <div className={s.v2vPromptRow} data-testid="tl-v2v-prompt">
+        <label className={s.v2vPromptLabel} htmlFor="tl-v2v-prompt-input">
+          {studioCopy.v2vPromptLabel}
+        </label>
+        <Input
+          id="tl-v2v-prompt-input"
+          type="text"
+          data-testid="tl-v2v-prompt-input"
+          className={s.v2vPromptInput}
+          placeholder={studioCopy.v2vPromptPlaceholder}
+          title={studioCopy.v2vPromptTip}
+          value={v2vPromptDraft}
+          onInput={(e: unknown) => { setV2vPromptDraft((e as { target: { value: string } }).target.value) }}
+          onChange={(e: unknown) => { setV2vPromptDraft((e as { target: { value: string } }).target.value) }}
+          onBlur={commitV2vPrompt}
+          onKeyDown={(e: unknown) => {
+            const ke = e as KeyboardEvent
+            if (ke.key === "Enter") { ke.preventDefault(); commitV2vPrompt() }
+          }}
+        />
+      </div>
+    )}
     {/* THE STRIP TOOL ROW (2026-11-10, the corner-crush burn: the
         verbs rode INSIDE the pane hint's 9px text span, each clamped
         to the 22×22 upload-glyph box — input and buttons clipped

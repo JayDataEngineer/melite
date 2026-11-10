@@ -474,3 +474,27 @@
   cursor: help;
   user-select: none;
 }
+
+/* THE V2V PROMPT SEAT (the no-UI burn, 2026-11-10: the one text the
+ * run carries had NO seat on the user's surface). Full-width row,
+ * first thing under the header: the label never clips, the input
+ * takes the rest — prose-sized, never clamped into a glyph box. */
+.v2vPromptRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  padding: 0 0 4px;
+}
+
+.v2vPromptLabel {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+}
+
+.v2vPromptInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}

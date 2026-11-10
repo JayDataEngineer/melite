@@ -332,6 +332,16 @@ export declare const studioCopy: {
     /** The calls lane head under the armed edit bag (the windows are
      *  the run's own video-to-video spans). */
     readonly callsV2vLabel: "Video-to-video — windows & cuts";
+    /** THE V2V PROMPT SEAT (the no-UI burn, operator 2026-11-10:
+     * "THERE IS NO USER INTERFACE FOR THE ACTUAL PROMPT THAT GOES —
+     * THE AGENT MAKES ONE, THEN I GET NO UI FOR IT"): the edit's
+     * prompt — the ONE text the run carries — renders on the strip
+     * itself, first row under the header, the agent's authored text
+     * visible and editable. Under v2v the calls' prose stands down;
+     * THIS seat is the prose's lawful home on the user's surface. */
+    readonly v2vPromptLabel: "Edit prompt — the text this run carries";
+    readonly v2vPromptPlaceholder: "what happens in the edit (the agent's text lands here — edit it freely)";
+    readonly v2vPromptTip: "The edit's own prompt seat — the one text the video-to-video run carries (the lane's windows and cuts read; each call's prose does not). What the agent composed shows here verbatim; typing edits the same seat.";
     /** The calls lane's empty hint under the armed edit bag. (D-19
      *  re-word 2026-11-18: the pre-cure sentence promised "Add cut
      *  divides the window" while the empty doc held no window — a verb
