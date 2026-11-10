@@ -35,8 +35,10 @@ the mask slot chooses the how — the SAM3 region track or one staged
 PNG, the static read is the MASK DIAL's value, never a second
 cell), `identity-swap` (region × still+mannequin × 1, the masked
 side re-rendered whole — ONE cell for both reads: clothing vs
-identity is PROMPT WORDS, never two; push denoise toward 0.55 to
-keep source motion riding through), `whole-frame-restyle`
+identity is PROMPT WORDS, never two; a still+mannequin swap of a
+DIFFERENT person needs near-full noise — measured: 0.5 = none,
+1.0 = full; 0.55 keeps the source's motion by keeping its
+identity, the garment read, never the recast), `whole-frame-restyle`
 (whole-frame × self × 0.6, under the boil floor), `refine-2x`
 (whole-frame × self × 0.32 with the refine switch ON at 2x, the
 learned upscale riding this edit's own latents in the same run),
@@ -80,7 +82,12 @@ loop — a different mechanism than the refine switch).
    derivations:
    - `region` (the default) — `region_prompt` is the SAM3 detection
      target ("hands", "a person", "a face"); the mask tracks every
-     matching object per frame and grows by `mask_grow`. The tuning
+     matching object per frame and grows by `mask_grow`. THE
+     TEXT-CONDITIONED DOOR (board D-12, quotable): with
+     `mask_source: "region"`, `region_prompt` selects the region by
+     text; the edit prompt redraws inside it; no reference image is
+     required unless the new content must be a specific person or a
+     specific mark. The tuning
      seats (`mask_grow`, `mask_blur`, `detection_threshold`) are the
      coarse-mask cure: thin structures (handles, caps) tune at the
      door, never by hand.
@@ -106,7 +113,14 @@ loop — a different mechanism than the refine switch).
    - `still+mannequin` — `still` + `mannequin` both required: the
      still anchors appearance (it MUST show the person wearing the
      target look — a garment alone hallucinates the uncovered body),
-     the mannequin carries motion.
+     the mannequin carries motion. THE MOTION-CARRIER LAW (board
+     D-14): `mannequin` is the motion carrier — any video clip may
+     be bound; the source clip itself is a valid mannequin when the
+     motion is already in the shot (a track run is one source, never
+     a requirement; no provisioning step exists). THE MEDIUM LAW
+     (board D-15): the `still` should be photoreal when the source
+     is photoreal; a stylized still transfers garments and colour,
+     not identity.
 5. **Set the dials.** The entry fields (the card's served ranges):
    - `denoise` (0.05–1, 0.32) — the edit pole: partial (the repair
      window is 0.30–0.35) holds the unmasked region AND its sound; 1

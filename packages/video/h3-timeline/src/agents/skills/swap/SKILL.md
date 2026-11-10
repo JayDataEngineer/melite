@@ -22,8 +22,10 @@ genre: video
    The legacy entry rides the bag container
    `params.replace = [entry]` on EVERY door — never flat; a flat
    bag seat refuses as unknown param(s). Seats: `source_clip`,
-   `still` (the replacement still), `mannequin` (the track run's
-   clip), `mask` — ONE image from the track run, never its staged
+   `still` (the replacement still), `mannequin` (the MOTION CARRIER —
+   any video clip may be bound; the source clip itself is a valid
+   mannequin when the motion is already in the shot, no track run
+   required), `mask` — ONE image from the track run, never its staged
    frames folder: the pixel-max UNION over the grown per-frame
    masks is recommended. There is no `mask_sequence` seat. New docs
    state the same seats on `params.edit` (the translation binds

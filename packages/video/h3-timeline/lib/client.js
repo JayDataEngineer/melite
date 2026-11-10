@@ -4901,7 +4901,7 @@ window.__ModuleLoader__.load({
 					value: "still+mannequin",
 					label: "Still + mannequin — swap posture"
 				}],
-				tooltip: "WHO the edit keeps: the source clip on its own reference seat (the identity anchor is the person already in the frame — zero new pixels), or a replacement still + the track run's mannequin video (the still anchors appearance, the mannequin carries motion; the still must show the person WEARING the target — a garment alone hallucinates the uncovered body, the outfit-swap burn)."
+				tooltip: "WHO the edit keeps — the enum is self | still+mannequin (\"still\" alone is not a posture: a stated still seat is read only under still+mannequin, never as a value of this dial): the source clip on its own reference seat (the identity anchor is the person already in the frame — zero new pixels), or a replacement still + a mannequin video (the still anchors appearance; the mannequin is the MOTION CARRIER — any video clip may be bound, the source clip itself is a valid mannequin when the motion is already in the shot, no track run required; the still must show the person WEARING the target — a garment alone hallucinates the uncovered body, the outfit-swap burn)."
 			},
 			{
 				name: "still",
@@ -4910,7 +4910,7 @@ window.__ModuleLoader__.load({
 				type: "image",
 				default: "",
 				visible_when: "reference=still+mannequin",
-				tooltip: "The replacement still under the still+mannequin anchors (the R2V ref_images seat + the plan's geometry anchor — the person wearing the target look)."
+				tooltip: "The replacement still under the still+mannequin anchors (the R2V ref_images seat + the plan's geometry anchor — the person wearing the target look). The still should be photoreal when the source is photoreal; a stylized still transfers garments and colour, not identity (a cel face cannot map onto a photoreal head — the run completes, the face stays the source's)."
 			},
 			{
 				name: "mannequin",
@@ -4920,7 +4920,7 @@ window.__ModuleLoader__.load({
 				media: "video",
 				visible_when: "reference=still+mannequin",
 				default: "",
-				tooltip: "The mannequin video from the track-card run under the still+mannequin anchors (the R2V ref_videos seat — motion the still cannot carry)."
+				tooltip: "The mannequin video under the still+mannequin anchors (the R2V ref_videos seat — motion the still cannot carry). The mannequin is the MOTION CARRIER: any video clip may be bound; the source clip itself is a valid mannequin when the motion is already in the shot. A track-card run is one source of a mannequin, never a requirement — no provisioning step exists."
 			},
 			{
 				name: "denoise",

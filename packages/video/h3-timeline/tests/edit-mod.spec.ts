@@ -14,6 +14,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -367,6 +368,98 @@ describe("THE DEFECT-BOARD DOC PASS (D-10 + D-12, 2026-11-16: 'the bundle names 
     if (region?.tooltip === undefined) throw new Error("region_prompt row not found");
     if (!/region_prompt selects the region by text; the edit prompt redraws inside it; no reference image is required unless the new content must be a specific person or a specific mark/.test(region.tooltip)) {
       throw new Error("the board's quotable line is not verbatim on the tooltip");
+    }
+  });
+});
+
+describe("THE SWAP-POSTURE TRUTH (defect board D-13 + D-14 + D-15, 2026-11-18: 'an identity swap silently does NOT happen below near-full noise' / 'the identity anchors are documented as unusable, and they are the door that works' / 'the anchors skill never says the still must share the video's medium')", () => {
+  const chipTooltips = (): Array<{ id?: string; tooltip?: string }> => {
+    const mod = (cardMod as unknown as { EDIT_MOD?: { sections?: Array<{ id?: string; tooltip?: string }> } }).EDIT_MOD;
+    return mod?.sections ?? [];
+  };
+  const skillMd = (leaf: string): string =>
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), `../src/agents/skills/${leaf}/SKILL.md`), "utf8");
+
+  it("D-13 THE RECAST LAW: the swap chip's denoise advice states the measured band — a DIFFERENT person needs near-full noise; 0.55 keeps identity (the unqualified advice is gone)", () => {
+    const chip = chipTooltips().find((s) => s.id === "identity-swap");
+    if (chip?.tooltip === undefined) throw new Error("identity-swap section not found");
+    if (!/swap of a DIFFERENT person needs near-full noise/.test(chip.tooltip)) {
+      throw new Error("the recast clause is missing from the chip tooltip");
+    }
+    if (!/measured: 0\.5 = none, 1\.0 = full/.test(chip.tooltip)) {
+      throw new Error("the measured band is missing from the chip tooltip");
+    }
+    if (!/0\.55 keeps the source'?s motion by keeping its identity/.test(chip.tooltip)) {
+      throw new Error("the 0.55 truth is missing from the chip tooltip");
+    }
+    if (/push toward 0\.55 to keep source motion riding through/.test(chip.tooltip)) {
+      throw new Error("the board's misleading unqualified advice is still on the chip");
+    }
+  });
+
+  it("D-13 THE SKILL SEAT: the edit skill's identity-swap cell carries the same measured recast law", () => {
+    const md = skillMd("edit");
+    if (!/swap of a\s+DIFFERENT person needs near-full noise/.test(md)) {
+      throw new Error("the recast clause is missing from the edit skill");
+    }
+    if (!/measured: 0\.5 = none,\s+1\.0 = full/.test(md)) {
+      throw new Error("the measured band is missing from the edit skill");
+    }
+    if (/push denoise toward 0\.55 to\s+keep source motion riding through/.test(md)) {
+      throw new Error("the board's misleading unqualified advice is still in the edit skill");
+    }
+  });
+
+  it("D-14 THE MOTION CARRIER: every mannequin seat states any-video-bind + the source clip itself — the track-run requirement is gone (decl, chip, edit skill, swap skill)", () => {
+    const fields = editFields();
+    const reference = fields.find((f) => f.name === "reference");
+    const mannequin = fields.find((f) => f.name === "mannequin");
+    if (reference?.tooltip === undefined || mannequin?.tooltip === undefined) {
+      throw new Error("reference/mannequin rows not found");
+    }
+    const chip = chipTooltips().find((s) => s.id === "identity-swap");
+    if (chip?.tooltip === undefined) throw new Error("identity-swap section not found");
+    for (const [seat, t] of [["reference", reference.tooltip], ["mannequin", mannequin.tooltip], ["chip", chip.tooltip], ["edit skill", skillMd("edit")], ["swap skill", skillMd("swap")]] as const) {
+      if (!/any video clip may\s+be bound/.test(t)) {
+        throw new Error(`the any-video law is missing from the ${seat} seat`);
+      }
+      if (!/the source clip itself is a\s+valid\s+mannequin/.test(t)) {
+        throw new Error(`the source-as-mannequin law is missing from the ${seat} seat`);
+      }
+    }
+    if (/the track run'?s mannequin video/.test(reference.tooltip)) {
+      throw new Error("the reference tooltip still names the track run as the mannequin's source");
+    }
+    if (/The mannequin video from the track-card run/.test(mannequin.tooltip)) {
+      throw new Error("the mannequin tooltip still requires the track-card run");
+    }
+  });
+
+  it("D-12 THE SKILL MIRROR: the edit skill's region bullet carries the board's quotable text-conditioned door line verbatim (the served doc, not only the tooltip)", () => {
+    const md = skillMd("edit");
+    if (!/`region_prompt` selects the region by\s+text; the edit prompt redraws inside it; no\s+reference image is\s+required unless the new content must be a specific person or a\s+specific mark/.test(md)) {
+      throw new Error("the board's quotable line is not verbatim in the edit skill's region bullet");
+    }
+  });
+
+  it("D-15 THE MEDIUM + THE ENUM: the still states the medium law; the reference tooltip enumerates its values", () => {
+    const fields = editFields();
+    const still = fields.find((f) => f.name === "still");
+    const reference = fields.find((f) => f.name === "reference");
+    if (still?.tooltip === undefined || reference?.tooltip === undefined) {
+      throw new Error("still/reference rows not found");
+    }
+    if (!/should be photoreal when the source is photoreal/.test(still.tooltip)) {
+      throw new Error("the medium law is missing from the still tooltip");
+    }
+    if (!/transfers garments and colour, not identity/.test(still.tooltip)) {
+      throw new Error("the stylized-still truth is missing from the still tooltip");
+    }
+    if (!/the enum is self \| still\+mannequin/.test(reference.tooltip)) {
+      throw new Error("the reference tooltip does not enumerate its values");
+    }
+    if (!/should be photoreal when the source\s+is photoreal/.test(skillMd("edit"))) {
+      throw new Error("the medium law is missing from the edit skill's anchor bullet");
     }
   });
 });
