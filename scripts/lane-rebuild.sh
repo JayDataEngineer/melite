@@ -232,6 +232,44 @@ if [ "$PORT" != "3088" ]; then
     cp -f "$MAIN_HOME/.anonymous-user-id" "$DSH_HOME/.anonymous-user-id"
     echo "   shared chat identity: branch adopts :3088's anonymous user id"
   fi
+  # THE SHARED MODEL CREDENTIALS (2026-11-10, "not hooked into my
+  # models"): provider keys live per-home in .credentials.yaml refs —
+  # a branch home boots with only its browser-session grant and its
+  # agent seat has NO model backend. The branch therefore MERGES the
+  # main home's refs into its own file (refs only — the branch's own
+  # records, e.g. its live browser session, are never clobbered).
+  # Values are never echoed; the merge is idempotent.
+  if [ -f "$MAIN_HOME/.credentials.yaml" ] && [ -f "$DSH_HOME/.credentials.yaml" ]; then
+    node -e '
+      // structural merge of the credentials file (order-independent,
+      // idempotent): top-level blocks are split by column-0 lines; the
+      // branch keeps its OWN version + records (its live browser
+      // session), refs merge with the branch winning key ties.
+      // Values are never echoed.
+      const fs = require("fs");
+      const blocks = (p) => {
+        const out = new Map();
+        let cur = null, body = [];
+        for (const line of fs.readFileSync(p, "utf8").split("\n")) {
+          if (/^[A-Za-z_]/.test(line)) { if (cur) out.set(cur, body.join("\n")); cur = line.split(":")[0]; body = [line]; }
+          else if (cur) body.push(line);
+        }
+        if (cur) out.set(cur, body.join("\n"));
+        return out;
+      };
+      const main = blocks(process.argv[1]);
+      const br = blocks(process.argv[2]);
+      const refsOf = (b) => { const m = new Map(); for (const line of (b.get("refs") || "").split("\n").slice(1)) { const kv = line.trim().match(/^([^:]+):\s*(.+)$/); if (kv) m.set(kv[1], kv[2]); } return m; };
+      const merged = new Map([...refsOf(main), ...refsOf(br)]);
+      const version = br.get("version") || "version: 1";
+      const records = br.get("records") || "records: []";
+      const refsBlock = "refs:\n" + [...merged].map(([k, v]) => `  ${k}: ${v}`).join("\n");
+      const tmp = process.argv[2] + ".tmp";
+      fs.writeFileSync(tmp, `${version}\n${records}\n${refsBlock}\n`, { mode: 0o600 });
+      fs.renameSync(tmp, process.argv[2]);
+      console.log("   shared model credentials: merged " + merged.size + " refs into the branch home");
+    ' "$MAIN_HOME/.credentials.yaml" "$DSH_HOME/.credentials.yaml" || { echo "FATAL: credentials merge failed"; exit 1; }
+  fi
   cat > "$HOME/.config/systemd/user/$UNIT" <<UNIT_EOF
 [Unit]
 Description=DSH branch lane (melite series, port $PORT, own DSH_HOME, script-launched)
