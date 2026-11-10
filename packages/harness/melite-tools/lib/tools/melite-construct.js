@@ -57,6 +57,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 import { jsonClean } from "../json-clean.js";
 import { coerceWireArrays, foldLegacyAliases, unwrapItemArrays } from '@melite/comfyui-card-kit';
+import { expandCuts } from '@melite/models-h3/timelineContract';
 import { loadCardDefs } from '@melite/comfyui-cordis';
 import { emitKnob } from '@melite/comfyui-card-kit/params-emit';
 import { extraOf } from '@melite/contracts/extraKeys';
@@ -446,6 +447,17 @@ function wireShapeCandidate(params) {
         }
     }
     return false;
+}
+/** True when a params bag carries the CUTS VERB — a non-empty string
+ *  under `cuts`. The patch door reads the bench for it (the verb
+ *  expands against the row's own calls rows — the windows' ONE
+ *  storage, operator 2026-11-10: the agent and the UI share one
+ *  bench), the same bounded-read law the spell voice rides. */
+function cutsCandidate(params) {
+    if (typeof params !== 'object' || params === null || Array.isArray(params))
+        return false;
+    const cuts = params['cuts'];
+    return typeof cuts === 'string' && cuts.trim() !== '';
 }
 /** The voice itself: each $-token named with its resolution source.
  *  A token whose name matches a WIRED input resolves to that channel
@@ -1145,6 +1157,12 @@ export function meliteConstruct(estate, opts = {}) {
                 description: 'patch (merge onto the stage) | add_stage | load single-stage shorthand. '
                     + 'A null value UNSETS its key (the drafts door\'s JSON Merge Patch law — '
                     + 'patch {voice_name: null} clears it; no remove_stage dance). '
+                    + 'WINDOWS (the h3 film card — ONE storage, the calls rows): windows ARE params.calls '
+                    + '[{text, start_frame, end_frame}] — the same rows the card UI and the timeline strip read '
+                    + '(clip_seconds, two edit[] entries, and typed overlap_frames are NOT windows — one seat, '
+                    + 'engine-internal splits, and a refusal). NEVER type frame math (a hand-typed window once '
+                    + 'repaired 90 of 243 frames): split with the VERB {cuts: "2.5, 5"} — seconds, expanded '
+                    + 'through the same split law the strip\'s Add cut rides, into the calls rows, seams cut. '
                     + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
                     + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
                     + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone.',
@@ -1261,6 +1279,14 @@ export function meliteConstruct(estate, opts = {}) {
                     lines.push('stale: params changed — the stage\'s done mark is cleared; the next flow re-runs it (its old artifact stays readable as last_run)');
                 }
                 if (v.verb === 'patch') {
+                    // THE CUTS VOICE (the one-bench cure): the verb's answer
+                    // names what it built — N windows on the calls rows — so
+                    // the model reads the one storage it just wrote (and never
+                    // re-derives the window count from a refusal).
+                    const cutsWindows = v.cuts_windows;
+                    if (typeof cutsWindows === 'number') {
+                        lines.push('cuts → ' + cutsWindows + ' windows: the calls rows are rewritten (seams cut, no chaining) — the strip\'s window face and the card UI mirror them');
+                    }
                     // THE DIFF VOICE (defect board D-22, 2026-11-10: three
                     // writes landed on a never-run stage and every one
                     // answered "no value change" — `stale` only voices when a
@@ -1696,7 +1722,7 @@ export function meliteConstruct(estate, opts = {}) {
                     // caller brought no rev — one bounded read serves both
                     // (the fill never adds a second read on this path)
                     let rev0 = a.expect_rev;
-                    if (spellTokensIn(a.params).length > 0 || wireShapeCandidate(a.params) || craftCandidate(a.params)) {
+                    if (spellTokensIn(a.params).length > 0 || wireShapeCandidate(a.params) || craftCandidate(a.params) || cutsCandidate(a.params)) {
                         const b = await readBench(estate, bench, signal);
                         const rows = projectStages(b.stages);
                         wiredInputs = inputsOfStageRow(rows, a.stage);
@@ -1726,6 +1752,44 @@ export function meliteConstruct(estate, opts = {}) {
                             appliedDerivations = derived.derived;
                         }
                     }
+                    // ── THE CUTS VERB (the one-bench cure, operator 2026-11-10:
+                    // "THE AGENT, AND THE USER UI. SHARE ONE BENCH. ONE.") ──
+                    // Windows ARE the doc's calls rows — the ONE storage the
+                    // strip's Add cut, the leaf form, and the run all read. The
+                    // agent had ZERO doors into them (the burn: three guessed
+                    // spellings — clip_seconds, two edit[] entries, typed
+                    // overlap_frames — one accepted by accident, the card UI
+                    // showing the truth: ONE window). `cuts` is a VERB, never
+                    // stored state: seconds ("2.5, 5"), expanded through the
+                    // ONE split law (@melite/models-h3/timelineContract — the
+                    // same bytes the strip's mutations and the leaf form ride,
+                    // byte-for-byte walled) into the row's own calls rows,
+                    // then dropped from the patch. Frames are never typed
+                    // (the run-e79f3b304e4b law: hand-typed frames repaired
+                    // 90 of 243 frames once).
+                    let cutsWindows;
+                    if (cutsCandidate(a.params) && isRecordArg(params)) {
+                        const cutsRaw = String(params['cuts'] ?? '').trim();
+                        const heldCalls = heldParams === undefined ? undefined : heldParams['calls'];
+                        const rows = Array.isArray(heldCalls) ? heldCalls : [];
+                        if (rows.length === 0) {
+                            return out({ error: 'cuts: this stage carries no calls rows to split — windows ARE the calls rows (ONE storage: the strip\'s window face, the leaf form, and the run all read them). A fresh film stage seeds its first span; author the calls rows once (or cut on the strip) and cuts can halve them. State seconds, never frames: {cuts: "2.5, 5"}.' });
+                        }
+                        const windows = rows.filter((r) => typeof r['start_frame'] === 'number' && typeof r['end_frame'] === 'number');
+                        if (windows.length !== rows.length) {
+                            return out({ error: 'cuts: the stage\'s calls rows are malformed — a row without numeric start_frame/end_frame cannot split. The calls law: [{text, start_frame, end_frame}] tiling the delivered timeline, contiguous (end of i = start of i+1).' });
+                        }
+                        // §0.5 verbatim: the halves GLUE WITHOUT CONTEXT CHAINING —
+                        // every seam the verb births states CUT.
+                        const expanded = expandCuts(windows, cutsRaw, 'cut');
+                        if (!expanded.ok) {
+                            return out({ error: `cuts: ${expanded.refusal}` });
+                        }
+                        cutsWindows = expanded.calls.length;
+                        const nextParams = { ...params, calls: expanded.calls };
+                        delete nextParams['cuts'];
+                        params = nextParams;
+                    }
                     const r = await postBenchVerb(estate, bench, 'patch', { stage: a.stage, params, expect_rev: rev0 }, signal, 
                     // the rev here is the caller's word when stated; the
                     // spell-read fill (rev0 from the bench read) is the
@@ -1753,6 +1817,7 @@ export function meliteConstruct(estate, opts = {}) {
                     const compile = stale === true ? await compileVerdictOf(estate, bench, signal) : undefined;
                     return out({ rev: r.rev, stage: r.stage, patched: r.patched,
                         ...(stale ? { stale: true } : {}),
+                        ...(cutsWindows !== undefined ? { cuts_windows: cutsWindows } : {}),
                         // D-22 (the board, 2026-11-10): `keep_done` keyed on
                         // "not stale" was the tool-side twin of the lie — a
                         // LANDED write on a never-run stage (no mark to clear,

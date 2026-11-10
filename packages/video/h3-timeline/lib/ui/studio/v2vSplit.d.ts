@@ -1,15 +1,17 @@
-import type { DocCall } from './docModel.js';
-/** The three carry states the split seat states (§0.9's vocabulary,
- * the same three the call card's seam seat and the strip head's
- * carry menu serve). */
-export type SplitCarry = 'cut' | 'extend' | 'carry+keyframe';
-/** Split the doc's calls at a gesture frame with a selected carry.
- * @param calls the doc's own windows (the row's calls param)
- * @param gestureFrame the frame the split is asked at (doc space)
- * @param carry the seam state the NEW split births after the stock
- * cut ("cut" keeps the split's own default seam)
- * @returns the next calls array, or null when no legal split exists
- * (a window too short to halve, or an empty doc — the refusal the
- * caller's own voice names) */
-export declare function splitCallsAt(calls: DocCall[], gestureFrame: number, carry: SplitCarry): DocCall[] | null;
+/** v2vSplit.ts — THE PURE SPLIT LAW'S CLIENT SEAT. The law itself
+ * moved to the contract module (2026-11-10, the one-bench cure):
+ * ONE storage — the doc's `calls` rows — demanded ONE implementation
+ * every plane imports, because the agent's write door
+ * (melite-construct's patch) could not reach client studio code and
+ * the agent had ZERO paths into the windows (the operator's burn:
+ * the AI "claimed to make 3 windows" — nothing it could call). The
+ * strip's mutations, this leaf seat, and the agent's cuts verb are
+ * THREE doors over the ONE law in @melite/models-h3/timelineContract
+ * (splitCallsAt); this module re-exports it so the leaf form's
+ * imports and its parity wall keep their home. The byte-for-byte
+ * parity is walled studio-side (studio-v2v-cut-door.spec.tsx) and
+ * contract-side (the third-door arm); a fourth door imports the
+ * contract, never a copy. */
+export { splitCallsAt, expandCuts } from '@melite/models-h3/timelineContract';
+export type { SplitCarry, CutsResult } from '@melite/models-h3/timelineContract';
 //# sourceMappingURL=v2vSplit.d.ts.map

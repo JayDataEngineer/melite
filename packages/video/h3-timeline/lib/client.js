@@ -1135,6 +1135,125 @@ window.__ModuleLoader__.load({
 			}
 			return length;
 		}
+		/** THE GRID'S TWO VIEWS (encoded 2026-11-10 from the lane burn —
+		*  never re-derive this from a refusal string again). The window
+		*  grid is ONE law seen from two doors:
+		*  - AUTHORED SPAN (the calls rows, this module's law): a first or
+		*    cut window authors 22+17k frames (56, 73, 90 … in [22,362]);
+		*    a carried window authors 17k frames (17, 34, 51 …) because its
+		*    22f seam is the generation head, not the span.
+		*  - GENERATED LENGTH (the engine's own gate): the frames a carried
+		*    window RENDERS are span + 22, and 17k + 22 ≡ 5 (mod 17) —
+		*    which is why the engine's refusal reads "length % 17 == 5" and
+		*    names a span five off the authored one. The refusal prints the
+		*    GENERATED length; the calls row carries the AUTHORED span.
+		*  A calculator in front of this law authored 141f as [0,90)+[90,141)
+		*  (a 51f carried span the chain refused as generated 73) and a doc
+		*  nearly ossified a "two grids" theory from one error string. There
+		*  are not two grids. There is one grid and two views; this comment
+		*  is the map. */
+		/** Is this window's seam a carried join? Index-aware — index 0 is
+		*  always a first window (no carry), and a 'cut' seam never
+		*  carries. */
+		function isCarriedShape(index, call) {
+			return index > 0 && transitionOverlap(call.transition) > 0;
+		}
+		/** Is this authored LENGTH legal for the window's shape? A carried
+		*  window rides the 17k step (content + 22f carry head ≤ 362); a
+		*  first/cut window rides the 22+17k grid. */
+		function isLegalCallLength(length, carried) {
+			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
+			return isGridLength(length);
+		}
+		/** The splice frame for a split where BOTH halves must be legal —
+		*  the gesture's frame when it already qualifies, else the nearest
+		*  one that does. NULL when no interior frame qualifies (the §0.5
+		*  fence): a window at its shape's floor has no legal split at all
+		*  — the caller refuses loud, never repairs. */
+		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
+			let best = null;
+			let bestDistance = Number.POSITIVE_INFINITY;
+			for (let frame = start + 1; frame < end; frame++) {
+				if (!isLegalCallLength(frame - start, leftCarried)) continue;
+				if (!isLegalCallLength(end - frame, rightCarried)) continue;
+				const distance = Math.abs(frame - gesture);
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					best = frame;
+				}
+			}
+			return best;
+		}
+		/** The seam toggle's re-frame: the 22-frame carry moves from the
+		*  generation head to (or from) the authored span. A first window
+		*  has no carry either way, so its toggle never moves frames. */
+		function reflowSeamSpan(call, index, next) {
+			const wasCarried = isCarriedShape(index, call);
+			const willCarried = isCarriedShape(index, { transition: next });
+			if (wasCarried === willCarried) return call.end_frame;
+			const length = call.end_frame - call.start_frame;
+			return call.start_frame + (willCarried ? length - 22 : length + 22);
+		}
+		/** Split the doc's calls at a gesture frame with a selected carry —
+		*  §0.5's split, verbatim: the gesture frame snaps to the authoring
+		*  lattice, one window becomes its own two halves (the row carries
+		*  whole into both; the seam the split births states CUT), everything
+		*  downstream rebases, and a selected carry mode re-frames the NEW
+		*  seam. A gesture with no legal split frame REFUSES (null): the doc
+		*  keeps its identity. Generic over the row: the rest of the call
+		*  (text, refs, knobs, anchors) carries whole by construction.
+		* @param calls the doc's own windows (the calls rows)
+		* @param gestureFrame the frame the split is asked at (doc space)
+		* @param carry the seam state the NEW split births after the stock
+		*  cut ("cut" keeps the split's own default seam)
+		* @returns the next calls array, or null when no legal split exists. */
+		function splitCallsAt(calls, gestureFrame, carry) {
+			if (calls.length === 0) return null;
+			const i = calls.findIndex((c) => gestureFrame > c.start_frame && gestureFrame < c.end_frame);
+			if (i < 0) {
+				const target = calls.find((c) => gestureFrame === c.start_frame) ?? calls[calls.length - 1];
+				return splitCallsAt(calls, Math.round((target.start_frame + target.end_frame) / 2), carry);
+			}
+			const cur = calls[i];
+			const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), true, gestureFrame);
+			if (split === null) return null;
+			const rightEnd = reflowSeamSpan({
+				...cur,
+				start_frame: split,
+				transition: "extend"
+			}, i + 1, "cut");
+			const next = [...calls];
+			next[i] = {
+				...cur,
+				end_frame: split
+			};
+			next.splice(i + 1, 0, {
+				...cur,
+				start_frame: split,
+				end_frame: rightEnd,
+				transition: "cut"
+			});
+			const delta = rightEnd - cur.end_frame;
+			for (let j = i + 2; j < next.length; j++) next[j] = {
+				...next[j],
+				start_frame: next[j].start_frame + delta,
+				end_frame: next[j].end_frame + delta
+			};
+			if (carry !== "cut") {
+				const seam = { ...next[i + 1] };
+				const end = reflowSeamSpan(seam, i + 1, carry);
+				next[i + 1] = {
+					...seam,
+					transition: carry,
+					end_frame: end
+				};
+				if (i + 1 < next.length - 1) next[i + 2] = {
+					...next[i + 2],
+					start_frame: end
+				};
+			}
+			return next;
+		}
 		/** The largest 22+17k grid length ≤ x (floored at 22, capped 362). */
 		const gridFloorFrames = (x) => Math.min(362, 22 + 17 * Math.floor((x - 22) / 17));
 		/** The smallest 22+17k grid length ≥ x (capped at 362); null when x
@@ -5530,16 +5649,11 @@ window.__ModuleLoader__.load({
 			const n = parseSpecNumber(v);
 			return n === void 0 ? void 0 : Math.round(n);
 		}
-		/** Is this window's seam a carried join? Index-aware, exactly the
-		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
-		function isCarriedShape(index, call) {
-			return index > 0 && transitionOverlap(call.transition) > 0;
-		}
-		/** Is this authored LENGTH legal for the window's shape? */
-		function isLegalCallLength(length, carried) {
-			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
-			return isGridLength(length);
-		}
+		/** Is this window's seam a carried join? / Is this authored LENGTH
+		*  legal for the window's shape? — BOTH moved to the contract module
+		*  (2026-11-10, the one-bench cure: one law, three doors — the strip
+		*  mutations, the leaf form, the agent's cuts verb); re-exported at
+		*  the top of this module so every studio importer keeps its home. */
 		/** Nearest legal authored length for the window's shape. */
 		function snapCallLength(length, carried) {
 			if (carried) {
@@ -5599,37 +5713,11 @@ window.__ModuleLoader__.load({
 		function snapCallEnd(call, index, end) {
 			return call.start_frame + snapCallLength(end - call.start_frame, isCarriedShape(index, call));
 		}
-		/** The splice frame for a split where BOTH halves must be legal — the
-		*  gesture's frame when it already qualifies, else the nearest one
-		*  that does. NULL when no interior frame qualifies (the §0.5 fence,
-		*  2026-11-09): the old fallthrough handed back the raw gesture and
-		*  every caller wrote an off-grid half the card would refuse whole.
-		*  A window at its shape's floor (the 22f base, the 17f step) has no
-		*  legal split at all — the caller refuses loud, never repairs. */
-		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
-			let best = null;
-			let bestDistance = Number.POSITIVE_INFINITY;
-			for (let frame = start + 1; frame < end; frame++) {
-				if (!isLegalCallLength(frame - start, leftCarried)) continue;
-				if (!isLegalCallLength(end - frame, rightCarried)) continue;
-				const distance = Math.abs(frame - gesture);
-				if (distance < bestDistance) {
-					bestDistance = distance;
-					best = frame;
-				}
-			}
-			return best;
-		}
-		/** The seam toggle's re-frame: the 22-frame carry moves from the
-		*  generation head to (or from) the authored span. A first window has
-		*  no carry either way, so its toggle never moves frames. */
-		function reflowSeamSpan(call, index, next) {
-			const wasCarried = isCarriedShape(index, call);
-			const willCarried = isCarriedShape(index, { transition: next });
-			if (wasCarried === willCarried) return call.end_frame;
-			const length = call.end_frame - call.start_frame;
-			return call.start_frame + (willCarried ? length - 22 : length + 22);
-		}
+		/** The splice frame for a split where BOTH halves must be legal /
+		*  the seam toggle's re-frame — BOTH moved to the contract module
+		*  (the one-bench cure); re-exported at the top of this module. The
+		*  §0.5 fence (null when no interior frame qualifies) and the 22f
+		*  carry reframe ride the contract's own bytes. */
 		/** The window that would cover a pin at `frame` — the plan gate's own
 		*  predicate (f ∈ [start_frame, end_frame), the first matching call).
 		*
@@ -6114,83 +6202,6 @@ window.__ModuleLoader__.load({
 					]
 				})
 			] });
-		}
-		//#endregion
-		//#region src/ui/studio/v2vSplit.ts
-		/** v2vSplit.ts — THE PURE SPLIT LAW (queue 11's form seat, operator
-		* 2026-11-08 reopened: "the video2video form that would allow clips
-		* to split by timestamp … with the option to select how context is
-		* carried"). ONE law, two doors: the strip head's door rides the
-		* studio's mutation updaters (useCallMutations — addCallAt's splice
-		* + setCallTransition's reframe, walled by
-		* studio-v2v-cut-door.spec.tsx); the LEAF FORM's face rides THIS
-		* pure function. The two must agree byte-for-byte — the parity arm
-		* in the form's wall judges the same fixture through both doors
-		* (the orb's one-truth law: ONE truth, two views of one draft).
-		*
-		* The law itself is §0.5's split + §0.9's reframe, verbatim from
-		* the mutation: the gesture frame snaps to the authoring lattice
-		* (22+17k), one window becomes its own two halves (text, refs and
-		* knobs carry whole into both; the seam the split births states
-		* CUT), everything downstream rebases by the 22f cut price, and a
-		* selected carry mode re-frames the NEW seam (the right half's end
-		* and the next window's start move together — the tiling holds). A
-		* gesture with no legal split frame REFUSES (null): the doc keeps
-		* its identity, exactly as the mutation's onRefuse path does. */
-		/** Split the doc's calls at a gesture frame with a selected carry.
-		* @param calls the doc's own windows (the row's calls param)
-		* @param gestureFrame the frame the split is asked at (doc space)
-		* @param carry the seam state the NEW split births after the stock
-		* cut ("cut" keeps the split's own default seam)
-		* @returns the next calls array, or null when no legal split exists
-		* (a window too short to halve, or an empty doc — the refusal the
-		* caller's own voice names) */
-		function splitCallsAt(calls, gestureFrame, carry) {
-			if (calls.length === 0) return null;
-			const i = calls.findIndex((c) => gestureFrame > c.start_frame && gestureFrame < c.end_frame);
-			if (i < 0) {
-				const target = calls.find((c) => gestureFrame === c.start_frame) ?? calls[calls.length - 1];
-				return splitCallsAt(calls, Math.round((target.start_frame + target.end_frame) / 2), carry);
-			}
-			const cur = calls[i];
-			const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), true, gestureFrame);
-			if (split === null) return null;
-			const rightEnd = reflowSeamSpan({
-				...cur,
-				start_frame: split,
-				transition: "extend"
-			}, i + 1, "cut");
-			const next = [...calls];
-			next[i] = {
-				...cur,
-				end_frame: split
-			};
-			next.splice(i + 1, 0, {
-				...cur,
-				start_frame: split,
-				end_frame: rightEnd,
-				transition: "cut"
-			});
-			const delta = rightEnd - cur.end_frame;
-			for (let j = i + 2; j < next.length; j++) next[j] = {
-				...next[j],
-				start_frame: next[j].start_frame + delta,
-				end_frame: next[j].end_frame + delta
-			};
-			if (carry !== "cut") {
-				const seam = { ...next[i + 1] };
-				const end = reflowSeamSpan(seam, i + 1, carry);
-				next[i + 1] = {
-					...seam,
-					transition: carry,
-					end_frame: end
-				};
-				if (i + 1 < next.length - 1) next[i + 2] = {
-					...next[i + 2],
-					start_frame: end
-				};
-			}
-			return next;
 		}
 		//#endregion
 		//#region src/ui/studio/V2vLeafFace.tsx

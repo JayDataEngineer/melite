@@ -166,3 +166,28 @@ describe("the grid heal (a doc never refuses the run)", () => {
     assert.equal(snapCutDelta(-9), -17)
   })
 })
+
+// ── THE ONE-LAW IDENTITY ARM (the one-bench cure, operator
+// 2026-11-10: "THE AGENT, AND THE USER UI. SHARE ONE BENCH. ONE.")
+// ── The split law moved to @melite/models-h3/timelineContract so
+// three doors (the strip's mutations, the leaf form, the agent's
+// cuts verb) ride ONE implementation. This arm judges IDENTITY, not
+// behavior: the studio's re-exports ARE the contract's functions —
+// a copy pasted back into studio code (the exact drift class that
+// once authored 141f as [0,90)+[90,141) on a mis-copied grid) fails
+// here as a different function object.
+import * as contract from "@melite/models-h3/timelineContract"
+import { splitCallsAt } from "./../src/ui/studio/v2vSplit.ts"
+
+describe("THE ONE LAW — the studio rides the contract's bytes, never a copy", () => {
+  it("docGrid's re-exports ARE timelineContract's functions (identity, not behavior)", () => {
+    assert.equal(isCarriedShape, contract.isCarriedShape, "isCarriedShape must be the contract's bytes")
+    assert.equal(isLegalCallLength, contract.isLegalCallLength, "isLegalCallLength must be the contract's bytes")
+    assert.equal(snapSplitFrame, contract.snapSplitFrame, "snapSplitFrame must be the contract's bytes")
+    assert.equal(reflowSeamSpan, contract.reflowSeamSpan, "reflowSeamSpan must be the contract's bytes")
+  })
+
+  it("v2vSplit's law IS the contract's splitCallsAt (the third door rides the same bytes)", () => {
+    assert.equal(splitCallsAt, contract.splitCallsAt, "the leaf form's split must be the contract's split")
+  })
+})

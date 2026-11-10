@@ -31,9 +31,17 @@ import {
   GRID_STEP_FRAMES,
   SEAM_OVERLAP_FRAMES,
   gridSnap,
+  isCarriedShape,
   isGridLength,
-  transitionOverlap,
+  reflowSeamSpan,
+  snapSplitFrame,
 } from '@melite/models-h3/timelineContract'
+// THE SPLIT LAW MOVED (2026-11-10, the one-bench cure): these four
+// names now have ONE home — the contract module — so the agent's
+// write door (melite-construct) and both UI doors ride the same
+// bytes. Re-exported here so every studio importer keeps its home;
+// the byte-for-byte parity is walled contract-side.
+export { isCarriedShape, isLegalCallLength, reflowSeamSpan, snapSplitFrame } from '@melite/models-h3/timelineContract'
 import type { DocCall } from "./docModel.ts"
 
 /** The span editors' string→number parse: SpecAtom hands the RAW
@@ -58,20 +66,11 @@ export function parseFrameEdit(v: unknown): number | undefined {
   return n === undefined ? undefined : Math.round(n)
 }
 
-/** Is this window's seam a carried join? Index-aware, exactly the
- *  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
-export function isCarriedShape(index: number, call: Pick<DocCall, "transition">): boolean {
-  return index > 0 && transitionOverlap(call.transition) > 0
-}
-
-/** Is this authored LENGTH legal for the window's shape? */
-export function isLegalCallLength(length: number, carried: boolean): boolean {
-  if (carried) {
-    return Number.isInteger(length) && length >= GRID_STEP_FRAMES &&
-      length + SEAM_OVERLAP_FRAMES <= GRID_MAX_FRAMES && length % GRID_STEP_FRAMES === 0
-  }
-  return isGridLength(length)
-}
+/** Is this window's seam a carried join? / Is this authored LENGTH
+ *  legal for the window's shape? — BOTH moved to the contract module
+ *  (2026-11-10, the one-bench cure: one law, three doors — the strip
+ *  mutations, the leaf form, the agent's cuts verb); re-exported at
+ *  the top of this module so every studio importer keeps its home. */
 
 /** Nearest legal authored length for the window's shape. */
 export function snapCallLength(length: number, carried: boolean): number {
@@ -135,44 +134,11 @@ export function snapCallEnd(call: DocCall, index: number, end: number): number {
   return call.start_frame + snapCallLength(end - call.start_frame, isCarriedShape(index, call))
 }
 
-/** The splice frame for a split where BOTH halves must be legal — the
- *  gesture's frame when it already qualifies, else the nearest one
- *  that does. NULL when no interior frame qualifies (the §0.5 fence,
- *  2026-11-09): the old fallthrough handed back the raw gesture and
- *  every caller wrote an off-grid half the card would refuse whole.
- *  A window at its shape's floor (the 22f base, the 17f step) has no
- *  legal split at all — the caller refuses loud, never repairs. */
-export function snapSplitFrame(
-  start: number,
-  end: number,
-  leftCarried: boolean,
-  rightCarried: boolean,
-  gesture: number,
-): number | null {
-  let best: number | null = null
-  let bestDistance = Number.POSITIVE_INFINITY
-  for (let frame = start + 1; frame < end; frame++) {
-    if (!isLegalCallLength(frame - start, leftCarried)) continue
-    if (!isLegalCallLength(end - frame, rightCarried)) continue
-    const distance = Math.abs(frame - gesture)
-    if (distance < bestDistance) {
-      bestDistance = distance
-      best = frame
-    }
-  }
-  return best
-}
-
-/** The seam toggle's re-frame: the 22-frame carry moves from the
- *  generation head to (or from) the authored span. A first window has
- *  no carry either way, so its toggle never moves frames. */
-export function reflowSeamSpan(call: DocCall, index: number, next: "extend" | "cut" | "carry+keyframe"): number {
-  const wasCarried = isCarriedShape(index, call)
-  const willCarried = isCarriedShape(index, { transition: next })
-  if (wasCarried === willCarried) return call.end_frame
-  const length = call.end_frame - call.start_frame
-  return call.start_frame + (willCarried ? length - SEAM_OVERLAP_FRAMES : length + SEAM_OVERLAP_FRAMES)
-}
+/** The splice frame for a split where BOTH halves must be legal /
+ *  the seam toggle's re-frame — BOTH moved to the contract module
+ *  (the one-bench cure); re-exported at the top of this module. The
+ *  §0.5 fence (null when no interior frame qualifies) and the 22f
+ *  carry reframe ride the contract's own bytes. */
 
 // ── THE KEYFRAME CHIP'S SEAT VERDICT (slice 3, 2026-11-05) ─────────────
 // The UI mirrors NOTHING compose-side: the pin→seat/ pin→node mapping

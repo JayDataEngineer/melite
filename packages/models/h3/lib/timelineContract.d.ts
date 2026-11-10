@@ -226,6 +226,81 @@ export declare function assertGridLength(length: unknown, where: string): number
  *  seam after the first carries (the swap's clip law, shared with the
  *  extend's window composition). */
 export declare const CONTEXT_OVERLAP_FRAMES = 39;
+/** The three carry states a split seat states (§0.9's vocabulary,
+ *  the same three the call card's seam seat and the strip head's
+ *  carry menu serve). */
+export type SplitCarry = 'cut' | 'extend' | 'carry+keyframe';
+/** THE GRID'S TWO VIEWS (encoded 2026-11-10 from the lane burn —
+ *  never re-derive this from a refusal string again). The window
+ *  grid is ONE law seen from two doors:
+ *  - AUTHORED SPAN (the calls rows, this module's law): a first or
+ *    cut window authors 22+17k frames (56, 73, 90 … in [22,362]);
+ *    a carried window authors 17k frames (17, 34, 51 …) because its
+ *    22f seam is the generation head, not the span.
+ *  - GENERATED LENGTH (the engine's own gate): the frames a carried
+ *    window RENDERS are span + 22, and 17k + 22 ≡ 5 (mod 17) —
+ *    which is why the engine's refusal reads "length % 17 == 5" and
+ *    names a span five off the authored one. The refusal prints the
+ *    GENERATED length; the calls row carries the AUTHORED span.
+ *  A calculator in front of this law authored 141f as [0,90)+[90,141)
+ *  (a 51f carried span the chain refused as generated 73) and a doc
+ *  nearly ossified a "two grids" theory from one error string. There
+ *  are not two grids. There is one grid and two views; this comment
+ *  is the map. */
+/** Is this window's seam a carried join? Index-aware — index 0 is
+ *  always a first window (no carry), and a 'cut' seam never
+ *  carries. */
+export declare function isCarriedShape(index: number, call: Pick<TimelineCallSpan, 'transition'>): boolean;
+/** Is this authored LENGTH legal for the window's shape? A carried
+ *  window rides the 17k step (content + 22f carry head ≤ 362); a
+ *  first/cut window rides the 22+17k grid. */
+export declare function isLegalCallLength(length: number, carried: boolean): boolean;
+/** The splice frame for a split where BOTH halves must be legal —
+ *  the gesture's frame when it already qualifies, else the nearest
+ *  one that does. NULL when no interior frame qualifies (the §0.5
+ *  fence): a window at its shape's floor has no legal split at all
+ *  — the caller refuses loud, never repairs. */
+export declare function snapSplitFrame(start: number, end: number, leftCarried: boolean, rightCarried: boolean, gesture: number): number | null;
+/** The seam toggle's re-frame: the 22-frame carry moves from the
+ *  generation head to (or from) the authored span. A first window
+ *  has no carry either way, so its toggle never moves frames. */
+export declare function reflowSeamSpan(call: Pick<TimelineCallSpan, 'start_frame' | 'end_frame' | 'transition'>, index: number, next: 'extend' | 'cut' | 'carry+keyframe'): number;
+/** Split the doc's calls at a gesture frame with a selected carry —
+ *  §0.5's split, verbatim: the gesture frame snaps to the authoring
+ *  lattice, one window becomes its own two halves (the row carries
+ *  whole into both; the seam the split births states CUT), everything
+ *  downstream rebases, and a selected carry mode re-frames the NEW
+ *  seam. A gesture with no legal split frame REFUSES (null): the doc
+ *  keeps its identity. Generic over the row: the rest of the call
+ *  (text, refs, knobs, anchors) carries whole by construction.
+ * @param calls the doc's own windows (the calls rows)
+ * @param gestureFrame the frame the split is asked at (doc space)
+ * @param carry the seam state the NEW split births after the stock
+ *  cut ("cut" keeps the split's own default seam)
+ * @returns the next calls array, or null when no legal split exists. */
+export declare function splitCallsAt<T extends TimelineCallSpan>(calls: T[], gestureFrame: number, carry: SplitCarry): T[] | null;
+/** THE CUTS VERB'S OUTCOME — the rows, or the loud refusal (never a
+ *  silent drop, never a repair behind the caller's back). */
+export type CutsResult<T extends TimelineCallSpan> = {
+    ok: true;
+    calls: T[];
+} | {
+    ok: false;
+    refusal: string;
+};
+/** THE CUTS VERB (the agent's door into the one storage): seconds,
+ *  never frame math (the run-e79f3b304e4b law — hand-typed frames
+ *  repaired 90 of 243 frames once). "2.5, 5" splits the containing
+ *  windows at those seconds — each fold rides splitCallsAt, so the
+ *  verb IS the split law, not a second arithmetic. The seconds
+ *  spelling never persists: every write door expands it into the
+ *  calls rows and drops it (ONE storage; a lingering cuts key on a
+ *  doc is a bug, refused by the walk).
+ * @param calls the doc's own windows the verb splits
+ * @param cuts the comma-separated seconds ("2.5, 5")
+ * @param carry the seam state every new seam births
+ * @returns the next calls array, or the refusal naming the cure. */
+export declare function expandCuts<T extends TimelineCallSpan>(calls: T[], cuts: string, carry?: SplitCarry): CutsResult<T>;
 /** The plan's scene cap (chain_nodes: a 32-scene cap refuses
  *  mis-authored loops) — the composition solver's window ceiling. */
 export declare const MAX_COMPOSED_WINDOWS = 32;

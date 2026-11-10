@@ -21014,69 +21014,41 @@ window.__ModuleLoader__.load({
 		function isGridLength(length) {
 			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
 		}
-		const LEGACY_KNOB_KEY = {
-			sampling_steps: "steps",
-			sampler: "sampler_name",
-			scheduler: "sched_name",
-			h3_sla_sparsity: "sla_sparsity",
-			h3_sla_block_size: "sla_block_size",
-			h3_sla_min_seq_len: "sla_min_seq_len",
-			h3_sla_dense_last_steps: "sla_dense_last_steps",
-			h3_sla_protect_audio: "sla_protect_audio",
-			h3_sla_stabilize_motion: "sla_stabilize_motion",
-			h3_sla_reference_protection: "sla_reference_protection",
-			h3_sla_dense_backend: "sla_dense_backend",
-			h3_sla_dense_steps: "sla_dense_steps",
-			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
-			interpolate_model: "interp_model",
-			interpolate_multiplier: "interp_multiplier"
-		};
-		//#endregion
-		//#region ../../video/h3-timeline/src/ui/studio/docGrid.ts
-		/**
-		* docGrid.ts — THE AUTHORING GRID (studio side, 2026-09-25).
-		*
-		* WHY THIS FILE EXISTS: the card's admission gate became UNIFORM
-		* (`assertSpanGrid` — every window shape refuses an off-grid authored
-		* span instead of silently re-framing it). A refusal-only card would
-		* break the authoring surface: the bar drag, the span number inputs
-		* and the call splitter all move frames by hand, and every one of them
-		* used to hand the engine whatever the operator's pixel resolved to.
-		* So the authoring boundary snaps, VISIBLY, to the same law the card
-		* refuses against — the number inputs and the bar show the snapped
-		* frames, and the card never has to repair a doc this surface built.
-		*
-		* THE LAW (one owner, imported from the card's own contract — no
-		* duplicated constants):
-		*   - a window generates 22+17k frames in [22,362];
-		*   - a CARRIED window (i>0, non-cut) generates span+22, so its
-		*     authored span must be 17k;
-		*   - a FIRST or CUT window generates its span verbatim, so its
-		*     authored span must be 22+17k;
-		*   - calls TILE: every call starts where the previous one ended.
-		*
-		* The seam toggle re-frames by exactly 22 frames (a carried span
-		* loses 22, a cut span gains 22) because both shapes cannot be legal
-		* for one span — arithmetic, not policy. The operator sees the new end
-		* frame in the input; nothing is repaired behind their back.
-		*/
-		/** Is this window's seam a carried join? Index-aware, exactly the
-		*  card's own `chainLike` law (filmMix's stanzaSecs reads the same). */
+		/** THE GRID'S TWO VIEWS (encoded 2026-11-10 from the lane burn —
+		*  never re-derive this from a refusal string again). The window
+		*  grid is ONE law seen from two doors:
+		*  - AUTHORED SPAN (the calls rows, this module's law): a first or
+		*    cut window authors 22+17k frames (56, 73, 90 … in [22,362]);
+		*    a carried window authors 17k frames (17, 34, 51 …) because its
+		*    22f seam is the generation head, not the span.
+		*  - GENERATED LENGTH (the engine's own gate): the frames a carried
+		*    window RENDERS are span + 22, and 17k + 22 ≡ 5 (mod 17) —
+		*    which is why the engine's refusal reads "length % 17 == 5" and
+		*    names a span five off the authored one. The refusal prints the
+		*    GENERATED length; the calls row carries the AUTHORED span.
+		*  A calculator in front of this law authored 141f as [0,90)+[90,141)
+		*  (a 51f carried span the chain refused as generated 73) and a doc
+		*  nearly ossified a "two grids" theory from one error string. There
+		*  are not two grids. There is one grid and two views; this comment
+		*  is the map. */
+		/** Is this window's seam a carried join? Index-aware — index 0 is
+		*  always a first window (no carry), and a 'cut' seam never
+		*  carries. */
 		function isCarriedShape(index, call) {
 			return index > 0 && transitionOverlap(call.transition) > 0;
 		}
-		/** Is this authored LENGTH legal for the window's shape? */
+		/** Is this authored LENGTH legal for the window's shape? A carried
+		*  window rides the 17k step (content + 22f carry head ≤ 362); a
+		*  first/cut window rides the 22+17k grid. */
 		function isLegalCallLength(length, carried) {
 			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
 			return isGridLength(length);
 		}
-		/** The splice frame for a split where BOTH halves must be legal — the
-		*  gesture's frame when it already qualifies, else the nearest one
-		*  that does. NULL when no interior frame qualifies (the §0.5 fence,
-		*  2026-11-09): the old fallthrough handed back the raw gesture and
-		*  every caller wrote an off-grid half the card would refuse whole.
-		*  A window at its shape's floor (the 22f base, the 17f step) has no
-		*  legal split at all — the caller refuses loud, never repairs. */
+		/** The splice frame for a split where BOTH halves must be legal —
+		*  the gesture's frame when it already qualifies, else the nearest
+		*  one that does. NULL when no interior frame qualifies (the §0.5
+		*  fence): a window at its shape's floor has no legal split at all
+		*  — the caller refuses loud, never repairs. */
 		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
 			let best = null;
 			let bestDistance = Number.POSITIVE_INFINITY;
@@ -21092,8 +21064,8 @@ window.__ModuleLoader__.load({
 			return best;
 		}
 		/** The seam toggle's re-frame: the 22-frame carry moves from the
-		*  generation head to (or from) the authored span. A first window has
-		*  no carry either way, so its toggle never moves frames. */
+		*  generation head to (or from) the authored span. A first window
+		*  has no carry either way, so its toggle never moves frames. */
 		function reflowSeamSpan(call, index, next) {
 			const wasCarried = isCarriedShape(index, call);
 			const willCarried = isCarriedShape(index, { transition: next });
@@ -21101,36 +21073,19 @@ window.__ModuleLoader__.load({
 			const length = call.end_frame - call.start_frame;
 			return call.start_frame + (willCarried ? length - 22 : length + 22);
 		}
-		//#endregion
-		//#region ../../video/h3-timeline/src/ui/studio/v2vSplit.ts
-		/** v2vSplit.ts — THE PURE SPLIT LAW (queue 11's form seat, operator
-		* 2026-11-08 reopened: "the video2video form that would allow clips
-		* to split by timestamp … with the option to select how context is
-		* carried"). ONE law, two doors: the strip head's door rides the
-		* studio's mutation updaters (useCallMutations — addCallAt's splice
-		* + setCallTransition's reframe, walled by
-		* studio-v2v-cut-door.spec.tsx); the LEAF FORM's face rides THIS
-		* pure function. The two must agree byte-for-byte — the parity arm
-		* in the form's wall judges the same fixture through both doors
-		* (the orb's one-truth law: ONE truth, two views of one draft).
-		*
-		* The law itself is §0.5's split + §0.9's reframe, verbatim from
-		* the mutation: the gesture frame snaps to the authoring lattice
-		* (22+17k), one window becomes its own two halves (text, refs and
-		* knobs carry whole into both; the seam the split births states
-		* CUT), everything downstream rebases by the 22f cut price, and a
-		* selected carry mode re-frames the NEW seam (the right half's end
-		* and the next window's start move together — the tiling holds). A
-		* gesture with no legal split frame REFUSES (null): the doc keeps
-		* its identity, exactly as the mutation's onRefuse path does. */
-		/** Split the doc's calls at a gesture frame with a selected carry.
-		* @param calls the doc's own windows (the row's calls param)
+		/** Split the doc's calls at a gesture frame with a selected carry —
+		*  §0.5's split, verbatim: the gesture frame snaps to the authoring
+		*  lattice, one window becomes its own two halves (the row carries
+		*  whole into both; the seam the split births states CUT), everything
+		*  downstream rebases, and a selected carry mode re-frames the NEW
+		*  seam. A gesture with no legal split frame REFUSES (null): the doc
+		*  keeps its identity. Generic over the row: the rest of the call
+		*  (text, refs, knobs, anchors) carries whole by construction.
+		* @param calls the doc's own windows (the calls rows)
 		* @param gestureFrame the frame the split is asked at (doc space)
 		* @param carry the seam state the NEW split births after the stock
-		* cut ("cut" keeps the split's own default seam)
-		* @returns the next calls array, or null when no legal split exists
-		* (a window too short to halve, or an empty doc — the refusal the
-		* caller's own voice names) */
+		*  cut ("cut" keeps the split's own default seam)
+		* @returns the next calls array, or null when no legal split exists. */
 		function splitCallsAt(calls, gestureFrame, carry) {
 			if (calls.length === 0) return null;
 			const i = calls.findIndex((c) => gestureFrame > c.start_frame && gestureFrame < c.end_frame);
@@ -21178,6 +21133,23 @@ window.__ModuleLoader__.load({
 			}
 			return next;
 		}
+		const LEGACY_KNOB_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier"
+		};
 		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
 		({ ...LEGACY_KNOB_KEY });
 		[
