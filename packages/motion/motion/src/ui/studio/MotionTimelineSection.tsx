@@ -120,13 +120,9 @@ export function MotionTimelineSection({
  {motionCopy.fpsChip({ fps: npz.fps.toFixed(0), frames: npz.T })}
  </div>
  )}
- </>
- }
- hint={
- <span className={s.hintWrap}>
- <span className={s.hintTitle}>
- {motionCopy.timelineTitle}{tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""}
- </span>
+ {/* THE ADD-CARD VERB (moved out of the hint, 2026-11-10): the lead
+ cluster is verbs' lawful home — its own width beside the transport,
+ never clipped by the hint's yield. */}
  <Tip
  tip={/* v8 ignore next -- targetT = max(baseT≥1, …) ≥ 1 from every constructor (probe 2026-09-19) */ targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…"}
  >
@@ -141,6 +137,15 @@ export function MotionTimelineSection({
  </Button>
  </span>
  </Tip>
+ </>
+ }
+ /* THE TITLE-ONLY HINT LAW (2026-11-10, the corner-crush burn): the
+ pane hint is PROSE — it yields (ellipsis) on narrow panes and never
+ hosts verbs. The Add-card verb rides the header's LEAD cluster
+ beside the transport, its own width, never clipped. */
+ hint={
+ <span className={s.hintTitle}>
+ {motionCopy.timelineTitle}{tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""}
  </span>
  }
  />

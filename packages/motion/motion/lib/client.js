@@ -18457,14 +18457,8 @@ window.__ModuleLoader__.load({
 										fps: npz.fps.toFixed(0),
 										frames: npz.T
 									})
-								})
-							] }),
-							hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: component_module_css_default.hintWrap,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-									className: component_module_css_default.hintTitle,
-									children: [motionCopy.timelineTitle, tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 									tip: /* v8 ignore next -- targetT = max(baseT≥1, …) ≥ 1 from every constructor (probe 2026-09-19) */ targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: component_module_css_default.contents,
@@ -18476,7 +18470,11 @@ window.__ModuleLoader__.load({
 											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: component_module_css_default.i12 }), motionCopy.addPromptCard]
 										})
 									})
-								})]
+								})
+							] }),
+							hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+								className: component_module_css_default.hintTitle,
+								children: [motionCopy.timelineTitle, tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
 							})
 						}),
 						targetT > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {

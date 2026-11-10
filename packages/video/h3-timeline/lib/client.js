@@ -316,8 +316,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
-		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_seamModeRow{align-items:center;gap:4px;padding:2px 2px 0;display:flex}.ezL1Ba_seamModeBtn{flex:none}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px;display:block}.ezL1Ba_declaredThumbBtn{border:0;flex:none;padding:0;line-height:0}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_uploadBtn{flex:none;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:inline-flex}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_kfEmpty{color:var(--dsw-alias-label-tertiary);padding:8px 2px;font-size:10px}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--dsw-alias-border-l2);max-width:46%;color:var(--dsw-alias-label-tertiary);opacity:.85;flex-shrink:0;padding-left:8px;font-size:10px;overflow:hidden}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_spanInfo{color:var(--dshtx2);cursor:help;user-select:none;font-size:12px;line-height:1}";
-		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@1603759a";
+		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_seamModeRow{align-items:center;gap:4px;padding:2px 2px 0;display:flex}.ezL1Ba_seamModeBtn{flex:none}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px;display:block}.ezL1Ba_declaredThumbBtn{border:0;flex:none;padding:0;line-height:0}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_uploadBtn{flex:none;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:inline-flex}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_stripTools{flex-wrap:wrap;align-items:center;gap:4px;padding:0 0 4px;display:flex}.ezL1Ba_stripTools>button{flex:none}.ezL1Ba_splitAtInput{flex:0 72px;min-width:0}.ezL1Ba_kfEmpty{color:var(--dsw-alias-label-tertiary);padding:8px 2px;font-size:10px}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--dsw-alias-border-l2);max-width:46%;color:var(--dsw-alias-label-tertiary);opacity:.85;flex-shrink:0;padding-left:8px;font-size:10px;overflow:hidden}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_spanInfo{color:var(--dshtx2);cursor:help;user-select:none;font-size:12px;line-height:1}";
+		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@a378b335";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -395,6 +395,8 @@ window.__ModuleLoader__.load({
 			"spanInfo": "ezL1Ba_spanInfo",
 			"spanLabel": "ezL1Ba_spanLabel",
 			"spanRow": "ezL1Ba_spanRow",
+			"splitAtInput": "ezL1Ba_splitAtInput",
+			"stripTools": "ezL1Ba_stripTools",
 			"studioRoot": "ezL1Ba_studioRoot",
 			"sz10": "ezL1Ba_sz10",
 			"sz12": "ezL1Ba_sz12",
@@ -5873,17 +5875,20 @@ window.__ModuleLoader__.load({
 			};
 			const barFps = filmMap?.fps ?? fps;
 			const barSeconds = (barTotal / barFps).toFixed(2);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
-				title: studioCopy.timelineTitle,
-				meta: studioCopy.stripMeta({
-					calls: calls.length,
-					frames: barTotal,
-					fps: barFps,
-					seconds: barSeconds
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_melite_card_base_client.PaneShell, { children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.PaneHeader, {
+					title: studioCopy.timelineTitle,
+					meta: studioCopy.stripMeta({
+						calls: calls.length,
+						frames: barTotal,
+						fps: barFps,
+						seconds: barSeconds
+					}),
+					hint: studioCopy.stripHint
 				}),
-				hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-					studioCopy.stripHint,
-					callsFace.face === "v2v" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: studio_module_css_default.stripTools,
+					children: [callsFace.face === "v2v" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 							type: "number",
 							min: 0,
@@ -5891,7 +5896,7 @@ window.__ModuleLoader__.load({
 							"data-testid": "tl-split-at",
 							"aria-label": studioCopy.splitAtLabel,
 							title: studioCopy.splitAtTip,
-							className: studio_module_css_default.uploadBtn,
+							className: studio_module_css_default.splitAtInput,
 							placeholder: studioCopy.splitAtPlaceholder,
 							value: splitAtSec,
 							onInput: (e) => {
@@ -5933,7 +5938,6 @@ window.__ModuleLoader__.load({
 								"data-testid": "tl-split-carry",
 								"aria-label": studioCopy.splitCarryLabel,
 								title: studioCopy.splitCarryTip,
-								className: studio_module_css_default.uploadBtn,
 								onClick: () => {
 									setCarryMenuOpen(!carryMenuOpen);
 								},
@@ -5946,172 +5950,170 @@ window.__ModuleLoader__.load({
 							"data-testid": "tl-add-cut",
 							"aria-label": studioCopy.addCutDoor,
 							title: studioCopy.addCutDoorTip,
-							className: studio_module_css_default.uploadBtn,
 							onClick: addCutAtPlayhead,
 							children: studioCopy.addCutDoor
 						})
-					] }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						variant: "ghost",
 						size: "sm",
 						"data-testid": "tl-keyframes-door",
 						"aria-label": studioCopy.keyframesDoor,
 						title: studioCopy.keyframesDoorTip,
-						className: studio_module_css_default.uploadBtn,
 						onClick: enterKfView,
 						children: studioCopy.keyframesDoor
-					})
-				] })
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: studio_module_css_default.blockerWrap,
-				children: [
-					refusalFace !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-testid": "tl-strip-file-error",
-						className: studio_module_css_default.fileErr,
-						role: "alert",
-						children: refusalFace
-					}),
-					refAudiosBlocked && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-testid": "tl-lane-blocker",
-						className: studio_module_css_default.laneBlocker,
-						children: studioCopy.laneBlockedMessage
-					}),
-					kfErr !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-testid": "tl-strip-kf-error",
-						className: studio_module_css_default.fileErr,
-						role: "alert",
-						children: kfErr
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
-						prompts: lanePrompts,
-						keyframes: kfChips,
-						frameIdx,
-						totalFrames: barTotal,
-						plannedFrames,
-						fps: barFps,
-						initialSeconds: 10,
-						onFrameChange: handleBarFrame,
-						onScrubStart: handleScrubStart,
-						onScrubEnd: handleScrubEnd,
-						onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
-						onKeyframeDelete: handleKeyframeDelete,
-						onTrackAdd: openTrackAdd,
-						onPromptUpdate: callsFace.face === "dormant" ? refuseCallsEdit : callsFace.face === "v2v" ? refuseV2vProse : handlePromptUpdate,
-						onPromptMove: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => {
-							if (derivedGuard(id)) return;
-							handlePromptMove(id, docFromFilm(s), docFromFilm(e));
-						},
-						onPromptResize: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => {
-							if (derivedGuard(id)) return;
-							handlePromptResize(id, docFromFilm(s), docFromFilm(e));
-						},
-						onPromptDelete: callsFace.face === "dormant" ? refuseCallsEdit : (id) => {
-							if (derivedGuard(id)) return;
-							handlePromptDelete(id);
-						},
-						onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
-						tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
-						packed: true,
-						promptsLabel: callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vLabel : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind) : studioCopy.callsLabel,
-						commissions: commissionRows,
-						laneHint: studioCopy.keyframeLaneHint,
-						emptyPromptsHint: callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vHint : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind) : studioCopy.stripEmptyPromptsHint,
-						promptsHeight: 64,
-						onPromptAdd: callsFace.face === "dormant" || callsFace.face === "v2v" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
-						onSeamToggle: callsFace.face === "dormant" ? void 0 : (id) => {
-							const idx = barPrompts.findIndex((p) => p.uuid === id);
-							/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders a seam chip only for rows of the prompts array it was handed, and the chip arms only where shownPrompts is the unfiltered barPrompts (the dormant face's filter carries no chip — onSeamToggle is undefined there), so every uuid through this door is a barPrompts row; a face that filters prompts while keeping the chip armed would re-arm it */
-							if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut");
-						},
-						onPromptSplit: callsFace.face === "dormant" ? void 0 : (id) => {
-							if (id === "v2v-derived-whole-film") {
-								const extent = docFromFilm(barTotal);
-								const mid = Math.round(extent / 2);
-								const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, { transition: void 0 }), true, mid) !== null;
-								addFirstWindowCut(extent, mid, () => setLaneErr(studioCopy.splitRefusal));
-								if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry);
-								return;
-							}
-							const idx = barPrompts.findIndex((p) => p.uuid === id);
-							/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
-							if (idx < 0) return;
-							const call = calls[idx];
-							if (call === void 0) return;
-							cutWithCarry(Math.round((call.start_frame + call.end_frame) / 2), () => setLaneErr(studioCopy.splitRefusal));
-						},
-						previews: callPreviews,
-						selectedId: selectedBarId,
-						onSelect: handleTimelineSelect,
-						audioClipCards: true,
-						kfLaneCards: true,
-						audioLayers: [
-							{
-								id: "dialogue",
-								label: studioCopy.laneDialogue,
-								icon: "mic",
-								accent: "#22d3ee",
-								onUpload: refAudiosBlocked ? void 0 : openLanePicker("dialogue"),
-								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "dialogue")
+					})]
+				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: studio_module_css_default.blockerWrap,
+					children: [
+						refusalFace !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-testid": "tl-strip-file-error",
+							className: studio_module_css_default.fileErr,
+							role: "alert",
+							children: refusalFace
+						}),
+						refAudiosBlocked && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-testid": "tl-lane-blocker",
+							className: studio_module_css_default.laneBlocker,
+							children: studioCopy.laneBlockedMessage
+						}),
+						kfErr !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-testid": "tl-strip-kf-error",
+							className: studio_module_css_default.fileErr,
+							role: "alert",
+							children: kfErr
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
+							prompts: lanePrompts,
+							keyframes: kfChips,
+							frameIdx,
+							totalFrames: barTotal,
+							plannedFrames,
+							fps: barFps,
+							initialSeconds: 10,
+							onFrameChange: handleBarFrame,
+							onScrubStart: handleScrubStart,
+							onScrubEnd: handleScrubEnd,
+							onKeyframeMove: (id, frame) => handleKeyframeMove(id, docFromFilm(frame)),
+							onKeyframeDelete: handleKeyframeDelete,
+							onTrackAdd: openTrackAdd,
+							onPromptUpdate: callsFace.face === "dormant" ? refuseCallsEdit : callsFace.face === "v2v" ? refuseV2vProse : handlePromptUpdate,
+							onPromptMove: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => {
+								if (derivedGuard(id)) return;
+								handlePromptMove(id, docFromFilm(s), docFromFilm(e));
 							},
-							{
-								id: "music",
-								label: studioCopy.laneMusic,
-								icon: "music",
-								accent: "#a78bfa",
-								stem: layerA.audio_stem ?? null,
-								onUpload: refAudiosBlocked ? void 0 : openLanePicker("music"),
-								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "music")
+							onPromptResize: callsFace.face === "dormant" ? refuseCallsEdit : (id, s, e) => {
+								if (derivedGuard(id)) return;
+								handlePromptResize(id, docFromFilm(s), docFromFilm(e));
 							},
-							{
-								id: "sfx",
-								label: studioCopy.laneSfx,
-								icon: "zap",
-								accent: "#fb923c",
-								onUpload: refAudiosBlocked ? void 0 : openLanePicker("sfx"),
-								clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "sfx")
+							onPromptDelete: callsFace.face === "dormant" ? refuseCallsEdit : (id) => {
+								if (derivedGuard(id)) return;
+								handlePromptDelete(id);
+							},
+							onExtend: (newTotal) => handleExtend(docFromFilm(newTotal)),
+							tracks: VIDEO_TIMELINE_TRACKS.map((t) => ({ ...t })),
+							packed: true,
+							promptsLabel: callsFace.face === "dormant" ? studioCopy.callsDormantLabel(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vLabel : callsFace.face === "prompt" ? studioCopy.callsPromptSeatLabel(callsFace.kind) : studioCopy.callsLabel,
+							commissions: commissionRows,
+							laneHint: studioCopy.keyframeLaneHint,
+							emptyPromptsHint: callsFace.face === "dormant" ? studioCopy.callsDormantHint(callsFace.kind) : callsFace.face === "v2v" ? studioCopy.callsV2vHint : callsFace.face === "prompt" ? studioCopy.callsPromptSeatHint(callsFace.kind) : studioCopy.stripEmptyPromptsHint,
+							promptsHeight: 64,
+							onPromptAdd: callsFace.face === "dormant" || callsFace.face === "v2v" ? void 0 : (frame) => addCallAt(docFromFilm(frame)),
+							onSeamToggle: callsFace.face === "dormant" ? void 0 : (id) => {
+								const idx = barPrompts.findIndex((p) => p.uuid === id);
+								/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders a seam chip only for rows of the prompts array it was handed, and the chip arms only where shownPrompts is the unfiltered barPrompts (the dormant face's filter carries no chip — onSeamToggle is undefined there), so every uuid through this door is a barPrompts row; a face that filters prompts while keeping the chip armed would re-arm it */
+								if (idx >= 0) setCallTransition(idx, calls[idx]?.transition === "cut" ? "extend" : "cut");
+							},
+							onPromptSplit: callsFace.face === "dormant" ? void 0 : (id) => {
+								if (id === "v2v-derived-whole-film") {
+									const extent = docFromFilm(barTotal);
+									const mid = Math.round(extent / 2);
+									const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, { transition: void 0 }), true, mid) !== null;
+									addFirstWindowCut(extent, mid, () => setLaneErr(studioCopy.splitRefusal));
+									if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry);
+									return;
+								}
+								const idx = barPrompts.findIndex((p) => p.uuid === id);
+								/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
+								if (idx < 0) return;
+								const call = calls[idx];
+								if (call === void 0) return;
+								cutWithCarry(Math.round((call.start_frame + call.end_frame) / 2), () => setLaneErr(studioCopy.splitRefusal));
+							},
+							previews: callPreviews,
+							selectedId: selectedBarId,
+							onSelect: handleTimelineSelect,
+							audioClipCards: true,
+							kfLaneCards: true,
+							audioLayers: [
+								{
+									id: "dialogue",
+									label: studioCopy.laneDialogue,
+									icon: "mic",
+									accent: "#22d3ee",
+									onUpload: refAudiosBlocked ? void 0 : openLanePicker("dialogue"),
+									clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "dialogue")
+								},
+								{
+									id: "music",
+									label: studioCopy.laneMusic,
+									icon: "music",
+									accent: "#a78bfa",
+									stem: layerA.audio_stem ?? null,
+									onUpload: refAudiosBlocked ? void 0 : openLanePicker("music"),
+									clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "music")
+								},
+								{
+									id: "sfx",
+									label: studioCopy.laneSfx,
+									icon: "zap",
+									accent: "#fb923c",
+									onUpload: refAudiosBlocked ? void 0 : openLanePicker("sfx"),
+									clips: barAudioClips.filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) === "sfx")
+								}
+							],
+							onAudioDropAt: (id, url, frame) => {
+								setLaneErr(null);
+								if (refAudiosBlocked) {
+									setLaneErr(studioCopy.laneBlockedMessage);
+									return;
+								}
+								const name = artifactIndex.byUrl.get(url);
+								if (!name) {
+									setLaneErr(FOREIGN_URL_REFUSAL);
+									return;
+								}
+								addAudioClip(name, name, docFromFilm(frame), id);
+							},
+							onAudioFileDrop: (id, file, frame) => {
+								setLaneErr(null);
+								if (refAudiosBlocked) {
+									setLaneErr(studioCopy.laneBlockedMessage);
+									return;
+								}
+								takeAudioFile(file, docFromFilm(frame), id, setLaneErr);
+							},
+							onAudioClipMove: (_id, clipId, frame) => {
+								moveAudioClip(clipId, docFromFilm(frame));
+							},
+							onAudioClipDelete: (_id, clipId) => {
+								deleteAudioClip(clipId);
+							},
+							onAudioLaneActivate: (layerId) => {
+								enterAudioView(layerId);
+							},
+							onAudioDetach: (layerId) => {
+								const laneCls = layerId === "music" ? "music" : layerId === "sfx" ? "sfx" : "dialogue";
+								const kept = (layerA.audio_clips ?? []).filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) !== laneCls);
+								setLayerAKey("audio_clips", kept.length ? kept : void 0);
+								if (layerId === "music") setLayerAKey("audio_stem", void 0);
 							}
-						],
-						onAudioDropAt: (id, url, frame) => {
-							setLaneErr(null);
-							if (refAudiosBlocked) {
-								setLaneErr(studioCopy.laneBlockedMessage);
-								return;
-							}
-							const name = artifactIndex.byUrl.get(url);
-							if (!name) {
-								setLaneErr(FOREIGN_URL_REFUSAL);
-								return;
-							}
-							addAudioClip(name, name, docFromFilm(frame), id);
-						},
-						onAudioFileDrop: (id, file, frame) => {
-							setLaneErr(null);
-							if (refAudiosBlocked) {
-								setLaneErr(studioCopy.laneBlockedMessage);
-								return;
-							}
-							takeAudioFile(file, docFromFilm(frame), id, setLaneErr);
-						},
-						onAudioClipMove: (_id, clipId, frame) => {
-							moveAudioClip(clipId, docFromFilm(frame));
-						},
-						onAudioClipDelete: (_id, clipId) => {
-							deleteAudioClip(clipId);
-						},
-						onAudioLaneActivate: (layerId) => {
-							enterAudioView(layerId);
-						},
-						onAudioDetach: (layerId) => {
-							const laneCls = layerId === "music" ? "music" : layerId === "sfx" ? "sfx" : "dialogue";
-							const kept = (layerA.audio_clips ?? []).filter((c) => (c.class ?? (c.text ? "dialogue" : "music")) !== laneCls);
-							setLayerAKey("audio_clips", kept.length ? kept : void 0);
-							if (layerId === "music") setLayerAKey("audio_stem", void 0);
-						}
-					}),
-					wireMenu,
-					kfAddMenu
-				]
-			})] });
+						}),
+						wireMenu,
+						kfAddMenu
+					]
+				})
+			] });
 		}
 		//#endregion
 		//#region src/ui/studio/v2vSplit.ts

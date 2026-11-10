@@ -745,7 +745,11 @@ select option {
 }
 .paneMeta { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .paneMetaNum { font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
-.paneHint { margin-left: auto; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
+/* THE HINT YIELDS (2026-11-10, the corner-crush burn): the hint is
+ * PROSE pushed to the header's right end — on a narrow pane it
+ * ellipsizes (never overflows, never hosts controls; verbs live in
+ * their own row, the strip tool row law). */
+.paneHint { margin-left: auto; font-size: 9px; color: var(--dsw-alias-label-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* DSH pane chrome: surfaces/borders/text ride the DSW alias tokens —
  * the panes are DSH modules, not bespoke islands. */
 .paneShell {

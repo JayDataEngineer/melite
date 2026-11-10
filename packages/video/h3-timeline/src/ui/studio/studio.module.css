@@ -344,9 +344,20 @@
  * as the declared chips (never wider than the lane). */
 /* THE ANCHOR SLOT (bundle split 2026-09-18): the first frame renders
  * IN the chips row — one grammar with the ref chips (never an alien
- * box). Column so the file-error line rides under the square. */
+ * box). Column so the file-error line rides under the square.
+ * (2026-11-10: this 22×22 glyph box is the UPLOAD SLOT's own — never
+ * again the strip verbs' clamp; the strip verbs ride .stripTools.) */
 .uploadBtn { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; }
 .uploadBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary); }
+
+/* THE STRIP TOOL ROW (2026-11-10, the corner-crush burn): the
+ * timeline's verbs (split-at input, carry menu, Add cut, Keyframes)
+ * ride their OWN row under the pane header — full text, natural
+ * widths, wrapped lawfully; the hint stays prose in the header and
+ * yields. Never clamp a verb into the upload glyph's box. */
+.stripTools { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 0 0 4px; }
+.stripTools > button { flex: none; }
+.splitAtInput { flex: 0 1 72px; min-width: 0; }
 /* the keyframes subview's empty face (defect B): the pin doors, named */
 .kfEmpty { font-size: 10px; color: var(--dsw-alias-label-tertiary); padding: 8px 2px; }
 

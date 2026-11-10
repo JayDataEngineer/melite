@@ -553,87 +553,88 @@ export function StudioStripPane({
       meta={
         studioCopy.stripMeta({ calls: calls.length, frames: barTotal, fps: barFps, seconds: barSeconds })
       }
-      hint={
+      hint={studioCopy.stripHint}
+    />
+    {/* THE STRIP TOOL ROW (2026-11-10, the corner-crush burn: the
+        verbs rode INSIDE the pane hint's 9px text span, each clamped
+        to the 22×22 upload-glyph box — input and buttons clipped
+        into "s**t in the corner that doesn't even fit"). The hint is
+        PROSE; the verbs are VERBS: their own row under the header,
+        wrapped lawfully, full text, never clamped. */}
+    <div className={s.stripTools}>
+      {/* (THE V2V FACE, queue 11's SECOND BLOCK) the TIMESTAMP SPLIT
+          SEAT — the operator's law: "the video2video form that would
+          allow clips to split by timestamp. I.e. split at 2 seconds,
+          with the option to select how context is carried." The seat
+          rides the tool row beside the Add cut door: a seconds input
+          + the carry-mode menu. A stated timestamp overrides the
+          playhead; the carry mode re-frames the new seam (stock =
+          the split's default). */}
+      {callsFace.face === "v2v" && (
         <>
-          {studioCopy.stripHint}
-          {/* (THE V2V FACE, queue 11's SECOND BLOCK) the TIMESTAMP
-              SPLIT SEAT — the operator's law: "the video2video form
-              that would allow clips to split by timestamp. I.e. split
-              at 2 seconds, with the option to select how context is
-              carried." The seat rides the strip head beside the Add
-              cut door: a seconds input + the carry-mode menu. A
-              stated timestamp overrides the playhead; the carry mode
-              re-frames the new seam (stock = the split's default). */}
-          {callsFace.face === "v2v" && (
-            <>
-              <Input
-                type="number"
-                min={0}
-                step={0.1}
-                data-testid="tl-split-at"
-                aria-label={studioCopy.splitAtLabel}
-                title={studioCopy.splitAtTip}
-                className={s.uploadBtn}
-                placeholder={studioCopy.splitAtPlaceholder}
-                value={splitAtSec}
-                onInput={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
-                onChange={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
-              />
-              <Menu
-                open={carryMenuOpen}
-                onClose={() => { setCarryMenuOpen(false) }}
-                compact
-                portal
-                items={[
-                  { id: "cut", label: studioCopy.splitCarryStock },
-                  { id: "extend", label: studioCopy.splitCarryCarry },
-                  { id: "carry+keyframe", label: studioCopy.splitCarryKeyframe },
-                ]}
-                selectedId={splitCarry}
-                onSelect={(id: string) => {
-                  setCarryMenuOpen(false)
-                  setSplitCarry(id as "cut" | "extend" | "carry+keyframe")
-                }}
-                anchor={
-                  <Button variant="outline" size="sm"
-                    data-testid="tl-split-carry"
-                    aria-label={studioCopy.splitCarryLabel}
-                    title={studioCopy.splitCarryTip}
-                    className={s.uploadBtn}
-                    onClick={() => { setCarryMenuOpen(!carryMenuOpen) }}
-                  >
-                    {splitCarry === "cut" ? studioCopy.splitCarryStock
-                      : splitCarry === "extend" ? studioCopy.splitCarryCarry
-                        : studioCopy.splitCarryKeyframe}
-                  </Button>
-                }
-              />
-              <Button variant="ghost" size="sm"
-                data-testid="tl-add-cut"
-                aria-label={studioCopy.addCutDoor}
-                title={studioCopy.addCutDoorTip}
-                className={s.uploadBtn}
-                onClick={addCutAtPlayhead}
+          <Input
+            type="number"
+            min={0}
+            step={0.1}
+            data-testid="tl-split-at"
+            aria-label={studioCopy.splitAtLabel}
+            title={studioCopy.splitAtTip}
+            className={s.splitAtInput}
+            placeholder={studioCopy.splitAtPlaceholder}
+            value={splitAtSec}
+            onInput={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
+            onChange={(e: unknown) => { setSplitAtSec((e as { target: { value: string } }).target.value) }}
+          />
+          <Menu
+            open={carryMenuOpen}
+            onClose={() => { setCarryMenuOpen(false) }}
+            compact
+            portal
+            items={[
+              { id: "cut", label: studioCopy.splitCarryStock },
+              { id: "extend", label: studioCopy.splitCarryCarry },
+              { id: "carry+keyframe", label: studioCopy.splitCarryKeyframe },
+            ]}
+            selectedId={splitCarry}
+            onSelect={(id: string) => {
+              setCarryMenuOpen(false)
+              setSplitCarry(id as "cut" | "extend" | "carry+keyframe")
+            }}
+            anchor={
+              <Button variant="outline" size="sm"
+                data-testid="tl-split-carry"
+                aria-label={studioCopy.splitCarryLabel}
+                title={studioCopy.splitCarryTip}
+                onClick={() => { setCarryMenuOpen(!carryMenuOpen) }}
               >
-                {studioCopy.addCutDoor}
+                {splitCarry === "cut" ? studioCopy.splitCarryStock
+                  : splitCarry === "extend" ? studioCopy.splitCarryCarry
+                    : studioCopy.splitCarryKeyframe}
               </Button>
-            </>
-          )}
-          {/* THE SUBVIEW DOOR (defect B): the strip head's one
-              keyframes verb — the rail swaps to the standalone
-              editor, Layer A/B banned alongside it. */}
+            }
+          />
           <Button variant="ghost" size="sm"
-            data-testid="tl-keyframes-door"
-            aria-label={studioCopy.keyframesDoor}
-            title={studioCopy.keyframesDoorTip}
-            className={s.uploadBtn}
-            onClick={enterKfView}
+            data-testid="tl-add-cut"
+            aria-label={studioCopy.addCutDoor}
+            title={studioCopy.addCutDoorTip}
+            onClick={addCutAtPlayhead}
           >
-            {studioCopy.keyframesDoor}
+            {studioCopy.addCutDoor}
           </Button>
         </>
-      }
-    />
+      )}
+      {/* THE SUBVIEW DOOR (defect B): the strip's one keyframes verb
+          — the rail swaps to the standalone editor, Layer A/B banned
+          alongside it. */}
+      <Button variant="ghost" size="sm"
+        data-testid="tl-keyframes-door"
+        aria-label={studioCopy.keyframesDoor}
+        title={studioCopy.keyframesDoorTip}
+        onClick={enterKfView}
+      >
+        {studioCopy.keyframesDoor}
+      </Button>
+    </div>
     <div className={s.blockerWrap}>
       {refusalFace !== null && (
         <div data-testid="tl-strip-file-error" className={s.fileErr} role="alert">{refusalFace}</div>
