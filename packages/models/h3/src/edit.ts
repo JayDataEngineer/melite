@@ -588,9 +588,13 @@ export function renderH3Edit(
         // the plan geometry in-graph, never trust the file.
         const raw = g.node('LoadImage', { image: mask.image }).out(0)
         const channel = g.node('ImageToMask', { image: raw, channel: 'red' }).out(0)
-        editMask = g.node('ImageResize', {
+        // D-16 (defect board 2026-11-18): `ImageResize` is a class
+        // no engine build owns (the refusal landed at compose time,
+        // after the authoring pass) — core `ImageScale` is the
+        // exact-fit resize (width/height, never proportion-keeping).
+        editMask = g.node('ImageScale', {
           image: channel, width: cur.out(8), height: cur.out(9),
-          upscale_method: 'bilinear', keep_proportion: false, crop: 'disabled',
+          upscale_method: 'bilinear', crop: 'disabled',
         }).out(0)
       } else if (mask.source === 'video') {
         // THE OWN-VIDEO MASK DOOR: the operator's staged per-frame
@@ -607,9 +611,11 @@ export function renderH3Edit(
         const decoded = g.node('ImageToMask', {
           image: maskFrames, channel: 'red',
         }).out(0)
-        const fitted = g.node('ImageResize', {
+        // D-16: `ImageScale` (core, exact-fit) — `ImageResize` is a
+        // class no engine build owns.
+        const fitted = g.node('ImageScale', {
           image: decoded, width: cur.out(8), height: cur.out(9),
-          upscale_method: 'bilinear', keep_proportion: false, crop: 'disabled',
+          upscale_method: 'bilinear', crop: 'disabled',
         }).out(0)
         const verified = g.node('MiniMaxH3ContexLoopMaskLengthCheck', {
           source_frames: srcFrames, mask: fitted,

@@ -109,8 +109,10 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_edit_png");
     const out = graphOf(g);
-    assert.equal(ofClass(out, "ImageResize").length, 1,
-      "the staged PNG resizes to the chain geometry through the door (F3-16 defect 1)");
+    assert.equal(ofClass(out, "ImageScale").length, 1,
+      "the staged PNG resizes to the chain geometry through the door (F3-16 defect 1; D-16: core ImageScale — ImageResize is a class no engine owns)");
+    assert.equal(ofClass(out, "ImageResize").length, 0,
+      "the dead class is gone (D-16: compose-time refusal, after the whole authoring pass)");
     assert.equal(ofClass(out, "SAM3_VideoTrack").length, 0, "no tracker on the static-png dial");
   });
 

@@ -69,11 +69,12 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     const dec = ofClass(o, "ImageToMask");
     assert.equal(dec.length, 1, "one staged-PNG decoder");
     assert.equal(dec[0]![1].inputs.channel, "red", "the union PNG decodes off its red channel");
-    const resize = ofClass(o, "ImageResize");
-    assert.equal(resize.length, 1, "THE GEOMETRY CURE: the mask resizes in-graph — the track card's own shape never rides the chain raw");
+    const resize = ofClass(o, "ImageScale");
+    assert.equal(resize.length, 1, "THE GEOMETRY CURE: the mask resizes in-graph — the track card's own shape never rides the chain raw (D-16: core ImageScale, the exact-fit resize; ImageResize is a class no engine owns)");
+    assert.equal(ofClass(o, "ImageResize").length, 0, "the dead class is gone from the composed graph (D-16)");
     const r = resize[0]![1].inputs;
-    assert.equal(r.keep_proportion, false, "the mask fills the chain canvas exactly, aspect and all");
-    assert.equal(r.crop, "disabled", "no crop — every masked pixel lands");
+    assert.equal(r.upscale_method, "bilinear", "smooth resample — a mask never nearest-neighbors");
+    assert.equal(r.crop, "disabled", "no crop — every masked pixel lands; ImageScale's exact width/height IS the fill-the-canvas law (no proportion arm to assert — the node has none by definition)");
     const w = r.width as [string, number]; const h = r.height as [string, number];
     assert.ok(Array.isArray(w) && Array.isArray(h), "width/height ride wires, not literals");
     assert.equal(w[0], h[0], "width and height ride the SAME chain-geometry node (the plan's own canvas, engine-derived)");
@@ -94,7 +95,7 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     assert.equal(grow[0]![1].inputs.blur_radius, 6, "the blur dial carries — thin structures tune at the door (N8)");
     const sliceMask = ofClass(o, "MiniMaxH3ContexLoopMaskSlice");
     assert.equal(sliceMask.length, 1, "the per-scene mask slice (F7's law — the tracked timeline slices before the grow)");
-    assert.equal(ofClass(o, "ImageResize").length, 0, "no resize — the tracked mask already lives at the window's shape");
+    assert.equal(ofClass(o, "ImageScale").length, 0, "no resize — the tracked mask already lives at the window's shape");
     assert.equal(ofClass(o, "ImageToMask").length, 0, "no staged-PNG decoder on the region door");
   });
 
@@ -108,9 +109,9 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     const dec = ofClass(o, "ImageToMask");
     assert.equal(dec.length, 1, "the mask frames decode off the red channel, per frame");
     assert.equal(dec[0]![1].inputs.channel, "red", "a mask video is a greyscale ride on the red plane");
-    const resize = ofClass(o, "ImageResize");
-    assert.equal(resize.length, 1, "THE GEOMETRY CURE rides the per-frame door too — the staged mask's own shape never rides the chain raw");
-    assert.equal(resize[0]![1].inputs.keep_proportion, false, "the mask fills the chain canvas exactly, frame by frame");
+    const resize = ofClass(o, "ImageScale");
+    assert.equal(resize.length, 1, "THE GEOMETRY CURE rides the per-frame door too — the staged mask's own shape never rides the chain raw (D-16: core ImageScale)");
+    assert.equal(resize[0]![1].inputs.crop, "disabled", "the mask fills the chain canvas exactly, frame by frame — ImageScale's exact width/height, no crop");
     const check = ofClass(o, "MiniMaxH3ContexLoopMaskLengthCheck");
     assert.equal(check.length, 1, "THE LENGTH-MATCH CHECK — the operator's own law: the mask's frames must equal the clip's frames, refused loud naming both counts");
     const clipLoader = ofClass(o, "VHS_LoadVideo")

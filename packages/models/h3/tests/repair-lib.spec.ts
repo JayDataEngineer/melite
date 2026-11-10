@@ -5,7 +5,7 @@
 // second-pass chain ending in MiniMaxH3ChainAssemble; THE MASK IS
 // RECEIVED (P0-2, defect board row 2 — the operator's contract
 // "repair receives a mask and errors without one"): one staged PNG
-// rides LoadImage → ImageToMask → ImageResize at the plan geometry,
+// rides LoadImage → ImageToMask → ImageScale at the plan geometry,
 // the inline SAM3 prose manufacture is DEAD (stated region_prompt
 // manufactures nothing), the mask-less repair refuses naming
 // 'mask'; the partial denoise law refuses at >= 1; the window
@@ -48,7 +48,7 @@ describe("renderH3Repair as a library (the bypass face)", () => {
       "a repair is a visual second pass — the soundtrack is the source's own, always");
   });
 
-  it("P0-2 THE RECEIVED MASK: one staged PNG rides LoadImage → ImageToMask(red) → ImageResize at the plan geometry (F3-16's law, never trust the file's shape)", () => {
+  it("P0-2 THE RECEIVED MASK: one staged PNG rides LoadImage → ImageToMask(red) → ImageScale at the plan geometry (F3-16's law, never trust the file's shape; D-16: core ImageScale — ImageResize is a class no engine owns)", () => {
     const g = new GraphBuilder();
     renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_mask");
     const o = out(g);
@@ -59,8 +59,9 @@ describe("renderH3Repair as a library (the bypass face)", () => {
     assert.equal(toMask.length, 1, "one staged-mask decoder (red channel)");
     assert.equal(toMask[0]![1].inputs.channel, "red", "the red channel IS the mask (the swap's own law)");
     assert.deepEqual(toMask[0]![1].inputs.image, [load[0]![0], 0], "the decoder reads the received PNG");
-    const resize = ofClass(o, "ImageResize");
-    assert.equal(resize.length, 1, "one geometry resize — the PNG's shape is the TRACK's shape, not the chain's");
+    const resize = ofClass(o, "ImageScale");
+    assert.equal(resize.length, 1, "one geometry resize — the PNG's shape is the TRACK's shape, not the chain's (D-16: core ImageScale)");
+    assert.equal(ofClass(o, "ImageResize").length, 0, "the dead class is gone (D-16: no engine build owns it)");
     assert.deepEqual(resize[0]![1].inputs.image, [toMask[0]![0], 0], "the resize reads the decoded mask");
     const w = resize[0]![1].inputs.width as [string, number];
     const h = resize[0]![1].inputs.height as [string, number];
