@@ -156,4 +156,48 @@ describe('web media-panel (the boot-staged sidebar face, keyless)', () => {
     })
     assert.ok(!document.body.textContent?.includes(STALE_CHIP), 'a cold cache never chips stale')
   })
+
+  it('a multi-artifact run folds to its hero — the badge names the sections, the fold expands', async () => {
+    // THE RUN GROUPING (operator 2026-11-10, "can grouping happen in
+    // the media sidebar?"): the product face of the fold — one
+    // completed film card per run, sections collapsed under a count
+    // badge, expansion one click away. The wall-spec arm
+    // (media-panel-grouping.spec.tsx) owns every mechanism branch;
+    // this arm owns what the operator SEES on a fresh feed.
+    const fresh = JSON.stringify({
+      runs: [{
+        run_id: 'fold-run',
+        created_at: 3,
+        status: 'completed',
+        artifacts: [
+          { url: '/v/final-film.mp4', name: 'final-film.mp4', type: 'video' },
+          { url: '/v/final-film_w1_ab12f.mp4', name: 'final-film_w1_ab12f.mp4', type: 'video' },
+        ],
+      }],
+      errors: [],
+    })
+    const gate = stubGatedFeed(fresh)
+    render(h(MediaPanel))
+    gate.release()
+    // the hero film alone paints; the window section is folded (no
+    // SEGMENT chip on the page), and the badge names the fold
+    await waitFor(() => {
+      assert.ok(document.querySelector('button video') !== null, 'the hero tile paints')
+    })
+    const segmentChips = () => Array.from(document.querySelectorAll('button span'))
+      .filter((s) => s.textContent === 'SEGMENT')
+    assert.equal(segmentChips().length, 0, 'the section rides collapsed on first paint')
+    const badge = document.querySelector('[data-infer-media-group]') as HTMLElement | null
+    assert.ok(badge !== null, 'the group badge paints on the hero')
+    assert.match(badge.textContent ?? '', /\+1 ▾/)
+    assert.equal(badge.getAttribute('aria-expanded'), 'false')
+    // one click expands the fold — the section tiles mount, the
+    // badge turns to its collapse face
+    badge.click()
+    await waitFor(() => {
+      assert.ok(segmentChips().length === 1, 'the window section tiles mount expanded')
+    })
+    assert.match(badge.textContent ?? '', /\+1 ▴/)
+    assert.equal(badge.getAttribute('aria-expanded'), 'true')
+  })
 })

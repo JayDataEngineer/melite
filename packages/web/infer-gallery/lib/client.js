@@ -518,6 +518,13 @@ window.__ModuleLoader__.load({
 			*  final film, not this window segment's own frame (the previews
 			*  cure class 2 — a poster-less video tile wears the film lead). */
 			chipSegment: "SEGMENT",
+			/** The run-group badge: the hero tile's section count (the run
+			*  grouping, 2026-11-10 — the completed film is the visible card,
+			*  its sections expand collapsed-underneath; never hidden, only
+			*  folded). */
+			groupBadge: (p) => `+${p.count}`,
+			/** The run-group badge's aria name: says what folding does. */
+			groupBadgeAria: (p) => p.expanded ? `Collapse ${p.count} section${p.count === 1 ? "" : "s"}` : `Expand ${p.count} section${p.count === 1 ? "" : "s"}`,
 			/** The flows tab pill face. */
 			tabFlows: (p) => `Flows ${p.count}`,
 			/** The artifacts tab pill face. */
@@ -3013,6 +3020,50 @@ window.__ModuleLoader__.load({
 			items.sort((a, b) => b.created - a.created || Number(b.final) - Number(a.final));
 			return items;
 		}
+		/** THE RUN GROUPING (operator 2026-11-10, "can grouping happen in the
+		*  media sidebar?"): the completed film is the visible card, its
+		*  sections (window segments, per-stage outputs) fold collapsed
+		*  underneath — never hidden rows, folded ones; the files exist and
+		*  the badge names their count. Groups key by runId GLOBALLY (a
+		*  Map), never by adjacency: the active sort (Newest interleaves by
+		*  created; A–Z shatters run order entirely) re-orders items freely,
+		*  and a run's tiles must still find each other. Group order = first
+		*  occurrence in the shown list, so the active sort owns the page's
+		*  face. The hero is the run's `final` film wherever it sits (the
+		*  flatten law already flags it); a run with no final keeps its first
+		*  tile as hero. Sections keep their shown-list order.
+		*  THE TUCKED FACE NEVER FOLDS (the mass-archive law is not the run
+		*  grouping): archived tiles are provenance-in-waiting surfaced by
+		*  their own toggle — each renders flat and selectable into the
+		*  restore verb; folding them behind a badge would fight that sweep. */
+		function groupPage(items) {
+			const byRun = /* @__PURE__ */ new Map();
+			const order = [];
+			for (const it of items) {
+				if (it.archived) {
+					order.push({
+						hero: it,
+						sections: []
+					});
+					continue;
+				}
+				const existing = byRun.get(it.runId);
+				if (existing === void 0) {
+					const group = {
+						hero: it,
+						sections: []
+					};
+					byRun.set(it.runId, group);
+					order.push(group);
+					continue;
+				}
+				if (it.final && !existing.hero.final) {
+					existing.sections.push(existing.hero);
+					existing.hero = it;
+				} else existing.sections.push(it);
+			}
+			return order;
+		}
 		function Glyph({ kind, size = 26 }) {
 			if (kind === "video") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
 				width: size,
@@ -3300,6 +3351,15 @@ window.__ModuleLoader__.load({
 			const [archiveArmed, setArchiveArmed] = (0, react.useState)(false);
 			const [restoreArmed, setRestoreArmed] = (0, react.useState)(false);
 			const [archiving, setArchiving] = (0, react.useState)(false);
+			const [expandedGroups, setExpandedGroups] = (0, react.useState)(/* @__PURE__ */ new Set());
+			const toggleGroup = (runId) => {
+				setExpandedGroups((was) => {
+					const next = new Set(was);
+					if (next.has(runId)) next.delete(runId);
+					else next.add(runId);
+					return next;
+				});
+			};
 			const dragSelecting = (0, react.useRef)(false);
 			const dragAdd = (0, react.useRef)(true);
 			const dragMoved = (0, react.useRef)(false);
@@ -3605,6 +3665,20 @@ window.__ModuleLoader__.load({
 			const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
 			const safePage = Math.min(page, pageCount - 1);
 			const pageItems = (0, react.useMemo)(() => shown.slice(safePage * pageSize, (safePage + 1) * pageSize), [shown, safePage]);
+			const grouped = (0, react.useMemo)(() => groupPage(pageItems), [pageItems]);
+			const groupsByRun = (0, react.useMemo)(() => {
+				const m = /* @__PURE__ */ new Map();
+				for (const g of grouped) if (g.sections.length > 0) m.set(g.hero.runId, g);
+				return m;
+			}, [grouped]);
+			const visibleItems = (0, react.useMemo)(() => pageItems.filter((it) => {
+				const g = groupsByRun.get(it.runId);
+				return g === void 0 || it.id === g.hero.id || expandedGroups.has(it.runId);
+			}), [
+				pageItems,
+				groupsByRun,
+				expandedGroups
+			]);
 			const selectedLive = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && !it.archived), [items, selected]);
 			const selectedTucked = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && it.archived), [items, selected]);
 			const toggleSelect = (it) => {
@@ -4130,214 +4204,254 @@ window.__ModuleLoader__.load({
 							touchAction: "pan-y",
 							userSelect: selectMode ? "none" : void 0
 						},
-						children: pageItems.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-							onClick: (e) => {
-								if (!selectMode) {
-									setPreview(it);
-									return;
-								}
-								if (suppressSelectClick.current) {
+						children: visibleItems.map((it) => {
+							const grp = groupsByRun.get(it.runId);
+							const isGroupHero = grp !== void 0 && it.id === grp.hero.id;
+							const groupOpen = grp !== void 0 && expandedGroups.has(it.runId);
+							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+								onClick: (e) => {
+									if (!selectMode) {
+										setPreview(it);
+										return;
+									}
+									if (suppressSelectClick.current) {
+										suppressSelectClick.current = false;
+										return;
+									}
+									if (e.shiftKey) rangeSelect(it);
+									else toggleSelect(it);
+								},
+								onPointerDown: (e) => {
+									if (!selectMode) return;
+									if (e.pointerType === "mouse" && e.button !== 0) return;
+									dragSelecting.current = true;
+									dragMoved.current = false;
+									dragAnchorId.current = it.id;
+									dragAdd.current = !selected.has(it.id);
 									suppressSelectClick.current = false;
-									return;
-								}
-								if (e.shiftKey) rangeSelect(it);
-								else toggleSelect(it);
-							},
-							onPointerDown: (e) => {
-								if (!selectMode) return;
-								if (e.pointerType === "mouse" && e.button !== 0) return;
-								dragSelecting.current = true;
-								dragMoved.current = false;
-								dragAnchorId.current = it.id;
-								dragAdd.current = !selected.has(it.id);
-								suppressSelectClick.current = false;
-							},
-							onPointerEnter: () => {
-								if (!selectMode || !dragSelecting.current) return;
-								if (!dragMoved.current && dragAnchorId.current !== null) paintSelect(dragAnchorId.current);
-								dragMoved.current = true;
-								suppressSelectClick.current = true;
-								paintSelect(it.id);
-							},
-							onPointerUp: () => {
-								dragSelecting.current = false;
-								dragAnchorId.current = null;
-							},
-							"aria-pressed": selectMode ? selected.has(it.id) : void 0,
-							className: overlay_module_css_default.tile,
-							style: {
-								position: "relative",
-								aspectRatio: "16 / 9",
-								borderRadius: 10,
-								overflow: "hidden",
-								border: "1px solid " + (selectMode && selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"),
-								cursor: "pointer",
-								padding: 0,
-								background: tileBgFor(it.kind),
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
-								textAlign: "left",
-								fontFamily: "inherit",
-								opacity: it.archived ? .55 : void 0
-							},
-							children: [
-								it.poster !== "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-									src: it.poster,
-									alt: "",
-									loading: "lazy",
-									style: {
-										position: "absolute",
-										inset: 0,
-										width: "100%",
-										height: "100%",
-										objectFit: "cover"
-									}
-								}) : it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-									src: it.face,
-									poster: it.poster !== "" && it.poster !== it.url && it.poster !== it.face ? it.poster : void 0,
-									muted: true,
-									playsInline: true,
-									preload: "metadata",
-									disablePictureInPicture: true,
-									"aria-hidden": "true",
-									tabIndex: -1,
-									style: {
-										position: "absolute",
-										inset: 0,
-										width: "100%",
-										height: "100%",
-										objectFit: "contain",
-										pointerEvents: "none"
-									}
-								}) : it.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelTilePreview, {
-									url: it.url,
-									file: it.file
-								}) : null,
-								it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										position: "absolute",
-										right: 6,
-										bottom: 6,
-										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-										borderRadius: 6,
-										padding: 3,
-										lineHeight: 0,
-										color: "var(--dsw-alias-label-primary, #e2e8f0)"
-									},
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
-										kind: "video",
-										size: 14
-									})
-								}) : null,
-								it.segment ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										position: "absolute",
-										left: 6,
-										bottom: 6,
-										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-										borderRadius: 6,
-										padding: "3px 6px",
-										lineHeight: 0,
-										color: "var(--dsw-alias-label-primary, #e2e8f0)",
-										fontSize: 10,
-										letterSpacing: "0.04em"
-									},
-									children: galleryCopy.chipSegment
-								}) : null,
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
-								it.archived ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										position: "absolute",
-										left: 6,
-										bottom: 6,
-										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-										borderRadius: 6,
-										padding: "3px 6px",
-										lineHeight: 1,
-										color: "var(--dsw-alias-label-primary, #e2e8f0)",
-										fontSize: 10,
-										letterSpacing: "0.04em"
-									},
-									children: galleryCopy.archivedBadge
-								}) : null,
-								selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										position: "absolute",
-										left: 6,
-										top: 6,
-										width: 18,
-										height: 18,
-										borderRadius: "50%",
-										display: "flex",
-										alignItems: "center",
-										justifyContent: "center",
-										fontSize: 11,
-										lineHeight: 1,
-										background: selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-										color: selected.has(it.id) ? "var(--dsw-alias-bg-base, #000)" : "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
-										border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"
-									},
-									children: selected.has(it.id) ? "✓" : ""
-								}) : null,
-								!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									role: "button",
-									tabIndex: 0,
-									className: overlay_module_css_default.wand,
-									"aria-label": galleryCopy.wandAria,
-									onClick: (e) => {
-										e.stopPropagation();
-										openCards(it);
-									},
-									onKeyDown: (e) => {
-										if (e.key === "Enter") {
+								},
+								onPointerEnter: () => {
+									if (!selectMode || !dragSelecting.current) return;
+									if (!dragMoved.current && dragAnchorId.current !== null) paintSelect(dragAnchorId.current);
+									dragMoved.current = true;
+									suppressSelectClick.current = true;
+									paintSelect(it.id);
+								},
+								onPointerUp: () => {
+									dragSelecting.current = false;
+									dragAnchorId.current = null;
+								},
+								"aria-pressed": selectMode ? selected.has(it.id) : void 0,
+								className: overlay_module_css_default.tile,
+								style: {
+									position: "relative",
+									aspectRatio: "16 / 9",
+									borderRadius: 10,
+									overflow: "hidden",
+									border: "1px solid " + (selectMode && selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"),
+									cursor: "pointer",
+									padding: 0,
+									background: tileBgFor(it.kind),
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
+									textAlign: "left",
+									fontFamily: "inherit",
+									opacity: it.archived ? .55 : void 0
+								},
+								children: [
+									it.poster !== "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+										src: it.poster,
+										alt: "",
+										loading: "lazy",
+										style: {
+											position: "absolute",
+											inset: 0,
+											width: "100%",
+											height: "100%",
+											objectFit: "cover"
+										}
+									}) : it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+										src: it.face,
+										poster: it.poster !== "" && it.poster !== it.url && it.poster !== it.face ? it.poster : void 0,
+										muted: true,
+										playsInline: true,
+										preload: "metadata",
+										disablePictureInPicture: true,
+										"aria-hidden": "true",
+										tabIndex: -1,
+										style: {
+											position: "absolute",
+											inset: 0,
+											width: "100%",
+											height: "100%",
+											objectFit: "contain",
+											pointerEvents: "none"
+										}
+									}) : it.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelTilePreview, {
+										url: it.url,
+										file: it.file
+									}) : null,
+									it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											position: "absolute",
+											right: 6,
+											bottom: 6,
+											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+											borderRadius: 6,
+											padding: 3,
+											lineHeight: 0,
+											color: "var(--dsw-alias-label-primary, #e2e8f0)"
+										},
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
+											kind: "video",
+											size: 14
+										})
+									}) : null,
+									it.segment ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											position: "absolute",
+											left: 6,
+											bottom: 6,
+											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+											borderRadius: 6,
+											padding: "3px 6px",
+											lineHeight: 0,
+											color: "var(--dsw-alias-label-primary, #e2e8f0)",
+											fontSize: 10,
+											letterSpacing: "0.04em"
+										},
+										children: galleryCopy.chipSegment
+									}) : null,
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
+									isGroupHero && grp !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										role: "button",
+										tabIndex: 0,
+										"aria-expanded": groupOpen,
+										"aria-label": galleryCopy.groupBadgeAria({
+											count: grp.sections.length,
+											expanded: groupOpen
+										}),
+										"data-infer-media-group": it.runId,
+										onClick: (e) => {
+											e.stopPropagation();
+											toggleGroup(it.runId);
+										},
+										onKeyDown: (e) => {
+											if (e.key === "Enter") {
+												e.stopPropagation();
+												toggleGroup(it.runId);
+											}
+										},
+										style: {
+											position: "absolute",
+											left: 6,
+											top: selectMode ? 30 : 6,
+											zIndex: 3,
+											borderRadius: 6,
+											padding: "3px 6px",
+											lineHeight: 1,
+											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+											color: "var(--dsw-alias-label-primary, #e2e8f0)",
+											fontSize: 10,
+											fontWeight: 700,
+											letterSpacing: "0.04em"
+										},
+										children: [galleryCopy.groupBadge({ count: grp.sections.length }), groupOpen ? " ▴" : " ▾"]
+									}) : null,
+									it.archived ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											position: "absolute",
+											left: 6,
+											bottom: 6,
+											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+											borderRadius: 6,
+											padding: "3px 6px",
+											lineHeight: 1,
+											color: "var(--dsw-alias-label-primary, #e2e8f0)",
+											fontSize: 10,
+											letterSpacing: "0.04em"
+										},
+										children: galleryCopy.archivedBadge
+									}) : null,
+									selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											position: "absolute",
+											left: 6,
+											top: 6,
+											width: 18,
+											height: 18,
+											borderRadius: "50%",
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+											fontSize: 11,
+											lineHeight: 1,
+											background: selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+											color: selected.has(it.id) ? "var(--dsw-alias-bg-base, #000)" : "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
+											border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"
+										},
+										children: selected.has(it.id) ? "✓" : ""
+									}) : null,
+									!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										role: "button",
+										tabIndex: 0,
+										className: overlay_module_css_default.wand,
+										"aria-label": galleryCopy.wandAria,
+										onClick: (e) => {
 											e.stopPropagation();
 											openCards(it);
-										}
-									},
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
-								}),
-								restoringId === it.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: {
-										position: "absolute",
-										left: 6,
-										top: 6,
-										zIndex: 3,
-										borderRadius: 6,
-										padding: "4px 6px",
-										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-										color: "var(--dsw-alias-label-primary, rgb(226,232,240))",
-										fontSize: 9,
-										fontWeight: 700,
-										letterSpacing: "0.4px"
-									},
-									children: galleryCopy.restoringAction
-								}),
-								it.poster === "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
-								}) : null,
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-									style: {
-										position: "absolute",
-										left: 0,
-										right: 0,
-										bottom: 0,
-										padding: "16px 6px 4px",
-										background: gradientCaption,
-										fontSize: 10,
-										lineHeight: 1.35,
-										color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
-										display: "-webkit-box",
-										WebkitLineClamp: 2,
-										WebkitBoxOrient: "vertical",
-										overflow: "hidden"
-									},
-									children: [it.head !== "" ? it.head + " — " : "", [it.time, it.file].filter(Boolean).join(" · ")]
-								})
-							]
-						}, it.id))
+										},
+										onKeyDown: (e) => {
+											if (e.key === "Enter") {
+												e.stopPropagation();
+												openCards(it);
+											}
+										},
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
+									}),
+									restoringId === it.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											position: "absolute",
+											left: 6,
+											top: 6,
+											zIndex: 3,
+											borderRadius: 6,
+											padding: "4px 6px",
+											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+											color: "var(--dsw-alias-label-primary, rgb(226,232,240))",
+											fontSize: 9,
+											fontWeight: 700,
+											letterSpacing: "0.4px"
+										},
+										children: galleryCopy.restoringAction
+									}),
+									it.poster === "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
+									}) : null,
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										style: {
+											position: "absolute",
+											left: 0,
+											right: 0,
+											bottom: 0,
+											padding: "16px 6px 4px",
+											background: gradientCaption,
+											fontSize: 10,
+											lineHeight: 1.35,
+											color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
+											display: "-webkit-box",
+											WebkitLineClamp: 2,
+											WebkitBoxOrient: "vertical",
+											overflow: "hidden"
+										},
+										children: [it.head !== "" ? it.head + " — " : "", [it.time, it.file].filter(Boolean).join(" · ")]
+									})
+								]
+							}, it.id);
+						})
 					}), pageCount > 1 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							display: "flex",

@@ -359,6 +359,56 @@ export function flatten(runs: GalleryRunRow[]): MediaItem[] {
   return items
 }
 
+/** A run group on a gallery page: the hero (the run's FINAL film —
+ *  the product) and the section items folded under it. A group with
+ *  an empty sections array renders as a plain tile (no group
+ *  chrome). */
+export interface MediaGroup {
+  hero: MediaItem
+  sections: MediaItem[]
+}
+
+/** THE RUN GROUPING (operator 2026-11-10, "can grouping happen in the
+ *  media sidebar?"): the completed film is the visible card, its
+ *  sections (window segments, per-stage outputs) fold collapsed
+ *  underneath — never hidden rows, folded ones; the files exist and
+ *  the badge names their count. Groups key by runId GLOBALLY (a
+ *  Map), never by adjacency: the active sort (Newest interleaves by
+ *  created; A–Z shatters run order entirely) re-orders items freely,
+ *  and a run's tiles must still find each other. Group order = first
+ *  occurrence in the shown list, so the active sort owns the page's
+ *  face. The hero is the run's `final` film wherever it sits (the
+ *  flatten law already flags it); a run with no final keeps its first
+ *  tile as hero. Sections keep their shown-list order.
+ *  THE TUCKED FACE NEVER FOLDS (the mass-archive law is not the run
+ *  grouping): archived tiles are provenance-in-waiting surfaced by
+ *  their own toggle — each renders flat and selectable into the
+ *  restore verb; folding them behind a badge would fight that sweep. */
+export function groupPage(items: MediaItem[]): MediaGroup[] {
+  const byRun = new Map<string, MediaGroup>()
+  const order: MediaGroup[] = []
+  for (const it of items) {
+    if (it.archived) {
+      order.push({ hero: it, sections: [] })
+      continue
+    }
+    const existing = byRun.get(it.runId)
+    if (existing === undefined) {
+      const group: MediaGroup = { hero: it, sections: [] }
+      byRun.set(it.runId, group)
+      order.push(group)
+      continue
+    }
+    if (it.final && !existing.hero.final) {
+      existing.sections.push(existing.hero)
+      existing.hero = it
+    } else {
+      existing.sections.push(it)
+    }
+  }
+  return order
+}
+
 function Glyph({ kind, size = 26 }: { kind: Kind; size?: number }) {
   if (kind === 'video') {
     return (
@@ -593,6 +643,19 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [archiveArmed, setArchiveArmed] = useState(false)
   const [restoreArmed, setRestoreArmed] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  /* THE RUN GROUPS (operator 2026-11-10): a multi-artifact run folds
+   * to its hero film + a count badge; its sections render only while
+   * the group is expanded. Collapsed is the default — the bar reads
+   * as films, the sections stay one click away, never hidden. */
+  const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(new Set())
+  const toggleGroup = (runId: string): void => {
+    setExpandedGroups((was) => {
+      const next = new Set(was)
+      if (next.has(runId)) next.delete(runId)
+      else next.add(runId)
+      return next
+    })
+  }
   /* DRAG-SELECT (operator 2026-11-14, "click and drag would be ideal"):
    * click-each-box stands for small sweeps; a 19-loser candidate sweep
    * wants one gesture. In select mode a held pointer paints the
@@ -972,6 +1035,27 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const pageItems = useMemo(
     () => shown.slice(safePage * pageSize, (safePage + 1) * pageSize),
     [shown, safePage],
+  )
+  /* THE RUN GROUPS ON THE PAGE (operator 2026-11-10): fold each
+   * multi-artifact run to its hero film + count badge; sections
+   * render only while expanded. visibleItems keeps the tile stream
+   * shape (the grid, selection, pagination all ride it unchanged):
+   * an item survives when its run has no sections (a lone tile is
+   * its own face), when it IS the hero, or when its group is
+   * expanded. Collapsed sections are folded, never deleted — the
+   * badge names their count and one click restores them. */
+  const grouped = useMemo(() => groupPage(pageItems), [pageItems])
+  const groupsByRun = useMemo(() => {
+    const m = new Map<string, MediaGroup>()
+    for (const g of grouped) if (g.sections.length > 0) m.set(g.hero.runId, g)
+    return m
+  }, [grouped])
+  const visibleItems = useMemo(
+    () => pageItems.filter((it) => {
+      const g = groupsByRun.get(it.runId)
+      return g === undefined || it.id === g.hero.id || expandedGroups.has(it.runId)
+    }),
+    [pageItems, groupsByRun, expandedGroups],
   )
   /* THE VERB SUBSETS (mass-archive law): one selection, three verbs —
    * archive + delete sweep the live subset, restore sweeps the tucked
@@ -1445,7 +1529,11 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                     onPointerCancel={() => { dragSelecting.current = false; dragAnchorId.current = null }}
                     style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${String(TILE_W[tileSize])}px, 1fr))`, gap: 10, touchAction: 'pan-y', userSelect: selectMode ? 'none' : undefined }}
                   >
-                    {pageItems.map((it) => (
+                    {visibleItems.map((it) => {
+                      const grp = groupsByRun.get(it.runId)
+                      const isGroupHero = grp !== undefined && it.id === grp.hero.id
+                      const groupOpen = grp !== undefined && expandedGroups.has(it.runId)
+                      return (
                       <button
                         key={it.id}
                         onClick={(e) => {
@@ -1544,6 +1632,44 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           )
                         : null}
                       <TileBadge item={it} />
+                      {/* THE GROUP BADGE (the run grouping, 2026-11-10):
+                        * a multi-artifact run's hero carries the fold —
+                        * the section count, click to expand/collapse.
+                        * A SPAN with role, never a nested button (the
+                        * wand law: button-in-button is invalid DOM);
+                        * stopPropagation keeps the tile's own click
+                        * (preview / select) intact. Top-left, below the
+                        * select marker when one shows — every other
+                        * corner is owned (video glyph bottom-right,
+                        * segment/archived chips bottom-left, wand
+                        * top-right). */}
+                      {isGroupHero && grp !== undefined
+                        ? (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              aria-expanded={groupOpen}
+                              aria-label={galleryCopy.groupBadgeAria({ count: grp.sections.length, expanded: groupOpen })}
+                              data-infer-media-group={it.runId}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleGroup(it.runId)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.stopPropagation()
+                                  toggleGroup(it.runId)
+                                }
+                              }}
+                              style={{
+                                position: 'absolute', left: 6, top: selectMode ? 30 : 6, zIndex: 3,
+                                borderRadius: 6, padding: '3px 6px', lineHeight: 1,
+                                background: fillSubtle2, color: labelPrimary4,
+                                fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+                              }}
+                            >{galleryCopy.groupBadge({ count: grp.sections.length })}{groupOpen ? ' ▴' : ' ▾'}</span>
+                          )
+                        : null}
                       {/* THE TUCKED BADGE (mass-archive law): a tucked
                         * tile names itself — the dim alone reads as a
                         * loading state, never as archived. Archived
@@ -1649,8 +1775,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       }}>
                         {it.head !== '' ? it.head + ' \u2014 ' : ''}{[it.time, it.file].filter(Boolean).join(' · ')}
                       </span>
-                    </button>
-                  ))}
+                      </button>
+                      )
+                    })}
                   </div>
                   {pageCount > 1 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, justifyContent: 'center' }}>

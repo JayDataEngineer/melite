@@ -208,6 +208,10 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
           ] })])
         : draftsFeed([]))
     render(<MediaPanel />)
+    // THE RUN GROUPING (2026-11-10): the run folds to its hero film;
+    // the glb section rides collapsed under the badge — expand to judge it
+    await waitFor(() => { expect(document.querySelector('[data-infer-media-group]')).toBeTruthy() })
+    fireEvent.click(document.querySelector('[data-infer-media-group]') as HTMLElement)
     await waitFor(() => { expect(screen.getByText('3D')).toBeTruthy() })
     expect(screen.queryByText('FINAL FILM')).toBeNull()
   })
@@ -240,6 +244,15 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
           ] })])
         : draftsFeed([]))
     render(<MediaPanel />)
+    // THE RUN GROUPING (2026-11-10): collapsed default — the hero
+    // film alone mounts; the window section rides the +1 badge
+    await waitFor(() => {
+      const vs = Array.from(document.querySelectorAll('button video:not([controls])')) as HTMLVideoElement[]
+      expect(vs).toHaveLength(1)
+    })
+    const badge = document.querySelector('[data-infer-media-group]') as HTMLElement | null
+    expect(badge?.textContent).toMatch(/\+1 ▾/)
+    fireEvent.click(badge as HTMLElement)
     const tiles = await waitFor(() => {
       const vs = Array.from(document.querySelectorAll('button video:not([controls])')) as HTMLVideoElement[]
       expect(vs).toHaveLength(2)
@@ -278,6 +291,9 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
           ] })])
         : draftsFeed([]))
     render(<MediaPanel />)
+    // THE RUN GROUPING: fold → expand, then judge the window face
+    await waitFor(() => { expect(document.querySelector('[data-infer-media-group]')).toBeTruthy() })
+    fireEvent.click(document.querySelector('[data-infer-media-group]') as HTMLElement)
     const windowTile = await waitFor(() => {
       const v = document.querySelector('button video[src="/v/film_w1_ab12f.mp4"]') as HTMLVideoElement | null
       expect(v).not.toBeNull()
@@ -308,6 +324,9 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
           ] })])
         : draftsFeed([]))
     render(<MediaPanel />)
+    // THE RUN GROUPING: expand the fold before judging the segment law
+    await waitFor(() => { expect(document.querySelector('[data-infer-media-group]')).toBeTruthy() })
+    fireEvent.click(document.querySelector('[data-infer-media-group]') as HTMLElement)
     // the suffixed artifact's tile paints the TRUE final as its face
     const segmentTile = await waitFor(() => {
       const v = document.querySelector('button video[src="/v/hero.mp4"]') as HTMLVideoElement | null
@@ -343,8 +362,17 @@ describe('MediaPanel — stubbed feed over the gallery routes', () => {
     render(<MediaPanel />)
     await waitFor(() => { expect(screen.getByText(/1 runs · 3 artifacts/)).toBeTruthy() })
     expect(screen.getByText(/1 capped/)).toBeTruthy()
-    // exactly three tiles — the marker artifact never renders
-    const tiles = Array.from(document.querySelectorAll('button img'))
+    // THE RUN GROUPING: collapsed, the capped run folds to ONE hero
+    // tile (+2 badge); expanded, exactly three tiles paint — the
+    // marker artifact never renders either way
+    const collapsed = Array.from(document.querySelectorAll('button img'))
+    expect(collapsed).toHaveLength(1)
+    fireEvent.click(document.querySelector('[data-infer-media-group]') as HTMLElement)
+    const tiles = await waitFor(() => {
+      const shown = Array.from(document.querySelectorAll('button img'))
+      expect(shown).toHaveLength(3)
+      return shown
+    })
     expect(tiles).toHaveLength(3)
   })
 

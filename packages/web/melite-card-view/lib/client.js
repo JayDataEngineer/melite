@@ -18000,6 +18000,13 @@ window.__ModuleLoader__.load({
 			*  final film, not this window segment's own frame (the previews
 			*  cure class 2 — a poster-less video tile wears the film lead). */
 			chipSegment: "SEGMENT",
+			/** The run-group badge: the hero tile's section count (the run
+			*  grouping, 2026-11-10 — the completed film is the visible card,
+			*  its sections expand collapsed-underneath; never hidden, only
+			*  folded). */
+			groupBadge: (p) => `+${p.count}`,
+			/** The run-group badge's aria name: says what folding does. */
+			groupBadgeAria: (p) => p.expanded ? `Collapse ${p.count} section${p.count === 1 ? "" : "s"}` : `Expand ${p.count} section${p.count === 1 ? "" : "s"}`,
 			/** The flows tab pill face. */
 			tabFlows: (p) => `Flows ${p.count}`,
 			/** The artifacts tab pill face. */

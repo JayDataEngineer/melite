@@ -27,6 +27,15 @@ const imagesRun = (n: number): GalleryRunRow =>
     artifacts: Array.from({ length: n }, (_, i) => ({ url: `/v/i${String(i)}.png`, type: 'image' })),
   }) as GalleryRunRow
 
+/** n single-artifact runs — the library's real paginate face: one
+ * tile per run, so THE RUN GROUPING (2026-11-10) folds nothing and
+ * the page dial judges pagination, not the fold. */
+const imagesRuns = (n: number): GalleryRunRow[] =>
+  Array.from({ length: n }, (_, i) => ({
+    run_id: `r${String(i)}`, created_at: i,
+    artifacts: [{ url: `/v/i${String(i)}.png`, type: 'image' }],
+  }) as GalleryRunRow)
+
 const gridColumns = (): string => {
   const grid = document.querySelector('[data-infer-media-grid]') as HTMLElement | null
   expect(grid).toBeTruthy()
@@ -50,7 +59,7 @@ describe('the view dials — preview size + page size over the artifacts grid', 
 
   it('the page dial re-anchors the scan — 61 items: 2 pages at 60, 3 at 30', async () => {
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-gallery/runs' ? runsFeed([imagesRun(61)]) : draftsFeed([]))
+      url === '/infer-gallery/runs' ? runsFeed(imagesRuns(61)) : draftsFeed([]))
     render(<MediaPanel />)
     await waitFor(() => { expect(screen.getByText(/page 1 of 2/)).toBeTruthy() })
     // page 2 holds the one tile past the first 60
