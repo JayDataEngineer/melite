@@ -16,15 +16,46 @@
 # @melite/harness-tools is NEVER tsdown-built: bundle-repro.spec.ts
 # asserts its committed lib/ is full tsc output.
 #
-# Usage:  ./scripts/lane-rebuild.sh          (from anywhere)
+# Usage:  ./scripts/lane-rebuild.sh          (from anywhere — the :3088 lane)
+#         ./scripts/lane-rebuild.sh 3089     (a BRANCH lane on :3089 — own
+#                 DSH_HOME, own unit; a later :3088 rebuild never touches it)
 # Never hand-cp libs into ~/.dsh-dev again — the provisioner owns
 # that tree; a hand-cp is a lie that the next render erases.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # deployment env (.env is gitignored; .env.example documents every knob)
 [ -f ./.env ] && . ./.env   # env-file loaded
-LOG="$HOME/.dsh-dev/melite-test-3088.log"
-PORT=3088
+# THE PORT PARAMETER (operator 2026-11-10: "we need to also have it on
+# https://cloud.tailb1e597.ts.net:3089/ via a parameter. That way I can
+# test the 3089, and when you rebuild 3088, it won't get ripped down in
+# front of me"). The DEFAULT path is byte-identical to the old script.
+# A BRANCH port rides the demo lane's own-home law (dsh-melite-demo on
+# :3090 runs on its own DSH_HOME precisely so two lanes can stand at
+# once): own home (own profiles/storages/sessions — a blank media
+# sidebar, like the demo), own unit, own log. A :3088 rebuild renders
+# ~/.dsh-dev and restarts dsh-melite-test + the browser sidecar only —
+# the branch lane's home and unit are never in its blast radius.
+PORT="${1:-${LANE_PORT:-3088}}"
+case "$PORT" in
+  3088)
+    UNIT="dsh-melite-test.service"
+    DSH_HOME="${LANE_DSH_HOME:-$HOME/.dsh-dev}"
+    ;;
+  *)
+    UNIT="dsh-melite-test-$PORT.service"
+    DSH_HOME="${LANE_DSH_HOME:-$HOME/.dsh-lane$PORT}"
+    # THE SERVE PROXY (loud, never silent loopback): the tailnet face
+    # https://cloud.tailb1e597.ts.net:$PORT is a tailscale-serve proxy
+    # onto 127.0.0.1:$PORT — :3089 exists already; any OTHER port owes
+    # its own proxy first, and a lane that answers only loopback while
+    # the receipt prints a cloud URL is a lie.
+    if ! tailscale serve status 2>/dev/null | grep -q "cloud.tailb1e597.ts.net:$PORT "; then
+      echo "LANE REFUSED: no tailscale-serve proxy for :$PORT — add one first (an https proxy onto http://127.0.0.1:$PORT), then re-run"
+      exit 1
+    fi
+    ;;
+esac
+LOG="$DSH_HOME/melite-test-$PORT.log"
 # THE RENDER CONTRACT (the model-loss cure, 2026-11-06): the profile
 # render MUST carry the same flags lane-sync uses — a FLAGLESS render
 # regenerates cordis.patch.yml wholesale with an EMPTY operator-rows
@@ -32,7 +63,9 @@ PORT=3088
 # the agentRoute pin: the lane then boots with ZERO LLM models while
 # the script's llm-blind receipts still print success.
 PROFILE="${LANE_PROFILE:-melite-test}"
-DSH_HOME="${LANE_DSH_HOME:-$HOME/.dsh-dev}"
+# (DSH_HOME is seated in the PORT case above: the default lane's
+# ~/.dsh-dev, a branch lane's own ~/.dsh-lane$PORT — never re-derived
+# here, or the branch home would be clobbered back onto the main one)
 # The seat is the PRIMARY brain (zai/glm-5.3-flash, same as :3080's
 # MELITE_AGENT_ROUTE). It sat on the muse FALLBACK until 2026-10-20 —
 # every lane-sync re-pin stuck the lane on muse and the rate-limit
@@ -90,16 +123,34 @@ echo "── [2/6] building every profile-bundled melite package (build-plane ri
 node tools/build-plane.mjs build
 
 echo "── [3/6] rendering the $PROFILE profile from the current tree (lane-sync's render contract)"
+# THE BRANCH ROOTS LAW (2026-11-10, the lane-3089 lock collision): the
+# 3088 estate pins the repo's data/runs state root and holds its
+# single-writer gateway lock for its lifetime. A branch lane rendering
+# the same rows derives the SAME root, and every one of its queue-plane
+# seats dies on the lock at boot ("another estate owns this root") —
+# the demo lane's own cure (--estate-state-root, J12) applies here: a
+# branch names its OWN runs root under its OWN DSH_HOME, so the two
+# lanes are two estates, never two writers on one root.
+BRANCH_ROOT_ARGS=()
+if [ "$PORT" != "3088" ]; then
+  BRANCH_ROOT_ARGS=(--estate-state-root "$DSH_HOME/runs")
+  echo "   branch state root: $DSH_HOME/runs (the repo's data/runs stays 3088's)"
+fi
 node packages/harness/provisioner/bin/infer-provision.mjs profile "$PROFILE" \
   --dsh-home "$DSH_HOME" \
   --estate-agent-route "$ROUTE" \
-  --profile-rows "$ROWS" >/dev/null
+  --profile-rows "$ROWS" \
+  "${BRANCH_ROOT_ARGS[@]}" >/dev/null
 # (the model-loss wall, 2026-11-06) the render is only honest if the
 # LLM rows + the agent route SURVIVED it — a stripped render reboots
 # a modelless lane that every downstream receipt still calls green.
 PATCH="$DSH_HOME/profiles/$PROFILE/cordis.patch.yml"
 grep -q 'llm-pi-ai' "$PATCH" || { echo "RENDER REFUSED: $PATCH carries no llm-pi-ai rows — the LLM models would vanish (see dev_docs/audits/features/lane-rebuild-model-loss-2026-11-06.md)"; exit 1; }
 grep -q 'agentRoute' "$PATCH" || { echo "RENDER REFUSED: $PATCH lost the agentRoute pin — the estate agent would not seat"; exit 1; }
+if [ "$PORT" != "3088" ]; then
+  grep -q "stateRoot: \"$DSH_HOME/runs\"" "$PATCH" || { echo "RENDER REFUSED: $PATCH carries no branch stateRoot — the lane would boot onto 3088's runs root and die on its gateway lock"; exit 1; }
+  echo "   render verified: branch stateRoot pinned in $PATCH"
+fi
 echo "   render verified: llm-pi-ai rows + agentRoute present in $PATCH"
 # THE RENDER-PROVENANCE FRESHNESS GATE (HMR audit 009 F5, 2026-10-24):
 # the receipts at [6/6] prove the BOOT — this gate proves the RENDER.
@@ -128,18 +179,97 @@ PROV_FILE="$PROV" PROV_HEAD="$(git rev-parse HEAD)" node -e '
  console.log("   render provenance fresh: " + p.source.commit.slice(0, 9) + " rendered " + ageMin.toFixed(1) + " min ago" + (p.source.dirty ? " (dirty tree — uncommitted bytes ride the render)" : "") + " \u2713");
 '
 
-echo "── [4/6] wiping every cache seat (embedded browsers + chrome profiles)"
-rm -rf ~/.cache/dsh-chrome-profile/Default/Cache \
-       ~/.cache/dsh-chrome-profile/Default/Code\ Cache \
-       ~/.cache/dsh-chrome-profile/Default/Service\ Worker \
-       ~/.cache/dsh-chrome-profile2/Default/Cache \
-       ~/.cache/dsh-chrome-profile2/Default/Code\ Cache \
-       ~/.cache/dsh-chrome-profile2/Default/Service\ Worker 2>/dev/null || true
+if [ "$PORT" = "3088" ]; then
+  echo "── [4/6] wiping every cache seat (embedded browsers + chrome profiles)"
+  rm -rf ~/.cache/dsh-chrome-profile/Default/Cache \
+         ~/.cache/dsh-chrome-profile/Default/Code\ Cache \
+         ~/.cache/dsh-chrome-profile/Default/Service\ Worker \
+         ~/.cache/dsh-chrome-profile2/Default/Cache \
+         ~/.cache/dsh-chrome-profile2/Default/Code\ Cache \
+         ~/.cache/dsh-chrome-profile2/Default/Service\ Worker 2>/dev/null || true
+else
+  # THE BRANCH LANE never wipes the cache seats: the sidecar browsers
+  # belong to the :3088 lane the operator may be mid-test on — wiping
+  # them from a branch boot would rip :3088's face down, the exact
+  # harm this parameter exists to prevent. The branch's own boot is a
+  # fresh unit anyway.
+  echo "── [4/6] branch lane — cache seats untouched (they belong to :3088's sidecars)"
+fi
 
-echo "── [5/6] killing any orphan on :$PORT, restarting lane + browser sidecar"
-ORPHAN=$(ss -tlnp 2>/dev/null | grep "127.0.0.1:$PORT" | grep -oE 'pid=[0-9]+' | cut -d= -f2 || true)
-[ -n "$ORPHAN" ] && { echo "   killing orphan PID $ORPHAN (restarts never owned it)"; kill -9 "$ORPHAN" 2>/dev/null || true; }
-systemctl --user restart dsh-melite-test.service dsh-browser-view.service
+if [ "$PORT" != "3088" ]; then
+  # THE BRANCH UNIT (installed, not hand-run — systemd owns restarts):
+  # mirrors dsh-melite-demo's own-home shape with this port's numbers.
+  # Bin paths are read off the LIVE :3088 unit (ground truth on this
+  # box), never guessed.
+  NODE_BIN="$(systemctl --user cat dsh-melite-test.service | grep -oE '^ExecStart=[^ ]+/bin/node [^ ]+' | awk '{print $1}' | cut -d= -f2)"
+  DSH_BIN="$(systemctl --user cat dsh-melite-test.service | grep -oE '[^ ]+/bin/dsh' | head -1)"
+  [ -n "$NODE_BIN" ] && [ -x "$NODE_BIN" ] || NODE_BIN="$(command -v node)"
+  [ -n "$DSH_BIN" ] && [ -x "$DSH_BIN" ] || DSH_BIN="$(command -v dsh)"
+  mkdir -p "$DSH_HOME" "$HOME/.config/systemd/user"
+  # THE SHARED-CHAT LAW (operator 2026-11-10, "make 3088 and 3089 share
+  # dsh chat sessions"): sessions live in DSH_HOME/sessions keyed by the
+  # workspace slug, and the sidebar attributes them by the home's
+  # anonymous-user-id — a branch home with its own store would boot with
+  # a BLANK chat list. The branch therefore (a) links its sessions dir
+  # onto :3088's store and (b) adopts :3088's anonymous id, so both
+  # lanes list and continue the SAME chats. One live writer per chat is
+  # the user's own discipline (the same chat open twice writes twice);
+  # read/resume across lanes is the requested behavior.
+  MAIN_HOME="${MELITE_MAIN_DSH_HOME:-$HOME/.dsh-dev}"
+  if [ -d "$MAIN_HOME/sessions" ]; then
+    if [ -L "$DSH_HOME/sessions" ] || [ -e "$DSH_HOME/sessions" ]; then
+      [ "$(readlink "$DSH_HOME/sessions" 2>/dev/null || true)" = "$MAIN_HOME/sessions" ] \
+        || { echo "FATAL: $DSH_HOME/sessions exists and is not the shared store link — refusing to touch it"; exit 1; }
+    else
+      ln -s "$MAIN_HOME/sessions" "$DSH_HOME/sessions" \
+        || { echo "FATAL: cannot link sessions onto $MAIN_HOME/sessions"; exit 1; }
+    fi
+    echo "   shared chat sessions: $DSH_HOME/sessions → $MAIN_HOME/sessions"
+  else
+    echo "   NOTE: $MAIN_HOME/sessions not found — the branch keeps its own chat store (fresh list)"
+  fi
+  if [ -f "$MAIN_HOME/.anonymous-user-id" ]; then
+    cp -f "$MAIN_HOME/.anonymous-user-id" "$DSH_HOME/.anonymous-user-id"
+    echo "   shared chat identity: branch adopts :3088's anonymous user id"
+  fi
+  cat > "$HOME/.config/systemd/user/$UNIT" <<UNIT_EOF
+[Unit]
+Description=DSH branch lane (melite series, port $PORT, own DSH_HOME, script-launched)
+After=network.target
+
+[Service]
+WorkingDirectory=$PWD
+Environment=PATH=/home/user/.local/share/mise/shims:/home/user/.local/bin:/home/user/bin:/usr/local/bin:/usr/bin:/bin
+Environment=DSH_HOME=$DSH_HOME
+ExecStart=$NODE_BIN $DSH_BIN --profile melite-test --host 127.0.0.1 --port $PORT --trusted-host cloud.tailb1e597.ts.net:$PORT --no-open
+Restart=always
+RestartSec=4
+StandardOutput=append:$DSH_HOME/melite-test-$PORT.log
+StandardError=inherit
+UMask=0077
+
+[Install]
+WantedBy=default.target
+UNIT_EOF
+  systemctl --user daemon-reload
+fi
+
+echo "── [5/6] restarting the lane unit"
+if [ "$PORT" = "3088" ]; then
+  # the main lane keeps its orphan sweep (a crashed dsh outside
+  # systemd once held :3088 and every restart bounced off it).
+  ORPHAN=$(ss -tlnp 2>/dev/null | grep "127.0.0.1:$PORT" | grep -oE 'pid=[0-9]+' | cut -d= -f2 || true)
+  [ -n "$ORPHAN" ] && { echo "   killing orphan PID $ORPHAN (restarts never owned it)"; kill -9 "$ORPHAN" 2>/dev/null || true; }
+  # the browser sidecar rides the MAIN lane's face only — a branch
+  # boot never restarts it (the operator may be testing :3088 through
+  # it this minute).
+  systemctl --user restart dsh-melite-test.service dsh-browser-view.service
+else
+  # a branch port's listener is ALWAYS systemd-owned (the unit above
+  # is the only thing that ever binds it) — restart owns the stop; a
+  # pid-kill here would race systemd's own relaunch.
+  systemctl --user restart "$UNIT"
+fi
 
 echo "── [6/6] polling for the NEW boot's live token (verified by HTTP, not by grep)"
 TOKEN_URL=""
@@ -216,5 +346,13 @@ else
 fi
 echo ""
 echo "OPEN IN A VIRGIN BROWSER (zero cache exists anywhere):"
-echo "  ${TOKEN_URL/127.0.0.1/${MELITE_PUBLIC_HOST:-127.0.0.1}}"
-echo "  (local fallback: $TOKEN_URL)"
+if [ "$PORT" != "3088" ]; then
+  # the branch's face is the tailnet https proxy — splice the token's
+  # query onto the cloud host (the serve proxy answers https only).
+  TAIL_QUERY="${TOKEN_URL#*127.0.0.1:$PORT}"
+  echo "  https://cloud.tailb1e597.ts.net:$PORT$TAIL_QUERY"
+  echo "  (local fallback: $TOKEN_URL)"
+else
+  echo "  ${TOKEN_URL/127.0.0.1/${MELITE_PUBLIC_HOST:-127.0.0.1}}"
+  echo "  (local fallback: $TOKEN_URL)"
+fi
