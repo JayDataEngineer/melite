@@ -238,6 +238,18 @@ if [ "$PORT" != "3088" ]; then
     cp -f "$MAIN_HOME/.anonymous-user-id" "$DSH_HOME/.anonymous-user-id"
     echo "   shared chat identity: branch adopts :3088's anonymous user id"
   fi
+  # THE 1:1 ROSTER LAW (operator 2026-11-10, "IT LOST ALL TOOLS"): the
+  # delegation record ($DSH_HOME/melite-runs-state.json) decides the
+  # boot's tool roster — delegated=true seats melite_flow + run_status
+  # AND pins the six estate doors at boot (the seat-pin cure); a branch
+  # home born without the record boots the browser-law roster and a
+  # session crossing lanes loses tools mid-flight ("unknown tool
+  # run_status"). The branch adopts the main home's record verbatim:
+  # same toggle, same roster, no delta.
+  if [ -f "$MAIN_HOME/melite-runs-state.json" ]; then
+    cp -f "$MAIN_HOME/melite-runs-state.json" "$DSH_HOME/melite-runs-state.json"
+    echo "   1:1 tool roster: branch adopts :3088's melite-runs delegation record"
+  fi
   # THE SHARED MODEL CREDENTIALS (2026-11-10, "not hooked into my
   # models"): provider keys live per-home in .credentials.yaml refs —
   # a branch home boots with only its browser-session grant and its
