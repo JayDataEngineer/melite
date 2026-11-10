@@ -48,7 +48,7 @@ describe("renderH3Repair as a library (the bypass face)", () => {
       "a repair is a visual second pass — the soundtrack is the source's own, always");
   });
 
-  it("P0-2 THE RECEIVED MASK: one staged PNG rides LoadImage → ImageToMask(red) → ImageScale at the plan geometry (F3-16's law, never trust the file's shape; D-16: core ImageScale — ImageResize is a class no engine owns)", () => {
+  it("P0-2 THE RECEIVED MASK: one staged PNG rides LoadImage → ImageScale (IMAGE plane) → ImageToMask(red) at the plan geometry (F3-16's law, never trust the file's shape; D-16: core ImageScale — ImageResize is a class no engine owns; D-21: the conversion rides LAST — ImageScale is IMAGE→IMAGE, a MASK socket fed an IMAGE is the engine's prompt-validation death)", () => {
     const g = new GraphBuilder();
     renderH3Repair(ENTRY(), {}, FACTS, g, "run_lib_mask");
     const o = out(g);
@@ -58,11 +58,11 @@ describe("renderH3Repair as a library (the bypass face)", () => {
     const toMask = ofClass(o, "ImageToMask");
     assert.equal(toMask.length, 1, "one staged-mask decoder (red channel)");
     assert.equal(toMask[0]![1].inputs.channel, "red", "the red channel IS the mask (the swap's own law)");
-    assert.deepEqual(toMask[0]![1].inputs.image, [load[0]![0], 0], "the decoder reads the received PNG");
     const resize = ofClass(o, "ImageScale");
+    assert.deepEqual(toMask[0]![1].inputs.image, [resize[0]![0], 0], "D-21: the conversion reads the RESIZED image — the resize rides the IMAGE plane, the conversion rides LAST (the same two nodes; the ORDER is the law)");
     assert.equal(resize.length, 1, "one geometry resize — the PNG's shape is the TRACK's shape, not the chain's (D-16: core ImageScale)");
     assert.equal(ofClass(o, "ImageResize").length, 0, "the dead class is gone (D-16: no engine build owns it)");
-    assert.deepEqual(resize[0]![1].inputs.image, [toMask[0]![0], 0], "the resize reads the decoded mask");
+    assert.deepEqual(resize[0]![1].inputs.image, [load[0]![0], 0], "D-21: the resize reads the raw IMAGE decode — ImageScale takes IMAGE, emits IMAGE (boot census); the mask plane starts at the conversion");
     const w = resize[0]![1].inputs.width as [string, number];
     const h = resize[0]![1].inputs.height as [string, number];
     assert.ok(Array.isArray(w) && w[1] === 8, "width is a loop-state wire (slot 8) — the plan geometry, never a literal");
@@ -71,12 +71,12 @@ describe("renderH3Repair as a library (the bypass face)", () => {
     // received mask's own pixels, at the chain's own geometry
     const edit = ofClass(o, "MiniMaxH3FantasticVideoEditLatent");
     assert.equal(edit.length, 1);
-    assert.deepEqual(edit[0]![1].inputs.mask, [resize[0]![0], 0],
-      "the edit latent masks with the resized received mask");
+    assert.deepEqual(edit[0]![1].inputs.mask, [toMask[0]![0], 0],
+      "D-21: the edit latent's MASK socket receives the ImageToMask output (MASK) — never the IMAGE resizer");
     const target = ofClass(o, "MiniMaxH3ContexMaskedTarget");
     assert.equal(target.length, 1);
-    assert.deepEqual(target[0]![1].inputs.mask, [resize[0]![0], 0],
-      "the masked target carries the same received mask (mask_meaning's own law)");
+    assert.deepEqual(target[0]![1].inputs.mask, [toMask[0]![0], 0],
+      "D-21: the masked target's MASK socket receives the same converted mask — mask_meaning's own law rides a MASK, not an IMAGE");
   });
 
   it("P0-2 THE PROSE DEMOTION: stated region_prompt manufactures NOTHING — the SAM3 chain is dead at this seat even when prose rides the entry", () => {

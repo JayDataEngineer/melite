@@ -80,6 +80,24 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     assert.equal(w[0], h[0], "width and height ride the SAME chain-geometry node (the plan's own canvas, engine-derived)");
     assert.equal(ofClass(o, "SolidMask").length, 0, "no white mask — the dial is the staged PNG");
     assert.equal(ofClass(o, "SAM3_VideoTrack").length, 0, "no tracker — the dial is not the region door");
+    // D-21 (defect board 2026-11-18, runs run-b1591b1e26ed /
+    // run-894ac56e3c8a): THE TYPE FLOW — the resize rides the IMAGE
+    // plane, the conversion rides LAST, and every MASK socket
+    // downstream receives the ImageToMask output (MASK), never the
+    // IMAGE resizer (ImageScale is IMAGE→IMAGE per the boot census;
+    // compose passing is not evidence — the engine's
+    // prompt-validation is).
+    const load = ofClass(o, "LoadImage");
+    assert.deepEqual(resize[0]![1].inputs.image, [load[0]![0], 0],
+      "D-21: the resize eats the raw IMAGE decode — the IMAGE plane owns the geometry");
+    assert.deepEqual(dec[0]![1].inputs.image, [resize[0]![0], 0],
+      "D-21: the conversion eats the resize's output — same two nodes, the ORDER is the law");
+    const editLatent = ofClass(o, "MiniMaxH3FantasticVideoEditLatent");
+    assert.deepEqual(editLatent[0]![1].inputs.mask, [dec[0]![0], 0],
+      "D-21: the edit latent's MASK socket receives the conversion's MASK output");
+    const maskedTarget = ofClass(o, "MiniMaxH3ContexMaskedTarget");
+    assert.deepEqual(maskedTarget[0]![1].inputs.mask, [dec[0]![0], 0],
+      "D-21: the masked target's MASK socket receives the same MASK — never the IMAGE resizer");
   });
 
   it("THE MASK DIAL region: the per-frame SAM3 chain + the tuning seats ride (N7 first-class, N8 tunable)", () => {
@@ -128,6 +146,16 @@ describe("renderH3Edit — the video-edit matrix on the one spine (stage 2a)", (
     assert.equal(grow[0]![1].inputs.blur_radius, 4, "the blur dial carries — feathering is the door's own seat");
     assert.equal(ofClass(o, "SAM3_VideoTrack").length, 0, "no tracker — the mask is the operator's own, not a detected one");
     assert.equal(ofClass(o, "SolidMask").length, 0, "no white mask — the dial is the staged video");
+    // D-21: THE TYPE FLOW on the per-frame door — the resize rides
+    // the IMAGE plane (the mask loader's frames), the conversion
+    // rides LAST, and the length check's MASK socket receives the
+    // conversion's MASK output.
+    assert.deepEqual(resize[0]![1].inputs.image, [maskLoader[0]![0], 0],
+      "D-21: the resize eats the decoded IMAGE frames — never a MASK");
+    assert.deepEqual(dec[0]![1].inputs.image, [resize[0]![0], 0],
+      "D-21: the conversion eats the resize's output — the ORDER is the law");
+    assert.equal(checkInputs.mask[0], dec[0]![0],
+      "D-21: the length check's mask socket receives the conversion's MASK output — never the IMAGE resizer");
   });
 
   it("THE MASK DIAL whole-frame: the all-white SolidMask sized to the chain's own geometry", () => {

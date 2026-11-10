@@ -122,16 +122,23 @@ export function renderH3Repair(entry, p, facts, g, runId) {
             // the file. The recommended bridge (the track run's pixel-max
             // union) arrives already grown; prose manufactures nothing. ──
             const raw = g.node('LoadImage', { image: maskSeat }).out(0);
-            const channel = g.node('ImageToMask', { image: raw, channel: 'red' }).out(0);
             // D-16 (defect board 2026-11-18): the door once wired
             // `ImageResize` — a class NO engine build owns (1817 classes,
             // none so named; the refusal landed at compose time, after the
             // authoring pass). Core `ImageScale` is the exact-fit resize
             // the law always meant: it resizes to width/height with no
             // proportion-keeping arm — the mask fills the chain canvas.
-            const editMask = g.node('ImageScale', {
-                image: channel, width: cur.out(8), height: cur.out(9),
+            // D-21 (defect board 2026-11-18): the resize rides the IMAGE
+            // plane and the conversion rides LAST — ImageScale is
+            // IMAGE→IMAGE, and a MASK socket fed an IMAGE is the
+            // prompt-validation death the engine serves after compose
+            // passes. Same two nodes; the ORDER is the law.
+            const fitted = g.node('ImageScale', {
+                image: raw, width: cur.out(8), height: cur.out(9),
                 upscale_method: 'bilinear', crop: 'disabled',
+            }).out(0);
+            const editMask = g.node('ImageToMask', {
+                image: fitted, channel: 'red',
             }).out(0);
             // ── the masked second-pass body: NO still, NO mannequin — the
             // source clip rides its own ref_video seat (the identity

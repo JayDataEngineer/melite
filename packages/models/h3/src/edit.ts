@@ -587,14 +587,23 @@ export function renderH3Edit(
         // shape is the TRACK's shape, not the chain's — resize to
         // the plan geometry in-graph, never trust the file.
         const raw = g.node('LoadImage', { image: mask.image }).out(0)
-        const channel = g.node('ImageToMask', { image: raw, channel: 'red' }).out(0)
         // D-16 (defect board 2026-11-18): `ImageResize` is a class
         // no engine build owns (the refusal landed at compose time,
         // after the authoring pass) — core `ImageScale` is the
         // exact-fit resize (width/height, never proportion-keeping).
-        editMask = g.node('ImageScale', {
-          image: channel, width: cur.out(8), height: cur.out(9),
+        // D-21 (defect board 2026-11-18, runs run-b1591b1e26ed /
+        // run-894ac56e3c8a): the resize rides the IMAGE plane and
+        // the conversion rides LAST — `ImageScale` is IMAGE→IMAGE
+        // (boot census), and a MASK socket fed an IMAGE is the
+        // prompt-validation death both mask-supplied doors died at
+        // the engine after D-16 let them compose. Same two nodes,
+        // only the ORDER is the law.
+        const fitted = g.node('ImageScale', {
+          image: raw, width: cur.out(8), height: cur.out(9),
           upscale_method: 'bilinear', crop: 'disabled',
+        }).out(0)
+        editMask = g.node('ImageToMask', {
+          image: fitted, channel: 'red',
         }).out(0)
       } else if (mask.source === 'video') {
         // THE OWN-VIDEO MASK DOOR: the operator's staged per-frame
@@ -608,17 +617,19 @@ export function renderH3Edit(
         // both counts. The check GATES the door: the slice rides
         // the verified timeline, never the raw decode.
         const [maskFrames] = loadVideo(g, mask.video)
-        const decoded = g.node('ImageToMask', {
-          image: maskFrames, channel: 'red',
-        }).out(0)
         // D-16: `ImageScale` (core, exact-fit) — `ImageResize` is a
-        // class no engine build owns.
+        // class no engine build owns. D-21: the resize rides the
+        // IMAGE plane, the conversion rides LAST (ImageScale is
+        // IMAGE→IMAGE; the mask sockets downstream take MASK).
         const fitted = g.node('ImageScale', {
-          image: decoded, width: cur.out(8), height: cur.out(9),
+          image: maskFrames, width: cur.out(8), height: cur.out(9),
           upscale_method: 'bilinear', crop: 'disabled',
         }).out(0)
+        const decoded = g.node('ImageToMask', {
+          image: fitted, channel: 'red',
+        }).out(0)
         const verified = g.node('MiniMaxH3ContexLoopMaskLengthCheck', {
-          source_frames: srcFrames, mask: fitted,
+          source_frames: srcFrames, mask: decoded,
         }).out(0)
         const sceneMask = g.node('MiniMaxH3ContexLoopMaskSlice', {
           state: cur.out(0), mask: verified, source_fps: 24,
