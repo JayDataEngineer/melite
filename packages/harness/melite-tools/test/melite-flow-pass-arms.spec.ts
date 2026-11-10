@@ -454,7 +454,7 @@ describe('melite_flow bench — the foreign-row voice (the compose-plane cure: a
   })
 })
 
-describe('melite_flow bench — the thrown-observe arms (the observer is not infallible: an aborted signal throws THROUGH it, and the pass must record, never drop, the stage)', () => {
+describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: four runs completed on the queue while the agent read `Error: tool call aborted` — a dead signal must press NOTHING and never record phantom rows)', () => {
   const twoLive = (): Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> => [
     (lane: string) => {
       if (lane === 'benchGet') {
@@ -467,9 +467,12 @@ describe('melite_flow bench — the thrown-observe arms (the observer is not inf
       return undefined
     },
   ]
-  test('an abort carrying an Error records the message and the pass presses the rest', async () => {
-    // signal.throwIfAborted rethrows the abort REASON verbatim — an
-    // Error reason rides the instanceof arm (message, never String()).
+  test('a PRE-ABORTED signal presses NOTHING — no run minted, no phantom rows, the re-press counsel rides', async () => {
+    // D-7: the old pass minted real runs against a dead session (the
+    // fake lanes do not honor the signal) and recorded phantom
+    // `thrown` rows for stages whose start never flew — the agent
+    // re-pressed and doubled the queue. The guard returns before any
+    // estate call: nothing is on the queue, re-press is safe.
     const controller = new AbortController()
     controller.abort(new Error('stage fright'))
     const fake = fakeEstateStatus(twoLive())
@@ -477,32 +480,138 @@ describe('melite_flow bench — the thrown-observe arms (the observer is not inf
     const out = await tool.execute({ bench: true }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.stoppedAt, 's_0')
-    const pass = out.pass as Array<Record<string, unknown>>
-    assert.equal(pass.length, 2, 'both stages recorded — the throw pressed nothing but dropped nothing')
-    assert.deepEqual(pass[0], { stage: 's_0', card: 'h3-timeline', run_id: 'r_abort', thrown: 'stage fright' })
-    assert.equal(pass[1]!['stage'], 's_1', 'the pass pressed the remaining stage')
-    assert.ok('thrown' in pass[1]!, 'the remaining stage recorded its own throw')
-    assert.equal(fake.calls.filter((c) => c.lane === 'runsStatus').length, 0, 'the observer threw before any poll')
-    assert.equal(
-      out.error,
-      'stage s_0 (h3-timeline) threw (a transport or resolution error — read pass[] for the rest) — 2 stages failed (the pass still pressed every stage; read pass[])',
-    )
+    assert.deepEqual(out.pass, [], 'no stage row — nothing was pressed, so nothing is recorded')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'no run was ever minted')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStatus').length, 0, 'the observer never polled')
+    assert.match(String(out.error), /aborted before stage s_0 was pressed/)
+    assert.match(String(out.error), /stage fright/)
+    assert.match(String(out.error), /no stage was pressed — nothing is on the queue; re-press is safe/)
   })
-
-  test('a non-Error abort reason records the String() voice — the bare string is never dropped', async () => {
-    // signal.throwIfAborted rethrows the abort REASON verbatim, and a
-    // reason is ANY value: abort('flat reason') throws the string
-    // itself — NOT an instanceof Error, so the String() arm answers
-    // (never "[object Object]", never a crash on .message).
+  test('a non-Error abort reason rides the same face verbatim — the bare string is never dropped', async () => {
+    // signal.reason is ANY value: abort('flat reason') carries the
+    // string itself — the face's why arm answers with the String()
+    // voice (never "[object Object]", never a crash on .message).
     const controller = new AbortController()
     controller.abort('flat abort reason')
     const fake = fakeEstateStatus(twoLive())
     const tool = meliteFlow(fake.estate)
     const out = await tool.execute({ bench: true }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
+    assert.match(String(out.error), /flat abort reason/)
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'no run was ever minted')
+  })
+  test('an abort MID-START names the unknown outcome and never presses the rest — ledger_tail before re-press', async () => {
+    // the fetch died mid-flight: the queue may or may not have taken
+    // the run, so the face points at ledger_tail (the doubled-queue
+    // trap) and the sibling stage is never sent.
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: benchWith([
+            { id: 's_0', card: 'h3-timeline', params: {} },
+            { id: 's_1', card: 'h3-timeline', params: {} },
+          ]) }
+        }
+        if (lane === 'runsStart') throw new Error('socket died')
+        return undefined
+      },
+    ]
+    const controller = new AbortController()
+    const fake = fakeEstateStatus(lanes)
+    const origStart = fake.estate.runsStart.bind(fake.estate)
+    fake.estate.runsStart = ((_body: unknown, signal: AbortSignal) => {
+      controller.abort(new Error('lane died'))
+      return origStart(_body, signal)
+    }) as typeof fake.estate.runsStart
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.match(String(out.error), /aborted mid-start at stage s_0/)
+    assert.match(String(out.error), /the run's existence is unknown/)
+    assert.match(String(out.error), /read ledger_tail/)
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, "only the first stage's start flew")
+  })
+  test('an abort MID-OBSERVE returns the pending face WITH the run_id — the run is durable, the sibling never sent', async () => {
+    // THE BOARD'S OWN CASE: the run started (durable on the queue)
+    // and the observation died with the session. The receipt is
+    // pending + run_id (run_status owns the wait), never a `thrown`
+    // stage row, never a phantom press of the remaining stage.
+    const controller = new AbortController()
+    let polls = 0
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: benchWith([
+            { id: 's_0', card: 'h3-timeline', params: {} },
+            { id: 's_1', card: 'h3-timeline', params: {} },
+          ]) }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_durable', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          polls += 1
+          if (polls === 1) {
+            controller.abort(new Error('session teardown'))
+            throw new Error('observer transport died')
+          }
+          // settle the re-armed background link's later polls so it
+          // terminates instead of spinning on an aborted signal
+          return { status: 200, body: { status: 'failed', stages: [], error: 'gone' } }
+        }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'pending', "the durable run's receipt is pending, never stopped")
+    assert.equal(out.stoppedAt, 's_0')
+    assert.equal(out.run_id, 'r_durable')
     const pass = out.pass as Array<Record<string, unknown>>
-    assert.equal(pass[0]!['thrown'], 'flat abort reason',
-      'the bare reason rides verbatim: ' + JSON.stringify(pass[0]))
+    assert.equal(pass.length, 1, 'the sibling stage was never pressed')
+    assert.equal(pass[0]!['run_id'], 'r_durable')
+    assert.equal(pass[0]!['status'], 'queued')
+    assert.ok(!('thrown' in pass[0]!), 'an aborted observe is not a thrown stage — the run lives')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the sibling was never minted')
+  })
+  test('the PRESS BUDGET bounds the whole synchronous window (D-7): a stage that outlives it returns pending + run_id and the sibling is never pressed', async () => {
+    // fake clock owns time; the run never settles. The first stage's
+    // observation spends the whole press budget and returns the
+    // pending receipt — long before any caller-side aborter could
+    // strike (the 15-minute observe WAS the abort lie's window).
+    vi.useFakeTimers()
+    try {
+      const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+        (lane: string) => {
+          if (lane === 'benchGet') {
+            return { status: 200, body: benchWith([
+              { id: 's_0', card: 'h3-timeline', params: {} },
+              { id: 's_1', card: 'h3-timeline', params: {} },
+            ]) }
+          }
+          if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_slow', status: 'queued' } }
+          if (lane === 'runsStatus') return { status: 200, body: { status: 'running', stages: [] } }
+          if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+          return undefined
+        },
+      ]
+      const fake = fakeEstateStatus(lanes)
+      const tool = meliteFlow(fake.estate)
+      const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
+      const runP = tool.execute({ bench: true }, exec) as Promise<Record<string, unknown>>
+      // one full poll cadence past the 110 s budget: the deadline
+      // check rides the tick AFTER the budget boundary
+      await vi.advanceTimersByTimeAsync(111_600)
+      const out = await runP
+      assert.equal(out.status, 'pending')
+      assert.equal(out.run_id, 'r_slow')
+      assert.equal(out.stoppedAt, 's_0')
+      assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, "the sibling was never pressed — the budget is the press's, not the stage's")
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass[0]!['status'], 'queued')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

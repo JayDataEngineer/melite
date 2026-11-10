@@ -36,7 +36,9 @@
 // row with {stage}; the estate flow_inline arm still serves
 // single-stage bodies, it just has no tool caller.
 // Returns {run_id} (card/bench and a materialized flow also
-// carry draft_id); poll with run_status. One active run
+// carry draft_id); the synchronous window is bounded (D-7 —
+// PRESS_BUDGET_MS): a long render returns status pending WITH the
+// run_id; run_status owns the wait. One active run
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
@@ -122,6 +124,22 @@ const DRAFT_TIMEOUT_MS = 15_000
  *  family's WAIT_MAX_S=300 — above every legitimate render
  *  observed, short enough to free a wedged transcript. */
 const OBSERVE_MAX_MS = 900_000
+/** THE PRESS BUDGET (defect board D-7, 2026-11-18 — the four burns:
+ *  refine 2×, restyle, continuation, outfit, every run COMPLETED on
+ *  the queue while the agent read `Error: tool call aborted`): DSH's
+ *  ToolRuntime DISCARDS any tool return that settles after the
+ *  caller's signal aborted — a synchronous observation longer than
+ *  the caller's patience (lane restart mid-render, session teardown)
+ *  is structurally a lie, whatever face it returns. So the
+ *  synchronous window is bounded for the WHOLE press: past this
+ *  budget the receipt is the pending face (run_id carried — the run
+ *  is durable on the queue; run_status owns the long wait, its own
+ *  300 s wait family). Fast rows still settle done inside the
+ *  window; a real render (minutes) returns pending long before any
+ *  aborter can strike. The unpressed stages are never sent on a
+ *  spent budget — a re-press after pending must first read
+ *  run_status (the doubled-queue trap the board names). */
+const PRESS_BUDGET_MS = 110_000
 /** THE STAMP-BACK TAKES (F3 D3-07, the 15 s bound's third burn —
  *  F2 D-07 → D3-05 → s_94): the terminal attribution PATCH takes
  *  this many swipes at the drafts door, each with its own fresh
@@ -401,6 +419,10 @@ async function runBench(
     }
     return snapshot
   }
+  // THE PRESS DEADLINE (D-7): one budget for the WHOLE press — the
+  // loop starts the clock at the first pressed stage, and every
+  // stage's observation spends only what remains.
+  const pressDeadline = Date.now() + PRESS_BUDGET_MS
   for (const row of rows) {
     const stageId = row['id'] as string
     // THE PER-STAGE PRESS (W-8): the named row alone rides the
@@ -408,6 +430,23 @@ async function runBench(
     // is skipped before any read, so a half-written sibling can never
     // abort this press (F3-10) and the bench intent rides untouched.
     if (only !== undefined && stageId !== only) continue
+    // D-7 — THE ABORT GUARD: a dead signal presses NOTHING. The old
+    // pass minted real runs against a dead session and recorded
+    // phantom `thrown` rows for stages whose start never flew — the
+    // agent then re-pressed and doubled the queue (the board's own
+    // trap). An aborted signal here means nothing was sent for THIS
+    // stage; the return carries the pressed-so-far truth.
+    if (signal.aborted) {
+      const why = signal.reason instanceof Error ? signal.reason.message : String(signal.reason ?? 'the call was aborted')
+      return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+        ...(intent !== '' ? { intent } : {}),
+        ...(only !== undefined ? { stage: only } : {}),
+        error: `the call was aborted before stage ${stageId} was pressed (${why}) — `
+          + (mintedRuns.size > 0
+            ? `the ${mintedRuns.size} pressed run(s) are durable on the queue: poll run_status with the run_id(s) in pass[] before re-pressing (a re-press doubles the queue); the unpressed stages were never sent`
+            : 'no stage was pressed — nothing is on the queue; re-press is safe'),
+        ...pressCensus(), pass }
+    }
     const card = typeof row['card'] === 'string' && row['card'] !== '' ? row['card'] as string : ''
     // THE CACHE-HIT SKIP, folded (2026-10-01): the raw 'done' compare
     // re-ran every stage the estate settles 'completed' and every
@@ -641,6 +680,18 @@ async function runBench(
         : { ...resolved, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId },
       signal)
     } catch (thrown) {
+      // D-7 — an aborted START is not a thrown stage: the fetch died
+      // mid-flight, so the run's existence is UNKNOWN (the queue may
+      // have taken it). Never press another stage on the dead signal;
+      // the face points at ledger_tail before any re-press.
+      if (signal.aborted) {
+        const why = thrown instanceof Error ? thrown.message : String(thrown)
+        return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+          ...(intent !== '' ? { intent } : {}),
+          ...(only !== undefined ? { stage: only } : {}),
+          error: `the call was aborted mid-start at stage ${stageId} (${why}) — the run's existence is unknown: read ledger_tail (or run_status if an id is known) before re-pressing; the unpressed stages were never sent`,
+          ...pressCensus(), pass }
+      }
       const why = thrown instanceof Error ? thrown.message : String(thrown)
       pass.push({ stage: stageId, card, thrown: why })
       failures.push({ stage: stageId, card, status: 'threw', run_id: '' })
@@ -651,10 +702,29 @@ async function runBench(
     }
     const runId = started['run_id'] as string
     if (runId !== '') mintedRuns.set(stageId, runId)
+    // D-7 — THE PRESS BUDGET: this stage's observation spends only
+    // what remains of the whole press's window. Budget spent → the
+    // pending receipt NOW (the run is durable, run_id carried); the
+    // remaining stages are never observed into an aborter's window.
+    const remainMs = pressDeadline - Date.now()
+    if (remainMs <= 0) {
+      pass.push({ stage: stageId, card, run_id: runId, status: 'queued',
+        note: 'the press budget spent — the run is durable on the queue, poll with run_status' })
+      return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass }
+    }
     let outcome: Awaited<ReturnType<typeof observeAndAttribute>>
     try {
-      outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test), OBSERVE_MAX_MS, 2, currentInputs)
+      outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test), Math.min(OBSERVE_MAX_MS, remainMs), 2, currentInputs)
     } catch (thrown) {
+      // D-7 — an aborted OBSERVE leaves the run DURABLE (the start
+      // answered): the face is the pending receipt carrying the
+      // run_id, never a `thrown` stage row and never a phantom press
+      // of the remaining stages on a dead signal.
+      if (signal.aborted) {
+        const why = thrown instanceof Error ? thrown.message : String(thrown)
+        pass.push({ stage: stageId, card, run_id: runId, status: 'queued', aborted: why })
+        return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass }
+      }
       const why = thrown instanceof Error ? thrown.message : String(thrown)
       pass.push({ stage: stageId, card, run_id: runId, thrown: why })
       failures.push({ stage: stageId, card, status: 'threw', run_id: runId })
@@ -1441,7 +1511,15 @@ export function meliteFlow(estate: Estate): ToolDefinition {
       + 'hand-authored graph). Compositions '
       + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
       + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '
-      + 'agent arg. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.',
+      + 'agent arg. Returns {run_id, draft_id}; the synchronous window is bounded (~2 min, defect board D-7): a '
+      + 'long render returns status pending WITH the run_id — the run is durable on the queue, poll with run_status '
+      + '(never re-press). One active run machine-wide.',
+    // D-7 — the wedge backstop: the press budget (~110 s) plus the
+    // stamp-back takes bound the healthy settle well inside this; the
+    // declared limit lets the timeout-policy plugin voice a clean
+    // `tool call timed out` on a wedged door instead of the abort
+    // lie (a healthy press never sees it).
+    timeoutMs: 200_000,
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper) — every composition arm stays
     // optional because exactly-one cross-property exclusivity is not
