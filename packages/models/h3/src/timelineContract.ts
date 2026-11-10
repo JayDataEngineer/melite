@@ -480,7 +480,9 @@ export function splitCallsAt<T extends TimelineCallSpan>(calls: T[], gestureFram
   }
   const cur = calls[i]!
   // rightCarried is TRUE by construction: the right half is a carried
-  // window (17k content) seating transition cut — v2vSplit's law verbatim
+  // window (17k content) — it seats 'cut' transiently for the reframe
+  // math, then the carry block below re-frames it to the caller's
+  // seam law (default 'extend', the operator's 2026-11-17 order)
   const split = snapSplitFrame(cur.start_frame, cur.end_frame, isCarriedShape(i, cur), true, gestureFrame)
   if (split === null) return null
   // the right half seats transition cut — the reframe computes its end
@@ -493,12 +495,21 @@ export function splitCallsAt<T extends TimelineCallSpan>(calls: T[], gestureFram
     next[j] = { ...next[j]!, start_frame: next[j]!.start_frame + delta, end_frame: next[j]!.end_frame + delta }
   }
   if (carry !== 'cut') {
-    // the seam re-frames, the next window's start follows (one
-    // reflow, tiling preserved)
+    // the seam re-frames onto its carry lattice (17k content), and
+    // EVERY downstream window follows on BOTH coordinates — its span
+    // is its own lattice seat and never changes, only its position.
+    // (The 2026-11-17 defect this block cured: sliding only the next
+    // window's start landed it at 141f — off the 17k carried lattice,
+    // a doc the walk itself would refuse, authored by the split that
+    // was supposed to be legal. It slept because every caller passed
+    // 'cut' until the carry default landed.)
     const seam = { ...next[i + 1]! }
     const end = reflowSeamSpan(seam, i + 1, carry)
     next[i + 1] = { ...seam, transition: carry, end_frame: end }
-    if (i + 1 < next.length - 1) next[i + 2] = { ...next[i + 2]!, start_frame: end }
+    const rebase = end - rightEnd
+    for (let j = i + 2; j < next.length; j++) {
+      next[j] = { ...next[j]!, start_frame: next[j]!.start_frame + rebase, end_frame: next[j]!.end_frame + rebase }
+    }
   }
   return next
 }
@@ -524,7 +535,7 @@ export type CutsResult<T extends TimelineCallSpan> =
 export function expandCuts<T extends TimelineCallSpan>(
   calls: T[],
   cuts: string,
-  carry: SplitCarry = 'cut',
+  carry: SplitCarry = 'extend',
 ): CutsResult<T> {
   const parts = cuts.split(',').map((s) => s.trim())
   if (parts.some((p) => p === '')) {
@@ -770,7 +781,13 @@ export const CALL_KEYS: ReadonlySet<string> = new Set([
  *  'carry+keyframe' (the carry join + a gen-side image anchor).
  *  `transitionOverlap` treats ANY non-'cut' string as carry, so
  *  the schema's walk judges every stated transition against THIS
- *  roster — a typo'd seam never composes as carry in silence. */
+ *  roster — a typo'd seam never composes as carry in silence.
+ *  THE SEAM LAW (operator 2026-11-17): 'cut' stays in the roster
+ *  for legacy rows and the operator's manual stock seat only — the
+ *  agent authors omit (carry, THE DEFAULT) or 'carry+keyframe',
+ *  never 'cut'; H3 hard-cuts on its own when a shot must start
+ *  fresh. Every authoring default (expandCuts, the construct cuts
+ *  verb, the studio split control) seats carry. */
 export const CALL_TRANSITIONS = ['cut', 'extend', 'carry+keyframe'] as const
 
 export const LEGACY_KNOB_KEY = {

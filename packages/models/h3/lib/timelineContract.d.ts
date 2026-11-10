@@ -366,7 +366,13 @@ export declare const CALL_KEYS: ReadonlySet<string>;
  *  'carry+keyframe' (the carry join + a gen-side image anchor).
  *  `transitionOverlap` treats ANY non-'cut' string as carry, so
  *  the schema's walk judges every stated transition against THIS
- *  roster — a typo'd seam never composes as carry in silence. */
+ *  roster — a typo'd seam never composes as carry in silence.
+ *  THE SEAM LAW (operator 2026-11-17): 'cut' stays in the roster
+ *  for legacy rows and the operator's manual stock seat only — the
+ *  agent authors omit (carry, THE DEFAULT) or 'carry+keyframe',
+ *  never 'cut'; H3 hard-cuts on its own when a shot must start
+ *  fresh. Every authoring default (expandCuts, the construct cuts
+ *  verb, the studio split control) seats carry. */
 export declare const CALL_TRANSITIONS: readonly ["cut", "extend", "carry+keyframe"];
 export declare const LEGACY_KNOB_KEY: {
     readonly sampling_steps: "steps";

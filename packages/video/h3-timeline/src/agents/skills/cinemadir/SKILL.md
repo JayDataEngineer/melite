@@ -64,20 +64,26 @@ The estate's camera knobs, in the order you should reach for them:
    small-to-moderate re-angles and 2.5D parallax. There is NO
    Fun-ControlNet stage and NO inpaint stage in this chain: the holes
    the warp leaves are pinned raw, never painted.
-5. **Seams — `transition`, the stitch grammar.** The seam system has
-   exactly two states: a carried seam (omit `transition` — the
-   generation head hands a 22-frame drift-control overlap to the next
-   window, so ONE continuous move may ride across it) and `transition:
-   "cut"` on the incoming call (a fresh window, nothing carries). There
-   is no crossfade or dissolve knob — a dissolve ask lands as a cut
-   whose outgoing/incoming prose carries the motion. A whip-pan is a
-   cut: the new window opens on the whip's arrival, and the incoming
-   call's text describes the speed-blur.
+5. **Seams — `transition`, the stitch grammar.** THE SEAM LAW
+   has two authorable states: context carry
+   (THE DEFAULT — omit `transition`; the generation head hands a
+   22-frame drift-control overlap to the next window, so ONE
+   continuous move may ride across it) and `transition:
+   "carry+keyframe"` (the carry PLUS the previous window's final
+   frame pinned as this window's first frame — a gen-side image
+   anchor for the most consistent shots). NEVER author
+   `transition: "cut"` — H3 hard-cuts on its own when a shot must start fresh;
+   stock is the operator's manual escape hatch in the strip, never a
+   parameter. There is no crossfade or dissolve knob — a dissolve
+   ask rides the carry with the outgoing/incoming prose carrying the
+   motion. A whip-pan is prompt prose: the incoming call's text
+   describes the speed-blur, and H3 hard-cuts when it needs to
+   without you.
 
-The span grid is the move's metronome: the first call and every
-`transition: "cut"` call author a `22+17k` span (22, 39, 56, 73, 90,
-107, 124 … up to 362); a carried call authors a `17k` span (17, 34, 51,
-68 …). At the schema's 24 fps default, 56 frames ≈ 2.3 s, 124 ≈ 5.2 s,
+The span grid is the move's metronome: the first call authors a
+`22+17k` span (22, 39, 56, 73, 90, 107, 124 … up to 362); every
+carried later call authors a `17k` span (17, 34, 51, 68 …). At the
+schema's 24 fps default, 56 frames ≈ 2.3 s, 124 ≈ 5.2 s,
 362 = 15 s — a slow push-in wants a long window, a whip-pan wants the
 short side of a cut. Off-grid spans are refused with the nearest legal
 frame named; do not send a move the grid cannot time.
@@ -107,8 +113,7 @@ melite_construct → add_stage below
       {
         "text": "A whip-pan blurs across the room and lands hard on the door; the frame settles on the handle.",
         "start_frame": 124,
-        "end_frame": 248,
-        "transition": "cut"
+        "end_frame": 243
       }
     ],
     "keyframes": [
@@ -119,11 +124,11 @@ melite_construct → add_stage below
 ```
 
 Why each knob: the push-in is call prose (the primary seat); `image`
-anchors the opening on her face (the anchor rail); the whip-pan is a
-`"cut"` — its span 124 is a legal `22+17k` cut span, while the carried
-case would demand a `17k` span; the keyframes pin seats the door close-up
-at film-absolute frame 124, the incoming window's head, so the cut lands
-on the intended framing.
+anchors the opening on her face (the anchor rail); the whip-pan rides
+the carry — H3 hard-cuts on its own when the shot must start fresh —
+and its 119-frame span is a legal `17k` carried span (243 = 124+119);
+the keyframes pin seats the door close-up at film-absolute frame 124,
+the incoming window's head, so the whip lands on the intended framing.
 
 ### "Orbit partway around the parked car, then hold low over the hood."
 

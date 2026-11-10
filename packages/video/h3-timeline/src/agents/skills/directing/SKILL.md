@@ -55,8 +55,12 @@ carries no run tool. Never shell out to ComfyUI or hand-build a graph.
 
 `calls` and `audio_clips` are arrays. A call needs `text`, integer
 `start_frame`, and an integer `end_frame` greater than its start. The first
-call has no incoming seam. Omit `transition` for the automatic carry and set
-`transition: "cut"` on an incoming call when the shot should start fresh.
+call has no incoming seam. Omit `transition` for the automatic context
+carry (THE DEFAULT). `transition: "carry+keyframe"` is the second lawful
+mode: the carry plus the previous window's final frame pinned as this
+window's first frame. NEVER author `transition: "cut"` — H3 hard-cuts on
+its own when the shot must start fresh; stock is the operator's manual
+escape hatch, never a parameter.
 
 An audio row's `src` is the spoken asset itself, spelled so the run can
 stage it: the run-relative `<run-id>/<file>` name of the TTS run's output,

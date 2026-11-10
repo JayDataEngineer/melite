@@ -57,7 +57,10 @@ Admission enforces the tiling: `calls[i].start_frame` must equal
 
 ## Continuation
 
-Omit `transition` for the automatic carried continuation. Use
-`transition: "cut"` when the new call must begin independently. A stable seed
-helps preserve world texture across re-rolls; it does not replace visual
-continuity or a valid timeline.
+Omit `transition` for the automatic carried continuation — context carry
+is THE DEFAULT. `transition: "carry+keyframe"` is the second lawful mode:
+the carry plus the previous window's final frame pinned as this window's
+first frame. NEVER author `transition: "cut"` — H3 hard-cuts on its own
+when a shot must start fresh; stock is the operator's manual escape hatch.
+A stable seed helps preserve world texture across re-rolls; it does not
+replace visual continuity or a valid timeline.

@@ -756,7 +756,7 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
 describe('the studio css carries no dead rules (the R7 purge stands)', () => {
   const CSS = 'packages/video/h3-timeline/src/ui/studio/studio.module.css'
   const TREE = 'packages/video/h3-timeline/src'
-  const BLOCK_PIN = 108 // re-pinned 2026-11-06: the R5 conversion cut .warnRow + .warnIcon
+  const BLOCK_PIN = 113 // re-pinned 2026-11-14: the v2v cut door + the seam-mode seats landed their rule blocks (queue 11's strip faces); a cure shrinks it, a new rule re-pins deliberately
   const stripComments = (s: string): string =>
     s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
   function definedClasses(): Set<string> {

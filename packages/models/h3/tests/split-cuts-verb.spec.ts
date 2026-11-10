@@ -87,6 +87,57 @@ describe("THE CUTS VERB — the third door over the one law", () => {
     }
   });
 
+  test("THE SEAM LAW DEFAULT (operator 2026-11-17): an unstated carry seats EXTEND — the seam births context carry, never stock", () => {
+    // "STOCK IS NOT DEFAULT. YOU SELECTED STOCK… CONTEXT IS DEFAULT
+    // TO CARRY." The verb's unstated carry is the operator's law;
+    // 'cut' stays a legal STATED mode (the operator's manual escape
+    // hatch rides the strip) but never what an omitted seat births.
+    const out = expandCuts(film(), "2.5");
+    assert.ok(out.ok);
+    // (the typed read: the fixture's rows author no transition — the
+    // seam the split births is the only row that carries one)
+    const seam = out.calls[1] as { transition?: string };
+    assert.equal(seam.transition, "extend",
+      "the seam an unstated carry births states extend — stock is never the default");
+    // and the rows it authors pass the walk's own span gate (the
+    // split never writes a doc the schema would refuse)
+    for (let i = 0; i < out.calls.length; i++) {
+      const row = out.calls[i]!;
+      const span = row.end_frame - row.start_frame;
+      if (i === 0) {
+        assert.ok(isGridLength(span), `the first window stays 22+17k (got ${span})`);
+      } else {
+        assert.ok(span % GRID_STEP_FRAMES === 0 && span > 0,
+          `the carried right half's span is 17k (got ${span}) — its 22f seam is the generation head`);
+      }
+    }
+  });
+
+  test("THE DOWNSTREAM REBASE: a carried split keeps EVERY downstream window on its own lattice (the 141f defect's wall)", () => {
+    // THE BURN (2026-11-17, caught when the carry default landed):
+    // the carry block slid the next window's START to the reflowed
+    // seam but never its END — a 3-window doc split under carry
+    // landed the third row at 141f, off the 17k carried lattice, a
+    // doc the walk itself would refuse (the split authored illegal
+    // rows). Every downstream window rebase-preserved its SPAN: the
+    // film keeps its length, the tiling stays contiguous.
+    const doc = [
+      { text: "w1", start_frame: 0, end_frame: 124 },
+      { text: "w2", start_frame: 124, end_frame: 243, transition: "extend" },
+      { text: "w3", start_frame: 243, end_frame: 362, transition: "extend" },
+    ];
+    const out = expandCuts(doc, "2.5");
+    assert.ok(out.ok);
+    assert.deepEqual(
+      out.calls.map((c) => [c.start_frame, c.end_frame]),
+      [[0, 56], [56, 124], [124, 243], [243, 362]],
+      "the seam reflows onto the 17k lattice and the downstream rows keep their spans — the film keeps its length",
+    );
+    for (let i = 0; i + 1 < out.calls.length; i++) {
+      assert.equal(out.calls[i]!.end_frame, out.calls[i + 1]!.start_frame, "the tiling stays contiguous");
+    }
+  });
+
   test("the refusal voices: garbage, empty part, and a window too short to halve", () => {
     for (const bad of ["soon", "2.5,,5", ""]) {
       const out = expandCuts(film(), bad, "cut");

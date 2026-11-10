@@ -190,17 +190,19 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
   // split was hidden in a double-click no clip ever passes through,
   // and the splice it performed stripped the call's identity and
   // stated no seam). The seat must be VISIBLE on the clip, and its
-  // write must land on the write channel as the §0.5 split: BOTH
-  // halves keep the text, the new seam states cut, the spans ride
-  // the grid (the right half authors its content + the 22f cut price).
-  it('THE SPLIT SEAT WRITES THE §0.5 SPLIT: identity carries, the new seam states cut', async () => {
+  // write must land on the write channel as the seam-law split: BOTH
+  // halves keep the text, the new seam states EXTEND (context carry
+  // is THE DEFAULT — operator 2026-11-17), the spans ride the grid
+  // (the carried right half authors 17k content; its 22f seam is the
+  // generation head).
+  it('THE SPLIT SEAT WRITES THE SEAM-LAW SPLIT: identity carries, the new seam states extend (the carry default)', async () => {
     const p = owner({
       row: {
         id: 's_4', card: 'h3-timeline', title: 'H3 Timeline',
         params: {
           // 141 = 22+7·17, on-grid: the split finds frame 73 (the
-          // nearest legal to the midpoint 71); the right half ends
-          // at 141+22 = 163
+          // nearest legal to the midpoint 71); the carried right half
+          // spans 73→141 (68 = 4·17 content — the film keeps its length)
           calls: [{ text: 'shot one', start_frame: 0, end_frame: 141 }],
           keyframes: [], fps: 24, seed: 7,
         },
@@ -226,7 +228,10 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
     }>
     expect(calls.length).toBe(2)
     expect(calls[0]).toMatchObject({ text: 'shot one', start_frame: 0, end_frame: 73 })
-    expect(calls[1]).toMatchObject({ text: 'shot one', start_frame: 73, end_frame: 163, transition: 'cut' })
+    expect(calls[1]).toMatchObject({ text: 'shot one', start_frame: 73, end_frame: 141, transition: 'extend' })
+    // the lattice law holds on both authored rows (the split never
+    // writes a doc the walk would refuse)
+    expect(calls[1]!.end_frame - calls[1]!.start_frame).toBe(68)
   })
 })
 

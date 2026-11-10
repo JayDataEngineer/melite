@@ -40,13 +40,43 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     for (const [name, re] of RETIRED) expect(md, `retired ${name}`).not.toMatch(re);
   });
 
-  it("the video-timeline skill teaches the D-M-E clip rows + the automatic seam, and that the bed is GONE, never the retired spellings", () => {
+  it("the video-timeline skill teaches the D-M-E clip rows + THE SEAM LAW (carry is the default), and that the bed is GONE, never the retired spellings", () => {
     const md = read("agents/skills/video-timeline/SKILL.md");
     expect(md).toMatch(/THE BED IS GONE/);
     expect(md).toMatch(/params\.audio_clips/);
     expect(md).toMatch(/22-frame overlap/);
-    expect(md).toMatch(/transition:\s*"cut"/);
+    // THE SEAM LAW (operator 2026-11-17): the skill teaches BOTH
+    // lawful modes and the never-author-cut law — never the
+    // pre-cure "set transition: cut" instruction
+    expect(md).toMatch(/THE SEAM LAW/);
+    expect(md).toMatch(/carry\+keyframe/);
+    expect(md).toMatch(/NEVER\s+author `transition: "cut"`/);
+    expect(md).not.toMatch(/[Ss]et `transition:\s*"cut"`/);
     for (const [name, re] of RETIRED) expect(md, `retired ${name}`).not.toMatch(re);
+  });
+
+  it("THE SEAM LAW teaches everywhere an agent loads it: AGENT.md and every skill name both lawful modes and refuse authoring cut (the source-digging burn's wall)", () => {
+    // THE BURN (operator 2026-11-17, verbatim in the dev_docs
+    // receipt): a fresh agent had to dig in source code to find the
+    // most important option in the video mode — the two authorable
+    // seam modes must be VISIBLE in every doc an agent can load:
+    // omit = carry (THE DEFAULT); 'carry+keyframe' = carry + the
+    // pinned first frame — and the never-author-cut law beside them.
+    for (const rel of [
+      "agents/AGENT.md",
+      "agents/README.md",
+      "agents/skills/video-timeline/SKILL.md",
+      "agents/skills/directing/SKILL.md",
+      "agents/skills/grid-authoring/SKILL.md",
+      "agents/skills/cinemadir/SKILL.md",
+    ]) {
+      const md = read(rel);
+      expect(md, `${rel} names the keyframe mode`).toMatch(/carry\+keyframe/);
+      expect(md, `${rel} states the carry default`).toMatch(/DEFAULT/i);
+      expect(md, `${rel} refuses authoring cut`).toMatch(/NEVER[\s\S]{0,40}author[\s\S]{0,10}`transition: "cut"`/);
+      // and no seat anywhere instructs authoring the stock seam
+      expect(md, `${rel} never instructs the cut authoring`).not.toMatch(/[Ss]et `transition:\s*"cut"`|[Uu]se\s+`transition:\s*"cut"`/);
+    }
   });
 
   it("AGENT.md teaches the automatic seam, never the retired spellings", () => {

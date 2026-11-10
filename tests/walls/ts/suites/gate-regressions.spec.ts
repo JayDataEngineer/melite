@@ -726,7 +726,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // zero-import models-input/scale-vocab leaf lands its tsc emit
   // packages/models/input/lib/scale-vocab.js — the census follows
   // the emitted truth.
-  const LIB_CENSUS_PIN = 644;
+  // Repinned 644 -> 643 (2026-11-14, the one-bench cuts verb): the
+  // docGrid source died with its hand-rolled grid (the calls rows
+  // are the one storage) and its emit
+  // packages/video/h3-timeline/lib/ui/studio/docGrid.js died with
+  // it — the census follows the emitted truth.
+  const LIB_CENSUS_PIN = 643;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

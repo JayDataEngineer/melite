@@ -23,8 +23,8 @@
  *   section would no longer allow people to add clips"); only the
  *   prose goes quiet.
  * - THE JOURNEY — the real studio: the press lands a two-window doc,
- *   the second half transition "cut" (§0.5's split law, ridden
- *   through the strip's own button).
+ *   the second half transition "extend" (THE SEAM LAW, ridden
+ *   through the strip's own button: context carry is the default).
  * - THE DERIVED WHOLE-FILM WINDOW (D-19) — under v2v with zero
  *   authored spans the lane paints the run's ONE implicit window
  *   (the whole film, derived join — the lane mirrors the chain); the
@@ -262,10 +262,13 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
       "extent = the derived window's own frames (56), at = the playhead (28)")
     assert.equal(rec.addCall.length, 0,
       "the stock addCallAt verb NEVER fires for the derived window")
-    // THE DEFAULT CARRY frames nothing ("cut" is the no-reframe
-    // mode — the reframe proof rides the carry-selected arm below)
-    assert.equal(rec.seam.length, 0,
-      "the default carry (cut) frames no seam on the first press")
+    // THE SEAM LAW (operator 2026-11-17: "STOCK IS NOT DEFAULT —
+    // CONTEXT IS DEFAULT TO CARRY"): the resting state of the split
+    // control is CARRY — the first press frames the new seam extend
+    // with NO menu gesture (the menu is how the operator reaches the
+    // stock escape hatch, never how the seam births)
+    assert.deepEqual(rec.seam, [[1, "extend"]],
+      "the default carry (extend) frames the seam on the first press — stock is never the default")
     els.unmount()
     // THE STATED TIMESTAMP rides the same door: split-at 1.625s on a
     // 24fps film cuts at frame 39 — ON the authoring lattice (22+17,
@@ -332,8 +335,9 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     // (round(107/2) = 54). The seat rides the derived row's own uuid
     // (the kit arms it iff onPromptSplit is wired); the pre-cure
     // path resolved no call for the uuid and dropped the press
-    // SILENT — the named disease. The carry stays at its default
-    // ("cut") — the reframe is the timestamp arm's proof.
+    // SILENT — the named disease. THE SEAM LAW: the carry rests at
+    // its default (extend) — the divide frames the seam with no
+    // menu gesture.
     const { els, rec } = strip({
       calls: [] as never,
       barPrompts: [] as never,
@@ -348,8 +352,34 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
       "extent = the derived window's frames, at = its midpoint (round(107/2) = 54)")
     assert.equal(rec.addCall.length, 0,
       "the stock addCallAt verb NEVER fires for the derived divide")
-    assert.equal(rec.seam.length, 0,
-      "the default carry (cut) frames no seam — the reframe is the timestamp arm's proof")
+    assert.deepEqual(rec.seam, [[1, "extend"]],
+      "the default carry (extend) frames the divide's seam — stock is never the default")
+    els.unmount()
+  })
+
+  it("THE CARRY DEFAULT (operator 2026-11-17) — the split control's resting selection is Carry, never Stock", () => {
+    // THE SCREENSHOT BURN: the split menu opened on Stock — the
+    // operator's law verbatim: "STOCK IS NOT DEFAULT. YOU SELECTED
+    // STOCK… CONTEXT IS DEFAULT TO CARRY." The anchor names the
+    // resting mode BEFORE any gesture; Stock stays a menu row (the
+    // operator's manual escape hatch), never what the control
+    // births at rest.
+    const { els } = strip({
+      calls: [{ text: "a", start_frame: 0, end_frame: 107 }] as never,
+      barPrompts: [{ ...P1, end_frame: 107 }] as never,
+      barTotal: 107,
+      frameIdx: 10,
+    })
+    const anchor = els.container.querySelector('[data-testid="tl-split-carry"]')
+    assert.ok(anchor instanceof HTMLElement, "the split carry anchor renders under the armed edit")
+    assert.ok(
+      anchor.textContent?.includes(studioCopy.splitCarryCarry),
+      `the anchor names CARRY at rest — got "${anchor.textContent}"`,
+    )
+    assert.ok(
+      !anchor.textContent?.includes(studioCopy.splitCarryStock),
+      "the anchor never names Stock at rest (stock is the escape hatch the menu serves, not the default)",
+    )
     els.unmount()
   })
 
@@ -435,7 +465,7 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     els.unmount()
   })
 
-  it("THE JOURNEY — the real studio: the ADD CUT press lands a two-window doc, the second half transition \"cut\"", async () => {
+  it("THE JOURNEY — the real studio: the ADD CUT press lands a two-window doc, the second half transition \"extend\" (the carry default)", async () => {
     const body = specBody(theService(), await loadCardDefs(), {
       card: "h3-timeline", service: "h3-timeline", model: "h3-timeline",
     })
@@ -483,14 +513,22 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
     // playhead, at its midpoint): the press that landed an empty
     // appended window pre-cure now lands a CUT.
     fireEvent.click(door)
-    // THE §0.5 LAW, ridden through the door: one window becomes its
-    // own two halves, the seam the split births states CUT
+    // THE SEAM LAW, ridden through the door: one window becomes its
+    // own two halves, and the seam the split births states EXTEND —
+    // context carry is THE DEFAULT (operator 2026-11-17: stock is
+    // the operator's manual escape hatch, never what a press births)
     await waitFor(() => {
       const withCalls = saved.filter((p) => Array.isArray(p.calls)) as Array<{ calls: DocCall[] }>
       assert.ok(withCalls.length > 0, `the press must land the calls write — got: ${JSON.stringify(saved)}`)
       const doc = withCalls[withCalls.length - 1]!.calls
       assert.equal(doc.length, 2, `two windows after the cut — got ${JSON.stringify(doc)}`)
-      assert.equal(doc[1]!.transition, "cut", "the second half's seam states CUT")
+      assert.equal(doc[1]!.transition, "extend", "the second half's seam states EXTEND — the carry default")
+      // the tiling + lattice laws hold on the authored rows (the
+      // split never writes a doc the walk would refuse)
+      assert.equal(doc[1]!.start_frame, doc[0]!.end_frame, "the seam tiles")
+      const right = doc[1]!.end_frame - doc[1]!.start_frame
+      assert.ok(right % 17 === 0 && right > 0,
+        `the carried right half's span is 17k (got ${right}) — its 22f seam is the generation head`)
     }, { timeout: 4000 })
   })
 

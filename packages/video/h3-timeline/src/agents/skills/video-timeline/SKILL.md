@@ -61,14 +61,19 @@ a display name or an invented placeholder.
 ## Window and seam rules
 
 - The first call has no incoming seam.
-- Omit `transition` for the automatic continuation; set `transition: "cut"`
-  on an incoming call for an independent window.
-- One span grid, uniform: first and `cut` calls author `22+17k` frames in
+- THE SEAM LAW: context carry is THE DEFAULT —
+  omit `transition` and the latent tail continues across the seam.
+  `transition: "carry+keyframe"` is the second lawful mode: the carry
+  PLUS the previous window's final frame pinned as this window's first
+  frame (a gen-side image anchor for the most consistent shots). NEVER
+  author `transition: "cut"` — H3 hard-cuts on its own when a shot
+  must start fresh; stock is the operator's manual escape hatch in the
+  strip, never a parameter.
+- One span grid, uniform: the first call authors `22+17k` frames in
   `[22,362]`; carried calls author `17k` frames (the carry's 22 frames come
   from the generation head). Off-grid spans are refused at admission and
   at the compose carrier, with the nearest legal frame named.
-- The automatic continuation uses a fixed 22-frame overlap; `transition:
-  "cut"` is the deliberate independent-window choice.
+- The automatic continuation uses a fixed 22-frame overlap.
 - Calls tile, enforced at admission: a cross-call gap or overlap is refused
   (`calls[i].start_frame` must equal `calls[i-1].end_frame`).
 

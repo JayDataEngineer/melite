@@ -38,7 +38,7 @@ genre: video
   mechanism.
 - The full dial table and the posture's refusal laws live in ONE place: the `edit` skill.
 
-## NO RUN? THE ONE-DIAL DOOR (2026-11-17, the pattern dissolution)
+## NO RUN? THE ONE-DIAL DOOR (the pattern dissolution)
 
 `chain_run` is the RESUME shortcut — the zero-re-encode pass over a
 run's own saved latents. When there is no run (an outside video, an

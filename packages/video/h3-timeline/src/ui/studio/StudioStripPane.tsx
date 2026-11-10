@@ -449,7 +449,11 @@ export function StudioStripPane({
   // (stock / carry / carry+keyframe — the §0.9 states as the split's
   // own option, the same three the call card's seam seat serves).
   const [splitAtSec, setSplitAtSec] = useState("")
-  const [splitCarry, setSplitCarry] = useState<"cut" | "extend" | "carry+keyframe">("cut")
+  // THE CARRY-DEFAULT LAW (operator 2026-11-17: "STOCK IS NOT
+  // DEFAULT — CONTEXT IS DEFAULT TO CARRY"): the split control
+  // opens on Carry; Stock is the manual escape hatch, never the
+  // resting state of a seam.
+  const [splitCarry, setSplitCarry] = useState<"cut" | "extend" | "carry+keyframe">("extend")
   const [carryMenuOpen, setCarryMenuOpen] = useState(false)
   // ── THE V2V PROMPT SEAT's binding ──────────────────────────────
   // The armed edit bag's prompt, seeded from the one storage and
@@ -615,7 +619,7 @@ export function StudioStripPane({
     {/* THE STRIP TOOL ROW (2026-11-10, the corner-crush burn: the
         verbs rode INSIDE the pane hint's 9px text span, each clamped
         to the 22×22 upload-glyph box — input and buttons clipped
-        into "s**t in the corner that doesn't even fit"). The hint is
+        into corner-crushed overflow that didn't even fit). The hint is
         PROSE; the verbs are VERBS: their own row under the header,
         wrapped lawfully, full text, never clamped. */}
     <div className={s.stripTools}>

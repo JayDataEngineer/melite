@@ -42,8 +42,11 @@ skill needs correction.
 - `params.calls` and `params.audio_clips` are the declared array surface;
   malformed non-array containers refuse after the card's wire normalization,
   while the declared wrapper/empty-array compatibility forms are normalized.
-- `transition` belongs on the incoming call: omitted means automatic carry;
-  `"cut"` requests a fresh window.
+- `transition` belongs on the incoming call: omitted means context carry
+  (THE DEFAULT); `"carry+keyframe"` is the carry plus the previous window's
+  final frame pinned as this window's first frame. NEVER author
+  `transition: "cut"` — H3 hard-cuts on its own when a shot must start
+  fresh; stock is the operator's manual escape hatch, never a parameter.
 - The current film tail saves each window, places unload boundaries, and
   concatenates saved files in-graph. Historical Python graph paths are not
   instructions.

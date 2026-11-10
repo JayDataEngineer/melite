@@ -49,13 +49,18 @@ the schema listing alone under-describes this card by design.
   must equal `calls[i-1].end_frame`; gaps and overlaps are refused at
   admission, not absorbed.
 - The first call has no incoming seam.
-- Omit `transition` for the automatic carry; set `transition: "cut"` on the
-  incoming call for a deliberate fresh window.
-- One span grid, uniform across every window shape: the first call and
-  any `transition: "cut"` call author a `22+17k` span (56, 73, 90, 107 …)
-  inside `[22,362]`; a carried call authors a `17k` span (17, 34, 51 …)
-  because its 22-frame overlap comes from the generation head. Off-grid spans
-  are refused at admission and again at the compose carrier, with the
+- THE SEAM LAW: context carry is THE DEFAULT —
+  omit `transition` and the latent tail continues across the seam.
+  `transition: "carry+keyframe"` is the second lawful mode: the carry
+  PLUS the previous window's final frame pinned as this window's first
+  frame (a gen-side image anchor). NEVER author `transition: "cut"` —
+  H3 hard-cuts on its own when a shot must start fresh; stock is the
+  operator's manual escape hatch in the strip, never a parameter.
+- One span grid, uniform across every window shape: the first call
+  authors a `22+17k` span (56, 73, 90, 107 …) inside `[22,362]`; a
+  carried call authors a `17k` span (17, 34, 51 …) because its
+  22-frame overlap comes from the generation head. Off-grid spans are
+  refused at admission and again at the compose carrier, with the
   nearest legal frame named.
 - Do not send `context`, seam-keyframe, `bed_audio`, sampler/backend internals,
   or other undeclared fields. Top-level unknown fields are refused; some

@@ -16,6 +16,7 @@
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { meliteConstruct } from '../src/tools/melite-construct.ts'
+import { assertSpanGrid, transitionOverlap } from '@melite/models-h3/timelineContract'
 import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
@@ -58,10 +59,24 @@ describe('THE CUTS VERB — the agent\'s door into the one storage', () => {
     assert.equal(rows.length, 4, 'one cut, one more window')
     assert.deepEqual(
       rows.map((r) => [r.start_frame, r.end_frame]),
-      [[0, 56], [56, 146], [146, 265], [265, 384]],
-      'the 22f cut price rebases the downstream tiling',
+      [[0, 56], [56, 124], [124, 243], [243, 362]],
+      'THE SEAM LAW: the carried seam costs the right half its 22f head (17k span), ' +
+      'and the downstream windows keep their own lattice seats — the film keeps its length',
     )
-    assert.equal(rows[1]!.transition, 'cut', '§0.5: the seam a split births states CUT — no chaining')
+    assert.equal(rows[1]!.transition, 'extend', 'THE SEAM LAW (operator 2026-11-17): a split births CARRY — never stock; stock is the operator\'s manual escape hatch alone')
+    // ACCURACY (the contract canon): the rows the verb authors must
+    // pass the schema's OWN span gate — the split never writes a doc
+    // the walk would refuse (the 141f off-lattice defect this wall
+    // caught when the carry default landed: sliding a downstream
+    // start without its end authored an illegal carried span).
+    rows.forEach((r, i) => {
+      const carry = i > 0 ? transitionOverlap(r.transition) : 0
+      assertSpanGrid({ start: r.start_frame, end: r.end_frame }, `calls[${i}]`, carry)
+    })
+    // the tiling law survives the reflow (end of i = start of i+1)
+    for (let i = 1; i < rows.length; i++) {
+      assert.equal(rows[i]!.start_frame, rows[i - 1]!.end_frame, `the seam at row ${i} tiles`)
+    }
     // the answer names what was built (the model reads the count)
     assert.equal(out['cuts_windows'], 4)
     // the refusal never fired: the write lane was reached exactly once

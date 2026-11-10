@@ -37,6 +37,21 @@ describe("the h3-timeline tool face", () => {
     assert.ok(calls !== undefined && !("type" in calls));
   });
 
+  it("THE SEAM LAW SERVES ON THE FACE (the 2026-11-17 burn: 'IT HAS TO DIG IN SOURCE CODE TO FIND THE MOST IMPORTANT OPTION')", () => {
+    // Schema be the judge: the agent's own form-spec must teach the
+    // two lawful seam modes — omit = context carry (THE DEFAULT),
+    // 'carry+keyframe' = carry + the pinned first frame — and the
+    // never-author-cut law. The mode a fresh agent cannot see is a
+    // mode it cannot use; the face is where it must see them.
+    const props = (tool.parameters?.properties ?? {}) as Record<string, { description?: string }>;
+    const d = props.calls?.description ?? "";
+    assert.match(d, /THE SEAM LAW/, "the seam law is named on the face");
+    assert.match(d, /context carry is THE DEFAULT/i, "the face states the carry default");
+    assert.match(d, /'carry\+keyframe'/, "the face names the second lawful mode — the option nobody could see");
+    assert.match(d, /NEVER author transition 'cut'/, "the face refuses the stock seam: H3 hard-cuts on its own");
+    assert.match(d, /escape hatch/, "stock is named as the operator's manual escape hatch, never a parameter");
+  });
+
   it("the any-frame pin lane is OFF the tool plane — pins live on the timeline's keyframes lane (audit 013 cure 2, the row death)", () => {
     // THE ROW DEATH: keyframes is a document-plane lane (the studio
     // doc's keyframes row, validated by the schema walk), never a

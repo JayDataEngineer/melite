@@ -1244,7 +1244,8 @@ export function meliteConstruct(
           + '(clip_seconds, two edit[] entries, and typed overlap_frames are NOT windows — one seat, '
           + 'engine-internal splits, and a refusal). NEVER type frame math (a hand-typed window once '
           + 'repaired 90 of 243 frames): split with the VERB {cuts: "2.5, 5"} — seconds, expanded '
-          + 'through the same split law the strip\'s Add cut rides, into the calls rows, seams cut. '
+          + 'through the same split law the strip\'s Add cut rides, into the calls rows, the new seams carried '
+          + '(context carry is THE DEFAULT; stock is the operator\'s manual escape hatch, never authored). '
           + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
           + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
           + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone.',
@@ -1367,7 +1368,7 @@ export function meliteConstruct(
           // re-derives the window count from a refusal).
           const cutsWindows = (v as { cuts_windows?: unknown }).cuts_windows
           if (typeof cutsWindows === 'number') {
-            lines.push('cuts → ' + cutsWindows + ' windows: the calls rows are rewritten (seams cut, no chaining) — the strip\'s window face and the card UI mirror them')
+            lines.push('cuts → ' + cutsWindows + ' windows: the calls rows are rewritten (context carry across the new seams — the default law) — the strip\'s window face and the card UI mirror them')
           }
           // THE DIFF VOICE (defect board D-22, 2026-11-10: three
           // writes landed on a never-run stage and every one
@@ -1855,7 +1856,12 @@ export function meliteConstruct(
             }
             // §0.5 verbatim: the halves GLUE WITHOUT CONTEXT CHAINING —
             // every seam the verb births states CUT.
-            const expanded = expandCuts(windows, cutsRaw, 'cut')
+            // THE CARRY-DEFAULT LAW (operator 2026-11-17): a split
+            // seam DEFAULTS to context carry — Stock is never
+            // authored by the agent (H3 hard-cuts on its own when a
+            // shot must start fresh; stock is the operator's manual
+            // escape hatch in the strip).
+            const expanded = expandCuts(windows, cutsRaw, 'extend')
             if (!expanded.ok) {
               return out({ error: `cuts: ${expanded.refusal}` })
             }

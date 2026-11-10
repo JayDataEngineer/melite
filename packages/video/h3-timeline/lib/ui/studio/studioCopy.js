@@ -117,7 +117,7 @@ export const studioCopy = {
     seamModeStock: "Stock",
     seamModeCarry: "Carry",
     seamModeCarryKeyframe: "Carry + keyframe",
-    seamModeStockTip: "stock — no context carry: this window renders independent, a true butt against the last (rarely used, the escape hatch)",
+    seamModeStockTip: "stock — no context carry: this window renders independent, a true butt against the last (the operator's manual escape hatch — NEVER the default, never agent-authored; H3 hard-cuts on its own when a shot must start fresh)",
     seamModeCarryTip: "carry — the latent tail continues across the seam at the proven 22-frame overlap (the default)",
     seamModeCarryKeyframeTip: "carry + keyframe — the latent tail carries AND the previous window's final frame is pinned as this window's first frame (more consistent shots)",
     seamModeAria: "Context carry mode",
