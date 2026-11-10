@@ -1030,3 +1030,99 @@ describe("executeSingle × THE VRAM HEADROOM GATE (the prevent-oom law, 2026-10-
     expect(vramFreeBodies, "the never-evicts law").toHaveLength(0);
   });
 });
+
+describe("THE KILL IS NAMED (defect board D-17, 2026-11-18: 'An out-of-memory kill is reported to the caller as a read timeout' — run-9d147f6fc37e, 46.1 GB peak, journal oom-kill / status=9/KILL, caller saw 'stopped answering its queue/history reads')", () => {
+  // The burn's shape: the queue/history reads RIDE their bound while
+  // the engine dies (swapping starves the reads first), every salvage
+  // re-read refuses too, and the health probe then meets a port that
+  // REFUSES outright — the process is gone. The old message named the
+  // reader; the cure names the cause and the lever.
+  const hangUntilAbort = (init?: { signal?: AbortSignal }): Promise<unknown> =>
+    new Promise((_resolve, reject) => {
+      // never settles on its own — only the read bound's abort
+      // rejects it (the harness mirror of a starved read)
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+    });
+
+  it("a refused port after the bound names the kill, the journal's words, and the less-work levers", async () => {
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> => {
+        if (route.startsWith("/system_stats")) {
+          return Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:8188"));
+        }
+        return hangUntilAbort(init);
+      },
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 40,
+      }),
+    ).rejects.toThrow(
+      /stopped answering its queue\/history reads.*REFUSES connections — the process has died.*oom-kill \/ status=9\/KILL.*LESS WORK PER GENERATION: shorter windows, fewer armed arms, a lower resolution tier/s,
+    );
+  });
+
+  it("a silent engine (not even a refusal) names the wedge — the levers ride the same sentence", async () => {
+    const c = fakeClient({
+      fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> => hangUntilAbort(init),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 40,
+      }),
+    ).rejects.toThrow(
+      /wedged or swapping to death.*LESS WORK PER GENERATION: shorter windows, fewer armed arms, a lower resolution tier/s,
+    );
+  });
+
+  it("the wait is voiced on the lane log: how long the diagnosis stood and what /system_stats said", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const c = fakeClient({
+        fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> => hangUntilAbort(init),
+      } as Partial<Record<string, unknown>>);
+      await expect(
+        waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
+          readBoundMs: 40,
+          salvageAttempts: 1,
+          healthBoundMs: 40,
+        }),
+      ).rejects.toThrow(/stopped answering its queue\/history reads/);
+      const voiced = warn.mock.calls.map((args) => String(args[0])).join("\n");
+      expect(voiced).toMatch(/read-bound diagnosis stood after \d+ms of refused reads/);
+      expect(voiced).toMatch(/1 salvage re-reads \+ the \/system_stats health probe — \/system_stats said nothing/);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("a busy engine still resumes — the named-kill arm never fires on a live one (the F8 control)", async () => {
+    // /system_stats answers (alive-but-busy) while the queue read
+    // rides its bound once: polling resumes, the run settles.
+    let reads = 0;
+    const c = fakeClient({
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> => {
+        if (route.startsWith("/system_stats")) {
+          return Promise.resolve({ ok: true, json: async () => ({}) } as unknown as never);
+        }
+        reads++;
+        if (reads === 1) return hangUntilAbort(init);
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ queue_running: [], queue_pending: [], "p-1": { status: "completed" } }),
+        } as unknown as never);
+      },
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 500,
+      }),
+    ).resolves.toBeTruthy();
+  });
+});

@@ -256,14 +256,19 @@ async function salvageAtClose(client, promptId, deadline, shouldStop, boundMs, a
  *  run's own deadline still bounds the wait), never fails a run on
  *  a live engine. Silence is the only diagnosis that stands. */
 const HEALTH_BOUND_MS = 30_000;
-/** One cheap liveness read: resolved = alive, refused = silent. */
-async function engineAnswersHealth(client, boundMs) {
+/** One cheap liveness read whose FAILURE SHAPE is the evidence
+ *  (D-17, defect board 2026-11-18): "answered" = alive-but-busy
+ *  (resume polling), "refused" = the port rejects connections
+ *  outright — the process is gone, the OOM kill's signature —,
+ *  "silent" = not even a refusal inside the bound (wedged or
+ *  swapping to death). */
+async function engineHealthSignal(client, boundMs) {
     try {
         await withBound(() => client.fetchApi("/system_stats", { signal: new AbortController().signal }), boundMs, "GET /system_stats (health gate)");
-        return true;
+        return "answered";
     }
-    catch {
-        return false;
+    catch (e) {
+        return isTransportDownError(e) ? "refused" : "silent";
     }
 }
 export async function waitTerminal(client, promptId, deadline, shouldStop, policy) {
@@ -336,6 +341,7 @@ export async function waitTerminal(client, promptId, deadline, shouldStop, polic
             // means the diagnosis was false and polling resumes, every
             // attempt refused stands the diagnosis loud.
             if (e instanceof EngineReadBoundError) {
+                const diagnosedAt = Date.now();
                 const close = await salvageAtClose(client, promptId, deadline, shouldStop, readBoundMs, policy?.salvageAttempts ?? SALVAGE_ATTEMPTS, policy?.salvageRetrySleepMs ?? SALVAGE_RETRY_SLEEP_MS);
                 if (close.answered) {
                     if (close.entry !== undefined) {
@@ -358,11 +364,41 @@ export async function waitTerminal(client, promptId, deadline, shouldStop, polic
                 // cadence (the run's own deadline bounds the wait — the
                 // budget check above still interrupts there), and only a
                 // silent engine falls through to the loud diagnosis.
-                if (await engineAnswersHealth(client, policy?.healthBoundMs ?? HEALTH_BOUND_MS)) {
+                const health = await engineHealthSignal(client, policy?.healthBoundMs ?? HEALTH_BOUND_MS);
+                if (health === "answered") {
                     downStreak = 0;
                     cadence = Math.min(cadence * 4, backoffCapMs);
                     continue;
                 }
+                // D-17 (defect board 2026-11-18, run-9d147f6fc37e): the
+                // kernel's OOM killer took the engine at a 46.1 GB peak and
+                // the caller heard only this read bound — the old message
+                // named the READER, never the cause, and the obvious next
+                // moves (re-press, longer timeouts) burned runs to learn
+                // nothing. Silence has now stood through every salvage
+                // re-read AND the health probe; the refusal's own shape is
+                // the closest honest signal this side of the host journal
+                // (the journal itself — oom-kill / status=9/KILL, the peak
+                // RSS/swap — is the host's evidence, unreachable from
+                // here). Name the cause, voice the wait, and hand the
+                // caller the one lever that exists: less work per
+                // generation.
+                const waitedMs = Date.now() - diagnosedAt;
+                const cause = health === "refused"
+                    ? "the engine's port now REFUSES connections — the process has died (a host OOM kill is the common cause at memory peaks; the host journal will show oom-kill / status=9/KILL)"
+                    : "the engine answers nothing, not even a connection refusal — wedged or swapping to death";
+                console.warn("[comfyui-cordis] read-bound diagnosis stood after " +
+                    String(waitedMs) +
+                    "ms of refused reads (" +
+                    String(policy?.salvageAttempts ?? SALVAGE_ATTEMPTS) +
+                    " salvage re-reads + the /system_stats health probe — /system_stats said nothing) — " +
+                    cause);
+                await bestEffortInterrupt(client, promptId);
+                throw new ComfyError("the engine stopped answering its queue/history reads (" +
+                    String(readBoundMs) +
+                    "ms bound) — refusing closed. " +
+                    cause +
+                    ". The lever is LESS WORK PER GENERATION: shorter windows, fewer armed arms, a lower resolution tier — the engine's memory grows with all three. A fresh engine boot with an empty queue is the tell (the next press succeeds and the failure looks random).");
             }
             if (isTransportDownError(e)) {
                 const now = Date.now();
