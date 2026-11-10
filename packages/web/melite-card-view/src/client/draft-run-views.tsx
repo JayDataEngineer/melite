@@ -182,6 +182,11 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   }, run.graphReceipt.verdict === 'complete'
     ? chromeCopy.graphReceiptCarried({ nodes: run.graphReceipt.nodes, promptId: run.graphReceipt.prompt_id })
     : chromeCopy.graphReceiptDropped({ dropped: run.graphReceipt.dropped, promptId: run.graphReceipt.prompt_id }))
+  // (D-11) the verdict vocabulary names the params plane
+  // ("params_unbound" — populated params whose literal never rode the
+  // graph, envelope keys never judged); a legacy receipt on disk
+  // still carrying "partial" renders the same dropped-names face
+  // (every non-complete verdict rides this arm).
   // THE BAKE CHIP (study §7 item 2 — the run voice prices the bake):
   // present iff the composed graph bakes/loads a refmod mod; absent
   // otherwise — a non-refmod run renders byte-identical to before.

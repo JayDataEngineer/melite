@@ -1,3 +1,4 @@
+import { CARD_ENVELOPE_KEYS } from "./vocab.js";
 export function sidecarStageOf(stage) {
     const out = {
         id: stage.id,
@@ -126,6 +127,8 @@ export function graphReceiptOf(params, composed) {
     const found = [];
     const missed = [];
     for (const [key, value] of Object.entries(params)) {
+        if (CARD_ENVELOPE_KEYS.includes(key))
+            continue;
         const scalar = receiptScalarOf(value);
         if (scalar === undefined)
             continue;
@@ -140,7 +143,9 @@ export function graphReceiptOf(params, composed) {
         populated,
         carried: found,
         dropped: missed,
-        verdict: missed.length === 0 ? "complete" : "partial",
+        // the verdict names its plane (D-11): not integration
+        // vocabulary — populated params whose literal never rode
+        verdict: missed.length === 0 ? "complete" : "params_unbound",
         ...(bake !== undefined ? { bake } : {}),
     };
 }
@@ -180,7 +185,7 @@ export function graphReceiptFoldOf(rows, promptId) {
         populated: union((r) => r.populated),
         carried: union((r) => r.carried),
         dropped: union((r) => r.dropped),
-        verdict: complete ? "complete" : "partial",
+        verdict: complete ? "complete" : "params_unbound",
         stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
         // THE BAKE rides the fold: the first stage that carries one
         // (the card run's single stage; a multi-stage flow receipts the

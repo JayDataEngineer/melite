@@ -9,24 +9,13 @@ import { type FamilyLaw } from "@melite/contracts/familyLane";
 export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.js";
 export type { VariantSelection } from "./cardsVariant.js";
 export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.js";
-/** The card-envelope keys: SELECT the graph, never ride it.
- *
- *  THE ROW COORDINATES ARE THE CONTRACT'S (the operator's live
- *  refusal, 2026-09-28: "compose-door: unknown param(s) on the
- *  image-gen card: card" — the whole-bench run composes each stage
- *  with `{ ...params, card }` (runsRegistry.ts:516), and `card` was
- *  in NO list here, so the row's own coordinate rode the card's knob
- *  bag and the admission gate refused the operator's Run ALL with a
- *  key the door had just added itself. The envelope now carries the
- *  contract's WIRE_STAGE_KEYS — the ONE list of what a stage row IS
- *  — instead of a hand-picked few, so a coordinate can never ride a
- *  card again, and a new stage key is filtered by derivation rather
- *  than by remembering to add it here.
- *
- *  DOOR_KEYS (yaml/flow/flow_inline/model) and the run/bench
- *  coordinates (draft_id/test/service) stay named beside them: they
- *  are door vocabulary, not row vocabulary. */
-export declare const CARD_ENVELOPE_KEYS: readonly string[];
+/** The card-envelope keys: SELECT the graph, never ride it —
+ *  re-exported from the vocabulary's own home (vocab.ts) so the
+ *  compose door and the graph receipt's scope gate read the ONE
+ *  list (D-11: envelope keys are never knobs; the receipt never
+ *  judges them). The list's derivation law and its reasons live
+ *  beside the list. */
+export { CARD_ENVELOPE_KEYS } from "./vocab.js";
 /** The card-lane refusal: status + the _refusal envelope shape
  *  (error, code, then loc/expected/got) — the door maps it through
  *  the local refusal path. */

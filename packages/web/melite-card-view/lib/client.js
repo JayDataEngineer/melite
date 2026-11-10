@@ -5121,11 +5121,14 @@ window.__ModuleLoader__.load({
 			*  an EngineRef suffix wherever the estate stamped one — absent
 			*  prompt_id leaves the legacy face byte-identical. */
 			graphReceiptCarried: (p) => "graph ✓ " + String(p.nodes) + "n" + engineRefSuffix(p.promptId),
-			/** Run view's graph-receipt chip on the partial face: the composed
-			*  graph dropped doc scalars — the names are data (the estate's
-			*  sorted receipt, joined by the seat). The EngineRef suffix rides
-			*  here too (both faces name the queued engine call). */
-			graphReceiptDropped: (p) => "graph ✕ dropped " + p.dropped.join(", ") + engineRefSuffix(p.promptId),
+			/** Run view's graph-receipt chip on the params_unbound face (D-11:
+			*  the verdict names its plane — populated doc params whose
+			*  literal never rode the composed graph; envelope keys are never
+			*  judged, so these are knob names, never bookkeeping). The names
+			*  are data (the estate's sorted receipt, joined by the seat). The
+			*  EngineRef suffix rides here too (both faces name the queued
+			*  engine call). */
+			graphReceiptDropped: (p) => "graph ✕ params not bound " + p.dropped.join(", ") + engineRefSuffix(p.promptId),
 			/** Run view's bake chip (study §7 item 2 — the run voice prices the
 			*  bake): the receipt's price string is data composed from the
 			*  graph's own extract node; the seat renders it verbatim. */
@@ -20704,11 +20707,17 @@ window.__ModuleLoader__.load({
 			*  no legal frame (the 22f base / 17f step windows): the grid's
 			*  shortest halves don't fit — the shared laneErr slot's voice. */
 			splitRefusal: "this window is too short to split — its shortest legal halves don't fit; lengthen it first",
-			/** (queue 11 part 2, the empty doc under v2v) the face's own
-			* refusal: the only verb is cutting and there is no window to cut —
-			* the stock append is an ADD the face bars (the operator: "This
-			* section would no longer allow people to add clips"). */
-			splitEmptyRefusal: "nothing to cut — the video-to-video face adds no clips; a cut needs an existing clip",
+			/** (D-19, the v2v lane-mirror cure 2026-11-18) the derived
+			* whole-film window's OWN readout — the one span the armed edit
+			* composes when no windows are authored, painted in the authoring
+			* lane so the cut doors have their object. The words mirror the
+			* commission row's carry seat (the same truth, the lane's voice). */
+			v2vDerivedWindowText: "whole film — derived join (Add cut authors the first spans)",
+			/** (D-19) the derived window is READ-ONLY: a geometry gesture on it
+			*  (drag body / drag edge / delete) answers LOUD in the shared
+			*  laneErr slot — never a silent snap-back. The cut doors (Add cut,
+			*  the divide seat) are the verbs that author real spans. */
+			v2vDerivedReadonly: "the whole-film window is derived — it mirrors the run; Add cut (or the divide seat) authors the first real spans",
 			/** (queue 11 reopened, the FORM seat) the video2video leaf face's
 			*  own words — the windows list + the split-by-timestamp seat the
 			*  operator named ("NO WINDOWS IN THE FORM!"): the same copy law
@@ -20822,8 +20831,13 @@ window.__ModuleLoader__.load({
 			/** The calls lane head under the armed edit bag (the windows are
 			*  the run's own video-to-video spans). */
 			callsV2vLabel: "Video-to-video — windows & cuts",
-			/** The calls lane's empty hint under the armed edit bag. */
-			callsV2vHint: "Video edit is armed — each window is one video-to-video span; Add cut divides the window at the playhead into two (a cut seam, never a chain — wherever the playhead sits)",
+			/** The calls lane's empty hint under the armed edit bag. (D-19
+			*  re-word 2026-11-18: the pre-cure sentence promised "Add cut
+			*  divides the window" while the empty doc held no window — a verb
+			*  with no object. The hint now states the whole-film truth; with
+			*  the derived window painting, the lane is empty only when the
+			*  axis itself has no extent — the belt, never the working state.) */
+			callsV2vHint: "Video edit is armed — the run edits the whole film as one window; author spans with Add cut (each window is one video-to-video span, cut seams only — never a chain)",
 			/** The strip head's visible cut door (the queue-11 law: the
 			*  ability to add cuts is a CONTROL on the face, never a hidden
 			*  gesture). */
@@ -20960,6 +20974,23 @@ window.__ModuleLoader__.load({
 		function isGridLength(length) {
 			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
 		}
+		const LEGACY_KNOB_KEY = {
+			sampling_steps: "steps",
+			sampler: "sampler_name",
+			scheduler: "sched_name",
+			h3_sla_sparsity: "sla_sparsity",
+			h3_sla_block_size: "sla_block_size",
+			h3_sla_min_seq_len: "sla_min_seq_len",
+			h3_sla_dense_last_steps: "sla_dense_last_steps",
+			h3_sla_protect_audio: "sla_protect_audio",
+			h3_sla_stabilize_motion: "sla_stabilize_motion",
+			h3_sla_reference_protection: "sla_reference_protection",
+			h3_sla_dense_backend: "sla_dense_backend",
+			h3_sla_dense_steps: "sla_dense_steps",
+			h3_sla_disable_fp16_accum: "sla_disable_fp16_accum",
+			interpolate_model: "interp_model",
+			interpolate_multiplier: "interp_multiplier"
+		};
 		//#endregion
 		//#region ../../video/h3-timeline/src/ui/studio/docGrid.ts
 		/**
@@ -21002,7 +21033,7 @@ window.__ModuleLoader__.load({
 		/** The splice frame for a split where BOTH halves must be legal — the
 		*  gesture's frame when it already qualifies, else the nearest one
 		*  that does. NULL when no interior frame qualifies (the §0.5 fence,
-		*  2026-11-16): the old fallthrough handed back the raw gesture and
+		*  2026-11-09): the old fallthrough handed back the raw gesture and
 		*  every caller wrote an off-grid half the card would refuse whole.
 		*  A window at its shape's floor (the 22f base, the 17f step) has no
 		*  legal split at all — the caller refuses loud, never repairs. */
@@ -21107,6 +21138,44 @@ window.__ModuleLoader__.load({
 			}
 			return next;
 		}
+		studioCopy.knobSteps, studioCopy.knobDenoise, studioCopy.knobSampler, studioCopy.knobScheduler, studioCopy.knobShiftVideo, studioCopy.knobShiftAudio, studioCopy.knobSlaSparsity, studioCopy.knobSlaBlockSize, studioCopy.knobSlaMinSeqLen, studioCopy.knobSlaDenseLastSteps, studioCopy.knobSlaProtectAudio, studioCopy.knobSlaStabilizeMotion, studioCopy.knobSlaRefProtection, studioCopy.knobSlaDenseBackend, studioCopy.knobSlaDenseSteps, studioCopy.knobSlaFullPrecAccum, studioCopy.knobSharpen, studioCopy.knobSharpenMethod, studioCopy.knobSharpenStrength, studioCopy.knobSharpenRadius, studioCopy.knobSharpenNoiseGate, studioCopy.knobSharpenIterations, studioCopy.knobInterpolate, studioCopy.knobInterpModel, studioCopy.knobInterpMultiplier, studioCopy.knobWindowLength;
+		({ ...LEGACY_KNOB_KEY });
+		[
+			"You rewrite video-generation prompts for the MiniMax H3 model.",
+			"One prompt describes ONE continuous camera shot — never describe cuts, transitions, or editing inside a prompt.",
+			"Style rules: present tense; concrete cinematic camera language (dolly, crane, handheld, static tripod, orbit); named subject with visible physical detail; specific action beats that fit the shot's duration; environment, lighting and atmosphere; film-stock or lens texture where it helps.",
+			"Keep the original subject, intent, and any proper nouns exactly. Do not invent new characters or change the story.",
+			"Length: 2-4 flowing sentences, dense but not padded. No lists, no headings, no meta-commentary.",
+			"Output STRICT JSON exactly: {\"positive\": \"<the rewritten prompt>\", \"negative\": \"\"} — nothing else outside the JSON."
+		].join(" ");
+		/** The fresh-card document: ONE window 0→90 — the t4_open draft
+		* budget . The canvas IS the film: the readout shows
+		* 3.8 s and 3.8 s renders. A user authoring a longer window rides
+		* the UNIFORM SPAN GATE (2026-09-25): writes snap to the grid and a
+		* reversed/crossed write refuses at the mutation seat — the
+		* starter's 0→90 survives because it is grid-exact. Used only when
+		* params carry no valid calls (never authored, or legacy malformed). */
+		const STARTER_CALLS = [{
+			text: "A single shot — describe the action, camera, and mood.",
+			start_frame: 0,
+			end_frame: 90
+		}];
+		studioCopy.imageGuideLane;
+		//#endregion
+		//#region ../../video/h3-timeline/src/ui/studio/commissions.ts
+		/** Whether a call's text is the studio's own starter placeholder
+		*  verbatim (trimmed) — the one text every NON-PLAIN face stands
+		*  down (dormant, v2v, AND the prompt seat — operator 2026-11-18:
+		*  "WHY DO I SEE THIS PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT
+		*  THAT DOESN'T DO ANYTHING?"): the placeholder is the FILM route's
+		*  view-state invitation, never operator content, so under any
+		*  armed commission painting it is a lie about what the armed run
+		*  reads or books.
+		* @param text the call's text
+		* @returns true only for the verbatim starter placeholder */
+		function isStarterCallText(text) {
+			return text.trim() === STARTER_CALLS[0].text;
+		}
 		//#endregion
 		//#region ../../video/h3-timeline/src/ui/studio/V2vLeafFace.tsx
 		/** V2vLeafFace.tsx — THE VIDEO2VIDEO FORM'S WINDOWS FACE (queue 11
@@ -21130,29 +21199,55 @@ window.__ModuleLoader__.load({
 		*  carry reframe the strip head's mutation updaters ride; the
 		*  parity arm in the form's wall (leaf-v2v-face.spec.tsx) judges
 		*  both doors against one fixture. */
-		/** The carry menu's three rows — the §0.9 vocabulary, the same
-		*  labels the strip head's carry menu serves (one dictionary). */
+		/** The split seat's three states — ONE vocabulary everywhere (the
+		*  operator's 2026-11-09 segmented law: "There is ONE knob for
+		*  carry" — the collapsed anchor hid the two carry modes): all
+		*  three states render VISIBLE as a segmented control, never behind
+		*  a dropdown. The labels are the strip seam editor's own compact
+		*  words (CallCard's seamModeRow, verbatim from studioCopy) — the
+		*  leaf's split seat, the leaf's per-window override, and the
+		*  strip's per-seam editor all speak Stock / Carry / Carry +
+		*  keyframe; the long teaching ("no carry", "22-frame overlap")
+		*  rides the tips, verbatim. The long splitCarry rows stay on the
+		*  strip head's own split menu — its door, its words. */
 		const CARRY_ROWS = [
 			{
 				id: "cut",
-				label: studioCopy.splitCarryStock
+				label: studioCopy.seamModeStock,
+				tip: studioCopy.seamModeStockTip
 			},
 			{
 				id: "extend",
-				label: studioCopy.splitCarryCarry
+				label: studioCopy.seamModeCarry,
+				tip: studioCopy.seamModeCarryTip
 			},
 			{
 				id: "carry+keyframe",
-				label: studioCopy.splitCarryKeyframe
+				label: studioCopy.seamModeCarryKeyframe,
+				tip: studioCopy.seamModeCarryKeyframeTip
 			}
 		];
-		/** the carry's own label (the three-row universe is closed — a
-		*  Record, never a find-with-fallback that can reach nothing). */
-		const CARRY_LABEL = {
-			cut: studioCopy.splitCarryStock,
-			extend: studioCopy.splitCarryCarry,
-			"carry+keyframe": studioCopy.splitCarryKeyframe
-		};
+		/** The per-seam rows — the strip seam editor's own compact
+		*  vocabulary (CallCard's seamModeRow, verbatim labels + tips): the
+		*  leaf's per-window override speaks the same three states as the
+		*  strip head, never a second spelling. */
+		const SEAM_ROWS = [
+			{
+				id: "cut",
+				label: studioCopy.seamModeStock,
+				tip: studioCopy.seamModeStockTip
+			},
+			{
+				id: "extend",
+				label: studioCopy.seamModeCarry,
+				tip: studioCopy.seamModeCarryTip
+			},
+			{
+				id: "carry+keyframe",
+				label: studioCopy.seamModeCarryKeyframe,
+				tip: studioCopy.seamModeCarryKeyframeTip
+			}
+		];
 		/**
 		* THE FACE'S OWN APPEARANCE (inline, the paint/bbox/orbit law —
 		* stroke 95: an embedded leaf face styles ITSELF, never a css
@@ -21170,7 +21265,7 @@ window.__ModuleLoader__.load({
 		const FACE = {
 			display: "flex",
 			flexDirection: "column",
-			gap: 6,
+			gap: 4,
 			minWidth: 0
 		};
 		const HEAD = {
@@ -21207,7 +21302,34 @@ window.__ModuleLoader__.load({
 			display: "flex",
 			alignItems: "center",
 			gap: 4,
-			padding: "2px 2px 0"
+			padding: "2px 2px 0",
+			flexWrap: "wrap"
+		};
+		/** the segmented three-state (split seat + per-seam rows share the
+		*  recipe — inline, the face's own appearance law above). */
+		const SEGMENT = {
+			display: "inline-flex",
+			gap: 4,
+			flexWrap: "wrap",
+			alignItems: "center"
+		};
+		/** the per-seam override seat — the compact twin of the strip's
+		*  seamModeRow, under its own window's row. */
+		const SEAM_SEAT = {
+			display: "flex",
+			gap: 4,
+			flexWrap: "wrap",
+			alignItems: "center",
+			marginTop: 4
+		};
+		/** the per-row split seat — seconds INTO this row (one recipe on
+		*  every window row, the global seat's own words). */
+		const ROW_SPLIT = {
+			display: "flex",
+			gap: 4,
+			alignItems: "center",
+			marginTop: 4,
+			flexWrap: "wrap"
 		};
 		const REFUSAL = {
 			fontSize: 9,
@@ -21218,8 +21340,12 @@ window.__ModuleLoader__.load({
 		/** The windows face itself: the spans list + the split seat. */
 		function V2vLeafFace(props) {
 			const [splitAtSec, setSplitAtSec] = (0, react.useState)("");
+			/** every window row's own split-time-in-seconds field (the
+			*  operator's 2026-11-09 order: "the ability in EVERY window to
+			*  set the split time by seconds" — seconds stated INTO that
+			*  row, never one global field only). */
+			const [rowSec, setRowSec] = (0, react.useState)({});
 			const [carry, setCarry] = (0, react.useState)("cut");
-			const [menuOpen, setMenuOpen] = (0, react.useState)(false);
 			const [refusal, setRefusal] = (0, react.useState)(null);
 			const calls = props.value.calls;
 			const secs = (frames) => (frames / (props.value.fps || 24)).toFixed(2);
@@ -21235,6 +21361,47 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				setRefusal(null);
+				props.onChange(next);
+			};
+			/** THE PER-ROW SPLIT PRESS: the stated seconds are INTO the named
+			*  row (frame = row.start + s·fps) — a value past the row's own
+			*  end REFUSES (it never silently resolves into another window,
+			*  the boundary law the global seat rides); grid legality stays
+			*  splitCallsAt's own refusal. */
+			const pressRow = (i) => {
+				const raw = rowSec[i] ?? "";
+				const stated = Number(raw);
+				const row = calls[i];
+				if (raw.trim() === "" || !Number.isFinite(stated) || stated < 0 || row === void 0) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				const frame = Math.round(row.start_frame + stated * (props.value.fps || 24));
+				if (frame <= row.start_frame || frame >= row.end_frame) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				const next = splitCallsAt(calls, frame, carry);
+				if (next === null) {
+					setRefusal(studioCopy.v2vFormRefusal);
+					return;
+				}
+				setRefusal(null);
+				props.onChange(next);
+			};
+			/** THE PER-SEAM OVERRIDE (operator 2026-11-09: "no per-window
+			*  seam editor in the leaf" — the data carried per-seam
+			*  transition, the engine reads it, the split sets it, but the
+			*  leaf offered no control to change an EXISTING seam): every
+			*  non-first window carries the same compact 3-state segmented
+			*  the strip head serves, bound to THAT row's transition and
+			*  committed through onChange (the leaf's own envelope channel —
+			*  one truth, two views of one draft). */
+			const setSeam = (i, value) => {
+				const next = calls.map((w, j) => j === i ? {
+					...w,
+					transition: value
+				} : w);
 				props.onChange(next);
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -21258,10 +21425,74 @@ window.__ModuleLoader__.load({
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
 						style: WINDOWS,
 						"data-v2v-windows": true,
-						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+						children: calls.map((c, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 							style: WINDOW,
 							"data-v2v-window": i,
-							children: studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "cut" : "", c.text ?? "")
+							children: [
+								studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", isStarterCallText(c.text ?? "") ? "" : c.text ?? ""),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									style: ROW_SPLIT,
+									"data-v2v-row-split": i,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+										type: "number",
+										min: 0,
+										step: .1,
+										style: {
+											flex: "1 1 56px",
+											minWidth: 0,
+											width: 56
+										},
+										"data-testid": `v2v-row-split-at-${i}`,
+										"aria-label": `${studioCopy.v2vFormSplitLabel} — W${i + 1}`,
+										title: studioCopy.v2vFormSplitTip,
+										placeholder: studioCopy.v2vFormSplitPlaceholder,
+										value: rowSec[i] ?? "",
+										onInput: (e) => {
+											setRowSec({
+												...rowSec,
+												[i]: e.target.value
+											});
+										},
+										onChange: (e) => {
+											setRowSec({
+												...rowSec,
+												[i]: e.target.value
+											});
+										}
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "outline",
+										size: "sm",
+										"data-testid": `v2v-row-split-${i}`,
+										"aria-label": `${studioCopy.v2vFormCutAria} — W${i + 1}`,
+										title: studioCopy.v2vFormSplitTip,
+										onClick: () => {
+											pressRow(i);
+										},
+										children: studioCopy.v2vFormCutAria
+									})]
+								}),
+								i > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									style: SEAM_SEAT,
+									"data-v2v-seam": i,
+									role: "group",
+									"aria-label": `${studioCopy.seamModeAria} — W${i + 1}`,
+									children: SEAM_ROWS.map((row) => {
+										const active = (c.transition ?? "extend") === row.id;
+										return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											variant: active ? "primary" : "outline",
+											size: "sm",
+											"data-testid": `v2v-seam-${i}-${row.id}`,
+											"aria-pressed": active,
+											"aria-label": `${studioCopy.seamModeAria}: ${row.label}`,
+											title: row.tip,
+											onClick: () => {
+												setSeam(i, row.id);
+											},
+											children: row.label
+										}, row.id);
+									})
+								}) : null
+							]
 						}, i))
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -21288,29 +21519,25 @@ window.__ModuleLoader__.load({
 									setSplitAtSec(e.target.value);
 								}
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-								open: menuOpen,
-								onClose: () => {
-									setMenuOpen(false);
-								},
-								compact: true,
-								portal: true,
-								items: CARRY_ROWS,
-								selectedId: carry,
-								onSelect: (id) => {
-									setMenuOpen(false);
-									setCarry(id);
-								},
-								anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "outline",
-									size: "sm",
-									"data-testid": "v2v-split-carry",
-									"aria-label": studioCopy.splitCarryLabel,
-									title: studioCopy.splitCarryTip,
-									onClick: () => {
-										setMenuOpen(!menuOpen);
-									},
-									children: CARRY_LABEL[carry]
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: SEGMENT,
+								role: "group",
+								"aria-label": studioCopy.splitCarryLabel,
+								"data-testid": "v2v-split-carry",
+								children: CARRY_ROWS.map((row) => {
+									const active = carry === row.id;
+									return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: active ? "primary" : "outline",
+										size: "sm",
+										"data-testid": `v2v-split-carry-${row.id}`,
+										"aria-pressed": active,
+										"aria-label": `${studioCopy.splitCarryLabel}: ${row.label}`,
+										title: row.tip,
+										onClick: () => {
+											setCarry(row.id);
+										},
+										children: row.label
+									}, row.id);
 								})
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {

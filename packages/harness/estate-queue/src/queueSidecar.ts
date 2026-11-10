@@ -5,6 +5,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 import type { DraftId } from "@melite/contracts/benchStage";
+import { CARD_ENVELOPE_KEYS } from "./vocab.ts";
 
 // ── sidecar document (sidecar 2124-2169) ──────────────────────────
 
@@ -127,6 +128,20 @@ export function sidecarStageOf(stage: {
  *  a raw name-diff would false-red on — v1 receipts the scalar
  *  plane and SAYS SO in arm (c)'s wall.
  *
+ *  (D-11, 2026-11-18 — the false "partial" on honest presses): the
+ *  scope gate NEVER judges envelope keys (CARD_ENVELOPE_KEYS — door
+ *  vocabulary and row coordinates: bench_stage_id, draft_id, model,
+ *  press_key…). An envelope key is not a knob; its absence from the
+ *  graph is not evidence of anything, and calling it a "dropped
+ *  node" sent agents hunting integration bugs that never existed.
+ *  The verdict vocabulary names the plane it measures: a non-
+ *  complete verdict is "params_unbound" — populated doc params
+ *  whose literal value never rode the graph (a wire-transformed
+ *  shape dial, or a genuine silent drop — the dropped list names
+ *  which keys, and the allowability law (cardsDroppable) judges the
+ *  knob ones). Never again integration vocabulary ("partial")
+ *  for a params-plane fact.
+ *
  *  NO refusal rides here — the receipt is EVIDENCE, never a gate:
  *  the compose gate owns refusals; a dropped key is a receipt fact
  *  (the P0 census consumes it). */
@@ -139,7 +154,7 @@ export interface GraphReceiptPair {
   readonly carried: readonly string[];
   /** The judged keys NOT found in the graph, sorted — the honesty face. */
   readonly dropped: readonly string[];
-  readonly verdict: "complete" | "partial";
+  readonly verdict: "complete" | "params_unbound";
   /** THE BAKE'S RECORD (study §7 item 2, the run voice): present
    *  iff the composed graph bakes or loads a refmod mod — read off
    *  the graph's own nodes (the extract/loader inputs VERBATIM),
@@ -271,6 +286,7 @@ export function graphReceiptOf(
   const found: string[] = [];
   const missed: string[] = [];
   for (const [key, value] of Object.entries(params)) {
+    if (CARD_ENVELOPE_KEYS.includes(key)) continue;
     const scalar = receiptScalarOf(value);
     if (scalar === undefined) continue;
     populated.push(key);
@@ -284,7 +300,9 @@ export function graphReceiptOf(
     populated,
     carried: found,
     dropped: missed,
-    verdict: missed.length === 0 ? "complete" : "partial",
+    // the verdict names its plane (D-11): not integration
+    // vocabulary — populated params whose literal never rode
+    verdict: missed.length === 0 ? "complete" : "params_unbound",
     ...(bake !== undefined ? { bake } : {}),
   };
 }
@@ -323,7 +341,7 @@ export function graphReceiptFoldOf(rows: readonly GraphReceiptStageRow[], prompt
     populated: union((r) => r.populated),
     carried: union((r) => r.carried),
     dropped: union((r) => r.dropped),
-    verdict: complete ? "complete" : "partial",
+    verdict: complete ? "complete" : "params_unbound",
     stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
     // THE BAKE rides the fold: the first stage that carries one
     // (the card run's single stage; a multi-stage flow receipts the

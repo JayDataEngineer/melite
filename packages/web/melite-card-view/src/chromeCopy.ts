@@ -345,12 +345,15 @@ export const chromeCopy = {
    *  prompt_id leaves the legacy face byte-identical. */
   graphReceiptCarried: (p: { nodes: number; promptId?: string }): string =>
     'graph ✓ ' + String(p.nodes) + 'n' + engineRefSuffix(p.promptId),
-  /** Run view's graph-receipt chip on the partial face: the composed
-   *  graph dropped doc scalars — the names are data (the estate's
-   *  sorted receipt, joined by the seat). The EngineRef suffix rides
-   *  here too (both faces name the queued engine call). */
+  /** Run view's graph-receipt chip on the params_unbound face (D-11:
+   *  the verdict names its plane — populated doc params whose
+   *  literal never rode the composed graph; envelope keys are never
+   *  judged, so these are knob names, never bookkeeping). The names
+   *  are data (the estate's sorted receipt, joined by the seat). The
+   *  EngineRef suffix rides here too (both faces name the queued
+   *  engine call). */
   graphReceiptDropped: (p: { dropped: string[]; promptId?: string }): string =>
-    'graph ✕ dropped ' + p.dropped.join(', ') + engineRefSuffix(p.promptId),
+    'graph ✕ params not bound ' + p.dropped.join(', ') + engineRefSuffix(p.promptId),
   /** Run view's bake chip (study §7 item 2 — the run voice prices the
    *  bake): the receipt's price string is data composed from the
    *  graph's own extract node; the seat renders it verbatim. */

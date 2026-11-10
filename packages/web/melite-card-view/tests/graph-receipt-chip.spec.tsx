@@ -74,12 +74,12 @@ describe("the graph-receipt chip (the purge P1's run face)", () => {
   test("partial: the loud chip names the dropped scalars, sorted by the estate", async () => {
     mountChip(runValue({
       graphReceipt: receipt({
-        verdict: "partial",
+        verdict: "params_unbound",
         carried: ["guidance", "prompt"],
         dropped: ["orphan_ash", "orphan_zed"],
       }),
     }));
-    expect(await screen.findByText("graph ✕ dropped orphan_ash, orphan_zed", {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText("graph ✕ params not bound orphan_ash, orphan_zed", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("no receipt: no chip (inline runs stamp none — never a phantom)", async () => {
@@ -103,13 +103,13 @@ describe("the graph-receipt chip (the purge P1's run face)", () => {
   test("engine ref: the loud chip carries the prompt_id beside the dropped names", async () => {
     mountChip(runValue({
       graphReceipt: receipt({
-        verdict: "partial",
+        verdict: "params_unbound",
         carried: ["guidance", "prompt"],
         dropped: ["orphan_ash", "orphan_zed"],
         prompt_id: "receipt-prompt-0001",
       }),
     }));
-    expect(await screen.findByText("graph ✕ dropped orphan_ash, orphan_zed · #receipt-prompt-0001", {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText("graph ✕ params not bound orphan_ash, orphan_zed · #receipt-prompt-0001", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("no prompt_id: no dangling separator (the legacy faces stay byte-identical)", async () => {

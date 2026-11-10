@@ -12,9 +12,13 @@
  * showed, the doc saved, and the compose silently dropped — every
  * seat between was green because no seat judged the DOC→GRAPH hop.
  * The receipt is EVIDENCE, never a refusal: the compose gate owns
- * refusals; a dropped key is a receipt fact (verdict 'partial',
- * dropped names it) that the operator's run tile and the P0 census
- * consume.
+ * refusals; a dropped key is a receipt fact (verdict
+ * 'params_unbound' — D-11: the vocabulary names the PARAMS plane it
+ * measures, never integration vocabulary; a knob whose literal never
+ * rode the graph, dropped names it) that the operator's run tile and
+ * the P0 census consume. ENVELOPE KEYS ARE NEVER JUDGED (D-11: they
+ * select the graph, never ride it — bench_stage_id/draft_id/model
+ * reading as "dropped nodes" was the false red the board burned).
  *
  * THE ARMS:
  *   a — THE RECEIPT IS STAMPED: a real compose through the estate
@@ -26,7 +30,7 @@
  *       sorted. (RED TODAY: the key does not exist — the
  *       pre-registered red of the seated cure.)
  *   b — THE DROP IS NAMED: a doc scalar the synth compose does NOT
- *       carry → verdict 'partial', dropped names it SORTED.
+ *       carry → verdict 'params_unbound', dropped names it SORTED.
  *   c — THE BAGS ARE OUT OF SCOPE BY LAW: an array doc key and an
  *       object doc key appear in NEITHER populated nor dropped (the
  *       v1 scope line — the bag/class planes have lawful transforms;
@@ -39,10 +43,9 @@
  *       outcome; settle's sidecar rewrite carries it to disk).
  *   e — THE REAL-BUILD TOGGLE: the REAL music3 DECL through the
  *       real door (phase1Card+phase2Card, hermetic boot) receipts
- *       its admitted body — control verdict partial with dropped
- *       ["model"] ONLY (the routing residue: the admitted body
- *       carries model but no graph input spells the bare family
- *       id — named here, never hidden), every stated scalar
+ *       its admitted body — control verdict COMPLETE (D-11: `model`
+ *       is door vocabulary, never judged — the old "routing
+ *       residue" drop was the false red), every stated scalar
  *       carried; the carriage twin (caption present-but-unwired)
  *       names prompt in dropped. The audit's specified toggle —
  *       delete `caption: p.prompt` at music3 actions — reds this
@@ -52,11 +55,12 @@
  *       receipt-gated — the arm's closing comment carries the
  *       verbatim refusal and the presence-keying wart).
  *   h — THE RUN-fcf9572a HONESTY FACE: the stuck run's envelope
- *       scalars (draft_id/model/press_key/quant/variant) receipt
- *       partial naming EXACTLY those keys SORTED; the
- *       verdict↔dropped biconditional (partial ⟺ dropped non-empty)
- *       and the run/stage fold agreement (run complete iff every
- *       stage complete) hold on every row.
+ *       scalars (draft_id/model/press_key) are NEVER JUDGED (D-11)
+ *       while its real unwired knobs (quant/variant) receipt
+ *       params_unbound naming EXACTLY those keys SORTED; the
+ *       verdict↔dropped biconditional (params_unbound ⟺ dropped
+ *       non-empty) and the run/stage fold agreement (run complete
+ *       iff every stage complete) hold on every row.
  *
  * THE RED-PROOF (registry row runs-graph-receipt): neutralize the
  * stamp in registerCompiledRun (runsStart.ts — `run.graphReceipt =
@@ -373,7 +377,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     assert.equal(stages[0]!["verdict"], "complete");
   });
 
-  it("ARM b — THE DROP IS NAMED: a scalar the compose ignores lands in dropped, sorted, verdict partial — the honesty face", async () => {
+  it("ARM b — THE DROP IS NAMED: a scalar the compose ignores lands in dropped, sorted, verdict params_unbound — the honesty face", async () => {
     const { sidecar } = await runBench({
       prompt: "the courier steps in",
       steps: 12,
@@ -383,7 +387,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     });
     const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
     assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
-    assert.equal(receipt["verdict"], "partial", "a dropped scalar is a receipt fact: " + JSON.stringify(receipt));
+    assert.equal(receipt["verdict"], "params_unbound", "an unwired scalar is a params-plane fact, named for its plane (D-11): " + JSON.stringify(receipt));
     assert.deepEqual(receipt["dropped"], ["orphan_ash", "orphan_zed"], "dropped names the ignored scalars, SORTED");
     assert.deepEqual(
       receipt["carried"],
@@ -469,9 +473,11 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     // carries a sentinel so the BY-VALUE diff cannot collide.
     const control = await realMusicReceipt((p) => p);
     assert.ok(control.nodes > 0, "the real door composed a non-empty graph");
-    assert.equal(control.verdict, "partial", "control verdict: " + JSON.stringify(control));
-    assert.deepEqual(control.dropped, ["model"],
-      "control drops ONLY the routing residue (the admitted body carries model but no graph input spells the bare family id — named, never hidden): " + JSON.stringify(control));
+    assert.equal(control.verdict, "complete", "control verdict: " + JSON.stringify(control));
+    assert.deepEqual(control.dropped, [],
+      "control drops NOTHING (D-11: `model` is door vocabulary — the family selector selects the graph, never rides it; the old 'routing residue' drop was the false red the board burned): " + JSON.stringify(control));
+    assert.ok(!control.populated.includes("model"),
+      "the envelope key is never even judged (out of scope at the gate, not merely carried): " + JSON.stringify(control));
     assert.deepEqual(control.carried,
       ["duration", "guidance_scale", "lm_cfg_scale", "lyrics", "n_diffusion_steps", "prompt", "seed"],
       "every stated scalar rode, the marker prompt among them: " + JSON.stringify(control));
@@ -479,9 +485,9 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     // audit's toggle — delete `caption: p.prompt` at music3 actions)
     // must name prompt in dropped while everything else still rides.
     const twin = await realMusicReceipt((p) => ({ ...p, prompt: "ZZQ-CORRUPTED-CAPTION — the compose never saw the marker" }));
-    assert.equal(twin.verdict, "partial", "twin verdict: " + JSON.stringify(twin));
-    assert.deepEqual(twin.dropped, ["model", "prompt"],
-      "the caption-dropped compose names prompt in dropped, SORTED beside the residue: " + JSON.stringify(twin));
+    assert.equal(twin.verdict, "params_unbound", "twin verdict: " + JSON.stringify(twin));
+    assert.deepEqual(twin.dropped, ["prompt"],
+      "the caption-dropped compose names prompt in dropped (the one unwired knob — model never judged): " + JSON.stringify(twin));
     assert.ok((twin.populated as string[]).includes("prompt"), "prompt stays populated (stated non-empty) — the twin judges carriage, never presence");
     // THE TRUE-ABSENCE FACE (proven by the audit's source toggle,
     // not by a twin — and the twin attempt below is WHY): deleting
@@ -656,16 +662,19 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     }
   });
 
-  it("ARM h — THE RUN-fcf9572a HONESTY FACE: a partial verdict names its dropped keys, and the run fold agrees with its stages", async () => {
-    // THE BURN (stuck-run receipt remainder 4, 2026-11-09 night):
-    // run-fcf9572a5ffb-5ba89b44 settled completed with
-    // graph_receipt.verdict "partial", dropped ["draft_id", "model",
-    // "press_key", "quant", "variant"] (bench-door envelope scalars the
-    // compose never wires), carried ["test"]. The honesty seam: a
-    // partial verdict MUST name its dropped keys — the judge that says
-    // so is this arm. It pins (i) the run's exact envelope vocabulary
-    // on the synth rig, (ii) the verdict↔dropped biconditional
-    // (partial ⟺ dropped non-empty, on every stage row), (iii) the
+  it("ARM h — THE RUN-fcf9572a HONESTY FACE: envelope keys are NEVER judged while real unwired knobs receipt params_unbound; the run fold agrees with its stages", async () => {
+    // THE BURN (stuck-run receipt remainder 4, 2026-11-09 night,
+    // re-pinned by D-11): run-fcf9572a5ffb-5ba89b44 settled completed
+    // with graph_receipt.verdict "partial", dropped ["draft_id",
+    // "model", "press_key", "quant", "variant"] — envelope keys read
+    // as "dropped nodes" on an honest press (the board's D-11: "an
+    // agent reasoning about integration will read 'partial' as 'a
+    // node was dropped' and go hunting"). The cure pins (i) the
+    // envelope keys NEVER enter judgment (not populated, not
+    // carried, not dropped), (ii) the real unwired knobs (quant,
+    // variant — knobs the synth rig invented, the compose ignores)
+    // receipt params_unbound naming EXACTLY those keys, (iii) the
+    // verdict↔dropped biconditional on every stage row, (iv) the
     // run/stage fold agreement (run complete iff every stage
     // complete).
     const { sidecar } = await runBench({
@@ -676,12 +685,22 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     });
     const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
     assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
-    assert.equal(receipt["verdict"], "partial", "envelope scalars the compose never wires are a receipt fact: " + JSON.stringify(receipt));
+    assert.equal(receipt["verdict"], "params_unbound",
+      "the real unwired knobs are a params-plane fact, named for the plane (D-11): " + JSON.stringify(receipt));
+    // THE SCOPE GATE (D-11): envelope keys — door vocabulary and row
+    // coordinates — are never knobs; their absence from the graph is
+    // not evidence of anything
     assert.deepEqual(
       receipt["dropped"],
-      ["draft_id", "model", "press_key", "quant", "variant"],
-      "dropped names EXACTLY the unwired envelope scalars, SORTED: " + JSON.stringify(receipt),
+      ["quant", "variant"],
+      "dropped names EXACTLY the real unwired knobs, SORTED (draft_id/model/press_key never judged): " + JSON.stringify(receipt),
     );
+    for (const envelope of ["draft_id", "model", "press_key"]) {
+      assert.ok(!(receipt["populated"] as string[]).includes(envelope),
+        `the envelope key ${envelope} is NEVER judged — not even populated (out of scope at the gate)`);
+      assert.ok(!(receipt["carried"] as string[]).includes(envelope),
+        `the envelope key ${envelope} never rides carried either`);
+    }
     assert.deepEqual(
       receipt["carried"],
       ["guidance", "prompt", "steps"],
@@ -689,18 +708,18 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     );
     assert.deepEqual(
       (receipt["populated"] as string[]).sort(),
-      ["draft_id", "guidance", "model", "press_key", "prompt", "quant", "steps", "variant"],
-      "populated is every judged scalar; carried/dropped partition it",
+      ["guidance", "prompt", "quant", "steps", "variant"],
+      "populated is every judged scalar (envelope keys excluded at the gate); carried/dropped partition it",
     );
-    // THE BICONDITIONAL + THE FOLD (the judge): no partial without
-    // named drops, no complete with drops, and the run verdict is the
-    // AND of its stages.
+    // THE BICONDITIONAL + THE FOLD (the judge): no params_unbound
+    // without named drops, no complete with drops, and the run
+    // verdict is the AND of its stages.
     const stages = receipt["stages"] as Array<Record<string, unknown>>;
     assert.ok(stages.length === 1 && stages[0]!["stage"] === "s_0", "one stage row");
     for (const s of stages) {
       const dropped = s["dropped"] as string[];
-      if (s["verdict"] === "partial") {
-        assert.ok(dropped.length > 0, "a partial stage row names its dropped keys: " + JSON.stringify(s));
+      if (s["verdict"] === "params_unbound") {
+        assert.ok(dropped.length > 0, "an unbound stage row names its dropped keys: " + JSON.stringify(s));
         assert.deepEqual([...dropped].sort(), dropped, "the stage drops ride SORTED: " + JSON.stringify(s));
       } else {
         assert.deepEqual(dropped, [], "a complete stage row drops nothing: " + JSON.stringify(s));
@@ -708,7 +727,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     }
     assert.equal(
       receipt["verdict"],
-      stages.every((s) => s["verdict"] === "complete") ? "complete" : "partial",
+      stages.every((s) => s["verdict"] === "complete") ? "complete" : "params_unbound",
       "the run verdict is the AND of its stages: " + JSON.stringify(receipt),
     );
   });
@@ -729,7 +748,7 @@ describe("runs-graph-receipt — THE DROPPED-KNOB ALLOWABILITY LAW (F3-04)", () 
       populated: ["mode", "source_glb"],
       carried: ["source_glb"],
       dropped: ["mode"],
-      verdict: "partial" as const,
+      verdict: "params_unbound" as const,
     };
     assert.deepEqual(unjustifiedDropped(rigReceipt, "rig"), [],
       "the rig's mode drop carries its declared reason (the lane router) — justified, never a finding");

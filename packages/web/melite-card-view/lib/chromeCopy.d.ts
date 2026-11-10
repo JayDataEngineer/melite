@@ -377,10 +377,13 @@ export declare const chromeCopy: {
         nodes: number;
         promptId?: string;
     }) => string;
-    /** Run view's graph-receipt chip on the partial face: the composed
-     *  graph dropped doc scalars — the names are data (the estate's
-     *  sorted receipt, joined by the seat). The EngineRef suffix rides
-     *  here too (both faces name the queued engine call). */
+    /** Run view's graph-receipt chip on the params_unbound face (D-11:
+     *  the verdict names its plane — populated doc params whose
+     *  literal never rode the composed graph; envelope keys are never
+     *  judged, so these are knob names, never bookkeeping). The names
+     *  are data (the estate's sorted receipt, joined by the seat). The
+     *  EngineRef suffix rides here too (both faces name the queued
+     *  engine call). */
     readonly graphReceiptDropped: (p: {
         dropped: string[];
         promptId?: string;
