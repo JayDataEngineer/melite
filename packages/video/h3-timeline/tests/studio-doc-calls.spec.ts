@@ -641,3 +641,33 @@ describe("callIndexOf / kfIndexOf", () => {
     expect(callIndexOf("call-0")).toBe(0)
   })
 })
+
+// ── THE PLAIN-FACE LAW (operator 2026-11-18: "I still see THIS
+// PROMPT ON RESHOOT BY DEFAULT IN THE TIMELINE — 'A single shot —
+// describe the action, camera, and mood.' WHAT? WHY DO I SEE THIS
+// PROMPT THAT DOESN'T DO ANYTHING?") — the starter placeholder is
+// the FILM route's invitation; it mints only when the caller owes
+// it (nothing armed — the same predicate useShownDoc's persist gate
+// spells). Under an armed commission every calls-less shape
+// hydrates EMPTY: the lane names its face and the dictionary's
+// hint is the invitation. (The projection/overlay depth lives in
+// studio-pending-ops ARM P/O/C; these are the hydrate's own law.)
+describe("hydrateCalls starter mode (the plain-face law)", () => {
+  it("starter=false empties every calls-less shape (armed docs never mint film prose)", () => {
+    expect(hydrateCalls({}, false)).toEqual([])
+    expect(hydrateCalls({ calls: [], beats: [] }, false)).toEqual([])
+    expect(hydrateCalls({ calls: "not-json", beats: 42 }, false)).toEqual([])
+    expect(hydrateCalls({ calls: "[{broken" }, false)).toEqual([])
+  })
+
+  it("starter=false empties the every-row-dropped shape too; authored lists ride untouched", () => {
+    expect(hydrateCalls({ calls: [{ ...CALL, start_frame: 10, end_frame: 10 }] }, false)).toEqual([])
+    const authored = hydrateCalls({ calls: [CALL] }, false)
+    expect(authored).toHaveLength(1)
+    expect(authored[0]!.text).toBe(CALL.text)
+  })
+
+  it("the default keeps the film route's invitation (plain docs mint the starter, the law arms only)", () => {
+    expect(hydrateCalls({})).toEqual(STARTER_CALLS)
+  })
+})

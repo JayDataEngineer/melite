@@ -89,6 +89,7 @@ import { useViewSelection, nextSelectionAfterDelete } from "./useViewSelection.t
 import { useFilmSync } from "./useFilmSync.ts"
 import { useFilmAudio } from "./useFilmAudio.ts"
 import { usePromptMutations } from "./usePromptMutations.ts"
+import { deriveCommissions } from "./commissions.ts"
 import { useEnhance } from "./useEnhance.ts"
 import { useCallMutations } from "./useCallMutations.ts"
 import { useBeatMutations } from "./useBeatMutations.ts"
@@ -203,7 +204,12 @@ export function VideoTimelineStudio(owner: StageViewOwnerProps) {
     stage, upstreams, layerA, setLayerA: doc.updateLayerA, setLayerAKey: doc.setLayerAKey,
     fps, frameIdx: view.frameIdx, filmPlaying: film.filmPlaying, filmFpsRef: film.filmFpsRef,
   })
-  const pr = usePromptMutations(doc.updateCalls)
+  // THE PLAIN-FACE FLAG (2026-11-18 starter law): the delete-the-
+  // only-call gesture mints the starter ONLY on the disarmed film
+  // route — under an armed commission it empties the doc and the
+  // lane names its face. Same predicate as useShownDoc's gate.
+  const starterOwed = deriveCommissions(stage.params as Record<string, unknown> | undefined).length === 0
+  const pr = usePromptMutations(doc.updateCalls, starterOwed)
   // THE DELETE-SELECTED LAW (the rail-law audit, 2026-10-31): the
   // gesture sites (the focused card's Delete + the bar's clip ✕)
   // both ride this one wire — the selection follows the doc, never

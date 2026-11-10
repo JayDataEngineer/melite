@@ -314,8 +314,9 @@ export function StudioStripPane({
   // authored prose still paints — it is doc truth, merely unread by
   // this run, and hiding operator content is not this lane's call.
   // Under a READING commission (reshoot, loras) the lane stays fully
-  // live and is labeled as the run's prompt seat. The words are the
-  // dictionary's; the kit stays tenant-dumb (label + hint props).
+  // live — its DOORS, not the placeholder: authored prose paints and
+  // the dictionary's prompt-seat hint is the invitation. The words
+  // are the dictionary's; the kit stays tenant-dumb (label + hint).
   const callsFace = callsLaneFace(commissions)
   // The bar row's text is the clip-header composite (clipHeader wraps
   // the call's prose), so the placeholder judges its SOURCE call —
@@ -327,7 +328,20 @@ export function StudioStripPane({
   // starter's "describe the action" prose is an invitation the armed
   // run never reads (the edit composes from the mod's own prompt
   // seat). The span doors stay live — AUTHORED windows still paint.)
-  const shownPrompts = callsFace.face === "dormant" || callsFace.face === "v2v"
+  // (THE PROMPT-SEAT STAND-DOWN, operator 2026-11-18: "I still see
+  // THIS PROMPT ON RESHOOT BY DEFAULT IN THE TIMELINE — 'A single
+  // shot — describe the action, camera, and mood.' WHAT? WHY DO I
+  // SEE THIS PROMPT THAT DOESN'T DO ANYTHING?" — under a READING arm
+  // the stand-down is MORE owed than under dormant: the lane is
+  // labeled the run's prompt seat, so the film route's placeholder
+  // prose reads as content the run will book, and it would — the
+  // projection no longer mints it (the plain-face law,
+  // projectDoc/hydrateCalls). This filter is the belt for docs that
+  // PERSIST the starter verbatim (pre-gate saves, agent-authored):
+  // the starter paints ONLY on the plain face. AUTHORED prose and
+  // every door stay live — the stand-down never hides operator
+  // content, only the studio's own placeholder.)
+  const shownPrompts = callsFace.face !== "plain"
     ? barPrompts.filter((_p, i) => !(calls[i] !== undefined && isStarterCallText(calls[i]!.text ?? "")))
     : barPrompts
 

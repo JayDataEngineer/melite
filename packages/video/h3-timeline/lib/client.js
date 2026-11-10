@@ -5450,10 +5450,13 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/** Whether a call's text is the studio's own starter placeholder
-		*  verbatim (trimmed) — the one text the dormant face stands down:
-		*  the placeholder is VIEW state inviting prose, never operator
-		*  content, so under a non-reading arm painting it is the exact
-		*  "describe their video … when that isn't used at all" lie.
+		*  verbatim (trimmed) — the one text every NON-PLAIN face stands
+		*  down (dormant, v2v, AND the prompt seat — operator 2026-11-18:
+		*  "WHY DO I SEE THIS PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT
+		*  THAT DOESN'T DO ANYTHING?"): the placeholder is the FILM route's
+		*  view-state invitation, never operator content, so under any
+		*  armed commission painting it is a lie about what the armed run
+		*  reads or books.
 		* @param text the call's text
 		* @returns true only for the verbatim starter placeholder */
 		function isStarterCallText(text) {
@@ -5778,7 +5781,7 @@ window.__ModuleLoader__.load({
 				};
 			});
 			const callsFace = callsLaneFace(commissions);
-			const shownPrompts = callsFace.face === "dormant" || callsFace.face === "v2v" ? barPrompts.filter((_p, i) => !(calls[i] !== void 0 && isStarterCallText(calls[i].text ?? ""))) : barPrompts;
+			const shownPrompts = callsFace.face !== "plain" ? barPrompts.filter((_p, i) => !(calls[i] !== void 0 && isStarterCallText(calls[i].text ?? ""))) : barPrompts;
 			const kfChips = barLanes.map((k, i) => {
 				const docFrame = keyframes[i]?.frame;
 				const verdict = typeof docFrame === "number" ? pinDropVerdict(calls, docFrame) : null;
@@ -8216,7 +8219,7 @@ window.__ModuleLoader__.load({
 			}
 			return null;
 		}
-		function hydrateCalls(raw) {
+		function hydrateCalls(raw, starter = true) {
 			const corrupt = corruptCallsField(raw);
 			if (corrupt !== null) console.error(`VideoTimelineStudio: params.${corrupt} is array-shaped but unparseable — the document is corrupt. The starter is shown as view state ONLY; nothing persists over the corrupt source until you edit.`);
 			let callsRaw = raw.calls;
@@ -8230,7 +8233,7 @@ window.__ModuleLoader__.load({
 				if (Array.isArray(parsed)) beatsRaw = parsed;
 			} catch {}
 			const list = Array.isArray(callsRaw) && callsRaw.length > 0 ? callsRaw : Array.isArray(beatsRaw) && beatsRaw.length > 0 ? beatsRaw : null;
-			if (!list) return STARTER_CALLS;
+			if (!list) return starter ? STARTER_CALLS : [];
 			const calls = [];
 			for (const [index, c] of list.entries()) {
 				if (typeof c !== "object" || c === null) {
@@ -8319,7 +8322,7 @@ window.__ModuleLoader__.load({
 				}
 				calls.push(call);
 			}
-			if (calls.length === 0) return STARTER_CALLS;
+			if (calls.length === 0) return starter ? STARTER_CALLS : [];
 			return healOffGridCalls(calls.sort((a, b) => a.start_frame - b.start_frame));
 		}
 		/** The keyframe pin channel's hydration (the keyframe lane's shape,
@@ -8491,6 +8494,19 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region src/ui/studio/pendingOps.ts
+		/** The plain-face predicate the calls channel rides everywhere in
+		* this file (THE STARTER PLAIN-FACE LAW, operator 2026-11-18: "WHY
+		* DO I SEE THIS PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT THAT
+		* DOESN'T DO ANYTHING?"): the starter placeholder mints only for a
+		* disarmed doc. One spelling, the starter-persist gate's own
+		* (useShownDoc): `deriveCommissions(params).length === 0`. It must
+		* ride projectDoc AND the op overlay's re-hydration — a `[]` calls
+		* op under an armed bag would otherwise re-mint the starter in
+		* overlayDoc and never retire (its healed digest could never equal
+		* the empty doc it settled into). */
+		function starterOwedFor(params) {
+			return deriveCommissions(params).length === 0;
+		}
 		/** Canonical JSON for content comparison (A1, 2026-10-27): keys
 		* sorted recursively, arrays order-preserved (row order is
 		* semantic), undefined-valued keys SKIPPED (the door's own JSON
@@ -8532,7 +8548,7 @@ window.__ModuleLoader__.load({
 				calls: hydrateCalls({
 					calls: params?.calls,
 					beats: params?.beats
-				}),
+				}, starterOwedFor(params)),
 				keyframes: hydrateKeyframes(params?.keyframes, params?.image ?? params?.image_name ?? params?.ref_image),
 				layerA: hydrateLayerA(params)
 			};
@@ -8555,24 +8571,30 @@ window.__ModuleLoader__.load({
 		*  retires when the doc HEALS to it. overlayDoc already re-hydrates
 		*  op values the same way — retirement now agrees with the shown
 		*  doc. */
-		function healedChannelValue(op) {
+		function healedChannelValue(op, starter) {
 			switch (op.channel) {
-				case "calls": return serializeCalls(hydrateCalls({ calls: op.value }));
+				case "calls": return serializeCalls(hydrateCalls({ calls: op.value }, starter));
 				case "keyframes": return serializeKeyframes(hydrateKeyframes(op.value));
 				case "layerA": return serializeLayerA(hydrateLayerA(op.value));
 			}
 		}
 		/** The live ops: ops whose value the projected doc does not yet
 		* contain. Derived per render — never bookkept, so nothing can
-		* leak or go stale (an op is retired by the settlement itself). */
-		function liveOps(doc, ops) {
-			return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), healedChannelValue(op)));
+		* leak or go stale (an op is retired by the settlement itself).
+		* @param starter the calls channel's plain-face flag (the law at
+		* the file head) — it rides the healed comparison so an empty
+		* calls op under an armed bag retires against the empty doc. */
+		function liveOps(doc, ops, starter = true) {
+			return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), healedChannelValue(op, starter)));
 		}
 		/** The shown document: the projection with the live ops applied
 		*  (latest op per channel wins; hydration re-runs so the shown doc
-		*  is always well-formed view state, never raw payload). */
-		function overlayDoc(doc, ops) {
-			const live = liveOps(doc, ops);
+		*  is always well-formed view state, never raw payload).
+		* @param starter the calls channel's plain-face flag (the law at
+		* the file head) — it rides the op re-hydration so an empty calls
+		* op under an armed bag shows [], never a re-minted starter. */
+		function overlayDoc(doc, ops, starter = true) {
+			const live = liveOps(doc, ops, starter);
 			const latest = (channel) => {
 				let out;
 				for (const op of live) if (op.channel === channel && (out === void 0 || op.seq > out.seq)) out = op;
@@ -8586,7 +8608,7 @@ window.__ModuleLoader__.load({
 				calls: callsOp === void 0 ? doc.calls : hydrateCalls({
 					calls: callsOp.value,
 					beats: void 0
-				}),
+				}, starter),
 				keyframes: kfOp === void 0 ? doc.keyframes : hydrateKeyframes(kfOp.value),
 				layerA: layerOp === void 0 ? doc.layerA : hydrateLayerA(layerOp.value)
 			};
@@ -8649,10 +8671,11 @@ window.__ModuleLoader__.load({
 				opsRef.current = opsRef.current.filter((o) => o.channel !== "calls");
 				setOps(opsRef.current);
 			} else if (docArrivedRef.current && rawList === null) docArrivedRef.current = false;
+			const starterFace = deriveCommissions(params).length === 0;
 			const starterOwed = rawList === null && corruptCallsField({
 				calls: params?.calls,
 				beats: params?.beats
-			}) === null && deriveCommissions(params).length === 0;
+			}) === null && starterFace;
 			(0, react.useEffect)(() => {
 				if (starterOwed) {
 					const payload = serializeCalls(projectedRef.current.calls);
@@ -8666,8 +8689,16 @@ window.__ModuleLoader__.load({
 					setOps([op]);
 				}
 			}, [stage.id]);
-			const live = (0, react.useMemo)(() => liveOps(projected, ops), [projected, ops]);
-			const shown = (0, react.useMemo)(() => overlayDoc(projected, live), [projected, live]);
+			const live = (0, react.useMemo)(() => liveOps(projected, ops, starterFace), [
+				projected,
+				ops,
+				starterFace
+			]);
+			const shown = (0, react.useMemo)(() => overlayDoc(projected, live, starterFace), [
+				projected,
+				live,
+				starterFace
+			]);
 			/** Retract one appended op by its commit order (the P8 async arm —
 			*  a mount-local helper, never a render read: refs stay the
 			*  within-tick truth, state follows). */
@@ -8676,7 +8707,7 @@ window.__ModuleLoader__.load({
 				setOps(opsRef.current);
 			}
 			const commit = (channel, serialize, getShown) => (u) => {
-				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current)));
+				const prev = getShown(overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current, starterFace), starterFace));
 				let payload = serialize(typeof u === "function" ? u(prev) : u);
 				if (canonicalJson(payload) === canonicalJson(serialize(prev))) return;
 				const answer = onSave(channelPayload(channel, payload));
@@ -9170,8 +9201,16 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/ui/studio/usePromptMutations.ts
-		/** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042. */
-		function usePromptMutations(setCalls) {
+		/** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042.
+		* @param setCalls the calls write door
+		* @param starterOwed whether the doc owes the starter placeholder
+		* (THE PLAIN-FACE LAW, operator 2026-11-18: "WHY DO I SEE THIS
+		* PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT THAT DOESN'T DO
+		* ANYTHING?"): deleting the only call mints the starter ONLY on the
+		* disarmed film route — under an armed commission the doc empties
+		* (`[]`), the lane names its face, and the dictionary's hint is the
+		* invitation, never re-minted film prose an armed run would read. */
+		function usePromptMutations(setCalls, starterOwed = true) {
 			const handlePromptResize = (id, s, e) => {
 				const i = callIndexOf(id);
 				setCalls((prev) => {
@@ -9231,7 +9270,7 @@ window.__ModuleLoader__.load({
 				const i = callIndexOf(id);
 				setCalls((prev) => {
 					if (i < 0 || i >= prev.length) return prev;
-					if (prev.length === 1) return STARTER_CALLS.map((c) => ({ ...c }));
+					if (prev.length === 1) return starterOwed ? STARTER_CALLS.map((c) => ({ ...c })) : [];
 					const next = prev.filter((_, j) => j !== i);
 					if (i > 0) next[i - 1] = {
 						...next[i - 1],
@@ -18620,7 +18659,8 @@ window.__ModuleLoader__.load({
 				filmPlaying: film.filmPlaying,
 				filmFpsRef: film.filmFpsRef
 			});
-			const pr = usePromptMutations(doc.updateCalls);
+			const starterOwed = deriveCommissions(stage.params).length === 0;
+			const pr = usePromptMutations(doc.updateCalls, starterOwed);
 			const handlePromptDelete = (id) => {
 				view.setSelected(nextSelectionAfterDelete(selected, id));
 				pr.handlePromptDelete(id);

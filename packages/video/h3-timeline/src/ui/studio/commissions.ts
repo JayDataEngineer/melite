@@ -332,10 +332,13 @@ export function callsLaneFace(commissions: DocCommission[]): CallsLaneFace {
 }
 
 /** Whether a call's text is the studio's own starter placeholder
- *  verbatim (trimmed) — the one text the dormant face stands down:
- *  the placeholder is VIEW state inviting prose, never operator
- *  content, so under a non-reading arm painting it is the exact
- *  "describe their video … when that isn't used at all" lie.
+ *  verbatim (trimmed) — the one text every NON-PLAIN face stands
+ *  down (dormant, v2v, AND the prompt seat — operator 2026-11-18:
+ *  "WHY DO I SEE THIS PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT
+ *  THAT DOESN'T DO ANYTHING?"): the placeholder is the FILM route's
+ *  view-state invitation, never operator content, so under any
+ *  armed commission painting it is a lie about what the armed run
+ *  reads or books.
  * @param text the call's text
  * @returns true only for the verbatim starter placeholder */
 export function isStarterCallText(text: string): boolean {

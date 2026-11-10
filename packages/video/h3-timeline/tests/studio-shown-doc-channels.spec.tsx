@@ -276,9 +276,12 @@ describe("THE MOD-MODE STARTER GATE (2026-11-14 — no placeholder under an arme
   it("an armed NON-reading mod + a void doc NEVER persists the starter (dead text under the arm)", () => {
     const s = seat({ replace: [REPLACE_ENTRY] })
     expect(s.sent.length).toBe(0)
-    // the view still shows the starter fallback (the authoring surface
-    // the strip's dormant face stands down) — but nothing BOOKS
-    expect(s.result.current.calls.length).toBe(1)
+    // THE PLAIN-FACE LAW (operator 2026-11-18): the view no longer
+    // MINTS the starter under an armed bag either — pre-cure the
+    // projection still showed the fallback (only the strip's filter
+    // stood it down); the view itself now holds [] and the lane
+    // names its face. Nothing BOOKS and nothing PRETENDS.
+    expect(s.result.current.calls).toEqual([])
   })
 
   it("an armed READING mod (reshoot) + a void doc NEVER persists the starter (no silent placeholder prompt)", () => {

@@ -30,6 +30,21 @@
 import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
 import { hydrateCalls, hydrateKeyframes, serializeCalls, serializeKeyframes } from "./docCalls.ts"
 import { hydrateLayerA, serializeLayerA } from "./docHydrate.ts"
+import { deriveCommissions } from "./commissions.ts"
+
+/** The plain-face predicate the calls channel rides everywhere in
+ * this file (THE STARTER PLAIN-FACE LAW, operator 2026-11-18: "WHY
+ * DO I SEE THIS PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT THAT
+ * DOESN'T DO ANYTHING?"): the starter placeholder mints only for a
+ * disarmed doc. One spelling, the starter-persist gate's own
+ * (useShownDoc): `deriveCommissions(params).length === 0`. It must
+ * ride projectDoc AND the op overlay's re-hydration — a `[]` calls
+ * op under an armed bag would otherwise re-mint the starter in
+ * overlayDoc and never retire (its healed digest could never equal
+ * the empty doc it settled into). */
+function starterOwedFor(params: Record<string, unknown> | undefined): boolean {
+  return deriveCommissions(params).length === 0
+}
 
 /** The three writable channels — the write door's own granularity. */
 export type OpChannel = "calls" | "keyframes" | "layerA"
@@ -98,7 +113,13 @@ export interface ProjectedDoc {
 /** Pure projection: the bench row hydrated (the doc, verbatim). */
 export function projectDoc(params: Record<string, unknown> | undefined): ProjectedDoc {
   return {
-    calls: hydrateCalls({ calls: params?.calls, beats: params?.beats }),
+    // The armed predicate (the plain-face law above): a calls-less
+    // doc under ANY armed commission projects [] — the lane names
+    // its face and the hint is the invitation, never film prose.
+    calls: hydrateCalls(
+      { calls: params?.calls, beats: params?.beats },
+      starterOwedFor(params),
+    ),
     keyframes: hydrateKeyframes(
       params?.keyframes,
       // THE ANCHOR UNION (the timeline-visibility cure, 2026-11-13):
@@ -133,9 +154,9 @@ export function serializeChannel(doc: ProjectedDoc, channel: OpChannel): unknown
  *  retires when the doc HEALS to it. overlayDoc already re-hydrates
  *  op values the same way — retirement now agrees with the shown
  *  doc. */
-function healedChannelValue(op: PendingOp): unknown {
+function healedChannelValue(op: PendingOp, starter: boolean): unknown {
   switch (op.channel) {
-    case "calls": return serializeCalls(hydrateCalls({ calls: op.value }))
+    case "calls": return serializeCalls(hydrateCalls({ calls: op.value }, starter))
     case "keyframes": return serializeKeyframes(hydrateKeyframes(op.value))
     case "layerA": return serializeLayerA(hydrateLayerA(op.value as Record<string, unknown> | undefined))
   }
@@ -143,16 +164,22 @@ function healedChannelValue(op: PendingOp): unknown {
 
 /** The live ops: ops whose value the projected doc does not yet
  * contain. Derived per render — never bookkept, so nothing can
- * leak or go stale (an op is retired by the settlement itself). */
-export function liveOps(doc: ProjectedDoc, ops: PendingOp[]): PendingOp[] {
-  return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), healedChannelValue(op)))
+ * leak or go stale (an op is retired by the settlement itself).
+ * @param starter the calls channel's plain-face flag (the law at
+ * the file head) — it rides the healed comparison so an empty
+ * calls op under an armed bag retires against the empty doc. */
+export function liveOps(doc: ProjectedDoc, ops: PendingOp[], starter = true): PendingOp[] {
+  return ops.filter((op) => !settledEquals(serializeChannel(doc, op.channel), healedChannelValue(op, starter)))
 }
 
 /** The shown document: the projection with the live ops applied
  *  (latest op per channel wins; hydration re-runs so the shown doc
- *  is always well-formed view state, never raw payload). */
-export function overlayDoc(doc: ProjectedDoc, ops: PendingOp[]): ProjectedDoc {
-  const live = liveOps(doc, ops)
+ *  is always well-formed view state, never raw payload).
+ * @param starter the calls channel's plain-face flag (the law at
+ * the file head) — it rides the op re-hydration so an empty calls
+ * op under an armed bag shows [], never a re-minted starter. */
+export function overlayDoc(doc: ProjectedDoc, ops: PendingOp[], starter = true): ProjectedDoc {
+  const live = liveOps(doc, ops, starter)
   const latest = (channel: OpChannel): PendingOp | undefined => {
     let out: PendingOp | undefined
     // MAX SEQ, never array position (A2): seq is the declared commit
@@ -170,7 +197,7 @@ export function overlayDoc(doc: ProjectedDoc, ops: PendingOp[]): ProjectedDoc {
   return {
     calls: callsOp === undefined
       ? doc.calls
-      : hydrateCalls({ calls: callsOp.value as DocCall[] | undefined, beats: undefined }),
+      : hydrateCalls({ calls: callsOp.value as DocCall[] | undefined, beats: undefined }, starter),
     keyframes: kfOp === undefined
       ? doc.keyframes
       : hydrateKeyframes(kfOp.value as DocKeyframe[] | undefined),

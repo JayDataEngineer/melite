@@ -239,16 +239,38 @@ describe("THE MOD-MODE CALLS FACE (2026-11-14 — the default call bar under a m
     expect(head.textContent).toBe(studioCopy.callsDormantLabel("replace"))
   })
 
-  it("ARM H — under a READING arm (reshoot) the lane stays LIVE and is labelled the run's prompt seat", () => {
+  // ── THE PROMPT-SEAT STAND-DOWN (operator 2026-11-18, verbatim: "I
+  // still see THIS PROMPT ON RESHOOT BY DEFAULT IN THE TIMELINE —
+  // 'A single shot — describe the action, camera, and mood.' WHAT?
+  // WHY DO I SEE THIS PROMPT THAT DOESN'T DO ANYTHING?") — under a
+  // READING arm the lane is labeled the RUN'S PROMPT SEAT, so the
+  // film route's starter prose reads as content the run will book
+  // (and pre-cure it would have — the projection minted it). The
+  // mint is cured at projectDoc (studio-pending-ops ARM P); THIS arm
+  // is the paint belt — a doc that PERSISTS the starter verbatim
+  // (a pre-gate save, an agent-authored row) must not paint it
+  // under the reading arm either. The lane stays LIVE: authored
+  // prose paints (H2), the doors stay armed, and the dictionary's
+  // prompt-seat hint is the honest invitation.
+  it("ARM H — under a READING arm (reshoot) the STARTER placeholder paints NOTHING (the prompt-seat stand-down, verbatim)", () => {
     const { container } = render(strip([RESHOOT], [STARTER]))
-    // the clip paints — this lane's text rides the run, so the starter
-    // view is the authoring invitation, honestly labeled
-    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(1)
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(0)
     const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
     expect(head.textContent).toBe(studioCopy.callsPromptSeatLabel("reshoot"))
+    // the empty lane NAMES its seat in the dictionary's own words —
+    // the hint is the invitation, never film prose
+    expect(container.textContent).toContain(studioCopy.callsPromptSeatHint("reshoot"))
     // the commission row paints its own row — two NAMED bars (the
     // prompt's input lane + the commission), never two mystery bars
     expect(container.querySelector('[data-commission-lane="reshoot"]')).not.toBeNull()
+  })
+
+  it("ARM H2 — under a READING arm AUTHORED prose still paints (the run's prompt seat is an authoring surface, never a casualty)", () => {
+    const { container } = render(strip([RESHOOT], [AUTHORED]))
+    expect(container.querySelectorAll("[data-prompt-clip]")).toHaveLength(1)
+    const head = container.querySelector('[data-lane-head="prompts"]') as HTMLElement
+    expect(head.textContent).toBe(studioCopy.callsPromptSeatLabel("reshoot"))
+    expect(container.textContent).toContain("she walks on, the light shifts")
   })
 
   it("ARM I — a READING arm over an EMPTY lane names the prompt seat in the hint (the lane's own words)", () => {

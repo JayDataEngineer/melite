@@ -175,7 +175,7 @@ const RESHOOT_MOD = {
  *  dials of the bag, served by their own preset chips; the one
  *  door this family refuses to fold is Reshoot (a different
  *  chain, never a mask/denoise variation). */
-const EDIT_MOD = {
+export const EDIT_MOD = {
     kind: 'edit',
     label: 'Video edit',
     param_key: 'edit',

@@ -1,4 +1,5 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition';
+import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit';
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces';
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
@@ -16,6 +17,29 @@ export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
  *  family's own DECL, and with it the lane's files. */
 export declare const BOARDED: string[];
 export declare const VARIANT_ADDRESSES: string[];
+/** THE EDIT KIND (the timeline rework's stage 2b, 2026-11-15;
+ *  operator order: "do the rework of the timeline mods according
+ *  to your judgment"): ONE video-edit bag whose dials state the
+ *  cell of the mask × reference × denoise matrix directly — the
+ *  seven peer bags were seven FIXED cells of that matrix, and
+ *  this door serves the whole grid. The legacy doors stay frozen
+ *  byte-pinned (their suites, their docs); every cell through
+ *  THIS door rides the family's matrix seat (models/h3
+ *  renderH3Edit) on the one chain spine + the one constructor.
+ *  THE DIALS: Mask source (per-frame SAM3 region — N7's cure,
+ *  first-class with grow/blur/detection tuning seats, N8's — /
+ *  whole frame / one staged PNG, resized to the chain's geometry
+ *  in-graph, F3-16 defect 1's cure), Reference (the source's own
+ *  self / a still + mannequin pair), and Denoise (0.05–1). The
+ *  safety law is the door's own: the identity boil (whole-frame ×
+ *  self × >= 0.8, F3-17) and the partial audio drop refuse loud.
+ *  Continuation (continuation + extend_seconds), the
+ *  no-reference second pass (refine + scale), and the deferred
+ *  upscale of a prior run (chain_run) ARE cells on this door —
+ *  dials of the bag, served by their own preset chips; the one
+ *  door this family refuses to fold is Reshoot (a different
+ *  chain, never a mask/denoise variation). */
+export declare const EDIT_MOD: DeclaredModifierKind;
 /** THE LEGACY EDIT ALIASES (slice 4 of the FRICTION_3 collapse —
  * THE DELETION): the five peer bags left the DECLARED roster (the
  * served face is edit + reshoot + loras; the operator 2026-11-06:

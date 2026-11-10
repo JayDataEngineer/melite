@@ -10,8 +10,16 @@ import { callIndexOf } from "./docCalls.ts"
 import { snapCallEnd, snapCutDelta } from "./docGrid.ts"
 import { patchAt } from "./docPatch.ts"
 
-/** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042. */
-export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>) {
+/** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042.
+ * @param setCalls the calls write door
+ * @param starterOwed whether the doc owes the starter placeholder
+ * (THE PLAIN-FACE LAW, operator 2026-11-18: "WHY DO I SEE THIS
+ * PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT THAT DOESN'T DO
+ * ANYTHING?"): deleting the only call mints the starter ONLY on the
+ * disarmed film route — under an armed commission the doc empties
+ * (`[]`), the lane names its face, and the dictionary's hint is the
+ * invitation, never re-minted film prose an armed run would read. */
+export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, starterOwed = true) {
   // ── Beat gestures (the ripple — a packed timeline's edits are CUT
   // moves; contiguity is maintained BY CONSTRUCTION, so plan_windows
   // never sees a gap from a UI gesture) ──────────────────────────────────
@@ -74,10 +82,13 @@ export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>
     setCalls((prev) => {
       if (i < 0 || i >= prev.length) return prev
       if (prev.length === 1) {
-        // The only call: deleting it would empty the document (the plan
-        // REQUIRES ≥1 call) — reset to the starter instead of an invalid
-        // empty doc.
-        return STARTER_CALLS.map((c) => ({ ...c }))
+        // The only call: deleting it would empty the document (the
+        // plan REQUIRES ≥1 call) — reset to the starter instead of an
+        // invalid empty doc. THE PLAIN-FACE LAW (2026-11-18): under
+        // an armed commission the starter is film-route prose an
+        // armed run would read or book — the doc empties, the lane
+        // names its face, and the hint is the honest invitation.
+        return starterOwed ? STARTER_CALLS.map((c) => ({ ...c })) : []
       }
       const next = prev.filter((_, j) => j !== i)
       // Merge the freed span into the neighbor (prev absorbs; the first

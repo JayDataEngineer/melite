@@ -12,7 +12,7 @@
  * nothing and the overlay would lie — the component owns the
  * clear, this spec pins the content law it relies on).
  */
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import {
   canonicalJson, liveOps, overlayDoc, projectDoc, serializeChannel,
   type PendingOp, type ProjectedDoc,
@@ -147,5 +147,67 @@ describe("overlayDoc (the shown document)", () => {
     const shown = overlayDoc(settled, [op("calls", typed, 0)])
     expect(shown.calls[0]!.text).toBe("typed live")
     expect(shown).toEqual(settled)
+  })
+})
+
+// ── THE PLAIN-FACE LAW (operator 2026-11-18: "I still see THIS
+// PROMPT ON RESHOOT BY DEFAULT IN THE TIMELINE — 'A single shot —
+// describe the action, camera, and mood.' WHAT? WHY DO I SEE THIS
+// PROMPT THAT DOESN'T DO ANYTHING?") ─────────────────────────────
+// The starter placeholder mints ONLY for a disarmed doc. Under ANY
+// armed commission (a reading arm above all — the lane is labeled
+// the run's prompt seat, so placeholder prose reads as content the
+// run would book, and pre-cure it WOULD: the projection minted it,
+// the strip painted it) the calls-less doc projects [] and the op
+// overlay re-hydrates [] as [] — never a re-minted starter whose
+// healed digest could then never retire against the empty doc it
+// settled into. The strip's paint filter is the belt for persisted
+// starter text (studio-strip-commissions ARM H); these arms are the
+// MINT's own depth: the projection and the overlay, the two seats
+// that invent content.
+describe("THE PLAIN-FACE LAW (the starter mints only on the disarmed doc)", () => {
+  const ARMED_RESHOOT = {
+    reshoot: [{ source_clip: "clips/t4.mp4", orbit: "30" }],
+    keyframes: [],
+    fps: 24,
+  }
+
+  it("ARM P — an armed calls-less doc projects [] (the projection never mints film prose under a commission)", () => {
+    const armed = projectDoc(ARMED_RESHOOT)
+    expect(armed.calls).toEqual([])
+    // the same doc DISARMED keeps the film route's invitation (the
+    // law is the armed predicate, not an unconditional emptying)
+    const plain = projectDoc({ keyframes: [], fps: 24 })
+    expect(plain.calls).toHaveLength(1)
+    expect(plain.calls[0]!.text).toContain("A single shot")
+  })
+
+  it("ARM O — a [] calls op under an armed bag overlays as [] and RETIRES (no re-mint, no ghost)", () => {
+    const armed = projectDoc(ARMED_RESHOOT)
+    const empty: Array<{ text: string; start_frame: number; end_frame: number }> = []
+    const ops = [op("calls", empty, 0)]
+    // the op retires against the armed projection's [] IMMEDIATELY —
+    // content-equal by construction, so no ghost can sit live. (The
+    // unflagged hydrate re-minted the starter here instead: healed([])
+    // digested STARTER_CALLS, never equal to the empty doc — the op
+    // sat live forever and the overlay re-invented film prose.)
+    expect(liveOps(armed, ops, false)).toHaveLength(0)
+    expect(overlayDoc(armed, ops, false).calls).toEqual([])
+    // and once the settlement lands (the doc carries the explicit
+    // empty array — same projection, same flag) it stays retired
+    const settled = projectDoc({ ...ARMED_RESHOOT, calls: [] })
+    expect(liveOps(settled, ops, false)).toHaveLength(0)
+    expect(overlayDoc(settled, ops, false).calls).toEqual([])
+  })
+
+  it("ARM C — a corrupt calls field under an armed bag stays EMPTY view state (the crime still names itself; the starter never poses as the cure)", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+    try {
+      const armed = projectDoc({ ...ARMED_RESHOOT, calls: "[{broken" })
+      expect(armed.calls).toEqual([])
+      expect(spy).toHaveBeenCalledTimes(1)
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

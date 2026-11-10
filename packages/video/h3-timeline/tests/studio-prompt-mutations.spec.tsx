@@ -117,6 +117,23 @@ describe("handlePromptDelete", () => {
     assert.ok(result.current.calls !== STARTER_CALLS, "a copy, not the shared starter")
   })
 
+  // ── THE PLAIN-FACE LAW (operator 2026-11-18: "WHY DO I SEE THIS
+  // PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT THAT DOESN'T DO
+  // ANYTHING?") — the delete gesture must not RE-MINT the starter
+  // under an armed commission: the doc empties, the lane names its
+  // face, the hint is the invitation. Starter mints only when the
+  // caller owes it (the disarmed film route).
+  it("deleting the ONLY call under an ARMED commission EMPTIES the doc (starterOwed=false never re-mints film prose)", () => {
+    const { result } = renderHook(() => {
+      const [calls, setCalls] = useState<DocCall[]>([A])
+      const m = usePromptMutations(setCalls, false)
+      return { calls, ...m }
+    })
+    act(() => { result.current.handlePromptDelete("call-0") })
+    assert.deepEqual(result.current.calls, [])
+    assert.notEqual(result.current.calls[0]?.text ?? "", STARTER_CALLS[0]!.text)
+  })
+
   it("bad ids no-op", () => {
     const { result } = harness([A])
     const before = result.current.calls

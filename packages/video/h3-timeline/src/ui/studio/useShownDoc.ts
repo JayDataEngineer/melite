@@ -129,9 +129,16 @@ export function useShownDoc(
   // (StudioStripPane); the run door's textless refusal stays the
   // loud backstop. A disarmed doc (no bag / explicit empty array)
   // keeps the starter: the authoring invitation is honest there.
+  // THE PLAIN-FACE FLAG (the starter's one predicate, everywhere):
+  // the projection (projectDoc) and this hook's op overlay mint the
+  // starter ONLY for a disarmed doc — under an armed commission a
+  // calls-less doc shows [] and the lane names its face. The gate
+  // below rides it; the overlay calls at the bottom ride it too (a
+  // `[]` calls op under an armed bag must stay [], never re-mint).
+  const starterFace = deriveCommissions(params).length === 0
   const starterOwed = rawList === null
     && corruptCallsField({ calls: params?.calls, beats: params?.beats }) === null
-    && deriveCommissions(params).length === 0
+    && starterFace
   useEffect(() => {
     if (starterOwed) {
       const payload = serializeCalls(projectedRef.current.calls)
@@ -143,8 +150,8 @@ export function useShownDoc(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage.id])
 
-  const live = useMemo(() => liveOps(projected, ops), [projected, ops])
-  const shown: ProjectedDoc = useMemo(() => overlayDoc(projected, live), [projected, live])
+  const live = useMemo(() => liveOps(projected, ops, starterFace), [projected, ops, starterFace])
+  const shown: ProjectedDoc = useMemo(() => overlayDoc(projected, live, starterFace), [projected, live, starterFace])
 
   /** Retract one appended op by its commit order (the P8 async arm —
    *  a mount-local helper, never a render read: refs stay the
@@ -159,7 +166,7 @@ export function useShownDoc(
     serialize: (v: V) => unknown,
     getShown: (doc: ProjectedDoc) => V,
   ): Dispatch<SetStateAction<V>> => (u) => {
-    const shownBefore = overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current))
+    const shownBefore = overlayDoc(projectedRef.current, liveOps(projectedRef.current, opsRef.current, starterFace), starterFace)
     const prev = getShown(shownBefore)
     const next = typeof u === "function" ? (u as (p: V) => V)(prev) : u
     let payload = serialize(next)

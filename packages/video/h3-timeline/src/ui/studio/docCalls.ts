@@ -37,7 +37,22 @@ export function corruptCallsField(raw: { calls?: unknown; beats?: unknown }): "c
   return null
 }
 
-export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall[] {
+export function hydrateCalls(
+  raw: { calls?: unknown; beats?: unknown },
+  /** Whether the starter placeholder may mint for a doc with no
+   * usable calls. THE PLAIN-FACE LAW (operator 2026-11-18: "I still
+   * see THIS PROMPT ON RESHOOT BY DEFAULT IN THE TIMELINE … WHY DO I
+   * SEE THIS PROMPT THAT DOESN'T DO ANYTHING?"): the starter is the
+   * FILM route's own authoring invitation — it mints only when
+   * nothing is armed (`deriveCommissions(params).length === 0`, the
+   * same predicate the starter-persist gate spells in useShownDoc).
+   * Under an armed commission the calls-less doc hydrates to `[]`:
+   * the lane names its face (dormant / prompt seat / v2v) and the
+   * dictionary's hint is the invitation, so the film's "describe
+   * the action, camera, and mood" prose never poses as content an
+   * armed run would read or book. */
+  starter = true,
+): DocCall[] {
   // Layer B: `calls` is the vocabulary (2026-08-16, the B/C conflation
   // fix). Legacy docs wrote `beats` where every beat was a call in
   // disguise — map 1:1 (text, no inner segments; the family does the
@@ -82,7 +97,10 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     : Array.isArray(beatsRaw) && beatsRaw.length > 0
       ? beatsRaw
       : null
-  if (!list) return STARTER_CALLS
+  // Both fallback arms (no usable list; every row dropped) obey the
+  // plain-face law above: `starter === false` yields the EMPTY doc —
+  // the armed lane's own hint is the invitation, never this prose.
+  if (!list) return starter ? STARTER_CALLS : []
   const calls: DocCall[] = []
   for (const [index, c] of list.entries()) {
     // EVERY DROP IS NAMED (2026-10-16, audit 3f0b7c1a ui-truth-gap
@@ -234,7 +252,7 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     }
     calls.push(call)
   }
-  if (calls.length === 0) return STARTER_CALLS
+  if (calls.length === 0) return starter ? STARTER_CALLS : []
   // Sorted (plan_windows' vocabulary is sorted calls); NOT re-tiled — a
   // hand-authored gap stays visible and the compiler's refusal stays the
   // honest gate. The tenant's own writes always maintain contiguity.
