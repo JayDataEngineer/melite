@@ -208,26 +208,32 @@ if [ "$PORT" != "3088" ]; then
   mkdir -p "$DSH_HOME" "$HOME/.config/systemd/user"
   # THE SHARED-CHAT LAW (operator 2026-11-10, "make 3088 and 3089 share
   # dsh chat sessions"): sessions live in DSH_HOME/sessions keyed by the
-  # workspace slug, and the sidebar attributes them by the home's
-  # anonymous-user-id — a branch home with its own store would boot with
-  # a BLANK chat list. The branch therefore (a) links its sessions dir
-  # onto :3088's store and (b) adopts :3088's anonymous id, so both
-  # lanes list and continue the SAME chats. One live writer per chat is
-  # the user's own discipline (the same chat open twice writes twice);
+  # workspace slug, session BODIES reference their uploads in
+  # DSH_HOME/attachments, and the sidebar attributes them by the home's
+  # anonymous-user-id — a branch home with its own stores would boot
+  # with a BLANK chat list, and a SHARED session continued on the
+  # branch dies mid-turn ("Attachment object is missing") the moment it
+  # loads a message whose upload lives in the main home. The branch
+  # therefore (a) links its sessions AND attachments dirs onto :3088's
+  # stores and (b) adopts :3088's anonymous id, so both lanes list,
+  # continue, and read the SAME chats. One live writer per chat is the
+  # user's own discipline (the same chat open twice writes twice);
   # read/resume across lanes is the requested behavior.
   MAIN_HOME="${MELITE_MAIN_DSH_HOME:-$HOME/.dsh-dev}"
-  if [ -d "$MAIN_HOME/sessions" ]; then
-    if [ -L "$DSH_HOME/sessions" ] || [ -e "$DSH_HOME/sessions" ]; then
-      [ "$(readlink "$DSH_HOME/sessions" 2>/dev/null || true)" = "$MAIN_HOME/sessions" ] \
-        || { echo "FATAL: $DSH_HOME/sessions exists and is not the shared store link — refusing to touch it"; exit 1; }
+  for SHARED_STORE in sessions attachments; do
+    if [ -d "$MAIN_HOME/$SHARED_STORE" ]; then
+      if [ -L "$DSH_HOME/$SHARED_STORE" ] || [ -e "$DSH_HOME/$SHARED_STORE" ]; then
+        [ "$(readlink "$DSH_HOME/$SHARED_STORE" 2>/dev/null || true)" = "$MAIN_HOME/$SHARED_STORE" ] \
+          || { echo "FATAL: $DSH_HOME/$SHARED_STORE exists and is not the shared store link — refusing to touch it"; exit 1; }
+      else
+        ln -s "$MAIN_HOME/$SHARED_STORE" "$DSH_HOME/$SHARED_STORE" \
+          || { echo "FATAL: cannot link $SHARED_STORE onto $MAIN_HOME/$SHARED_STORE"; exit 1; }
+      fi
+      echo "   shared chat $SHARED_STORE: $DSH_HOME/$SHARED_STORE → $MAIN_HOME/$SHARED_STORE"
     else
-      ln -s "$MAIN_HOME/sessions" "$DSH_HOME/sessions" \
-        || { echo "FATAL: cannot link sessions onto $MAIN_HOME/sessions"; exit 1; }
+      echo "   NOTE: $MAIN_HOME/$SHARED_STORE not found — the branch keeps its own $SHARED_STORE store"
     fi
-    echo "   shared chat sessions: $DSH_HOME/sessions → $MAIN_HOME/sessions"
-  else
-    echo "   NOTE: $MAIN_HOME/sessions not found — the branch keeps its own chat store (fresh list)"
-  fi
+  done
   if [ -f "$MAIN_HOME/.anonymous-user-id" ]; then
     cp -f "$MAIN_HOME/.anonymous-user-id" "$DSH_HOME/.anonymous-user-id"
     echo "   shared chat identity: branch adopts :3088's anonymous user id"
