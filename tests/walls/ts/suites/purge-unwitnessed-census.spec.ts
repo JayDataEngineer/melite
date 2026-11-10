@@ -206,6 +206,7 @@ function valueCells(): Cell[] {
   // rule, so the arm titles here must stay verbatim).
   const H3_CLASS_ARM: Record<string, { anchor: string, note: string }> = {
     width: { anchor: 'ARM 13 — the shape + clock pins', note: 'verbatim at the ReferenceToVideo head' },
+    output_name: { anchor: 'CENSUS output_name: the delivered film is not BORN named', note: 'THE FILE PLANE (queue 12, 2026-11-19): the stem owns the SaveVideo prefix LEAF (h3_t4_film_<slug>), never a node input — the judge row on the named census doc' },
     height: { anchor: 'ARM 13 — the shape + clock pins', note: 'verbatim at the ReferenceToVideo head' },
     length: { anchor: 'ARM 13 — the shape + clock pins', note: 'verbatim at the ReferenceToVideo head' },
     ref_image_size: { anchor: 'ARM 13 — the shape + clock pins', note: 'verbatim at the ReferenceToVideo head' },

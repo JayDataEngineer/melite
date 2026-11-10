@@ -211,6 +211,11 @@ const rig = (doc: SynthDoc): Rig => {
     objectInfo: (): unknown => null,
     defsSync: (): unknown => new Map(),
     primeObjectInfo: async (): Promise<boolean> => true,
+    // THE SPARING'S DECL LOOKUP (queue 12's file plane): the
+    // reserved-lift sparable branch reads cardDecls — the fake seats
+    // no card DECLs, so every reserved key keeps lifting (the
+    // blanket law the doors wall pins on the real registry).
+    cardDecls: (): unknown => ({}),
     phase1Card: async (body: Record<string, unknown>) => ({
       mid: "receipt-model",
       fam: "",

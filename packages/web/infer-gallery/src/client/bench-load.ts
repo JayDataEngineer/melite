@@ -163,8 +163,11 @@ function resultOfRun(
   // — its generic-video tier happened to catch the film today, a
   // weaker private law beside the estate's own. The finder now
   // matches the engine-film law verbatim, never a private copy.
+  // THE OUTPUT-NAME FILE TAIL (2026-11-19): the optional slug segment
+  // admits the born-named film (`h3_t4_film_<slug>_00001_.mp4`) —
+  // filmLead.ts's law, mirrored verbatim.
   const film = media.find((p: string): boolean =>
-    /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p),
+    /(?:^|[/_])h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p),
   )
   const video = media.find((p: string): boolean => isVideo(p) && !WINDOW_FILM.test(p))
   const hero = film ?? video ?? media.find((p: string): boolean => !WINDOW_FILM.test(p)) ?? media[0]

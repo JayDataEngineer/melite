@@ -333,6 +333,26 @@ describe("runArtifacts", () => {
     ]);
   });
 
+  it("THE BORN-NAMED FILM LEADS (queue 12's file plane): a spelled output_name slug rides the stem and the film still leads", () => {
+    // The regex's optional slug segment (filmLead.ts, 2026-11-19): a
+    // run that spelled output_name mints `h3_t4_film_<slug>_00001_.mp4`
+    // — the presentation-order law must keep seating it first, and the
+    // machinery stem still anchors the match (the slug charset is the
+    // schema's own lowercase alnum + hyphen, never a separator).
+    const root = tmp();
+    for (const name of [
+      "h3_t4_w1_00001_.mp4",
+      "h3_t4_film_audio_00001.flac",
+      "h3_t4_film_chase_00001_.mp4",
+    ]) writeFileSync(join(root, name), name);
+    const arts = runArtifacts(root, "run-x") as Record<string, unknown>[];
+    assert.deepEqual(arts.map((art) => art["name"]), [
+      "h3_t4_film_chase_00001_.mp4",
+      "h3_t4_film_audio_00001.flac",
+      "h3_t4_w1_00001_.mp4",
+    ]);
+  });
+
   it("the literal without a slash rides whole; dangling links DROP (a dead artifact never kills the row)", () => {
     const root = tmp();
     writeFileSync(join(root, "b.png"), "bb");

@@ -557,6 +557,51 @@ describe('loadRunOntoBench — the run record wins', () => {
     })
   })
 
+  it('THE BORN-NAMED FILM IS STILL THE HERO (queue 12 file plane, 2026-11-19): a spelled output_name slug never breaks the restore\'s film finder', async () => {
+    // bench-load's mirror of filmLead.ts admits the optional slug
+    // segment (`h3_t4_film_<slug>_<n>_.mp4`): a run that spelled
+    // output_name restores ITS named film as the stage hero — never
+    // the generic-video tier or a window.
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const side = {
+      run_id: 'run-0f1e2d-r1',
+      flow: {
+        artifacts: [
+          '/data/run-0f1e2d-r1/s_2/h3_t4_film_chase_1_.mp4',
+          '/data/run-0f1e2d-r1/s_0/a.png',
+        ],
+        bench_snapshot: {
+          stages: [
+            { id: 's_0', card: 'image-gen' },
+            { id: 's_2', card: 'h3-timeline' },
+          ],
+          intent: 'x',
+        },
+        stages: [
+          { id: 's_0', name: 'image', index: 0, status: 'completed', url: 's_0/a.png', gallery: [{ name: 's_0/a.png' }], outputs: {}, expected: {} },
+          { id: 's_2', name: 'h3', index: 2, status: 'completed', url: 's_2/h3_t4_film_chase_1_.mp4', gallery: [{ name: 's_2/h3_t4_w1_1_.mp4' }, { name: 's_2/h3_t4_film_chase_1_.mp4' }], outputs: {}, expected: {} },
+        ],
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(2)
+    expect(stages[1]).toMatchObject({
+      id: 's_2',
+      result: {
+        run_id: 'run-0f1e2d-r1',
+        url: route('run-0f1e2d-r1/s_2/h3_t4_film_chase_1_.mp4'),
+        artifacts: {
+          'run-0f1e2d-r1/s_2/h3_t4_film_chase_1_.mp4': route('run-0f1e2d-r1/s_2/h3_t4_film_chase_1_.mp4'),
+          'run-0f1e2d-r1/s_2/h3_t4_w1_1_.mp4': route('run-0f1e2d-r1/s_2/h3_t4_w1_1_.mp4'),
+        },
+      },
+    })
+  })
+
   it('THE PER-STAGE PREVIEW LAW, skeleton join: a card-skeleton id joins its bench row through bench_stage_id; a stage the sidecar ROWS leave unmatched restores preview-less (the floor is the legacy arm, operator 2026-10-31)', async () => {
     const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
     const side = {

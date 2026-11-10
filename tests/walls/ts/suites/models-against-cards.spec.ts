@@ -520,7 +520,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 482 -> 480 (2026-11-09, the removal): the retired edit family
     // left the tree — its two tuning-boolean schema rows died with the
     // card's claim-law drop.
-    assert.equal(walked, 480,
+    // 480 -> 481 (2026-11-19, queue 12's file plane): h3's
+    // output_name row joins the judged face — the deliverable slug,
+    // the ONE deliberate text field (group 'naming').
+    assert.equal(walked, 481,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -1995,7 +1998,12 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // ParamSpec rows sync against the card schema per carried
     // address (length/width/height/steps/shift_video/shift_audio
     // bounds + the seed sentinel; offenders empty).
-    assert.equal(pairs, 774, "the shared-name pair census changed — update this pin deliberately"); // 791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. (829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
+    // 774 -> 777 (2026-11-19, queue 12's file plane): output_name
+    // joins the film action's ParamSpec (the advertised naming row)
+    // and the h3 schema declares it — one agreeing pair per boarding
+    // card (three carry the h3 family); a string row owns no bounds
+    // or enum, so offenders stay empty.
+    assert.equal(pairs, 777, "the shared-name pair census changed — update this pin deliberately"); // 791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. (829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
     // 796→791 2026-11-01 (the blender-lane removal): the rig card's fbx/decimate/species knobs and gem-soma's two export knobs leave both homes together
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });

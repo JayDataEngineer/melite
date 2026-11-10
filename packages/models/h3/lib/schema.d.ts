@@ -15,6 +15,12 @@ export declare const FPS_RAIL_MAX = 120;
  *  rider (the SOTA plan's researched 0.30–0.35 band; 1.0 is the
  *  taomate full-denoise mechanic, opt-in). */
 export declare const REFINE_DENOISE_DEFAULT = 0.35;
+/** THE OUTPUT-NAME SLUG LAW (the file-plane seat on the carrier
+ *  below): a filename segment and nothing else — the stem lands
+ *  inside a SaveVideo / SaveImage prefix, so no space, slash, dot,
+ *  or case may ride it. Shared by the carrier (the walk's boundary
+ *  refusal) and the compose tail helper at the carrier's foot. */
+export declare const OUTPUT_NAME_SLUG_RE: RegExp;
 export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;
     last_frame: z<string, string, "plain">;
@@ -80,6 +86,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
     fps_seconds: z<number, number, "plain">;
+    output_name: z<string, string, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
@@ -149,11 +156,21 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
     fps_seconds: z<number, number, "plain">;
+    output_name: z<string, string, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
     image_name: z<string, string, "plain">;
 }>>, "plain">;
+/** The composed prefix tail for a doc's output_name — `_<slug>` when
+ *  spelled, '' when absent. The DELIVERABLE prefix sites thread this
+ *  (the film `h3_t4_film`, the extend film `extend_film`, the
+ *  re-shoot plates `reshoot_warp` / `reshoot_orbit`); a stem that
+ *  escaped the boundary walk (a legacy draft, a hand-built doc)
+ *  refuses HERE loud, naming the law — a bad stem must never reach
+ *  a filename. An empty string is the label seam's silence law:
+ *  no stem, no tail, no refusal. */
+export declare function outputNameTailOf(p: Record<string, unknown>): string;
 /** Schemastery objects are lenient (unknown/missing keys ride); the
  *  family-admission laws are the renderer's own validators, ported:
  *  unknown variant + family-conditional key admission on EXPLICIT
@@ -249,6 +266,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
     fps_seconds: z<number, number, "plain">;
+    output_name: z<string, string, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;
@@ -318,6 +336,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     k: z<number, number, "plain">;
     noise_seed: z<number, number, "plain">;
     fps_seconds: z<number, number, "plain">;
+    output_name: z<string, string, "plain">;
     interp_switch: z<boolean, boolean, "plain">;
     sharpen_switch: z<boolean, boolean, "plain">;
     sla_switch: z<boolean, boolean, "plain">;

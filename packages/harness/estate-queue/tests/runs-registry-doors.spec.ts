@@ -1065,6 +1065,66 @@ describe("validate", () => {
     );
   });
 
+  it("THE DECLARED-KEY SPARING (queue 12's file plane): a card that DECLARES output_name walks it into admission — the stem reaches the compose", async () => {
+    // The lift's own law (the arm above) holds for POLICY keys on
+    // cards that do not declare them. The file plane (2026-11-19,
+    // the operator's naming press) seats the stem ON the card: h3's
+    // carrier declares output_name, so the reserved list must NOT
+    // strip it — the walk receives it and the renderer threads it
+    // into the deliverable save prefixes. If the sparing ever
+    // breaks, phase1 loses the key and this wall reds on the same
+    // seam the LIFT arm protects in the other direction.
+    const phase1Params: unknown[] = [];
+    const s = seat(
+      {
+        modelFacts: (): unknown => ({ "z-image": {} }),
+        resolveCardFamily: (): unknown => "z-image",
+        modelMids: (): unknown => new Set<string>(),
+        // the DECL truth: this card DECLARES output_name (schemaNames
+        // — the same projection cardAdmits judges, cardsFacts.ts)
+        cardDecls: (): unknown => ({
+          "image-gen": { skeleton: "edit", boarded: ["z-image"], schemaNames: ["prompt", "output_name"], admits: [], spells: [] },
+        }),
+        phase1Card: async (params: unknown): Promise<unknown> => {
+          phase1Params.push(params);
+          return { mid: "z-image", fam: "z-image", card: "image-gen", spell: null, params: {} };
+        },
+        phase2Card: async (): Promise<unknown> => ({
+          graph: { "9": { class_type: "EmptySD3LatentImage", inputs: {} } },
+          outputs: {},
+          outputNodes: { default: "9" },
+        }),
+      },
+      { stages: [{ id: "s_0", card: "image-gen", params: { prompt: "x", output_name: "golden-hour" } }] },
+    );
+    const engine = engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as Record<string, unknown>)["engines"] = {
+      ids: (): string[] => ["comfyui"],
+      resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+    };
+    engine.onFlow = async (rows) => ({
+      stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+      promptId: "p",
+    });
+    const ans = await s.svc.start({ draft_id: "d1", test: false }, sig());
+    const run = await settleWait(s, ans.run_id);
+    assert.equal(run.status, "completed", "the declaring card's stage composes and settles");
+    // 1. THE WALK RECEIVED THE STEM — the sparing's own evidence
+    assert.ok(phase1Params.length > 0, "the card walk ran");
+    for (const p of phase1Params) {
+      assert.equal(
+        (p as Record<string, unknown>)["output_name"],
+        "golden-hour",
+        "phase1 receives the params WITH the declared stem (the sparing's own evidence)",
+      );
+    }
+    // 2. THE COMPOSED ROW CARRIES IT BESIDE THE GRAPH
+    const stageParams = run.params[0] as Record<string, unknown>;
+    assert.equal(stageParams["output_name"], "golden-hour", "the composed stage's params carry the stem verbatim");
+    assert.ok(typeof stageParams["workflow"] === "object", "the graph still composes");
+  });
+
   // ── THE EXTERMINATION WALLS (2026-10-10, the operator's order: NO
   //    SILENT BEHAVIOR — run 880aaa85d928 proved the seam: the bench
   //    wired input_images from s_0, the client's Run sent a

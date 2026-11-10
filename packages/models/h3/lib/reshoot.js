@@ -1,3 +1,4 @@
+import { outputNameTailOf } from './schema.js';
 /** The pack's clip-normalization node (the official chain's first
  *  stage — resamples to 24 fps, snaps the frame count to H3's 17k+5
  *  grid, centre-crops to the requested aspect at the pixel budget).
@@ -334,13 +335,17 @@ export function buildH3Reshoot(p, g, windowFrames, runId) {
         batch_index: 0,
         length: 1,
     }).out(0);
+    // THE OUTPUT-NAME FILE TAIL (2026-11-19, the operator's naming
+    // press): the re-shoot's DELIVERED plates are BORN named
+    // (`reshoot_warp_<slug>` / `reshoot_orbit_<slug>`) — the same
+    // stem on both faces of the one re-shoot.
     const plateSave = g.node('SaveImage', {
         images: plate,
-        filename_prefix: `${runId}/reshoot_warp`,
+        filename_prefix: `${runId}/reshoot_warp${outputNameTailOf(p)}`,
     }).out(0);
     const orbitSave = g.node('SaveImage', {
         images: warpNode.out(1),
-        filename_prefix: `${runId}/reshoot_orbit`,
+        filename_prefix: `${runId}/reshoot_orbit${outputNameTailOf(p)}`,
     }).out(0);
     return {
         refFrames: source,

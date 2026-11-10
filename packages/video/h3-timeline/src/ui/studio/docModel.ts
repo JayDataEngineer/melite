@@ -436,6 +436,17 @@ export interface LayerA {
    *  for the run. */
   model?: string
   audio_stem?: string
+  /** THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+   *  the deliverable-naming slug — a served schema row (group
+   *  'naming') the studio CARRIES end-to-end: hydrated from the
+   *  doc, emitted by serializeLayerA's loop (undefined/"" = absent,
+   *  the label seam's silence law), and threaded by the compose
+   *  into every DELIVERABLE save prefix (`h3_t4_film_<slug>`,
+   *  `extend_film_<slug>`, the re-shoot plates) so the artifact is
+   *  BORN named. One seat serves both constituencies (the agent
+   *  patches it; the GUI writes it) — the orphan-row wall's law:
+   *  a served row with no carrier is the panel-lie class. */
+  output_name?: string
   /** (Layer A NLE law, 2026-08-31; the stitch RESTORED 2026-09-21;
    * the DIALOGUE HALF same day; the valve's SECOND ARM 2026-09-24)
    * Positioned AUDIO CLIPS — the Music row as a DaVinci track: each

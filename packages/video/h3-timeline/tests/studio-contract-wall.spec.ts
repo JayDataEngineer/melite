@@ -121,6 +121,10 @@ const LAYER_A_ALL_KEYS: string[] = [
   "quant",
   // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14)
   "refmod_mode", "refmod_pool", "refmod_identity", "refmod_save",
+  // THE OUTPUT-NAME FILE SEAT (queue 12's file plane): the
+  // deliverable slug — served, hydrated, emitted by the generic
+  // loop; presence + orphan arms both judge it here
+  "output_name",
 ]
 
 /** A maximally-populated Layer A (every value non-default, every
@@ -187,6 +191,11 @@ function populatedMax(): Record<string, unknown> {
     else if (key === "upscale_model") populated[key] = "minimax_h3_latent_upscaler_3d_bf16.safetensors"
     else if (key === "attention_backend") populated[key] = "pytorch attention"
     else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
+    // THE OUTPUT-NAME FILE SEAT (queue 12's file plane): a REAL slug,
+    // not a number — the string seat must ride the emit loop's
+    // non-empty pole or the orphan arm reds by name (a served row
+    // with no carrier is the panel-lie class)
+    else if (key === "output_name") populated[key] = "chase"
     else populated[key] = 1
   }
   populated.sr_resolution = 1080

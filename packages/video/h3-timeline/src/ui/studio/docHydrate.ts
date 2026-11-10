@@ -270,6 +270,13 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     // NO LONGER a user-facing control. When a doc has audio_stem but no
     // audio_clips, the stem is converted to a positioned clip at frame 0.
     audio_stem: optStr("audio_stem"),
+    // THE OUTPUT-NAME FILE SEAT (queue 12's file plane): the
+    // deliverable slug hydrated verbatim — the compose door owns
+    // validation (the slug law), the serializer's loop carries it
+    // when non-empty, and the deliverable save prefixes are BORN
+    // named (`h3_t4_film_<slug>`…). undefined = absent = the
+    // machine name rides (frozen default, pinned by the model wall).
+    output_name: optStr("output_name"),
     audio_clips: (() => {
       const parsed = hydrateAudioClips(raw?.audio_clips)
       const stem = optStr("audio_stem")
@@ -342,6 +349,10 @@ const LAYERA_EMIT_LOOP_KEYS = [
   "attention_backend",
   "duck_depth_db",
   "ref_image_size", "model", "audio_stem",
+  // the deliverable-naming slug (queue 12's file plane): rides the
+  // generic loop so emit + delete-ride derive together — "" = absent
+  // (cleared name deletes via the ride's null pole)
+  "output_name",
 ] as const
 
 /** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-09

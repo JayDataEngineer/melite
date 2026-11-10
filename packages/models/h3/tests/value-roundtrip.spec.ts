@@ -1910,6 +1910,14 @@ const CENSUS_DOCS = {
     audio_clips: [{ src: "data/input/take.wav", start_frame: 0, dur_frames: 24, text: "hello there" }],
     calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
   },
+  // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19): the
+  // film doc with the deliverable stem spelled — the census judge row
+  // below proves the film's SaveVideo prefix is BORN named and no
+  // machinery film prefix survives beside it.
+  named: {
+    length: 124, output_name: "chase",
+    calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+  },
   // ARM 22b — the call-level guide alias.
   alias: { length: 56, calls: [SHOT({ image_name: "data/input/alias.png" })] },
   // ARM 47 — the any-frame pins lane.
@@ -2080,6 +2088,26 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   { kind: "at", param: "refmod_identity", doc: "media", cls: "MiniMaxH3RefModExtract", input: "identity", value: 650 },
   { kind: "at", param: "refmod_save", doc: "media", cls: "MiniMaxH3RefModExtract", input: "save", value: false },
   { kind: "at", param: "image_name", doc: "alias", cls: "LoadImage", input: "image", value: "data/input/alias.png", mode: "some" },
+  // ── THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+  // the deliverable stem's consumer is the film concat's OWN
+  // SaveVideo prefix — the value lands INSIDE the filename the run
+  // will mint, never as a node input key. The judge row is the
+  // strongest voice: the born-named prefix EXISTS and the machinery
+  // film prefix is GONE (windows keep theirs — intermediates).
+  {
+    kind: "judge", param: "output_name", doc: "named",
+    judge: (g: Graph): void => {
+      const prefixes = Object.values(g)
+        .filter((n) => n.class_type === "SaveVideo")
+        .map((n) => String((n.inputs as Record<string, unknown>)["filename_prefix"]));
+      assert.ok(prefixes.includes("h3_census_named/h3_t4_film_chase"),
+        `CENSUS output_name: the delivered film is not BORN named — SaveVideo prefixes ${JSON.stringify(prefixes)}`);
+      assert.ok(!prefixes.includes("h3_census_named/h3_t4_film"),
+        `CENSUS output_name: the machinery film prefix survived beside the named one — ${JSON.stringify(prefixes)}`);
+      assert.ok(!Object.values(g).some((n) => "output_name" in (n.inputs as Record<string, unknown>)),
+        "CENSUS output_name: the stem became a node input key — it owns the prefix leaf only");
+    },
+  },
   // ── THE REGISTER (the shrinkable half) ───────────────────────
   // ── THE RE-SHOOT BAG retired from the census (the fourth-mod-
   // bag unification, §8 2026-11-12): the commission is a CARD mod

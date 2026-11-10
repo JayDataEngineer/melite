@@ -49,7 +49,11 @@ function videoUrlOf(
       const [name, url] = entry
       return typeof url === 'string' && url !== '' && refGenreOf(name, url) === 'video'
     })
-  const film = rows.find(([name, url]) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url))
+  // THE OUTPUT-NAME FILE TAIL (2026-11-19): the optional slug segment
+  // admits the born-named film (`h3_t4_film_<slug>_00001_.mp4`) on
+  // both faces — the artifact name and the served url — filmLead.ts's
+  // law, mirrored verbatim.
+  const film = rows.find(([name, url]) => /(?:^|[/_])h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4$/i.test(name) || /h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4(?:$|[?#])/i.test(url))
   if (film !== undefined) return film[1] as string
   if (typeof direct === 'string' && direct !== '' && refGenreOf('', direct) === 'video') return direct
   const named = rows.find(([name]) => allowWindow || !isWindowName(name))

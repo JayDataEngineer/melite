@@ -256,12 +256,19 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // c7bc662b7) the film-level PROMPT field is GONE — calls own
     // prompts; a prompt field reappearing on the card schema is the
     // freeform lie's return and must be refused here.
+    // (2026-11-19, queue 12's file plane) output_name joins the
+    // census LAWFULLY: it is the ONE deliberate text field since the
+    // dense-steps straggler — a NAME is the text the operator asked
+    // for ("offer the AI the ability to name the actual outputs"),
+    // closed by the slug law at the compose door (charset + length
+    // pinned by packages/models/h3/tests/output-name.spec.ts), not a
+    // freeform param lie. A THIRD text field is refused.
     const fields = fieldsOfEnvelope(
       ((def.schemaCarrier ?? def.schema) as unknown as { toJSON(): unknown }).toJSON() as never,
     );
     assert.equal(fields.find((f) => f.name === "prompt"), undefined, "the film-level prompt stays dead — calls own prompts")
     const textFields = fields.filter((f) => f.type === "text").map((f) => f.name);
-    assert.deepEqual(textFields, ["sla_dense_steps"]);
+    assert.deepEqual(textFields, ["sla_dense_steps", "output_name"]);
     // sr_model serves as the closed dropdown, gated behind sr_switch
     // like every other post leaf.
     const srModel = fields.find((f) => f.name === "sr_model")!;

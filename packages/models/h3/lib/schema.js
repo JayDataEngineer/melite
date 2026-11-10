@@ -49,6 +49,12 @@ export const REFINE_DENOISE_DEFAULT = 0.35;
 // (historical shape); at runtime schema() normalizes an
 // omitted key back to null so the body resolves the family's literal
 // (t4 INT 8 / t4r 8.0 — the served structural values).
+/** THE OUTPUT-NAME SLUG LAW (the file-plane seat on the carrier
+ *  below): a filename segment and nothing else — the stem lands
+ *  inside a SaveVideo / SaveImage prefix, so no space, slash, dot,
+ *  or case may ride it. Shared by the carrier (the walk's boundary
+ *  refusal) and the compose tail helper at the carrier's foot. */
+export const OUTPUT_NAME_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 export const paramSchema = z.object({
     // (operator 2026-11-05: "I don't want a prompt for the Layer A
     // for the full model, remove that") — the film-level prompt field
@@ -444,6 +450,26 @@ export const paramSchema = z.object({
     // the 400-class guard against a zero/negative clock on the wire —
     // while every grid-legal window at every legal fps passes.
     fps_seconds: z.number().description("Clip seconds (fps rail — internal, derived from the window length at compose)").min(bookSeconds(GRID_BASE_FRAMES, FPS_RAIL_MAX)).max(bookSeconds(GRID_MAX_FRAMES, FPS_RAIL_MIN)).extra('extra', bag({ hidden: true })),
+    // ── THE OUTPUT-NAME SEAT, FILE PLANE (queue 12's owed half,
+    // 2026-11-19; operator press verbatim: "you were to also handle
+    // offering the ai the ability to name the actual outputs to make
+    // it clear for the end user"). The A1 label seam (2026-11-08,
+    // registry row cards-output-name-label) named the DISPLAY rows
+    // only — the settled file itself stayed `h3_t4_film_00001_.mp4`,
+    // and the 2026-11-18 session's "naming works" claim rode a
+    // developer-repo copy index the end user never sees. THIS seat is
+    // the file plane: the declared param walks the compose (the
+    // registry's reserved lift spares keys the card declares —
+    // runsRegistry.ts), and the renderer threads the stem into every
+    // DELIVERABLE save prefix (`h3_t4_film`, `extend_film`,
+    // `reshoot_warp`, `reshoot_orbit`) so the artifact is BORN named:
+    // run dir, gallery, downloads, and every film-lead finder
+    // (filmLead.ts + its three mirrors) carry it. Windows/x0/x1/audio
+    // stems stay machinery names — chain intermediates, not the
+    // outputs the operator means. SLUG LAW: a filename segment and
+    // nothing else — lowercase alnum + hyphen, 64 max; no separator
+    // can smuggle a path escape into the `${runId}/` prefix wiring.
+    output_name: z.string().max(64).pattern(OUTPUT_NAME_SLUG_RE).description("Output name").extra('extra', bag({ order: null, group: 'naming', wtype: 'text', tooltip: "Names the delivered files: the composed film and re-shoot plates are BORN with this stem beside the machinery prefix (h3_t4_film_<name>_00001_.mp4). Absent = the machinery name, byte-frozen." })),
     // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
     // — gate-admitted for old drafts, never user surface: the MODS
     // own the switches (the operator's law), one face each.
@@ -455,6 +481,24 @@ export const paramSchema = z.object({
     // here is dead surface the estate wtype judge refuses.)
     image_name: z.string().role('path').description("Guide image (renderer alias)").extra('extra', bag({ hidden: true, tooltip: "The renderer's guide-image spelling — gate-admitted for old docs; the rail's First frame is the user face." })),
 });
+/** The composed prefix tail for a doc's output_name — `_<slug>` when
+ *  spelled, '' when absent. The DELIVERABLE prefix sites thread this
+ *  (the film `h3_t4_film`, the extend film `extend_film`, the
+ *  re-shoot plates `reshoot_warp` / `reshoot_orbit`); a stem that
+ *  escaped the boundary walk (a legacy draft, a hand-built doc)
+ *  refuses HERE loud, naming the law — a bad stem must never reach
+ *  a filename. An empty string is the label seam's silence law:
+ *  no stem, no tail, no refusal. */
+export function outputNameTailOf(p) {
+    const stem = p['output_name'];
+    if (stem === undefined || stem === null || stem === '')
+        return '';
+    if (typeof stem !== 'string' || stem.length > 64 || !OUTPUT_NAME_SLUG_RE.test(stem)) {
+        throw new Error('h3-timeline: output_name must be a filename slug (lowercase letters, digits, hyphens; 64 max) — ' +
+            JSON.stringify(stem) + ' cannot name a delivered file');
+    }
+    return '_' + stem;
+}
 /** Schemastery objects are lenient (unknown/missing keys ride); the
  *  family-admission laws are the renderer's own validators, ported:
  *  unknown variant + family-conditional key admission on EXPLICIT

@@ -4098,7 +4098,7 @@ window.__ModuleLoader__.load({
 				const [name, url] = entry;
 				return typeof url === "string" && url !== "" && refGenreOf(name, url) === "video";
 			});
-			const film = rows.find(([name, url]) => /(?:^|[/_])h3_t4_film_\d+_\.mp4$/i.test(name) || /h3_t4_film_\d+_\.mp4(?:$|[?#])/i.test(url));
+			const film = rows.find(([name, url]) => /(?:^|[/_])h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4$/i.test(name) || /h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4(?:$|[?#])/i.test(url));
 			if (film !== void 0) return film[1];
 			if (typeof direct === "string" && direct !== "" && refGenreOf("", direct) === "video") return direct;
 			const named = rows.find(([name]) => allowWindow || !isWindowName(name));
@@ -8015,6 +8015,7 @@ window.__ModuleLoader__.load({
 				...raw?.edit !== void 0 ? { edit: raw.edit } : {},
 				...raw?.reshoot !== void 0 ? { reshoot: raw.reshoot } : {},
 				audio_stem: optStr("audio_stem"),
+				output_name: optStr("output_name"),
 				audio_clips: (() => {
 					const parsed = hydrateAudioClips(raw?.audio_clips);
 					const stem = optStr("audio_stem");
@@ -8087,7 +8088,8 @@ window.__ModuleLoader__.load({
 			"duck_depth_db",
 			"ref_image_size",
 			"model",
-			"audio_stem"
+			"audio_stem",
+			"output_name"
 		];
 		/** THE WRITABLE MOD BAGS (the modleaf-add journey audit, 2026-11-09
 		* — the operator's burn: "literally does nothing after I press
@@ -18392,7 +18394,7 @@ window.__ModuleLoader__.load({
 					});
 				}
 			}
-			const filmName = Object.keys(arts).find((n) => !stagedEcho(n) && /(?:^|[/_])h3_t4_film_\d+_\.mp4$/.test(n));
+			const filmName = Object.keys(arts).find((n) => !stagedEcho(n) && /(?:^|[/_])h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4$/.test(n));
 			const filmUrl = filmName !== void 0 && typeof arts[filmName] === "string" && arts[filmName] !== "" ? arts[filmName] : "";
 			const heroUrl = typeof res?.url === "string" && res.url !== "" && !stagedEcho(res.url) ? res.url : "";
 			const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video" && !stagedEcho(name) && !/(?:^|[/_])h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];

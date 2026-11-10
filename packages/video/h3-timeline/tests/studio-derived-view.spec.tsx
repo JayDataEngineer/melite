@@ -231,6 +231,28 @@ describe("filmstrip (the last run's windows)", () => {
     )
   })
 
+  // THE BORN-NAMED FILM (queue 12's file plane, 2026-11-19): a run
+  // that spelled output_name delivers `h3_t4_film_<slug>_<n>_.mp4`
+  // — the browser-side hero finder (useDerivedView's mirror of
+  // filmLead.ts) must seat the NAMED film as the hero; a window
+  // never takes the cut seat because the finder missed the slug.
+  it("the born-named film is the hero: the slug segment never breaks the hero pick", () => {
+    const { result } = view({
+      stage: stageWith({
+        artifacts: {
+          "run-abc123/h3_t4_film_chase_00001_.mp4": "https://r/film-chase.mp4",
+          "run-abc123/h3_t4_w1_00001_.mp4": "https://r/w1.mp4",
+        },
+        assetUrls: ["https://r/film-chase.mp4", "https://r/w1.mp4"],
+      }),
+    })
+    assert.equal(result.current.filmstrip.final, "https://r/film-chase.mp4")
+    assert.deepEqual(
+      result.current.filmstrip.windows.map((w) => w.url),
+      ["https://r/w1.mp4"],
+    )
+  })
+
   it("a window can never impersonate the hero when the film is absent", () => {
     const { result } = view({
       stage: stageWith({

@@ -271,6 +271,24 @@ describe("the loaded-history face (the wand-restored result renders the persiste
     assert.equal(filmstrip.windows.length, 1, "the window still tiles as evidence beneath the final")
   })
 
+  it("THE BORN-NAMED FILM still leads by NAME (queue 12's file plane — the slug segment never breaks the projection's film pick)", () => {
+    // projection.ts's mirror of filmLead.ts (2026-11-19): a run that
+    // spelled output_name delivers `h3_t4_film_<slug>_<n>_.mp4`; the
+    // projection's film finder must seat it over the pointer tier and
+    // the window — on BOTH faces the finder reads (artifact name and
+    // served url).
+    const film = "run-c80a8afa5a28-a9ccdde4/h3-film/SaveVideo.2_h3_t4_film_chase_00001_.mp4"
+    const win = "run-c80a8afa5a28-a9ccdde4/h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4"
+    const filmstrip = restoredFilmstrip({
+      run_id: "run-c80a8afa5a28-a9ccdde4",
+      url: route(win),
+      artifacts: { [film]: route(film), [win]: route(win) },
+      assetUrls: [route(film), route(win)],
+    })
+    assert.equal(filmstrip.final, route(film), "the born-named engine film still outranks the pointer (tier 1)")
+    assert.equal(filmstrip.windows.length, 1, "the window still tiles as evidence beneath the final")
+  })
+
   it("the settled meta rides the restore: the persisted film map + history chips reach the projected face (the audit cure 3)", () => {
     // The wand's rebuilt result used to be a 4-key orphan — no
     // metadata — so filmMap nulled (the bar ran identity doc-space)

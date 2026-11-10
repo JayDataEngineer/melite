@@ -31,6 +31,7 @@ import {
   inlineStagesNameCards,
   registryInitialsError,
 } from "./flowsData.ts";
+import { cardAdmits } from "./cardsFacts.ts";
 import { isFile } from "./skillFs.ts";
 import { kindsOk } from "./runsValidateStages.ts";
 import { replayJudgeRows } from "./runsStart.ts";
@@ -813,14 +814,32 @@ export class RunsRuntimeService extends Service {
     // bag the bench stored. The copy above keeps the original row
     // untouched; the graph receipt below still judges the doc
     // verbatim.
+    // THE DECLARED-KEY SPARING (2026-11-19, queue 12's file plane): a
+    // reserved key the card's own DECLARATION admits is NOT a policy
+    // key on this stage — it is the card's param, and it WALKS (h3's
+    // declared output_name threads the deliverable save prefixes at
+    // compose; the settle's label mint reads it from the composed row
+    // either way). The spared truth is the same one admission judges
+    // (the DECL's schemaNames + admits — cardAdmits, cardsFacts.ts);
+    // an undeclared reserved key on any other family keeps lifting
+    // verbatim, so the all-families label blanket survives.
     const reserved: Record<string, unknown> = {};
+    const spared: Record<string, unknown> = {};
+    const card = String(row["card"] ?? "");
+    const decl = card !== "" ? this.ctx.cardRegistry.cardDecls()[card] : undefined;
     for (const k of STAGE_RESERVED_PARAMS) {
-      if (params[k] !== undefined) {
+      if (params[k] === undefined) continue;
+      if (cardAdmits(decl, new Set(), k)) {
+        // A declared reserved key WALKS (the card's own param) — and
+        // still rides the composed row's params bag below, so the
+        // settle's label mint and planMerge's paramsByStage read the
+        // same stem the compose threaded into the prefixes.
+        spared[k] = params[k];
+      } else {
         reserved[k] = params[k];
         delete params[k];
       }
     }
-    const card = String(row["card"] ?? "");
     // STROKE 3'S FALLBACK (the validate walk's own shape —
     // runsValidateArms: a family-less card stage composes by its OWN
     // card id — mid alone, never an injected body.model, which would
@@ -1087,7 +1106,11 @@ export class RunsRuntimeService extends Service {
         output_nodes: (renamedAny ? renamedNodes : cardNodes) as unknown as EngineJson,
         // THE STAGE-RESERVED CARRY (F-C): the merge plane's own keys
         // ride beside the composed graph — additive, never a card key.
+        // A SPARED reserved key (declared on the card — h3's
+        // output_name) rides the same bag: the label mint and the
+        // file-plane compose read ONE stem.
         ...reserved,
+        ...spared,
       },
       // THE DECLARED INPUT KINDS RIDE (2026-10-04): the compiler reads
       // `expected` for its kindsOk walk and defaults an absent bag to

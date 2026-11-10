@@ -1,5 +1,6 @@
 import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js';
 import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from './timelineContract.js';
+import { outputNameTailOf } from './schema.js';
 export { solveWindowComposition } from './timelineContract.js';
 // the last-frame spelling re-exported from its ONE home (timelineContract —
 // actions.ts reads it there too; the public face keeps this name)
@@ -214,7 +215,10 @@ export function renderH3Extend(entry, p, facts, g, runId) {
             format: 'mp4', codec: 'h264',
         }).out();
         const after = chainSaveBoundaries(g, [priorSaved]);
-        concatSavedFilms(g, [`${runId}/x0`], after, `${runId}/extend_film`, {
+        // THE OUTPUT-NAME FILE TAIL (2026-11-19): the delivered extend
+        // film is BORN named (`extend_film_<slug>`) — x0/x1 parts stay
+        // machinery prefixes (chain intermediates).
+        concatSavedFilms(g, [`${runId}/x0`], after, `${runId}/extend_film${outputNameTailOf(p)}`, {
             append: assemblePath,
         });
         return;
@@ -237,6 +241,6 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         format: 'mp4', codec: 'h264',
     }).out();
     const after = chainSaveBoundaries(g, [newSaved, priorSaved]);
-    concatSavedFilms(g, [`${runId}/x0`, `${runId}/x1`], after, `${runId}/extend_film`);
+    concatSavedFilms(g, [`${runId}/x0`, `${runId}/x1`], after, `${runId}/extend_film${outputNameTailOf(p)}`);
 }
 //# sourceMappingURL=extend.js.map

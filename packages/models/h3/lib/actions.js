@@ -1,6 +1,6 @@
 import { fireControlNets } from '@melite/comfyui-card-kit/guard';
 import { saveAudio } from '@melite/comfyui-card-kit';
-import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT } from './schema.js';
+import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT, outputNameTailOf } from './schema.js';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
 import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
@@ -1028,11 +1028,18 @@ function renderH3Film(p, g, facts, model, runId) {
         // clips-free arm rides — container mux only (CreateVideo +
         // SaveVideo h264/mp4 on the decoded window files), never the
         // mix. The mix rides it: audio carries the node's output.
-        return concatSavedFilms(g, windowPrefixes, after, `${runId}/h3_t4_film`, {
+        // THE OUTPUT-NAME FILE TAIL (2026-11-19, the operator's naming
+        // press): a spelled output_name rides the DELIVERED film's
+        // prefix leaf (`h3_t4_film_<slug>`) so the artifact is BORN
+        // named — absent, the machinery prefix is byte-frozen. Both
+        // film arms carry it; the windows and the audio stem stay
+        // machinery (chain intermediates, and the film-lead finders
+        // key on the film stem alone).
+        return concatSavedFilms(g, windowPrefixes, after, `${runId}/h3_t4_film${outputNameTailOf(p)}`, {
             audio: meter.out(0),
         });
     }
-    return concatSavedFilms(g, windowPrefixes, after, `${runId}/h3_t4_film`);
+    return concatSavedFilms(g, windowPrefixes, after, `${runId}/h3_t4_film${outputNameTailOf(p)}`);
 }
 /** THE FUN-CONTROLNET CHAIN (002 H2/H4 + 007 L7): family-owned,
  *  the LTX_lora_loader precedent — the node pair is the family's
@@ -2495,6 +2502,14 @@ export const film = {
         { name: "refmod_identity", type: "number", bounds: [0, 2000] },
         { name: "refmod_save", type: "boolean" },
         { name: "image_name", type: "string" },
+        // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+        // the deliverable slug the compose threads into every save
+        // prefix (outputNameTailOf at the film stems). Plain string HERE
+        // — the CARD schema row owns the slug law (charset + length,
+        // refused loud at the walk); this row is the ADVERTISED face, so
+        // the agent's film action names its own output. Absent = the
+        // machinery prefix verbatim.
+        { name: "output_name", type: "string" },
     ],
     facts: parseH3Facts,
     build({ p: docIn, facts, g, model, runId }) {

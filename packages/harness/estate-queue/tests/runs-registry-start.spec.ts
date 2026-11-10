@@ -95,6 +95,10 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     },
     resolveCardFamily: (mid: unknown): unknown => mid,
     modelMids: (): unknown => new Set<string>(),
+    // THE DECLARED-KEY SPARING's seat truth (2026-11-19, queue 12's
+    // file plane): the reserved lift consults the card DECLs — this
+    // rig carries none, so every reserved key keeps lifting.
+    cardDecls: (): unknown => ({}),
     composeValidateCard: async (): Promise<unknown> => null,
     phase1Card: async (): Promise<unknown> => {
       throw new Error("unreached phase1");

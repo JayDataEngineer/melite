@@ -217,11 +217,17 @@ function assertAcyclic(edges, ids) {
  * paramsByStage reads exactly the bag the bench stored.
  * `output_name` (queue 12, operator 2026-11-08: "there is no place
  * for the ai agent or the user through the card UI to label output
- * names") is the ESTATE's output-label seat — one reserved key serves
- * EVERY card (no family schema declares it, the agent can patch it on
- * any stage); the run settle reads it and mints gallery-row labels
- * (the display plane — file names stay machine-minted, the filesystem
- * name cap law holds: nothing parses the filename). */
+ * names") is the ESTATE's output-name seat — one reserved key serves
+ * EVERY card by default (the agent can patch it on any stage); the
+ * run settle reads it and mints gallery-row labels (the display
+ * plane). FILE PLANE (2026-11-19, the operator's naming press): a
+ * card that DECLARES output_name on its own carrier (h3 does) spares
+ * it from the lift (runsRegistry.ts THE DECLARED-KEY SPARING) — the
+ * param walks the compose and the DELIVERED files are born named
+ * (`h3_t4_film_<slug>`, `extend_film_<slug>`, the re-shoot plates).
+ * Filenames ARE parsed — by the four film-lead finders
+ * (filmLead.ts + its mirrors), which is why the stem is a schema
+ * slug and the finders' regexes admit the slug segment. */
 export const STAGE_RESERVED_PARAMS = ["boundary_unload_models", "vram_budget_mb", "output_name"];
 export function planMerge(rows, initials, inputNames) {
     const merged = {};
