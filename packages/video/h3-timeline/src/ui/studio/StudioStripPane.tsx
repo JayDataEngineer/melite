@@ -515,7 +515,7 @@ export function StudioStripPane({
       // cut: the seam write fires ONLY when the split will land (a
       // refused cut leaves the doc empty — a reframe against nothing
       // would hit a row that does not exist)
-      const shape = isCarriedShape(0, { text: "", start_frame: 0, end_frame: extent })
+      const shape = isCarriedShape(0, { transition: undefined })
       const willSplit = snapSplitFrame(0, extent, shape, true, at) !== null
       addFirstWindowCut(extent, at, () => setLaneErr(studioCopy.splitRefusal))
       if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry)
@@ -783,7 +783,7 @@ export function StudioStripPane({
               if (id === V2V_DERIVED_WINDOW_UUID) {
                 const extent = docFromFilm(barTotal)
                 const mid = Math.round(extent / 2)
-                const shape = isCarriedShape(0, { text: "", start_frame: 0, end_frame: extent })
+                const shape = isCarriedShape(0, { transition: undefined })
                 const willSplit = snapSplitFrame(0, extent, shape, true, mid) !== null
                 addFirstWindowCut(extent, mid, () => setLaneErr(studioCopy.splitRefusal))
                 if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry)

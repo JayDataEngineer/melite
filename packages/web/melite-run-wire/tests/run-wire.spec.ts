@@ -144,8 +144,21 @@ describe('the graph-receipt fold (readGraphReceipt, the purge P1)', () => {
     expect('graph_receipt' in row).toBe(false)
   })
 
-  it('malformed is absent, never a throw (a broken receipt is no receipt)', () => {
-    // verdict outside the vocabulary
+  it("a legacy 'partial' folds onto 'params_unbound' (D-11 follow-on: the pre-cure word still on disk rides the new face, never a dropped chip)", () => {
+    const folded = readGraphReceipt({
+      ...completeDoc,
+      verdict: 'partial',
+      dropped: ['width'],
+      stages: [
+        { stage: 's_0', nodes: 2, populated: ['width'], carried: [], dropped: ['width'], verdict: 'partial' },
+      ],
+    })
+    expect(folded?.verdict).toBe('params_unbound')
+    expect(folded?.stages[0]?.verdict).toBe('params_unbound')
+    expect(folded?.dropped).toEqual(['width'])
+  })
+
+  it('malformed is absent, never a throw (a broken receipt is no receipt)', () => {    // verdict outside the vocabulary
     expect(readGraphReceipt({ ...completeDoc, verdict: 'lost' })).toBeUndefined()
     // dropped with a non-string entry
     expect(readGraphReceipt({ ...completeDoc, dropped: ['ok', 42] })).toBeUndefined()

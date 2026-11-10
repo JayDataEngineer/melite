@@ -130,7 +130,11 @@ describe("handlePromptDelete", () => {
       return { calls, ...m }
     })
     act(() => { result.current.handlePromptDelete("call-0") })
-    assert.deepEqual(result.current.calls, [])
+    // (the deepEqual asserts actual IS the expected literal — against
+    // a bare [] the doc narrows to never[]; bind the typed local
+    // first so the emptiness check cannot eat the tests below it)
+    const emptied: DocCall[] = result.current.calls
+    assert.deepEqual(emptied, [])
     assert.notEqual(result.current.calls[0]?.text ?? "", STARTER_CALLS[0]!.text)
   })
 

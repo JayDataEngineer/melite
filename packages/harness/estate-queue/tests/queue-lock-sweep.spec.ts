@@ -407,7 +407,7 @@ describe("sweepSidecar (the deep resettle)", () => {
     assert.equal(r.held, false);
   });
   it("maxHolds > 0 HOLDS a queued face — status untouched, the counter stamps, the note names the replay", () => {
-    const doc = {
+    const doc: Record<string, unknown> = {
       status: "queued",
       stages: [{ id: "s1", status: "queued" }, { id: "s2", status: "completed" }],
     };
@@ -426,7 +426,7 @@ describe("sweepSidecar (the deep resettle)", () => {
     assert.equal(r2.held, true);
   });
   it("past the bound the resettle fires with the exhausted-holds voice", () => {
-    const doc = { status: "queued", sweep_holds: 3, stages: [{ id: "s1", status: "queued" }] };
+    const doc: Record<string, unknown> = { status: "queued", sweep_holds: 3, stages: [{ id: "s1", status: "queued" }] };
     const r = sweepSidecar(doc, "server.restart", "queue.requeued", 3);
     assert.equal(doc["status"], "failed");
     assert.equal((doc["stages"] as { status: string }[])[0]["status"], "failed");

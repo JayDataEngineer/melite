@@ -1517,8 +1517,9 @@ test('THE ONE-COLUMN LAW (the vid2v modal cure): a v2v-windows leaf renders the 
     kinds: [EDIT_STRIP],
     values: { calls: [{ text: 'a', start_frame: 0, end_frame: 107 }], fps: 24 },
     onEdit: vi.fn(), onPatch: vi.fn(),
+    // (the commit is NOT a section prop — ModifiersSection mints
+    // commitEnvelope itself; a stub face renders, no verb fires)
     v2vFace: StripStub as never,
-    v2vCommit: () => {},
   }))
   openCreate('Video edit')
   const dialog = screen.getByRole('dialog')

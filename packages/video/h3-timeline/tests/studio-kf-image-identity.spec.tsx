@@ -151,6 +151,7 @@ function openStripDoor(): { added: [string, number][]; unmount: () => void } {
       handlePromptDelete={() => {}}
       handleExtend={() => {}}
       addCallAt={() => {}}
+      addFirstWindowCut={() => {}}
       handleTimelineSelect={() => {}}
       layerA={{ audio_stem: null, ...DIMS } as never}
       addAudioClip={() => {}}

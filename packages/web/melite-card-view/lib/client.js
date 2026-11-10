@@ -3785,8 +3785,9 @@ window.__ModuleLoader__.load({
 		function readGraphReceipt(value) {
 			if (typeof value !== "object" || value === null || Array.isArray(value)) return void 0;
 			const doc = value;
-			const verdict = doc["verdict"];
-			if (verdict !== "complete" && verdict !== "partial") return void 0;
+			const rawVerdict = doc["verdict"];
+			const verdict = rawVerdict === "partial" ? "params_unbound" : rawVerdict;
+			if (verdict !== "complete" && verdict !== "params_unbound") return void 0;
 			if (typeof doc["nodes"] !== "number") return void 0;
 			const lists = {};
 			for (const key of [
@@ -3805,7 +3806,8 @@ window.__ModuleLoader__.load({
 				if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return void 0;
 				const row = raw;
 				if (typeof row["stage"] !== "string" || typeof row["nodes"] !== "number") return void 0;
-				if (row["verdict"] !== "complete" && row["verdict"] !== "partial") return void 0;
+				const rowVerdict = row["verdict"] === "partial" ? "params_unbound" : row["verdict"];
+				if (rowVerdict !== "complete" && rowVerdict !== "params_unbound") return void 0;
 				const rowLists = {};
 				for (const key of [
 					"populated",
@@ -3822,7 +3824,7 @@ window.__ModuleLoader__.load({
 					populated: rowLists["populated"],
 					carried: rowLists["carried"],
 					dropped: rowLists["dropped"],
-					verdict: row["verdict"]
+					verdict: rowVerdict
 				});
 			}
 			const stamped = doc["prompt_id"];

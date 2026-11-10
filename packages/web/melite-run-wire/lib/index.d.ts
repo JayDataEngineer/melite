@@ -71,14 +71,16 @@ export interface RunStageStatus {
 /** One stage's queue-time doc→graph evidence (the served-graph
  *  receipt's per-stage row, the silent UI-drop purge's P1): which of
  *  the stage's doc scalars the composed graph carries, which it
- *  dropped. Verdict 'complete' carries dropped []. */
+ *  dropped. Verdict 'complete' carries dropped []. (D-11: the
+ *  loud face is 'params_unbound' — populated doc params whose
+ *  literal never rode the graph; the estate never mints 'partial'.) */
 export interface GraphReceiptStageRow {
     stage: string;
     nodes: number;
     populated: string[];
     carried: string[];
     dropped: string[];
-    verdict: 'complete' | 'partial';
+    verdict: 'complete' | 'params_unbound';
     /** The refmod bake's record (present iff the graph bakes/loads a mod). */
     bake?: GraphReceiptBake;
 }
@@ -106,7 +108,7 @@ export interface GraphReceipt {
     populated: string[];
     carried: string[];
     dropped: string[];
-    verdict: 'complete' | 'partial';
+    verdict: 'complete' | 'params_unbound';
     stages: GraphReceiptStageRow[];
     prompt_id?: string;
     /** The first stage's bake record (the card run's single stage). */

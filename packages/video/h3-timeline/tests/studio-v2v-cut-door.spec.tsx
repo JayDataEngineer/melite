@@ -75,13 +75,22 @@ const EDIT_PARAMS = { edit: [{ edit_prompt: "make it rain" }] }
 const UPSACLE_PARAMS = { upscale: [{ scale: 2 }] }
 
 function strip(over?: Record<string, unknown>) {
-  const rec: Record<string, unknown[]> = {
-    addCall: [] as Array<[number] | [number, (() => void) | undefined]>,
-    firstCut: [] as Array<[number, number, (() => void) | undefined]>,
-    promptUpdate: [] as unknown[],
-    promptMove: [] as unknown[],
-    promptDelete: [] as unknown[],
-    seam: [] as unknown[],
+  // (the typed record: the asserts below slice the firstCut rows —
+  // a bare Record<string, unknown[]> narrows them to {} at the use)
+  const rec: {
+    addCall: Array<[number] | [number, (() => void) | undefined]>
+    firstCut: Array<[number, number, (() => void) | undefined]>
+    promptUpdate: unknown[]
+    promptMove: unknown[]
+    promptDelete: unknown[]
+    seam: unknown[]
+  } = {
+    addCall: [],
+    firstCut: [],
+    promptUpdate: [],
+    promptMove: [],
+    promptDelete: [],
+    seam: [],
   }
   const els = render(
     <StudioStripPane

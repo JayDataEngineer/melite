@@ -71,14 +71,16 @@ export interface RunStageStatus {
 /** One stage's queue-time doc→graph evidence (the served-graph
  *  receipt's per-stage row, the silent UI-drop purge's P1): which of
  *  the stage's doc scalars the composed graph carries, which it
- *  dropped. Verdict 'complete' carries dropped []. */
+ *  dropped. Verdict 'complete' carries dropped []. (D-11: the
+ *  loud face is 'params_unbound' — populated doc params whose
+ *  literal never rode the graph; the estate never mints 'partial'.) */
 export interface GraphReceiptStageRow {
   stage: string
   nodes: number
   populated: string[]
   carried: string[]
   dropped: string[]
-  verdict: 'complete' | 'partial'
+  verdict: 'complete' | 'params_unbound'
   /** The refmod bake's record (present iff the graph bakes/loads a mod). */
   bake?: GraphReceiptBake
 }
@@ -108,7 +110,7 @@ export interface GraphReceipt {
   populated: string[]
   carried: string[]
   dropped: string[]
-  verdict: 'complete' | 'partial'
+  verdict: 'complete' | 'params_unbound'
   stages: GraphReceiptStageRow[]
   prompt_id?: string
   /** The first stage's bake record (the card run's single stage). */
@@ -178,8 +180,13 @@ export function toRunMediaUrl(runId: string, url: string): string {
 export function readGraphReceipt(value: unknown): GraphReceipt | undefined {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
   const doc = value as Record<string, unknown>
-  const verdict = doc['verdict']
-  if (verdict !== 'complete' && verdict !== 'partial') return undefined
+  const rawVerdict = doc['verdict']
+  // (D-11 follow-on) the pre-cure vocabulary spelled the loud face
+  // 'partial' — the estate no longer mints it, but a legacy receipt
+  // on disk still carries it: fold it onto the new word at the
+  // boundary (the chip renders every non-complete verdict alike).
+  const verdict = rawVerdict === 'partial' ? 'params_unbound' : rawVerdict
+  if (verdict !== 'complete' && verdict !== 'params_unbound') return undefined
   if (typeof doc['nodes'] !== 'number') return undefined
   const lists: Record<string, string[]> = {}
   for (const key of ['populated', 'carried', 'dropped']) {
@@ -194,7 +201,8 @@ export function readGraphReceipt(value: unknown): GraphReceipt | undefined {
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
     const row = raw as Record<string, unknown>
     if (typeof row['stage'] !== 'string' || typeof row['nodes'] !== 'number') return undefined
-    if (row['verdict'] !== 'complete' && row['verdict'] !== 'partial') return undefined
+    const rowVerdict = row['verdict'] === 'partial' ? 'params_unbound' : row['verdict']
+    if (rowVerdict !== 'complete' && rowVerdict !== 'params_unbound') return undefined
     const rowLists: Record<string, string[]> = {}
     for (const key of ['populated', 'carried', 'dropped']) {
       const rawList: unknown = row[key]
@@ -207,7 +215,7 @@ export function readGraphReceipt(value: unknown): GraphReceipt | undefined {
       populated: rowLists['populated'] as string[],
       carried: rowLists['carried'] as string[],
       dropped: rowLists['dropped'] as string[],
-      verdict: row['verdict'] as 'complete' | 'partial',
+      verdict: rowVerdict as 'complete' | 'params_unbound',
     })
   }
   const stamped: unknown = doc['prompt_id']

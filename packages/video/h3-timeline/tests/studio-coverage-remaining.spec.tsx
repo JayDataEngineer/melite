@@ -97,6 +97,8 @@ function makeStripProps(rec: StripRecord, over: Partial<StripProps> = {}): Strip
     handlePromptDelete: () => {},
     handleExtend: () => {},
     addCallAt: () => {},
+    // (the ADD CUT door — this fixture never presses the split seat)
+    addFirstWindowCut: () => {},
     handleTimelineSelect: () => {},
     layerA: hydrateLayerA(undefined),
     refAudiosBlocked: false,

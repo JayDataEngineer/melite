@@ -56,6 +56,7 @@ function strip(over?: Record<string, unknown>) {
       handlePromptDelete: () => {},
       handleExtend: () => {},
       addCallAt: () => {},
+      addFirstWindowCut: () => {},
       handleTimelineSelect: () => {},
       layerA: { audio_stem: "https://u/bed.mp3" } as never,
       addAudioClip: (n: string, s: string, at: number) => { rec.addedClip.push([n, s, at]) },

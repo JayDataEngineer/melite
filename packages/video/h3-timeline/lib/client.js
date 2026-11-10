@@ -5853,11 +5853,7 @@ window.__ModuleLoader__.load({
 					const atStated = splitAtSec.trim() !== "" && Number.isFinite(stated) && stated >= 0 ? Math.round(stated * (filmMap?.fps ?? fps)) : null;
 					const at = atStated !== null ? atStated : docFromFilm(frameIdx);
 					const extent = docFromFilm(barTotal);
-					const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, {
-						text: "",
-						start_frame: 0,
-						end_frame: extent
-					}), true, at) !== null;
+					const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, { transition: void 0 }), true, at) !== null;
 					addFirstWindowCut(extent, at, () => setLaneErr(studioCopy.splitRefusal));
 					if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry);
 					return;
@@ -6030,11 +6026,7 @@ window.__ModuleLoader__.load({
 							if (id === "v2v-derived-whole-film") {
 								const extent = docFromFilm(barTotal);
 								const mid = Math.round(extent / 2);
-								const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, {
-									text: "",
-									start_frame: 0,
-									end_frame: extent
-								}), true, mid) !== null;
+								const willSplit = snapSplitFrame(0, extent, isCarriedShape(0, { transition: void 0 }), true, mid) !== null;
 								addFirstWindowCut(extent, mid, () => setLaneErr(studioCopy.splitRefusal));
 								if (willSplit && splitCarry !== "cut") setCallTransition(1, splitCarry);
 								return;

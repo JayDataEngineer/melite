@@ -294,7 +294,8 @@
       "allowImportingTsExtensions": true,
       "lib": [
           "ES2024",
-          "DOM"
+          "DOM",
+          "DOM.Iterable"
       ],
       "strict": true,
       "noEmit": true,

@@ -35,8 +35,13 @@ export function readGraphReceipt(value) {
     if (typeof value !== 'object' || value === null || Array.isArray(value))
         return undefined;
     const doc = value;
-    const verdict = doc['verdict'];
-    if (verdict !== 'complete' && verdict !== 'partial')
+    const rawVerdict = doc['verdict'];
+    // (D-11 follow-on) the pre-cure vocabulary spelled the loud face
+    // 'partial' — the estate no longer mints it, but a legacy receipt
+    // on disk still carries it: fold it onto the new word at the
+    // boundary (the chip renders every non-complete verdict alike).
+    const verdict = rawVerdict === 'partial' ? 'params_unbound' : rawVerdict;
+    if (verdict !== 'complete' && verdict !== 'params_unbound')
         return undefined;
     if (typeof doc['nodes'] !== 'number')
         return undefined;
@@ -57,7 +62,8 @@ export function readGraphReceipt(value) {
         const row = raw;
         if (typeof row['stage'] !== 'string' || typeof row['nodes'] !== 'number')
             return undefined;
-        if (row['verdict'] !== 'complete' && row['verdict'] !== 'partial')
+        const rowVerdict = row['verdict'] === 'partial' ? 'params_unbound' : row['verdict'];
+        if (rowVerdict !== 'complete' && rowVerdict !== 'params_unbound')
             return undefined;
         const rowLists = {};
         for (const key of ['populated', 'carried', 'dropped']) {
@@ -72,7 +78,7 @@ export function readGraphReceipt(value) {
             populated: rowLists['populated'],
             carried: rowLists['carried'],
             dropped: rowLists['dropped'],
-            verdict: row['verdict'],
+            verdict: rowVerdict,
         });
     }
     const stamped = doc['prompt_id'];
