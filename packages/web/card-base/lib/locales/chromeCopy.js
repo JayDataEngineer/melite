@@ -70,6 +70,12 @@ export const chromeCopy = {
     chainRunOptionLabel: (p) => `${p.run} — ${p.kind}, ${p.scenes} ${p.scenes === 1 ? 'scene' : 'scenes'}`,
     /** Chain-run picker's free-text affordance (the advanced fallback — a placeholder AND accessible name). */
     chainRunAdvancedLabel: 'Advanced — paste a run id',
+    /** Chain-run seat's degraded placeholder (no loader / dead load): names what the field wants, never an empty box. */
+    chainRunDegradedPlaceholder: 'Pick a finished run for the 2x pass (dropdown unavailable — type its run id)',
+    /** Chain-run seat's no-lane note (the host threaded no runs loader): where the run ids would have come from. */
+    chainRunNoLaneNote: 'Dropdown unavailable here — type a run id from Runs (a finished swap, repair, extend or refine).',
+    /** Chain-run seat's failed-load note (the loader died): the honest retry story, never a blank face. */
+    chainRunFailedNote: 'Could not load your runs — type a run id from Runs, or reopen this form to retry.',
     /** The mod leaf's advanced fold row (2026-11-09, the Plan-trio cure): fields the DECL marks `advanced` fold behind this one-word title. */
     advancedFoldTitle: 'Advanced',
     /** The mod leaf's posture-chip row (2026-11-09, the coexistence cure): the DECL's served sections ride as client draft-patchers — one press seeds the lawful companion values. */

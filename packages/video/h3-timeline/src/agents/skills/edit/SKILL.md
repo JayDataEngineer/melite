@@ -162,10 +162,13 @@ loop — a different mechanism than the refine switch).
      39f context overlap, exact delivery or a refusal naming the
      neighbors (ceiling 432.29s).
    - `chain_run` (text, "") — THE UPSCALE POSTURE'S ARMING SEAT:
-     the engine-side run name of a PRIOR chain run. Stating it
-     turns the edit into the DEFERRED 2x second pass — the run's
-     checkpointed scenes resume scene by scene through the requeue
-     loop (CheckpointManager → UpscaleAdapter → … →
+     re-render a PRIOR run at 2x. Human voice: "pick a finished
+     run; its saved scenes upscale." The picker serves the
+     estate's run ids (a finished swap, repair, extend or refine
+     leaves its scenes behind); stating one turns the edit into
+     the DEFERRED 2x second pass — the run's checkpointed scenes
+     resume scene by scene through the requeue loop
+     (CheckpointManager → UpscaleAdapter → … →
      UpscaleLoopEnd), a DIFFERENT mechanism than the refine switch
      (same-run handoff): one door, the SOURCE names which. The
      execute door resolves the name to the newest per-scene

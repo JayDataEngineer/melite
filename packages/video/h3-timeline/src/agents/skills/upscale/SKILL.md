@@ -27,10 +27,12 @@ genre: video
 ## The cell, as it composes today
 
 - `denoise` (0.05–1, 0.24) — the pass-2 recipe's own pole.
-- `chain_run` — the engine-side run name of a PRIOR chain run,
-  stated bare; the execute door resolves the newest per-scene
-  lineage and an unknown name refuses loud there. The served seat
-  is the LIVE chain-run picker (type `chain-run`).
+- `chain_run` — re-render a finished run at 2x: this names WHICH
+  run. Pick it from the served list (a finished swap, repair,
+  extend or refine leaves its scenes behind); the bare run name
+  resolves its per-scene lineage at the execute door and an
+  unknown name refuses loud there. The served seat is the LIVE
+  chain-run picker (type `chain-run`).
 - Under this posture the refine and continuation switches stand
   down (`visible_when: chain_run=null` on both) — one second-pass
   mechanism.

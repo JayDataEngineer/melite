@@ -153,6 +153,12 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
   const input = screen.getByLabelText('Prior chain run') as HTMLInputElement
   assert.equal(input.tagName, 'INPUT')
+  // THE TEACHING FACE (2026-11-10, the operator's burn: the degraded
+  // input was an empty box teaching nothing): the placeholder names
+  // what the field wants, and the note names where run ids come from
+  // — never a bare input with a jargon tooltip.
+  expect(input.placeholder).toMatch(/2x pass|finished run/i)
+  expect(screen.getByText(/Dropdown unavailable here/)).not.toBeNull()
   expect(screen.queryByLabelText('Advanced — paste a run id')).toBeNull()
   fireEvent.change(input, { target: { value: 'swap_1111' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
@@ -162,7 +168,8 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   cleanup()
 
   // THE FAILED LOAD: a dead lane must not blank the seat either —
-  // the same plain input holds, the truth stays honest.
+  // the same plain input holds, the truth stays honest (the failed
+  // note names the retry, never a silent blank).
   const failed = async (): Promise<never> => { throw new Error('connection reset') }
   const broken = openLeaf({ kinds: [k], values: {}, loadChainRuns: failed })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
@@ -172,6 +179,7 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   })
   const fallback = screen.getByLabelText('Prior chain run') as HTMLInputElement
   assert.equal(fallback.tagName, 'INPUT')
+  expect(screen.getByText(/Could not load your runs/)).not.toBeNull()
   fireEvent.change(fallback, { target: { value: 'swap_2222' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   const [bkey, bbag] = broken.onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]

@@ -105,14 +105,17 @@ function ChainRunPicker(props) {
         'data-chain-run-picker': props.f.name,
         'data-chain-runs-loaded': failed ? 'failed' : (rows !== null ? 'true' : 'false'),
     }, degraded
-        ? h(Input, {
-            type: 'text',
-            value: current,
-            placeholder: props.f.placeholder ?? '',
-            title: props.f.tooltip,
-            'aria-label': props.f.label,
-            onChange: (e) => { edit(e.target.value); },
-        })
+        ? [
+            h(Input, {
+                type: 'text',
+                value: current,
+                placeholder: props.f.placeholder ?? chromeCopy.chainRunDegradedPlaceholder,
+                title: props.f.tooltip,
+                'aria-label': props.f.label,
+                onChange: (e) => { edit(e.target.value); },
+            }),
+            h('span', { key: 'why', className: css.modLeafHint }, failed ? chromeCopy.chainRunFailedNote : chromeCopy.chainRunNoLaneNote),
+        ]
         : [
             h(SpecMenuSelect, {
                 key: 'menu',
@@ -871,7 +874,16 @@ export function ModifiersSection(props) {
                     // staged persona is the tile's identity, F54); an
                     // option-less select keeps the kind-label fall (a
                     // vocabulary field with no served rows names nothing).
-                    return picked.type === 'file' && (picked.options ?? []).length === 0 ? String(entry[picked.name]) : null;
+                    // THE STEM LAW (2026-11-10, the AI-mod tile burn): a
+                    // staged file names itself by its OWN NAME — the
+                    // path's last segment — never the full directory
+                    // walk (the tile is 132px; a raw path is noise the
+                    // ellipsis eats to nothing).
+                    if (picked.type === 'file' && (picked.options ?? []).length === 0) {
+                        const raw = String(entry[picked.name]);
+                        return raw.split('/').pop() ?? raw;
+                    }
+                    return null;
                 })();
                 return h(ModTile, {
                     key: tileIds[i],

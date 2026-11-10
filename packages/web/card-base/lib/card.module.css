@@ -323,8 +323,16 @@ select option {
 .modHead { display: flex; align-items: baseline; gap: 8px; }
 .modTitle { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 .modHint { font-size: 9px; opacity: .45; }
-.modRow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; list-style: none; margin: 0; padding: 0; }
-.modTile { display: flex; flex-direction: column; gap: 2px; justify-content: center; min-width: 84px; max-width: 132px; padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 8px; background: var(--bg-elevated, rgba(128,128,128,.08)); cursor: grab; touch-action: none; }
+/* THE STRETCH LAW (operator 2026-11-10: "THE SQUARES SHOULD BE ABLE
+ * TO *STRETCH* NOT KICK STUFF OFF"): ONE flowing line — a new mod or
+ * staged input NEVER kicks the later tiles onto a line of their own
+ * (the AI-mod-above-the-lora burn: a long-path label ran its tile to
+ * the 132px cap, the pair no longer fit, flex-wrap threw the loras
+ * tile below). Tiles therefore SHARE the row: flex-basis 0 + grow,
+ * min-width 0 (the label's ellipsis owns the squeeze), max-width
+ * caps a lone tile's stretch. */
+.modRow { display: flex; flex-wrap: nowrap; gap: 6px; align-items: stretch; list-style: none; margin: 0; padding: 0; }
+.modTile { display: flex; flex-direction: column; gap: 2px; justify-content: center; flex: 1 1 0; min-width: 0; max-width: 132px; padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 8px; background: var(--bg-elevated, rgba(128,128,128,.08)); cursor: grab; touch-action: none; }
 .modTile:active { cursor: grabbing; }
 .modTileLabel { font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .modTileStrength { font-size: 9px; opacity: .55; }
@@ -334,6 +342,7 @@ select option {
   align-items: center; background: transparent;
   border: 1px dashed var(--dsw-alias-border-l3); border-radius: 8px;
   cursor: pointer; display: flex; height: 64px; justify-content: center; opacity: .7;
+  flex: 0 0 auto;
   transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
     background-color var(--ds-transition-duration) var(--ds-ease-in-out);
   width: 64px;
@@ -492,8 +501,17 @@ select option {
 
 /* THE SLOT ROW (2026-09-13, the old melite's input-zone grammar): the
  * slot-shaped fields of one group render side-by-side — their labels
- * live under their squares, not in stacked key rows. Token-only. */
-.specSlotRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+ * live under their squares, not in stacked key rows. Token-only.
+ * THE STRETCH LAW rides here too (the input-stack burn, 2026-11-10:
+ * a staged image input landed ABOVE the row instead of joining it —
+ * the same wrap kick as the mod row, the same cure): one line, the
+ * cells share it, the add cell never leaves the row. */
+.specSlotRow { display: flex; flex-wrap: nowrap; gap: 8px; align-items: flex-start; }
+/* the cells SQUEEZE under width pressure (flex-basis 0, min-width 0):
+ * the square keeps its own size, the cell clips around it — the row
+ * never kicks a cell onto its own line. (Single spelling — the old
+ * rule folded in here.) */
+.specSlotCell { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 0; max-width: 132px; }
 
 /* THE DECL GRID (stroke 22, the operator's law: "smaller things
  * like width/height need to take up one row and not 2"): when the
@@ -501,7 +519,6 @@ select option {
  * group renders as a grid and each field spans its declared
  * `width`. The DECL owns the geometry — the form renders it. */
 .specGrid { display: grid; gap: 8px; align-items: start; }
-.specSlotCell { display: flex; flex-direction: column; gap: 4px; }
 
 /* THE INPUT RAIL (the operator's law: cards emit input signatures —
  * clean data in, ONE rail out). The input zone is the rail: squares in

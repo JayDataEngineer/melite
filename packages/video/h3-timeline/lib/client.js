@@ -4990,7 +4990,8 @@ window.__ModuleLoader__.load({
 				type: "chain-run",
 				default: "",
 				width: 2,
-				tooltip: "THE UPSCALE POSTURE'S SEAT: the prior chain run resumed as the deferred 2x pass (denoise 0.24, steps 20); empty = a fresh edit."
+				placeholder: "Empty = a fresh edit — or pick a finished run for the 2x pass",
+				tooltip: "Re-render a finished run at 2x: pick it and its saved scenes upscale. Empty = a fresh edit, the field does nothing."
 			},
 			{
 				name: "segment_crf",
