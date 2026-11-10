@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { MIN_DIM } from '@melite/models-input'
+import { MIN_DIM } from '@melite/models-input/scale-vocab'
 import css from './prep.module.css'
 
 /** A crop box in image pixels — the card's four crop params as one

@@ -35,7 +35,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { StageViewOwnerProps } from '@melite/contracts/stageView'
 import { StudioShell, SourceRow, readAsDataURL, fetchMediaLibrary } from '@melite/card-base/client'
-import { SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input'
+// THE CLIENT-SAFE LEAF (2026-11-10): the family root drags the kit
+// root (saveAudio) whose closure carries schemastery past the client
+// bundle purity gate — the words live in ./scale-vocab (zero
+// imports), one truth, both consumers.
+import { SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input/scale-vocab'
 import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
 import css from './prep.module.css'

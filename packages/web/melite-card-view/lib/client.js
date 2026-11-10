@@ -578,7 +578,13 @@ window.__ModuleLoader__.load({
 			"stage": zod.z.string().readonly(),
 			"patched": zod.z.array(zod.z.string()).readonly(),
 			"dropped": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional().describe("THE FAMILY RESEAT'S RECEIPT (the ERROR g/h cure, 2026-11-08): the family-dead keys the settlement dropped off the merged view (the flip's own strand — the arrival flipped the derived family under carried stamps). Empty/absent when nothing dropped. The drop rides the row so it SPEAKS — never a silent strip."),
-			"stale": zod.z.union([zod.z.undefined(), zod.z.literal(true)]).readonly().optional().describe("Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent.")
+			"stale": zod.z.union([zod.z.undefined(), zod.z.literal(true)]).readonly().optional().describe("Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent."),
+			"changed": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(false),
+				zod.z.literal(true)
+			]).readonly().optional().describe("D-22 (the board, 2026-11-10): a LANDED write answered \"no value change\" on a never-run stage — `stale` only voices when a done mark EXISTED to clear, so the render read its absence as equality. The change truth now rides the row itself: true iff the stored params moved under this patch, mark or no mark."),
+			"diff": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).readonly().optional().describe("The moved leaves, pathed and spelled (\"seed 46601 → 46602\", \"ref_mods removed\", \"edit[0].denoise 0.32 → 0.33\", plus the element-merge carry note for record arrays). Empty iff the patch wrote back exactly what was stored.")
 		});
 		let _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_remove_stage_parameter_0$schema = () => _melite_estate_drafts_bench_remove_stage_parameter_0$schema$value ??= zod.z.string();
@@ -873,7 +879,13 @@ window.__ModuleLoader__.load({
 			"delivered": zod.z.boolean(),
 			"reason": zod.z.union([zod.z.undefined(), zod.z.string()]).optional(),
 			"patched": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).optional(),
-			"rev": zod.z.union([zod.z.undefined(), zod.z.number()]).optional()
+			"rev": zod.z.union([zod.z.undefined(), zod.z.number()]).optional(),
+			"changed": zod.z.union([
+				zod.z.undefined(),
+				zod.z.literal(false),
+				zod.z.literal(true)
+			]).optional().describe("D-22 (one law, both transports): true iff the stored params moved under this patch; the moved leaves ride `diff`."),
+			"diff": zod.z.union([zod.z.undefined(), zod.z.array(zod.z.string())]).optional()
 		});
 		let closed$JsonValueRemoteCodec$schema$value$1;
 		const closed$JsonValueRemoteCodec$schema$1 = () => closed$JsonValueRemoteCodec$schema$value$1 ??= zod.z.union([
@@ -1335,7 +1347,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1753,
+						"line": 1778,
 						"column": 9
 					}
 				},
@@ -1402,7 +1414,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1765,
+						"line": 1790,
 						"column": 9
 					}
 				},
@@ -1466,7 +1478,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1798,
+						"line": 1823,
 						"column": 9
 					}
 				},
@@ -1530,7 +1542,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1821,
+						"line": 1846,
 						"column": 9
 					}
 				},
@@ -1564,7 +1576,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1573,
+						"line": 1598,
 						"column": 9
 					}
 				},
@@ -1598,7 +1610,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1463,
+						"line": 1488,
 						"column": 9
 					}
 				},
@@ -1662,7 +1674,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1861,
+						"line": 1886,
 						"column": 9
 					}
 				},
@@ -1727,6 +1739,16 @@ window.__ModuleLoader__.load({
 									"type": "boolean",
 									"const": true,
 									"description": "Present-and-true when the patch changed what the next run composes (the done mark cleared — the skip law cannot fold it). Absent when the patch was idempotent."
+								},
+								"changed": {
+									"type": "boolean",
+									"enum": [false, true],
+									"description": "D-22 (the board, 2026-11-10): a LANDED write answered \"no value change\" on a never-run stage — `stale` only voices when a done mark EXISTED to clear, so the render read its absence as equality. The change truth now rides the row itself: true iff the stored params moved under this patch, mark or no mark."
+								},
+								"diff": {
+									"type": "array",
+									"items": { "type": "string" },
+									"description": "The moved leaves, pathed and spelled (\"seed 46601 → 46602\", \"ref_mods removed\", \"edit[0].denoise 0.32 → 0.33\", plus the element-merge carry note for record arrays). Empty iff the patch wrote back exactly what was stored."
 								}
 							},
 							"required": [
@@ -1741,7 +1763,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1743,
+						"line": 1768,
 						"column": 9
 					}
 				},
@@ -1805,7 +1827,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1808,
+						"line": 1833,
 						"column": 9
 					}
 				},
@@ -1873,7 +1895,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1842,
+						"line": 1867,
 						"column": 9
 					}
 				},
@@ -1944,7 +1966,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1831,
+						"line": 1856,
 						"column": 9
 					}
 				},
@@ -1978,7 +2000,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1481,
+						"line": 1506,
 						"column": 10
 					}
 				},
@@ -2027,7 +2049,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1897,
+						"line": 1922,
 						"column": 9
 					}
 				},
@@ -2091,7 +2113,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1879,
+						"line": 1904,
 						"column": 9
 					}
 				},
@@ -2133,7 +2155,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 867,
+						"line": 871,
 						"column": 9
 					}
 				},
@@ -2167,7 +2189,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 852,
+						"line": 856,
 						"column": 9
 					}
 				},
@@ -2210,7 +2232,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 844,
+						"line": 848,
 						"column": 9
 					}
 				},
@@ -2307,7 +2329,16 @@ window.__ModuleLoader__.load({
 									"type": "array",
 									"items": { "type": "string" }
 								},
-								"rev": { "type": "number" }
+								"rev": { "type": "number" },
+								"changed": {
+									"type": "boolean",
+									"enum": [false, true],
+									"description": "D-22 (one law, both transports): true iff the stored params moved under this patch; the moved leaves ride `diff`."
+								},
+								"diff": {
+									"type": "array",
+									"items": { "type": "string" }
+								}
 							},
 							"required": [
 								"draftId",
@@ -2319,7 +2350,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 990,
+						"line": 994,
 						"column": 9
 					}
 				}

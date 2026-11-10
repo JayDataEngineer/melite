@@ -722,7 +722,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // packages/video/h3-timeline/lib/ui/studio/commissions.js — the
   // leaf landed with the inpaint-serve commit's lib restage. The
   // census follows the emitted truth.
-  const LIB_CENSUS_PIN = 643;
+  // Repinned 643 -> 644 (2026-11-10, the byte-blind-spot cure): the
+  // zero-import models-input/scale-vocab leaf lands its tsc emit
+  // packages/models/input/lib/scale-vocab.js — the census follows
+  // the emitted truth.
+  const LIB_CENSUS_PIN = 644;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

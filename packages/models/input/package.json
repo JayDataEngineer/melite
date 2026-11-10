@@ -9,7 +9,11 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./scale-vocab": {
+      "types": "./lib/scale-vocab.d.ts",
+      "default": "./lib/scale-vocab.js"
+    }
   },
   "dependencies": {
     "@melite/comfyui-card-kit": "workspace:*"

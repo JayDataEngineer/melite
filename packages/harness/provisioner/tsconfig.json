@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
       "paths": {
+        "@melite/models-input/scale-vocab": ["./../../models/input/src/scale-vocab.ts"],
         "@melite/video-h3-timeline/v2v-face": ["./../../video/h3-timeline/src/ui/v2vFace.ts"],
         "@melite/models-h3/secondPass": ["./../../models/h3/src/secondPass.ts"],
         "@melite/contracts/loraExtensions": ["./../../web-kit/contracts/src/loraExtensions.ts"],

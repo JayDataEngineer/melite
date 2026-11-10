@@ -17,9 +17,11 @@
 // very files: same inode, same mtime, one truth.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { execSync, execFileSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { execSync, execFileSync, spawnSync } from "node:child_process";
 import { deriveSrcStamp } from "../../../../tools/src-stamp.mjs";
+import { affectedBundles, bundlePackages, bytesEqual, ownerPackageName } from "../../../../tools/hook-client-bundle-bytes.mjs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -189,8 +191,7 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
   // matched nothing and the roster collapsed to 0. The argv form
   // carries the same git and the same pathspec with no shell to
   // misquote it.
-  it("every package with a tsdown.config.ts declares tsdown in devDependencies (the builder is installed, never inherited)", () => {
-    const tracked = execFileSync("git", ["ls-files", "**/tsdown.config.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })
+  it("every package with a tsdown.config.ts declares tsdown in devDependencies (the builder is installed, never inherited)", () => {    const tracked = execFileSync("git", ["ls-files", "**/tsdown.config.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })
       .split("\n")
       .filter((f) => f.trim() !== "");
     assert.ok(tracked.length >= 10, `the tsdown config roster collapsed (${tracked.length}) — the walk broke`);
@@ -201,5 +202,93 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
       if (pkg.devDependencies?.tsdown === undefined) offenders.push(`${f}: no tsdown devDep — a fresh clone has no builder for this bundle`);
     }
     assert.deepEqual(offenders, [], `browser-served packages missing their builder declaration:\n${offenders.join("\n")}`);
+  });
+
+  // THE BYTE-EQUALITY ARM (2026-11-10, the stale-embed lesson —
+  // roadmap OPEN row "THE LANDING HOOK'S BYTE BLIND SPOT"): the
+  // tree arm above judges mtimes, and mtimes cannot see the v2v
+  // class — inputs that moved in ANOTHER package while this
+  // bundle's own src stood still (h3-timeline bytes inside
+  // card-view's bundle; the battery's lib-sync drift arm stashes
+  // bundles without rebuilding them, so it is blind too). This arm
+  // judges BYTES: every seated lib/client.js must be byte-identical
+  // to a fresh tsdown emit of its inputs, rebuilt to a temp dir
+  // (never in place). No mtimes anywhere — this arm runs on CI too
+  // (the checkout-mtime class does not apply: `git show :path`
+  // reads the index, not the checkout's write order). A failed emit
+  // IS a refusal (the input-prep class: an unreproducible bundle
+  // can never carry new bytes — its fossil serves forever).
+  it("every seated lib/client.js is byte-identical to a fresh tsdown emit of its inputs (the v2v embed class dies here — CI-safe, no mtimes)", () => {
+    const bundles = bundlePackages();
+    assert.ok(bundles.length >= 6, `the bundle roster collapsed (${bundles.length}) — the tsdown.config walk broke`);
+    const stale: string[] = [];
+    for (const pkgDir of bundles) {
+      const bin = join(ROOT, pkgDir, "node_modules", ".bin", process.platform === "win32" ? "tsdown.cmd" : "tsdown");
+      assert.ok(existsSync(bin), `${pkgDir}: no tsdown builder (run pnpm install — the declaration arm above owns the declaration, this arm owns the binary)`);
+      const tmp = mkdtempSync(join(tmpdir(), "wall-bundle-bytes-"));
+      try {
+        // THE PRODUCTION-EMIT LAW (same as the hook tool's): the
+        // shared preset defines NODE_ENV into the bundle, defaulting
+        // unset to 'production'. This suite runs under vitest
+        // (NODE_ENV=test) — an unstripped emit carries zustand's dev
+        // branches and false-reds every bundle. Strip it.
+        const { NODE_ENV: _stripped, ...childEnv } = process.env;
+        const r = spawnSync(bin, ["-d", tmp, "--silent"], { cwd: join(ROOT, pkgDir), encoding: "utf8", env: childEnv });
+        if (r.status !== 0) {
+          stale.push(`${pkgDir}/lib/client.js: fresh emit FAILED — the bundle is unreproducible and can never carry new bytes:\n${String(r.stdout + "\n" + r.stderr).split("\n").filter((l) => /ERROR|purity|cannot|failed/i.test(l)).slice(0, 3).join("\n")}`);
+          continue;
+        }
+        const fresh = join(tmp, "client.js");
+        if (!existsSync(fresh)) {
+          stale.push(`${pkgDir}/lib/client.js: emit produced no client.js — the config no longer builds the served bundle`);
+          continue;
+        }
+        const seated = execFileSync("git", ["show", `:${pkgDir}/lib/client.js`], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 });
+        if (!bytesEqual(readFileSync(fresh), seated)) {
+          stale.push(`${pkgDir}/lib/client.js: STALE BYTES — a fresh tsdown emit of its inputs differs from the seated bundle (inputs moved without a rebuild): cd ${pkgDir} && ./node_modules/.bin/tsdown (tsdown BEFORE tsc), then stage the diff`);
+        }
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
+    }
+    assert.deepEqual(stale, [], "STALE SERVED BUNDLES (bytes, not mtimes) — the lane serves these files verbatim and their inputs moved on:\n" + stale.join("\n"));
+  }, 300_000);
+
+  // THE FIRING ARMS (synthetic fixtures, never the tree — the wall-clock can never false-red these):
+  // the byte predicate and the affected-set derivation ride the SAME functions the hook runs.
+  it("the byte gate FIRES (equal bytes pass, one flipped byte refuses; the affected set derives own-src + embed + preset + empty)", () => {
+    assert.equal(bytesEqual(Buffer.from("abc"), Buffer.from("abc")), true, "identical bytes are fresh");
+    assert.equal(bytesEqual(Buffer.from("abc"), Buffer.from("abd")), false, "one flipped byte is stale");
+    assert.equal(bytesEqual(Buffer.from("abc"), Buffer.from("abcd")), false, "a length change is stale");
+    const bundles = ["packages/motion/motion", "packages/web/melite-card-view"];
+    const nameOf = (f: string): string | null => {
+      if (f.startsWith("packages/estate/drafts/")) return "@melite/estate-drafts";
+      if (f.startsWith("packages/motion/motion/")) return "@melite/motion-motion";
+      if (f.startsWith("packages/web/melite-card-view/")) return "@melite/melite-card-view";
+      return null;
+    };
+    const importsOf = (b: string): Set<string> => new Set(
+      b === "packages/web/melite-card-view" ? ["@melite/estate-drafts", "@melite/estate-runs"] : ["@melite/contracts"],
+    );
+    // OWN-SRC: the bundle's own src dirties itself, never its sibling.
+    assert.deepEqual(
+      affectedBundles(["packages/motion/motion/src/client/x.ts"], { bundles, nameOf, importsOf }),
+      ["packages/motion/motion"], "own-src change dirties its own bundle only",
+    );
+    // EMBED (the v2v class): drafts bytes ride card-view's bundle — the draft change dirties card-view, never motion.
+    assert.deepEqual(
+      affectedBundles(["packages/estate/drafts/src/bench.ts"], { bundles, nameOf, importsOf }),
+      ["packages/web/melite-card-view"], "embed-input change dirties the importing bundle only",
+    );
+    // SHARED PRESET: the preset change dirties every bundle.
+    assert.deepEqual(
+      affectedBundles(["packages/web/shared/tsdown.client.ts"], { bundles, nameOf, importsOf }),
+      [...bundles].sort(), "shared-preset change dirties all bundles",
+    );
+    // EMPTY: no inputs moved, no bundles judged.
+    assert.deepEqual(affectedBundles([], { bundles, nameOf, importsOf }), [], "empty set judges nothing");
+    // OWNER: the manifest names the package, unknown dirs stay null.
+    assert.equal(ownerPackageName("packages/estate/drafts/src/bench.ts", { readPkg: (d: string) => d === "packages/estate/drafts" ? { name: "@melite/estate-drafts" } : {} as never }), "@melite/estate-drafts", "the manifest names the owner");
+    assert.equal(ownerPackageName("docs/notes.md", { readPkg: () => { throw new Error("must not read"); } }), null, "non-package paths stay null without a read");
   });
 });

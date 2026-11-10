@@ -281,11 +281,15 @@ describe('THE ANTI-SNIFF WALL — the full as-unknown census (V4/16 drain)', () 
  *  feature reads → ModifiersFormSpec; the catalog guards →
  *  unknown). A new `any` of ANY spelling reds here.
  *
- *  PINNED (the one adjudicated row): agent params.ts carries the
- *  literal text `value: any` INSIDE an error-message template string
- *  — message prose naming the wire shape, not a type. */
+ *  PINNED (adjudicated rows — prose, not a type): agent params.ts
+ *  carries the literal text `value: any` INSIDE an error-message
+ *  template string — message prose naming the wire shape. h3-timeline
+ *  editDecl.ts carries `CARRIER: any video` inside user-facing
+ *  tooltip prose (the D-13/D-14/D-15 recast) — the mannequin copy,
+ *  not a type spelling. */
 const ANY_PINNED: Record<string, number> = {
   'packages/engines/agent/src/params.ts': 1,
+  'packages/video/h3-timeline/src/editDecl.ts': 1,
 }
 
 describe('THE ANTI-SNIFF WALL — the zero-any ratchet (V5/18 drain)', () => {

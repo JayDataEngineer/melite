@@ -2096,6 +2096,7 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   // film prefix is GONE (windows keep theirs — intermediates).
   {
     kind: "judge", param: "output_name", doc: "named",
+    why: "the deliverable stem's consumer is the film concat's own SaveVideo prefix — the value lands inside the filename the run will mint, never as a node input key",
     judge: (g: Graph): void => {
       const prefixes = Object.values(g)
         .filter((n) => n.class_type === "SaveVideo")

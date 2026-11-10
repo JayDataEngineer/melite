@@ -3012,6 +3012,27 @@ describe("THE NULL-FLOOR MINT + K=1 MARGIN (the regen's own classification law)"
     expect(table).toContain("functions: 75");
   });
 
+  it("an added row mints like a rewrite — the K=1 margin with per-metric nulls, never a raw pct MIN", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cov-added-mint-"));
+    // the rowless class: a new fully-covered constants leaf — 4/4
+    // statements and lines, ZERO branch/function paths (istanbul
+    // judges those pct 100). A raw pct MIN would seat
+    // 100/100/100/100: a vacuous 100 on the pathless metrics and a
+    // zero-headroom 100 on the few-path ones.
+    const face = summaryFace({
+      "/w/packages/models/input/src/scale-vocab.ts": { statements: [4, 4], branches: [0, 0], functions: [0, 0], lines: [4, 4] },
+      "/w/packages/models/input/src/anchor.ts": { statements: [10, 10], branches: [8, 10], functions: [4, 4], lines: [10, 10] },
+    });
+    const verdict = runRegen(dir, [face, face],
+      "export const COVERAGE_BASELINE = {\n" + row("**/packages/models/input/src/anchor.ts", "0/0/0/0") + "\n};\n");
+    expect(verdict.code, "the regen must seat the rowless file, not refuse\n" + verdict.out).toBe(0);
+    // statements/lines: 100·(4−1)/4 = 75; branches/functions: null.
+    // (The ROW ADDED report rides stderr, which the success path of
+    // runRegen discards — the seated table bytes are the assertion.)
+    expect(verdict.table).toContain(
+      "'**/packages/models/input/src/scale-vocab.ts': { statements: 75, branches: null, functions: null, lines: 75 },");
+  });
+
   it("a stale null floor — the metric now carries paths — refuses the regen, naming glob:metric", () => {
     const dir = mkdtempSync(join(tmpdir(), "cov-stale-null-"));
     const face = summaryFace({

@@ -140,6 +140,7 @@
       "@melite/models-h3/actions": ["./packages/models/h3/src/actions.ts"],
       "@melite/models-h3/schema": ["./packages/models/h3/src/schema.ts"],
       "@melite/models-input": ["./packages/models/input/src/index.ts"],
+      "@melite/models-input/scale-vocab": ["./packages/models/input/src/scale-vocab.ts"],
       "@melite/models-joycaption": ["./packages/models/joycaption/src/index.ts"],
       "@melite/models-joytag": ["./packages/models/joytag/src/index.ts"],
       "@melite/models-kimodo": ["./packages/models/kimodo/src/index.ts"],

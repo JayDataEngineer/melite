@@ -271,16 +271,31 @@ for (const file of faces[0].keys()) {
   if (!GATED_RE.test(file)) continue
   const glob = '**' + file.slice(file.indexOf('/packages/'))
   if (knownGlobs.has(glob)) continue
-  let min = null
+  // THE ADDED-ROW MINT (the rewrite path's classification, not a
+  // raw pct MIN): per metric, null when no face carries paths on it
+  // (a zero-path metric mints null — never a vacuous 100), otherwise
+  // the K=1 margin MIN over the faces that carry paths. A raw pct
+  // MIN seats two lies at once: a vacuous 100 on pathless metrics
+  // (istanbul judges zero paths 100) and a zero-headroom 100 on
+  // fully-covered few-path files (4/4 seats 100, not 75) — both
+  // spellings the rewrite path's own laws refuse, and both locking
+  // the next regen into argued-drop noise (number→number holds)
+  // instead of a stable re-mint.
+  const withPaths = []
+  let unseatable = false
   for (const face of faces) {
     const row = face.get(file)
-    if (row === undefined || row._vacuous) { min = null; break }
-    if (min === null) min = { statements: row.statements, branches: row.branches, functions: row.functions, lines: row.lines }
-    else for (const k of METRICS) min[k] = Math.min(min[k], row[k])
+    if (row === undefined || row._vacuous) { unseatable = true; break }
+    withPaths.push(row)
   }
-  if (min === null) continue // absent or vacuous in any face — not seatable here
-  for (const k of METRICS) min[k] = Math.round(min[k] * 100) / 100
-  const rowText = "  '" + glob + "': { statements: " + min.statements + ', branches: ' + min.branches + ', functions: ' + min.functions + ', lines: ' + min.lines + ' },'
+  if (unseatable || withPaths.length === 0) continue // absent or vacuous in any face — not seatable here
+  const min = {}
+  for (const k of METRICS) {
+    const carriers = withPaths.filter((row) => row._counts[k].total > 0)
+    min[k] = carriers.length > 0 ? marginFloor(carriers, k) : null
+  }
+  const spell = (v) => (v === null ? 'null' : String(Math.round(v * 100) / 100))
+  const rowText = "  '" + glob + "': { statements: " + spell(min.statements) + ', branches: ' + spell(min.branches) + ', functions: ' + spell(min.functions) + ', lines: ' + spell(min.lines) + ' },'
   const lines = finalText.split('\n')
   let at = lines.length - 1
   for (let i = 0; i < lines.length; i++) {
@@ -290,7 +305,7 @@ for (const file of faces[0].keys()) {
   }
   lines.splice(at, 0, rowText)
   finalText = lines.join('\n')
-  added.push(glob + ' @ ' + min.statements + '/' + min.branches + '/' + min.functions + '/' + min.lines)
+  added.push(glob + ' @ ' + spell(min.statements) + '/' + spell(min.branches) + '/' + spell(min.functions) + '/' + spell(min.lines))
 }
 
 // ALL-OR-NOTHING (U5, 2026-10-31): the floor set applies whole or

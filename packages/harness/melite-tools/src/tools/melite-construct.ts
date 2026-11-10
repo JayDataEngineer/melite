@@ -1837,7 +1837,7 @@ export function meliteConstruct(
             // equality (changed === false), and a landed write
             // carries its diff.
             ...(r['changed'] === true
-              ? { changed: true, ...(Array.isArray(r['diff']) && r['diff'].length > 0 ? { diff: (r['diff'] as unknown[]).map(String) } : {}) }
+              ? { changed: true, ...(Array.isArray(r['diff']) && r['diff'].length > 0 ? { diff: r['diff'].map(String) } : {}) }
               : (stale ? {} : { keep_done: true })),
             ...(spellLines.length > 0 ? { spells: spellLines } : {}),
             ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}),

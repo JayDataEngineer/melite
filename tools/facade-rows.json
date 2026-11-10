@@ -389,6 +389,9 @@
   "@melite/models-input": [
     "./packages/models/input/src/index.ts"
   ],
+  "@melite/models-input/scale-vocab": [
+    "./packages/models/input/src/scale-vocab.ts"
+  ],
   "@melite/models-joycaption": [
     "./packages/models/joycaption/src/index.ts"
   ],

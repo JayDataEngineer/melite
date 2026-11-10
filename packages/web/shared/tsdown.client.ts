@@ -371,11 +371,19 @@ function clientConfig(id: string, entry: string): UserConfig {
           )
           const mapFile = file + '.map'
           if (existsSync(mapFile)) {
-            const map = readFileSync(mapFile, 'utf8').replaceAll(
+            // THE MAP-NEWLINE LAW (the trailing-newline law's second
+            // half, 2026-11-10): rolldown's map serialization RACES on
+            // the trailing byte — a fresh emit may end mid-token while
+            // the seated canonical form carries exactly one newline
+            // (the map arm refuses the flip). The JS guarantee above
+            // never reached the sibling; enforce the same form here
+            // so a rebuild reproduces the seated bytes deterministically.
+            let map = readFileSync(mapFile, 'utf8').replaceAll(
               /node_modules\/\.pnpm\/[^/"']+\/node_modules\//gu,
               '',
             )
-            if (map !== readFileSync(mapFile, 'utf8')) writeFileSync(mapFile, map)
+            if (!map.endsWith('\n')) map += '\n'
+            writeFileSync(mapFile, map)
           }
           if (!code.endsWith('\n')) code += '\n'
           writeFileSync(file, code)

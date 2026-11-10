@@ -103,6 +103,23 @@ pre-push:
     - name: final-newline (pushed text)
       run: node tools/hook-final-newline.mjs {push_files}
 
+    # THE SERVED-BUNDLE BYTE GATE (2026-11-10, the stale-embed
+    # lesson — roadmap OPEN row "THE LANDING HOOK'S BYTE BLIND
+    # SPOT"): the freshness wall judges mtimes and the battery's
+    # lib-sync drift arm stashes bundles without rebuilding them,
+    # so a land whose inputs moved without a bundle rebuild passed
+    # every gate while the lane served the stale face (the v2v burn:
+    # h3-timeline bytes inside card-view's bundle, caught a land
+    # late; the D-22/D-23 bench bytes the same class). This job
+    # re-emits every bundle whose inputs moved in the push set to a
+    # temp dir (never in place) and refuses on any byte inequality
+    # with the seated bundle — or on an emit that fails at all (an
+    # unreproducible bundle can never carry new bytes). Scoped to
+    # the push set: silent sub-second pass when no bundle inputs
+    # moved. The walls-tier byte arm judges ALL bundles every run.
+    - name: bundle-bytes (changed client bundles)
+      run: node tools/hook-client-bundle-bytes.mjs {push_files}
+
     # The full local battery on push: tsc per typecheck package
     # (CI runs unit/coverage/tiers only — types are the battery's
     # to own) + the walls via the root vitest node project.

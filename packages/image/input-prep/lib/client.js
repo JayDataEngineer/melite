@@ -7,81 +7,7 @@ window.__ModuleLoader__.load({
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let react = require("react");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region ../../engines/comfyui-card-kit/lib/impact.js
-		const IMPACT_DETECTOR_IDS = [
-			"person",
-			"face",
-			"hand"
-		];
-		const IMPACT_DETECTORS = Object.freeze({
-			person: Object.freeze({
-				graphPath: "segm/person_yolov8m-seg.pt",
-				provision: Object.freeze({
-					name: "person_yolov8m-seg.pt",
-					url: "https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8m-seg.pt",
-					folder: "ultralytics/segm",
-					sha256: "c8ab26f517173b1fe8342d336a09f443eb61cb08dcbfc78d53fff4c2547ae81e",
-					size_bytes: 54827683
-				}),
-				providerNode: "UltralyticsDetectorProvider",
-				providerOutput: 1,
-				detectorNode: "SegmDetectorSEGS",
-				detectorInput: "segm_detector"
-			}),
-			face: Object.freeze({
-				graphPath: "bbox/face_yolov8m.pt",
-				provision: Object.freeze({
-					name: "face_yolov8m.pt",
-					url: "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt",
-					folder: "ultralytics/bbox",
-					sha256: "717923c19b3f4bbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f",
-					size_bytes: 52026019
-				}),
-				providerNode: "UltralyticsDetectorProvider",
-				providerOutput: 0,
-				detectorNode: "BboxDetectorSEGS",
-				detectorInput: "bbox_detector"
-			}),
-			hand: Object.freeze({
-				graphPath: "bbox/hand_yolov8s.pt",
-				provision: Object.freeze({
-					name: "hand_yolov8s.pt",
-					url: "https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8s.pt",
-					folder: "ultralytics/bbox",
-					sha256: "70b540063fbc385736d8258970744a4afbc4cbf7932134bae3b24cdadeadec06",
-					size_bytes: 22507643
-				}),
-				providerNode: "UltralyticsDetectorProvider",
-				providerOutput: 0,
-				detectorNode: "BboxDetectorSEGS",
-				detectorInput: "bbox_detector"
-			})
-		});
-		Object.freeze(IMPACT_DETECTOR_IDS.map((id) => IMPACT_DETECTORS[id].provision));
-		Object.freeze(["comfyui-impact-pack", "comfyui-impact-subpack"]);
-		function impactDetector(id) {
-			const detector = IMPACT_DETECTORS[id];
-			if (detector === void 0) throw new Error(`unknown Impact detector '${id}' — expected ${IMPACT_DETECTOR_IDS.join(", ")}`);
-			return detector;
-		}
-		//#endregion
-		//#region ../../engines/comfyui-card-kit/lib/lanes-3d.js
-		const MESH_BAKE_SIZES = [
-			["atlas_size", ["2048", "4096"]],
-			["ao_size", ["512", "1024"]],
-			["normal_size", ["1024", "2048"]]
-		];
-		MESH_BAKE_SIZES[0][1];
-		MESH_BAKE_SIZES[1][1];
-		MESH_BAKE_SIZES[2][1];
-		//#endregion
-		//#region ../../engines/comfyui-card-kit/lib/lanes-image-tools.js
-		impactDetector("person");
-		impactDetector("face");
-		impactDetector("hand");
-		[...Array.from({ length: 25 }, (_, i) => String(20 + i * 10))];
-		//#endregion
-		//#region ../../models/input/src/actions.ts
+		//#region ../../models/input/src/scale-vocab.ts
 		/** The closed upscale-method set (the dropdown law, 2026-10-24):
 		*  ComfyUI core ImageScale's own combo values, grounded in the live
 		*  engine's object_info (not memory). The input-prep card's
@@ -108,7 +34,6 @@ window.__ModuleLoader__.load({
 			"4x-UltraSharp",
 			"ESRGAN_x4"
 		]];
-		Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, [...SCALE_METHODS], [...SCALE_MODEL_OPTIONS];
 		//#endregion
 		//#region \0dsh-css:packages/image/input-prep/src/ui/studio/prep.module.css.mjs
 		const css = ".o0BhZq_studioHost{flex-direction:column;width:100%;min-height:320px;display:flex}.o0BhZq_paramsCol{flex-direction:column;gap:10px;min-width:0;display:flex}.o0BhZq_previewPane{flex-direction:column;flex:auto;gap:6px;min-width:0;display:flex}.o0BhZq_paneNote{color:#ffffffa6;border:1px dashed #7f7f7f66;border-radius:8px;padding:18px 14px;font-size:12px;line-height:1.5}.o0BhZq_paneMeta{color:#ffffff80;font-size:11px}.o0BhZq_previewWrap{user-select:none;touch-action:none;align-self:flex-start;max-width:100%;display:inline-block;position:relative}.o0BhZq_previewImg{border-radius:8px;max-width:100%;max-height:52vh;display:block}.o0BhZq_previewOverlay{cursor:crosshair;border-radius:8px;position:absolute;inset:0}.o0BhZq_cropBox{cursor:move;border:1px solid #fff;position:absolute;box-shadow:0 0 0 100000px #00000080}.o0BhZq_cropBadge{color:#fff;white-space:nowrap;background:#0009;border-radius:4px;padding:1px 5px;font-size:10px;position:absolute;top:-20px;left:4px}.o0BhZq_previewHint{color:#ffffffbf;pointer-events:none;white-space:nowrap;background:#00000080;border-radius:4px;padding:2px 8px;font-size:11px;position:absolute;bottom:10px;left:50%;transform:translate(-50%)}.o0BhZq_handle,.o0BhZq_handle_nw,.o0BhZq_handle_ne,.o0BhZq_handle_se,.o0BhZq_handle_sw,.o0BhZq_handle_n,.o0BhZq_handle_e,.o0BhZq_handle_s,.o0BhZq_handle_w{background:#fff;border:1px solid #0006;border-radius:2px;width:12px;height:12px;position:absolute}.o0BhZq_handle_nw{cursor:nwse-resize;top:-7px;left:-7px}.o0BhZq_handle_ne{cursor:nesw-resize;top:-7px;right:-7px}.o0BhZq_handle_se{cursor:nwse-resize;bottom:-7px;right:-7px}.o0BhZq_handle_sw{cursor:nesw-resize;bottom:-7px;left:-7px}.o0BhZq_handle_n{cursor:ns-resize;margin-left:-6px;top:-7px;left:50%}.o0BhZq_handle_s{cursor:ns-resize;margin-left:-6px;bottom:-7px;left:50%}.o0BhZq_handle_w{cursor:ew-resize;margin-top:-6px;top:50%;left:-7px}.o0BhZq_handle_e{cursor:ew-resize;margin-top:-6px;top:50%;right:-7px}.o0BhZq_rail{background:#7f7f7f14;border:1px solid #7f7f7f40;border-radius:8px;flex-direction:column;gap:8px;padding:10px;display:flex}.o0BhZq_railTitle{letter-spacing:.04em;text-transform:uppercase;color:#fff9;font-size:11px;font-weight:600}.o0BhZq_railRow{flex-wrap:wrap;align-items:flex-end;gap:8px;display:flex}.o0BhZq_railHint{color:#ffffff80;font-size:11px;line-height:1.4}.o0BhZq_field{color:#ffffffb3;flex-direction:column;flex:1;gap:3px;min-width:0;font-size:11px;display:flex}.o0BhZq_field input,.o0BhZq_field select{color-scheme:light;box-sizing:border-box;color:#fff;background:#00000059;border:1px solid #7f7f7f66;border-radius:6px;width:100%;padding:5px 7px;font-size:12px}.o0BhZq_chip{color:#ffffffd9;cursor:pointer;background:#00000040;border:1px solid #7f7f7f66;border-radius:6px;padding:5px 10px;font-size:11px}.o0BhZq_chip:disabled{opacity:.45;cursor:default}";
