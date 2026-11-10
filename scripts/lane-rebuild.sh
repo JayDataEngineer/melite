@@ -17,8 +17,13 @@
 # asserts its committed lib/ is full tsc output.
 #
 # Usage:  ./scripts/lane-rebuild.sh          (from anywhere — the :3088 lane)
-#         ./scripts/lane-rebuild.sh 3089     (a BRANCH lane on :3089 — own
-#                 DSH_HOME, own unit; a later :3088 rebuild never touches it)
+#         ./scripts/lane-rebuild.sh <port>   (a BRANCH lane — never 3089)
+# NEVER 3089 (operator 2026-11-10: "YOU NEVER TOUCH 3089. THE WHOLE
+# POINT WAS THAT *YOU NEVER TOUCH 3089*. NEVER. EVER."): :3089 is the
+# operator's LIVING lane — a rebuild restarts its unit, which kills
+# their in-flight turn ("The DSH process exited before this turn
+# finished"). The refusal below is ABSOLUTE: no override, no flag.
+# :3089 changes reach the operator only when THEY restart it.
 # Never hand-cp libs into ~/.dsh-dev again — the provisioner owns
 # that tree; a hand-cp is a lie that the next render erases.
 set -euo pipefail
@@ -36,6 +41,14 @@ cd "$(dirname "$0")/.."
 # ~/.dsh-dev and restarts dsh-melite-test + the browser sidecar only —
 # the branch lane's home and unit are never in its blast radius.
 PORT="${1:-${LANE_PORT:-3088}}"
+# THE 3089 REFUSAL (ABSOLUTE — the law above): the operator's living
+# lane dies on every restart; no session may ever restart it through
+# this script, whatever the reason, however urgent the change is.
+if [ "$PORT" = "3089" ]; then
+  echo "LANE REFUSED: :3089 is the operator's living lane — NEVER rebuilt, NEVER restarted, no override exists."
+  echo "A rebuild here kills their in-flight turn. Land changes on :3088; :3089 adopts them when the OPERATOR restarts it."
+  exit 1
+fi
 case "$PORT" in
   3088)
     UNIT="dsh-melite-test.service"
