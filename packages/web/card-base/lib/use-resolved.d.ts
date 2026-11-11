@@ -1,4 +1,4 @@
-import type { FormSpecDoc, SpecField } from './spec.ts';
+import type { FormSpecDoc, SpecField } from './spec.js';
 /** The resolved studio seam: spec + error from the door, values
  * resolved through the ONE cascade, edits coerced at the schema
  * boundary. `user` is the surface's explicit layer (a document's

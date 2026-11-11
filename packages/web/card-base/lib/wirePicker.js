@@ -14,7 +14,12 @@ import styles from "./card.module.css";
  * assetUrls[0]). The output name rides onPick → setSlotInput →
  * inputOutputs → collectUpstreamResults. */
 export function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, onUnwire, onClose, }) {
-    return (_jsx(Modal, { open: true, onClose: onClose, title: t('wireTitle', { slot }), closeLabel: t('closeWirePicker'), className: styles.wireDialog, children: _jsxs("div", { "data-wire-modal": true, children: [currentId && (_jsx("button", { type: "button", onClick: onUnwire, "data-wire-unwire": true, className: styles.wireUnwire, children: t('unwire') })), _jsxs("ul", { className: styles.wireList, children: [priorStages.length === 0 && (_jsx("li", { className: styles.wireEmpty, children: t('noEarlierCards') })), priorStages.map((u, i) => {
+    return (_jsx(Modal, { open: true, onClose: onClose, title: t('wireTitle', { slot }), closeLabel: t('closeWirePicker'), className: styles.wireDialog, children: _jsxs("div", { "data-wire-modal": true, children: [currentId && (
+                // ARGUED RAW SEAT (S7j, the row-face class): a full-width
+                // modal row-action strip — DSH's own modal body rows type
+                // raw buttons + module css (ChangedFiles.tsx:83; the Modal's
+                // own close verb is raw + module css, Modal.tsx:70-72).
+                _jsx("button", { type: "button", onClick: onUnwire, "data-wire-unwire": true, className: styles.wireUnwire, children: t('unwire') })), _jsxs("ul", { className: styles.wireList, children: [priorStages.length === 0 && (_jsx("li", { className: styles.wireEmpty, children: t('noEarlierCards') })), priorStages.map((u, i) => {
                             // Named artifacts the upstream produced (media, mask, …). When
                             // >1, expand into per-output rows; else a single primary row.
                             const named = u.result?.artifacts ?? {};
