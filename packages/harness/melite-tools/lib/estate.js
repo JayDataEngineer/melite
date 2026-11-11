@@ -1,5 +1,6 @@
 import { CARD_PLANE_ENGINE, draftIdOf } from '@melite/contracts/benchStage';
 import { deadline, TimeoutReason } from '@deepseek-ai/dsh-timeout';
+import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 /** Narrow the seat-bound request to the canonical EstateCall the card
  * tool builders receive: the seats demand a caller signal (trySeats'
  * throwIfAborted), so a signalless call fails HERE with a named error
@@ -132,11 +133,11 @@ async function trySeats(ctx, method, path, body, signal) {
         return seats.disclose.contracts();
     }
     // The validate lane (REBUILD-8): the pure compile over the runs
-    // seat — the door's arm order lives in the registry.
+    // seat — the door's arm order lives in the registry. Raw throws
+    // fold at runsValidateFold (the gateway voice, never the shapeless
+    // 502 that reads as a dead seat).
     if (method === 'POST' && path === '/v1/flows/validate') {
-        if (seats.runs === undefined)
-            return undefined;
-        return seats.runs.validate(body, signal);
+        return runsValidateFold(seats, body, signal);
     }
     // The runs plane's lanes (REBUILD-6): the flowsRun door arms over
     // the registry seat — submit, live status (with the log tail on
@@ -463,6 +464,37 @@ function notADoorRefusal(host, sp, family, probeNames, notADoor) {
         + `${liveVoice} `
         + `On a chat lane, compose via melite_construct onto the shared bench instead of the raw flow doors.`);
 }
+/** The validate door's gateway fold (the 2026-10-22 sweep-journeys
+ *  audit §5 WO-2): a raw throw out of the runs seat's validate work —
+ *  an engine-down transport death, a compose boot failure, the door's
+ *  own bug arms — used to escape as the shapeless 502 catch-all, a
+ *  body with no code in the seat-absent voice's exact shape, so a
+ *  mounted seat's carrier failure read as "no seat on this lane
+ *  serves …" (the audit's ledger: 502 ×3 per combo, the browser
+ *  console the only voice). The fold speaks the carrier's own mapped
+ *  class — gateway/internal with the cause verbatim (gateway/cancelled
+ *  when the caller's signal already fired: the caller walked, not the
+ *  carrier); a RemoteError passes untouched, the door's
+ *  REFUSAL_STATUS_OF owns the caller's class. The client
+ *  discriminates the code (runs-policy rethrows gateway/* as
+ *  not-a-verdict); the missing-seat voice keeps its own shape. ONE
+ *  fold, both faces (F-1): the URL router's POST /v1/flows/validate
+ *  arm and the typed Estate.runsValidate lane. */
+async function runsValidateFold(seats, body, signal) {
+    if (seats.runs === undefined)
+        return undefined;
+    try {
+        return await seats.runs.validate(body, signal);
+    }
+    catch (e) {
+        if (remoteErrorOf(e) !== undefined)
+            throw e;
+        const message = e instanceof Error ? e.message : String(e);
+        if (signal.aborted)
+            throw new RemoteError('gateway/cancelled', message, {});
+        throw new RemoteError('gateway/internal', message, {});
+    }
+}
 async function performEstateRequest(ctx, method, path, body, execSignal) {
     const viaSeats = await trySeats(ctx, method, path, body, execSignal);
     if (viaSeats !== undefined)
@@ -540,7 +572,7 @@ export function makeEstate(ctx) {
                 }
             }
         }, signal, timeoutMs),
-        runsValidate: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/flows/validate', RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.validate(doc, signal), signal, timeoutMs),
+        runsValidate: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/flows/validate', RUNS_LANE, (s) => runsValidateFold(s, doc, signal), signal, timeoutMs),
         runsStart: (doc, signal, timeoutMs) => estateLane(ctx, 'POST /v1/flows/start', RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.start(doc, signal), signal, timeoutMs),
         runsStatus: (runId, includeLog, signal, timeoutMs) => estateLane(ctx, `GET /v1/flows/status/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.status(runId, signal, includeLog), signal, timeoutMs),
         runsStop: (runId, signal, timeoutMs) => estateLane(ctx, `POST /v1/flows/stop/${encodeURIComponent(runId)}`, RUNS_LANE, (s) => s.runs === undefined ? undefined : s.runs.stop(runId, signal), signal, timeoutMs),

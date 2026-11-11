@@ -283,6 +283,34 @@ describe('estate lane error classes', () => {
     assert.ok(text.includes('no seat on this lane serves'), text)
   })
 
+  // THE VALIDATE DOOR'S GATEWAY FOLD (the 2026-10-22 sweep-journeys
+  // audit §5 WO-2): a raw throw out of a MOUNTED runs seat's validate
+  // work is the carrier's failure, not the lane's absence — the fold
+  // (estate.ts runsValidateFold) maps it to gateway/internal with the
+  // cause verbatim. Before the fold, both faces below rode the same
+  // shapeless 502 body and a mounted-seat burn read as a dead lane.
+  test('a raw gateway-class throw at validate folds to gateway/internal with the cause verbatim — distinct from the seat-absent voice', async () => {
+    const mounted = boot({
+      runs: {
+        validate: () => Promise.reject(new Error(
+          'comfyui engine unreachable for live object_info (http://127.0.0.1:8188) — refusing closed',
+        )),
+      },
+    })
+    const gw = await post(mounted, '/v1/flows/validate', { id: 'x', stages: [] })
+    assert.equal(gw.status, 502)
+    const body = JSON.parse(gw.text) as { error: string; code?: string }
+    assert.equal(body.code, 'gateway/internal')
+    assert.ok(body.error.includes('comfyui engine unreachable'), gw.text)
+    // the contrast, same door: the SEATLESS face keeps its own voice —
+    // the seatless sentence, no code — so the two 502s discriminate
+    const absent = await post(boot({}), '/v1/flows/validate', { id: 'x', stages: [] })
+    assert.equal(absent.status, 502)
+    const seatless = JSON.parse(absent.text) as { error: string; code?: string }
+    assert.ok(seatless.error.includes('no seat on this lane serves'), absent.text)
+    assert.equal(seatless.code, undefined)
+  })
+
   test('named refusals with null or array details still answer the protocol voice', async () => {
     for (const details of [null, []]) {
       const routes = boot({ runs: { status: () => Promise.reject(new RemoteError('runs/unknown-run', 'unknown', details as never)) } })
