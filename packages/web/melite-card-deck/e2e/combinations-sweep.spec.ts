@@ -148,7 +148,8 @@ const bareB = (s: string): string => normB(s.replace(/\([^)]*\)/g, ''))
 const BRICK_VOICE = /unknown param|unknown variant|unknown quant|unknown model|unknown card|not offered|unsanctioned inject keys|no model unit|composes outside|not a legal identifier|dangling artifact ref/
 const LAWFUL_VOICE = /requires|required param|no store copy exists|add at least one |paired transfer lane|set both for the/
 
-/** THE ATTACH FIXTURES (e2e/fixtures — real bytes, one per seat
+/** THE ATTACH FIXTURES (tests/fixtures/card-deck-sweep — the
+ *  repo's sanctioned fixture home; real bytes, one per seat
  *  kind the served census can name): the image triad seat takes a
  *  real PNG; the video-hinted file seat a real MP4; the mesh wire
  *  type a real GLB (glTF 2.0 binary, one triangle — the square's
@@ -163,7 +164,7 @@ const FIXTURES = {
   wav: { path: 'sweep-attach.wav', name: 'sweep-attach.wav', mimeType: 'audio/wav' },
 } as const
 const fixtureBytes = (rel: string): Buffer =>
-  readFileSync(new URL('./fixtures/' + rel, import.meta.url))
+  readFileSync(new URL('../../../../tests/fixtures/card-deck-sweep/' + rel, import.meta.url))
 
 /** THE SEAT'S OWN FIXTURE (derived, never hand-listed per family):
  *  the field's served wtype + media hint name the bytes — image
