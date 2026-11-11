@@ -85,19 +85,14 @@ export interface UserLoraFile {
 import { LORA_EXTENSIONS } from '@melite/contracts/loraExtensions'
 export { LORA_EXTENSIONS }
 
-/** The rows file's default home (the shipped state is ABSENT — the
- *  door is opt-in; `lora_list` reports the path it would read). */
-const DEFAULT_USER_LORAS_PATH = './data/loras/user-loras.json'
-
-/** ONE spelling of the rows-file location: the declared
- *  MELITE_USER_LORAS override wins, the repo default otherwise.
- *  Every reader (the manage door, the composed flavor, the hot
- *  drop-in) resolves through here — a second literal is a second
- *  truth about the same file. */
-export function userLorasPath(): string {
-  const declared = process.env['MELITE_USER_LORAS']
-  return declared !== undefined && declared !== '' ? declared : DEFAULT_USER_LORAS_PATH
-}
+/** The rows-file location seat lives in its own module
+ *  (lorasPathSeat.ts): the config-pinned override is a LOCATION
+ *  fact, not a rows read — the reader census pins this module's
+ *  importers, and the manage registry pins the location through the
+ *  package root without becoming a reader. One re-export keeps this
+ *  seam's existing importers on one spelling. */
+import { userLorasPath } from './lorasPathSeat.ts'
+export { setUserLorasPath, userLorasPath } from './lorasPathSeat.ts'
 
 /** ONE row's validation — the refusals name the field, never the file. */
 export function validateUserLoraRow(

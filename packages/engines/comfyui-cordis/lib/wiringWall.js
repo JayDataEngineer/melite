@@ -253,6 +253,24 @@ export class ComfyUIWiringService extends Service {
         assertWiringAgainst(this.doc.nodes, this.doc.inputs, cardId, graph);
     }
 }
+/** Seats that already stood down to an absent provider this process
+ *  (one loud line per seat — never a log storm, never a silent skip). */
+const wiringAbsentSeats = new Set();
+/** LOUD STAND-DOWN (the wiring-absence law): a composition that
+ *  mounts no `comfyuiWiring` provider stands every wall down — the
+ *  standing law — but the absence is LOGGED, once per seat per
+ *  process, in the estate's own log voice. Misconfiguration never
+ *  silently skips a missing referent (AGENTS.md base rule).
+ *
+ * @param ctx the seat's cordis context (the logger's voice)
+ * @param seat the standing-down seat's name, for the log line
+ */
+export function warnWiringAbsent(ctx, seat) {
+    if (wiringAbsentSeats.has(seat))
+        return;
+    wiringAbsentSeats.add(seat);
+    ctx.logger('comfyui').warn(`[wiring] no comfyuiWiring provider in this composition — ${seat} stands its wiring walls down (no /object_info census; unknown classes and inputs will pass unjudged)`);
+}
 /** The provider: mounts the wiring service. Mount BEFORE the host
  *  and the engines adapter (the estate bundle's row order) so both
  *  `comfyui` classes and the run seat read it from first submit. */

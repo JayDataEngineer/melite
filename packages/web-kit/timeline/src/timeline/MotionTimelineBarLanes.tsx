@@ -621,7 +621,13 @@ export function TimelineAudioLanes(props: TimelineAudioLanesProps) {
                   )}
                   <span className={css.audioClipLabel}>
                     <span className={css.audioName}>{c.name}</span>
-                    <span className={css.audioTime}>{timelineCopy.clipSeconds({ seconds: a })}</span>
+                    {/* the label speaks the clip's DURATION (the same
+                        law as the span labels above) — the START with
+                        an "s" suffix read as a duration, and a 5.9s
+                        clip starting at 0.2s announced itself as
+                        "0.2s" (the M-18 mislabel); the title keeps
+                        the start–end span. */}
+                    <span className={css.audioTime}>{timelineCopy.clipSeconds({ seconds: (Math.max(1, c.dur_frames) / Math.max(1, fps)).toFixed(1) })}</span>
                   </span>
                   {onAudioClipDelete && (
                     <Button variant="ghost" size="sm"

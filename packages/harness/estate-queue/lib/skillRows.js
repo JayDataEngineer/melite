@@ -307,6 +307,7 @@ export function modelRows(engine, stateRoot) {
             let sks;
             try {
                 sks = readdirSync(join(mdir, "agents", "skills")).sort();
+                // a model dir with no agents/skills subtree ships no skills of its own — the skip is the answer, its spawn rows already walked above
             }
             catch {
                 continue;
@@ -423,6 +424,7 @@ export function cardRows(engine, repo) {
                 let sks;
                 try {
                     sks = readdirSync(join(cdir, "agents", "skills")).sort();
+                    // a card dir with no agents/skills subtree ships no skills — the empty list lets the walk fall through to the spawn plane
                 }
                 catch {
                     sks = [];

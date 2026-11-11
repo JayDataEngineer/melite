@@ -22,6 +22,7 @@ import {
   bootGate,
   isPidAlive,
 } from "../src/queueLock.ts";
+import type { RunId } from "../src/queueCore.ts";
 import { pipelineOf } from "../src/queueSidecar.ts";
 import { bootSweep, sweepSidecar } from "../src/queueSweep.ts";
 
@@ -252,7 +253,10 @@ describe("bootSweep (the boot dispositions)", () => {
     writeFileSync(join(out, "run-live", "_flow.json"), JSON.stringify({ status: "running" }));
     mkdirSync(join(out, "run-stale"), { recursive: true });
     writeFileSync(join(out, "run-stale", "_flow.json"), JSON.stringify({ status: "running" }));
-    const swept = await bootSweep(ROOT, ["run-live"]);
+    // liveRunIds speaks the branded RunId (MINOR-1, the 2026-11-17
+    // cordis audit) — the fixture mints through the same cast the
+    // producers use.
+    const swept = await bootSweep(ROOT, ["run-live" as RunId]);
     assert.deepEqual(swept, ["run-stale"]);
     const doc = JSON.parse(readFileSync(join(out, "run-stale", "_flow.json"), "utf8"));
     assert.equal(doc["status"], "failed");

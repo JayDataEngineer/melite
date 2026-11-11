@@ -371,6 +371,14 @@ export function tileStatusFromVerdict(verdict: string): 'running' | 'done' | 'st
   return 'stopped'
 }
 
+/** Normalize a `bench/get` wire doc into the bench value: only
+ *  string-id stage rows and numbered-rev log heads survive the
+ *  untyped wire, the card birth law re-attaches the intent's card
+ *  onto a single-stage chat-born bench, and the session key rides
+ *  its carried spelling.
+ * @param doc the door's raw bench doc (untyped at this seam)
+ * @param sessionKey the conversation the bench belongs to
+ * @returns the CardsBenchValue the tab renders */
 export function readBench(doc: Record<string, unknown>, sessionKey: string): CardsBenchValue {
   let stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageView =>
@@ -681,6 +689,19 @@ const TRANSPORT_BACKOFF_MAX_MS = 10000
 // poll loop.
 const VERDICT_DELIVERY_ATTEMPTS = 3
 
+/** One outcome observer per draft:stage:run, ever, in-process — poll
+ *  the run to terminal on the run-wire cadence, then write
+ *  runStatus + result onto the bench row through the shared-state
+ *  door. A second call for a seated key rides the first's promise;
+ *  the seat clears when the observer settles. Resolves the terminal
+ *  outcome, or null when the watch ended without a DELIVERED verdict
+ *  (an abort, or the delivery budget dying undelivered).
+ * @param draftId the run's producing draft
+ * @param stageId the stage the run serves
+ * @param runId the run to observe
+ * @param signal an abort ends the watch (no patch, no throw)
+ * @param onTouched called after each delivered bench patch
+ * @returns 'done' | 'failed' | 'stopped', or null when undelivered */
 export function observeRunOutcome(
   draftId: DraftId,
   stageId: string,
@@ -1129,6 +1150,14 @@ export function terminalOutcomeOf(
   return { result, terminal }
 }
 
+/** Normalize a runs/status doc into the run value: the run-wire
+ *  package's distill (stage rows + the ONE media-url rewrite) wrapped
+ *  with the admitted card snapshot (malformed dropped, never
+ *  half-carried) and the graph receipt; lastFrame stays undefined —
+ *  it is the events face's field, never the hydrate's.
+ * @param runId the run the doc answers for
+ * @param doc the door's raw runs/status doc
+ * @returns the CardsRunValue the run view renders */
 export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
   // the normalization (stage distill + the ONE media-url rewrite)
   // lives in the run-wire package; this wraps it into the protocol's
@@ -1177,6 +1206,15 @@ export type StageRowRead =
   | { status: 'ready', row: BenchStageView }
   | { status: 'gone' }
   | { status: 'unreadable' }
+/** The drill's fresh row read — the run press composes the ESTATE's
+ *  row, never the client's stale render row. Three outcomes, never
+ *  collapsed: 'ready' carries the card-re-attached BenchStageView,
+ *  'gone' a stage the draft does not name, 'unreadable' a failed
+ *  read (a failed read is NOT a gone row).
+ * @param draftId the draft holding the stage
+ * @param stageId the stage to read back
+ * @param signal aborts the read
+ * @returns the three-outcome read */
 export async function readStageRow(
   draftId: DraftId,
   stageId: string,
@@ -1213,6 +1251,14 @@ export async function freshStageRow(
   return read.status === 'ready' ? read.row : null
 }
 
+/** Normalize a `drafts/get` doc into the draft-stage value: stage
+ *  rows keep the string-id filter (mirroring readBench — the door's
+ *  wire is untyped here) and the rev is the embedded bench's (0 when
+ *  the doc carries none).
+ * @param draftId the draft the doc answers for
+ * @param stageId the focused stage
+ * @param doc the door's raw draft doc
+ * @returns the CardsDraftValue the tab renders */
 export function readDraft(draftId: DraftId, stageId: string, doc: Record<string, unknown>): CardsDraftValue {
   const stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageView =>

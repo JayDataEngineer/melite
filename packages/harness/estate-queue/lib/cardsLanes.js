@@ -51,6 +51,7 @@ export function lanePackFolders() {
     let cfg;
     try {
         cfg = loadEndpointConfig();
+        // a missing or malformed config file throws — the read yields no pack folders and the stock lane sets stand alone
     }
     catch {
         return [];

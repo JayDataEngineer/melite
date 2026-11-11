@@ -1,0 +1,18 @@
+# snapshot.yml — keyless recorded-session scenario (DSH tier 6).
+# The cuts-verb replay (the types/docs/testing audit's F8-2 debt,
+# 2026-11-17): the ONE-BENCH cut door (b5260a4f1, 2026-11-10) landed
+# with package tests only — no session-level scenario exercising the
+# verb through melite_construct. This scenario replays a recorded
+# session owning one cuts press; the tool executes for REAL against
+# the stubbed estate (keyless — no network, no model), the split
+# lands through THE SEAM LAW (operator 2026-11-17: context carry is
+# the default), and the persisted bench meta rides the settled block.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
+workspace:
+  facts:
+    - fresh sandbox state root per run
+    - no network (the estate lane is stubbed; no model replay needed)
+    - no PROD :3080 contact

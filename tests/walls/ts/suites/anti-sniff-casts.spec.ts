@@ -144,7 +144,21 @@ describe('THE ANTI-SNIFF WALL — the inline-cast census (F-2/F-4)', () => {
  *  the whole tail (~242 sites, 86 files) so a new
  *  site of ANY spelling reds and every step-down is a conscious
  *  baseline edit. The tail's retirement (typed values or validation at
- *  each site) is the row's owed M-work — one file at a time. */
+ *  each site) is the row's owed M-work — one file at a time.
+ *
+ *  F2-2's adjudicated legacy classes (the 2026-11-17 audit), each
+ *  frozen by its row here with its named cure — the retirement plan:
+ *  (1) runsRegistry's `as unknown as EngineCtx` ×3 → declare EngineCtx
+ *  on the service's Context augmentation; (2) runsRegistry's
+ *  `composed.graph as unknown as EngineJson` ×2 → narrow at the
+ *  compose door, not each send site; (3) bench.ts:419's no-op
+ *  `as unknown` hop → delete; (4) bench.ts's
+ *  `doc as unknown as DraftRecord["doc"]` ×3 → one validated read at
+ *  the load door; (5) cards-resource's
+ *  `unwrapRemote(…) as unknown as Record<…>` ×7 → a typed readRecord
+ *  helper at the unwrap point (the wire boundary). JSON.parse(…) as
+ *  unknown before validation is JUSTIFIED (the typed discipline
+ *  itself); the executorHarness fakes stay (F2-2 items 9-10). */
 const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/audio/tts/src/card.ts': 1,
   'packages/engines/agent/src/agent-engine.ts': 1,
@@ -268,6 +282,80 @@ describe('THE ANTI-SNIFF WALL — the full as-unknown census (V4/16 drain)', () 
       if (!seen.has(rel)) offenders.push(`${rel}: baseline row is stale — the file is cast-free; step the row out`)
     }
     assert.deepEqual(offenders, [], 'the as-unknown tail drifted:\n  ' + offenders.join('\n  '))
+  })
+})
+
+/** The `as never` census (F2-1's missing arm, the 2026-11-17
+ *  types/docs/testing audit): the audit caught the ratchet blind to
+ *  every double-cast shape but `as unknown as {` — the V4 all-forms
+ *  drain above already widened `as unknown` to ANY target; THIS row
+ *  freezes the OTHER erasure spelling, `as never`, the same way.
+ *  Today's tail is the schemastery generics coercion class
+ *  (`emitParamsSpec(schema as never, …)` — a Schema VALUE riding a
+ *  type parameter the emitter's signature over-constrains) plus the
+ *  harness stands' structural fakes; each retirement is a conscious
+ *  step-down, each growth a red.
+ *
+ *  ADJUDICATED (F2-2, same audit): executorHarness.ts's 11 sites
+ *  are the test-harness coercion class (a shared describe-block
+ *  harness pinning envelope contracts — `render({}, undefined as
+ *  never)`, deliberate spec re-pins; the ledger records the idiom);
+ *  they stay until the harness itself gains typed stand
+ *  constructors. Every other row is the schemastery generics
+ *  coercion at its tool/schema seam — the typed cure is widening
+ *  the emitter signatures to accept the Schema value's own type,
+ *  one tool file at a time. */
+const AS_NEVER_BASELINE: Record<string, number> = {
+  'packages/3d/rig/src/card.ts': 2,
+  'packages/audio/music/src/tool.ts': 1,
+  'packages/audio/tts/src/tool.ts': 1,
+  'packages/engines/comfyui-card-kit/src/model-contract.ts': 1,
+  'packages/engines/comfyui-card-kit/src/params-emit.ts': 1,
+  'packages/engines/comfyui-cordis/src/models/service.ts': 2,
+  'packages/engines/comfyui-cordis/src/mods/packs.ts': 6,
+  // JUSTIFIED (F2-2 item 10): the shared describe-block harness's
+  // structural fakes — deliberate spec re-pins, not boundary casts.
+  'packages/harness/estate-call/src/executorHarness.ts': 11,
+  'packages/harness/estate-queue/src/runsRegistry.ts': 3,
+  'packages/harness/melite-tools/src/discovery.ts': 4,
+  'packages/harness/melite-tools/src/estate.ts': 1,
+  'packages/harness/melite-tools/src/tools/melite-construct.ts': 3,
+  'packages/image/image-edit/src/tool.ts': 1,
+  'packages/image/image-gen/src/tool.ts': 1,
+  'packages/image/mask/src/card.ts': 1,
+  'packages/models/h3/src/schema.ts': 1,
+  'packages/motion/motion/src/tool.ts': 1,
+  'packages/video/h3-timeline/src/tool.ts': 1,
+  'packages/video/h3-timeline/src/ui/studio/omitLaneRecipe.ts': 1,
+}
+
+describe('THE ANTI-SNIFF WALL — the as-never census (F2-1 widening)', () => {
+  test('the as-never tail matches its adjudicated baseline exactly', () => {
+    const RX = /\bas never\b/g
+    const seen = new Map<string, number>()
+    const offenders: string[] = []
+    for (const plane of srcPlanes()) {
+      for (const file of walkSources(plane)) {
+        const rel = relative(REPO, file).split(sep).join('/')
+        const stripped = readFileSync(file, 'utf8')
+          .replace(/\/\*[\s\S]*?\*\//g, '')
+          .replace(/(^|\s)\/\/[^\n]*/g, '$1')
+        const count = (stripped.match(RX) ?? []).length
+        if (count > 0) seen.set(rel, count)
+      }
+    }
+    for (const [rel, count] of seen) {
+      const admitted = AS_NEVER_BASELINE[rel]
+      if (admitted === undefined) {
+        offenders.push(`${rel}: ${count} site(s) in a file with NO baseline row — a NEW as-never site: type the value or widen the signature, do not erase`)
+      } else if (count !== admitted) {
+        offenders.push(`${rel}: ${count} site(s) vs baseline ${admitted} — ${count > admitted ? 'the tail GREW: widen the signature instead' : 'the tail SHRANK: step the baseline row down in the same change'}`)
+      }
+    }
+    for (const rel of Object.keys(AS_NEVER_BASELINE)) {
+      if (!seen.has(rel)) offenders.push(`${rel}: baseline row is stale — the file carries no as-never sites; step the row out`)
+    }
+    assert.deepEqual(offenders, [], 'the as-never tail drifted:\n  ' + offenders.join('\n  '))
   })
 })
 

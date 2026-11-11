@@ -266,4 +266,3 @@ describe('THE QUANT-AXIS CELLS WALL — every offered coordinate serves (audit 0
     expect(unboarded.length, `unboarded families (family-coverage's seat, counted): ${unboarded.join(', ')}; facts-less unboarded (facts-derivation seat, counted): ${factsLess.join(', ') || 'none'}`).toBeLessThanOrEqual(3)
   })
 })
-

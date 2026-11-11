@@ -1,0 +1,4 @@
+{"type": "header", "format": "v0", "sessionId": "construct-cuts-verb", "profile": "melite-test"}
+{"type": "user", "text": "Cut the film at two and a half seconds, carried."}
+{"type": "assistant", "text": "The cut landed: four windows, the seam carried."}
+{"type": "tool-result", "callId": "c1", "call": {"name": "melite_construct", "argsRaw": "{\"verb\": \"patch\", \"stage\": \"s_0\", \"params\": {\"cuts\": \"2.5\"}}"}, "isError": false, "meta": {"bench": "s_cut7"}, "content": [{"type": "text", "text": "cut → 4 windows"}]}

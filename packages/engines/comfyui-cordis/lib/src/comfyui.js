@@ -90,6 +90,11 @@ export { interrupt, stopForRunDir, unloadModels } from "./comfyui-control.js";
 export { fetchOutputs, mapHistoryEntry, publishOutputChannels, viewTimeoutMs, } from "./comfyui-outputs.js";
 export { executeSingle } from "./comfyui-execute.js";
 export { executeFlow, planMerge, STAGE_RESERVED_PARAMS } from "./comfyui-merge.js";
-export { assertWiringAgainst, comfyuiWiringProvider, ComfyUIWiringService, deriveWiringDoc, } from "./wiringWall.js";
+export { assertWiringAgainst, comfyuiWiringProvider, ComfyUIWiringService, deriveWiringDoc, warnWiringAbsent, } from "./wiringWall.js";
+// THE ROWS-FILE LOCATION SEAT (config plane): the manage registry
+// pins the user-loras rows location through the package root — it
+// never imports the rows-reader module (the lora-roster-reader
+// census owns that importer set).
+export { setUserLorasPath } from "./lorasPathSeat.js";
 export { comfyuiHostProvider, ComfyUIHostService, Config, needComfyUI, parseComfyUIHostConfig, } from "./comfyui-host.js";
 //# sourceMappingURL=comfyui.js.map

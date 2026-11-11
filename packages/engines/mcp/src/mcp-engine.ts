@@ -59,6 +59,7 @@ const treeOf = (dir: string): Set<string> => {
     let entries: string[];
     try {
       entries = readdirSync(d);
+      // a missing or unreadable dir has no tree to snapshot — absence reads as the empty set
     } catch {
       return;
     }
@@ -68,6 +69,7 @@ const treeOf = (dir: string): Set<string> => {
       let st;
       try {
         st = statSync(full);
+        // the entry can vanish between readdir and stat — a vanished file just drops out of the diff
       } catch {
         continue;
       }

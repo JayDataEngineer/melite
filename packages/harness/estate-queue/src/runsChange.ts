@@ -10,14 +10,19 @@
 // to PUSH fresh rows; the browser's resource provider consumes the
 // stream (the same-origin mux the bench tail rides).
 import type { Context } from "@deepseek-ai/cordis";
+import type { RunId } from "./queueCore.ts";
 
-type RunChangeListener = (runId: string) => void;
+// THE BRAND RIDES THE BUS (the 2026-11-17 cordis audit's MINOR-1):
+// the event payload is a cross-boundary opaque id, so the seam and
+// the typed event carry RunId — one mint (queueCore), one unbrand,
+// at the ledger/protocol serialization edge, never here.
+type RunChangeListener = (runId: RunId) => void;
 
 /** The event seam this pure-domain spine reaches the bus through
  *  (the bench seam's law, verbatim: the writers own no Context, the
  *  owning service installs the pair once). */
 export interface RunsChangeSeam {
-  emit: (runId: string) => void;
+  emit: (runId: RunId) => void;
   on: (fn: RunChangeListener) => () => void;
 }
 
@@ -30,7 +35,7 @@ declare module "@deepseek-ai/cordis" {
      * @mode emit
      * @param runId - the run whose row moved.
      */
-    "runs.changed": (runId: string) => void;
+    "runs.changed": (runId: RunId) => void;
   }
 }
 
@@ -70,7 +75,7 @@ export function onRunChange(fn: RunChangeListener): () => void {
       "estate-queue: no runs change seam installed — RunsRuntimeService installs it in its constructor, tests call setRunsChangeSeam()",
     );
   }
-  return runsChangeSeam.on((runId: string): void => {
+  return runsChangeSeam.on((runId: RunId): void => {
     try {
       fn(runId);
     } catch (fault) {
@@ -88,7 +93,7 @@ export function onRunChange(fn: RunChangeListener): () => void {
  *  subscriber's park in a microtask, by which time the writer's
  *  synchronous mutation has landed — the re-read serves the moved
  *  row, never the pre-write one. */
-export function notifyRunChanged(runId: string): void {
+export function notifyRunChanged(runId: RunId): void {
   runsChangeSeam?.emit(runId);
 }
 
@@ -103,8 +108,8 @@ export function installRunsChangeSeam(ctx: Context): () => void {
   let detach: (() => void) | null = null;
   ctx.effect(() => {
     const mine: RunsChangeSeam = {
-      emit: (runId: string): void => { ctx.emit("runs.changed", runId); },
-      on: (fn: (runId: string) => void): (() => void) => {
+      emit: (runId: RunId): void => { ctx.emit("runs.changed", runId); },
+      on: (fn: (runId: RunId) => void): (() => void) => {
         const stop = ctx.on("runs.changed", fn);
         return () => { stop(); };
       },

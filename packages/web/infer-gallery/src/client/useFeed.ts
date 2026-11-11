@@ -128,6 +128,7 @@ export function useFeed<T>(url: string, decode: (json: unknown) => T, initial: T
     if (boot.cached === null) return initial
     try {
       return decode(boot.cached)
+    // a cache the decoder refuses paints initial — nothing usable was stored
     } catch {
       return initial
     }

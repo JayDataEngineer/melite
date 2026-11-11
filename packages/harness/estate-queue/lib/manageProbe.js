@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sweepOutputRoots } from "./cardsDangling.js";
+import { sdkClient } from "@melite/comfyui-cordis";
 import { deadline } from "@deepseek-ai/dsh-timeout";
 const execFileAsync = promisify(execFile);
 // ── runs / security / probe (TS-native) ────────────────────────────
@@ -141,6 +142,7 @@ export function managerSecurity(repoRoot) {
         let text;
         try {
             text = readFileSync(ini, "utf-8");
+            // an absent or unreadable candidate ini pins nothing — the loop falls through to the legacy layout and the final "unpinned" answer is the truth
         }
         catch {
             continue;
@@ -177,7 +179,11 @@ export async function engineQueueView(mctx) {
         return null;
     const dl = deadline(mctx.signal, 5000, "MANAGE_PROBE");
     try {
-        const r = await fetch(url + "/queue", { signal: dl.signal });
+        // THE SDK SEAT OWNS THE WIRE (A1, the layers audit 2026-11-17):
+        // engine reads ride sdkClient().fetchApi — never a parallel
+        // hand-rolled fetch spelling beside the estate's declared
+        // client law (comfyui-transport.ts owns fetch + endpoints).
+        const r = await sdkClient(url).fetchApi("/queue", { signal: dl.signal });
         const q = (await r.json());
         const running = q["queue_running"];
         const pending = q["queue_pending"];
@@ -207,7 +213,10 @@ export async function probeEndpoint(mctx) {
         return { reachable: false, reason: "no url in endpoint config" };
     const dl = deadline(mctx.signal, 5000, "MANAGE_PROBE");
     try {
-        const r = await fetch(url + "/system_stats", { signal: dl.signal });
+        // THE SDK SEAT OWNS THE WIRE (A1): the /system_stats health read
+        // rides the same fetchApi spelling the execute seat's health
+        // gate uses — ONE wire spelling for engine reads tree-wide.
+        const r = await sdkClient(url).fetchApi("/system_stats", { signal: dl.signal });
         const stats = (await r.json());
         const sysinfo = (stats["system"] ?? {});
         const devices = (stats["devices"] ?? []).slice(0, 4).map((d) => ({

@@ -156,6 +156,7 @@ function readDial<T extends string | number>(key: string, allowed: readonly T[],
     const raw = localStorage.getItem(key)
     const hit = allowed.find((a) => String(a) === raw)
     return hit ?? fallback
+  // a denied localStorage throws on getItem — no dial was ever persisted, the default is the right layout
   } catch {
     return fallback
   }
@@ -224,6 +225,7 @@ function timeLabel(sec: unknown): string {
     return new Date(sec * 1000).toLocaleString(undefined, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
     })
+  // a locale the formatter refuses drops the timestamp to an empty label — cosmetic, the tile keeps its media
   } catch {
     return ''
   }

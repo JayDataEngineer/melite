@@ -29,6 +29,7 @@ import { fileURLToPath } from "node:url";
 const isDir = (p) => {
     try {
         return statSync(p).isDirectory();
+        // a missing path is not a directory — false just skips the entry in the recipe walk
     }
     catch {
         return false;

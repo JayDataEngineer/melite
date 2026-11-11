@@ -167,6 +167,7 @@ export function sidecarReaderFor(dir) {
     return (name) => {
         try {
             return readFileSync(join(dir, name), 'utf8');
+            // a missing or unreadable sidecar file means there is nothing to mount — absence is a valid decorate answer, so the miss reads as null and never throws
         }
         catch {
             return null;
@@ -434,6 +435,7 @@ export class RunsRuntimeService extends Service {
                         const comfy = this.engineSeat ?? (() => {
                             try {
                                 return needComfyUI(this.ctx, "runsRemote teardown");
+                                // needComfyUI throws when no ComfyUI seat is registered — undefined only skips the interrupt and the stopFlags still converge the worker loop (teardown must not fail)
                             }
                             catch {
                                 return undefined;
@@ -2397,6 +2399,7 @@ export class RunsRuntimeService extends Service {
             const cfg = loadEndpointConfig();
             if (typeof cfg["url"] === "string")
                 url = cfg["url"];
+            // an unreadable endpoint config leaves the engine url empty — the admission stats read is best-effort and a stats failure never blocks admission
         }
         catch {
             url = "";
@@ -2712,7 +2715,7 @@ export class RunsRuntimeService extends Service {
         if (run.status === "running")
             run.status = "stopping";
         run.stopFlag = true;
-        notifyRunChanged(runId);
+        notifyRunChanged(run.runId);
         // The interrupt rides the injected engine service when the
         // seat exists (best-effort — the flag is the authority).
         try {
@@ -2753,7 +2756,7 @@ export class RunsRuntimeService extends Service {
             delete run.attribution;
         else
             run.attribution = value;
-        notifyRunChanged(runId);
+        notifyRunChanged(run.runId);
         await attributionPersist(run);
         return { run_id: runId, attribution: run.attribution ?? "" };
     }

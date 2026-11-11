@@ -246,6 +246,7 @@ async function statFsFree(path: string): Promise<number> {
 async function fileExists(path: string): Promise<boolean> {
   try {
     return (await stat(path)).isFile();
+    // any stat error reads as absent — a probe failure must never serve the row as present
   } catch {
     return false;
   }
@@ -259,6 +260,7 @@ async function pathExists(path: string): Promise<boolean> {
   try {
     await stat(path);
     return true;
+    // a stat miss means no counterpart on disk — presence of either kind is all this fallback judges
   } catch {
     return false;
   }
@@ -1030,6 +1032,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
           (checked.integrity ?? "verified") + ") — operation " + operation.operationId +
           " settled failed but the file landed; the row serves the disk",
       };
+      // a failed disk probe cannot re-admit — the settled failure verdict stands unchanged
     } catch {
       return null;
     }
@@ -1169,6 +1172,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         const narrowed = narrowPlan(plan, options?.items);
         total = planTotal(narrowed);
         wantedKeys = narrowed.items.map((item) => item.key);
+        // an unresolvable plan proves no coverage — total 0 makes the dedupe skip and a fresh mint run
       } catch {
         total = 0;
       }
@@ -1533,6 +1537,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     try {
       const plan = await this.plan(ref);
       total = planTotal(narrowPlan(plan, items));
+      // an unresolvable plan gives the join no denominator — total 0 leaves the live entry's ledger untouched
     } catch {
       total = 0;
     }
@@ -2001,6 +2006,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       let freeBytes: number | undefined;
       try {
         freeBytes = await this.diskFree(this.writerRoot);
+        // a statfs probe failure leaves freeBytes undefined — the gate skips rather than refusing on its own probe
       } catch {
         freeBytes = undefined;
       }

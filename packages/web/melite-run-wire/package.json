@@ -2,6 +2,7 @@
   "name": "@melite-plugin/melite-run-wire",
   "version": "0.2.2-alpha",
   "type": "module",
+  "private": true,
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

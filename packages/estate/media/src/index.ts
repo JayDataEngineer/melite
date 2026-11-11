@@ -149,6 +149,7 @@ function parseTarget(sub: string): { runId: string; rel: string } | null {
     let decoded: string;
     try {
       decoded = decodeURIComponent(seg);
+      // a malformed percent-escape throws URIError — a segment the grammar cannot accept refuses here
     } catch {
       return null;
     }
@@ -470,6 +471,7 @@ export async function listMediaAcross(roots: readonly string[], kind: string): P
   const walk = (root: string, runId: string, dir: string, rel: string, depth: number): void => {
     if (items.length >= LIST_CAP || depth > 3) return;
     let entries: import("node:fs").Dirent[];
+    // a missing/unreadable dir reads empty — it contributes no items and never poisons the listing
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     const files: Array<{ name: string; t: number }> = [];
     for (const e of entries) {

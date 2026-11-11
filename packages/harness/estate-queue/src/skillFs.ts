@@ -41,6 +41,7 @@ export function disclosureRoot(): string {
 export function isDir(p: string): boolean {
   try {
     return statSync(p).isDirectory();
+  // a missing or unreadable path is not a directory — false is the probe's whole answer
   } catch {
     return false;
   }
@@ -49,6 +50,7 @@ export function isDir(p: string): boolean {
 export function isFile(p: string): boolean {
   try {
     return statSync(p).isFile();
+  // a missing or unreadable path is not a file — false is the probe's whole answer
   } catch {
     return false;
   }
@@ -74,6 +76,7 @@ export function subdirs(parent: string): string[] {
 export function readText(p: string): string | null {
   try {
     return readFileSync(p, "utf8");
+  // a missing or unreadable file reads as null — the callers treat null as absent, so the failure is itself the answer
   } catch {
     return null;
   }

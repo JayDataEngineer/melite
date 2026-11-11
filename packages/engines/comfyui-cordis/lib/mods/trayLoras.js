@@ -32,6 +32,7 @@ export function trayLoraRows(dir) {
         let files = [];
         try {
             files = readdirSync(famDir);
+            // an unreadable family dir serves nothing from it — the rest of the tray still lists
         }
         catch {
             continue;

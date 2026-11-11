@@ -33,6 +33,7 @@ export function liveFamilySeat(modelsSeat) {
     try {
         const decls = modelsService().allDecls();
         return { decls, state: decls.length === 0 ? "bare" : "seated" };
+        // an unbooted context throws on the singleton read — "absent" is the seat's answer, and a family stage refuses loud on it inside composeOne
     }
     catch {
         return { decls: [], state: "absent" };

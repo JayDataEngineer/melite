@@ -45,6 +45,7 @@ export function artifactUrlOfAddress(address: string): string | null {
   if (seg.length === 0) return null
   try {
     return b64uDecode(seg)
+  // atob refuses a malformed base64 segment — a corrupt address is not ours, null voices the refusal
   } catch {
     return null
   }

@@ -731,7 +731,13 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // are the one storage) and its emit
   // packages/video/h3-timeline/lib/ui/studio/docGrid.js died with
   // it — the census follows the emitted truth.
-  const LIB_CENSUS_PIN = 643;
+  // Repinned 643 -> 645 (2026-11-17, the conformance audits): the
+  // rows-file location seat split out of userLoras (the lora census
+  // law) lands its tsc emits — both of the package's emission
+  // planes carry the new module
+  // (comfyui-cordis/lib/lorasPathSeat.js + lib/src/lorasPathSeat.js)
+  // — the census follows the emitted truth.
+  const LIB_CENSUS_PIN = 645;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

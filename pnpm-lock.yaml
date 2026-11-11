@@ -28,6 +28,9 @@ importers:
       '@melite-plugin/dsh-gallery':
         specifier: 0.2.2-alpha
         version: link:packages/web/infer-gallery
+      '@melite/3d-img-to-mesh':
+        specifier: 0.2.2-alpha
+        version: link:packages/3d/img-to-mesh
       '@melite/card-base':
         specifier: 0.2.2-alpha
         version: link:packages/web/card-base
@@ -40,6 +43,96 @@ importers:
       '@melite/image-input-prep':
         specifier: 0.2.2-alpha
         version: link:packages/image/input-prep
+      '@melite/models-anima':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/anima
+      '@melite/models-anny':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/anny
+      '@melite/models-concat':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/concat
+      '@melite/models-fibo2-edit':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/fibo2-edit
+      '@melite/models-fit':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/fit
+      '@melite/models-florence2':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/florence2
+      '@melite/models-flux-klein':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/flux-klein
+      '@melite/models-gem-soma':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/gem-soma
+      '@melite/models-h3':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/h3
+      '@melite/models-input':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/input
+      '@melite/models-joycaption':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/joycaption
+      '@melite/models-joytag':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/joytag
+      '@melite/models-kimodo':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/kimodo
+      '@melite/models-krea-2':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/krea-2
+      '@melite/models-mask':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/mask
+      '@melite/models-moss-image':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/moss-image
+      '@melite/models-moss-sfx':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/moss-sfx
+      '@melite/models-music3':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/music3
+      '@melite/models-pixal3d':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/pixal3d
+      '@melite/models-qwen-img-21':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/qwen-img-21
+      '@melite/models-qwen-img-edit-21':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/qwen-img-edit-21
+      '@melite/models-qwen3-tts':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/qwen3-tts
+      '@melite/models-seedvr2-ema':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/seedvr2-ema
+      '@melite/models-skin':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/skin
+      '@melite/models-somax':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/somax
+      '@melite/models-transfer-rig':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/transfer-rig
+      '@melite/models-trellis2-native':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/trellis2-native
+      '@melite/models-wd14':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/wd14
+      '@melite/models-yue2':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/yue2
+      '@melite/models-z-image':
+        specifier: 0.2.2-alpha
+        version: link:packages/models/z-image
       '@melite/motion-motion':
         specifier: 0.2.2-alpha
         version: link:packages/motion/motion
@@ -74,9 +167,6 @@ importers:
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:packages/estate/runs
-      '@melite/models-kimodo':
-        specifier: workspace:*
-        version: link:packages/models/kimodo
       '@shikijs/langs':
         specifier: 4.4.3
         version: 4.4.3
@@ -208,7 +298,7 @@ importers:
         specifier: ^3.18.5
         version: 3.18.5
       '@melite-plugin/melite-run-wire':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web/melite-run-wire
       '@melite/card-base':
         specifier: workspace:*
@@ -606,7 +696,7 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@melite-plugin/timeline':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../../../web-kit/timeline
       '@melite/card-base':
         specifier: workspace:*
@@ -676,6 +766,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.5
         version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@deepseek-ai/dsh-brand':
+        specifier: 0.2.1-rc.2
+        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -1051,16 +1144,16 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(97a699628cd7976c576abef2e63b15f5)
       '@melite-plugin/dsh-card-deck':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web/melite-card-deck
       '@melite-plugin/dsh-card-view':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web/melite-card-view
       '@melite-plugin/dsh-estate':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web/melite-estate
       '@melite-plugin/dsh-gallery':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web/infer-gallery
       '@melite/3d-img-to-mesh':
         specifier: workspace:*
@@ -1854,10 +1947,10 @@ importers:
         specifier: ^3.18.5
         version: 3.18.5
       '@melite-plugin/motion':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../engines/comfyui/src/action_cards/motion/ui
       '@melite-plugin/timeline':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web-kit/timeline
       '@melite/card-base':
         specifier: workspace:*
@@ -1952,7 +2045,7 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(f4f5dafa2004c02f6afbbbc8518bca23)
       '@melite-plugin/timeline':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web-kit/timeline
       '@melite/card-base':
         specifier: workspace:*
@@ -2193,7 +2286,7 @@ importers:
         specifier: ^3.2.2
         version: 3.2.2(react@19.3.0)
       '@melite-plugin/melite-run-wire':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../melite-run-wire
       '@melite/catalog':
         specifier: workspace:*
@@ -2469,13 +2562,13 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@melite-plugin/dsh-gallery':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../infer-gallery
       '@melite-plugin/melite-run-wire':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../melite-run-wire
       '@melite-plugin/timeline':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../../web-kit/timeline
       '@melite/card-base':
         specifier: workspace:*
@@ -2806,7 +2899,7 @@ importers:
         specifier: ^3.18.5
         version: 3.18.5
       '@melite-plugin/melite-run-wire':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../melite-run-wire
       '@melite/contracts':
         specifier: workspace:*
@@ -2849,7 +2942,7 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@melite-plugin/melite-run-wire':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../melite-run-wire
       '@melite/contracts':
         specifier: workspace:*
@@ -2883,7 +2976,7 @@ importers:
         specifier: ^4.0.5
         version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)
       '@deepseek-ai/cordis-plugin-loader':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../loader
     devDependencies:
       '@types/node':
@@ -2896,7 +2989,7 @@ importers:
         specifier: ^4.0.5
         version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@vendor+cordis_plugins+loader)
       '@deepseek-ai/cordis-plugin-loader':
-        specifier: workspace:*
+        specifier: workspace:~
         version: link:../loader
       '@deepseek-ai/cosmokit':
         specifier: 1.8.5

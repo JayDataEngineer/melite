@@ -144,10 +144,10 @@ describe.skipIf(!REGISTRY_PRESENT)('THE REGISTRY WALL (every law accounted, ever
   it('every @contract header in a package suite maps to a registry row — a declared law with no row is a lie (arm 4, journey audit A5 2026-11-07)', () => {
     // THE HEADER SPELLING: a line `// @contract <id>` (the id is the
     // registry row's id, any tier). Package suites declare it the day
-    // they carry a law worth tracking; this arm fires the moment one
-    // names an id the registry does not carry. Today zero headers
-    // exist — the arm is the enforcement SEAT for the convention,
-    // landing before the first header, not after the first drift.
+    // they carry a law worth tracking; this arm judges every header
+    // that exists against the registry and fires the moment one
+    // names an id the registry does not carry. Headers are the
+    // convention; their absence is not a state this arm asserts.
     // The accounting debt itself (the package-local suites that name
     // no row at all — the seat-rowing wave) is ROADMAP-owed.
     const ids = new Set(rows().map((r) => String(r.id)))

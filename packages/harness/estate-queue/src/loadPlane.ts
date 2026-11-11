@@ -322,6 +322,7 @@ export function flowLeafDocs(repo: string, flowName: string): Array<{ path: stri
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
+      // a missing or unreadable directory throws ENOENT — the walk simply contributes no doc files, never refusing the bundle
     } catch {
       return;
     }
@@ -436,6 +437,7 @@ export function loadCard(
       try {
         const rows = models.resolveCatalogArtifact(fam, "", "", repo);
         present = rows.length > 0 && rows.every((row) => models.checkModelPresent(row.relative_path, row.name, repo) !== null);
+        // a family with no resolvable catalog artifact throws — presence stays false, which is what the served hint reports; the run door owns the loud refusal
       } catch {
         present = false;
       }

@@ -1,10 +1,11 @@
 import type { Context } from "@deepseek-ai/cordis";
-type RunChangeListener = (runId: string) => void;
+import type { RunId } from "./queueCore.js";
+type RunChangeListener = (runId: RunId) => void;
 /** The event seam this pure-domain spine reaches the bus through
  *  (the bench seam's law, verbatim: the writers own no Context, the
  *  owning service installs the pair once). */
 export interface RunsChangeSeam {
-    emit: (runId: string) => void;
+    emit: (runId: RunId) => void;
     on: (fn: RunChangeListener) => () => void;
 }
 declare module "@deepseek-ai/cordis" {
@@ -16,7 +17,7 @@ declare module "@deepseek-ai/cordis" {
          * @mode emit
          * @param runId - the run whose row moved.
          */
-        "runs.changed": (runId: string) => void;
+        "runs.changed": (runId: RunId) => void;
     }
 }
 /** Install the seam (the registry service does this with its
@@ -48,7 +49,7 @@ export declare function onRunChange(fn: RunChangeListener): () => void;
  *  subscriber's park in a microtask, by which time the writer's
  *  synchronous mutation has landed — the re-read serves the moved
  *  row, never the pre-write one. */
-export declare function notifyRunChanged(runId: string): void;
+export declare function notifyRunChanged(runId: RunId): void;
 /** Install the typed runs event seam on a Context (the registry
  *  service's constructor — the bench installer's law, drafts
  *  remote.ts installBenchChangeSeam): fiber-scoped through

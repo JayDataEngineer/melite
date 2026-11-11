@@ -65,7 +65,9 @@ export class QueueCore {
       if (run === undefined) continue;
       run.status = "running";
       this.activeId = runId;
-      notifyRunChanged(runId);
+      // the ROW's own branded id feeds the bus (the order array is
+      // the wire-facing FIFO of bare strings — the brand rides rows)
+      notifyRunChanged(run.runId);
       return run;
     }
     return null;

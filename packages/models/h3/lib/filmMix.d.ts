@@ -7,6 +7,11 @@ export interface FilmMixClip {
     readonly start: number;
     /** duration (frames; 0 = overlay-only, unsized). */
     readonly dur: number;
+    /** the SOURCE in-point (frames at the DOC CLOCK; 0 = play from the
+     *  head — the only behavior before the field existed). One TTS
+     *  source can contribute its middle: the conditioning slice AND the
+     *  pristine overlay both start here. */
+    readonly srcIn: number;
     readonly text: string;
     readonly cls: FilmMixClipClass;
 }
@@ -73,6 +78,26 @@ export interface FilmMixInput {
     readonly fps?: number;
     readonly duckDb?: number;
 }
+/** One window's per-class lane winners — the one lane law both
+ * halves drive (the conditioning stamps in actions.ts and the
+ * conditioned set in computeFilmMix). A clip that STARTS inside the
+ * window's doc span owns its class's lane; a seam-crossing clip
+ * (starts before the window) owns only a window no same-class clip
+ * starts inside — the line continues, never restarts, but it yields
+ * to the window's own speech. Two same-class clips starting inside
+ * ONE window cannot share the lane and neither may silently drop
+ * its conditioning: refuse loud, naming both rows and the cure (the
+ * 2026-11-17 M-17 burn: row 1 crossed the seam into window 2, row 2
+ * started inside it, and first-wins row order handed window 2's
+ * dialogue lane to row 1 — window 2 re-performed line 1 while row 2
+ * conditioned nothing).
+ *
+ * @param clips the parsed audio_clips rows, doc frames
+ * @param spanStart the window's doc span start (frames)
+ * @param spanEnd the window's doc span end (frames, exclusive)
+ * @param genStart the window's generation start (spanStart − carry; a clip starting in the carry head belongs to the previous window's film seat, so it counts as a crosser here)
+ * @returns per class, the winning clip's index into `clips` (absent = the class conditions this window through no clip) */
+export declare function chooseLaneClips(clips: readonly FilmMixClip[], spanStart: number, spanEnd: number, genStart: number): Partial<Record<FilmMixClipClass, number>>;
 /** The duck span string — "start:end" at ms precision, ';'-joined. */
 export declare function formatDuckSpan(start: number, end: number): string;
 /** Per-window stanza seconds — THE compose-time windowSecs

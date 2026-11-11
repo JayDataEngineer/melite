@@ -112,12 +112,14 @@ function readLoaderEntryNames(ctx: unknown): string[] | undefined {
   let loader: unknown;
   try {
     loader = typeof probe.get === "function" ? probe.get("loader") : undefined;
+  // a throwing getter on a foreign ctx falls through to the plain loader property probe.
   } catch {
     loader = undefined;
   }
   if (loader === undefined) {
     try {
       loader = probe.loader;
+    // a throwing property getter means no loader is observable — the gate reads undefined as direct-mount.
     } catch {
       loader = undefined;
     }
@@ -127,6 +129,7 @@ function readLoaderEntryNames(ctx: unknown): string[] | undefined {
   let list: unknown;
   try {
     list = (entries as () => unknown).call(loader);
+  // a throwing entries() call yields no entry names — undefined defers to the direct-mount pass.
   } catch {
     return undefined;
   }
@@ -136,6 +139,7 @@ function readLoaderEntryNames(ctx: unknown): string[] | undefined {
       const name = (entry as { options?: { name?: unknown } } | null)?.options?.name;
       if (typeof name === "string") names.push(name);
     }
+  // a hostile iterable refuses enumeration — undefined defers to the direct-mount pass, never a false gutted verdict.
   } catch {
     return undefined;
   }

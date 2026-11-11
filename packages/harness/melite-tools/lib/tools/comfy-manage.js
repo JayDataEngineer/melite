@@ -122,6 +122,7 @@ function asText(value) {
     try {
         const encoded = JSON.stringify(value);
         return encoded === undefined ? '?' : encoded;
+        // a value JSON.stringify cannot encode (circular, bigint) renders as '?' — this renderer's unrenderable marker
     }
     catch {
         return '?';

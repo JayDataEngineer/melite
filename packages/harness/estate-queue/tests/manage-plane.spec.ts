@@ -278,7 +278,11 @@ let ROUTE: Route = () => text("unused", 500);
 const route = (fn: Route): void => {
   ROUTE = fn;
   globalThis.fetch = (async (url: unknown, init: RequestInit | undefined) =>
-    ROUTE(String(url), init)) as typeof fetch;
+    // THE SDK WIRE (A1, the layers audit 2026-11-17): the engine
+    // reads ride sdkClient().fetchApi, and the SDK stamps its
+    // clientId query param on every URL — the stubs judge PATHS,
+    // so the dispatch strips the query before routing.
+    ROUTE(String(url).split("?")[0] ?? "", init)) as typeof fetch;
 };
 
 const manage = (doc: unknown, ctx?: ManageCtx): Promise<[number, { ok: boolean; detail: string; action: string; data?: unknown }]> =>

@@ -1,5 +1,5 @@
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
-import { loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
+import { loadCardDefs, needComfyUI, spliceWorkflow, warnWiringAbsent } from "@melite/comfyui-cordis";
 import { deadline } from "@deepseek-ai/dsh-timeout";
 import { errText, runRel } from "./runsTypes.js";
 import { notifyRunChanged } from "./runsChange.js";
@@ -302,6 +302,12 @@ export async function runOne(run, ctx, settle) {
     // Unarmed (no wiring service in the composition): the wall
     // stands down — the standing law.
     const wiring = ctx.get("comfyuiWiring");
+    // Absent PROVIDER (never an unarmed doc): the composition
+    // mounted no wiring row at all — the whole fence stands down,
+    // LOUD once per process (warnWiringAbsent). An armed-but-empty
+    // doc keeps its silent stand-down (the doc-null law below).
+    if (wiring === undefined)
+        warnWiringAbsent(ctx, "run seat fence");
     // UNARMED, THE WHOLE FENCE STANDS DOWN — splice included (the
     // second audit, 2026-10-11: the cut below spliced outside the
     // wall's own stand-down, so a lane whose /object_info fetch

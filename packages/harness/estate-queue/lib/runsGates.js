@@ -156,6 +156,7 @@ function tryLeaf(schema, v) {
     try {
         z.resolve(v, schema, {});
         return true;
+        // a schema refusal throws out of z.resolve — the refusal is the negative verdict itself, so false is the answer, not an error to recover
     }
     catch {
         return false;

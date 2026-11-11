@@ -62,6 +62,7 @@ export function engineRootOf(): string | null {
   let cfg: Record<string, unknown>;
   try {
     cfg = loadEndpointConfig() as unknown as Record<string, unknown>;
+  // an unreadable endpoint machine statement declares no engine root — null is the not-declared answer and the decision core refuses loudly downstream
   } catch {
     return null;
   }
@@ -106,6 +107,7 @@ export function lanesEnvFileOf(): string | null {
   let cfg: Record<string, unknown>;
   try {
     cfg = loadEndpointConfig() as unknown as Record<string, unknown>;
+  // an unreadable endpoint config states no lanes_env_file — null is the key-absent behavior and the process env still answers the check
   } catch {
     return null;
   }
@@ -133,6 +135,7 @@ export function lanesEnvValue(file: string, key: string, read: (path: string) =>
   let text: string;
   try {
     text = read(file);
+  // an unreadable env file arms no override — present: false is truthful and the caller still judges the process env leg
   } catch {
     return { value: "", present: false };
   }
@@ -185,6 +188,7 @@ export const nodeRuntimeFs: RuntimeFs = {
   isSymlink: (p) => {
     try {
       return lstatSync(p).isSymbolicLink();
+    // lstatSync fails on a missing or unreadable path — a path that lstats as nothing is not a symlink, so false is the chipped-target check's exact answer
     } catch {
       return false;
     }
@@ -192,6 +196,7 @@ export const nodeRuntimeFs: RuntimeFs = {
   readlink: (p) => {
     try {
       return readlinkSync(p);
+    // readlinkSync fails on a missing path or a non-symlink — null is the seam's not-a-symlink answer and the decision judges the real dir instead
     } catch {
       return null;
     }

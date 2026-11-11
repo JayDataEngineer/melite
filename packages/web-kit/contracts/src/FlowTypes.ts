@@ -365,4 +365,3 @@ export interface FlowDoc {
   */
  specBaseline?: Record<number, Record<string, unknown>>
 }
-

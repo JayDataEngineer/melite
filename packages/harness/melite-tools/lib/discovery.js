@@ -521,6 +521,7 @@ function servedOptions(rows, where) {
 export async function engineLorasListing(boundMs = 3_000) {
     try {
         return loraNamesFromObjectInfo(await liveObjectInfo(resolveEngineBaseUrl(), undefined, boundMs));
+        // a dead or undeclared engine proves no loras — undefined serves the picker's DECL rows alone (honest-empty)
     }
     catch {
         return undefined;
@@ -918,6 +919,7 @@ function runtimeRowsOf(boarded) {
         let decl = null;
         try {
             decl = getModel(family);
+            // an unregistered family carries no runtime — the runtimes block omits its row, never invents one
         }
         catch {
             decl = null;
@@ -931,6 +933,7 @@ function runtimeRowsOf(boarded) {
             present = rt.sentinel.every((s) => {
                 try {
                     return existsSync(join(override.value, s));
+                    // an unprobeable sentinel path (a malformed env override value) counts as absent — the row carries the provision command
                 }
                 catch {
                     return false;
@@ -976,6 +979,7 @@ export function specBody(svc, defs, res, engineLoras) {
     let decl = null;
     try {
         decl = getModel(key);
+        // an unknown model name serves the card model-less — its schema envelope and filters speak for it
     }
     catch {
         decl = null;
@@ -1256,6 +1260,7 @@ export function specBody(svc, defs, res, engineLoras) {
             let fdecl;
             try {
                 fdecl = getModel(atom);
+                // getModel throws for an unbootable family — the row stays (the boot census owns that refusal)
             }
             catch {
                 return true;
@@ -1439,6 +1444,7 @@ export async function cardToolsArm() {
             if (atom in lanes)
                 continue;
             let fdecl = null;
+            // an unregistered atom has no DECL — its lane falls back to the legacy truth (params: [] ≡ undeclared)
             try {
                 fdecl = getModel(atom);
             }

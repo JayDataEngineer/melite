@@ -164,6 +164,28 @@ describe("THE BLENDER LANE REMOVAL WALL (2026-11-01 — melite carries zero blen
     expect(rosteredLines, "the narration roster is non-empty (a silently emptied roster judges nothing)").toBe(7);
   });
 
+  it("the TS src plane spawns no blender executable (the subprocess claim, judged where it burned — B3, the layers audit 2026-11-17)", () => {
+    // The header promises "no engine node, no route, no card param, no
+    // subprocess"; until this arm the subprocess class was judged only
+    // over the vendored .py corpus — a spawn("blender", …) in any
+    // packages/**/src file passed every arm. The spawn-call shapes and
+    // the background-flag invocations are the executable seat; plain
+    // prose narration stays arm 2's jurisdiction.
+    const SPAWN_SEAT: RegExp =
+      /((spawn|execFile|exec|execSync|spawnSync)\s*\([^;\n]*["']blender["'])|(["']blender(\.exe)?["']?\s+(-b|--background)\b)|(\bblender(\.exe)?\s+--background\b)/;
+    const seats: string[] = [];
+    for (const f of tsSrcFiles()) {
+      const lines = readFileSync(f, "utf8").split("\n");
+      lines.forEach((line, i) => {
+        if (SPAWN_SEAT.test(line)) seats.push(`${relative(REPO, f)}:${i + 1}: ${line.trim()}`);
+      });
+    }
+    expect(
+      seats,
+      `EXECUTABLE BLENDER SPAWN on the TS plane — a src file shells out to the blender binary: ${JSON.stringify(seats, null, 1)}`,
+    ).toEqual([]);
+  });
+
   it("the flow/route/param plane carries zero blender spellings (harness + web estate src, the run-press's doors)", () => {
     const doors: string[] = [];
     for (const root of ["packages/harness/estate-queue/src", "packages/web"]) {

@@ -758,4 +758,3 @@ describe("THE SKILL BODY LAW — body copy induces calls; the landing's compile 
       "a taught 'read before writing' demand induces the very pre-read the door's craft-defer law retired — the craft line is the law, skills deepen it when the ask is unusual");
   });
 });
-

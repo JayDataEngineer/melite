@@ -226,6 +226,7 @@ function stampClipGeometry(body, admits) {
         bytes = new Uint8Array(readFileSync(abs));
     }
     catch {
+        // a missing or unreadable clip file throws at the stat/read — no bytes means no geometry stamp, never a refusal (the engine's follow-the-clip contract is the belt)
         return;
     }
     let probed;
@@ -233,6 +234,7 @@ function stampClipGeometry(body, admits) {
         probed = probeMedia(bytes);
     }
     catch {
+        // an unreadable or unrecognized container throws in the probe — the stamp skips and the engine's follow-the-clip contract is the belt
         return;
     }
     const stream = probed.streams.find((s) => s.width !== undefined && s.height !== undefined);
@@ -342,6 +344,7 @@ function refuseSilentSource(card, params) {
             let probed;
             try {
                 probed = probeMedia(bytes);
+                // a container the probe cannot read throws — without a positive no-audio reading this door never refuses, and the engine's own belt owns the clip
             }
             catch {
                 continue;
@@ -408,6 +411,7 @@ function probeSourceFrames(leaf, roots) {
     let probed;
     try {
         probed = probeMedia(bytes);
+        // an unreadable source throws in the probe — frames stay null and the caller stamps nothing rather than an invented length
     }
     catch {
         return null;
@@ -451,6 +455,7 @@ function refuseRefineWindowPastClip(card, params, roots) {
         let probed;
         try {
             probed = probeMedia(bytes);
+            // a clip the probe cannot read throws — no positive frame count means this door never refuses, and the engine's own belt keeps the clip
         }
         catch {
             continue;
@@ -499,6 +504,7 @@ function refuseTrimStartPastClip(card, params, roots) {
     let probed;
     try {
         probed = probeMedia(bytes);
+        // a clip the probe cannot read throws — no positive frame count means this door never refuses, and the engine's own belt keeps the clip
     }
     catch {
         return;
@@ -1980,6 +1986,7 @@ export class CardRegistryService extends Service {
             // face, the stored doc untouched.
             const kinds = this.defsSync().get(prep.card)?.flowKinds;
             return foldLegacyAliases(kinds, prep.params);
+            // an unservable body throws CardArmError from prepareCardParams — null lets the stage ride un-resolved (the serve is display-only) and the run door owns the refusal
         }
         catch {
             return null;

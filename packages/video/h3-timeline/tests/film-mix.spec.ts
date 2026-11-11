@@ -18,7 +18,7 @@ import type { FilmMixClip, FilmMixSpan } from '@melite/models-h3/filmMix';
 const SPAN = (start: number, end: number, transition?: string): FilmMixSpan =>
   transition === undefined ? { start, end } : { start, end, transition };
 const CLIP = (over: Partial<FilmMixClip> & { src: string }): FilmMixClip => ({
-  start: 0, dur: 0, text: "", cls: "music", ...over,
+  start: 0, dur: 0, srcIn: 0, text: "", cls: "music", ...over,
 });
 // the card's snap law for the pinned spans (56 → 56, 68 → 73,
 // 90 → 90, 124 → 124 — 22+17k by construction)
@@ -251,17 +251,33 @@ describe("computeFilmMix — the owner map (filmStart + (start−docStart), no c
     assert.equal(m.duckSpans.length, 0, "neither sized a conditioning slice");
   });
 
-  it("one lane per class per window: the first clip wins conditioning, both still overlay", () => {
+  it("one lane per class per window, owned by POSITION: the row starting inside wins the lane, the crosser yields (both still overlay)", () => {
     const m = computeFilmMix({
       spans: [SPAN(0, 56), SPAN(56, 124)],
       clips: [
-        CLIP({ src: "a.flac", start: 10, dur: 40, text: "first", cls: "dialogue" }),
-        CLIP({ src: "b.flac", start: 20, dur: 40, text: "second", cls: "dialogue" }),
+        CLIP({ src: "a.flac", start: 10, dur: 60, text: "crosses the seam", cls: "dialogue" }),
+        CLIP({ src: "b.flac", start: 60, dur: 40, text: "starts inside window two", cls: "dialogue" }),
       ],
       windowSecs: W2,
     });
     assert.equal(m.placements.length, 2);
-    assert.equal(m.duckSpans.length, 1, "the authored primary owns the lane");
+    // both rows condition (each owns one window's lane — the silent
+    // drop of row b was the M-17 burn), so both duck spans exist
+    assert.equal(m.duckSpans.length, 2, "the starter and the crosser each own a window's lane");
+  });
+
+  it("two same-class rows starting inside ONE window refuse loud (one lane cannot host both)", () => {
+    assert.throws(
+      () => computeFilmMix({
+        spans: [SPAN(0, 56), SPAN(56, 124)],
+        clips: [
+          CLIP({ src: "a.flac", start: 10, dur: 40, text: "first", cls: "dialogue" }),
+          CLIP({ src: "b.flac", start: 20, dur: 40, text: "second", cls: "dialogue" }),
+        ],
+        windowSecs: W2,
+      }),
+      /two dialogue clips start inside one window \(doc frames 0–56\) — "a\.flac" and "b\.flac"; one lane per class per window: end the first inside the window, merge the rows, or move the seam/,
+    );
   });
 
   it("one duration per window — never a guess", () => {

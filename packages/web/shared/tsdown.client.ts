@@ -180,6 +180,7 @@ export function mobileBundle(id: string, entry: string): UserConfig {
         if (match === null) return null
         try {
           return mobileRequire.resolve(source)
+        // an unresolvable proxy path returns null so the resolver chain falls through to its default handling.
         } catch {
           return null
         }

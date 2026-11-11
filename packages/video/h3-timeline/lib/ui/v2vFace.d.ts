@@ -7,5 +7,5 @@
  *  client bundle); the transitive closure here is the PURE plane
  *  only (the copy dict, the split law, the doc model — no CSS, no
  *  tenant editor), so a host inlining this leaf stays light. */
-export { V2vLeafFace } from './studio/V2vLeafFace.js';
+export { V2vLeafFace } from './studio/V2vLeafFace.tsx';
 //# sourceMappingURL=v2vFace.d.ts.map

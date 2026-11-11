@@ -192,6 +192,12 @@ export declare const refinePlaneSchema: z<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     [k: string]: z;
 }>>, "plain">;
+/** The wire tolerance for interpolate_enabled: the bench add-door's
+ *  "false"/"true" string literal folds to a boolean before the walk;
+ *  any other string refuses loud. Booleans and every other key pass
+ *  verbatim.
+ * @param raw the pre-walk params record
+ * @returns the record with interpolate_enabled narrowed to boolean */
 export declare const coerceWireBoolean: (raw: Record<string, unknown>) => Record<string, unknown>;
 /** THE PIN ROW SHAPE (one law, two seats): the doc walk and the compose
  *  gate both run this BEFORE any placement math — a row must carry a
@@ -200,6 +206,15 @@ export declare const coerceWireBoolean: (raw: Record<string, unknown>) => Record
  *  gate-and-walk wall pins them); placement and media existence stay
  *  the compose gate's, which owns the doc's calls/windows. */
 export declare function assertKeyframeRowShape(rows: readonly unknown[]): void;
+/** The compose-admission walk over a raw doc (the card gate's
+ *  model_validator port): array and boolean wire tolerances restored,
+ *  keyframe rows shape-judged, shot rows judged (per-call vocabulary,
+ *  int spans, tiling, seam/grid/guide gates), the window family
+ *  derived, and the family-conditional key gates run. A refusal names
+ *  the row and the cure; a passing doc returns the walked params with
+ *  the __steps_pinned/__shift_pinned stamps added.
+ * @param v the raw doc (absent = the fresh-card draft)
+ * @returns the walked params record the compose reads */
 export declare function schema(v: unknown): Record<string, unknown>;
 export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     image: z<string, string, "plain">;

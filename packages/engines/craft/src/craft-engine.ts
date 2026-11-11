@@ -328,6 +328,7 @@ export const llmCritic = (
         if (end === -1 || end < start) break;
         try {
           parsed = JSON.parse(text.slice(start, end + 1)) as CraftCritique;
+          // a slice that fails to parse is the walk's expected miss — the next shorter span may bound the object
         } catch {
           parsed = undefined;
         }

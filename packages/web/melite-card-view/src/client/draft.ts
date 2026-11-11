@@ -99,6 +99,7 @@ export async function fetchDraftRev(draftId: DraftId): Promise<number | null> {
   try {
     const doc = await fetchDraft(draftId)
     return typeof doc.bench?.rev === 'number' ? doc.bench.rev : null
+  // a draft the door won't serve returns null — the caller refuses the write instead of guessing a rev
   } catch {
     return null
   }

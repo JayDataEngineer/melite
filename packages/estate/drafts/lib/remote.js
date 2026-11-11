@@ -113,6 +113,7 @@ function resolverOf(ctx) {
     let seat;
     try {
         seat = ctx.get("cardRegistry", false);
+        // an unreadable cardRegistry seat means the registry-less lane — the resolver is optional and null admits unjudged
     }
     catch {
         return null;
@@ -410,6 +411,7 @@ export function composeVerdictOf(ctx, signal) {
     let seat;
     try {
         seat = ctx.get("runs", false);
+        // an unreadable runs seat means the registry-less lane (an isolated drafts rig) — undefined admits the compose
     }
     catch {
         return undefined;

@@ -77,6 +77,7 @@ export async function listRunText(runDir) {
         let entries;
         try {
             entries = await readdir(dir, { withFileTypes: true });
+            // a vanished or unreadable dir carries no text rows — this branch of the walk just ends
         }
         catch {
             return;
@@ -118,6 +119,7 @@ async function firstRootWithRunDir(seat, runId) {
         try {
             if ((await stat(dir)).isDirectory())
                 return { dir, root };
+            // no such run dir under this root — the loop tries the next root; a total miss is named by the caller
         }
         catch {
             continue;

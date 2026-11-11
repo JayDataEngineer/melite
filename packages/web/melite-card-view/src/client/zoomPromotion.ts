@@ -154,6 +154,7 @@ export function createZoomPromotion(
     return roots.every((root) => {
       try {
         return root.querySelector(ROOT_CLOSING_SELECTOR) != null
+      // a node detached mid-flight throws on querySelector — false reads "no closing overlay", the glide just skips
       } catch {
         return false
       }
@@ -165,6 +166,7 @@ export function createZoomPromotion(
     if (doc === null) return null
     try {
       return (doc.querySelector(GRID_PIN_SELECTOR) as unknown as PromotableGridNode | null) ?? null
+    // a refused selector finds no grid — null skips the pin, which is cosmetic only
     } catch {
       return null
     }
@@ -213,6 +215,7 @@ export function createZoomPromotion(
       try {
         const r = frame.getBoundingClientRect?.()
         restBox = r ? { left: r.left, top: r.top, width: r.width, height: r.height } : null
+      // a detached frame refuses its rect — a null restBox skips pin and glide, the fullscreen still applies
       } catch {
         restBox = null
       }
@@ -243,6 +246,7 @@ export function createZoomPromotion(
     try {
       const r = frame.getBoundingClientRect?.()
       from = r ? { left: r.left, top: r.top, width: r.width, height: r.height } : null
+    // a detached frame refuses its rect — a null origin skips the glide, the zoom state is untouched
     } catch {
       from = null
     }
@@ -263,6 +267,7 @@ export function createZoomPromotion(
         ],
         { duration: GLIDE_MS, easing: GLIDE_EASE, fill: "forwards" },
       )
+    // an unsupported animate throws — glide stays null and the zoom swaps without animation
     } catch {
       glide = null
     }

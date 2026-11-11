@@ -157,6 +157,7 @@ export async function pollFlowRun(runId, signal, opts) {
             // The server is lying to the poll.
             // Fail VISIBLY — polling on would be a silent fake "running" for the rest of the ceiling.
             let errorBody = null;
+            // a non-JSON error body (gateway HTML page → resp.json() SyntaxError) carries no violations — null just skips the signature check; the poll's status handling below still owns the refusal
             try {
                 errorBody = await resp.json();
             }

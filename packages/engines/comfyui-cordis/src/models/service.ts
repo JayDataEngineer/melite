@@ -1019,6 +1019,7 @@ export class ModelsService extends Service {
     let cfg: Record<string, EngineJson> | null;
     try {
       cfg = loadEndpointConfig();
+    // a missing or unparseable endpoint config means no mount leg — null makes findModelPresent check the runtime tree alone
     } catch {
       cfg = null;
     }

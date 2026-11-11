@@ -126,10 +126,18 @@ the row is dialogue. For example:
 {"id":"line-1","src":"<returned artifact>","start_frame":12,"dur_frames":91,"text":"I told you I would finish it before dawn."}
 ```
 
-THE WORDS MOVE THE MOUTH. One lane per CLASS per window. A row crossing a
-window seam CONTINUES the same line across both windows. The generated voice
+THE WORDS MOVE THE MOUTH. One lane per CLASS per window, owned by POSITION:
+the row that STARTS inside a window owns its class lane there. A row crossing a
+window seam CONTINUES the same line across both windows, but YIELDS the second
+window's lane to a row that starts inside it; two same-class rows starting
+inside ONE window REFUSE at compose (end the first inside the window, merge the
+rows, or move the seam). The generated voice
 DUCKS -14dB under a conditioned row. Place the row with `start_frame` and
-`dur_frames` in film coordinates. A source-less row REFUSES at compose
+`dur_frames` in film coordinates. Optional `in_frames` = the SOURCE in-point
+(doc frames): where in the file the clip starts — omit it and the clip plays
+from the head; state it and BOTH the conditioning slice and the overlay start
+there (one long TTS take can contribute its middle: two rows, same src,
+different `in_frames`). A source-less row REFUSES at compose
 (filmMix throws: "a positioned clip row has no src") — every row needs a
 real src path before the press; verify the returned manifest and final
 audio. Spoken lines are NEVER a

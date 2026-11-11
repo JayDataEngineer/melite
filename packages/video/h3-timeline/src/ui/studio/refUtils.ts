@@ -231,6 +231,7 @@ export const fitImageToAspect = async (src: string, tw: number, th: number): Pro
     const r = fitRect(sw, sh, tw, th)
     ctx.drawImage(img, r.dx, r.dy, r.dw, r.dh)
     return canvas.toDataURL("image/png")
+  // an undecodable image (decode failed / the 700ms stall) or a cross-origin-tainted canvas (toDataURL SecurityError) returns src verbatim — the commit never depends on the fit (the courtesy law)
   } catch {
     return src
   }

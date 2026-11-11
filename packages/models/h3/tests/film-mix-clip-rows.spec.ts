@@ -46,6 +46,6 @@ describe("parseFilmMixClips — the positioned chain's class/id/name conjuncts",
     const clips = parseFilmMixClips([
       { src: "s.flac", start_frame: "24", dur_frames: "48", class: "sfx", id: "take-4", name: "the bell" },
     ]);
-    expect(clips).toEqual([{ src: "s.flac", start: 24, dur: 48, text: "", cls: "sfx" }]);
+    expect(clips).toEqual([{ src: "s.flac", start: 24, dur: 48, srcIn: 0, text: "", cls: "sfx" }]);
   });
 });

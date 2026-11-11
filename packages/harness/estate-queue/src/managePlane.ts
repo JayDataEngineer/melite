@@ -23,6 +23,7 @@ import {
   liveObjectInfo,
   loadEndpointConfig,
   resolveEngineBaseUrl,
+  sdkClient,
 } from "@melite/comfyui-cordis";
 import { writeJsonAtomic } from "./queueLock.ts";
 import {
@@ -1598,6 +1599,7 @@ async function hLoraFetch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnve
   let inComboNow = false;
   try {
     inComboNow = loraNamesFromObjectInfo(await objectInfoDoc(ctx, railMs(req))).includes(comboName);
+  // the engine's deadline refusal is advisory here — a folded false reads as "not yet in the combo read", and the landed lora plus the restart voice below are untouched
   } catch {
     inComboNow = false;
   }
@@ -2435,7 +2437,11 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   const dl = deadlineOf(ctx.signal, 5000, "ENDPOINT_SET_PROBE");
   let stats: Record<string, unknown>;
   try {
-    const r = await fetch(url + "/system_stats", { signal: dl.signal });
+    // THE SDK SEAT OWNS THE WIRE (A1, the layers audit 2026-11-17):
+    // the endpoint-set probe rides fetchApi — the same engine-read
+    // spelling as the health gate and the manage probes, never a
+    // parallel fetch beside the estate's declared client law.
+    const r = await sdkClient(url).fetchApi("/system_stats", { signal: dl.signal });
     if (!r.ok) throw new Error("HTTP " + String(r.status));
     stats = (await r.json()) as Record<string, unknown>;
   } catch (e: unknown) {
@@ -2863,6 +2869,7 @@ async function objectInfoDoc(ctx: ManageCtx, boundMs?: number): Promise<unknown>
   if (ctx.objectInfo !== undefined) {
     try {
       return await ctx.objectInfo()
+    // a failed lane-carried objectInfo read means the engine did not answer — the null-doc contract folds to not-visible, never a throw across the sidebar
     } catch {
       return null
     }

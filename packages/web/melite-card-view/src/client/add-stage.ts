@@ -55,6 +55,7 @@ async function benchRev(sessionKey: string, signal?: AbortSignal): Promise<numbe
     ) as unknown as { rev?: unknown }
     const rev = row.rev
     return typeof rev === 'number' ? rev : undefined
+  // a failed rev read returns undefined — the re-apply skips and the caller's refusal stands as the answer
   } catch {
     return undefined
   }

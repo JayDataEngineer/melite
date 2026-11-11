@@ -48,18 +48,14 @@ export interface EngineStageOutcome {
 // The engine's own run handle is an opaque cross-boundary id —
 // branded like the queue lane's RunId (estate-queue queueCore,
 // `type RunId = Branded<"RunId">` from @deepseek-ai/dsh-brand).
-// The brand mechanics MIRROR that module's Branded declaration for
-// one reason: this source-plane package carries no dsh-brand
-// dependency row (strict pnpm isolation — no node_modules link
-// resolves without an install), and the brand is compile-time-only,
-// erased before any wire, file, or ledger write. A bare string is
-// not assignable; mints go through the transport that owns the id.
-declare const BRAND: unique symbol;
-
-/** A string carrying a compile-time-only brand B (the
- *  @deepseek-ai/dsh-brand mechanics, declared local — see the block
- *  comment above). */
-type Branded<B extends string> = string & { readonly [BRAND]: B };
+// ONE spelling of the brand mechanic since 2026-11-17 (the cordis
+// audit's MINOR-4): the local mirror below is deleted and the
+// devDependency row seats the real module — dsh-brand is
+// duplicate-install-safe by design (no runtime identity, the brand
+// erased before any wire, file, or ledger write), so a future
+// dsh-brand change propagates here too. A bare string is not
+// assignable; mints go through the transport that owns the id.
+import type { Branded } from "@deepseek-ai/dsh-brand";
 
 /** The engine's own handle for one submitted run (ComfyUI's
  *  promptId). Minted ONCE at the transport that pulled it off the

@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { QueueCore } from "../src/queue.ts";
+import type { RunId } from "../src/queueCore.ts";
 import { QueueService } from "../src/service.ts";
 import { apply, bootSweep, runsRegistryPlugin } from "../src/index.ts";
 
@@ -129,7 +130,10 @@ describe("the index face's sweep door", () => {
       JSON.stringify({ status: "running", draft_id: "d1" }),
     );
     writeFileSync(join(out, "run-stale", "_request.json"), "{}");
-    const swept = await bootSweep(root, ["run-old"]);
+    // liveRunIds speaks the branded RunId (MINOR-1, the 2026-11-17
+    // cordis audit) — the fixture mints through the same cast the
+    // producers use.
+    const swept = await bootSweep(root, ["run-old" as RunId]);
     assert.deepEqual(swept, ["run-stale"]);
     const stale = JSON.parse(readFileSync(join(out, "run-stale", "_flow.json"), "utf8")) as Record<
       string,

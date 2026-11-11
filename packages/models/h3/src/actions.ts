@@ -32,7 +32,7 @@ import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
 import type { Family } from './schema.js'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
-import { computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js'
+import { chooseLaneClips, computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js'
 import type { FilmMixClip, FilmMixSpan } from './filmMix.js'
 import { SECOND_PASS_WINDOW } from './secondPass.js'
 import { mountRefModBake } from './refmodBake.js'
@@ -694,8 +694,9 @@ function renderH3Film(
     // THE AUDIO CONDITIONING STAMPS (2026-09-21, generalized
     // 2026-09-22 to the D-M-E lanes): every window whose generation
     // span a clip rides HEARS that clip — one lane per CLASS, the
-    // FIRST clip in row order winning its class's lane when several
-    // of one class overlap one window (the authored primary). A clip
+    // lane law owned by chooseLaneClips (filmMix.ts): the clip that
+    // STARTS inside the window wins its class's lane; a crosser
+    // yields to it. A clip
     // with no dur (or a sub-0.1s overlap) cannot size a slice and
     // stays overlay-only. Computed BEFORE the stanza: a stamped
     // window is a REFERENCE window (t4r) — the audio lanes only
@@ -720,13 +721,23 @@ function renderH3Film(
     if (sf !== null && ef !== null && Number.isFinite(sf) && Number.isFinite(ef) && ef > sf) {
       const carry = i > 0 ? overlap : 0
       const genStart = sf - carry
-      for (let ci = 0; ci < clips.length; ci++) {
+      // THE LANE LAW (chooseLaneClips — the 2026-11-17 M-17 cure):
+      // a clip that STARTS inside this window owns its class's
+      // lane; a seam-crossing clip owns only a window no same-class
+      // clip starts inside (the line continues, never restarts, but
+      // it yields to the window's own speech); two same-class
+      // starters inside one window refuse loud. Row order
+      // previously owned the lane outright — a crossing row stole
+      // window 2's dialogue lane from the row that started there,
+      // and window 2 re-performed line 1 while the real row
+      // conditioned nothing.
+      const lanes = chooseLaneClips(clips, sf, ef, genStart)
+      for (const cls of ['dialogue', 'sfx', 'music'] as const) {
+        const ci = lanes[cls]
+        if (ci === undefined) continue
         const clip = clips[ci]!
-        if (clip.dur <= 0) continue
-        if (stamps[clip.cls] !== undefined) continue // one lane per class per window
         const lo = Math.max(clip.start, genStart)
         const hi = Math.min(clip.start + clip.dur, ef)
-        if (hi - lo < 2.4) continue // below the slice node's 0.1s floor
         // ONE CLOCK (journey audit AUDIO-2): the stamps' seconds
         // speak the DOC CLOCK — p.fps when stated, the schema row's
         // default otherwise. The /24 literal stretched a 16fps
@@ -734,9 +745,13 @@ function renderH3Film(
         // the audit's worst burn).
         const stampFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT
         const ms = (frames: number): number => Math.round((frames / stampFps) * 1000) / 1000
-        stamps[clip.cls] = {
+        stamps[cls] = {
           src: clip.src,
-          slice_start_seconds: ms(Math.max(0, genStart - clip.start)),
+          // the SOURCE in-point rides BOTH halves (the clipping
+          // lane): the conditioning slice starts in_frames into the
+          // source, exactly where the pristine overlay starts — the
+          // model hears the segment the film plays.
+          slice_start_seconds: ms(clip.srcIn + Math.max(0, genStart - clip.start)),
           slice_duration_seconds: ms(hi - lo),
           delay_seconds: ms(Math.max(0, clip.start - genStart)),
           text: clip.text,
@@ -1090,8 +1105,14 @@ function renderH3Film(
     let nextSeat = 0
     const mixRows = manifest.placements.map((pl) => {
       const clip = clips[pl.clip]!
+      // THE OVERLAY'S IN-POINT (the clipping lane): in_sec rides only
+      // when the clip starts past the source head — a 0 in-point omits
+      // the key, byte-identical to every manifest row composed before
+      // the lane existed (the wired-row arm freezes that shape).
+      const inSec = Math.round((clip.srcIn / (typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT)) * 1000) / 1000
+      const inField = inSec > 0 ? { in_sec: inSec } : {}
       if (!isSpell(clip.src)) {
-        return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls }
+        return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls, ...inField }
       }
       nextSeat += 1
       if (nextSeat > WIRED_CLIP_SEATS) {
@@ -1103,7 +1124,7 @@ function renderH3Film(
         audio: clip.src,
         sample_rate: FILM_AUDIO_RATE,
       }).out(0)
-      return { wired: nextSeat, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls }
+      return { wired: nextSeat, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls, ...inField }
     })
     const mix = g.node('MeliteFilmAudioMix', {
       videos: windowPrefixes.join(','),

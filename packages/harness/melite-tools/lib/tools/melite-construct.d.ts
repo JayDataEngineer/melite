@@ -13,11 +13,29 @@ import type { ToolDefinition } from '../types.js';
 /** The default bench — the unattributed seat (script runs,
  *  legacy callers). */
 export declare const DEFAULT_BENCH = "main";
+/** The conversation bench seat for an execution: a `session-` agent id
+ *  maps to its conversation bench, a bare uuid forwards under the
+ *  `delegate:` prefix (the estate door re-seats it to the parent
+ *  conversation), and an absent agent id takes the unattributed
+ *  DEFAULT_BENCH.
+ * @param exec the tool execution (its agent id is the session identity)
+ * @returns the bench key the verbs address */
 export declare function benchKeyOfExec(exec: {
     agent?: {
         id?: unknown;
     };
 }): string;
+/** The melite_construct author verb over the shared bench: the twelve
+ *  CONSTRUCT_VERBS (read/load/patch/add_stage/remove_stage/archive/
+ *  unarchive/clear/floor/rewire/undo/validate), addressed through
+ *  benchKeyOfExec's conversation seat, every mutation CAS-guarded and
+ *  answering with the derivations and compile verdict it produced.
+ *  Never mints a run: the bench is ensured once per key and edited in
+ *  place.
+ * @param estate the tool's estate seat (the bench/runs/drafts doors)
+ * @param opts delegated=true serves the compose-only copy law (the
+ *  description names the run door the agent actually has)
+ * @returns the tool definition a tools service registers */
 export declare function meliteConstruct(estate: Estate, opts?: {
     delegated?: boolean;
 }): ToolDefinition;

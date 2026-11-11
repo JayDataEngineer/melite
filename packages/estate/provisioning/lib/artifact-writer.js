@@ -247,6 +247,7 @@ async function nextChunk(iterator, signal) {
 async function closeIterator(iterator) {
     try {
         await iterator.return();
+        // the byte source may already have failed, so return() can reject — closing is best-effort and never masks the write's own error
     }
     catch {
         return;

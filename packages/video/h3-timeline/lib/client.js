@@ -997,6 +997,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../models/h3/src/timelineContract.ts
 		init_familyLane();
+		/** Per-media reference caps — the max stack each declared ref lane admits. */
 		const REF_CAPS = {
 			images: 8,
 			videos: 3,
@@ -1018,6 +1019,11 @@ window.__ModuleLoader__.load({
 			if (typeof raw === "boolean") return raw;
 			throw new Error(`h3-timeline edit: carry must be a boolean (true = continue each segment from the last frame of the previous; false = cut the joins) — saw ${JSON.stringify(raw)}`);
 		}
+		/** The context frames a seam carries: 0 for the cut join, the
+		*  SEAM_OVERLAP_FRAMES generation head for any other transition
+		*  (unstated included — carry is the default).
+		* @param transition the seam a call states (undefined = carry)
+		* @returns the join's context overlap in frames */
 		function transitionOverlap(transition) {
 			return transition === "cut" ? 0 : 22;
 		}
@@ -1130,6 +1136,10 @@ window.__ModuleLoader__.load({
 		function deriveWindowFamily(raw) {
 			return deriveFamilyLane(FAMILY_LAW, raw);
 		}
+		/** The nearest legal 22+17k length (round to the rung, clamp into
+		*  [22,362]) — the "nearest legal" value refusal voices quote.
+		* @param length the requested length in frames
+		* @returns the nearest grid-legal length */
 		function gridSnap(length) {
 			const k = Math.round((length - 22) / 17);
 			return Math.min(362, Math.max(22, 22 + 17 * k));
@@ -1137,10 +1147,17 @@ window.__ModuleLoader__.load({
 		/** THE GRID PREDICATE, one owner: a length the engine can render is
 		*  22+17k inside [22,362]. Every refusal door asks this question, so
 		*  knob pins, single windows, cut windows, and carried windows cannot
-		*  drift into different laws. */
+		*  drift into different laws.
+		* @param length the candidate length in frames
+		* @returns true when length is 22+17k inside [22,362] */
 		function isGridLength(length) {
 			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
 		}
+		/** The grid admission gate: a non-number or off-grid length refuses
+		*  naming the nearest legal value; a legal length passes verbatim.
+		* @param length the value under admission (a number is required)
+		* @param where the refusal's voice (the calling door's name)
+		* @returns the length, verbatim */
 		function assertGridLength(length, where) {
 			if (typeof length !== "number" || !isGridLength(length)) {
 				const nearest = typeof length === "number" && Number.isFinite(length) ? gridSnap(Math.min(362, Math.max(22, Math.round(length)))) : 124;
@@ -1167,13 +1184,19 @@ window.__ModuleLoader__.load({
 		*  is the map. */
 		/** Is this window's seam a carried join? Index-aware — index 0 is
 		*  always a first window (no carry), and a 'cut' seam never
-		*  carries. */
+		*  carries.
+		* @param index the window's position in the calls array (0-based)
+		* @param call the window's own row (its transition seat)
+		* @returns true when the seam rides the carry join */
 		function isCarriedShape(index, call) {
 			return index > 0 && transitionOverlap(call.transition) > 0;
 		}
 		/** Is this authored LENGTH legal for the window's shape? A carried
 		*  window rides the 17k step (content + 22f carry head ≤ 362); a
-		*  first/cut window rides the 22+17k grid. */
+		*  first/cut window rides the 22+17k grid.
+		* @param length the authored length in frames
+		* @param carried true when the window is a carried join
+		* @returns true when the shape's own grid admits the length */
 		function isLegalCallLength(length, carried) {
 			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
 			return isGridLength(length);
@@ -1182,7 +1205,13 @@ window.__ModuleLoader__.load({
 		*  the gesture's frame when it already qualifies, else the nearest
 		*  one that does. NULL when no interior frame qualifies (the §0.5
 		*  fence): a window at its shape's floor has no legal split at all
-		*  — the caller refuses loud, never repairs. */
+		*  — the caller refuses loud, never repairs.
+		* @param start the containing window's first frame
+		* @param end the containing window's end frame
+		* @param leftCarried whether the left half keeps the carried shape
+		* @param rightCarried whether the right half takes the carried shape
+		* @param gesture the frame the split was asked at
+		* @returns the legal frame nearest the gesture, or null */
 		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
 			let best = null;
 			let bestDistance = Number.POSITIVE_INFINITY;
@@ -1199,7 +1228,11 @@ window.__ModuleLoader__.load({
 		}
 		/** The seam toggle's re-frame: the 22-frame carry moves from the
 		*  generation head to (or from) the authored span. A first window
-		*  has no carry either way, so its toggle never moves frames. */
+		*  has no carry either way, so its toggle never moves frames.
+		* @param call the window row the toggle re-frames
+		* @param index the window's position in the calls array (0-based)
+		* @param next the seam state after the toggle
+		* @returns the window's re-framed end frame */
 		function reflowSeamSpan(call, index, next) {
 			const wasCarried = isCarriedShape(index, call);
 			const willCarried = isCarriedShape(index, { transition: next });
@@ -1320,11 +1353,22 @@ window.__ModuleLoader__.load({
 			const neighbor = (c) => c === null ? "" : ` nearest: ${c.windows} windows of ${c.windowFrames}f deliver ${c.deliveredFrames}f (${(c.deliveredFrames / 24).toFixed(3)}s);`;
 			throw new Error(`${where}: stated ${totalFrames}f composes nowhere exactly — N uniform 22+17k windows under the ${overlap}f context overlap compose exactly nowhere;${neighbor(bestUnder)}${neighbor(bestOver)} re-state extend_seconds as a composition's delivered seconds (D frames round-trips D/24 exactly; a single window keeps the 22+17k grid door)`);
 		}
+		/** The frames a window contributes to the delivered film: a first or
+		*  cut window contributes its span verbatim; a carried window nets
+		*  out the SEAM_OVERLAP_FRAMES it shares with the previous window.
+		* @param call the window row
+		* @param index the window's position in the calls array (0-based)
+		* @returns the delivered frame count (never negative) */
 		function deliveredFrames(call, index) {
 			const span = call.end_frame - call.start_frame;
 			if (index === 0 || call.transition === "cut") return span;
 			return Math.max(0, span - 22);
 		}
+		/** Split a comma-separated reference string into entries, trimming
+		*  separators and surrounding spaces; a data: URI's mime comma does
+		*  not split its entry.
+		* @param value the wire spelling (undefined = no refs)
+		* @returns the entries, in order, without empties */
 		function splitRefList(value) {
 			if (!value) return [];
 			const out = [];
@@ -1352,11 +1396,20 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** A declared ref seat's entries, either wire spelling: an array
+		*  passes its non-empty strings; a comma string rides splitRefList;
+		*  any other value is zero refs.
+		* @param value the ref seat's raw value
+		* @returns the reference entries, in order */
 		function normalizeDeclaredRefs(value) {
 			if (Array.isArray(value)) return value.filter((entry) => typeof entry === "string" && entry.trim() !== "");
 			if (typeof value === "string") return splitRefList(value);
 			return [];
 		}
+		/** The inverse wire spelling: entries join into one ", "-separated
+		*  string; empty input yields undefined (no seat, never an empty string).
+		* @param value an array of entries, a string, or absent
+		* @returns the joined string, or undefined when nothing is stated */
 		function joinRefList(value) {
 			if (Array.isArray(value)) {
 				const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean);
@@ -1364,6 +1417,12 @@ window.__ModuleLoader__.load({
 			}
 			if (typeof value === "string" && value.trim()) return value.trim();
 		}
+		/** A reference's media genre: the engine's video_w* naming first (its
+		*  _last_frame/_prev faces are images), else the extension of the name
+		*  or the URL's path (?path= decoded wins), else 'other'.
+		* @param name the entry's file name
+		* @param url the entry's URL, when one rides
+		* @returns 'image' | 'video' | 'audio' | 'other' */
 		function refGenreOf(name, url) {
 			const lowerName = name.toLowerCase();
 			if (/^video_w\d+_/.test(lowerName)) {
@@ -1406,6 +1465,9 @@ window.__ModuleLoader__.load({
 			].includes(extension)) return "audio";
 			return "other";
 		}
+		/** The per-call knob vocabulary in serve order — the studio renders a
+		*  call's knob rows in this order; KnobKey and CALL_KNOB_KEYS derive
+		*  from it. */
 		const KNOB_ORDER = [
 			"steps",
 			"denoise",
@@ -1434,6 +1496,7 @@ window.__ModuleLoader__.load({
 			"interp_multiplier",
 			"length"
 		];
+		/** The admitted per-call knob keys — KNOB_ORDER as a membership set. */
 		const CALL_KNOB_KEYS = new Set(KNOB_ORDER);
 		/** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
 		*  knobs' ONLY read seats live inside the post chain, whose only
@@ -1452,6 +1515,8 @@ window.__ModuleLoader__.load({
 			"interp_model",
 			"interp_multiplier"
 		]);
+		/** Legacy knob spellings → their current knob keys (a stored row
+		*  carrying the left column reads under the right). */
 		const LEGACY_KNOB_KEY = {
 			sampling_steps: "steps",
 			sampler: "sampler_name",
@@ -1469,6 +1534,10 @@ window.__ModuleLoader__.load({
 			interpolate_model: "interp_model",
 			interpolate_multiplier: "interp_multiplier"
 		};
+		/** Map a legacy knob spelling to its current knob key; an unknown key
+		*  passes through verbatim.
+		* @param key the stored or stated knob key
+		* @returns the current knob key */
 		function migrateCallKnobKey(key) {
 			return LEGACY_KNOB_KEY[key] ?? key;
 		}
@@ -3044,7 +3113,7 @@ window.__ModuleLoader__.load({
 										children: c.name
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.audioTime,
-										children: timelineCopy.clipSeconds({ seconds: a })
+										children: timelineCopy.clipSeconds({ seconds: (Math.max(1, c.dur_frames) / Math.max(1, fps)).toFixed(1) })
 									})]
 								}),
 								onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -5128,7 +5197,7 @@ window.__ModuleLoader__.load({
 				width: 2,
 				advanced: true,
 				placeholder: "Empty = a fresh edit — or pick a finished run for the 2x resume",
-				tooltip: "The RESUME shortcut: re-render a finished run at 2x from its saved pre-codec latents (zero re-encode loss, exact conditioning/seed state). Empty = a fresh edit, the field does nothing. For any video WITHOUT a run — an outside clip, an export whose run is gone — leave this empty and flip the Refine pass dial instead (the one-dial 2x)."
+				tooltip: "The RESUME shortcut: re-render a finished run at 2x from its saved latents, zero re-encode. No run id? Leave empty and flip the Refine pass dial instead."
 			},
 			{
 				name: "segment_crf",
@@ -7969,6 +8038,7 @@ window.__ModuleLoader__.load({
 				const row = c;
 				row["start_frame"] = wireInt(row["start_frame"]);
 				row["dur_frames"] = wireInt(row["dur_frames"]);
+				row["in_frames"] = wireInt(row["in_frames"]);
 				const src = typeof row.src === "string" ? row.src.trim() : "";
 				if (src === "") {
 					if (row.start_frame !== void 0 || row.dur_frames !== void 0 || typeof row.text === "string" && row.text.trim() !== "" || typeof row.class === "string" && row.class.trim() !== "" || typeof row.id === "string" && row.id.trim() !== "" || typeof row.name === "string" && row.name.trim() !== "") throw new Error("audio_clips: a positioned clip row has no src — the film mix cannot place a source-less row");
@@ -7977,6 +8047,11 @@ window.__ModuleLoader__.load({
 				}
 				if (typeof row.start_frame !== "number" || !Number.isFinite(row.start_frame)) throw new Error(`audio_clips: a clip with src but no numeric start_frame — the audio lanes own placement (re-add the clip)`);
 				const dur = typeof row.dur_frames === "number" && Number.isFinite(row.dur_frames) && row.dur_frames > 0 ? row.dur_frames : 0;
+				let srcIn = 0;
+				if (row.in_frames !== void 0) {
+					if (typeof row.in_frames !== "number" || !Number.isFinite(row.in_frames) || row.in_frames < 0) throw new Error(`audio_clips: a clip with in_frames ${JSON.stringify(row.in_frames)} — the source in-point must be a non-negative number of frames (omit to play from the head)`);
+					srcIn = row.in_frames;
+				}
 				const text = typeof row.text === "string" ? row.text.trim() : "";
 				const clsRaw = typeof row.class === "string" ? row.class.trim().toLowerCase() : "";
 				if (clsRaw !== "" && clsRaw !== "dialogue" && clsRaw !== "sfx" && clsRaw !== "music") throw new Error(`audio_clips: unknown class "${clsRaw}" — dialogue | sfx | music (omit for auto: text → dialogue, else music)`);
@@ -7985,6 +8060,7 @@ window.__ModuleLoader__.load({
 					src,
 					start: row.start_frame,
 					dur,
+					srcIn,
 					text,
 					cls
 				});

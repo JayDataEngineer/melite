@@ -986,10 +986,9 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // one-line pattern. The composer's reads below are reads of the
       // GATED doc.
       // The wire law is SHARED (coerceWireBoolean — the same
-      // definition schema() uses, hour 20). NO SILENT REPAIR
-      // (2026-09-20): an explicit null length used to be deleted
-      // here so the walk would silently fill the default — the same
-      // quiet-fix the door now refuses ('nulled-param'). The card's
+      // definition schema() uses). NO SILENT REPAIR: an explicit
+      // null length is refused here AND at the door ('nulled-param')
+      // — the default fills only when the key is OMITTED. The card's
       // own gate voices the same refusal: send a number or omit the
       // key, never null.
       const gateInput = coerceWireBoolean(p as Record<string, unknown>)

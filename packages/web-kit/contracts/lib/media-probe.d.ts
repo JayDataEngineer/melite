@@ -16,6 +16,8 @@
  *     (media timescale, for the audio duration).
  *   WAV/RIFF — `fmt ` (codec tag, channels, sample rate, bits) and
  *     `data` (byte length → duration).
+ *   FLAC — the STREAMINFO block (sample rate, channels, total
+ *     samples → duration); the TTS estate's own container.
  *
  * WHAT IT DELIBERATELY DOES NOT DO: decode. Frame pixels are the
  * engine's business — the harness commits an image the run produced

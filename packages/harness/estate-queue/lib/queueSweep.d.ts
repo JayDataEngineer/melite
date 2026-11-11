@@ -1,3 +1,4 @@
+import type { RunId } from "./queueCore.js";
 export interface SweepResult {
     readonly touched: boolean;
     readonly wasQueued: boolean;
@@ -52,5 +53,5 @@ export declare const READ_SWEEP_RUNNING_ERROR: string;
  *  Swept BEFORE traffic, so the ledger never shows phantom actives.
  *  Returns the RETIRED run ids in sorted order (held rows are not
  *  retired and never ride it). */
-export declare function bootSweep(stateRoot: string, liveRunIds?: readonly string[], nowS?: number): Promise<string[]>;
+export declare function bootSweep(stateRoot: string, liveRunIds?: readonly RunId[], nowS?: number): Promise<string[]>;
 //# sourceMappingURL=queueSweep.d.ts.map

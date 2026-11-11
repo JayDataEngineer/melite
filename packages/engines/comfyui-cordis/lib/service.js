@@ -1,7 +1,7 @@
 import { validateDeclaredMods } from "./mods-schema.js";
 import { validateCardDefinition } from "./card-definition-schema.js";
 import { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
-import { assertWiringAgainst, deriveWiringDoc } from "./wiringWall.js";
+import { assertWiringAgainst, deriveWiringDoc, warnWiringAbsent } from "./wiringWall.js";
 export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Service } from '@deepseek-ai/cordis';
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph';
@@ -598,6 +598,7 @@ export class ComfyUIService extends Service {
         let envelopeAtom = family;
         try {
             envelopeAtom = modelsService().owningAtom(family);
+            // an unbooted models table has no owning atom — the family folds to itself, the pre-fold read
         }
         catch {
             envelopeAtom = family;
@@ -621,6 +622,7 @@ export class ComfyUIService extends Service {
             let cap;
             try {
                 cap = modelsService().getModel(family).lane_inputs?.max_images;
+                // an unbooted models table (or an unknown family) has no lane cap — undefined leaves the declared schema unnarrowed
             }
             catch {
                 cap = undefined;
@@ -663,9 +665,12 @@ export class ComfyUIService extends Service {
         // other up — the wiring service under its OWN name is how every
         // seat (compose here, the run seat's fence, the adapter's
         // post-splice walk) reads the same census. A composition that
-        // mounts no wiring provider stands the walls down (documented).
+        // mounts no wiring provider stands the walls down — LOUD, once
+        // per process (warnWiringAbsent).
         const wiring = this.ctx.get('comfyuiWiring');
-        if (wiring !== undefined) {
+        if (wiring === undefined)
+            warnWiringAbsent(this.ctx, 'compose seat');
+        else {
             if (derived === null)
                 wiring.disarm();
             else

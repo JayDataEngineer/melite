@@ -91,6 +91,7 @@ export function galleryTail(t: string): string | null {
   let path: string | null = null;
   try {
     path = new URL(t, "http://source-echo.invalid").searchParams.get("path");
+  // a string the URL parser refuses is not a well-formed gallery pointer — null falls through to the caller's absolute face where a bad pointer still refuses loud
   } catch {
     return null;
   }
@@ -150,6 +151,7 @@ function detectFace(t: string): { face: SourceFace; rest: string; decoded: boole
   let decodedHead: string;
   try {
     decodedHead = decodeURIComponent(head);
+  // a bad percent-escape means the head is not a minted run id — null sends the pointer to the caller's loud not-a-source refusal instead of a parser crash
   } catch {
     return null;
   }
@@ -281,6 +283,7 @@ export interface SourceEchoRef {
 function isDir(p: string): boolean {
   try {
     return statSync(p).isDirectory();
+  // statSync fails on a missing or unreadable path — a path that stats as nothing is not a directory, so false is the caller's exact answer
   } catch {
     return false;
   }

@@ -139,6 +139,7 @@ export function acquireLock(
   let holder: string = "";
   try {
     holder = readFileSync(lockPath, "utf8").trim();
+  // an unreadable lock file is the dead-or-garbage case — holder "" falls through to the steal path that already owns it
   } catch {
     holder = "";
   }
@@ -173,12 +174,14 @@ export function releaseLock(
   let holder: string = "";
   try {
     holder = readFileSync(lockPath, "utf8").trim();
+  // an absent or unreadable lock file frees nothing this pid can prove it owns — false is the honest not-released
   } catch {
     return false;
   }
   if (holder !== String(pid)) return false;
   try {
     unlinkSync(lockPath);
+  // a refused unlink leaves the lock on disk — false reports still-held instead of a phantom release
   } catch {
     return false;
   }

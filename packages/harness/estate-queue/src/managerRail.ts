@@ -86,6 +86,7 @@ async function call(base: string, path: string, opts: CallOpts): Promise<unknown
     if (text === "") return null;
     try {
       return JSON.parse(text) as unknown;
+    // a non-JSON body is the vendor's own plain text — folding to raw text hands the caller the vendor's words instead of a parse refusal
     } catch {
       return text;
     }

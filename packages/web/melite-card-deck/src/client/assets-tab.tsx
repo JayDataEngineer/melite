@@ -444,6 +444,7 @@ function displayValue(value: unknown): string {
   if (value === undefined) return ''
   try {
     return JSON.stringify(value) ?? String(value)
+  // JSON.stringify throws on a circular or BigInt value — a display cell degrades to String(), the data is untouched
   } catch {
     return String(value)
   }

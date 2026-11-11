@@ -62,6 +62,7 @@ function normName(s: string): string {
 export function isEmbedded(): boolean {
   try {
     return window.parent !== window
+  // a cross-origin or sandboxed parent can throw SecurityError on the window access — a parent that refuses access is not the same-origin DSH embed, so not-embedded is the correct answer
   } catch {
     return false
   }

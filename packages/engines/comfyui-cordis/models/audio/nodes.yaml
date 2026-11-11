@@ -79,7 +79,19 @@ extensions:
     # since the 18:0x restart. Prior pin 69a4838 (the soundtrack
     # conditioning wire) is contained. Pack walls:
     # tests/test_identity_steering.py 11/11.
-    ref: ff7568a67fa6343d52a84f7c7d6130c649164954
+    # d3ae356 2026-11-17 (the clipping lane, operator order: no lane
+    # existed to clip into a source — the overlay always played from
+    # the file head): clips_json rows gain optional in_sec (numeric
+    # >= 0; absent = the head, byte-identical rows); the overlay
+    # plays [in_sec, in_sec+dur_sec] at the film seat via
+    # _trim_source_head before the delay (both buses); an in-point
+    # past the source end yields an empty span (the delay pads).
+    # The card half stamps the conditioning slice with the same
+    # number (h3 actions.ts) — one law, two halves. Deployed to both
+    # runtime trees (git checkout at the pin, clean), engine
+    # restarted 22:58 UTC. Pack walls: tests/test_film_mix_in_sec.py
+    # 5/5; prior pin ff7568a contained.
+    ref: d3ae356f484e447ad65a405e97072ff86f30085f
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane

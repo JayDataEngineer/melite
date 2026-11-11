@@ -235,6 +235,7 @@ export function checkModelPresent(relativePath, name, repoRoot = resolveRepoRoot
     let cfg;
     try {
         cfg = loadEndpointConfig();
+        // a missing or unparseable endpoint config means no mount leg — null makes findModelPresent check the runtime tree alone
     }
     catch {
         cfg = null;
@@ -274,6 +275,7 @@ export function checkModelPathPresent(modelPath, repoRoot = resolveRepoRoot()) {
     let cfg;
     try {
         cfg = loadEndpointConfig();
+        // a missing or unparseable endpoint config means no mount leg — null makes findModelPathPresent stop after the runtime tree
     }
     catch {
         cfg = null;
@@ -324,6 +326,7 @@ function rootModelsReadRoot(repoRoot) {
             }
         }
         return isAbsolute(store) ? store : join(repoRoot, store);
+        // a missing or malformed config file is no read_root statement — empty string sends the mount leg to the endpoint's own base
     }
     catch {
         return "";

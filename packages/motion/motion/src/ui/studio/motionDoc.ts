@@ -79,6 +79,7 @@ function parseWireJson(raw: unknown): unknown {
   if (!trimmed) return null
   try {
     return JSON.parse(trimmed) as unknown
+  // malformed JSON (JSON.parse SyntaxError) degrades to the null sentinel — empty constraints, never a hydrate crash
   } catch {
     return null
   }

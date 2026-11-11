@@ -99,6 +99,16 @@ export declare class ComfyUIWiringService extends Service {
      *  Unarmed, no doc, the wall stands down: the standing law. */
     assert(cardId: string, graph: unknown): void;
 }
+/** LOUD STAND-DOWN (the wiring-absence law): a composition that
+ *  mounts no `comfyuiWiring` provider stands every wall down — the
+ *  standing law — but the absence is LOGGED, once per seat per
+ *  process, in the estate's own log voice. Misconfiguration never
+ *  silently skips a missing referent (AGENTS.md base rule).
+ *
+ * @param ctx the seat's cordis context (the logger's voice)
+ * @param seat the standing-down seat's name, for the log line
+ */
+export declare function warnWiringAbsent(ctx: Context, seat: string): void;
 /** The provider: mounts the wiring service. Mount BEFORE the host
  *  and the engines adapter (the estate bundle's row order) so both
  *  `comfyui` classes and the run seat read it from first submit. */

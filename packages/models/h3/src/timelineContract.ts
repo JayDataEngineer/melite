@@ -1,10 +1,19 @@
 import { deriveFamilyLane } from '@melite/contracts/familyLane'
 
+/** The frames of generated context a carried seam contributes — the
+ *  generation head a non-cut join rides (a carried window's authored
+ *  span excludes it; its render includes it). */
 export const SEAM_OVERLAP_FRAMES = 22
+/** The window grid's floor and first rung: every legal length is BASE + STEP·k. */
 export const GRID_BASE_FRAMES = 22
+/** The window grid's rung spacing: legal lengths advance 17 frames per step. */
 export const GRID_STEP_FRAMES = 17
+/** The window grid's ceiling: no window renders more than 362 frames. */
 export const GRID_MAX_FRAMES = 362
+/** The generated-length residue: a carried window renders 17k + 22 ≡ 5
+ *  (mod 17) frames — the "% 17 == 5" the engine's own refusals name. */
 export const GRID_REMAINDER = 5
+/** The conditioning image bus's slot count (bundle inputs 3–9). */
 export const IMAGE_BUS_SLOTS = 9
 /** The family's LAST-FRAME PICK spelling (one home, both readers —
  *  extend.ts's anchor and the seam's keyframe carry): a positive
@@ -14,6 +23,7 @@ export const IMAGE_BUS_SLOTS = 9
  *  family-wide. */
 export const LAST_FRAME_BATCH_INDEX = 16384
 
+/** Per-media reference caps — the max stack each declared ref lane admits. */
 export const REF_CAPS = {
   images: 8,
   videos: 3,
@@ -93,12 +103,15 @@ export function resolveCarryOverlap(entry: Record<string, unknown>): number {
   )
 }
 
+/** One authored window in film frames: half-open [start, end), with
+ *  the seam its join carries (undefined = the carry default). */
 export interface TimelineSpan {
   readonly start: number
   readonly end: number
   readonly transition?: string
 }
 
+/** The calls-row spelling of a window: start/end_frame plus the seam. */
 export interface TimelineCallSpan {
   readonly start_frame: number
   readonly end_frame: number
@@ -112,11 +125,18 @@ export interface TimelineCallSpan {
  *  run-899a8448 crime); it would compose a Load* the engine cannot
  *  resolve. The schema's per-call guide gate and the keyframe pin
  *  gate (actions.ts) share THIS predicate — one law, every guide
- *  spelling. */
+ *  spelling.
+ * @param v the guide seat's trimmed value
+ * @returns true when the value names media a Load* can resolve */
 export function isMediaRef(v: string): boolean {
   return v.startsWith('$') || v.startsWith('data:') || v.includes('/') || /\.[A-Za-z0-9]+$/.test(v)
 }
 
+/** The context frames a seam carries: 0 for the cut join, the
+ *  SEAM_OVERLAP_FRAMES generation head for any other transition
+ *  (unstated included — carry is the default).
+ * @param transition the seam a call states (undefined = carry)
+ * @returns the join's context overlap in frames */
 export function transitionOverlap(transition?: string): number {
   return transition === 'cut' ? 0 : SEAM_OVERLAP_FRAMES
 }
@@ -262,15 +282,30 @@ export function deriveWindowFamily(raw: Record<string, unknown>): 't4r' | 't4_op
   return deriveFamilyLane(FAMILY_LAW, raw) as 't4r' | 't4_open' | 't4_chain'
 }
 
+/** A span's join overlap — transitionOverlap over the span's own seam.
+ * @param span the authored window
+ * @returns the window's context overlap in frames */
 export function spanOverlap(span: TimelineSpan): number {
   return transitionOverlap(span.transition)
 }
 
+/** The window's render length on the engine grid: the span plus its
+ *  carry, snapped to 22+17k inside [22,362]. Off-grid spans snap;
+ *  doors that must refuse use assertSpanGrid instead.
+ * @param span the authored window
+ * @param carry the seam overlap the window rides (0 for first/cut)
+ * @returns the grid-legal generated length in frames */
 export function spanStanzaFrames(span: TimelineSpan, carry = 0): number {
   const k = Math.round((span.end - span.start + carry - GRID_BASE_FRAMES) / GRID_STEP_FRAMES)
   return Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k))
 }
 
+/** A carried window's grid geometry: the generated start (span.start −
+ *  carry), the snapped generated length, and the two neighboring legal
+ *  end frames a refusal names.
+ * @param span the authored carried window (span = 17k content frames)
+ * @param carry the seam overlap (the SEAM_OVERLAP_FRAMES default)
+ * @returns the snapped geometry — never a legality verdict */
 export interface CarriedSpanGrid {
   readonly generatedStart: number
   readonly generatedEnd: number
@@ -279,6 +314,11 @@ export interface CarriedSpanGrid {
   readonly upperEnd: number
 }
 
+/** Compute a carried window's grid geometry without judging it: the
+ *  generated start, the snapped length, and the neighboring legal ends.
+ * @param span the authored carried window
+ * @param carry the seam overlap (the SEAM_OVERLAP_FRAMES default)
+ * @returns the CarriedSpanGrid for the window */
 export function carriedSpanGrid(span: TimelineSpan, carry = SEAM_OVERLAP_FRAMES): CarriedSpanGrid {
   const generatedStart = span.start - carry
   const requestedLength = span.end - span.start + carry
@@ -297,6 +337,14 @@ export function carriedSpanGrid(span: TimelineSpan, carry = SEAM_OVERLAP_FRAMES)
   }
 }
 
+/** The carried window's admission gate: the snapped grid length must
+ *  equal the requested span+carry exactly; anything else refuses loud
+ *  naming the authored range, the snapped range, and the legal
+ *  neighboring end frames.
+ * @param span the authored carried window
+ * @param where the refusal's voice (the calling door's name)
+ * @param carry the seam overlap (the SEAM_OVERLAP_FRAMES default)
+ * @returns the grid-legal generated length in frames */
 export function assertCarriedSpanGrid(span: TimelineSpan, where: string, carry = SEAM_OVERLAP_FRAMES): number {
   const grid = carriedSpanGrid(span, carry)
   const requestedLength = span.end - span.start + carry
@@ -319,11 +367,18 @@ export function assertCarriedSpanGrid(span: TimelineSpan, where: string, carry =
  *  quotient to milliseconds before it rides the wire, so every
  *  consumer that needs the value the graph will actually carry (the
  *  schema's own rail bounds, the mix ledger) books through here —
- *  never a second copy of the rounding. */
+ *  never a second copy of the rounding.
+ * @param lengthFrames the window's generated length
+ * @param fps the doc's playback clock
+ * @returns the length in seconds, rounded to milliseconds */
 export function bookSeconds(lengthFrames: number, fps: number): number {
   return Math.round((lengthFrames / fps) * 1000) / 1000
 }
 
+/** The nearest legal 22+17k length (round to the rung, clamp into
+ *  [22,362]) — the "nearest legal" value refusal voices quote.
+ * @param length the requested length in frames
+ * @returns the nearest grid-legal length */
 export function gridSnap(length: number): number {
   const k = Math.round((length - GRID_BASE_FRAMES) / GRID_STEP_FRAMES)
   return Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k))
@@ -332,7 +387,9 @@ export function gridSnap(length: number): number {
 /** THE GRID PREDICATE, one owner: a length the engine can render is
  *  22+17k inside [22,362]. Every refusal door asks this question, so
  *  knob pins, single windows, cut windows, and carried windows cannot
- *  drift into different laws. */
+ *  drift into different laws.
+ * @param length the candidate length in frames
+ * @returns true when length is 22+17k inside [22,362] */
 export function isGridLength(length: number): boolean {
   return Number.isInteger(length) &&
     length >= GRID_BASE_FRAMES &&
@@ -340,6 +397,11 @@ export function isGridLength(length: number): boolean {
     (length - GRID_BASE_FRAMES) % GRID_STEP_FRAMES === 0
 }
 
+/** The grid admission gate: a non-number or off-grid length refuses
+ *  naming the nearest legal value; a legal length passes verbatim.
+ * @param length the value under admission (a number is required)
+ * @param where the refusal's voice (the calling door's name)
+ * @returns the length, verbatim */
 export function assertGridLength(length: unknown, where: string): number {
   if (typeof length !== 'number' || !isGridLength(length)) {
     const nearest = typeof length === 'number' && Number.isFinite(length)
@@ -399,14 +461,20 @@ export type SplitCarry = 'cut' | 'extend' | 'carry+keyframe'
 
 /** Is this window's seam a carried join? Index-aware — index 0 is
  *  always a first window (no carry), and a 'cut' seam never
- *  carries. */
+ *  carries.
+ * @param index the window's position in the calls array (0-based)
+ * @param call the window's own row (its transition seat)
+ * @returns true when the seam rides the carry join */
 export function isCarriedShape(index: number, call: Pick<TimelineCallSpan, 'transition'>): boolean {
   return index > 0 && transitionOverlap(call.transition) > 0
 }
 
 /** Is this authored LENGTH legal for the window's shape? A carried
  *  window rides the 17k step (content + 22f carry head ≤ 362); a
- *  first/cut window rides the 22+17k grid. */
+ *  first/cut window rides the 22+17k grid.
+ * @param length the authored length in frames
+ * @param carried true when the window is a carried join
+ * @returns true when the shape's own grid admits the length */
 export function isLegalCallLength(length: number, carried: boolean): boolean {
   if (carried) {
     return Number.isInteger(length) && length >= GRID_STEP_FRAMES &&
@@ -419,7 +487,13 @@ export function isLegalCallLength(length: number, carried: boolean): boolean {
  *  the gesture's frame when it already qualifies, else the nearest
  *  one that does. NULL when no interior frame qualifies (the §0.5
  *  fence): a window at its shape's floor has no legal split at all
- *  — the caller refuses loud, never repairs. */
+ *  — the caller refuses loud, never repairs.
+ * @param start the containing window's first frame
+ * @param end the containing window's end frame
+ * @param leftCarried whether the left half keeps the carried shape
+ * @param rightCarried whether the right half takes the carried shape
+ * @param gesture the frame the split was asked at
+ * @returns the legal frame nearest the gesture, or null */
 export function snapSplitFrame(
   start: number,
   end: number,
@@ -443,7 +517,11 @@ export function snapSplitFrame(
 
 /** The seam toggle's re-frame: the 22-frame carry moves from the
  *  generation head to (or from) the authored span. A first window
- *  has no carry either way, so its toggle never moves frames. */
+ *  has no carry either way, so its toggle never moves frames.
+ * @param call the window row the toggle re-frames
+ * @param index the window's position in the calls array (0-based)
+ * @param next the seam state after the toggle
+ * @returns the window's re-framed end frame */
 export function reflowSeamSpan(
   call: Pick<TimelineCallSpan, 'start_frame' | 'end_frame' | 'transition'>,
   index: number,
@@ -641,7 +719,11 @@ export function solveWindowComposition(
  *  used to be the only shape that refused, while single/cut spans
  *  were silently snapped (the old two-law gap, closed 2026-09-25).
  *  `spanStanzaFrames` stays the render/film clock and is a no-op
- *  identity for admitted spans. */
+ *  identity for admitted spans.
+ * @param span the authored window
+ * @param where the refusal's voice (the calling door's name)
+ * @param carry the seam overlap (0 for first/cut; >0 rides the carried gate)
+ * @returns the window's generated length in frames */
 export function assertSpanGrid(span: TimelineSpan, where: string, carry = 0): number {
   if (carry > 0) return assertCarriedSpanGrid(span, where, carry)
   const length = span.end - span.start
@@ -655,16 +737,31 @@ export function assertSpanGrid(span: TimelineSpan, where: string, carry = 0): nu
   return length
 }
 
+/** The frames a window contributes to the delivered film: a first or
+ *  cut window contributes its span verbatim; a carried window nets
+ *  out the SEAM_OVERLAP_FRAMES it shares with the previous window.
+ * @param call the window row
+ * @param index the window's position in the calls array (0-based)
+ * @returns the delivered frame count (never negative) */
 export function deliveredFrames(call: TimelineCallSpan, index: number): number {
   const span = call.end_frame - call.start_frame
   if (index === 0 || call.transition === 'cut') return span
   return Math.max(0, span - SEAM_OVERLAP_FRAMES)
 }
 
+/** The image-bus seats available to loose references: a last-frame
+ *  pin spends one of the REF_CAPS.images seats when it is set.
+ * @param hasLastFrame whether a last-frame pin occupies the bus
+ * @returns the maximum reference-image stack */
 export function imageReferenceCap(hasLastFrame: boolean): number {
   return hasLastFrame ? REF_CAPS.images - 1 : REF_CAPS.images
 }
 
+/** Split a comma-separated reference string into entries, trimming
+ *  separators and surrounding spaces; a data: URI's mime comma does
+ *  not split its entry.
+ * @param value the wire spelling (undefined = no refs)
+ * @returns the entries, in order, without empties */
 export function splitRefList(value: string | undefined): string[] {
   if (!value) return []
   const out: string[] = []
@@ -693,6 +790,11 @@ export function splitRefList(value: string | undefined): string[] {
   return out
 }
 
+/** A declared ref seat's entries, either wire spelling: an array
+ *  passes its non-empty strings; a comma string rides splitRefList;
+ *  any other value is zero refs.
+ * @param value the ref seat's raw value
+ * @returns the reference entries, in order */
 export function normalizeDeclaredRefs(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim() !== '')
@@ -701,6 +803,10 @@ export function normalizeDeclaredRefs(value: unknown): string[] {
   return []
 }
 
+/** The inverse wire spelling: entries join into one ", "-separated
+ *  string; empty input yields undefined (no seat, never an empty string).
+ * @param value an array of entries, a string, or absent
+ * @returns the joined string, or undefined when nothing is stated */
 export function joinRefList(value: unknown): string | undefined {
   if (Array.isArray(value)) {
     const entries = value.map(String).map((entry) => entry.trim()).filter(Boolean)
@@ -710,6 +816,12 @@ export function joinRefList(value: unknown): string | undefined {
   return undefined
 }
 
+/** A reference's media genre: the engine's video_w* naming first (its
+ *  _last_frame/_prev faces are images), else the extension of the name
+ *  or the URL's path (?path= decoded wins), else 'other'.
+ * @param name the entry's file name
+ * @param url the entry's URL, when one rides
+ * @returns 'image' | 'video' | 'audio' | 'other' */
 export function refGenreOf(name: string, url?: string): 'image' | 'video' | 'audio' | 'other' {
   const lowerName = name.toLowerCase()
   if (/^video_w\d+_/.test(lowerName)) {
@@ -721,6 +833,7 @@ export function refGenreOf(name: string, url?: string): 'image' | 'video' | 'aud
   if (pathMatch !== null) {
     try {
       urlFace = decodeURIComponent(pathMatch[1] as string)
+    // a malformed percent-escape throws URIError — the raw encoded text is kept, and the genre sniff reads its extension instead of crashing
     } catch {
       urlFace = pathMatch[1] as string
     }
@@ -733,6 +846,9 @@ export function refGenreOf(name: string, url?: string): 'image' | 'video' | 'aud
   return 'other'
 }
 
+/** The per-call knob vocabulary in serve order — the studio renders a
+ *  call's knob rows in this order; KnobKey and CALL_KNOB_KEYS derive
+ *  from it. */
 export const KNOB_ORDER = [
   'steps', 'denoise', 'sampler_name', 'sched_name',
   'shift_video', 'shift_audio',
@@ -747,7 +863,9 @@ export const KNOB_ORDER = [
   'length',
 ] as const
 
+/** One per-call knob key — a member of KNOB_ORDER. */
 export type KnobKey = (typeof KNOB_ORDER)[number]
+/** The admitted per-call knob keys — KNOB_ORDER as a membership set. */
 export const CALL_KNOB_KEYS: ReadonlySet<string> = new Set(KNOB_ORDER)
 /** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
  *  knobs' ONLY read seats live inside the post chain, whose only
@@ -790,6 +908,8 @@ export const CALL_KEYS: ReadonlySet<string> = new Set([
  *  verb, the studio split control) seats carry. */
 export const CALL_TRANSITIONS = ['cut', 'extend', 'carry+keyframe'] as const
 
+/** Legacy knob spellings → their current knob keys (a stored row
+ *  carrying the left column reads under the right). */
 export const LEGACY_KNOB_KEY = {
   sampling_steps: 'steps',
   sampler: 'sampler_name',
@@ -808,6 +928,10 @@ export const LEGACY_KNOB_KEY = {
   interpolate_multiplier: 'interp_multiplier',
 } as const satisfies Record<string, KnobKey>
 
+/** Map a legacy knob spelling to its current knob key; an unknown key
+ *  passes through verbatim.
+ * @param key the stored or stated knob key
+ * @returns the current knob key */
 export function migrateCallKnobKey(key: string): string {
   return (LEGACY_KNOB_KEY as Record<string, string>)[key] ?? key
 }

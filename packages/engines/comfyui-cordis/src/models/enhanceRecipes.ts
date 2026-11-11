@@ -37,6 +37,7 @@ interface RecipeRow {
 const isDir = (p: string): boolean => {
   try {
     return statSync(p).isDirectory();
+  // a missing path is not a directory — false just skips the entry in the recipe walk
   } catch {
     return false;
   }

@@ -139,8 +139,24 @@ export declare function initialKindGloss(kind: RegistryInitialKind): string;
  * @param flow the registry row
  * @returns the gloss per declared initial key */
 export declare function flowInitialGlosses(flow: RegistryFlow): Record<string, string>;
+/** The {"initial": key} edge builder — a stage input bound to an
+ *  operator-supplied initial.
+ * @param key the initial's declared name
+ * @returns the initial edge */
 export declare function initial(key: string): RegistryInitialEdge;
+/** The {"stage": id, "output": name} edge builder — a stage input
+ *  bound to an earlier stage's output.
+ * @param stage the source stage's id
+ * @param output the source output's name
+ * @returns the stage edge */
 export declare function fromStage(stage: string, output: string): RegistryStageEdge;
+/** The authoring builder for a self-contained stage row: optional
+ *  fields fill their empty defaults (card/family/action "", the
+ *  records {}, skipWhen null); the row must name exactly one
+ *  composing plane (refuseRawWorkflowShape judges it at registration).
+ * @param row the declared fields (id, engine, card/family/action,
+ *  description, inputs, expected/outputs/cardIo, params, skipWhen)
+ * @returns the RegistryStage row */
 export declare function plainStage(row: {
     readonly id: string;
     readonly engine: string;
@@ -158,6 +174,15 @@ export declare function plainStage(row: {
         readonly when: string;
     } | null;
 }): RegistryStage;
+/** The from_flow link builder: a stage copied from the named flow's
+ *  stage at expansion time (id and inputs overridden there); the
+ *  engine/card/description fields ride empty until the link resolves,
+ *  and the source may register later than this row.
+ * @param flow the source flow's id
+ * @param stage the source stage's id
+ * @param id this row's own stage id
+ * @param inputs the row's winning input edges
+ * @returns the linked RegistryStage row */
 export declare function linkedStage(flow: string, stage: string, id: string, inputs: Record<string, RegistryEdge>): RegistryStage;
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
@@ -216,6 +241,14 @@ export declare class FlowsSeatService extends Service implements FlowsSeat {
  *  keeps the compile-time verdict for rows seeded before this
  *  gate). */
 export declare function refuseRawWorkflowShape(flowId: string, st: RegistryStage): void;
+/** Expand a declaration into servable form: self-contained stages pass
+ *  the raw-workflow gate and detach into fresh containers; linked
+ *  stages resolve against the LIVE seat (source flow and stage must
+ *  exist, single-hop only) and copy the source row under this row's id
+ *  and inputs. A dangling link refuses loud, naming the flow and stage.
+ * @param flow the declaration to expand
+ * @param seat the live FlowsSeat the links resolve against
+ * @returns the flow with every stage expanded */
 export declare function expandRegistryFlow(flow: RegistryFlow, seat: FlowsSeat): RegistryFlow;
 /** Does a projected inline doc carry at least one CARD-bearing stage?
  *  (the 2026-10-04 admission for the card-flow cure: such a doc is

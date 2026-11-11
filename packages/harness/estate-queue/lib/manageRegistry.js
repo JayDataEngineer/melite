@@ -13,13 +13,14 @@
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { Service } from "@deepseek-ai/cordis";
 import Schema from "@deepseek-ai/schemastery";
-import { loadEndpointConfig, resolveRepoRoot, modelsService } from "@melite/comfyui-cordis";
+import { loadEndpointConfig, resolveRepoRoot, modelsService, setUserLorasPath } from "@melite/comfyui-cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { dispatchManage } from "./managePlane.js";
 /** The validator twin of {@link ManageConfig}. */
 export const ManageConfig = Schema.object({
     comfyUnit: Schema.string().default("melite-comfyui.service"),
     autoProvision: Schema.boolean().default(false),
+    userLorasPath: Schema.string().default(""),
 });
 export class ManageGatewayService extends Service {
     // THE QUEUE INJECT (af-close4, 2026-10-09): act() reads
@@ -98,6 +99,11 @@ export const manageProvider = {
     inject: ["timer", "queue"],
     Config: ManageConfig,
     apply(ctx, config = {}) {
+        // The rows-file pin lands BEFORE the service exists: every
+        // manage-plane read (lora_list's rows_path, the hot drop-in)
+        // resolves through userLorasPath()'s one spelling, so the
+        // config field must win from the first read, never after.
+        setUserLorasPath(config.userLorasPath ?? "");
         new ManageGatewayService(ctx, config);
     },
 };

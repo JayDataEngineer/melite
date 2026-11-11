@@ -43,6 +43,7 @@ function jsonArrayValue(value) {
     try {
         const parsed = JSON.parse(value);
         return Array.isArray(parsed) ? parsed : value;
+        // non-JSON text throws SyntaxError — the caller's raw string is itself a legal param value, so the fold keeps it verbatim
     }
     catch {
         return value;

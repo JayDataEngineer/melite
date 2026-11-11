@@ -7,6 +7,7 @@
 import { readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { appendLedger, writeJsonAtomic } from "./queueLock.ts";
+import type { RunId } from "./queueCore.ts";
 // ── sweeps (sweep_sidecar 2253-2291, sidecar_status 2412-2470) ────
 
 export interface SweepResult {
@@ -127,15 +128,19 @@ export const READ_SWEEP_RUNNING_ERROR: string = "zombie swept at read time";
  *  retired and never ride it). */
 export async function bootSweep(
   stateRoot: string,
-  liveRunIds: readonly string[] = [],
+  liveRunIds: readonly RunId[] = [],
   nowS: number = Math.floor(Date.now() / 1000),
 ): Promise<string[]> {
   const swept: string[] = [];
-  const live: Set<string> = new Set(liveRunIds);
+  // THE ONE UNBRAND, at the durable edge (the brand rides the bus
+  // and the registry rows; the sweep compares against directory
+  // names, which the fs hands back as bare strings).
+  const live: ReadonlySet<string> = new Set<string>(liveRunIds);
   const outRoot: string = join(stateRoot, "output");
   let names: string[];
   try {
     names = readdirSync(outRoot);
+  // an absent or unreadable output root holds no runs to sweep — the empty swept set is the answer
   } catch {
     return swept;
   }
@@ -151,6 +156,7 @@ export async function bootSweep(
       if (typeof pre !== "object" || pre === null || Array.isArray(pre)) {
         pre = {};
       }
+    // a pre-read that cannot read or parse the sidecar cannot prove the queued hold — the row falls to the retire path, and the authoritative read below still ledgers it
     } catch {
       pre = {};
     }

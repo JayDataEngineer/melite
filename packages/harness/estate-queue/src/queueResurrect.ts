@@ -166,6 +166,7 @@ export function durableRecordUsable(
   // here would orphan records resurrect saves).
   try {
     JSON.parse(requestText);
+  // an unparseable _request.json cannot rebuild the run — false orphans the record instead of admitting an unresurrectable row
   } catch {
     return false;
   }
@@ -179,6 +180,7 @@ export function durableRecordUsable(
     sidecarList(rec["stages"]);
     sidecarList(rec["skipped_stages"]);
     artifactStrings(rec["artifacts"]);
+  // a non-listable stages/skipped/artifacts field means the record cannot replay — false is the same not-resurrectable answer the replay road would force
   } catch {
     return false;
   }
@@ -192,6 +194,7 @@ export function planResurrect(
   readSidecar: (runId: string) => string | null = (runId: string): string | null => {
     try {
       return readFileSync(join(stateRoot, "output", runId, "_flow.json"), "utf8");
+    // an absent or unreadable sidecar answers null — the plan orphans the run for the reconcile surface instead of dropping it
     } catch {
       return null;
     }
@@ -199,6 +202,7 @@ export function planResurrect(
   readRequest: (runId: string) => string | null = (runId: string): string | null => {
     try {
       return readFileSync(join(stateRoot, "output", runId, "_request.json"), "utf8");
+    // an absent or unreadable _request.json answers null — usable goes false and the run orphans, never a throw
     } catch {
       return null;
     }
@@ -217,6 +221,7 @@ export function planResurrect(
   let names: string[];
   try {
     names = readdirSync(outRoot);
+  // an absent output root means no run was ever written — an empty plan (no order, no orphans) is the whole answer
   } catch {
     return { order: [], orphans: [] };
   }

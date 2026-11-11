@@ -34,6 +34,7 @@ export function artifactPathOfUrl(url: string): string | null {
     const parsed = new URL(url, 'http://artifact-ops.invalid')
     const target = parsed.searchParams.get('path')
     return target !== null && target !== '' ? target : null
+  // new URL throws on a malformed url — an unparseable url carries no artifact path, null means foreign
   } catch {
     return null
   }

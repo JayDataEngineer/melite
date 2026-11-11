@@ -270,6 +270,7 @@ export function apply(ctx, config = {}) {
                     const reqFile = await resolveRunTarget(fs, path, `${runId}/_request.json`);
                     if (reqFile !== null)
                         request = JSON.parse(await fs.readFile(reqFile, 'utf8'));
+                    // an unreadable _request.json leaves request null — the old-run floor is optional material, the flow doc still serves
                 }
                 catch {
                     request = null;

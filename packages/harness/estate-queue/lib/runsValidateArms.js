@@ -324,6 +324,7 @@ export async function modelValidateArm(body, ctx) {
     let facts;
     try {
         facts = svc.modelFacts();
+        // a thrown model-facts read (absent or unreadable facts file) is the door's pinned degradation — the empty table reads as facts-absent, so prepare judges the catalog alone
     }
     catch {
         facts = {};

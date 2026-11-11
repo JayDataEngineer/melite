@@ -18,6 +18,7 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { isFile } from "./skillFs.js";
+import { assertNever } from "@deepseek-ai/dsh-util-values";
 import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { isAbsolute, join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.js";
@@ -70,6 +71,10 @@ export function initialKindGloss(kind) {
             return "finite JSON number";
         case "json":
             return "JSON object (or its string spelling)";
+        default:
+            // the closed-union law: a new kind joining RegistryInitialKind
+            // compiles red HERE, never silently vanishes the gloss
+            return assertNever(kind, "flowsData.initialKindGloss");
     }
 }
 /** A flow's initial keys → glosses, the same derivation order the
@@ -85,12 +90,28 @@ export function flowInitialGlosses(flow) {
     return out;
 }
 // ── shared builders ─────────────────────────────────────────────
+/** The {"initial": key} edge builder — a stage input bound to an
+ *  operator-supplied initial.
+ * @param key the initial's declared name
+ * @returns the initial edge */
 export function initial(key) {
     return { initial: key };
 }
+/** The {"stage": id, "output": name} edge builder — a stage input
+ *  bound to an earlier stage's output.
+ * @param stage the source stage's id
+ * @param output the source output's name
+ * @returns the stage edge */
 export function fromStage(stage, output) {
     return { stage, output };
 }
+/** The authoring builder for a self-contained stage row: optional
+ *  fields fill their empty defaults (card/family/action "", the
+ *  records {}, skipWhen null); the row must name exactly one
+ *  composing plane (refuseRawWorkflowShape judges it at registration).
+ * @param row the declared fields (id, engine, card/family/action,
+ *  description, inputs, expected/outputs/cardIo, params, skipWhen)
+ * @returns the RegistryStage row */
 export function plainStage(row) {
     return {
         id: row.id,
@@ -108,6 +129,15 @@ export function plainStage(row) {
         fromFlow: null,
     };
 }
+/** The from_flow link builder: a stage copied from the named flow's
+ *  stage at expansion time (id and inputs overridden there); the
+ *  engine/card/description fields ride empty until the link resolves,
+ *  and the source may register later than this row.
+ * @param flow the source flow's id
+ * @param stage the source stage's id
+ * @param id this row's own stage id
+ * @param inputs the row's winning input edges
+ * @returns the linked RegistryStage row */
 export function linkedStage(flow, stage, id, inputs) {
     return {
         id,
@@ -329,6 +359,14 @@ function detachStage(st) {
         skipWhen: structuredClone(st.skipWhen),
     };
 }
+/** Expand a declaration into servable form: self-contained stages pass
+ *  the raw-workflow gate and detach into fresh containers; linked
+ *  stages resolve against the LIVE seat (source flow and stage must
+ *  exist, single-hop only) and copy the source row under this row's id
+ *  and inputs. A dangling link refuses loud, naming the flow and stage.
+ * @param flow the declaration to expand
+ * @param seat the live FlowsSeat the links resolve against
+ * @returns the flow with every stage expanded */
 export function expandRegistryFlow(flow, seat) {
     const stages = flow.stages.map((st) => {
         if (st.fromFlow === null) {
@@ -670,6 +708,7 @@ export function normalizedInitialValue(key, kind, value) {
                 return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
                     ? parsed
                     : null;
+                // an unparseable JSON string throws SyntaxError — null fails loud at the door, a shape the gate would have refused
             }
             catch {
                 return null;

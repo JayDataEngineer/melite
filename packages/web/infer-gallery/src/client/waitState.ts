@@ -96,6 +96,7 @@ export async function fetchUntilSeated(
     let body: unknown = null
     try {
       body = JSON.parse(bodyText)
+    // a non-JSON 502/503 body folds to null — the voice check declines and the raw text serves verbatim
     } catch {
       body = null
     }

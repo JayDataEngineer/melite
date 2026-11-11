@@ -16,6 +16,8 @@
  *     (media timescale, for the audio duration).
  *   WAV/RIFF — `fmt ` (codec tag, channels, sample rate, bits) and
  *     `data` (byte length → duration).
+ *   FLAC — the STREAMINFO block (sample rate, channels, total
+ *     samples → duration); the TTS estate's own container.
  *
  * WHAT IT DELIBERATELY DOES NOT DO: decode. Frame pixels are the
  * engine's business — the harness commits an image the run produced
@@ -438,11 +440,65 @@ export function probeWav(bytes: Uint8Array): ProbeResult {
   return out
 }
 
+/** FLAC — the TTS estate's own container (every tts/* artifact the
+ *  runs write is FLAC; before this arm the probe refused them by
+ *  name and `melite_view` could not measure a single TTS clip). The
+ *  STREAMINFO block carries the facts in one packed row — sample
+ *  rate (20 bits), channels (3, stored minus one), bits per sample
+ *  (5, stored minus one), total samples (36 bits) — the duration
+ *  quotient in bytes, no decode. A STREAMINFO whose total-samples
+ *  field is zero (a stream, not a file) leaves the duration absent,
+ *  never fabricated; a FLAC with no readable STREAMINFO refuses by
+ *  the same law as a RIFF without fmt. */
+function probeFlac(bytes: Uint8Array): ProbeResult {
+  const r = new Reader(bytes.subarray(4)) // past 'fLaC'
+  let sampleRate: number | undefined
+  let channels: number | undefined
+  let totalSamples: number | undefined
+  for (;;) {
+    const head = r.u8()
+    if (head === undefined) break
+    const last = (head & 0x80) !== 0
+    const type = head & 0x7f
+    const len = ((r.u8() ?? 0) << 16) | ((r.u8() ?? 0) << 8) | (r.u8() ?? 0)
+    if (type === 0 && len >= 18) {
+      // STREAMINFO: 10 size fields, then the packed row — the first
+      // u32 holds rate(20) channels(3) bps(5) and total's TOP 4 bits
+      // (28 + 4 = 32), the second u32 total's low 32 (36 total).
+      r.skip(10)
+      const a = r.u32()
+      const b = r.u32()
+      if (a !== undefined && b !== undefined) {
+        sampleRate = a >>> 12
+        channels = ((a >>> 9) & 7) + 1
+        totalSamples = (a & 0xf) * 0x1_0000_0000 + b
+      }
+      r.skip(len - 18)
+    } else {
+      r.skip(len)
+    }
+    if (last) break
+  }
+  if (sampleRate === undefined || channels === undefined) {
+    throw new Error('the media probe found no streams — the file may be truncated or corrupt')
+  }
+  const out: ProbeResult = { size_bytes: bytes.byteLength, streams: [] }
+  const stream: ProbedStream = { codec: 'flac', codec_type: 'audio' }
+  stream.sample_rate = sampleRate
+  stream.channels = channels
+  out.streams.push(stream)
+  if (totalSamples !== undefined && totalSamples > 0 && sampleRate > 0) {
+    out.duration_s = Math.round((totalSamples / sampleRate) * 1e6) / 1e6
+  }
+  return out
+}
+
 /** THE DISPATCH: the container decides the parser. A file that is
  *  neither is refused by name — never probed with the wrong reader. */
 export function probeMedia(bytes: Uint8Array): ProbeResult {
+  if (bytes.byteLength >= 4 && text(bytes.subarray(0, 4)) === 'fLaC') return probeFlac(bytes)
   if (bytes.byteLength >= 4 && text(bytes.subarray(4, 8)) === 'ftyp') return probeMp4(bytes)
   if (bytes.byteLength >= 12 && text(bytes.subarray(0, 4)) === 'RIFF') return probeWav(bytes)
   if (bytes.byteLength >= 12 && text(bytes.subarray(4, 8)) === 'moov') return probeMp4(bytes)
-  throw new Error('the media probe recognized neither an MP4/MOV container nor a RIFF/WAVE stream')
+  throw new Error('the media probe recognized neither an MP4/MOV container, a RIFF/WAVE stream, nor a FLAC stream')
 }

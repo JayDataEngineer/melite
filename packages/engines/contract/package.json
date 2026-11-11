@@ -31,7 +31,8 @@
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-brand": "0.2.1-rc.2"
   },
   "files": [
     "lib/index.js",

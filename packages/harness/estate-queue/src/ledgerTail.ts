@@ -83,6 +83,7 @@ const parseTail = (lines: string[]): unknown[] => {
   for (const e of lines) {
     try {
       out.push(JSON.parse(e));
+      // an unparseable journal line throws SyntaxError — the tail keeps unparseables in its last-N window and they parse-skip at the end, never surfacing as entries
     } catch {
       continue;
     }

@@ -13,7 +13,7 @@
 // provider (engine-comfyui) — the estate bundle's row order. The
 // registration is effect-owned: fiber unload removes the row.
 import type { Context, Plugin } from "@deepseek-ai/cordis";
-import { ComfyUIWiringService } from "../wiringWall.ts";
+import { ComfyUIWiringService, warnWiringAbsent } from "../wiringWall.ts";
 import type {
   EngineExecutor,
   EngineParamValue,
@@ -84,7 +84,8 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
       // run seat's existing catch (the splice refusal's path):
       // stages failed, run settled, nothing submitted.
       const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
-      if (wiring !== undefined) {
+      if (wiring === undefined) warnWiringAbsent(ctx, "engines adapter");
+      else {
         for (const row of mergeRows) {
           // the VOICE names the composer (the audit's F-2): the
           // card when the run was card-commissioned — the estate

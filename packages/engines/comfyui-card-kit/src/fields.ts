@@ -138,4 +138,3 @@ export function inputImageExtra(opts?: InputImageExtraOpts): ExtraBag {
     wtype: 'image',
   }
 }
-

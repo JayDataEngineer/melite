@@ -43,7 +43,11 @@ afterEach(() => {
 
 type Route = (url: string) => Response | Promise<Response>;
 const route = (fn: Route): void => {
-  globalThis.fetch = (async (url: unknown) => fn(String(url))) as typeof fetch;
+  // THE SDK WIRE (A1, the layers audit 2026-11-17): the engine
+  // reads ride sdkClient().fetchApi, and the SDK stamps its
+  // clientId query param on every URL — the stubs judge PATHS,
+  // so the dispatch strips the query before routing.
+  globalThis.fetch = (async (url: unknown) => fn(String(url).split("?")[0] ?? "")) as typeof fetch;
 };
 
 const CTX = (over: Record<string, unknown> = {}): ManageCtx =>

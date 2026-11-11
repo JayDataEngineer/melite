@@ -19,7 +19,7 @@ import Schema from "@deepseek-ai/schemastery";
 // augmentation (ctx.timeout) with no runtime import (the queue's
 // own seam).
 import type { TimerService } from "@deepseek-ai/cordis-plugin-timer";
-import { loadEndpointConfig, resolveRepoRoot, modelsService } from "@melite/comfyui-cordis";
+import { loadEndpointConfig, resolveRepoRoot, modelsService, setUserLorasPath } from "@melite/comfyui-cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
 import { dispatchManage } from "./managePlane.ts";
@@ -54,12 +54,19 @@ export interface ManageConfig {
    *  regardless, and the gate decision ships to the deck through
    *  the status payload's auto_provision field. */
   autoProvision?: boolean;
+  /** The user-LoRAs rows file (2026-11-17, the env seam's config
+   *  twin): the manage door's own rows file is a deployment-varying
+   *  path — pinned here, changeable from cordis.yml. Empty (the
+   *  default) = the repo default path; the MELITE_USER_LORAS env
+   *  var stays only as the documented fallback below config. */
+  userLorasPath?: string;
 }
 
 /** The validator twin of {@link ManageConfig}. */
 export const ManageConfig = Schema.object({
   comfyUnit: Schema.string().default("melite-comfyui.service"),
   autoProvision: Schema.boolean().default(false),
+  userLorasPath: Schema.string().default(""),
 });
 
 export class ManageGatewayService extends Service {
@@ -147,6 +154,11 @@ export const manageProvider = {
   inject: ["timer", "queue"] as const,
   Config: ManageConfig,
   apply(ctx: Context, config: ManageConfig = {}): void {
+    // The rows-file pin lands BEFORE the service exists: every
+    // manage-plane read (lora_list's rows_path, the hot drop-in)
+    // resolves through userLorasPath()'s one spelling, so the
+    // config field must win from the first read, never after.
+    setUserLorasPath(config.userLorasPath ?? "");
     new ManageGatewayService(ctx, config);
   },
 };

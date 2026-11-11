@@ -28,14 +28,22 @@ export interface ManageConfig {
      *  regardless, and the gate decision ships to the deck through
      *  the status payload's auto_provision field. */
     autoProvision?: boolean;
+    /** The user-LoRAs rows file (2026-11-17, the env seam's config
+     *  twin): the manage door's own rows file is a deployment-varying
+     *  path — pinned here, changeable from cordis.yml. Empty (the
+     *  default) = the repo default path; the MELITE_USER_LORAS env
+     *  var stays only as the documented fallback below config. */
+    userLorasPath?: string;
 }
 /** The validator twin of {@link ManageConfig}. */
 export declare const ManageConfig: Schema<Schemastery.ObjectS<NoInfer<{
     comfyUnit: Schema<string, string, "defined">;
     autoProvision: Schema<boolean, boolean, "defined">;
+    userLorasPath: Schema<string, string, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     comfyUnit: Schema<string, string, "defined">;
     autoProvision: Schema<boolean, boolean, "defined">;
+    userLorasPath: Schema<string, string, "defined">;
 }>>, "plain">;
 export declare class ManageGatewayService extends Service {
     static inject: string[];
@@ -57,9 +65,11 @@ export declare const manageProvider: {
     Config: Schema<Schemastery.ObjectS<NoInfer<{
         comfyUnit: Schema<string, string, "defined">;
         autoProvision: Schema<boolean, boolean, "defined">;
+        userLorasPath: Schema<string, string, "defined">;
     }>>, Schemastery.ObjectT<NoInfer<{
         comfyUnit: Schema<string, string, "defined">;
         autoProvision: Schema<boolean, boolean, "defined">;
+        userLorasPath: Schema<string, string, "defined">;
     }>>, "plain">;
     apply(ctx: Context, config?: ManageConfig): void;
 };

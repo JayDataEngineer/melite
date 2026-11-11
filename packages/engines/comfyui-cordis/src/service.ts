@@ -7,7 +7,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { validateDeclaredMods } from './mods-schema.ts'
 import { validateCardDefinition } from './card-definition-schema.ts'
 import { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
-import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc, type WiringInputSpec } from './wiringWall.ts'
+import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc, warnWiringAbsent, type WiringInputSpec } from './wiringWall.ts'
 export { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults, type ObjectInfoInput } from '@melite/comfyui-card-kit/graph'
@@ -717,6 +717,7 @@ export class ComfyUIService extends Service {
     let envelopeAtom: string = family
     try {
       envelopeAtom = modelsService().owningAtom(family)
+    // an unbooted models table has no owning atom — the family folds to itself, the pre-fold read
     } catch {
       envelopeAtom = family
     }
@@ -738,6 +739,7 @@ export class ComfyUIService extends Service {
       let cap: unknown
       try {
         cap = modelsService().getModel(family).lane_inputs?.max_images
+      // an unbooted models table (or an unknown family) has no lane cap — undefined leaves the declared schema unnarrowed
       } catch {
         cap = undefined
       }
@@ -782,9 +784,11 @@ export class ComfyUIService extends Service {
     // other up — the wiring service under its OWN name is how every
     // seat (compose here, the run seat's fence, the adapter's
     // post-splice walk) reads the same census. A composition that
-    // mounts no wiring provider stands the walls down (documented).
+    // mounts no wiring provider stands the walls down — LOUD, once
+    // per process (warnWiringAbsent).
     const wiring = this.ctx.get('comfyuiWiring') as ComfyUIWiringService | undefined
-    if (wiring !== undefined) {
+    if (wiring === undefined) warnWiringAbsent(this.ctx, 'compose seat')
+    else {
       if (derived === null) wiring.disarm()
       else wiring.arm(derived.nodes, derived.inputs)
     }

@@ -363,6 +363,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         try {
           const reqFile = await resolveRunTarget(fs, path, `${runId}/_request.json`)
           if (reqFile !== null) request = JSON.parse(await fs.readFile(reqFile, 'utf8'))
+        // an unreadable _request.json leaves request null — the old-run floor is optional material, the flow doc still serves
         } catch { request = null }
         const body = JSON.stringify({ run_id: runId, flow: doc, request })
         res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })

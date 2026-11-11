@@ -56,6 +56,7 @@ function declarations() {
             let text;
             try {
                 text = readFileSync(index, "utf8");
+                // an unreadable client index declares no studio — keep descending; absence is a legitimate no-declaration
             }
             catch {
                 walk(p);

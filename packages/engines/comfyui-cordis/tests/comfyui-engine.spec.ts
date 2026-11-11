@@ -384,10 +384,14 @@ describe("the EngineRef brand (the executor seam's opaque id)", () => {
 
   it("the contract declares engineRef as the branded EngineRef, not a bare string", () => {
     const types = read("../../../engines/contract/src/types.ts");
-    // the branded carrier (the RunId mirror); the brand rides a
-    // unique symbol — a plain string intersection is not a brand
+    // the branded carrier (the RunId mirror); the brand rides the
+    // dsh-brand package's unique-symbol Branded — imported, never
+    // re-declared locally (a hand-rolled brand is a second symbol
+    // class, the exact drift the import cure deleted)
     expect(types).toMatch(/export type EngineRef = Branded<"EngineRef">/u);
-    expect(types).toMatch(/unique symbol/u);
+    expect(types).toMatch(/import type \{ Branded \} from "@deepseek-ai\/dsh-brand"/u);
+    expect(types).not.toMatch(/declare const BRAND/u);
+    expect(types).not.toMatch(/unique symbol/u);
     // EngineRunOutcome.engineRef carries the brand, never `string`
     expect(types).toMatch(/readonly engineRef\?: EngineRef;/u);
     // and the barrel exports it (the consumers mint by name)

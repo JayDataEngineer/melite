@@ -384,6 +384,7 @@ async function nextChunk(
 async function closeIterator(iterator: AsyncIterator<Uint8Array>): Promise<void> {
   try {
     await iterator.return!();
+    // the byte source may already have failed, so return() can reject — closing is best-effort and never masks the write's own error
   } catch {
     return;
   }

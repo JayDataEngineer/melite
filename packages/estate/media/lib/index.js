@@ -123,6 +123,7 @@ function parseTarget(sub) {
         let decoded;
         try {
             decoded = decodeURIComponent(seg);
+            // a malformed percent-escape throws URIError — a segment the grammar cannot accept refuses here
         }
         catch {
             return null;
@@ -427,6 +428,7 @@ export async function listMediaAcross(roots, kind) {
         if (items.length >= LIST_CAP || depth > 3)
             return;
         let entries;
+        // a missing/unreadable dir reads empty — it contributes no items and never poisons the listing
         try {
             entries = fs.readdirSync(dir, { withFileTypes: true });
         }

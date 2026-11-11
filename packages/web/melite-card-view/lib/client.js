@@ -1347,7 +1347,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1778,
+						"line": 1780,
 						"column": 9
 					}
 				},
@@ -1414,7 +1414,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1790,
+						"line": 1792,
 						"column": 9
 					}
 				},
@@ -1478,7 +1478,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1823,
+						"line": 1825,
 						"column": 9
 					}
 				},
@@ -1542,7 +1542,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1846,
+						"line": 1848,
 						"column": 9
 					}
 				},
@@ -1576,7 +1576,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1598,
+						"line": 1600,
 						"column": 9
 					}
 				},
@@ -1610,7 +1610,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1488,
+						"line": 1490,
 						"column": 9
 					}
 				},
@@ -1674,7 +1674,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1886,
+						"line": 1888,
 						"column": 9
 					}
 				},
@@ -1763,7 +1763,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1768,
+						"line": 1770,
 						"column": 9
 					}
 				},
@@ -1827,7 +1827,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1833,
+						"line": 1835,
 						"column": 9
 					}
 				},
@@ -1895,7 +1895,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1867,
+						"line": 1869,
 						"column": 9
 					}
 				},
@@ -1966,7 +1966,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1856,
+						"line": 1858,
 						"column": 9
 					}
 				},
@@ -2000,7 +2000,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1506,
+						"line": 1508,
 						"column": 10
 					}
 				},
@@ -2049,7 +2049,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1922,
+						"line": 1924,
 						"column": 9
 					}
 				},
@@ -2113,7 +2113,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1904,
+						"line": 1906,
 						"column": 9
 					}
 				},
@@ -2155,7 +2155,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 871,
+						"line": 873,
 						"column": 9
 					}
 				},
@@ -2189,7 +2189,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 856,
+						"line": 858,
 						"column": 9
 					}
 				},
@@ -2232,7 +2232,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 848,
+						"line": 850,
 						"column": 9
 					}
 				},
@@ -2350,7 +2350,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 994,
+						"line": 996,
 						"column": 9
 					}
 				}
@@ -2871,7 +2871,7 @@ window.__ModuleLoader__.load({
 				},
 				sourceLocation: {
 					"file": "packages/estate/media/src/index.ts",
-					"line": 553,
+					"line": 555,
 					"column": 9
 				}
 			} }
@@ -6556,6 +6556,14 @@ window.__ModuleLoader__.load({
 			if (folded === "done" || folded === "cached" || folded === "skipped" || folded === "reused") return "done";
 			return "stopped";
 		}
+		/** Normalize a `bench/get` wire doc into the bench value: only
+		*  string-id stage rows and numbered-rev log heads survive the
+		*  untyped wire, the card birth law re-attaches the intent's card
+		*  onto a single-stage chat-born bench, and the session key rides
+		*  its carried spelling.
+		* @param doc the door's raw bench doc (untyped at this seam)
+		* @param sessionKey the conversation the bench belongs to
+		* @returns the CardsBenchValue the tab renders */
 		function readBench(doc, sessionKey) {
 			let stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 			const intent = typeof doc["intent"] === "string" ? doc["intent"] : "";
@@ -6779,6 +6787,19 @@ window.__ModuleLoader__.load({
 		const TRANSPORT_BACKOFF_BASE_MS = 1500;
 		const TRANSPORT_BACKOFF_MAX_MS = 1e4;
 		const VERDICT_DELIVERY_ATTEMPTS = 3;
+		/** One outcome observer per draft:stage:run, ever, in-process — poll
+		*  the run to terminal on the run-wire cadence, then write
+		*  runStatus + result onto the bench row through the shared-state
+		*  door. A second call for a seated key rides the first's promise;
+		*  the seat clears when the observer settles. Resolves the terminal
+		*  outcome, or null when the watch ended without a DELIVERED verdict
+		*  (an abort, or the delivery budget dying undelivered).
+		* @param draftId the run's producing draft
+		* @param stageId the stage the run serves
+		* @param runId the run to observe
+		* @param signal an abort ends the watch (no patch, no throw)
+		* @param onTouched called after each delivered bench patch
+		* @returns 'done' | 'failed' | 'stopped', or null when undelivered */
 		function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
 			const key = `${draftId}\u0000${stageId}\u0000${runId}`;
 			const inFlight = observingRuns.get(key);
@@ -7030,6 +7051,14 @@ window.__ModuleLoader__.load({
 				terminal
 			};
 		}
+		/** Normalize a runs/status doc into the run value: the run-wire
+		*  package's distill (stage rows + the ONE media-url rewrite) wrapped
+		*  with the admitted card snapshot (malformed dropped, never
+		*  half-carried) and the graph receipt; lastFrame stays undefined —
+		*  it is the events face's field, never the hydrate's.
+		* @param runId the run the doc answers for
+		* @param doc the door's raw runs/status doc
+		* @returns the CardsRunValue the run view renders */
 		function readRun(runId, doc) {
 			const row = readRunStatus(runId, doc);
 			const snap = parseCardSnapshot(row.card_recipe ?? row.card_snapshot);
@@ -7046,6 +7075,15 @@ window.__ModuleLoader__.load({
 				lastFrame: void 0
 			};
 		}
+		/** The drill's fresh row read — the run press composes the ESTATE's
+		*  row, never the client's stale render row. Three outcomes, never
+		*  collapsed: 'ready' carries the card-re-attached BenchStageView,
+		*  'gone' a stage the draft does not name, 'unreadable' a failed
+		*  read (a failed read is NOT a gone row).
+		* @param draftId the draft holding the stage
+		* @param stageId the stage to read back
+		* @param signal aborts the read
+		* @returns the three-outcome read */
 		async function readStageRow(draftId, stageId, signal) {
 			try {
 				const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftId, signal), "drafts/get");
@@ -7066,6 +7104,14 @@ window.__ModuleLoader__.load({
 			const read = await readStageRow(draftId, stageId, signal);
 			return read.status === "ready" ? read.row : null;
 		}
+		/** Normalize a `drafts/get` doc into the draft-stage value: stage
+		*  rows keep the string-id filter (mirroring readBench — the door's
+		*  wire is untyped here) and the rev is the embedded bench's (0 when
+		*  the doc carries none).
+		* @param draftId the draft the doc answers for
+		* @param stageId the focused stage
+		* @param doc the door's raw draft doc
+		* @returns the CardsDraftValue the tab renders */
 		function readDraft(draftId, stageId, doc) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 			const bench = doc["bench"];
@@ -21014,13 +21060,20 @@ window.__ModuleLoader__.load({
 			/** The Window length knob's face. */
 			knobWindowLength: "Window length (frames)"
 		};
+		/** The context frames a seam carries: 0 for the cut join, the
+		*  SEAM_OVERLAP_FRAMES generation head for any other transition
+		*  (unstated included — carry is the default).
+		* @param transition the seam a call states (undefined = carry)
+		* @returns the join's context overlap in frames */
 		function transitionOverlap(transition) {
 			return transition === "cut" ? 0 : 22;
 		}
 		/** THE GRID PREDICATE, one owner: a length the engine can render is
 		*  22+17k inside [22,362]. Every refusal door asks this question, so
 		*  knob pins, single windows, cut windows, and carried windows cannot
-		*  drift into different laws. */
+		*  drift into different laws.
+		* @param length the candidate length in frames
+		* @returns true when length is 22+17k inside [22,362] */
 		function isGridLength(length) {
 			return Number.isInteger(length) && length >= 22 && length <= 362 && (length - 22) % 17 === 0;
 		}
@@ -21043,13 +21096,19 @@ window.__ModuleLoader__.load({
 		*  is the map. */
 		/** Is this window's seam a carried join? Index-aware — index 0 is
 		*  always a first window (no carry), and a 'cut' seam never
-		*  carries. */
+		*  carries.
+		* @param index the window's position in the calls array (0-based)
+		* @param call the window's own row (its transition seat)
+		* @returns true when the seam rides the carry join */
 		function isCarriedShape(index, call) {
 			return index > 0 && transitionOverlap(call.transition) > 0;
 		}
 		/** Is this authored LENGTH legal for the window's shape? A carried
 		*  window rides the 17k step (content + 22f carry head ≤ 362); a
-		*  first/cut window rides the 22+17k grid. */
+		*  first/cut window rides the 22+17k grid.
+		* @param length the authored length in frames
+		* @param carried true when the window is a carried join
+		* @returns true when the shape's own grid admits the length */
 		function isLegalCallLength(length, carried) {
 			if (carried) return Number.isInteger(length) && length >= 17 && length + 22 <= 362 && length % 17 === 0;
 			return isGridLength(length);
@@ -21058,7 +21117,13 @@ window.__ModuleLoader__.load({
 		*  the gesture's frame when it already qualifies, else the nearest
 		*  one that does. NULL when no interior frame qualifies (the §0.5
 		*  fence): a window at its shape's floor has no legal split at all
-		*  — the caller refuses loud, never repairs. */
+		*  — the caller refuses loud, never repairs.
+		* @param start the containing window's first frame
+		* @param end the containing window's end frame
+		* @param leftCarried whether the left half keeps the carried shape
+		* @param rightCarried whether the right half takes the carried shape
+		* @param gesture the frame the split was asked at
+		* @returns the legal frame nearest the gesture, or null */
 		function snapSplitFrame(start, end, leftCarried, rightCarried, gesture) {
 			let best = null;
 			let bestDistance = Number.POSITIVE_INFINITY;
@@ -21075,7 +21140,11 @@ window.__ModuleLoader__.load({
 		}
 		/** The seam toggle's re-frame: the 22-frame carry moves from the
 		*  generation head to (or from) the authored span. A first window
-		*  has no carry either way, so its toggle never moves frames. */
+		*  has no carry either way, so its toggle never moves frames.
+		* @param call the window row the toggle re-frames
+		* @param index the window's position in the calls array (0-based)
+		* @param next the seam state after the toggle
+		* @returns the window's re-framed end frame */
 		function reflowSeamSpan(call, index, next) {
 			const wasCarried = isCarriedShape(index, call);
 			const willCarried = isCarriedShape(index, { transition: next });
@@ -21145,6 +21214,8 @@ window.__ModuleLoader__.load({
 			}
 			return next;
 		}
+		/** Legacy knob spellings → their current knob keys (a stored row
+		*  carrying the left column reads under the right). */
 		const LEGACY_KNOB_KEY = {
 			sampling_steps: "steps",
 			sampler: "sampler_name",

@@ -279,9 +279,12 @@ test("endpoint_set probes, writes only url, and answers the probe (the operator'
   const { createServer } = await import("node:http");
   const { adapter, fiber, root } = await boot();
   const sig = new AbortController().signal;
-  // The stub engine: answers /system_stats like a real ComfyUI.
+  // The stub engine: answers /system_stats like a real ComfyUI. The
+  // SDK seat owns the wire (A1): sdkClient().fetchApi stamps its
+  // clientId query param on every URL, so the stub judges the PATH
+  // — the query is transport detail, never the route.
   const server = createServer((req, res) => {
-    if (req.url === "/system_stats") {
+    if ((req.url ?? "").split("?")[0] === "/system_stats") {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ system: { comfyui_version: "9.9.9-test" } }));
     } else {

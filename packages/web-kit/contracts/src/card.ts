@@ -178,4 +178,3 @@ export interface CardStage {
   * drill-down. See FlowTypes.ts CompoundBlock for the full rationale. */
   compound?: CompoundBlock
 }
-

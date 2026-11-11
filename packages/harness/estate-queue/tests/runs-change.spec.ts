@@ -10,6 +10,13 @@
 import { describe, expect, test } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange, setRunsChangeSeam } from "../src/runsChange.ts";
+import type { RunId } from "../src/queueCore.ts";
+
+/** The fixture's id mint — the seam speaks the branded RunId
+ *  (MINOR-1, the 2026-11-17 cordis audit: opaque cross-boundary ids
+ *  are branded, never bare string); tests mint through the same
+ *  one-spelling cast the producers use. */
+const runId = (s: string): RunId => s as RunId;
 
 const ctx = new Context();
 installRunsChangeSeam(ctx);
@@ -18,16 +25,16 @@ describe("the runs change events (the push source)", () => {
   test("a write notify reaches the listener with the run id", () => {
     const seen: string[] = [];
     const off = onRunChange((runId) => { seen.push(runId); });
-    notifyRunChanged("run-a");
-    notifyRunChanged("run-b");
+    notifyRunChanged(runId("run-a"));
+    notifyRunChanged(runId("run-b"));
     off();
-    notifyRunChanged("run-a");
+    notifyRunChanged(runId("run-a"));
     expect(seen).toEqual(["run-a", "run-b"]);
   });
 
   test("a listener's fault never breaks the write", () => {
     const off = onRunChange(() => { throw new Error("listener fault"); });
-    expect(() => notifyRunChanged("run-a")).not.toThrow();
+    expect(() => notifyRunChanged(runId("run-a"))).not.toThrow();
     off();
   });
 
@@ -56,7 +63,7 @@ describe("the runs change events (the push source)", () => {
     // the newer seam is still live: subscribe and notify both answer
     const seen: string[] = [];
     const off = onRunChange((runId) => { seen.push(runId); });
-    notifyRunChanged("run-live");
+    notifyRunChanged(runId("run-live"));
     off();
     expect(seen).toEqual(["run-live"]);
     detachNewer();
@@ -71,7 +78,7 @@ describe("the runs change events (the push source)", () => {
     expect(() => onRunChange(() => {})).toThrow(/no runs change seam installed/);
     // a notify with no seam is a no-op, never a throw (writers must
     // not care whether a watcher exists)
-    expect(() => notifyRunChanged("run-a")).not.toThrow();
+    expect(() => notifyRunChanged(runId("run-a"))).not.toThrow();
     installRunsChangeSeam(ctx); // restore the file's own seam
   });
 });

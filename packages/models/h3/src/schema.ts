@@ -553,6 +553,12 @@ export const refinePlaneSchema = z.object(Object.fromEntries(
   }),
 ))
 
+/** The wire tolerance for interpolate_enabled: the bench add-door's
+ *  "false"/"true" string literal folds to a boolean before the walk;
+ *  any other string refuses loud. Booleans and every other key pass
+ *  verbatim.
+ * @param raw the pre-walk params record
+ * @returns the record with interpolate_enabled narrowed to boolean */
 export const coerceWireBoolean = (raw: Record<string, unknown>): Record<string, unknown> => {
   if (typeof raw.interpolate_enabled === 'string') {
     // ENFORCEMENT (the wall's catch, 2026-09-19): the coercion admits
@@ -596,6 +602,15 @@ export function assertKeyframeRowShape(rows: readonly unknown[]): void {
   }
 }
 
+/** The compose-admission walk over a raw doc (the card gate's
+ *  model_validator port): array and boolean wire tolerances restored,
+ *  keyframe rows shape-judged, shot rows judged (per-call vocabulary,
+ *  int spans, tiling, seam/grid/guide gates), the window family
+ *  derived, and the family-conditional key gates run. A refusal names
+ *  the row and the cure; a passing doc returns the walked params with
+ *  the __steps_pinned/__shift_pinned stamps added.
+ * @param v the raw doc (absent = the fresh-card draft)
+ * @returns the walked params record the compose reads */
 export function schema(v: unknown): Record<string, unknown> {
   const raw = (v ?? {}) as Record<string, unknown>
   if (raw.calls !== undefined && !Array.isArray(raw.calls)) {

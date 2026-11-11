@@ -152,6 +152,7 @@ function normalizedRepository(value: string): string {
     url.hostname = url.hostname.toLowerCase();
     url.pathname = url.pathname.replace(/\/+$/u, "").replace(/\.git$/iu, "");
     return url.toString().replace(/\/$/u, "");
+  // a non-URL string is a plain owner/repo path, not a failure — the trimmed form is the normalized answer
   } catch {
     return trimmed;
   }

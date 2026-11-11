@@ -26,6 +26,7 @@
  * llm-complete.ts, shared with everything else.
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import Schema from '@deepseek-ai/schemastery'
 import type { LlmStreamSeam } from './llm-complete.ts'
 import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds'
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
@@ -85,6 +86,15 @@ export interface Config {
    */
   enhancePreference?: string
 }
+
+/** The validator twin of {@link Config} (2026-11-17, the doors
+ *  audit's MINOR-3): a bare-plugin entry the loader mounts from a
+ *  patch row must validate what cordis.yml delivers — an interface
+ *  alone hides a wrong shape until first read (the index entry's
+ *  V6 cure is the house pattern). */
+export const Config: Schema<Config> = Schema.object({
+  enhancePreference: Schema.string(),
+})
 
 /** The shipped default: the operator's named card model. */
 export const DEFAULT_ENHANCE_PREFERENCE = 'muse-spark-1.3-contributor'
@@ -755,6 +765,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           const fs = await import('node:fs/promises')
           const path = await import('node:path')
           const file = path.join(dir, filename)
+          // a realpath miss means the target doesn't exist yet — nothing to contain (the refusal needs both paths resolved)
           const [realFile, realDir] = await Promise.all([fs.realpath(file), fs.realpath(dir)].map(async (x) => x.catch(() => undefined)) as Promise<undefined | string>[])
           if (realFile !== undefined && realDir !== undefined && !realFile.startsWith(realDir + path.sep)) {
             return fail(400, 'uploads: path escapes the input dir')
@@ -794,6 +805,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           const path = await import('node:path')
           const fs = await import('node:fs/promises')
           const file = path.join(dir, name)
+          // a realpath miss is an absent input — the undefined fold becomes the 404 below
           const real = await fs.realpath(file).catch(() => undefined)
           const realDir = await fs.realpath(dir)
           if (real === undefined || !real.startsWith(realDir + path.sep)) return fail(404, 'no such input')

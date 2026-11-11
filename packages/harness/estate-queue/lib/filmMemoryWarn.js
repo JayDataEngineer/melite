@@ -88,6 +88,7 @@ export async function fetchEngineMem(baseUrl, fetchFn = globalThis.fetch, timeou
         if (typeof free !== 'number' || typeof total !== 'number')
             return null;
         return { vramFree: free, vramTotal: total };
+        // an unreachable engine or an unparseable stats body has no reading — null is the caller's documented skip
     }
     catch {
         return null;

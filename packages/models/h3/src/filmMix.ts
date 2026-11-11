@@ -29,6 +29,11 @@ export interface FilmMixClip {
   readonly start: number
   /** duration (frames; 0 = overlay-only, unsized). */
   readonly dur: number
+  /** the SOURCE in-point (frames at the DOC CLOCK; 0 = play from the
+   *  head — the only behavior before the field existed). One TTS
+   *  source can contribute its middle: the conditioning slice AND the
+   *  pristine overlay both start here. */
+  readonly srcIn: number
   readonly text: string
   readonly cls: FilmMixClipClass
 }
@@ -55,6 +60,7 @@ export function parseFilmMixClips(rows: readonly unknown[]): FilmMixClip[] {
     const row = c as Record<string, unknown>
     row['start_frame'] = wireInt(row['start_frame'])
     row['dur_frames'] = wireInt(row['dur_frames'])
+    row['in_frames'] = wireInt(row['in_frames'])
     const src = typeof row.src === 'string' ? row.src.trim() : ''
     if (src === '') {
       const positioned =
@@ -90,6 +96,21 @@ export function parseFilmMixClips(rows: readonly unknown[]): FilmMixClip[] {
     const dur = typeof row.dur_frames === 'number' && Number.isFinite(row.dur_frames) && row.dur_frames > 0
       ? row.dur_frames
       : 0
+    // THE SOURCE IN-POINT (2026-11-17, the clipping lane): optional
+    // in_frames — where in the SOURCE the clip starts. Absent or 0 =
+    // the head, byte-identical to every film composed before the
+    // field existed; a negative or non-numeric value refuses loud
+    // (an in-point is a real seat, never a silent clamp — the same
+    // law as start_frame).
+    let srcIn = 0
+    if (row.in_frames !== undefined) {
+      if (typeof row.in_frames !== 'number' || !Number.isFinite(row.in_frames) || row.in_frames < 0) {
+        throw new Error(
+          `audio_clips: a clip with in_frames ${JSON.stringify(row.in_frames)} — the source in-point must be a non-negative number of frames (omit to play from the head)`,
+        )
+      }
+      srcIn = row.in_frames
+    }
     const text = typeof row.text === 'string' ? row.text.trim() : ''
     const clsRaw = typeof row.class === 'string' ? row.class.trim().toLowerCase() : ''
     if (clsRaw !== '' && clsRaw !== 'dialogue' && clsRaw !== 'sfx' && clsRaw !== 'music') {
@@ -98,7 +119,7 @@ export function parseFilmMixClips(rows: readonly unknown[]): FilmMixClip[] {
       )
     }
     const cls = (clsRaw !== '' ? clsRaw : text !== '' ? 'dialogue' : 'music') as FilmMixClipClass
-    clips.push({ src, start: row.start_frame, dur, text, cls })
+    clips.push({ src, start: row.start_frame, dur, srcIn, text, cls })
   }
   return clips
 }
@@ -166,6 +187,62 @@ export interface FilmMixInput {
 
 const round3 = (v: number): number => Math.round(v * 1000) / 1000
 
+/** The minimum overlap (frames at the DOC CLOCK) that can size a
+ * slice for the stamp pin — the audio slice node's 0.1s floor. */
+const SLICE_FLOOR_FRAMES = 2.4
+
+/** One window's per-class lane winners — the one lane law both
+ * halves drive (the conditioning stamps in actions.ts and the
+ * conditioned set in computeFilmMix). A clip that STARTS inside the
+ * window's doc span owns its class's lane; a seam-crossing clip
+ * (starts before the window) owns only a window no same-class clip
+ * starts inside — the line continues, never restarts, but it yields
+ * to the window's own speech. Two same-class clips starting inside
+ * ONE window cannot share the lane and neither may silently drop
+ * its conditioning: refuse loud, naming both rows and the cure (the
+ * 2026-11-17 M-17 burn: row 1 crossed the seam into window 2, row 2
+ * started inside it, and first-wins row order handed window 2's
+ * dialogue lane to row 1 — window 2 re-performed line 1 while row 2
+ * conditioned nothing).
+ *
+ * @param clips the parsed audio_clips rows, doc frames
+ * @param spanStart the window's doc span start (frames)
+ * @param spanEnd the window's doc span end (frames, exclusive)
+ * @param genStart the window's generation start (spanStart − carry; a clip starting in the carry head belongs to the previous window's film seat, so it counts as a crosser here)
+ * @returns per class, the winning clip's index into `clips` (absent = the class conditions this window through no clip) */
+export function chooseLaneClips(
+  clips: readonly FilmMixClip[],
+  spanStart: number,
+  spanEnd: number,
+  genStart: number,
+): Partial<Record<FilmMixClipClass, number>> {
+  const starters: Partial<Record<FilmMixClipClass, number[]>> = {}
+  const crossers: Partial<Record<FilmMixClipClass, number[]>> = {}
+  for (let ci = 0; ci < clips.length; ci++) {
+    const clip = clips[ci]!
+    if (clip.dur <= 0) continue
+    const lo = Math.max(clip.start, genStart)
+    const hi = Math.min(clip.start + clip.dur, spanEnd)
+    if (hi - lo < SLICE_FLOOR_FRAMES) continue
+    const bucket = clip.start >= spanStart && clip.start < spanEnd ? starters : crossers
+    const row = (bucket[clip.cls] ??= [])
+    row.push(ci)
+  }
+  const lanes: Partial<Record<FilmMixClipClass, number>> = {}
+  for (const cls of ['dialogue', 'sfx', 'music'] as const) {
+    const started = starters[cls]
+    if (started !== undefined && started.length > 1) {
+      const named = started.map((ci) => `"${clips[ci]!.src}"`).join(' and ')
+      throw new Error(
+        `audio_clips: two ${cls} clips start inside one window (doc frames ${spanStart}–${spanEnd}) — ${named}; one lane per class per window: end the first inside the window, merge the rows, or move the seam`,
+      )
+    }
+    const winner = started?.[0] ?? crossers[cls]?.[0]
+    if (winner !== undefined) lanes[cls] = winner
+  }
+  return lanes
+}
+
 /** The duck span string — "start:end" at ms precision, ';'-joined. */
 export function formatDuckSpan(start: number, end: number): string {
   return `${round3(start)}:${round3(end)}`
@@ -223,27 +300,20 @@ export function computeFilmMix(input: FilmMixInput): FilmMixManifest {
   }
   const filmSec = round3(elapsed)
   // CONDITIONED clips (the stamp law's overlay half): every window
-  // whose generation span a clip rides HEARD that clip — one lane
-  // per CLASS, the FIRST clip in row order winning its class's lane
-  // when several of one class overlap one window. A clip with no
-  // dur (or a sub-0.1s overlap) cannot size a slice and stays
-  // overlay-only. The generation render starts at doc frame
-  // sf − carry (the carry head included).
+  // whose generation span a clip rides HEARD that clip — the lane
+  // law lives in chooseLaneClips (starts-inside owns the lane; a
+  // crosser owns only an uncontested window; two starters refuse).
+  // A clip with no dur (or a sub-0.1s overlap) cannot size a slice
+  // and stays overlay-only. The generation render starts at doc
+  // frame sf − carry (the carry head included).
   const conditioned = new Set<number>()
   spans.forEach((span, i) => {
     if (!Number.isFinite(span.start) || !Number.isFinite(span.end) || span.end <= span.start) return
     const carry = i > 0 ? overlaps[i]! : 0
-    const genStart = span.start - carry
-    const won: Partial<Record<FilmMixClipClass, true>> = {}
-    for (let ci = 0; ci < clips.length; ci++) {
-      const clip = clips[ci]!
-      if (clip.dur <= 0) continue
-      if (won[clip.cls] !== undefined) continue
-      const lo = Math.max(clip.start, genStart)
-      const hi = Math.min(clip.start + clip.dur, span.end)
-      if (hi - lo < 2.4) continue
-      won[clip.cls] = true
-      conditioned.add(ci)
+    const lanes = chooseLaneClips(clips, span.start, span.end, span.start - carry)
+    for (const cls of ['dialogue', 'sfx', 'music'] as const) {
+      const ci = lanes[cls]
+      if (ci !== undefined) conditioned.add(ci)
     }
   })
   // PLACEMENTS: doc frame → film seat through the owner map — the

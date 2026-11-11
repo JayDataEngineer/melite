@@ -1,3 +1,4 @@
+import Schema from '@deepseek-ai/schemastery';
 import type { LlmStreamSeam } from './llm-complete.js';
 import { mcpFormDoc } from '@melite/engine-mcp/formDoc';
 /** The tool-row shape, DERIVED from the contract's own signature
@@ -25,6 +26,12 @@ export interface Config {
      */
     enhancePreference?: string;
 }
+/** The validator twin of {@link Config} (2026-11-17, the doors
+ *  audit's MINOR-3): a bare-plugin entry the loader mounts from a
+ *  patch row must validate what cordis.yml delivers — an interface
+ *  alone hides a wrong shape until first read (the index entry's
+ *  V6 cure is the house pattern). */
+export declare const Config: Schema<Config>;
 /** The shipped default: the operator's named card model. */
 export declare const DEFAULT_ENHANCE_PREFERENCE = "muse-spark-1.3-contributor";
 /** The seated MCP servers (folded LIVE from the tools seat's

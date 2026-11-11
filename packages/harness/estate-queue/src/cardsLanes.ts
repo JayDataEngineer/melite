@@ -57,6 +57,7 @@ export function lanePackFolders(): readonly string[] {
   let cfg: Record<string, unknown>;
   try {
     cfg = loadEndpointConfig() as unknown as Record<string, unknown>;
+    // a missing or malformed config file throws — the read yields no pack folders and the stock lane sets stand alone
   } catch {
     return [];
   }

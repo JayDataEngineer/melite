@@ -226,6 +226,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
               try {
                 ctx.sidebarRight.openResource(address)
                 return true
+              // a shell refusal answers false as the face promises — a throw here would render the whole card tree dead
               } catch {
                 return false
               }
@@ -234,6 +235,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
               try {
                 ctx.sidebarRight.openTab('media')
                 return true
+              // an unseated media tab answers false — the face promises a boolean, never a throw
               } catch {
                 return false
               }
@@ -264,6 +266,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
               try {
                 ctx.sidebarRight.openResource(address)
                 return true
+              // a shell refusal answers false as the face promises — a throw here would render the whole card tree dead
               } catch {
                 return false
               }
@@ -272,6 +275,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
               try {
                 ctx.sidebarRight.openTab('media')
                 return true
+              // an unseated media tab answers false — the face promises a boolean, never a throw
               } catch {
                 return false
               }

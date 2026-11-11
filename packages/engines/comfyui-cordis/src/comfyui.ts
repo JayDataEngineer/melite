@@ -122,8 +122,14 @@ export {
   comfyuiWiringProvider,
   ComfyUIWiringService,
   deriveWiringDoc,
+  warnWiringAbsent,
 } from "./wiringWall.ts";
 export type { WiringDoc } from "./wiringWall.ts";
+// THE ROWS-FILE LOCATION SEAT (config plane): the manage registry
+// pins the user-loras rows location through the package root — it
+// never imports the rows-reader module (the lora-roster-reader
+// census owns that importer set).
+export { setUserLorasPath } from "./lorasPathSeat.ts";
 export type { FlowResult, MergeRow, MergeStageResult } from "./comfyui-merge.ts";
 export {
   comfyuiHostProvider,

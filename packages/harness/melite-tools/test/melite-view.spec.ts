@@ -1402,7 +1402,7 @@ describe('melite_view GAPS-5 — the newest-unopenable fall-through (qa8 receipt
     const { ctx } = fakeCtx()
     await assert.rejects(
       meliteView(ctx, sheet).execute({ run_id: 'run-bad0bad0-nofilm' }, visualExec as never),
-      /cannot view the film "cut_source\.webm": the media probe recognized neither an MP4\/MOV container nor a RIFF\/WAVE stream/,
+      /cannot view the film "cut_source\.webm": the media probe recognized neither an MP4\/MOV container, a RIFF\/WAVE stream, nor a FLAC stream/,
     )
   })
 })

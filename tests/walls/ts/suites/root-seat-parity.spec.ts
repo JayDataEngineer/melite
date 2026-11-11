@@ -60,6 +60,30 @@ function insertEntries(rows: Array<Record<string, unknown>>): Array<{ id: string
   return rows.flatMap((row) => (Array.isArray(row.insert) ? row.insert : [])) as Array<{ id: string; name?: string; disabled?: unknown }>
 }
 
+/** The package names the rendered patch inserts, normalized to their
+ *  base packages (a subpath row like @melite/harness-tools/doors
+ *  resolves from its base package's declaration — the seat's own
+ *  composition, every row the resolver manifest must cover). */
+function patchRowNames(): string[] {
+  const raw = insertEntries(renderedRows()).map((e) => e.name).filter((n): n is string => typeof n === 'string')
+  const bases = raw.map((n) => (n.startsWith('@') ? n.split('/').slice(0, 2).join('/') : n.split('/')[0]!))
+  return [...new Set(bases)]
+}
+
+/** Map a workspace package name to its directory (the pnpm-workspace
+ *  globs + each package.json's own name — derived, never a hand list). */
+function nameToPath(name: string): string {
+  const out = execFileSync('git', ['ls-files', '*/package.json'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+    .split('\n').map((f) => f.trim()).filter(Boolean)
+  for (const f of out) {
+    try {
+      const m = JSON.parse(readFileSync(join(ROOT, f), 'utf8')) as { name?: string }
+      if (m.name === name) return f.slice(0, f.lastIndexOf('/'))
+    } catch { /* foreign or malformed manifest — not ours */ }
+  }
+  throw new Error(`no workspace package named ${name}`)
+}
+
 describe('THE ROOT SEAT (the DSH plugin-install recognition shape)', () => {
   it('the root manifest is a recognizable dsh bundle seat', () => {
     expect(MANIFEST.name, 'the root package.json carries the name the git source resolves (ERR_PNPM_MISSING_PACKAGE_NAME without it)').toBe('melite')
@@ -80,15 +104,21 @@ describe('THE ROOT SEAT (the DSH plugin-install recognition shape)', () => {
     expect(MANIFEST.scripts?.['hooks:seat'], 'the hook seat stays reachable as an explicit dev script').toContain('install-lefthook')
   })
 
-  it('the seat dependencies are exactly the consumer-install carriers, from the registry channel', () => {
+  it('the seat dependencies cover every rendered patch row from the registry channel (the resolver-manifest law)', () => {
     const deps = MANIFEST.dependencies ?? {}
-    const expected = consumerInstallCarriers()
-    expect(Object.keys(deps).filter((n) => n.startsWith('@melite')).sort(), 'the root dependencies name exactly the consumer-install melite carriers').toEqual([...expected].sort())
+    // THE COVERAGE LAW ("bare plugins must appear in their resolver
+    // manifest's dependencies"): the seat composes 42 plugin rows; a
+    // row resolving only through transitive hoisting is invisible to
+    // every manifest-reading tool — the 2026-11-17 audit's MAJOR had
+    // 31 family rows riding hoisting. Carriers AND families seat here.
+    const expected = [...new Set([...consumerInstallCarriers(), ...patchRowNames()])]
+    expect(Object.keys(deps).filter((n) => n.startsWith('@melite')).sort(), 'the root dependencies name the carriers and every rendered patch row').toEqual(expected.sort())
     for (const [name, spec] of Object.entries(deps)) {
       if (!name.startsWith('@melite')) continue
-      expect(spec, `${name}: the seat resolves carriers from the published channel, never the workspace protocol a consumer profile cannot resolve`).not.toContain('workspace:')
-      const carrierManifest = JSON.parse(readFileSync(join(ROOT, carrierTable().find(([n]) => n === name)![1], 'package.json'), 'utf8')) as { version?: string }
-      expect(spec, `${name}: the seat pin tracks the carrier's own version (the release bump moves both)`).toBe(carrierManifest.version)
+      expect(spec, `${name}: the seat resolves from the published channel, never the workspace protocol a consumer profile cannot resolve`).not.toContain('workspace:')
+      const dir = carrierTable().find(([n]) => n === name)?.[1] ?? nameToPath(name)
+      const manifest = JSON.parse(readFileSync(join(ROOT, dir, 'package.json'), 'utf8')) as { version?: string }
+      expect(spec, `${name}: the seat pin tracks the package's own version (the release bump moves both)`).toBe(manifest.version)
     }
   })
 

@@ -198,4 +198,3 @@ export function apply(ctx: Context): void {
   ctx.effect(() => comfy.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))
   ctx.effect(() => comfy.registerPack({ pack: 'qvoice_save', fields: QvoiceSaveFields as never }))
 }
-

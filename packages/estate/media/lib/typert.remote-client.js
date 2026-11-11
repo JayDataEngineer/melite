@@ -52,7 +52,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         create: _melite_estate_media_media_list_result$schema,
         jsonSchema: {"type":"object","properties":{"count":{"type":"number"},"items":{"type":"array","items":{"type":"object","properties":{"url":{"type":"string"},"name":{"type":"string"},"kind":{"type":"string"},"runId":{"type":"string"},"served_from":{"type":"string","description":"§23 CROSS-ROOTS: the state root that served this row (own root first; first-root-wins on run-id collisions)."}},"required":["url","name","kind","runId","served_from"],"additionalProperties":true}}},"required":["count","items"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/estate/media/src/index.ts","line":553,"column":9},
+      sourceLocation: {"file":"packages/estate/media/src/index.ts","line":555,"column":9},
     },
   },
 }, z)

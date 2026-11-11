@@ -13,7 +13,10 @@
 // the plain text input (arm 3 — the faces' own degrade law). The
 // kinds here are the composition root's REAL card registry rows
 // (loadCardDefs) — toggling the declaration out reds arm 1 and arm 2
-// verbatim, never a hand-built kind.
+// verbatim, never a hand-built kind. THE ADVANCED FOLD (the Plan trio
+// law, 2026-11-09): the DECL marks chain_run advanced, so every arm
+// opens the leaf's disclosure row before it reaches the seat — the
+// wall rides the fold law, never bypasses it.
 import '../../../../tests/helpers/boot-models.ts'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
@@ -116,6 +119,8 @@ test('ARM 2 — THE FACE: the leaf serves the LIVE labeled rows and binds the pi
   const { onEdit } = openLeaf({ kinds: [k], values: {}, loadChainRuns: fetchChainRunCandidates })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
   fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
+  // the seat rides the advanced fold (chain_run is DECL-marked advanced)
+  fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
   // The load lands before the menu opens (the seat renders its state;
   // the wall awaits the fact, never a sleep).
   await waitFor(() => {
@@ -151,6 +156,8 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   const absent = openLeaf({ kinds: [k], values: {} })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
   fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
+  // the seat rides the advanced fold (chain_run is DECL-marked advanced)
+  fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
   const input = screen.getByLabelText('Prior chain run') as HTMLInputElement
   assert.equal(input.tagName, 'INPUT')
   // THE TEACHING FACE (2026-11-10, the operator's burn: the degraded
@@ -174,6 +181,8 @@ test('ARM 3 — THE DEGRADE: no runs lane (or a failed load) renders the plain t
   const broken = openLeaf({ kinds: [k], values: {}, loadChainRuns: failed })
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
   fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
+  // the seat rides the advanced fold (chain_run is DECL-marked advanced)
+  fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
   await waitFor(() => {
     expect(document.querySelector('[data-chain-run-picker="chain_run"]')?.getAttribute('data-chain-runs-loaded')).toBe('failed')
   })
@@ -199,6 +208,8 @@ test('ARM 4 — THE SUPERSEDED FLIGHT: an aborted load is cleanup, never an erro
   const first = render(h(ModifiersSection, { kinds: [k], values: {}, onEdit, onPatch, loadChainRuns: late }))
   fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
   fireEvent.click(screen.getByRole('menuitem', { name: 'Video edit' }))
+  // the seat rides the advanced fold (chain_run is DECL-marked advanced)
+  fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
   const seat = () => document.querySelector('[data-chain-run-picker="chain_run"]')
   expect(seat()?.getAttribute('data-chain-runs-loaded')).toBe('false')
   // the host re-serves the lane (a new loader identity) — flight 1 aborts by design

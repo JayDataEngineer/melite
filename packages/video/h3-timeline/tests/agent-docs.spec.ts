@@ -26,7 +26,9 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/audio_clips/);
     expect(md).toMatch(/"text":\s*"I told you I would finish it before dawn\."/);
     expect(md).toMatch(/THE WORDS MOVE THE MOUTH/);
-    expect(md).toMatch(/One lane per CLASS per window/);
+    expect(md).toMatch(/One lane per CLASS per window, owned by POSITION/);
+    expect(md).toMatch(/YIELDS the second/);
+    expect(md).toMatch(/two same-class rows starting/);
     expect(md).toMatch(/CONTINUES the same line across both/);
     expect(md).toMatch(/DUCKS -14dB/);
     expect(md).toMatch(/two or more calls/);

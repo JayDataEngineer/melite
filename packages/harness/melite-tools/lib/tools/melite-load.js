@@ -545,6 +545,7 @@ function familyPackSeats(families, servedKinds) {
     let svc = null;
     try {
         svc = theService();
+        // no service seat — field names degrade to [] and the seat drops; the compose door still refuses loud on a bad bag
     }
     catch {
         svc = null;
@@ -559,6 +560,7 @@ function familyPackSeats(families, servedKinds) {
             if (Array.isArray(raw)) {
                 packs = raw.map((m) => typeof m === 'string' ? m : (typeof m?.pack === 'string' ? m.pack : '')).filter((p) => p !== '');
             }
+            // an unregistered family has no DECL mods to serve — the compose door still refuses loud on a bad bag
         }
         catch {
             continue;

@@ -462,6 +462,7 @@ export const rearmLoraFlavors = (): { user_rows: number; tray_rows: number; prob
   let cfg: Record<string, unknown> = {}
   try {
     cfg = loadEndpointConfig()
+  // a missing or unparseable endpoint config means no declared loras base — the env and runtime-tree legs still resolve, null skips the walk
   } catch {
     cfg = {}
   }

@@ -40,12 +40,7 @@ export interface UserLoraFile {
  *  node:fs module; this import + re-export keeps the tray's F1 seam. */
 import { LORA_EXTENSIONS } from '@melite/contracts/loraExtensions';
 export { LORA_EXTENSIONS };
-/** ONE spelling of the rows-file location: the declared
- *  MELITE_USER_LORAS override wins, the repo default otherwise.
- *  Every reader (the manage door, the composed flavor, the hot
- *  drop-in) resolves through here — a second literal is a second
- *  truth about the same file. */
-export declare function userLorasPath(): string;
+export { setUserLorasPath, userLorasPath } from './lorasPathSeat.js';
 /** ONE row's validation — the refusals name the field, never the file. */
 export declare function validateUserLoraRow(raw: unknown, at: number): {
     row: UserLoraRow;

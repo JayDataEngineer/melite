@@ -1,3 +1,4 @@
+import { warnWiringAbsent } from "../wiringWall.js";
 import { needComfyUI, spliceWorkflow, } from "../comfyui.js";
 /** Splice + merge the engine-agnostic rows into MergeRows (the
  * door-validated params are the graph carrier; spliceWorkflow
@@ -42,7 +43,9 @@ export function comfyuiExecutor(ctx, host) {
             // run seat's existing catch (the splice refusal's path):
             // stages failed, run settled, nothing submitted.
             const wiring = ctx.get("comfyuiWiring");
-            if (wiring !== undefined) {
+            if (wiring === undefined)
+                warnWiringAbsent(ctx, "engines adapter");
+            else {
                 for (const row of mergeRows) {
                     // the VOICE names the composer (the audit's F-2): the
                     // card when the run was card-commissioned — the estate

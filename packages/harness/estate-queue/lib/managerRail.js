@@ -58,6 +58,7 @@ async function call(base, path, opts) {
             return null;
         try {
             return JSON.parse(text);
+            // a non-JSON body is the vendor's own plain text — folding to raw text hands the caller the vendor's words instead of a parse refusal
         }
         catch {
             return text;

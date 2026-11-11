@@ -464,11 +464,10 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
         for (const [i, st] of (bsStages as Record<string, unknown>[]).entries()) {
           // THE RESTORE'S OWN STRIP, BY THE CONTRACT'S NAMES
           // (benchStage.ts): the wand restores the WORKFLOW, never
-          // another bench's output memory. The list used to be
-          // written out here by hand AND in the birth arm AND in the
-          // snapshot contract — three copies of one law, which is
-          // how the restore and the birth drifted apart. The contract
-          // names the keys; each arm decides which arm it is.
+          // another bench's output memory. The contract names the
+          // keys (RESTORE_STRIP_KEYS) — ONE home — and each arm
+          // (restore, birth, snapshot contract) decides which arm it
+          // is against that single list.
           stripKeys(st, RESTORE_STRIP_KEYS)
           // THE SELF-NAMING MODEL STRIP (see the card arm's law below
           // — era stages ride the same strip before re-admission).

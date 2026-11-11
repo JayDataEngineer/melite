@@ -229,6 +229,7 @@ export async function uploadFile(
 export function isFile(path: string): boolean {
   try {
     return statSync(path).isFile();
+  // a missing or unreadable path is not a file — false keeps the staging probes honest
   } catch {
     return false;
   }
@@ -505,6 +506,7 @@ export async function uploadReferenced(
       let tail = "";
       try {
         tail = new URL(p, "http://upload.invalid").searchParams.get("path") ?? "";
+      // a string that fails URL parsing carries no ?path param — the empty tail fails the shape law below and refuses loud
       } catch {
         tail = "";
       }
@@ -611,6 +613,7 @@ export async function uploadReferenced(
           let runs: string[];
           try {
             runs = readdirSync(tree);
+          // an unreadable runs tree holds no candidates — a total miss still refuses loud below
           } catch {
             continue;
           }
@@ -702,6 +705,7 @@ export async function uploadReferenced(
                 let names: string[];
                 try {
                   names = readdirSync(tree);
+                // an unreadable tree contributes no nearby-run hints — best-effort debug voice only; the refusal below still throws
                 } catch {
                   continue;
                 }

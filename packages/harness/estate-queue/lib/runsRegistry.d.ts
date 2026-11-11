@@ -179,7 +179,7 @@ export declare class RunsRuntimeService extends Service {
      *  parks on); returns the unsubscribe. Delegates to the module
      *  seam — a listener's fault never breaks the write (the wrapper
      *  guards; the law lives at runsChange.ts onRunChange). */
-    onRunChange(fn: (runId: string) => void): () => void;
+    onRunChange(fn: (runId: RunId) => void): () => void;
     /** THE BOOT RECONCILE (stroke 83; boot_resurrect reborn as a
      *  REPLAY, not a hollow requeue): every usable QUEUED record's
      *  _request.json goes back through the START door under its own

@@ -85,7 +85,7 @@ describe('the dispatch and every refusal', () => {
 
   test('an unrecognized container is refused BY NAME, not probed with the wrong reader', () => {
     const junk = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-    assert.throws(() => probeMedia(junk), /recognized neither an MP4\/MOV container nor a RIFF\/WAVE stream/)
+    assert.throws(() => probeMedia(junk), /recognized neither an MP4\/MOV container, a RIFF\/WAVE stream, nor a FLAC stream/)
     assert.throws(() => probeMedia(new Uint8Array(0)), /recognized neither/)
     assert.throws(() => probeWav(new Uint8Array(8)), /found no streams/)
     assert.throws(() => probeWav(new Uint8Array(0)), /found no streams/)
@@ -793,5 +793,61 @@ describe('the stbl-without-stsd arm (walker bounds, second seat)', () => {
     const moov = box('moov', new Uint8Array([...box('mvhd', new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...u32(1000), ...u32(10)])), ...box('trak', mdia)]))
     const row = probeMp4(new Uint8Array([...box('ftyp', new Uint8Array([109, 115, 110, 109, 0, 0, 2, 0])), ...moov]))
     assert.deepEqual(row.streams, [{ codec: 'unknown', codec_type: 'audio' }])
+  })
+})
+
+// THE FLAC ARM (2026-11-17, the TTS blind spot): every tts/* artifact
+// the runs write is FLAC, and the probe refused the container by name
+// — melite_view could not measure a single TTS clip (the operator's
+// audio burn tripped it: the estate's own probe was the one door that
+// could not read the estate's own voice). STREAMINFO carries the
+// facts in one packed row: rate(20) channels(3,+1) bps(5,+1)
+// total(36). The bytes below are hand-built — no fixture file, the
+// parser tested against bytes it cannot cheat on.
+describe('the FLAC STREAMINFO arm (the TTS estate\'s own container)', () => {
+  const flac = (over: { rate?: number, channels?: number, bps?: number, total?: number, withStreaminfo?: boolean } = {}): Uint8Array => {
+    const { rate = 24000, channels = 2, bps = 16, total = 48000, withStreaminfo = true } = over
+    const out = new Uint8Array(4 + 4 + 34)
+    const v = new DataView(out.buffer)
+    for (let i = 0; i < 4; i++) out[i] = 'fLaC'.charCodeAt(i)
+    if (!withStreaminfo) {
+      // a VORBIS_COMMENT (type 4, zero length) marked last: a FLAC
+      // with no readable STREAMINFO
+      out[4] = 0x80 | 4
+      return out.subarray(0, 8)
+    }
+    out[4] = 0x80 // last-block flag + type 0 = STREAMINFO
+    v.setUint8(5, 0); v.setUint8(6, 0); v.setUint8(7, 34) // block length
+    v.setUint16(8, 4096) // min block size
+    v.setUint16(10, 4096) // max block size
+    v.setUint8(12, 0); v.setUint8(13, 0); v.setUint8(14, 10) // min frame size
+    v.setUint8(15, 0); v.setUint8(16, 0); v.setUint8(17, 10) // max frame size
+    // the packed row (8 bytes at offset 18): rate(20) ch(3) bps(5) total(36)
+    const packed = BigInt(rate) << 44n | BigInt(channels - 1) << 41n | BigInt(bps - 1) << 36n | BigInt(total)
+    for (let i = 0; i < 8; i++) out[18 + i] = Number((packed >> BigInt(56 - 8 * i)) & 0xffn)
+    return out
+  }
+
+  test('the dispatch recognizes the magic and STREAMINFO yields the row', () => {
+    const row = probeMedia(flac())
+    assert.equal(row.size_bytes, 42)
+    assert.equal(row.duration_s, 2) // 48000 samples at 24000 Hz
+    assert.deepEqual(row.streams, [{ codec: 'flac', codec_type: 'audio', sample_rate: 24000, channels: 2 } satisfies ProbedStream])
+  })
+
+  test('the real TTS shape: 24kHz, three channels, a 14.88s voice clip', () => {
+    const row = probeMedia(flac({ channels: 3, total: 24000 * 14.88 }))
+    assert.equal(row.duration_s, 14.88)
+    assert.equal(row.streams[0]!.channels, 3)
+  })
+
+  test('a zero total-samples field leaves the duration ABSENT, never fabricated', () => {
+    const row = probeMedia(flac({ total: 0 }))
+    assert.equal(row.duration_s, undefined)
+    assert.equal(row.streams[0]!.sample_rate, 24000, 'the stream facts still read')
+  })
+
+  test('a FLAC with no STREAMINFO refuses by the fmt-less WAV law', () => {
+    assert.throws(() => probeMedia(flac({ withStreaminfo: false })), /found no streams/)
   })
 })

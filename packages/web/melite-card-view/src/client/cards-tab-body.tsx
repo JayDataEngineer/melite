@@ -789,14 +789,13 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [retireStartClaim, onBack])
   // THE TAB OWNS ITS SCROLL (operator volley 2026-10-24, items d+j:
   // "errors flow above the visually available area" / "too much
-  // content and I can't scroll down"): the body used to be a bare
-  // Fragment — every branch's height was the shell pane's business,
-  // and a pane that clips (overflow hidden) cut the TOP off when an
-  // error line grew the head and made the BOTTOM unreachable — one
-  // law, both directions. The wrapper is the drill's own law
-  // (.zoomBody/.zoomDetail): fill the pane, scroll INSIDE. If the
-  // host pane is auto-height, height:100% resolves to auto and the
-  // wrapper grows — no regression for auto-height hosts.
+  // content and I can't scroll down"): the drill's own law
+  // (.zoomBody/.zoomDetail) governs every branch — the wrapper fills
+  // the pane and scrolls INSIDE, both directions (an error line
+  // growing the head never cuts the top off nor makes the bottom
+  // unreachable). If the host pane is auto-height, height:100%
+  // resolves to auto and the wrapper grows — no regression for
+  // auto-height hosts.
   // THE UNIFORM LAW (the d+j follow-up): the cheapest rule won —
   // EVERY return rides withTabScroll, including the early faces below
   // (hook-missing, valueless live/failed, loading). No exempt branch:

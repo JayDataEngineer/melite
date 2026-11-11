@@ -138,6 +138,7 @@ function byteLess(a, b) {
 function isDir(path) {
     try {
         return statSync(path).isDirectory();
+        // a missing or unreadable path is not a directory — false is the probe's whole answer
     }
     catch {
         return false;
@@ -146,6 +147,7 @@ function isDir(path) {
 function fileSize(path) {
     try {
         return statSync(path).size;
+        // an unstatable file has no knowable size — -1 is the sentinel the artifact pusher drops the row on
     }
     catch {
         return -1;
@@ -157,6 +159,7 @@ export function mediaCandidates(runDir) {
     let names;
     try {
         names = readdirSync(runDir);
+        // an unlistable run dir (vanished or unreadable) yields no media candidates — the empty list is the answer
     }
     catch {
         return [];
@@ -177,6 +180,7 @@ export function mediaCandidates(runDir) {
         let inner;
         try {
             inner = readdirSync(join(runDir, sub));
+            // a subdir unreadable at readdir time contributes no candidates — skipping it keeps the walk over the remaining subs
         }
         catch {
             continue;
@@ -295,6 +299,7 @@ export function runArchivedArtifacts(runDir, outDirLiteral) {
     let tops;
     try {
         tops = readdirSync(join(runDir, ARCHIVED_DIR_NAME));
+        // an absent _archived dir is the pinned empty face — the empty list is the answer, never a throw
     }
     catch {
         return [];
@@ -315,6 +320,7 @@ export function runArchivedArtifacts(runDir, outDirLiteral) {
         let inner;
         try {
             inner = readdirSync(join(runDir, ARCHIVED_DIR_NAME, sub));
+            // an archived subdir unreadable at readdir time contributes no rows — skipping it keeps the tuck walk over the rest
         }
         catch {
             continue;
@@ -393,6 +399,7 @@ export function runDirHasMedia(runDir) {
     let names;
     try {
         names = readdirSync(runDir);
+        // an unlistable run dir cannot be scanned for media — false is the answer, the same verdict an empty dir earns
     }
     catch {
         return false;
@@ -410,6 +417,7 @@ export function runDirHasMedia(runDir) {
                 if (has(inner))
                     return true;
             }
+            // a subdir that vanishes or refuses the readdir after passing its isDir probe holds no checkable media — skipping it answers false for that branch
         }
         catch {
             continue;
@@ -566,6 +574,7 @@ const scanCache = new Map();
 function mtimeMsOf(path) {
     try {
         return statSync(path).mtimeMs;
+        // a vanished path has no mtime — -1 is the sentinel scanRunEnt reads as a gone run
     }
     catch {
         return -1;
@@ -590,6 +599,7 @@ function scanRunEnt(runDir) {
     let buf = "";
     try {
         buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
+        // a run with no readable _flow.json sidecar has no recorded created time — the empty buffer keeps the scan entry alive at created 0
     }
     catch {
         buf = "";
@@ -615,6 +625,7 @@ function scanRunsRoot(stateRoot) {
         let names;
         try {
             names = readdirSync(seatRoot);
+            // a state root without this out seat (output/ or test-output/ never created) holds no runs — skipping the seat is the answer
         }
         catch {
             continue;

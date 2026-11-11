@@ -201,6 +201,7 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
         envRT.dispose()
         pmrem.dispose()
       }
+    // a refused WebGL probe leaves no environment and no disposer — flatter metals, the viewer still renders
     } catch {
       disposeEnv = null
     }

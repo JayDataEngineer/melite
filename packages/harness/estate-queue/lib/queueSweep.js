@@ -107,11 +107,15 @@ export const READ_SWEEP_RUNNING_ERROR = "zombie swept at read time";
  *  retired and never ride it). */
 export async function bootSweep(stateRoot, liveRunIds = [], nowS = Math.floor(Date.now() / 1000)) {
     const swept = [];
+    // THE ONE UNBRAND, at the durable edge (the brand rides the bus
+    // and the registry rows; the sweep compares against directory
+    // names, which the fs hands back as bare strings).
     const live = new Set(liveRunIds);
     const outRoot = join(stateRoot, "output");
     let names;
     try {
         names = readdirSync(outRoot);
+        // an absent or unreadable output root holds no runs to sweep — the empty swept set is the answer
     }
     catch {
         return swept;
@@ -127,6 +131,7 @@ export async function bootSweep(stateRoot, liveRunIds = [], nowS = Math.floor(Da
             if (typeof pre !== "object" || pre === null || Array.isArray(pre)) {
                 pre = {};
             }
+            // a pre-read that cannot read or parse the sidecar cannot prove the queued hold — the row falls to the retire path, and the authoritative read below still ledgers it
         }
         catch {
             pre = {};

@@ -14441,7 +14441,7 @@ window.__ModuleLoader__.load({
 										children: c.name
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.audioTime,
-										children: timelineCopy.clipSeconds({ seconds: a })
+										children: timelineCopy.clipSeconds({ seconds: (Math.max(1, c.dur_frames) / Math.max(1, fps)).toFixed(1) })
 									})]
 								}),
 								onAudioClipDelete && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {

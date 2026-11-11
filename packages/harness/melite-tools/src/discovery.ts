@@ -625,6 +625,7 @@ function servedOptions(
 export async function engineLorasListing(boundMs = 3_000): Promise<readonly string[] | undefined> {
   try {
     return loraNamesFromObjectInfo(await liveObjectInfo(resolveEngineBaseUrl(), undefined, boundMs))
+  // a dead or undeclared engine proves no loras — undefined serves the picker's DECL rows alone (honest-empty)
   } catch {
     return undefined
   }
@@ -1031,6 +1032,7 @@ function runtimeRowsOf(boarded: readonly string[]): NonNullable<FormSpecDoc['run
     let decl: ModelDecl | null = null
     try {
       decl = getModel(family)
+    // an unregistered family carries no runtime — the runtimes block omits its row, never invents one
     } catch {
       decl = null
     }
@@ -1042,6 +1044,7 @@ function runtimeRowsOf(boarded: readonly string[]): NonNullable<FormSpecDoc['run
       present = rt.sentinel.every((s) => {
         try {
           return existsSync(join(override.value, s))
+        // an unprobeable sentinel path (a malformed env override value) counts as absent — the row carries the provision command
         } catch {
           return false
         }
@@ -1091,6 +1094,7 @@ export function specBody(
   let decl: ModelDecl | null = null
   try {
     decl = getModel(key)
+  // an unknown model name serves the card model-less — its schema envelope and filters speak for it
   } catch {
     decl = null
   }
@@ -1376,6 +1380,7 @@ export function specBody(
       let fdecl: unknown
       try {
         fdecl = getModel(atom)
+      // getModel throws for an unbootable family — the row stays (the boot census owns that refusal)
       } catch {
         return true
       }
@@ -1566,6 +1571,7 @@ export async function cardToolsArm(): Promise<unknown[]> {
       const atom = owningAtom(fam)
       if (atom in lanes) continue;
       let fdecl: ModelDecl | null = null;
+      // an unregistered atom has no DECL — its lane falls back to the legacy truth (params: [] ≡ undeclared)
       try { fdecl = getModel(atom); } catch { fdecl = null; }
       // SAME LAW AS THE FORM FACE (the design audit's F5, 2026-10-10):
       // `params: []` ≡ undeclared — both faces fall back to the
