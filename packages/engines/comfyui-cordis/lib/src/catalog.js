@@ -38,7 +38,7 @@
 //     under model_base_path. Returns the hit path, else null (no
 //     configured base == null — the mount leg is skipped).
 //
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { loadEndpointConfig, resolveRepoRoot, } from "./comfyui.js";
 ;
@@ -332,7 +332,24 @@ function rootModelsReadRoot(repoRoot) {
         return "";
     }
 }
-/** The pure presence core (I/O: existsSync probes + the one
+/** A lane seat that reads present must carry bytes. A 0-byte
+ *  regular file at a weight seat is a failed download's corpse,
+ *  never a loadable weight — the 2026-11-11 unet-stub burn:
+ *  aborted download loops left 0-byte shadows beside the real
+ *  diffusion_models weights, presence called them present, the
+ *  run rode into ComfyUI and died at the safetensors header.
+ *  Presence treats a 0-byte file as ABSENT so the lane refusal
+ *  names it (and a dangling symlink throws to the same absent). */
+function presentWeight(path) {
+    try {
+        const st = statSync(path);
+        return st.isFile() && st.size > 0 ? path : null;
+    }
+    catch {
+        return null;
+    }
+}
+/** The pure presence core (I/O: size-checked probes + the one
  *  root-inheritance read, no cache): cfg null = mount leg skipped
  *  (unparseable endpoint collapses to None, same as the module
  *  function's try/catch). Shared by the module function
@@ -342,8 +359,8 @@ export function findModelPresent(relativePath, name, repoRoot, cfg) {
     const folder = relativePath.startsWith("models/")
         ? relativePath.slice("models/".length)
         : relativePath;
-    const runtimeHit = join(runtimeModelsRoot(repoRoot), folder, name);
-    if (existsSync(runtimeHit))
+    const runtimeHit = presentWeight(join(runtimeModelsRoot(repoRoot), folder, name));
+    if (runtimeHit !== null)
         return runtimeHit;
     if (cfg === null)
         return null;
@@ -365,8 +382,8 @@ export function findModelPresent(relativePath, name, repoRoot, cfg) {
     const sub = typeof mapped === "string" && stripSlashes(mapped) !== ""
         ? stripSlashes(mapped)
         : head;
-    const mountHit = rest !== "" ? join(mountBase, sub, rest, name) : join(mountBase, sub, name);
-    if (existsSync(mountHit))
+    const mountHit = presentWeight(rest !== "" ? join(mountBase, sub, rest, name) : join(mountBase, sub, name));
+    if (mountHit !== null)
         return mountHit;
     return null;
 }

@@ -201,6 +201,11 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "florence2/src/actions.ts",
         "flux-klein/src/actions.ts",
         "gem-soma/src/actions.ts",
+        // 2026-11-11, the H3-Image landing: both twins' t2i/edit
+        // actions mint through the same sentinel (directory-read
+        // order — the census is the tree's own).
+        "h3-image-edit/src/actions.ts",
+        "h3-image/src/actions.ts",
         "h3/src/actions.ts",
         "input/src/actions.ts",
         "joycaption/src/actions.ts",

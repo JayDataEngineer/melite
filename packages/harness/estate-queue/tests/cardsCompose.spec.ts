@@ -32,11 +32,11 @@ describe("the compose door's cards face (the primed registry)", () => {
     assert.ok((def.boarded ?? []).length > 0, "the card boards its families");
   });
 
-  it("image-gen's boarded roster IS the model plugins' DECL ids (moss-image joins 2026-11-07)", async () => {
+  it("image-gen's boarded roster IS the model plugins' DECL ids (moss-image joins 2026-11-07; h3-image 2026-11-11)", async () => {
     const svc = await mount();
     const boarded = svc.defsSync().get("image-gen")?.boarded ?? [];
     assert.deepEqual([...boarded].sort(), [
-      "anima", "flux-klein", "krea-2", "moss-image", "qwen-img-21", "z-image",
+      "anima", "flux-klein", "h3-image", "krea-2", "moss-image", "qwen-img-21", "z-image",
     ]);
   });
 });

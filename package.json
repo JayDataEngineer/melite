@@ -25,6 +25,8 @@
     "@melite/models-flux-klein": "0.2.3-rc.1",
     "@melite/models-gem-soma": "0.2.3-rc.1",
     "@melite/models-h3": "0.2.3-rc.1",
+    "@melite/models-h3-image": "0.2.3-rc.1",
+    "@melite/models-h3-image-edit": "0.2.3-rc.1",
     "@melite/models-input": "0.2.3-rc.1",
     "@melite/models-joycaption": "0.2.3-rc.1",
     "@melite/models-joytag": "0.2.3-rc.1",

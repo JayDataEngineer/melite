@@ -25,6 +25,8 @@ export const FAMILY_PKGS = [
     "@melite/models-fibo2-edit",
     "@melite/models-florence2",
     "@melite/models-flux-klein",
+    "@melite/models-h3-image",
+    "@melite/models-h3-image-edit",
     "@melite/models-input",
     "@melite/models-joycaption",
     "@melite/models-joytag",

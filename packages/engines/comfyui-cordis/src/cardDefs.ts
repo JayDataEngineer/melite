@@ -241,6 +241,16 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     // the mask bare flavor (the crop_stitch detailer arm).
     ['@melite/models-fibo2-edit/mods/loras', 'fibo2-edit loras'],
     ['@melite/models-fibo2-edit/mods/mask', 'fibo2-edit mask'],
+    // THE H3 IMAGE PAIR (2026-11-11, the same weights on two
+    // cards): both families carry the loras seed + the mask bare
+    // flavor — the t2i twin serves the gen detailer arm (photo +
+    // fresh-gen, the MASK ORDER's every-img-gen law) and the edit
+    // twin serves the crop_stitch detailer tail (the qwen edit
+    // twin's shape, over the H3 conditioning).
+    ['@melite/models-h3-image/mods/loras', 'h3-image loras'],
+    ['@melite/models-h3-image/mods/mask', 'h3-image mask'],
+    ['@melite/models-h3-image-edit/mods/loras', 'h3-image-edit loras'],
+    ['@melite/models-h3-image-edit/mods/mask', 'h3-image-edit mask'],
     // THE 2.1 MASK BOARDING (2026-09-22, the operator's lane call):
     // the region contract absorbs onto the CURRENT edit lane — the
     // GPU receipt caught the gap (the compose door's admission

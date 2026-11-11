@@ -58,7 +58,7 @@ knobs.
 
 ## THE LOOK PICKS THE FAMILY
 
-Six looks are boarded, and they are NOT interchangeable — the
+Seven looks are boarded, and they are NOT interchangeable — the
 brief's words pick one, or you ask. Never silently take the
 signature default when the brief names a look:
 
@@ -75,6 +75,9 @@ signature default when the brief names a look:
 - **moss-image** — the 50-step SFT photoreal lane: typography
   through quoted text, layout through native JSON bboxes in the
   prompt.
+- **h3-image** — the newest heavy lane: dense multi-element scenes
+  held together (many objects, stated spatial relations, long
+  prompts followed verbatim). 6-step lane, INT8 weights.
 
 Ambiguous ("make it cool")? ASK the user which look — one line,
 the options. The family rides `params.model` on the stage

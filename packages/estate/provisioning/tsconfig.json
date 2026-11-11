@@ -2,6 +2,8 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/models-h3-image/mods/mask": ["./../../models/h3-image/mods/mask.ts"],
+        "@melite/models-h3-image-edit/mods/mask": ["./../../models/h3-image-edit/mods/mask.ts"],
         "@melite/models-input/scale-vocab": ["./../../models/input/src/scale-vocab.ts"],
         "@melite/video-h3-timeline/v2v-face": ["./../../video/h3-timeline/src/ui/v2vFace.ts"],
         "@melite/models-h3/secondPass": ["./../../models/h3/src/secondPass.ts"],
@@ -18,6 +20,10 @@
         "@melite/models-fibo2-edit": ["./../../models/fibo2-edit/src/index.ts"],
         "@melite/models-fibo2-edit/mods/loras": ["./../../models/fibo2-edit/mods/loras.ts"],
         "@melite/models-fibo2-edit/mods/mask": ["./../../models/fibo2-edit/mods/mask.ts"],
+        "@melite/models-h3-image": ["./../../models/h3-image/src/index.ts"],
+        "@melite/models-h3-image/mods/loras": ["./../../models/h3-image/mods/loras.ts"],
+        "@melite/models-h3-image-edit": ["./../../models/h3-image-edit/src/index.ts"],
+        "@melite/models-h3-image-edit/mods/loras": ["./../../models/h3-image-edit/mods/loras.ts"],
         "@melite/estate-provisioning/contracts": ["./src/contracts.ts"],
         "@melite/models-moss-image": ["./../../models/moss-image/src/index.ts"],
         "@melite/models-moss-image/mods/loras": ["./../../models/moss-image/mods/loras.ts"],

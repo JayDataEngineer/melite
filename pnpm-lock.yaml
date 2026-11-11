@@ -70,6 +70,12 @@ importers:
       '@melite/models-h3':
         specifier: 0.2.3-rc.1
         version: link:packages/models/h3
+      '@melite/models-h3-image':
+        specifier: 0.2.3-rc.1
+        version: link:packages/models/h3-image
+      '@melite/models-h3-image-edit':
+        specifier: 0.2.3-rc.1
+        version: link:packages/models/h3-image-edit
       '@melite/models-input':
         specifier: 0.2.3-rc.1
         version: link:packages/models/input
@@ -598,6 +604,12 @@ importers:
       '@melite/models-h3':
         specifier: workspace:*
         version: link:../../models/h3
+      '@melite/models-h3-image':
+        specifier: workspace:*
+        version: link:../../models/h3-image
+      '@melite/models-h3-image-edit':
+        specifier: workspace:*
+        version: link:../../models/h3-image-edit
       '@melite/models-input':
         specifier: workspace:*
         version: link:../../models/input
@@ -1195,6 +1207,9 @@ importers:
       '@melite/models-fibo2-edit':
         specifier: workspace:*
         version: link:../../models/fibo2-edit
+      '@melite/models-h3-image-edit':
+        specifier: workspace:*
+        version: link:../../models/h3-image-edit
       '@melite/models-mask':
         specifier: workspace:*
         version: link:../../models/mask
@@ -1235,6 +1250,9 @@ importers:
       '@melite/models-flux-klein':
         specifier: workspace:*
         version: link:../../models/flux-klein
+      '@melite/models-h3-image':
+        specifier: workspace:*
+        version: link:../../models/h3-image
       '@melite/models-krea-2':
         specifier: workspace:*
         version: link:../../models/krea-2
@@ -1583,6 +1601,38 @@ importers:
       '@deepseek-ai/cosmokit':
         specifier: 1.8.5
         version: 1.8.5
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/h3-image:
+    dependencies:
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.5
+        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/h3-image-edit:
+    dependencies:
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.5
+        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -2775,6 +2825,12 @@ importers:
       '@melite/models-h3':
         specifier: workspace:*
         version: link:../../models/h3
+      '@melite/models-h3-image':
+        specifier: workspace:*
+        version: link:../../models/h3-image
+      '@melite/models-h3-image-edit':
+        specifier: workspace:*
+        version: link:../../models/h3-image-edit
       '@melite/models-input':
         specifier: workspace:*
         version: link:../../models/input

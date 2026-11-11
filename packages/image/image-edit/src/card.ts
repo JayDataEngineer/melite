@@ -47,6 +47,7 @@ import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 import { DECL as fibo2EditDecl } from '@melite/models-fibo2-edit'
+import { DECL as h3ImageEditDecl } from '@melite/models-h3-image-edit'
 import { bag } from '@melite/contracts/extraKeys'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
@@ -62,7 +63,7 @@ export const declCap = (d: { id: string; lane_inputs?: Record<string, unknown> }
   if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v)
   throw new Error(`image-edit card: boarded family '${d.id}' declares no lane_inputs.max_images (the max_images law — the node's own image-input count)`)
 }
-const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl))
+const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl), declCap(h3ImageEditDecl))
 
 export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
   // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
@@ -156,7 +157,7 @@ const schemaFn = callableSchema(schema)
 // BOTH IDS COME FROM THEIR DECLS (the card audit's M1): a boarded
 // id is the DECL's own, so a rename breaks the card at runtime
 // (not-boarded) with every wall green.
-export const BOARDED: string[] = [qwenImgEdit21Decl.id, fibo2EditDecl.id]
+export const BOARDED: string[] = [qwenImgEdit21Decl.id, fibo2EditDecl.id, h3ImageEditDecl.id]
 
 /** The action bindings (the atom vocabulary, stroke 3): a boarded
  *  family with a bound action composes through the atom's own
@@ -174,13 +175,16 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
   [fibo2EditDecl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(fibo2EditDecl, 'edit'), p, model, g, runId)
   },
+  [h3ImageEditDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(h3ImageEditDecl, 'edit'), p, model, g, runId)
+  },
 }
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
   label: 'Edit Image',
-  description: 'Instruction-driven image editing — the edit_image interface card boarding two served LANES: qwen-img-edit-21 (the default — the cached-reference edit lane of the same 2.1 weights as the t2i sibling family) and fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent). The family names the model, the card names the operation. The surface scopes itself.',
+  description: 'Instruction-driven image editing — the edit_image interface card boarding three served LANES: qwen-img-edit-21 (the default — the cached-reference edit lane of the same 2.1 weights as the t2i sibling family), fibo2-edit (BRIA\'s licensed Fibo 2.0 model, the Comfy-Org repack — one TextEncodeFibo2 encoder conditioning both arms, dev/edit-turbo checkpoint pair, the encoder\'s own trained-size latent), and h3-image-edit (MiniMax\'s H3 image checkpoint — the same weights as the t2i sibling family; every stated image rides the conditioning as <Picture n> anchors, four-megapixel reference scaling, canvas from the anchor itself). The family names the model, the card names the operation. The surface scopes itself.',
   genre: 'image',
   icon: 'edit',
   principles: [
@@ -336,7 +340,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         return
       }
       throw new Error(
-        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, fibo2-edit) composes its own declared segment; this address owns none. State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`)
+        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, fibo2-edit, h3-image-edit) composes its own declared segment; this address owns none. State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`)
     },
     finalize: finalizeImageEdit,
   }))

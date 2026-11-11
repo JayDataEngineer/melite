@@ -30,6 +30,8 @@ import { t2i as animaT2I } from "../../../../packages/models/anima/src/actions.t
 import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as editFibo2 } from "../../../../packages/models/fibo2-edit/src/actions.ts";
+import { t2i as h3ImageT2I } from "../../../../packages/models/h3-image/src/actions.ts";
+import { edit as h3ImageEdit } from "../../../../packages/models/h3-image-edit/src/actions.ts";
 import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 import { t2i as mossImageT2I } from "../../../../packages/models/moss-image/src/actions.ts";
 
@@ -76,7 +78,7 @@ const ADOPTERS = readdirSync(modelsDir).filter((f) => {
 
 describe("the shared diffusion param surface (one home)", () => {
   it("every tree adopter is asserted by name here (the census is the tree, not this file)", () => {
-    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "fibo2-edit", "flux-klein", "moss-image"]);
+    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "fibo2-edit", "flux-klein", "moss-image", "h3-image", "h3-image-edit"]);
     assert.deepEqual(
       ADOPTERS.filter((f) => !asserted.has(f)),
       [],
@@ -86,7 +88,10 @@ describe("the shared diffusion param surface (one home)", () => {
     // 8 -> 9 (2026-11-08, the third edit lane): fibo2-edit spreads the factory.
     // 9 -> 8 (2026-11-09, the removal): the retired edit lane's package
     // left the tree with its family.
-    assert.deepEqual(ADOPTERS.length, 8, "the adopter census changed — update this pin and the named assertions together");
+    // 8 -> 10 (2026-11-11, the H3-Image landing): both twins spread the
+    // factory (the t2i twin the default envelope, the edit twin the
+    // narrowed edit envelope).
+    assert.deepEqual(ADOPTERS.length, 10, "the adopter census changed — update this pin and the named assertions together");
   });
 
   it("the five text-to-image families declare the factory's rows, not a hand copy", () => {
@@ -97,6 +102,7 @@ describe("the shared diffusion param surface (one home)", () => {
       ["krea-2", krea2T2I, []],
       ["flux-klein", fluxKleinT2I, QWEN21_OWN_TAIL],
       ["moss-image", mossImageT2I, []],
+      ["h3-image", h3ImageT2I, QWEN21_OWN_TAIL],
     ] as const) {
       assert.deepEqual(
         action.params,
@@ -123,6 +129,14 @@ describe("the shared diffusion param surface (one home)", () => {
       editFibo2.params,
       [...EDIT_OWN_HEAD, ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS), { name: "match_input_resolution", type: "boolean" }],
       "fibo2-edit's edit action wraps the shared rows with the five-row head and the match toggle alone",
+    );
+  });
+
+  it("the H3-Image edit twin declares the narrowed rows around the same head (the shared-weights pair's edit face)", () => {
+    assert.deepEqual(
+      h3ImageEdit.params,
+      [...EDIT_OWN_HEAD, ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS), { name: "match_input_resolution", type: "boolean" }],
+      "h3-image-edit's edit action wraps the shared rows with the fibo2 shape — the reference-images seat rides the conditioning's <Picture n> slots",
     );
   });
 

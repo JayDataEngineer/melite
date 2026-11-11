@@ -29,6 +29,7 @@
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/models-fibo2-edit": "workspace:*",
+    "@melite/models-h3-image-edit": "workspace:*",
     "@melite/models-mask": "workspace:*",
     "@melite/models-qwen-img-edit-21": "workspace:*"
   },

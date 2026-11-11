@@ -88,6 +88,8 @@
     "@melite/models-flux-klein": "workspace:*",
     "@melite/models-gem-soma": "workspace:*",
     "@melite/models-h3": "workspace:*",
+    "@melite/models-h3-image": "workspace:*",
+    "@melite/models-h3-image-edit": "workspace:*",
     "@melite/models-input": "workspace:*",
     "@melite/models-joycaption": "workspace:*",
     "@melite/models-joytag": "workspace:*",

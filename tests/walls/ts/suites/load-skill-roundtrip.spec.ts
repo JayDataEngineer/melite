@@ -172,7 +172,11 @@ interface SkillLine { id?: string }
 // NINTH bag carries its own skill leaf (skills/mods-recipe/, the
 // mask-dial × identity-anchor grammar); its id round-tripped 200
 // with a body in the arm above before this repin.
-const EXPECTED_CARD_SKILLS = 55;
+// 55 → 57 (2026-11-11, the H3-Image landing): both twins' cards
+// carry their prompt-enhance skill leaf (h3-image: on image-gen,
+// h3-image-edit: on image-edit); both ids round-tripped 200 with a
+// body in the arm above before this repin.
+const EXPECTED_CARD_SKILLS = 57;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

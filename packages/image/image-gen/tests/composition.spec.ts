@@ -20,6 +20,7 @@ import { DECL as animaDecl } from "@melite/models-anima";
 import { DECL as qwenImg21Decl } from "@melite/models-qwen-img-21";
 import { DECL as fluxKleinDecl } from "@melite/models-flux-klein";
 import { DECL as mossImageDecl } from "@melite/models-moss-image";
+import { DECL as h3ImageDecl } from "@melite/models-h3-image";
 import { toolBaseRows } from "../../../harness/estate-queue/src/toolProjection.ts";
 
 describe("real composition (the production path)", () => {
@@ -32,12 +33,12 @@ describe("real composition (the production path)", () => {
     const def = defs.get("image-gen");
     assert.ok(def, "the composed package registers its card");
     assert.ok(def.requiresModel !== false, "a MODEL card rides the {model:} demand");
-    assert.deepEqual([...def.boarded], ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"]); // 006/U1 reference-native t2i (2026-10-18); the MOSS lane 2026-11-07
+    assert.deepEqual([...def.boarded], ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image", "h3-image"]); // 006/U1 reference-native t2i (2026-10-18); the MOSS lane 2026-11-07; the H3 pair 2026-11-11
     // THE CARD GETS ITS MODELS FROM THE MODEL PLUGINS: boarded ids
     // ARE the DECL ids of packages/models/* (the model
     // plugins — distinct domain from card plugins — each carrying
     // variants, quants, HF links, mods; never a restated string).
-    assert.deepEqual([...def.boarded], [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id]);
+    assert.deepEqual([...def.boarded], [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id, h3ImageDecl.id]);
     assert.equal(def.identity?.label, "Generate Image");
   });
 

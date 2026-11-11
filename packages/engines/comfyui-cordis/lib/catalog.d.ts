@@ -108,7 +108,7 @@ export declare function runtimeModelsRoot(repoRoot?: string): string;
 export declare function checkModelPresent(relativePath: string, name: string, repoRoot?: string): string | null;
 export declare function findModelPathPresent(modelPath: string, repoRoot: string, cfg: Record<string, EngineJson> | null): string | null;
 export declare function checkModelPathPresent(modelPath: string, repoRoot?: string): string | null;
-/** The pure presence core (I/O: existsSync probes + the one
+/** The pure presence core (I/O: size-checked probes + the one
  *  root-inheritance read, no cache): cfg null = mount leg skipped
  *  (unparseable endpoint collapses to None, same as the module
  *  function's try/catch). Shared by the module function

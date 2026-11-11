@@ -386,6 +386,24 @@
   "@melite/models-h3/schema": [
     "./packages/models/h3/src/schema.ts"
   ],
+  "@melite/models-h3-image": [
+    "./packages/models/h3-image/src/index.ts"
+  ],
+  "@melite/models-h3-image/mods/loras": [
+    "./packages/models/h3-image/mods/loras.ts"
+  ],
+  "@melite/models-h3-image/mods/mask": [
+    "./packages/models/h3-image/mods/mask.ts"
+  ],
+  "@melite/models-h3-image-edit": [
+    "./packages/models/h3-image-edit/src/index.ts"
+  ],
+  "@melite/models-h3-image-edit/mods/loras": [
+    "./packages/models/h3-image-edit/mods/loras.ts"
+  ],
+  "@melite/models-h3-image-edit/mods/mask": [
+    "./packages/models/h3-image-edit/mods/mask.ts"
+  ],
   "@melite/models-input": [
     "./packages/models/input/src/index.ts"
   ],

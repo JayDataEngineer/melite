@@ -159,6 +159,30 @@ describe("findModelPresent (runtime first, then the mount leg)", () => {
     assert.equal(findModelPresent("checkpoints", "w.safetensors", root, null), join(dir, "w.safetensors"));
   });
 
+  // THE UNET-STUB BURN (2026-11-11): aborted download loops left
+  // 0-byte shadows at lane seats; presence called them present and
+  // the run rode into ComfyUI to die at the safetensors header. A
+  // 0-byte corpse reads ABSENT on BOTH legs — the lane refusal then
+  // names the file (the cure deletes the corpse, never re-downloads
+  // the real weight that already sits in its declared home).
+  it("a 0-byte corpse at a lane seat reads ABSENT on both legs (the unet-stub burn)", () => {
+    const dir = join(runtimeModelsRoot(root), "checkpoints");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "corpse.safetensors"), "");
+    assert.equal(findModelPresent("models/checkpoints", "corpse.safetensors", root, null), null);
+    const base = mkdtempSync(join(tmpdir(), "stub-mount-"));
+    mkdirSync(join(base, "checkpoints"), { recursive: true });
+    writeFileSync(join(base, "checkpoints", "corpse.safetensors"), "");
+    assert.equal(
+      findModelPresent("models/checkpoints", "corpse.safetensors", root, { model_base_path: base }),
+      null,
+    );
+    // the live weight beside the corpse still reads present — the
+    // probe judges BYTES, not directory contamination
+    writeFileSync(join(dir, "live.safetensors"), "bytes");
+    assert.equal(findModelPresent("models/checkpoints", "live.safetensors", root, null), join(dir, "live.safetensors"));
+  });
+
   it("finds a declared model directory through the endpoint mount", () => {
     const base = mkdtempSync(join(tmpdir(), "model-path-"));
     mkdirSync(join(base, "audio", "Qwen3-TTS-12Hz-1.7B-VoiceDesign"), { recursive: true });

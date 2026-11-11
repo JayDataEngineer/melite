@@ -287,7 +287,11 @@ describe("THE DOOR-DEPTH resolver_defaults STAMP (axis-unification P1#5)", () =>
     // numbers; the encoder-emitted-latent graph keeps cfg 1 on turbo).
     // 11 -> 10 (2026-11-09, the removal): the retired edit family's
     // declared law dies with its package.
-    expect(lawFamilies).toBe(10);
+    // 10 -> 12 (2026-11-11, the H3-Image landing): both twins declare
+    // the law at birth (base 6/1 — the variant rows carry the
+    // distilled solver truth; the edit twin's family defaults carry
+    // sampler/scheduler only, the qwen-edit precedent).
+    expect(lawFamilies).toBe(12);
     expect(lawVariants).toBeGreaterThan(0);
   });
 });

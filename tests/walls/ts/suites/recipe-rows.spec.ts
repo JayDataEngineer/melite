@@ -172,7 +172,10 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // order — viggle-animate's recipe rows leave the table.
     // 23 -> 22 (2026-11-09, the removal): the retired edit family's
     // recipe declarer row dies with its package.
-    assert.equal(checked, 22, `the law reaches the table, exactly (checked ${String(checked)})`);
+    // 22 -> 24 (2026-11-11, the H3-Image landing): both twins carry
+    // the Recipe group on their cards (the t2i twin on image-gen,
+    // the edit twin on image-edit — the qwen 2.1 pair's shape).
+    assert.equal(checked, 24, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("LAW K (k cure, 2026-11-08): every card-carrying Recipe family DECLARES its group default, and the default names an existing Recipe row (the initial-recipe law — DECL-declared, never row-order-emergent; the birth stamp reads this declaration)", async (): Promise<void> => {
@@ -204,7 +207,9 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // 24 -> 23 (2026-11-12): same removal — the k law's table shrinks with it.
     // 23 -> 22 (2026-11-09, the removal): the retired edit family's
     // declarer row dies with its package.
-    assert.equal(checked, 22, `the k law reaches the same table (checked ${String(checked)})`);
+    // 22 -> 24 (2026-11-11, the H3-Image landing): the k law's table
+    // grows with LAW A's — both twins declare the Recipe group.
+    assert.equal(checked, 24, `the k law reaches the same table (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {

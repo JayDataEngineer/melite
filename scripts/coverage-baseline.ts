@@ -136,6 +136,10 @@ export const COVERAGE_BASELINE: Record<string, {
   // 100x4 measured over extend-mod.spec.ts — the card-door harness
   // drives every branch (both refusal seats, the grid door, all three
   // pairwise one-door edges, the empty-bag guard, the emission)
+  '**/packages/models/h3-image-edit/src/actions.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
+  '**/packages/models/h3-image-edit/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
+  '**/packages/models/h3-image/src/actions.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
+  '**/packages/models/h3-image/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
   '**/packages/models/h3/src/chainEdit.ts': { statements: 99.01, branches: 97.96, functions: 93.75, lines: 98.92 },
   // the video-edit matrix seat (timeline rework stage 2a): 98.18 /
   // 98.27 / 100 / 98.14 measured over edit-matrix.spec.ts — every

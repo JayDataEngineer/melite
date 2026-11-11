@@ -93,7 +93,9 @@ describe("the runs door through the lane's models seat", () => {
     // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole by
     // operator order ("that model is too old") — the census follows
     // the booted table.
-    assert.equal(seat.allDecls().length, 30, "the booted table, not a bare service (the FAMILY_PKGS census)");
+    // 30 -> 32 (2026-11-11): the H3-Image pair joins FAMILY_PKGS —
+    // h3-image (t2i) + h3-image-edit, the same weights on two cards.
+    assert.equal(seat.allDecls().length, 32, "the booted table, not a bare service (the FAMILY_PKGS census)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );

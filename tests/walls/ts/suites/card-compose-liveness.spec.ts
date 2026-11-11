@@ -468,7 +468,30 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         if (wired !== undefined && seat !== null && declaredProvision(modelId, wired, owningAtom)) {
           const member = inputs?.get(seat[1]!)?.get(seat[2]!)?.enum?.find((m): m is string => typeof m === "string");
           if (member !== undefined && pass < 8) {
-            probe = JSON.parse(JSON.stringify(probe), (_k, v: unknown) => (v === wired ? member : v));
+            // NEUTRALIZE IN PLACE (the h3-image landing, 2026-11-11):
+            // the JSON round-trip this replaced STRIPPED every
+            // undefined-valued key — and a compose that leaves a
+            // cascade-staged param (steps/cfg/width/height) as
+            // present-undefined (the qwen-img-edit-21 precedent: the
+            // family cascade stages the real value at run time, so
+            // the probe's undefined is a legal stand-in) lost those
+            // KEYS on the first filename neutralization, and the
+            // reverse arm then flagged the family's own unprovisioned
+            // weights as a missing-required finding. The walk below
+            // rewrites matching string VALUES without touching the
+            // key set — the shadow law neutralizes exactly the
+            // filename and nothing else.
+            const walk = (v: unknown): void => {
+              if (Array.isArray(v)) { for (const x of v) walk(x); return; }
+              if (v !== null && typeof v === "object") {
+                for (const k of Object.keys(v)) {
+                  const entry = (v as Record<string, unknown>)[k];
+                  if (entry === wired) (v as Record<string, unknown>)[k] = member;
+                  else walk(entry);
+                }
+              }
+            };
+            walk(probe);
             continue;
           }
           // no enum member to neutralize with (or bound hit): the

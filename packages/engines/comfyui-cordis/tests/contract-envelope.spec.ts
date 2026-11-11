@@ -76,7 +76,12 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
   test('input_images carries the full presentation contract (wtype, max_stack, zone, order, media group)', () => {
     const x = extraOf(nodeOf('input_images'))
     expect(x['wtype']).toBe('image_list')
-    expect(x['max_stack']).toBe(16)
+    // 16 -> 100 (2026-11-11): the cap rides Math.max across the
+    // boarded lanes — h3-image-edit's conditioning node owns 100
+    // autogrow image slots, so the FORM admits 100 while each
+    // lane's own action refuses beyond its family cap (the
+    // 2.1/fibo2 16s stay pinned per-serve below).
+    expect(x['max_stack']).toBe(100)
     expect(x['zone']).toBe('inputs')
     expect(x['group']).toBe('input')
     expect(x['order']).toBe(-1)

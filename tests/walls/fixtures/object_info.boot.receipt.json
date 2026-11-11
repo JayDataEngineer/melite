@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-11-09T21:27:15.376Z",
+ "derived_at": "2026-11-11T19:43:52.714Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "43e19d0e086f770903963bb59accb3f5019ccece469e540aeb712573dd0df8c6",
-  "mtime_ms": 1794259360470.0173,
-  "class_count": 1817,
-  "origin": "capture"
+  "sha256": "13f5d1e7cbe0e571bdf4b2ac07d2ccb6b7169b7d69a999082d76f0e9fd0f81c6",
+  "mtime_ms": 1794426232441.123,
+  "class_count": 1880,
+  "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -15,37 +15,26 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 92,
+  "addressed_class_count": 95,
   "bootstrap_class_count": 97,
-  "fixture_class_count": 188,
-  "rows_probed": 30,
+  "fixture_class_count": 191,
+  "rows_probed": 32,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
+  "added": [
+   "GetImageSize",
+   "MiniMaxH3ImageConditioning",
+   "ResizeImageMaskNode"
+  ],
   "pruned": [],
   "updated": [
-   "H3ConditioningSyncFromLatents",
-   "H3OneClickSwapPlan",
-   "MiniMaxH3ChainAssemble",
-   "MiniMaxH3ChainCheckpointManager",
-   "MiniMaxH3ChainCurrent",
-   "MiniMaxH3ChainPass2Prepare",
-   "MiniMaxH3ChainUpscaleAdapter",
-   "MiniMaxH3ChainUpscaleCurrent",
-   "MiniMaxH3ChainUpscaleLoopEnd",
-   "MiniMaxH3ChainUpscaleReferenceConditioning",
-   "MiniMaxH3ChainUpscaleSegmentSave",
-   "MiniMaxH3ContexMaskGridPreview",
-   "MiniMaxH3ContexMaskedTarget",
-   "MiniMaxH3MotionContext",
-   "MiniMaxH3MotionContextLoadLatent",
-   "MiniMaxH3MotionContextSaveLatent",
-   "MiniMaxH3MotionContextTrim",
-   "MiniMaxH3RefModApply",
-   "MiniMaxH3RefModAudioExtract",
-   "MiniMaxH3RefModExtract",
-   "MiniMaxH3RefModsLoader"
+   "CreateVideo",
+   "MeliteFilmAudioMix",
+   "MiniMaxH3RefModsLoader",
+   "RemeshMesh",
+   "SaveVideo",
+   "TextEncodeFibo2"
   ],
   "reordered_keys": 0
  }

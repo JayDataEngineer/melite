@@ -106,10 +106,11 @@ describe("the image-edit compose gate", () => {
     assert.equal(graph["KSampler.0"]?.inputs.cfg, 2.5, "stated values ride verbatim");
   });
 
-  it("THE MODEL ORDER (operator catch e): 2.1 boards FIRST — the tool's default and the GUI's head; fibo2 is the alternate", () => {
-    assert.equal(BOARDED[0], "qwen-img-edit-21", "2.1 is the LATEST lane — the default");
+  it("THE MODEL ORDER (operator catch e): 2.1 boards FIRST — the tool's default and the GUI's head; fibo2 the alternate, h3 the newest third (appended behind the proven pair, never displacing the default)", () => {
+    assert.equal(BOARDED[0], "qwen-img-edit-21", "2.1 stays the default head — the newest lane lands behind, not on top");
     assert.equal(BOARDED[1], "fibo2-edit", "fibo2 is the alternate lane");
-    assert.equal(BOARDED.length, 2, "two living lanes (the backup edit lane was removed 2026-11-09)");
+    assert.equal(BOARDED[2], "h3-image-edit", "h3-image-edit is the newest lane (2026-11-11)");
+    assert.equal(BOARDED.length, 3, "three living lanes (the h3 pair landed 2026-11-11)");
   });
 
   // THE SIZE LAW AT THE CARD (2026-11-08, restated by the
@@ -749,13 +750,14 @@ describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)
     assert.equal(leaf("seed"), undefined);
     // THE MERGE (2026-10-10 — image inputs and reference images are
     // ONE concept): input_images is THE one visible face — an ordered
-    // list, anchor at position 0 — riding BOTH lanes unguarded; the
+    // list, anchor at position 0 — riding every lane unguarded; the
     // CAP rides the boarded DECLs (roomiest max_images, anchor
-    // included — 16 today); each lane refuses past its own DECL cap
-    // LOUD at compose.
-    assert.equal(leaf("input_images"), undefined, "the one list carries no model guard — one row, both lanes");
+    // included — 100 today, the h3-image-edit conditioning node's
+    // autogrow room); each lane still refuses past its own DECL cap
+    // LOUD at compose (2.1 and fibo2 hold 16).
+    assert.equal(leaf("input_images"), undefined, "the one list carries no model guard — one row, every lane");
     const listId = root!.dict!["input_images"];
-    assert.equal(json.refs[listId]?.meta?.extra?.max_stack, 16, "the list caps at the roomiest boarded DECL (2.1's 16, anchor included)");
+    assert.equal(json.refs[listId]?.meta?.extra?.max_stack, 100, "the list caps at the roomiest boarded DECL (h3-image-edit's 100, anchor included)");
     // every legacy spelling is HIDDEN — no form row, no seat, ever.
     for (const alias of ["image1", "image2", "image3", "reference_images"]) {
       const id: number | undefined = root?.dict?.[alias];
@@ -953,7 +955,7 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
         def.schema({ prompt: "make the hallway blue", input_images: ["/m/anchor.png"], seed: 5 }),
         row as never, new GraphBuilder(), "wall_fallback",
       ),
-      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, fibo2-edit\).*State params\.model \(one of those families\)/,
+      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, fibo2-edit, h3-image-edit\).*State params\.model \(one of those families\)/,
     );
   });
 });

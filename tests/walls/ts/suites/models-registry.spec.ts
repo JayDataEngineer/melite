@@ -254,6 +254,18 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "flux-klein",
   "flux-klein-base",
   "h3",
+  // 2026-11-11, the H3-Image landing: the Comfy-Org MiniMax-H3-Image
+  // checkpoint serves TWO families on the same weights — the t2i twin
+  // on image-gen and the edit twin on image-edit (the qwen 2.1 pair
+  // precedent). Each variant row's quant cells ride their own routes.
+  "h3-image",
+  "h3-image-bf16",
+  "h3-image-edit",
+  "h3-image-edit-bf16",
+  "h3-image-edit-int8",
+  "h3-image-edit-w4a8",
+  "h3-image-int8",
+  "h3-image-w4a8",
   // 2026-10-17, the Singularity checkpoint: the h3 timeline lane's
   // second checkpoint rides the same untyped carve (its weights'
   // origin is the pinned provision row), under its own route address.
@@ -363,6 +375,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
       "fibo2-edit",
       "flux-klein",
       "h3",
+      // 2026-11-11, the H3-Image pair: both twins board mask +
+      // loras (the MASK ORDER's every-img-gen law + the
+      // every-image-family loras law — the klein-style seed).
+      "h3-image",
+      "h3-image-edit",
       "krea-2",
       // 2026-11-07, the operator's drop: moss-image boards mask +
       // the loras pack (the every-image-family law — the klein-style
@@ -433,7 +450,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal((cloneSmall.lane_inputs as Record<string, unknown>).model_path, "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base");
   });
 
-  it("variant matrices ride (the hierarchy: 64 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24; the Qwen TTS fold lands one family with three serving variants, 2026-10-26; the family-kill sweep takes ten, 2026-10-12)", (): void => {
+  it("variant matrices ride (the hierarchy: 66 serving variants — yue2's int8 cell, 2026-09-20; the qwen 2.1 pair folds to the 2x2 matrix, 2026-10-24; the Qwen TTS fold lands one family with three serving variants, 2026-10-26; the family-kill sweep takes ten, 2026-10-12)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants
     // the engine rides the variant (the moss meld) — a variant
@@ -503,7 +520,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // order — viggle-animate's one variant died with the lane).
     // 66 -> 64 (2026-11-09, the removal): the retired edit family's
     // two serving variants die with its package.
-    assert.equal(variants, 64);
+    // 64 -> 66 (2026-11-11, the H3-Image landing): both twins serve
+    // their base variant row (int8_convrot_pruned / w4a8 / bf16 are
+    // CELLS of the one row, not variants — the qwen 2.1 pair's shape).
+    assert.equal(variants, 66);
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -535,6 +555,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // order — viggle-animate's int8_convrot_pruned cell dies with it.
     // 83 -> 81 (2026-11-09, the removal): the retired edit family's
     // two quant cells die with its package.
-    assert.equal(cells, 81);
+    // 81 -> 87 (2026-11-11, the H3-Image landing): each twin's base
+    // variant carries its three quant cells (int8_convrot_pruned,
+    // w4a8, bf16) — six new cells on the pair.
+    assert.equal(cells, 87);
   });
 });

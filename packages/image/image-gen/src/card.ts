@@ -30,6 +30,7 @@ import { normalizeAnimaPromptTags } from '@melite/models-anima'
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
 import { DECL as fluxKleinDecl } from '@melite/models-flux-klein'
 import { DECL as mossImageDecl } from '@melite/models-moss-image'
+import { DECL as h3ImageDecl } from '@melite/models-h3-image'
 import { semanticModelEntries } from '@melite/comfyui-card-kit/semanticModelKnob'
 import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelKnob'
 import { bag } from '@melite/contracts/extraKeys'
@@ -41,7 +42,7 @@ import { bag } from '@melite/contracts/extraKeys'
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id] as const
+export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id, h3ImageDecl.id] as const
 
 /** THE GEN REGION ROSTER IS DEAD (operator 2026-11-09, the
  *  face-rail burn: "ANY model can inpaint, not just krea-2" — the
@@ -59,7 +60,7 @@ export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl
  *  estate-side. One source: the tool face serves THIS, never a
  *  second hand-written list. */
 export const SEMANTIC_MODELS: readonly SemanticModelEntry[] = semanticModelEntries([
-  krea2Decl, zImageDecl, animaDecl, qwenImg21Decl, fluxKleinDecl, mossImageDecl,
+  krea2Decl, zImageDecl, animaDecl, qwenImg21Decl, fluxKleinDecl, mossImageDecl, h3ImageDecl,
 ])
 
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
@@ -109,6 +110,9 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
   [mossImageDecl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(mossImageDecl, 't2i'), p, model, g, runId)
   },
+  [h3ImageDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(h3ImageDecl, 't2i'), p, model, g, runId)
+  },
 }
 
 export const schema = z.object({
@@ -129,11 +133,11 @@ export const schema = z.object({
   sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
   // THE REFERENCE SEAT (audit 004/C4, 2026-10-22): served LAST so
-  // the frozen form_spec field order holds. It fires only on the
-  // qwen-img-21 lane (the family's encoder reads references); a
+  // the frozen form_spec field order holds. It fires on the lanes
+  // whose encoder reads references (qwen-img-21, h3-image); a
   // stated list on another family refuses at compose — the
   // phantom-port law below.
-  reference_images: z.array(z.string()).description('Reference Images').extra('extra', bag({ order: 9, group: 'reference', width: 1, zone: 'params', wtype: 'image_list', tooltip: 'Optional reference images — identity/subject anchors the qwen-img-21 encoder conditions on. Ignored-loud on other families: a stated list refuses rather than dropping.' })),
+  reference_images: z.array(z.string()).description('Reference Images').extra('extra', bag({ order: 9, group: 'reference', width: 1, zone: 'params', wtype: 'image_list', tooltip: 'Optional reference images — identity/subject anchors the encoder conditions on (qwen-img-21, h3-image). Ignored-loud on other families: a stated list refuses rather than dropping.' })),
 })
 
 export const identity = {
@@ -232,8 +236,9 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // Every boarded family's t2i action ends in ONE decodeSave
     // (render-kit.ts:52 — VAEDecode → SaveImage), so every press this
     // card composes emits exactly one `SaveImage.0` — derived from the
-    // real compose output (all six families probed: anima, flux-klein,
-    // krea-2, moss-image, qwen-img-21, z-image → 1 save each), never
+    // real compose output (all seven families probed: anima, flux-klein,
+    // krea-2, moss-image, qwen-img-21, z-image, h3-image → 1 save
+    // each), never
     // guessed. The declaration seats the flow drives (object-forge's
     // concept, image-upscale's make) on the producer-law's declaration
     // door: the channel feeds resolveCardFlowOutputs, the row renames
@@ -301,11 +306,14 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
       }
-      // THE PHANTOM-PORT LAW: the seat is qwen-img-21's — a stated
-      // list on any other family refuses LOUD, never drops.
+      // THE PHANTOM-PORT LAW (c5f03df9): the reference seat belongs
+      // to qwen-img-21 ALONE — the one boarded family whose encoder
+      // reads references. A stated list on any other family
+      // (h3-image's vision path serves its edit sibling, never this
+      // card) refuses LOUD, never drops.
       const statedRefs = doc.reference_images as string[] | undefined
-      if (Array.isArray(statedRefs) && statedRefs.length > 0 && (model.family ?? model.id) !== 'qwen-img-21') {
-        throw new Error(`reference_images stated on family '${String(model.family ?? model.id)}' — the reference seat fires only on qwen-img-21 (its encoder reads references); this family has no reference port`)
+      if (Array.isArray(statedRefs) && statedRefs.length > 0 && String(model.family ?? model.id) !== 'qwen-img-21') {
+        throw new Error(`reference_images stated on family '${String(model.family ?? model.id)}' — the reference seat fires only on qwen-img-21 (the phantom-port law, c5f03df9); this family has no reference port`)
       }
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) {
@@ -314,7 +322,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       }
       else {
         throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image) composes its own declared segment; this address owns none`)
+          `no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image, h3-image) composes its own declared segment; this address owns none`)
       }
     },
     finalize: finalizeImageGen,

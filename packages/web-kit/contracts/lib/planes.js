@@ -65,6 +65,12 @@ const NAMED_QUANTS = {
     // bench audition the h3 DECL owes proves convrot (decl hint).
     int8_pruned: "encoding",
     fp8: "encoding",
+    // w4a8 (the H3-Image hop, 2026-11-11): weights-4-activations-8 —
+    // the Comfy-Org MiniMax-H3-Image line's low-VRAM unet tier
+    // (minimax_h3_image_pruned_w4a8). The same extension class as
+    // fp16 above: a real encoding the vocabulary lacked, named once
+    // here, never a per-family carve.
+    w4a8: "encoding",
     f32: "placeholder",
     native: "placeholder",
     lightning4: "size",

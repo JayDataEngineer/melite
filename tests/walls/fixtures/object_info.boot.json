@@ -2012,6 +2012,20 @@
       "tooltip": "Auto uses 8-bit for sRGB and 10-bit for HDR. Explicit 8-bit and 10-bit choices are independent of colorspace."
      }
     ],
+    "chroma_subsampling": [
+     "COMBO",
+     {
+      "default": "auto",
+      "multiselect": false,
+      "options": [
+       "auto",
+       "444",
+       "422",
+       "420"
+      ],
+      "tooltip": "444 keeps full color resolution, 422 halves horizontal color resolution, and 420 halves both axes. Auto uses the codec default. Unsupported choices use the closest supported mode and print a console warning."
+     }
+    ],
     "codec": [
      "COMBO",
      {
@@ -2022,7 +2036,8 @@
        "none",
        "auto",
        "h264",
-       "av1"
+       "av1",
+       "prores"
       ],
       "tooltip": "Optionally encode the video immediately. None keeps the images in tensor form; Auto uses H.264."
      }
@@ -2064,6 +2079,7 @@
     "audio",
     "bit_depth",
     "color_space",
+    "chroma_subsampling",
     "codec"
    ],
    "required": [
@@ -3855,6 +3871,69 @@
   "price_badge": null,
   "python_module": "comfy_extras.nodes_frame_interpolation",
   "search_aliases": null
+ },
+ "GetImageSize": {
+  "api_node": false,
+  "category": "image",
+  "deprecated": false,
+  "description": "Returns the width, height, and batch size of the image.",
+  "dev_only": false,
+  "display_name": "Get Image Size",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "hidden": {
+    "unique_id": [
+     "UNIQUE_ID"
+    ]
+   },
+   "required": {
+    "image": [
+     "IMAGE",
+     {}
+    ]
+   }
+  },
+  "input_order": {
+   "hidden": [
+    "unique_id"
+   ],
+   "required": [
+    "image"
+   ]
+  },
+  "is_input_list": false,
+  "name": "GetImageSize",
+  "output": [
+   "INT",
+   "INT",
+   "INT"
+  ],
+  "output_is_list": [
+   false,
+   false,
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "width",
+   "height",
+   "batch_size"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null,
+   null,
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_images",
+  "search_aliases": [
+   "dimensions",
+   "resolution",
+   "image info"
+  ]
  },
  "GetMeshInfo": {
   "api_node": false,
@@ -7251,7 +7330,7 @@
      {
       "default": "[]",
       "multiline": true,
-      "tooltip": "JSON array of {src | wired, start_sec, dur_sec, class} \u2014 the card renders the filmMix manifest here verbatim; a wired: k row rides the wired_audio_k seat instead of a file"
+      "tooltip": "JSON array of {src | wired, start_sec, dur_sec, in_sec?, class} \u2014 the card renders the filmMix manifest here verbatim; a wired: k row rides the wired_audio_k seat instead of a file; in_sec (optional, default 0) is the source in-point \u2014 the overlay plays [in_sec, in_sec+dur_sec], the segment the conditioning slice played"
      }
     ],
     "duck_db": [
@@ -9267,6 +9346,115 @@
    "video inpaint controlnet"
   ]
  },
+ "MiniMaxH3ImageConditioning": {
+  "api_node": false,
+  "category": "model/conditioning/minimax",
+  "deprecated": false,
+  "description": "Text-to-image, or with images an edit guided by them. The prompt refers to them as <Picture 1>, <Picture 2>, ...",
+  "dev_only": false,
+  "display_name": "MiniMax H3 Image Conditioning",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "optional": {
+    "images": [
+     "COMFY_AUTOGROW_V3",
+     {
+      "template": {
+       "input": {
+        "required": {
+         "image": [
+          "IMAGE",
+          {
+           "tooltip": "Reference picture, <Picture n> in the prompt; image_1 is the picture to edit."
+          }
+         ]
+        }
+       },
+       "max": 100,
+       "min": 0,
+       "prefix": "image_"
+      }
+     }
+    ],
+    "vae": [
+     "VAE",
+     {
+      "tooltip": "The MiniMax-H3-Image VAE. With it the pictures are also anchored as reference latents, without it they only condition the text encoder."
+     }
+    ]
+   },
+   "required": {
+    "clip": [
+     "CLIP",
+     {}
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 32,
+      "tooltip": "0 uses the height of image_1 after its reference scaling, or 2048 without images."
+     }
+    ],
+    "prompt": [
+     "STRING",
+     {
+      "dynamicPrompts": true,
+      "multiline": true
+     }
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 0,
+      "max": 16384,
+      "min": 0,
+      "step": 32,
+      "tooltip": "0 uses the width of image_1 after its reference scaling, or 2048 without images. The model is tuned for 2048x2048 pixels of area"
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "optional": [
+    "vae",
+    "images"
+   ],
+   "required": [
+    "clip",
+    "prompt",
+    "width",
+    "height"
+   ]
+  },
+  "is_input_list": false,
+  "name": "MiniMaxH3ImageConditioning",
+  "output": [
+   "CONDITIONING",
+   "LATENT"
+  ],
+  "output_is_list": [
+   false,
+   false
+  ],
+  "output_matchtypes": null,
+  "output_name": [
+   "positive",
+   "LATENT"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null,
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_minimax_h3",
+  "search_aliases": null
+ },
  "MiniMaxH3ImageToVideo": {
   "api_node": false,
   "category": "model/conditioning/minimax",
@@ -10628,12 +10816,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10650,12 +10842,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10672,12 +10868,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10694,12 +10894,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10716,12 +10920,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10738,12 +10946,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10760,12 +10972,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -10782,12 +10998,16 @@
       "A1_face",
       "SaveImage.0_edit_00001_",
       "SaveImage.0_gen_00001_",
+      "attitude-face",
       "bake-variance-probe-anchor",
       "camp-c3-mod-anchor",
       "face",
+      "face-cel",
       "face-upscaled",
+      "face_crop",
       "face_rail",
       "face_rail_nude",
+      "mira-face-cel",
       "mod",
       "s18_headshot",
       "vanellope_example",
@@ -13077,7 +13297,7 @@
   "api_node": false,
   "category": "3d/mesh",
   "deprecated": false,
-  "description": "Re-extracts a uniformly tessellated mesh via a narrow-band distance field + Dual Contouring, on the active compute device. Normalizes messy / non-manifold / self-intersecting topology; run before Decimate Mesh to hit an exact face count. Output stays welded.",
+  "description": "Re-extracts a uniformly tessellated mesh via a narrow-band distance field + Dual Contouring, on the active compute device. Normalizes messy / non-manifold / self-intersecting topology; run before Decimate Mesh to hit an exact face count. Output stays welded. Meshes reaching past 0.51 or spanning under 0.5 are fitted to the [-0.5,0.5] cube first and mapped back.",
   "dev_only": false,
   "display_name": "Remesh Mesh (Narrow-Band DC)",
   "essentials_category": null,
@@ -13328,6 +13548,276 @@
   "output_node": false,
   "python_module": "comfy_extras.nodes_model_advanced",
   "search_aliases": []
+ },
+ "ResizeImageMaskNode": {
+  "api_node": false,
+  "category": "image/transform",
+  "deprecated": false,
+  "description": "Resize an image or mask using various scaling methods.",
+  "dev_only": false,
+  "display_name": "Resize Image/Mask",
+  "essentials_category": null,
+  "experimental": false,
+  "has_intermediate_output": false,
+  "input": {
+   "required": {
+    "input": [
+     "COMFY_MATCHTYPE_V3",
+     {
+      "template": {
+       "allowed_types": "IMAGE,MASK",
+       "template_id": "input_type"
+      }
+     }
+    ],
+    "resize_type": [
+     "COMFY_DYNAMICCOMBO_V3",
+     {
+      "options": [
+       {
+        "inputs": {
+         "required": {
+          "crop": [
+           "COMBO",
+           {
+            "default": "center",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "center"
+            ],
+            "tooltip": "How to handle aspect ratio mismatch: 'disabled' stretches to fit, 'center' crops to maintain aspect ratio."
+           }
+          ],
+          "height": [
+           "INT",
+           {
+            "default": 512,
+            "max": 16384,
+            "min": 0,
+            "step": 1,
+            "tooltip": "Target height in pixels. Set to 0 to auto-calculate from width while preserving aspect ratio."
+           }
+          ],
+          "width": [
+           "INT",
+           {
+            "default": 512,
+            "max": 16384,
+            "min": 0,
+            "step": 1,
+            "tooltip": "Target width in pixels. Set to 0 to auto-calculate from height while preserving aspect ratio."
+           }
+          ]
+         }
+        },
+        "key": "scale dimensions"
+       },
+       {
+        "inputs": {
+         "required": {
+          "multiplier": [
+           "FLOAT",
+           {
+            "default": 1,
+            "max": 8,
+            "min": 0.01,
+            "step": 0.01,
+            "tooltip": "Scale factor (e.g., 2.0 doubles size, 0.5 halves size)."
+           }
+          ]
+         }
+        },
+        "key": "scale by multiplier"
+       },
+       {
+        "inputs": {
+         "required": {
+          "longer_size": [
+           "INT",
+           {
+            "default": 512,
+            "max": 16384,
+            "min": 0,
+            "step": 1,
+            "tooltip": "The longer edge will be resized to this value. Aspect ratio is preserved."
+           }
+          ]
+         }
+        },
+        "key": "scale longer dimension"
+       },
+       {
+        "inputs": {
+         "required": {
+          "shorter_size": [
+           "INT",
+           {
+            "default": 512,
+            "max": 16384,
+            "min": 0,
+            "step": 1,
+            "tooltip": "The shorter edge will be resized to this value. Aspect ratio is preserved."
+           }
+          ]
+         }
+        },
+        "key": "scale shorter dimension"
+       },
+       {
+        "inputs": {
+         "required": {
+          "width": [
+           "INT",
+           {
+            "default": 512,
+            "max": 16384,
+            "min": 0,
+            "step": 1,
+            "tooltip": "Target width in pixels. Height auto-adjusts to preserve aspect ratio."
+           }
+          ]
+         }
+        },
+        "key": "scale width"
+       },
+       {
+        "inputs": {
+         "required": {
+          "height": [
+           "INT",
+           {
+            "default": 512,
+            "max": 16384,
+            "min": 0,
+            "step": 1,
+            "tooltip": "Target height in pixels. Width auto-adjusts to preserve aspect ratio."
+           }
+          ]
+         }
+        },
+        "key": "scale height"
+       },
+       {
+        "inputs": {
+         "required": {
+          "megapixels": [
+           "FLOAT",
+           {
+            "default": 1,
+            "max": 16,
+            "min": 0.01,
+            "step": 0.01,
+            "tooltip": "Target total megapixels (e.g., 1.0 \u2248 1024\u00d71024). Aspect ratio is preserved."
+           }
+          ]
+         }
+        },
+        "key": "scale total pixels"
+       },
+       {
+        "inputs": {
+         "required": {
+          "crop": [
+           "COMBO",
+           {
+            "default": "center",
+            "multiselect": false,
+            "options": [
+             "disabled",
+             "center"
+            ],
+            "tooltip": "How to handle aspect ratio mismatch: 'disabled' stretches to fit, 'center' crops to maintain aspect ratio."
+           }
+          ],
+          "match": [
+           "IMAGE,MASK",
+           {
+            "tooltip": "Resize input to match the dimensions of this reference image or mask."
+           }
+          ]
+         }
+        },
+        "key": "match size"
+       },
+       {
+        "inputs": {
+         "required": {
+          "multiple": [
+           "INT",
+           {
+            "default": 8,
+            "max": 16384,
+            "min": 1,
+            "step": 1,
+            "tooltip": "Resize so width and height are divisible by this number. Useful for latent alignment (e.g., 8 or 64)."
+           }
+          ]
+         }
+        },
+        "key": "scale to multiple"
+       }
+      ],
+      "tooltip": "Select how to resize: by exact dimensions, scale factor, matching another image, etc."
+     }
+    ],
+    "scale_method": [
+     "COMBO",
+     {
+      "default": "area",
+      "multiselect": false,
+      "options": [
+       "nearest-exact",
+       "bilinear",
+       "area",
+       "bicubic",
+       "lanczos"
+      ],
+      "tooltip": "Interpolation algorithm. 'area' is best for downscaling, 'lanczos' for upscaling, 'nearest-exact' for pixel art."
+     }
+    ]
+   }
+  },
+  "input_order": {
+   "required": [
+    "input",
+    "resize_type",
+    "scale_method"
+   ]
+  },
+  "is_input_list": false,
+  "name": "ResizeImageMaskNode",
+  "output": [
+   "COMFY_MATCHTYPE_V3"
+  ],
+  "output_is_list": [
+   false
+  ],
+  "output_matchtypes": [
+   "input_type"
+  ],
+  "output_name": [
+   "resized"
+  ],
+  "output_node": false,
+  "output_tooltips": [
+   null
+  ],
+  "price_badge": null,
+  "python_module": "comfy_extras.nodes_post_processing",
+  "search_aliases": [
+   "resize",
+   "resize image",
+   "resize mask",
+   "scale",
+   "scale image",
+   "scale mask",
+   "image resize",
+   "change size",
+   "dimensions",
+   "shrink",
+   "enlarge"
+  ]
  },
  "SAM3_Detect": {
   "api_node": false,
@@ -14452,6 +14942,12 @@
          "required": {}
         },
         "key": "av1"
+       },
+       {
+        "inputs": {
+         "required": {}
+        },
+        "key": "prores"
        }
       ],
       "tooltip": "The output video codec. Auto preserves a compatible source stream. H.264 and AV1 re-encoding support SDR, HDR (HLG), and HDR PQ."
@@ -14563,6 +15059,12 @@
                "required": {}
               },
               "key": "av1"
+             },
+             {
+              "inputs": {
+               "required": {}
+              },
+              "key": "prores"
              }
             ],
             "tooltip": "The output video codec. Auto preserves a compatible source stream. H.264 and AV1 re-encoding support SDR, HDR (HLG), and HDR PQ."
@@ -14765,6 +15267,12 @@
                "required": {}
               },
               "key": "av1"
+             },
+             {
+              "inputs": {
+               "required": {}
+              },
+              "key": "prores"
              }
             ],
             "tooltip": "The output video codec. Auto preserves a compatible source stream. H.264 and AV1 re-encoding support SDR, HDR (HLG), and HDR PQ."
@@ -14834,9 +15342,30 @@
          }
         },
         "key": "webm"
+       },
+       {
+        "inputs": {
+         "required": {
+          "codec": [
+           "COMFY_DYNAMICCOMBO_V3",
+           {
+            "options": [
+             {
+              "inputs": {
+               "required": {}
+              },
+              "key": "prores"
+             }
+            ],
+            "tooltip": "The output video codec. Auto preserves a compatible source stream. H.264 and AV1 re-encoding support SDR, HDR (HLG), and HDR PQ."
+           }
+          ]
+         }
+        },
+        "key": "mov"
        }
       ],
-      "tooltip": "The output container. Auto uses MP4 for Auto/H.264 and WebM for AV1. MP4, MKV, and WebM select a specific container."
+      "tooltip": "Auto uses MOV for ProRes, WebM for AV1, and MP4 otherwise."
      }
     ],
     "video": [
@@ -15688,7 +16217,7 @@
      {
       "advanced": true,
       "multiline": true,
-      "tooltip": "Empty is the null caption Fibo 2.0 was trained with for classifier-free guidance."
+      "tooltip": "Empty is the null caption Fibo 2.0 was trained with for CFG with edit workflows."
      }
     ],
     "prompt": [

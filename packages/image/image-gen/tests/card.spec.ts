@@ -420,9 +420,21 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
         );
       } else {
         // a family whose header disclaims the latent member composes
-        // its own action's latent (qwen-img-21: EmptyLatentImage)
+        // its own action's latent — either an explicit latent node
+        // (qwen-img-21: EmptyLatentImage) or the lane's OWN
+        // conditioning node emitting the canvas latent on its second
+        // output (h3-image: MiniMaxH3ImageConditioning out 1). The
+        // KSampler's latent_input names which; both bind a composed
+        // node of the row's own spelling, never a hand-pinned class.
+        const sampler = nodes.find((n) => n.class_type === "KSampler")!;
+        const src = (sampler.inputs.latent_image as [string, number] | undefined)?.[0];
+        const latentHost = src !== undefined
+          ? (g.toJSON() as Record<string, { class_type?: string }>)[src]?.class_type
+          : undefined;
+        const rowEncoder = typeof li.text_encode_node === "string" ? li.text_encode_node : "CLIPTextEncode";
         assert.ok(
-          nodes.some((n) => n.class_type === "EmptyLatentImage"),
+          nodes.some((n) => n.class_type === "EmptyLatentImage")
+            || (latentHost !== undefined && latentHost === rowEncoder),
           "a family without a declared latent member still composes its action's latent",
         );
       }
@@ -463,7 +475,7 @@ describe("THE DECLARED FALLBACK — an unbound family refuses loud", () => {
     assert.ok(!("moss-shape" in ACTION_BINDINGS), "the synthetic row is genuinely unbound");
     assert.throws(
       () => def.compose(def.schema({ prompt: "a cat", seed: 5 }), synth, new GraphBuilder(), "r_fallback"),
-      /no declared action for family 'moss-shape' on the image-gen card — every boarded family \(krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image\)/,
+      /no declared action for family 'moss-shape' on the image-gen card — every boarded family \(krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image, h3-image\)/,
     );
   });
 });

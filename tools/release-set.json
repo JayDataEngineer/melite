@@ -1,7 +1,7 @@
 {
   "tag": "v0.2.3-rc.1",
   "version": "0.2.3-rc.1",
-  "count": 79,
+  "count": 81,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -53,6 +53,8 @@
     "@melite/models-flux-klein",
     "@melite/models-gem-soma",
     "@melite/models-h3",
+    "@melite/models-h3-image",
+    "@melite/models-h3-image-edit",
     "@melite/models-input",
     "@melite/models-joycaption",
     "@melite/models-joytag",

@@ -748,7 +748,8 @@
             "max_stack": 16,
             "serveDefault": true,
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
-          }
+          },
+          "max_stack": 16
         },
         "inner": 74
       },
@@ -1309,6 +1310,10 @@
     {
       "id": "fibo2-edit",
       "label": "Fibo 2.0 Edit"
+    },
+    {
+      "id": "h3-image-edit",
+      "label": "MiniMax H3 Image Edit"
     }
   ]
 }

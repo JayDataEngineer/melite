@@ -24,4 +24,37 @@
 # pins only, both upgraded in the venv before boot. The runtime clone
 # synced to this exact sha first; the core-pin-proof wall re-proves the
 # core_node_types roster against the clone's objects at this sha.
-87ed5a066d9c4660ef42100fd01a888da6994856
+# 87ed5a06 -> ede4e5fe8 (master, "feat: Support MiniMax-H3-image"
+# #17655, kijai), 2026-11-11 (the H3 IMAGE hop): the dedicated image
+# checkpoint family (h3-image + h3-image-edit, same weights on two
+# cards) needs MiniMaxH3ImageConditioning — absent until this merge.
+# Range is 122 commits and also lands MiniMaxH3LatentUpscaleWithModel
+# (Oct 28) and PH3ImageConditioning (Nov 3). Requirements delta:
+# frontend 1.57.1->1.58.5, workflow-templates 0.11.93->0.11.103,
+# embedded-docs 0.5.14->0.5.16, Pillow -> Pillow>=10.1.0 (all four
+# upgraded in the engine venv before the restart). Both checkouts
+# (the runtime clone at data/runtime/comfyui and the deployment at
+# ~/tools/comfyui) synced to this exact sha; the core-pin-proof wall
+# re-proves the core_node_types roster against the clone's objects
+# at this sha, and regen-node-vocab's two legs re-derive the census
+# from the live /object_info after the restart.
+# ede4e5fe8 -> 74eb0c4b8 (master, v0.45.0 + the workflow-fix merge
+# #17675), 2026-11-11 (the LATEST hop, operator order: "We need to
+# update comfyui to latest — old comfyui will not work here"): the
+# H3 image run died engine-side on the ModelVBAR pageout_callback
+# mismatch (comfy-aimdo 0.5.6 in the venv vs the 0.6.0 the core
+# imports since #17274) — the wheel was upgraded and the hop lands
+# the v0.45.0 release (989d93d0d), the workflow-not-working fix
+# (0228a9d73), and templates 0.11.106. The REAL core H3 image nodes
+# (MiniMaxH3ImageConditioning from #17655/CORE-708) remain the
+# wiring — the partner-node commit adds ComfyCloud rows this estate
+# never wires. Requirements delta: workflow-templates 0.11.103 ->
+# 0.11.106 only (installed in the engine venv before the restart);
+# comfy-aimdo 0.5.6 -> 0.6.0 per requirements.txt (was missed in
+# the ede4e5fe8 hop). Both checkouts (the runtime clone at
+# data/runtime/comfyui and the deployment at ~/tools/comfyui)
+# synced to this exact sha; the core-pin-proof wall re-proves the
+# core_node_types roster against the clone's objects at this sha,
+# and regen-node-vocab's two legs re-derive the census from the
+# live /object_info after the restart.
+74eb0c4b8

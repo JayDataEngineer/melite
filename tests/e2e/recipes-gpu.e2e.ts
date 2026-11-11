@@ -878,3 +878,81 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
     }
   }, 900_000)
 })
+
+// ── THE H3 IMAGE PAIR (2026-11-11, the Comfy-Org MiniMax-H3-Image
+// checkpoint; the qwen 2.1 naming law again: h3-image = the t2i lane,
+// h3-image-edit = the reference-guided edit lane over the SAME base
+// weights) ────────────────────────────────────────────────────────
+describe.skipIf(!ENGINE_FREE)('the h3 image pair on the GPU (with live ComfyUI)', () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-image'))('h3-image t2i: the pill payload composes ONE MiniMaxH3ImageConditioning (latent out 1, negative zeroed) and RUNS', async () => {
+    const w = await bootWorld('recipes-h3img-')
+    try {
+      const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
+      // the pill payload: a stated 1024 canvas (the node's own area
+      // law tuned for ~2048² working area — a 32-multiple smaller
+      // canvas bounds the receipt's VRAM while riding the same lane)
+      const p1 = await cards.phase1Card({
+        model: 'h3-image', prompt: 'a small red cube on a white field',
+        width: 1024, height: 1024,
+      }, 'h3-image')
+      assert.equal(p1.params?.steps, 6, 'the template stamps steps 6 (official t2i recipe)')
+      assert.equal(p1.params?.cfg, 1, 'cfg 1 — distilled guidance, the template\'s own arm')
+      const graph = (await cards.phase2Card(p1, 'compose-check')).graph as Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
+      const enc = Object.entries(graph).find(([, r]) => r.class_type === 'MiniMaxH3ImageConditioning')
+      assert.ok(enc !== undefined, 'the composed graph carries the H3 image conditioning node')
+      assert.equal(enc![1].inputs?.width, 1024, 'the conditioning node carries the stated canvas width')
+      assert.equal(enc![1].inputs?.height, 1024)
+      assert.ok(!('vae' in (enc![1].inputs ?? {})), 'the bare t2i template wires NO vae (reference latents are the edit lane\'s law)')
+      const sampler = Object.entries(graph).find(([, r]) => r.class_type === 'KSampler')
+      assert.ok(sampler !== undefined)
+      const encId = enc![0]
+      assert.equal((sampler![1].inputs?.positive as string[])[0], encId, 'positive wires the H3 conditioning')
+      assert.equal((sampler![1].inputs?.positive as string[])[1], 0, 'positive rides output 0 (CONDITIONING)')
+      assert.equal((sampler![1].inputs?.latent_image as string[])[0], encId, 'the latent canvas is the node\'s OWN second output')
+      assert.equal((sampler![1].inputs?.latent_image as string[])[1], 1, 'latent rides output 1 (LATENT)')
+      const zero = Object.entries(graph).find(([, r]) => r.class_type === 'ConditioningZeroOut')
+      assert.ok(zero !== undefined, 'the negative rides ConditioningZeroOut (no negative_prompt seat)')
+      assert.equal((sampler![1].inputs?.negative as string[])[0], zero![0], 'negative is the zeroed positive')
+      assert.equal(sampler![1].inputs?.steps, 6)
+      assert.equal(sampler![1].inputs?.cfg, 1)
+      assert.equal(sampler![1].inputs?.denoise, 1.0)
+      assert.equal(sampler![1].inputs?.sampler_name, 'euler')
+      assert.equal(sampler![1].inputs?.scheduler, 'simple')
+
+      const s = await runCard(w, {
+        model: 'h3-image', prompt: 'a small red cube on a white field',
+        width: 1024, height: 1024,
+      }, 'h3-image t2i')
+      assert.equal(byClass(s, 'MiniMaxH3ImageConditioning').length, 1, 'the RUN workflow carries exactly ONE H3 conditioning node')
+      assert.equal(byClass(s, 'ConditioningZeroOut').length, 1)
+      assert.equal(byClass(s, 'CLIPVisionLoader').length, 0, 'the bare t2i lane wires no vision loader')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the t2i artifact is a real PNG')
+      // the t2i artifact feeds the edit receipt (the chain precedent)
+      const chainInput = join(s.runDir, s.stageUrl)
+      const w2 = await bootWorld('recipes-h3imge-')
+      try {
+        const s2 = await runCard(w2, {
+          model: 'h3-image-edit', prompt: 'make the cube blue', image1: chainInput,
+        }, 'h3-image-edit edit')
+        const enc2 = byClass(s2, 'MiniMaxH3ImageConditioning')
+        assert.equal(enc2.length, 1, 'the edit lane rides the SAME conditioning node')
+        assert.ok('vae' in (enc2[0]![1].inputs ?? {}), 'the edit lane wires vae ALWAYS (reference latents anchor identity)')
+        assert.ok('images.image_1' in (enc2[0]![1].inputs ?? {}), 'the anchor rides the dotted images.image_1 autogrow slot')
+        assert.equal(byClass(s2, 'GetImageSize').length, 1, 'the canvas sizes off the scaled anchor (match_input_resolution default)')
+        assert.ok(byClass(s2, 'ResizeImageMaskNode').length > 0, 'the anchor rides the 4MP pre-scale chain')
+        assert.equal(byClass(s2, 'ConditioningZeroOut').length, 1, 'the edit negative is the zeroed positive too')
+        const editSampler = byClass(s2, 'KSampler')[0]!
+        assert.equal(editSampler[1].inputs?.denoise, 1.0)
+        assert.equal(editSampler[1].inputs?.steps, 6, 'the edit variant resolver stamps steps 6')
+        assert.equal(editSampler[1].inputs?.cfg, 1)
+        assert.equal(firstBytes(s2).readUInt32BE(0), 0x89504e47, 'the edit artifact is a real PNG')
+      } finally {
+        w2.stop()
+        await w2.ctx.fiber.dispose()
+      }
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 1_800_000)
+})

@@ -12,7 +12,7 @@ import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelK
  *  plugin; a rename breaks at tsc, never silently at the
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
-export declare const BOARDED: readonly [string, string, string, string, string, string];
+export declare const BOARDED: readonly [string, string, string, string, string, string, string];
 /** THE GEN REGION ROSTER IS DEAD (operator 2026-11-09, the
  *  face-rail burn: "ANY model can inpaint, not just krea-2" — the
  *  two-family roster was artificial, the DetailerForEach tail is

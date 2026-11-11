@@ -45,7 +45,9 @@ describe("the families provider (the lanes' models seat)", () => {
     // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole by
     // operator order ("that model is too old") — the family package
     // is gone, the table counts what boots.
-    expect(ids.length).toBe(30);
+    // 30 -> 32 (2026-11-11): the H3-Image pair lands — h3-image
+    // (t2i) + h3-image-edit, the same weights on two cards.
+    expect(ids.length).toBe(32);
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -70,7 +72,8 @@ describe("the families provider (the lanes' models seat)", () => {
     // 32 -> 31 (2026-11-01): the anyCreature deletion (f0feefd46,
     // the blender-lane estate cut) — same census as the arm above.
     // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole.
-    expect(seat.familyCount()).toBe(30);
+    // 30 -> 32 (2026-11-11): the H3-Image pair lands.
+    expect(seat.familyCount()).toBe(32);
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

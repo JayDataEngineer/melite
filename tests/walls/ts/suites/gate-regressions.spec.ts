@@ -737,7 +737,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // planes carry the new module
   // (comfyui-cordis/lib/lorasPathSeat.js + lib/src/lorasPathSeat.js)
   // — the census follows the emitted truth.
-  const LIB_CENSUS_PIN = 645;
+  // 653 (2026-11-11): the H3-Image pair lands — two new model
+  // packages (h3-image, h3-image-edit), each emitting index/actions
+  // JS + the mask mod.
+  const LIB_CENSUS_PIN = 653;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

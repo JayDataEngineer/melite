@@ -62,6 +62,8 @@ import { t2i as krea2T2I } from "../../../../packages/models/krea-2/src/actions.
 // names the next gap.
 import { t2i as fluxKleinT2I } from "../../../../packages/models/flux-klein/src/actions.ts";
 import { t2i as mossImageT2I } from "../../../../packages/models/moss-image/src/actions.ts";
+import { t2i as h3ImageT2I } from "../../../../packages/models/h3-image/src/actions.ts";
+import { edit as h3ImageEdit } from "../../../../packages/models/h3-image-edit/src/actions.ts";
 import { edit as edit21 } from "../../../../packages/models/qwen-img-edit-21/src/actions.ts";
 import { edit as editFibo2 } from "../../../../packages/models/fibo2-edit/src/actions.ts";
 // THE ROUTING SEAM'S OWNER (the census arm's live end): the judged
@@ -128,8 +130,8 @@ const serveCard = (schema: unknown, boarded: readonly string[]): Map<string, Ser
 };
 
 describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's rows are one surface", () => {
-  const T2I_ACTIONS = [["qwen-img-21", qwenImg21T2I], ["z-image", zImageT2I], ["anima", animaT2I], ["krea-2", krea2T2I], ["flux-klein", fluxKleinT2I], ["moss-image", mossImageT2I]] as const;
-  const EDIT_ACTIONS = [["qwen-img-edit-21", edit21], ["fibo2-edit", editFibo2]] as const;
+  const T2I_ACTIONS = [["qwen-img-21", qwenImg21T2I], ["z-image", zImageT2I], ["anima", animaT2I], ["krea-2", krea2T2I], ["flux-klein", fluxKleinT2I], ["moss-image", mossImageT2I], ["h3-image", h3ImageT2I]] as const;
+  const EDIT_ACTIONS = [["qwen-img-edit-21", edit21], ["fibo2-edit", editFibo2], ["h3-image-edit", h3ImageEdit]] as const;
 
   // THE JUDGED SET, hoisted so the routing census below diffs the
   // SAME array the parity arm walks — one list, never two copies.
@@ -137,9 +139,9 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
   // named flux-klein but no arm ever walked it — a wall narrating
   // coverage it never judged. This array is the only roster.)
   const JUDGED_CARDS = [
-    { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image"], actions: T2I_ACTIONS, cardOwned: ["model"] as readonly string[] },
+    { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image", "h3-image"], actions: T2I_ACTIONS, cardOwned: ["model"] as readonly string[] },
     {
-      name: "image-edit", schema: imageEditSchema, boarded: ["qwen-img-edit-21", "fibo2-edit"], actions: EDIT_ACTIONS,
+      name: "image-edit", schema: imageEditSchema, boarded: ["qwen-img-edit-21", "fibo2-edit", "h3-image-edit"], actions: EDIT_ACTIONS,
       // the card's hidden legacy aliases (image-edit/src/card.ts declares
       // them extra.hidden — validation-only, dropped by the emitter).
       // use_stock_nodes joined them 2026-11-12 (the one-seat register's

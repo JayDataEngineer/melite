@@ -1343,7 +1343,7 @@ describe('the agent contract carries the lane contract', () => {
     if (create === undefined) throw new Error('the image-gen manifest serves')
     const lanes = create['lanes'] as Record<string, unknown> | undefined
     expect(lanes, 'the create card serves lanes for its declaring families').toBeDefined()
-    expect(Object.keys(lanes ?? {}).sort()).toEqual(['anima', 'flux-klein', 'krea-2', 'moss-image', 'qwen-img-21', 'z-image'])
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['anima', 'flux-klein', 'h3-image', 'krea-2', 'moss-image', 'qwen-img-21', 'z-image'])
   })
 
   test('a boarded family whose DECL cannot resolve serves no lane key — the manifest never breaks', async () => {
@@ -1367,7 +1367,7 @@ describe('the agent contract carries the lane contract', () => {
     expect(create['params_schema'], 'the row serves past the unresolvable lane').toBeDefined()
     const lanes = create['lanes'] as Record<string, unknown> | undefined
     expect(lanes, 'the surviving declaring families keep their lanes').toBeDefined()
-    expect(Object.keys(lanes ?? {}).sort()).toEqual(['flux-klein', 'krea-2', 'moss-image', 'qwen-img-21', 'z-image'])
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['flux-klein', 'h3-image', 'krea-2', 'moss-image', 'qwen-img-21', 'z-image'])
   })
 })
 

@@ -57,6 +57,10 @@
       name: '@melite/models-florence2'
     - id: family-flux-klein
       name: '@melite/models-flux-klein'
+    - id: family-h3-image
+      name: '@melite/models-h3-image'
+    - id: family-h3-image-edit
+      name: '@melite/models-h3-image-edit'
     - id: family-input
       name: '@melite/models-input'
     - id: family-joycaption
