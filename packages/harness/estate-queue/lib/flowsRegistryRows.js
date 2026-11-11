@@ -412,11 +412,26 @@ export const OBJECT_FORGE = {
             engine: CARD_PLANE_ENGINE,
             card: "img-to-mesh",
             description: "Image → textured mesh via the img-to-mesh card (trellis2-native, " +
-                "no pack; repair knobs ride the card's own defaults)",
+                "no pack; the lift stamps the high recipe's own knobs — the " +
+                "same stamps every UI birth carries, Recipe default high)",
             inputs: { concept: fromStage("concept", "image") },
             expected: { concept: "image" },
             cardIo: { mesh: "mesh" },
-            params: { model: "trellis2-native", input_image: "$concept" },
+            // THE DOOR-PARITY STAMPS (the 2026-11-17 flows audit): a UI
+            // birth lands stamped with the declared default Recipe "high"
+            // (resolution 1536, remesh 1024, 1M faces — wire_defaults,
+            // applied client-side at birth only), while a bare {flow:}
+            // press composed at the family floor (1024) — the same lift
+            // produced different meshes by door. The stamps below are the
+            // high row's wire_defaults verbatim, and 1536 is the official
+            // template's own upsample default
+            // (3d_pixal3d_trellis2_image_to_model.json [94]). Compose
+            // never applies recipe wire_defaults server-side; the stage's
+            // own params are the flow plane's one seat.
+            params: {
+                model: "trellis2-native", input_image: "$concept",
+                resolution: "1536", remesh_resolution: 1024, decimate_faces: 1000000,
+            },
         }),
     ],
     initialValidators: { prompt: "text" },

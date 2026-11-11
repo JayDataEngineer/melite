@@ -4,13 +4,13 @@
   "kind": "flow",
   "model": "object-forge",
   "stage_title": "Object Forge",
-  "description": "Prompt to a textured 3D object in two card stages: concept (image-gen z-image \u2014 one subject render), lift (img-to-mesh trellis2-native \u2014 textured mesh, repair knobs at card defaults). WHAT it produces: the lift's textured tri mesh from one prompt line. HOW it runs: both stages are card=, so the {flow:} door submits ONE merged run (image-upscale's 2026-10-04 shape); agents can also drive the cards one at a time through the queue door. Craft surfaces: {model:} door, the bench, or the object_forge POST tool. (The remesh stage left the row 2026-10-13; quad topology is downstream work.)",
+  "description": "Prompt to a textured 3D object in two card stages: concept (image-gen z-image — one subject render), lift (img-to-mesh trellis2-native — textured mesh at the high recipe's stamps (1536 detail, the same as every card birth)). WHAT it produces: the lift's textured tri mesh from one prompt line. HOW it runs: both stages are card=, so the {flow:} door submits ONE merged run (image-upscale's 2026-10-04 shape); agents can also drive the cards one at a time through the queue door. Craft surfaces: {model:} door, the bench, or the object_forge POST tool. (The remesh stage left the row 2026-10-13; quad topology is downstream work.)",
   "params_schema": {
     "type": "object",
     "properties": {
       "prompt": {
         "type": "string",
-        "description": "Required. The object \u2014 one clear subject, plain background reads best (a single prop on white beats a busy scene)."
+        "description": "Required. The object — one clear subject, plain background reads best (a single prop on white beats a busy scene)."
       },
       "image_model": {
         "type": "string",

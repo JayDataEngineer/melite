@@ -41,6 +41,17 @@ describe("the yue2 model plugin (the whole model, one package)", () => {
     // is the action's own composition, never a lane fact.
     assert.deepEqual(Object.keys(li), ["checkpoint"], "one file row, nothing else");
   });
+
+  // THE STEP PAIRING (the 2026-11-17 flows audit): the official
+  // template's subgraph KSampler runs 32 (audio_yue2_text2music) —
+  // the sg-8 tier's own pairing. The shared music card's schema
+  // default (30) is music3's tier pairing; without this stamp a
+  // fresh yue2 stage borrows it silently.
+  it("the standard variant owns the step pairing — 32, the template's sg-8 tier, never music3's 30", () => {
+    const std = DECL.variants.find((v) => v.id === "standard")!;
+    assert.equal(std.resolver_defaults?.n_diffusion_steps, 32,
+      "the fresh yue2 stage's step count comes from here — drop it and the music card's music3 default (30) rides instead");
+  });
 });
 
 // THE VERBATIM CONTENT LAW: every declared provision row's digest, url

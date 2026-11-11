@@ -2004,7 +2004,12 @@ function renderH3Window(
       const ersde = g.node('SamplerER_SDE', {
         solver_type: 'ODE', max_stage: 3, eta: 0.0, s_noise: 1.0,
       }).out()
-      // template carries switch=false as a LITERAL, not a bool node
+      // The ER_SDE wrap is THIS ESTATE's spelling — no official h3
+      // workflow template composes SamplerER_SDE (verified across
+      // all twelve, 2026-11-17), and every template switch is wired
+      // to a PrimitiveBoolean node, never a literal. The literal
+      // false pins the pick to KSamplerSelect — the false side of
+      // the templates' own sampler switch (their default posture).
       sampler = g.node('ComfySwitchNode', { switch: false, on_true: ersde, on_false: samplerSel }).out()
     }
     // THE FUN-CONTROLNET SEAT (007 L7): one insertion past the sigma
@@ -2016,13 +2021,15 @@ function renderH3Window(
     // boarding gate — the rows are the operator's BENCH row, 002 H1)
     // and every row fact (schedule capability, strength ceiling, the
     // clip/mask channels) arrived stamped by the service resolution.
-    // THE RE-SHOOT MODEL SEAT (the 2026-11-13 official rework) mounts
-    // just ahead of it: the CrossView LoRA on the post-shift model —
-    // the official order (distill lora → shift → attention → the
-    // CrossView LoRA LAST) so the camera-trained adapters win, with
-    // any file-based picks refining on top. The hoisted reshootChain
-    // (the window head) is the one build — the film loop's stamped
-    // handles or the single-window's own.
+    // THE RE-SHOOT MODEL SEAT (the 2026-11-13 rework onto Comfy-Org's
+    // comfy-reshoot reference app — reshoot.ts's pinned revision, NOT
+    // a workflow template; no template carries a CrossView leg)
+    // mounts just ahead of it: the CrossView LoRA on the post-shift
+    // model — that app's order (distill lora → shift → attention →
+    // the CrossView LoRA LAST) so the camera-trained adapters win,
+    // with any file-based picks refining on top. The hoisted
+    // reshootChain (the window head) is the one build — the film
+    // loop's stamped handles or the single-window's own.
     if (reshootChain !== undefined) sigmaModel = applyH3ReshootModel(g, sigmaModel, p)
     sigmaModel = applyH3FunControlNets(g, sigmaModel, vaeVideo, fireControlNets(model, p))
     const schedName = p.sched_name as string

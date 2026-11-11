@@ -125,7 +125,7 @@ export const DECL: ModelDecl = {
     {
       "id": "standard",
       "label": "Standard",
-      "hint": "The official template's calibration as the floor: 1024 + remesh 768 + 700k faces.",
+      "hint": "The operator's standard floor (2026-11-02): 1024 + remesh 768 + 700k faces — the official template's own upsample default is 1536; the high recipe mirrors it.",
       "group": "Recipe",
       "cells": [],
     },
@@ -185,15 +185,22 @@ export const DECL: ModelDecl = {
       "size_bytes": 948461364
     },
     {
-      "name": "dino_v3_vit_l.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/clip_vision/dino_v3_vit_l.safetensors",
+      // THE CLIP-VISION TRUTH (the 2026-11-17 flows audit): the
+      // official template's CLIPVisionLoader [15] loads the Pixal3D
+      // NAF release — dino_v3_L_naf_fp32.safetensors — for BOTH mesh
+      // families (one clip-vision file, the Pixal3D repo's own).
+      // The TRELLIS.2 repo's dino_v3_vit_l is a file the template
+      // never loads; this row now mirrors the template's bytes (the
+      // same row pixal3d declares — the provisioner lands it once).
+      "name": "dino_v3_L_naf_fp32.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/clip_vision/dino_v3_L_naf_fp32.safetensors",
       "folder": "clip_vision",
-      "sha256": "5cb785e458de7c460579082418af81f5c62380c181599344bdc60898c63468ee",
-      "size_bytes": 1212559776
+      "sha256": "4ad2ec4e0879a5b5b04cd97325cc37da954a7b6edca5170b86510f17f2b2290f",
+      "size_bytes": 1215214176
     }
   ],
   "lane_inputs": {
-    "clip_vision": "dino_v3_vit_l.safetensors",
+    "clip_vision": "dino_v3_L_naf_fp32.safetensors",
     "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
     "unet": "trellis_2_int8_convrot.safetensors",
     "vae": "trellis_2_shape_vae_bf16.safetensors"

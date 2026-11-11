@@ -37,7 +37,11 @@ const PROVISION_PINS: ReadonlyArray<
   ["trellis_2_int8_convrot.safetensors", "d01952ad137213f6a868f86b6b877026276f84af5eec23069217475a0bad3a31", "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/diffusion_models/trellis_2_int8_convrot.safetensors", 5253048192],
   ["trellis_2_shape_vae_bf16.safetensors", "de0cb4949a76c59ee5c091a995a69bcc8c51d5aeda939f0c641a50d2a72341f4", "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/vae/trellis_2_shape_vae_bf16.safetensors", 1095844024],
   ["trellis_2_texture_vae_bf16.safetensors", "714e5ebf094a610e12a8e3b5175c18a62f37f6ea4218acb6073644456b73ab0e", "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/vae/trellis_2_texture_vae_bf16.safetensors", 948461364],
-  ["dino_v3_vit_l.safetensors", "5cb785e458de7c460579082418af81f5c62380c181599344bdc60898c63468ee", "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/clip_vision/dino_v3_vit_l.safetensors", 1212559776],
+  // clip_vision mirrors the official template's loader bytes ([15]
+  // CLIPVisionLoader): the Pixal3D NAF release, never the TRELLIS.2
+  // repo's dino_v3_vit_l (a file no template loads — the 2026-11-17
+  // flows audit). The row is byte-identical to pixal3d's own.
+  ["dino_v3_L_naf_fp32.safetensors", "4ad2ec4e0879a5b5b04cd97325cc37da954a7b6edca5170b86510f17f2b2290f", "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/clip_vision/dino_v3_L_naf_fp32.safetensors", 1215214176],
 ];
 
 describe("the declared provisions are pinned verbatim", () => {

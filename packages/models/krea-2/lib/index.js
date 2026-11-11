@@ -6,7 +6,10 @@ export const DECL = {
     "description": "High-quality general text-to-image generation.",
     "engine": "comfyui",
     "defaults": {
-        "scheduler": "normal",
+        // sampler/scheduler/steps/cfg mirror the official turbo template
+        // (image_krea2_turbo_t2i_int8.json: KSampler euler/simple/8/1 —
+        // the 2026-11-17 flows audit found "normal" undocumented drift)
+        "scheduler": "simple",
         "width": 1024,
         "height": 1024,
         "steps": 8,

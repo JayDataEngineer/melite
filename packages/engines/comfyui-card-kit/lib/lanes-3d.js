@@ -80,9 +80,14 @@ export function admitMeshLiftShared(p) {
     if (!MESH_RESOLUTIONS.includes(String(p.resolution))) {
         throw new Error(`resolution ${JSON.stringify(p.resolution)} is not one of ${MESH_RESOLUTIONS.join('|')} — the variant table is closed`);
     }
+    // bg_removal is RETIRED surface (the claim law, transfer-rig's own
+    // comment): no executor, graph, or action consumes it — birefnet is
+    // not provisioned and no leg composes. The gate stays for legacy
+    // drafts (a carried value composes-past instead of refusing), but
+    // the voice names the truth: the value changes nothing.
     const bg = String(p.bg_removal || 'auto');
     if (!MESH_BG_MODES.includes(bg)) {
-        throw new Error(`bg_removal ${JSON.stringify(bg)} is not one of auto|on|off — birefnet either cuts or it doesn't`);
+        throw new Error(`bg_removal ${JSON.stringify(bg)} is not one of auto|on|off — the knob is retired surface: no value changes the graph`);
     }
     for (const [k, opts] of MESH_BAKE_SIZES) {
         if (!opts.includes(String(p[k]))) {

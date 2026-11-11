@@ -139,9 +139,12 @@ describe("the trellis2-native mesh action — byte-stability (the compatibility 
       () => instantiateAction(mesh, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
       /^Error: trellis2-native mesh: lane_inputs\.texture_vae = "" — a non-empty string is required$/
     );
-    // 2026-10-12 ghost-debt: naf_fp32 -> vit_l — the lane agrees with
-    // the graph it composes (trellis_t1.json loads dino_v3_vit_l)
-assert.equal(parseMeshFacts(FACTS.lane_inputs as never).clip_vision, "dino_v3_vit_l.safetensors", "the DECL's own row parses clean");  });
+    // 2026-11-17 flows audit: the loader file mirrors the template of
+    // record's own bytes (3d_pixal3d_trellis2_image_to_model.json [15]
+    // CLIPVisionLoader: dino_v3_L_naf_fp32) — the 2026-10-12 flip to
+    // vit_l cited trellis_t1.json, an example workflow this estate's
+    // flow does not mirror.
+assert.equal(parseMeshFacts(FACTS.lane_inputs as never).clip_vision, "dino_v3_L_naf_fp32.safetensors", "the DECL's own row parses clean");  });
 
   it("the family's admission slice refuses a bake size outside the closed sets", () => {
 

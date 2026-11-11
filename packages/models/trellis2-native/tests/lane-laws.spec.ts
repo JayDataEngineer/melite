@@ -120,6 +120,10 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
   // (the missing-tests audit #6, 2026-11-06) bg_removal appeared in
   // ZERO test files across the mesh families — the explicit-value
   // arms and the closed-set refusal were dead in every pool.
+  // 2026-11-17 flows audit: the knob is RETIRED surface (no graph
+  // leg — the goldens carry no BiRefNet node; the voice no longer
+  // claims one). The gate itself stays: legacy drafts carrying the
+  // key compose-past, and the closed set still refuses typos.
   it("bg_removal admits its explicit values and refuses outside the closed set (verbatim voice)", () => {
     const base = {
       input_image: "/m/p.png", resolution: "1024",
@@ -130,7 +134,7 @@ describe("the trellis2-native mesh lane (the arm cases the kit wall used)", () =
       instantiateAction(mesh, { ...base, bg_removal: bg }, FACTS, new GraphBuilder(), "x");
     }
     assert.throws(() => instantiateAction(mesh, { ...base, bg_removal: "bogus" }, FACTS, new GraphBuilder(), "x"),
-      /bg_removal "bogus" is not one of auto\|on\|off — birefnet either cuts or it doesn't/);
+      /bg_removal "bogus" is not one of auto\|on\|off — the knob is retired surface: no value changes the graph/);
     // absent falls to 'auto' (the || fallback's absent side) — composes
     instantiateAction(mesh, { ...base }, FACTS, new GraphBuilder(), "x");
   });

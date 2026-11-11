@@ -285,14 +285,19 @@ export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
       ? (p.input_image as string)
       : g.node('LoadImage', { image: p.input_image as string }).out()
     const heads = loadLiftHeads(g, li, p)
-    // THE TEMPLATE HAS NO MASK BRIDGE: the crop eats the photo
-    // (LoadImage) verbatim — a MaskToImage-sourced crop feeds the
-    // silhouette, and the silhouette starves every appearance
-    // feature (the 2026-10-27 live burn). The masks leg demands a
-    // MASK (live object_info + a 400'd /prompt drive, 2026-10-23:
-    // "return_type_mismatch ... input_type(MASK)"), so the region
-    // rides ImageToMask of the SAME photo — images stay the photo
-    // verbatim (appearance features), the region is a real mask.
+    // THE MASK BRIDGE (2026-11-17 flows audit, corrected): the
+    // official template DOES ship one — BiRefNet ([192] true → [248]
+    // → [303] → [312].masks) cuts the subject and feeds the crop's
+    // masks leg. This lane composes NO birefnet (never provisioned)
+    // and rides the red-channel region instead, on its own live
+    // evidence: a MaskToImage-sourced crop fed the silhouette and
+    // starved every appearance feature (the 2026-10-27 live burn),
+    // and the masks leg demands a MASK (live object_info + a 400'd
+    // /prompt drive, 2026-10-23: "return_type_mismatch ...
+    // input_type(MASK)") — so the region rides ImageToMask of the
+    // SAME photo: images stay the photo verbatim (appearance
+    // features), the region is a real mask. The BiRefNet leg is an
+    // owed row (ROADMAP), not a template breach.
     const mask = g.node('ImageToMask', { image: img, channel: 'red' }).out()
     const cropped = g.node('ImageCropToMask', {
       images: img, masks: mask,

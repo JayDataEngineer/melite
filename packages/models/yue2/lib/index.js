@@ -13,9 +13,12 @@ export const DECL = {
     "genre": "audio",
     // THE REQUIRED DEFAULTS (operator contract 2026-11-07): The
     // user-provided seats (prompt, lyrics) — the compose caller
-    // provides them. No variant-class rows: this family's served
-    // face exposes no steps+cfg pair (the census's surface-derived
-    // carve).
+    // provides them. steps is the variant's own row below (the
+    // variant-sampler-defaults law): the official template's subgraph
+    // KSampler runs 32 (audio_yue2_text2music), and the shared music
+    // card's schema default (30) is music3's own tier pairing — this
+    // family's fresh stages must not borrow it (the 2026-11-17 flows
+    // audit). cfg stays unstamped: the lane's KSampler fixes it at 1.
     "required_defaults": [
         { "name": "prompt", "class": "user" },
         { "name": "lyrics", "class": "user" }
@@ -26,6 +29,12 @@ export const DECL = {
             "label": "Standard",
             "group": "Variant",
             "route": "yue2",
+            // THE STEP PAIRING (template parity): 32 — the sg-8 tier's own
+            // number (the template's subgraph KSampler), never the card
+            // schema's 30 (music3's full-schedule pairing).
+            "resolver_defaults": {
+                "n_diffusion_steps": 32
+            },
             "cells": [
                 {
                     // The stale source died (2026-10-13): the lane loads the

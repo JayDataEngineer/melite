@@ -914,6 +914,21 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
     });
   });
 
+  // THE DOOR-PARITY STAMPS (the 2026-11-17 flows audit): a UI birth
+  // lands stamped with trellis2-native's declared default Recipe
+  // "high" (client-side wire_defaults), while a bare {flow:} press
+  // composed at the family floor 1024 — the same lift produced
+  // different meshes by door, and 1536 is the official template's
+  // own upsample default. The lift stage carries the stamps itself
+  // (compose never applies recipe wire_defaults server-side).
+  it("object-forge's lift stamps the high recipe's knobs — the flow door matches the card birth", () => {
+    const lift = SEED.get("object-forge")!.stages.find((s) => s.id === "lift")!;
+    const params = lift.params as Record<string, unknown>;
+    assert.equal(params.resolution, "1536", "the official template's upsample default, the high recipe's own stamp");
+    assert.equal(params.remesh_resolution, 1024);
+    assert.equal(params.decimate_faces, 1000000);
+  });
+
   it("names the refusing initial in the door's own voice", () => {
     const ansy = SEED.get("anny-hmr-estimator")!;
     const refused = extractRequestInitials(ansy, { photo: 12 });

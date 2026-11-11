@@ -25,6 +25,19 @@ describe("the krea-2 model plugin (the whole model, one package)", () => {
     assert.equal(typeof family.apply, "function");
   });
 
+  // THE OFFICIAL SCHEDULER (the 2026-11-17 flows audit): the turbo
+  // template's KSampler runs euler/simple (image_krea2_turbo_t2i_int8
+  // .json — widgets [seed, control, 8, 1, 'euler', 'simple', 1]);
+  // "normal" rode undocumented for the family's whole life because
+  // no wall judged the family defaults against the template bytes.
+  it("the family defaults mirror the official turbo template — euler/simple/8/1", () => {
+    const d = DECL.defaults as Record<string, unknown>;
+    assert.equal(d.scheduler, "simple", "the official template's scheduler; 'normal' was undocumented drift");
+    assert.equal(d.sampler, "euler");
+    assert.equal(d.steps, 8);
+    assert.equal(d.cfg, 1);
+  });
+
   it("carries its variants — turbo, raw, kroma, kroma-base, realism — with routes and resolver defaults", () => {
     const ids = DECL.variants.map((v) => v.id);
     // (Rule A, 2026-09-18) the Recipe axis carries the functional
