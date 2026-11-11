@@ -8,6 +8,7 @@ import { describe, expect, test } from 'vitest'
 import {
   coerceFieldEdit,
   entryFieldsOfEnvelope,
+  familyScopedAwayKeysOf,
   fieldsOf,
   fieldsOfEnvelope,
   isHybridKind,
@@ -15,6 +16,7 @@ import {
   kindScalarFieldsOfEnvelope,
   modOwnedFields,
   imageSubjectKeysOf,
+  modelSwitchPatch,
   optionKeyOf,
   resolveFamilyKey,
   scalarKeyOf,
@@ -29,6 +31,7 @@ import {
   type SchemaEnvelope,
   type SchemaRef,
   type SpecField,
+  type SpecValues,
 } from '../src/spec.ts'
 
 test('schemaEnvelope: fields assign ids in insertion order off the object root', () => {
@@ -129,6 +132,57 @@ test('THE FAMILY-KEY RESOLUTION (2026-09-21, the families-DRY law): a composed v
   expect(fieldsOf({ ...doc, model: 'pixal3d' }).map((f) => f.name)).toEqual(['lift', 'fov'])
   // and under the un-composed sibling family the pixal rows skip
   expect(fieldsOf({ ...doc, model: 'trellis2-native' }).map((f) => f.name)).toEqual(['lift'])
+})
+
+test('THE FAMILY-SCOPED SLOT NULL (the deck sweep\'s switch-brick finding, 2026-11-12): a cross-family switch nulls the departed family\'s scoped keys — shared fields pass along', () => {
+  // img-to-mesh's own shape: the paired GLB slot (rigged_glb /
+  // target_glb) is transfer-rig-scoped; the lift field serves
+  // pixal3d + trellis2-native. A switch transfer-rig → pixal3d that
+  // leaves the slot set ships invisible state the arrival form
+  // never renders — the doc must not carry it (the sweep's
+  // departed-key poll reds verbatim until the verb nulls it).
+  const env = schemaEnvelope({
+    input_image: { type: 'string', meta: { extra: { families: ['pixal3d', 'trellis2-native'] } } },
+    rigged_glb: { type: 'string', meta: { extra: { families: ['transfer-rig'] } } },
+    target_glb: { type: 'string', meta: { extra: { families: ['transfer-rig'] } } },
+    camera_fov: { type: 'string', meta: { extra: { families: ['pixal3d'] } } },
+  })
+  const boarded = [
+    { id: 'pixal3d', present: true },
+    { id: 'trellis2-native', present: true },
+    { id: 'transfer-rig', present: true },
+  ]
+  const spec: FormSpecDoc = { form: 'img-to-mesh', model: 'transfer-rig', schema: env, families: boarded }
+  // the burn's holding: the paired slot set under transfer-rig
+  const held: SpecValues = { model: 'transfer-rig', rigged_glb: 'runs/a/rigged.glb', target_glb: 'runs/a/target.glb' }
+  const patch = modelSwitchPatch(spec, 'pixal3d', held)
+  // THE DEPARTED SLOT NULLS (the switch-brick cure): both paired
+  // keys die with their family — the arrival form never renders
+  // them and the paired-GLB output-binding law must not see them.
+  expect(patch['rigged_glb']).toBe(null)
+  expect(patch['target_glb']).toBe(null)
+  // a COMPOSED catalog-row pick resolves to its base before the
+  // families check — same verdict as the bare id.
+  const composed = modelSwitchPatch(spec, 'pixal3d-1536-int8', held)
+  expect(composed['rigged_glb']).toBe(null)
+  expect(composed['target_glb']).toBe(null)
+  // THE CARRIED SIDE (the sweep's own hard law): a field the
+  // arrival still declares never nulls — the switch to the sibling
+  // lift family keeps the shared input_image field's patch silent
+  // (no key, no verdict — the value passes along untouched).
+  expect('input_image' in patch).toBe(false)
+  // the reverse switch (pixal3d → transfer-rig) nulls the lift
+  // family's own scoped knobs by the same law — symmetric.
+  const reverse = modelSwitchPatch(
+    { ...spec, model: 'pixal3d' },
+    'transfer-rig',
+    { model: 'pixal3d', input_image: 'runs/a/img.png', camera_fov: 'auto' },
+  )
+  expect(reverse['camera_fov']).toBe(null)
+  // a WITHIN-family switch (model unchanged in the families sense)
+  // never fires the clause — only crossSpec walks it.
+  const within = modelSwitchPatch(spec, 'transfer-rig', held)
+  expect(within['rigged_glb']).toBeUndefined()
 })
 
 test('resolveFamilyKey: longest boarded base wins a prefixed key; unresolved and bare keys pass through verbatim', () => {

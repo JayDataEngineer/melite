@@ -225,6 +225,24 @@ export declare function fieldsOf(spec: FormSpecDoc): SpecField[];
  *  the subject survives every switch — the same edit, another model.
  *  Pure companion of bagKeysOf's walk, one ref shape, one law. */
 export declare function imageSubjectKeysOf(spec: FormSpecDoc): Set<string>;
+/** THE FAMILY-SCOPED-AWAY KEYS (the deck sweep's switch-brick
+ *  finding, live 2026-11-12): a multi-family card scopes fields per
+ *  family (extra.families declares the BASE ids the field serves);
+ *  a field whose families do not cover the ARRIVAL family is the
+ *  departed family's own knob — an attachment or value the arrival
+ *  form never renders and the doc must not carry (invisible state
+ *  that skews the card's own paired-lane and output-binding laws).
+ *  The scoping truth is the DEPARTING schema itself — the card
+ *  declares families card-wide — so the arrival DOC is never needed,
+ *  only the picked model id, resolved against the departing spec's
+ *  boarded rows by the same longest-prefix law resolveFamilyKey
+ *  rides (the pick may be a composed catalog row,
+ *  'pixal3d-1536-int8'). The subject law does NOT spare here: a
+ *  family-scoped field is the declaration that the arrival does not
+ *  serve it — the sweep's carried law judges by the arrival's
+ *  DECLARED set, and no field may ride a family its card says it
+ *  does not belong to. PURE. */
+export declare function familyScopedAwayKeysOf(spec: FormSpecDoc, arrivalModel: string): Set<string>;
 /** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
  * client-side (stroke 34 — the card-recipe layer is dead): schema
  * defaults <- model defaults <- SERVED STAMPS <- user. The form

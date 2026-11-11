@@ -857,7 +857,12 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
   expect(roster.length, 'the served door enumerates at least one card').toBeGreaterThan(0)
 
   const familyCap = Number(process.env.SWEEP_FAMILIES ?? '0')
-  const bounded = familyCap > 0 ? roster.slice(0, familyCap) : roster
+  // SWEEP_CARD (substring on the card id): a bounded ride for the
+  // cure-verifying press — one card's arms without the full census
+  // (the switch-brick cure's live red-green rode img-to-mesh alone).
+  const cardNeedle = process.env.SWEEP_CARD ?? ''
+  const bounded = (familyCap > 0 ? roster.slice(0, familyCap) : roster)
+    .filter((r) => cardNeedle === '' || r.card.includes(cardNeedle))
   const maxCombos = Number(process.env.SWEEP_MAX_COMBOS ?? '8')
 
   for (const row of bounded) {
@@ -1815,28 +1820,24 @@ test('the attach/detach sweep — slot file inputs, re-switch after attach', asy
         const holds = declared && seat2 !== null
           ? law2
           : (p: Record<string, unknown>) => !law2(p)
-        // THE DEPARTED-KEY JUDGMENT: a dropped attachment is the
-        // switch's own law; a KEPT attachment on a departed key is
-        // THE SWITCH-BRICK CLASS (h3 2026-11-05's own voice — the
-        // door refuses the stale key as an unknown param) — receipted
-        // as the finding it is, the census continuing (one finding
-        // never starves the remaining cards). The carried side keeps
-        // its hard red: an attachment the arrival still renders must
-        // follow, and its loss is the silent drop.
+        // THE DEPARTED-KEY JUDGMENT (WALLED 2026-11-17, the
+        // switch-brick cure): the switch's own verb nulls the
+        // departed family's scoped slots (card-base
+        // modelSwitchPatch's family-scoped clause — the verb wall
+        // is spec-walker's FAMILY-SCOPED SLOT NULL arm), so the doc
+        // MUST drop them; a kept attachment here is the h3
+        // 2026-11-05 switch-brick class RED, verbatim. The carried
+        // side keeps its hard red: an attachment the arrival still
+        // renders must follow, and its loss is the silent drop.
         const finalDoc = declared && seat2 !== null
           ? await pollStageDoc(page, row.card, `${reSwitchTag || tag} · ${slot.name}`,
             `the attachment FOLLOWS the switch (${slot.name} still declared and rendered on the arrival ${arrival2Id})`,
             holds,
             docPin)
           : await pollStageDoc(page, row.card, `${reSwitchTag || tag} · ${slot.name}`,
-            `the attachment is GONE after the switch (${slot.name} left the arrival ${arrival2Id} — a departed key the compose door bricks as an unknown param)`,
+            `the attachment is GONE after the switch (${slot.name} left the arrival ${arrival2Id} — a departed family-scoped slot the switch verb must null; a kept one is the switch-brick class)`,
             holds,
-            docPin).catch(() => null)
-        if (finalDoc === null) {
-          // eslint-disable-next-line no-console -- the switch-brick receipt
-          console.log(`[sweep-attach] ${reSwitchTag || tag} · ${slot.name}: SWITCH-BRICK FINDING — the switch departed ${slot.name} from the arrival ${arrival2Id} but the doc keeps the attachment; the arrival door refuses the stale key as an unknown param (the h3 2026-11-05 switch-brick class, live 2026-11-12) — receipted, the census continues`)
-          continue
-        }
+            docPin)
         expectVerdictLawful(await composeVerdict(page, finalDoc, arrival2Id), `${reSwitchTag || tag} · ${slot.name} :: re-switch`)
       }
 

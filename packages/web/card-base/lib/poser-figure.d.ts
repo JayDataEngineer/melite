@@ -23,7 +23,7 @@
  */
 import { createElement as h } from 'react';
 import * as THREE from '@melite/three-client/client';
-import { type FormSpecDoc, type SpecValues } from './spec.js';
+import { type FormSpecDoc, type SpecValues } from './spec.ts';
 /** The bind-mesh doc the geometry builder reads (SkinMeshData's
  * pinned subset: xyz verts, index-triplet faces). */
 export interface PoserMeshDoc {

@@ -10020,6 +10020,44 @@ window.__ModuleLoader__.load({
 			for (const [name, id] of Object.entries(dict)) if (env.refs[id]?.type === "array" && !docPlane.has(name)) out.add(name);
 			return out;
 		}
+		/** THE FAMILY-SCOPED-AWAY KEYS (the deck sweep's switch-brick
+		*  finding, live 2026-11-12): a multi-family card scopes fields per
+		*  family (extra.families declares the BASE ids the field serves);
+		*  a field whose families do not cover the ARRIVAL family is the
+		*  departed family's own knob — an attachment or value the arrival
+		*  form never renders and the doc must not carry (invisible state
+		*  that skews the card's own paired-lane and output-binding laws).
+		*  The scoping truth is the DEPARTING schema itself — the card
+		*  declares families card-wide — so the arrival DOC is never needed,
+		*  only the picked model id, resolved against the departing spec's
+		*  boarded rows by the same longest-prefix law resolveFamilyKey
+		*  rides (the pick may be a composed catalog row,
+		*  'pixal3d-1536-int8'). The subject law does NOT spare here: a
+		*  family-scoped field is the declaration that the arrival does not
+		*  serve it — the sweep's carried law judges by the arrival's
+		*  DECLARED set, and no field may ride a family its card says it
+		*  does not belong to. PURE. */
+		function familyScopedAwayKeysOf(spec, arrivalModel) {
+			const env = spec.schema;
+			if (env == null) return /* @__PURE__ */ new Set();
+			const boarded = spec.families;
+			let base = arrivalModel;
+			if (boarded !== void 0) {
+				let best;
+				for (const row of boarded) if (arrivalModel === row.id || arrivalModel.startsWith(row.id + "-") && (best === void 0 || row.id.length > best.length)) best = row.id;
+				if (best !== void 0) base = best;
+			}
+			const root = env.refs[env.uid];
+			const out = /* @__PURE__ */ new Set();
+			for (const [name, id] of Object.entries(root?.dict ?? {})) {
+				const ref = env.refs[id];
+				if (ref === void 0) continue;
+				const families = extraOf(ref).families;
+				if (!Array.isArray(families)) continue;
+				if (!families.includes(base)) out.add(name);
+			}
+			return out;
+		}
 		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
 		* client-side (stroke 34 — the card-recipe layer is dead): schema
 		* defaults <- model defaults <- SERVED STAMPS <- user. The form
@@ -10664,6 +10702,7 @@ window.__ModuleLoader__.load({
 					if (subjects.has(k)) continue;
 					if (!(k in patch)) patch[k] = null;
 				}
+				for (const k of familyScopedAwayKeysOf(spec, model)) if (!(k in patch)) patch[k] = null;
 				if (Array.isArray(spec.params) && arrival !== void 0 && Array.isArray(arrival.params)) {
 					const arrivalWords = new Set(arrival.params);
 					const axisWords = new Set(axisGroups(spec).map((g) => axisKey(g)));
@@ -19378,6 +19417,7 @@ window.__ModuleLoader__.load({
 		exports.estateInputUrl = estateInputUrl;
 		exports.estateInputVideoUrl = estateInputVideoUrl;
 		exports.estateRemote = estateRemote;
+		exports.familyScopedAwayKeysOf = familyScopedAwayKeysOf;
 		exports.fetchCardCatalog = fetchCardCatalog;
 		exports.fetchChainRunCandidates = fetchChainRunCandidates;
 		exports.fetchFormSpec = fetchFormSpec;
