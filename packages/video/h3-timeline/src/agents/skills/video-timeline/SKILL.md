@@ -118,6 +118,13 @@ clip row has no src — the film mix cannot place a source-less row"), so bind a
 staged or returned asset before you place it; an unpositioned row is a
 statement about the film's own audio, never a placeholder.
 
+**The reference-voice rail.** `ref_audios` conditions each window's generated
+voice: the engine loads each reference clip once per window and synthesises a
+voice that is mixed UNDER a conditioned row at `duck_depth_db` (default
+-14 dB). It is not a placed line — to hear your own take, place the line in
+`audio_clips`. Audio does not ride `ref_mods`; the mod bag is the image
+identity bake.
+
 **NO SPOKEN LINE IS NOT SILENCE — say "no dialogue" in the window that has
 none.** H3 fills any silence the audio does not account for: a window whose
 `text` never mentions voices comes back with muttered or fully voiced lines in

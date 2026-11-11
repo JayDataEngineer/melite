@@ -50,13 +50,20 @@ edit: [{ source_clip: "<any staged video>", refine: true, scale: 2 }]
 ```
 
 That is the WHOLE posture. Unstated seats derive themselves:
-whole-frame mask, self anchors, denoise 0.32, 56 f windows under
-the measured 141 f 2x ceiling — and a blank `edit_prompt` is lawful
-(the pass asks no action). State a seat only to override (a prompt
-steers the re-render; a stated window rides its own judgement —
-past 141 f at scale ≥ 2 the door refuses naming both cures). The
-cost versus the resume: one generation of codec + VAE-encode loss;
-the advantage: ANY video rides, no run id to hunt.
+whole-frame mask, self anchors, denoise 0.32, windows capped at
+the measured 141 f 2x ceiling (the derived plan never overshoots
+it) — and a blank `edit_prompt` is lawful (the pass asks no
+action). ONE WINDOW PER PRESS: a film longer than the ceiling
+cannot 2x in one press — the chain joins its segments at 1x
+geometry while each refined window emits 2x latents, so the door
+refuses a multi-window refine plan naming that burn; the whole-film
+2x tile owes the assembler its own upscale-after-assembly door (a
+feature, not a posture — press per window or pre-trim). State a
+seat only to override (a prompt steers the re-render; a stated
+window rides its own judgement — past 141 f at scale ≥ 2 the door
+refuses naming both cures). The cost versus the resume: one
+generation of codec + VAE-encode loss; the advantage: ANY video
+rides, no run id to hunt.
 
 THE DOOR REFUSES CLEANLY PAST VALIDATION: an unknown run name
 refuses loud at the execute door, never a silent empty pass. Do not promise an upscale: NOT yet verified live: an END-TO-END upscaled render

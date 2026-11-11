@@ -30,7 +30,7 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/YIELDS the second/);
     expect(md).toMatch(/two same-class rows starting/);
     expect(md).toMatch(/CONTINUES the same line across both/);
-    expect(md).toMatch(/DUCKS -14dB/);
+    expect(md).toMatch(/DUCKS under a conditioned row at `duck_depth_db`/);
     expect(md).toMatch(/two or more calls/);
   });
 
@@ -190,5 +190,43 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(src).toMatch(/text = THE SPOKEN WORDS/);
     expect(src).toMatch(/lip-sync law/);
     expect(src).toMatch(/There is NO per-call audio/);
+  });
+});
+
+describe("THE REFAUDIO RAIL TRUTH (defect board D-38 + ESTATE-DOC-FIXES §14, 2026-11-18: 'ref_audios is WIRED but undocumented' — the rail has no stated behaviour, and the duck prose hardcodes a number the card also exposes as a dial)", () => {
+  // the board's §14 paste paragraph, verbatim at every prose seat an
+  // agent loads (AGENT.md's Audio clips section + the video-timeline
+  // and directing skills) — the D-12/D-13 quotable-line pattern:
+  // wrapping may reflow, wording may not drift
+  const RAIL_SEATS: Array<[string, string]> = [
+    ["AGENT.md", "agents/AGENT.md"],
+    ["the video-timeline skill", "agents/skills/video-timeline/SKILL.md"],
+    ["the directing skill", "agents/skills/directing/SKILL.md"],
+  ];
+  const flat = (rel: string): string => read(rel).replace(/\s+/g, " ");
+
+  it("§14 THE QUOTABLE RAIL: every prose seat carries the reference-voice paragraph's four laws verbatim", () => {
+    for (const [seat, rel] of RAIL_SEATS) {
+      const md = flat(rel);
+      expect(md, `${seat}: the rail's conditioning law`).toMatch(/`ref_audios` conditions each window's generated voice/);
+      expect(md, `${seat}: once-per-window + the under-the-row mix`).toMatch(
+        /the engine loads each reference clip once per window and synthesises a voice that is mixed UNDER a conditioned row at `duck_depth_db`/,
+      );
+      expect(md, `${seat}: not a placed line`).toMatch(
+        /It is not a placed line — to hear your own take, place the line in `audio_clips`/,
+      );
+      expect(md, `${seat}: audio never rides the mod bag`).toMatch(
+        /Audio does not ride `ref_mods`; the mod bag is the image identity bake/,
+      );
+    }
+  });
+
+  it("§14 THE DUCK DIAL: AGENT.md's duck sentence names the dial — the bare -14dB hardcode is gone from every served doc", () => {
+    expect(flat("agents/AGENT.md"), "AGENT.md: the duck prose names the dial").toMatch(/DUCKS under a conditioned row at `duck_depth_db`/);
+    // the board's exact complaint: "The generated voice DUCKS -14dB
+    // under a conditioned row" names no dial — that sentence is dead
+    for (const [, rel] of RAIL_SEATS) {
+      expect(flat(rel), `${rel}: the dial-less duck hardcode is gone`).not.toMatch(/DUCKS -14dB under a conditioned row/);
+    }
   });
 });

@@ -97,6 +97,13 @@ window as required by the loaded contract. The card owns the final mix and
 ducking; do not invent a film-wide bed parameter or an out-of-band ffmpeg
 step.
 
+**The reference-voice rail.** `ref_audios` conditions each window's generated
+voice: the engine loads each reference clip once per window and synthesises a
+voice that is mixed UNDER a conditioned row at `duck_depth_db` (default
+-14 dB). It is not a placed line — to hear your own take, place the line in
+`audio_clips`. Audio does not ride `ref_mods`; the mod bag is the image
+identity bake.
+
 **Saying nothing about voices is not the same as asking for silence.** H3
 invents speech wherever the audio does not account for it — a window that never
 mentions voices returns with muttered lines or whole sentences in a synthetic

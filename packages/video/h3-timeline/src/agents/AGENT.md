@@ -132,7 +132,8 @@ window seam CONTINUES the same line across both windows, but YIELDS the second
 window's lane to a row that starts inside it; two same-class rows starting
 inside ONE window REFUSE at compose (end the first inside the window, merge the
 rows, or move the seam). The generated voice
-DUCKS -14dB under a conditioned row. Place the row with `start_frame` and
+DUCKS under a conditioned row at `duck_depth_db` (default -14dB, range -48–0).
+Place the row with `start_frame` and
 `dur_frames` in film coordinates. Optional `in_frames` = the SOURCE in-point
 (doc frames): where in the file the clip starts — omit it and the clip plays
 from the head; state it and BOTH the conditioning slice and the overlay start
@@ -158,6 +159,13 @@ stage does not use the film clip path. The current H3 card has separate
 dialogue, SFX, and music lanes. Do not invent a film-wide bed parameter or
 duplicate a pinned lane in free-form prompt text. Read the loaded skill and
 card schema for the current caps and defaults.
+
+**The reference-voice rail.** `ref_audios` conditions each window's generated
+voice: the engine loads each reference clip once per window and synthesises a
+voice that is mixed UNDER a conditioned row at `duck_depth_db` (default
+-14 dB). It is not a placed line — to hear your own take, place the line in
+`audio_clips`. Audio does not ride `ref_mods`; the mod bag is the image
+identity bake.
 
 **THE SOUNDTRACK WIRE (the merged-form law).** A soundtrack clip's `src` may be a `$spell` naming a WIRED
 STAGE INPUT: the producer card (tts, sfx, music) is wired as an upstream
