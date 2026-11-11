@@ -79,6 +79,33 @@ export default function setup(): () => void {
   };
 }
 
+/** Is any entry anywhere under root newer than the fence — one
+ *  live write anywhere in the subtree means a live suite owns it.
+ *  Walks top-down and stops at the first fresh entry; races with a
+ *  concurrent teardown read as not-fresh (their sweep takes it). */
+function subtreeFresh(root: string, newerThanMs: number): boolean {
+  const stack: string[] = [root];
+  while (stack.length > 0) {
+    const dir = stack.pop() as string;
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue; // a vanished subtree is not live
+    }
+    for (const entry of entries) {
+      const path = join(dir, entry.name);
+      try {
+        if (statSync(path).mtimeMs >= newerThanMs) return true;
+      } catch {
+        continue;
+      }
+      if (entry.isDirectory()) stack.push(path);
+    }
+  }
+  return false;
+}
+
 /** The owner marker a run root carries: its pid. A root whose owner
  *  is still running is never swept, whatever its age. */
 const OWNER_FILE = ".melite-run-owner";
@@ -149,13 +176,15 @@ function sweep(runStart: number): void {
         if (!SUITE_PREFIXES.some((pfx) => name.startsWith(pfx))) continue;
         const full = join(tmpdir(), name);
         try {
-          // trees older than the longest suite budget — a CONCURRENT
-          // run mints and writes inside nested directories, which
-          // leaves the top-level mtime untouched, so a one-second fence
-          // deleted a live run's tree (the same defect the run-root
-          // arm had). The legacy trees carry no marker, so age is the
-          // only fence they have; it must clear a whole suite.
-          if (statSync(full).mtimeMs < runStart - LEGACY_STALE_MS) {
+          // LIVE-SUBTREE FENCE (the variant-switch GESTURE B burn,
+          // 2026-11-11): the top-level mtime freezes while a suite
+          // works for minutes in NESTED directories (drafts/docs) —
+          // the 60s age fence then reaped a LIVE sibling suite's
+          // whole tree out from under its atomic rename (ENOENT).
+          // A tree that wrote anything, anywhere inside it, within
+          // the fence is live; only a tree silent throughout is a
+          // leftover.
+          if (statSync(full).mtimeMs < runStart - LEGACY_STALE_MS && !subtreeFresh(full, runStart - LEGACY_STALE_MS)) {
             rmSync(full, { recursive: true, force: true });
             swept++;
           }

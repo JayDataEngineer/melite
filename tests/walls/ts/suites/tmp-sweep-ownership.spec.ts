@@ -7,7 +7,7 @@
 // is alive survives, one whose owner is gone is reclaimed, and the run
 // marks its own root.
 import { describe, expect, test, afterEach } from 'vitest'
-import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import setup from '../../../global-sweep.ts'
@@ -96,5 +96,37 @@ describe('the tmp sweeper fences ownership, not staleness', () => {
     expect(existsSync(mint), 'a fresh owner-less mint survives the pre-sweep').toBe(true)
     teardown()
     expect(existsSync(mint), 'and the teardown sweep leaves it too (age-fenced, never pid-reaped)').toBe(true)
+  })
+
+  test("a legacy-prefix tree with a FRESH nested write is live, however stale its top mtime (the variant-switch burn)", () => {
+    enter()
+    // the variant-switch burn's exact shape: the suite's tree top
+    // froze an hour ago while GESTURE B writes drafts/docs NOW —
+    // the sweep's legacy-prefix branch must NOT reap it; a sibling
+    // tree silent throughout IS a leftover and reaps
+    const live = mkdtempSync(join(tmpdir(), 'variant-switch-'))
+    const stale = mkdtempSync(join(tmpdir(), 'variant-switch-'))
+    minted.push(live, stale)
+    const old = new Date(Date.now() - 3_600_000)
+    mkdirSync(join(live, 'storage', 'drafts', 'docs'), { recursive: true })
+    writeFileSync(join(live, 'storage', 'drafts', 'docs', 'mid-write.tmp'), 'bytes')
+    writeFileSync(join(stale, 'dust.tmp'), 'bytes')
+    utimesSync(live, old, old)
+    utimesSync(join(live, 'storage'), old, old)
+    utimesSync(join(live, 'storage', 'drafts'), old, old)
+    utimesSync(join(live, 'storage', 'drafts', 'docs'), old, old)
+    utimesSync(stale, old, old)
+    utimesSync(join(stale, 'dust.tmp'), old, old)
+
+    const teardown = setup()
+    // the pre-sweep reads INSIDE this run's own fresh root (by
+    // design — the outer trees are the teardown sweep's seat)
+    expect(existsSync(live), 'the live tree stands before the teardown sweep').toBe(true)
+    expect(existsSync(stale), 'the stale tree stands before the teardown sweep').toBe(true)
+    teardown()
+    // the teardown sweep sees the OUTER tmpdir: the fresh-nested
+    // tree lives, the silent tree reaps
+    expect(existsSync(live), 'a legacy tree with a fresh nested write survives the sweep').toBe(true)
+    expect(existsSync(stale), 'a legacy tree silent throughout still reaps').toBe(false)
   })
 })
