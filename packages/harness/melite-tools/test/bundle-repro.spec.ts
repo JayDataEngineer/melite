@@ -21,6 +21,10 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statfsSync } from 'node
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+// The canonical build's declaration finisher — the repro rebuilds
+// with the SAME recipe (tsc + this pass), imported from its one home
+// (tools/build-plane.mjs) rather than a hand-rolled second rewriter.
+import { rewriteDeclSpecifiers } from '../../../../tools/build-plane.mjs'
 
 const RUN = process.env.BUNDLE_REPRO === '1'
 
@@ -138,17 +142,20 @@ describe.skipIf(!RUN)('bundle-repro build (BUNDLE_REPRO=1 — git + pnpm + tsc)'
       // store links in seconds; a cold one pays minutes once
       runPnpm(['install', '--offline', '--ignore-scripts', '--prefer-offline'], wt)
       execFileSync('git', ['checkout', '--', 'pnpm-lock.yaml'], { cwd: wt, timeout: 30_000 })
-      // the package's OWN build (tsc -p tsconfig.build.json — the
-      // committed lib/ is full tsc output, never a two-entry tsdown
-      // bundle): emit into a same-depth sibling of lib/ so the
-      // sourcemap ../src relatives stay byte-identical, then compare
-      // the HEAD worktree's committed lib/ (never the live tree's)
-      // against the fresh emit.
+      // the package's OWN build — the canonical invocation
+      // build-plane runs (tsc -p tsconfig.build.json --newLine lf,
+      // cwd the package, no outDir override), because a --outDir
+      // override on the CLI deterministically stops
+      // rewriteRelativeImportExtensions from rewriting .ts → .js
+      // in declaration emits (measured on tsc 5.9.3: overridden →
+      // './x.ts' specifiers, in-place → './x.js' byte-identical to
+      // the committed lib). The clean in-place emit — snapshot the
+      // committed listing first, rm lib/, rebuild — also preserves
+      // the vestige arm: tsc never prunes, and a no-clean overwrite
+      // would leave a stale committed file sitting in the fresh
+      // listing, silently passing. The sourcemap ../src relatives
+      // stay byte-identical: the emit lands at lib/'s own depth.
       const wtPkg = join(wt, pkg)
-      const freshDir = join(wtPkg, '.repro-lib')
-      execFileSync(join(wtPkg, 'node_modules', '.bin', 'tsc'),
-        ['-p', 'tsconfig.build.json', '--outDir', freshDir],
-        { cwd: wtPkg, timeout: 280_000 })
       const readDir = (dir: string, base: string = dir): Map<string, string> => new Map(
         readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
           const full = join(dir, entry.name)
@@ -157,7 +164,29 @@ describe.skipIf(!RUN)('bundle-repro build (BUNDLE_REPRO=1 — git + pnpm + tsc)'
           return [[full.slice(base.length + 1), readFileSync(full, 'utf8')] as const]
         }),
       )
-      const problems = bundleDiffReport(readDir(join(wtPkg, 'lib')), readDir(freshDir))
+      // The one documented hand-place: lib/.src-stamp is the src
+      // hash the canonical build writes (tools/build-plane.mjs), so
+      // a tsc emit can never produce it — the ignore-cruft audit
+      // tracks the stamps as canonical artifacts on purpose ("no
+      // ignore row may name them"), and their FRESHNESS is judged
+      // by the client-bundle-freshness wall, not by this arm. This
+      // arm owns tsc byte-identity of the emitted JS/dts only;
+      // dropping the stamp from the committed side is the
+      // documentation, never a hole (a stale stamp still reds its
+      // own wall).
+      const committedFiles = readDir(join(wtPkg, 'lib'))
+      committedFiles.delete('.src-stamp')
+      rmSync(join(wtPkg, 'lib'), { recursive: true, force: true })
+      execFileSync(join(wtPkg, 'node_modules', '.bin', 'tsc'),
+        ['-p', 'tsconfig.build.json', '--newLine', 'lf'],
+        { cwd: wtPkg, timeout: 280_000 })
+      // the canonical build's last in-lib pass: TS 5.9's
+      // rewriteRelativeImportExtensions rewrites the .js emits but
+      // leaves relative .ts specifiers in .d.ts — build-plane
+      // finishes them byte-level, so the repro runs the same
+      // finisher (imported from its one home) before comparing.
+      rewriteDeclSpecifiers(join(wtPkg, 'lib'))
+      const problems = bundleDiffReport(committedFiles, readDir(join(wtPkg, 'lib')))
       assert.deepEqual(problems, [], 'the committed bundle is not reproducible from HEAD:\n' + problems.join('\n'))
     } finally {
       try { execFileSync('git', ['worktree', 'remove', '--force', wt], { cwd: repo, timeout: 60_000 }) } catch { /* best-effort */ }

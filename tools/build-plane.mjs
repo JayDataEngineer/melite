@@ -623,8 +623,12 @@ function copyCssSidecars(pkgDir, libDir) {
 }
 
 // Rewrite relative .ts/.tsx specifiers inside emitted .d.ts files to
-// their .js twins (see buildOne). Walks the whole lib tree.
-function rewriteDeclSpecifiers(libDir) {
+// their .js twins (see buildOne). Walks the whole lib tree. Exported
+// for the bundle-repro gate, which rebuilds a pristine HEAD worktree
+// with the canonical recipe (tsc + THIS finisher — TS 5.9 leaves the
+// relative .ts specifiers sitting in the declarations): the gate
+// imports the one home, never a hand-rolled second rewriter.
+export function rewriteDeclSpecifiers(libDir) {
   let touched = 0
   const walk = (dir) => {
     let entries
