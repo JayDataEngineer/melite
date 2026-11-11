@@ -1060,7 +1060,7 @@ describe("THE KILL IS NAMED (defect board D-17, 2026-11-18: 'An out-of-memory ki
         healthBoundMs: 40,
       }),
     ).rejects.toThrow(
-      /stopped answering its queue\/history reads.*REFUSES connections — the process has died.*oom-kill \/ status=9\/KILL.*LESS WORK PER GENERATION: shorter windows, fewer armed arms, a lower resolution tier/s,
+      /ENGINE UNIT-DOWN.*stopped answering its queue\/history reads.*REFUSES connections — the process has died.*oom-kill \/ status=9\/KILL.*THE UNIT FIRST: a fresh engine boot.*LESS WORK PER GENERATION — shorter windows, fewer armed arms, a lower resolution tier/s,
     );
   });
 
@@ -1075,7 +1075,31 @@ describe("THE KILL IS NAMED (defect board D-17, 2026-11-18: 'An out-of-memory ki
         healthBoundMs: 40,
       }),
     ).rejects.toThrow(
-      /wedged or swapping to death.*LESS WORK PER GENERATION: shorter windows, fewer armed arms, a lower resolution tier/s,
+      /ENGINE UNIT-DOWN.*wedged or swapping to death.*THE UNIT FIRST: a fresh engine boot.*LESS WORK PER GENERATION — shorter windows, fewer armed arms, a lower resolution tier/s,
+    );
+  });
+
+  it("D-35: the refusal reports the ENGINE event with the host swap reading — the unit lever BEFORE the doc lecture", async () => {
+    // The board burn (run-52ef3b0f106c): an engine up 2.4 days died
+    // under 56 GB of host swap and the caller got the memory
+    // lecture — then fixed it with comfy_manage launch, exactly the
+    // lever the message never named. The refusal now leads with the
+    // unit-down state and the host's own figures (/proc/meminfo —
+    // the board's "available is the only honest headroom").
+    const c = fakeClient({
+      fetchApi: (_route: string, init?: { signal?: AbortSignal }): Promise<unknown> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        }),
+    } as Partial<Record<string, unknown>>);
+    await expect(
+      waitTerminal(c, "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 40,
+      }),
+    ).rejects.toThrow(
+      /ENGINE UNIT-DOWN:.*host: (swap .+ GB used)?.*available .+ GB \(the honest headroom\).*comfy_manage launch/s,
     );
   });
 

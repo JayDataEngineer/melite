@@ -15,6 +15,9 @@
 //      refuses loud or names verb → rev.
 
 import { describe, test } from 'vitest'
+import { writeFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
@@ -652,6 +655,85 @@ describe('melite_construct mutations — every verb', () => {
     const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
     assert.ok(add, 'the add_stage write fired')
     assert.deepEqual(add!.args[2], { card: 'c', expect_rev: 6 })
+  })
+
+  // ── THE FILE DOOR (defect board D-37, 2026-11-11: a 14 KB call
+  // bag had to ride the model's own output tokens, and read never
+  // echoed the stored bag — the drafts store was the de-facto API).
+  // Four laws: the file's bytes ARE the bag, one source of truth
+  // per mint, an unparseable file refuses loud (a truncated paste
+  // and a short bag differ HERE), and read prints every stage's
+  // canonical params digest so the pre-press diff is one compare. ──
+  test('add_stage params_file: the validated artifact is the input — the bench stores the file\'s bag, the answer echoes path + sha + bytes', async () => {
+    const tmp = join(tmpdir(), 'melite-d37-' + Date.now() + '.json')
+    const bag = { model: 'h3', calls: [{ text: 'line one' }, { text: 'line two' }] }
+    writeFileSync(tmp, JSON.stringify(bag), 'utf8')
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 9, stage: 's3' }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 9, intent: '', stages: [{ id: 's3' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    try {
+      const tool = meliteConstruct(estate)
+      const out = await tool.execute(
+        { verb: 'add_stage', card: 'h3-timeline', params_file: tmp, expect_rev: 8 },
+        exec(),
+      ) as Record<string, unknown>
+      const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+      assert.ok(add, 'the add_stage write fired')
+      assert.deepEqual((add!.args[2] as Record<string, unknown>)['params'], bag,
+        'the bench stores the FILE\'s bag verbatim — the bytes were read, never re-typed')
+      const seated = out['params_file_seated'] as { path: string; sha: string; bytes: number }
+      assert.equal(seated.path, tmp)
+      assert.match(seated.sha, /^[0-9a-f]{12}$/)
+      assert.ok(seated.bytes > 0, 'the byte length rides the echo')
+    } finally {
+      rmSync(tmp, { force: true })
+    }
+  })
+
+  test('params_file + params refuses — one source of truth per mint; a missing or unparseable file refuses loud', async () => {
+    const tool = meliteConstruct(stubEstate())
+    const both = await tool.execute(
+      { verb: 'add_stage', card: 'c', params: { p: 1 }, params_file: '/tmp/x.json' },
+      exec(),
+    ) as Record<string, unknown>
+    assert.match(String(both['error']), /exclusive — one source of truth/)
+    const missing = await tool.execute(
+      { verb: 'add_stage', card: 'c', params_file: '/nonexistent/d37/bag.json' },
+      exec(),
+    ) as Record<string, unknown>
+    assert.match(String(missing['error']), /cannot be read/)
+    const bad = join(tmpdir(), 'melite-d37-bad-' + Date.now() + '.json')
+    writeFileSync(bad, '{trunc', 'utf8')
+    try {
+      const unparseable = await tool.execute(
+        { verb: 'add_stage', card: 'c', params_file: bad },
+        exec(),
+      ) as Record<string, unknown>
+      assert.match(String(unparseable['error']), /not parseable JSON/)
+    } finally {
+      rmSync(bad, { force: true })
+    }
+  })
+
+  test('read echoes every stage\'s params digest (sha + bytes) — the pre-press diff is one compare, never drafts archaeology', async () => {
+    const { estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') {
+        return {
+          session: 'session-chat7', rev: 12, intent: '', log: [],
+          stages: [{ id: 's0', card: 'h3-timeline', engine: 'comfyui', params: { model: 'h3', seed: 46601 } }],
+        }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const blocks = tool.output!.render!({ verb: 'read' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.match(rendered, /params sha256 [0-9a-f]{12} \(\d+ B\)/,
+      'the stage row prints its canonical params digest + byte length')
   })
 
   test('remove_stage splices one stage out', async () => {

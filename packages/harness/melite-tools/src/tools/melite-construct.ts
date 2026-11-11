@@ -1270,6 +1270,10 @@ export function meliteConstruct(
           + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
           + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone.',
       },
+      params_file: {
+        type: 'string',
+        description: 'add_stage: read the params bag from a FILE on disk (a validated artifact — the bytes are read, never re-typed through the output budget; D-37). JSON object root; refuses loud on a missing file, unparseable JSON or a non-object root. Exclusive with params — one source of truth per mint.',
+      },
       inputs: {
         type: 'object', additionalProperties: true,
         description: 'add_stage: {input: {stage, output} | {initial}} wiring.',
@@ -1372,6 +1376,13 @@ export function meliteConstruct(
         if (typeof stageId === 'string' && stageId !== '') {
           const verb = String(v.verb ?? '?')
           lines.push(verb === 'add_stage' ? 'minted stage ' + stageId + ' (patch/remove_stage/rewire address it as {stage: "' + stageId + '"})' : 'stage ' + stageId)
+          // THE FILE-DOOR ECHO (D-37): the mint names the artifact it
+          // seated — path, canonical sha, byte length — so the
+          // pre-press diff against the validated file is one compare.
+          const seated = (v as { params_file_seated?: { path?: unknown; sha?: unknown; bytes?: unknown } }).params_file_seated
+          if (seated !== undefined && typeof seated.path === 'string') {
+            lines.push('params seated from file: ' + seated.path + ' (sha256 ' + String(seated.sha ?? '?') + ', ' + String(seated.bytes ?? '?') + ' B)')
+          }
         }
         // THE STALENESS LINE, RENDERED (the warm-2 fire: the payload
         // carried stale:true and the model never saw it — a payload
@@ -1523,6 +1534,16 @@ export function meliteConstruct(
               const id = typeof s.id === 'string' ? s.id : '?'
               const card = typeof s.card === 'string' ? s.card : (typeof s.card_id === 'string' ? s.card_id : '?')
               const engine = typeof s.engine === 'string' ? s.engine : '?'
+              // THE PARAMS DIGEST (defect board D-37: read never
+              // echoed the stored bag, so 'diff the stored bag against
+              // the validated file' was drafts-store archaeology) —
+              // every stage row prints its canonical sha + byte
+              // length: the pre-press check is one compare, and the
+              // drafts file stops being the de-facto API.
+              const pBag = s.params
+              const pEcho = typeof pBag === 'object' && pBag !== null
+                ? ' · params sha256 ' + createHash('sha256').update(JSON.stringify(pBag), 'utf8').digest('hex').slice(0, 12) + ' (' + Buffer.byteLength(JSON.stringify(pBag), 'utf8') + ' B)'
+                : ''
               // THE LAST_RUN DISCLOSURE (022's self-critique #2,
               // 2026-09-24 — stroke 85's twin): withLastRun ATTACHES
               // the draft's latest run to every stage, but the render
@@ -1563,7 +1584,7 @@ export function meliteConstruct(
                   ? ' — last_run null (no run in the window names this stage)'
                   : ' — last_run null (draft has no run in the window)'
               }
-              lines.push(`  ${id} — ${card} [${engine}]${suffix}`)
+              lines.push(`  ${id} — ${card} [${engine}]${pEcho}${suffix}`)
             }
           }
         }
@@ -1644,7 +1665,7 @@ export function meliteConstruct(
         return jsonClean<ConstructResult>({
           verb, bench, ok: false,
           error: 'verb is required — the call was refused before anything was read or written (a payload never derives a verb; a WRITE is never guessed). '
-            + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params?, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
+            + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params | params_file, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
           error_kind: 'verb-required',
         })
       }
@@ -1955,6 +1976,40 @@ export function meliteConstruct(
           // lanes) and judges the wiring lanes BEFORE the write, so
           // the bench stores the state the run will actually admit.
           const card = typeof a.card === 'string' ? a.card : ''
+          // THE FILE DOOR (defect board D-37, 2026-11-11: a 14 KB
+          // call bag had to ride the model's own output tokens,
+          // where a truncated paste is indistinguishable from a
+          // short one at the door): params_file reads the bag from
+          // disk — the validated artifact IS the input. One source
+          // of truth per mint: params and params_file are exclusive.
+          let fileSeated: { path: string, sha: string, bytes: number } | undefined
+          if (typeof a.params_file === 'string' && a.params_file !== '') {
+            if (isRecordArg(a.params)) {
+              return out({ error: 'params and params_file are exclusive — one source of truth per mint (state the file, or the bag, never both)' })
+            }
+            const fs = await import('node:fs/promises')
+            let text: string
+            try {
+              text = await fs.readFile(a.params_file, 'utf8')
+            } catch (e) {
+              return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the validated artifact must exist where this tool runs' })
+            }
+            let parsed: unknown
+            try {
+              parsed = JSON.parse(text)
+            } catch (e) {
+              return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' is not parseable JSON (' + (e instanceof Error ? e.message : String(e)) + ') — a truncated paste and a short bag differ here, the file does not' })
+            }
+            if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+              return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' must root in a JSON object (the card\'s knobs) — got ' + (Array.isArray(parsed) ? 'an array' : typeof parsed) })
+            }
+            a.params = parsed as Record<string, unknown>
+            fileSeated = {
+              path: a.params_file,
+              sha: createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 12),
+              bytes: Buffer.byteLength(text, 'utf8'),
+            }
+          }
           let params: Record<string, unknown> | undefined = isRecordArg(a.params) ? a.params : undefined
           let appliedDerivations: Array<Record<string, unknown>> = []
           if (card !== '') {
@@ -2055,7 +2110,7 @@ export function meliteConstruct(
           const doc = typeof a.card === 'string' && a.card !== ''
             ? await cardDocOf(estate, a.card, sentDocs, signal)
             : undefined
-          return out({ rev: r.rev, stage: r.stage, ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile), ...(doc !== undefined ? { doc } : {}) })
+          return out({ rev: r.rev, stage: r.stage, ...(fileSeated !== undefined ? { params_file_seated: fileSeated } : {}), ...(spellLines.length > 0 ? { spells: spellLines } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile), ...(doc !== undefined ? { doc } : {}) })
         }
         if (verb === 'remove_stage') {
           const r = await postBenchVerb(estate, bench, 'remove_stage',

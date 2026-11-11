@@ -147,6 +147,34 @@ describe("THE SHEET SEAT (P0-1 — ref_mods + ref_images ride the edit chain, bo
       "the edit bus refuses loud — never a silent clobber onto the video lane");
   });
 
+  it("THE AUDIO ARM (defect board D-39a, the operator's rank-0 1:1 law: 'Ref Audios and putting audio into refmod should work 1:1 with images'): a mixed bag composes — a .flac NEVER refuses, it bakes through the audio extractor, declared order kept", () => {
+    // ref_mods takes ANY media (fdf838a9e, 2026-11-06) — image,
+    // video and audio board the SAME seat with the SAME list
+    // grammar; the system bakes each kind. This arm is the parity
+    // law's wall: an audio path in the bag is a path like any
+    // other, never a type refusal.
+    const g = new GraphBuilder();
+    renderH3Repair(REPAIR_ENTRY(), {
+      ref_mods: ["refs/face_crop.png", "voice/take-one.flac"],
+    }, FACTS, g, "run_audio_mod");
+    const o = out(g);
+    const extract = ofClass(o, "MiniMaxH3RefModExtract");
+    assert.equal(extract.length, 1, "the visual entry bakes through the pack extractor");
+    // the audio extractor node class (refmodBake's audio arm): one
+    // node per audio entry, voice-grade defaults
+    const audioExtract = ofClass(o, "MiniMaxH3RefModAudioExtract");
+    assert.equal(audioExtract.length, 1,
+      "the .flac bakes through the audio extractor — a path is a path (never a type refusal)");
+    const loads = ofClass(o, "LoadAudio");
+    assert.equal(loads.length, 1, "the audio path rides a LoadAudio loader like any media");
+    const audioName = audioExtract[0]![1].inputs["name"];
+    assert.equal(audioName, "take-one",
+      "the baked audio pack is named for its source stem (the save/reuse law, same as the visual pack)");
+    const apply = ofClass(o, "MiniMaxH3RefModApply");
+    assert.ok(apply.length >= 2,
+      "the baked visual pack AND the baked audio pack each append through their own Apply (declared order)");
+  });
+
   it("THE PRE-BAKED STEM ARM: a .safetensors mod rides the loader, not the extractor (the reuse door on the edit chain)", () => {
     const g = new GraphBuilder();
     renderH3Repair(REPAIR_ENTRY(), { ref_mods: ["models/refmods/twin_v1.safetensors"] }, FACTS, g, "run_stem");

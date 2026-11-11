@@ -101,8 +101,7 @@ step.
 voice: the engine loads each reference clip once per window and synthesises a
 voice that is mixed UNDER a conditioned row at `duck_depth_db` (default
 -14 dB). It is not a placed line — to hear your own take, place the line in
-`audio_clips`. Audio does not ride `ref_mods`; the mod bag is the image
-identity bake.
+`audio_clips`. Audio rides `ref_mods` too — any media boards the bag (image, video, audio; the system bakes each kind), a path is a path (the operator's 1:1 law); this rail is the voice seat, the bag is the identity bake.
 
 **Saying nothing about voices is not the same as asking for silence.** H3
 invents speech wherever the audio does not account for it — a window that never

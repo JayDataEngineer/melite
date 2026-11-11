@@ -164,8 +164,7 @@ card schema for the current caps and defaults.
 voice: the engine loads each reference clip once per window and synthesises a
 voice that is mixed UNDER a conditioned row at `duck_depth_db` (default
 -14 dB). It is not a placed line — to hear your own take, place the line in
-`audio_clips`. Audio does not ride `ref_mods`; the mod bag is the image
-identity bake.
+`audio_clips`. Audio rides `ref_mods` too — any media boards the bag (image, video, audio; the system bakes each kind), a path is a path (the operator's 1:1 law); this rail is the voice seat, the bag is the identity bake.
 
 **THE SOUNDTRACK WIRE (the merged-form law).** A soundtrack clip's `src` may be a `$spell` naming a WIRED
 STAGE INPUT: the producer card (tts, sfx, music) is wired as an upstream

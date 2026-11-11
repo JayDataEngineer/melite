@@ -377,6 +377,40 @@ export async function waitTerminal(
   shouldStop: () => boolean,
   policy?: EngineLostPolicy,
 ): Promise<Record<string, EngineJson>> {
+
+/** THE HOST READING (defect board D-35, 2026-11-18: the run
+ *  answered a queue-read timeout with the memory lecture while the
+ *  engine unit had been UP 2.4 DAYS and the host held 56 GB of
+ *  swap — the caller shrank a window that was never the problem).
+ *  Best-effort /proc read at the refusal: swap use + available (the
+ *  only honest headroom under stale swap), kB→GB, null when the
+ *  host publishes no meminfo (never a throw on the error path). */
+async function hostSwapReading(): Promise<string | null> {
+  try {
+    const fs = await import("node:fs/promises");
+    const text = await fs.readFile("/proc/meminfo", "utf8");
+    const kB = (key: string): number | null => {
+      const m = new RegExp("^" + key + ":\\s+(\\d+) kB$", "m").exec(text);
+      return m !== null ? Number(m[1]) : null;
+    };
+    const swapTotal = kB("SwapTotal");
+    const swapFree = kB("SwapFree");
+    const avail = kB("MemAvailable");
+    const gb = (v: number): string => (v / 1_048_576).toFixed(1);
+    const parts: string[] = [];
+    if (swapTotal !== null && swapFree !== null && swapTotal > 0) {
+      parts.push("swap " + gb(swapTotal - swapFree) + "/" + gb(swapTotal) + " GB used"
+        + (swapTotal - swapFree > swapTotal * 0.5
+          ? " (over half — stale whitespace from another host process; a reboot clears it)"
+          : ""));
+    }
+    if (avail !== null) parts.push("available " + gb(avail) + " GB (the honest headroom)");
+    return parts.length > 0 ? "host: " + parts.join(", ") : null;
+  } catch {
+    return null;
+  }
+}
+
   const lostStreak = policy?.streak ?? ENGINE_LOST_STREAK;
   const lostMinMs = policy?.minMs ?? ENGINE_LOST_MIN_MS;
   const backoffCapMs = policy?.backoffCapMs ?? ENGINE_LOST_BACKOFF_CAP_MS;
@@ -511,12 +545,24 @@ export async function waitTerminal(
             cause,
         );
         await bestEffortInterrupt(client, promptId);
+        // D-35 — THE UNIT-DOWN STATE: a queue-read timeout after a
+        // long run is distinguishable from a bad doc — the ENGINE's
+        // own unit is the tell (an up-for-days unit dying mid-run is
+        // a host/engine event, never the doc's shape), and the
+        // caller's next action is the unit (comfy_manage launch),
+        // not a smaller window. The refusal reports the ENGINE
+        // event with the host swap reading; the less-work lecture
+        // rides AFTER it, for the press that genuinely sits at the
+        // memory edge.
+        const hostReading = await hostSwapReading();
         throw new ComfyError(
-          "the engine stopped answering its queue/history reads (" +
+          "ENGINE UNIT-DOWN: the engine stopped answering its queue/history reads (" +
             String(readBoundMs) +
             "ms bound) — refusing closed. " +
             cause +
-            ". The lever is LESS WORK PER GENERATION: shorter windows, fewer armed arms, a lower resolution tier — the engine's memory grows with all three. A fresh engine boot with an empty queue is the tell (the next press succeeds and the failure looks random).",
+            "." +
+            (hostReading !== null ? " " + hostReading + "." : "") +
+            " The lever is THE UNIT FIRST: a fresh engine boot (comfy_manage launch) with an empty queue — an up-for-days unit dying mid-run is a host event, not your doc; check comfy_manage status (engine boot age, unit verdict) before changing anything. Only if the press itself sits at the memory edge: LESS WORK PER GENERATION — shorter windows, fewer armed arms, a lower resolution tier (the engine's memory grows with all three).",
         );
       }
       if (isTransportDownError(e)) {
