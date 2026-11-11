@@ -874,30 +874,43 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const [mediaLoading, setMediaLoading] = useState(false)
   const [mediaError, setMediaError] = useState('')
   const [mediaNonce, setMediaNonce] = useState(0)
+  // the walk's ownership token: a fresh scope/kind/refresh ask mints a
+  // new one so a stale in-flight page can never append into the new feed
+  const mediaWalk = useRef(0)
 
   const loadMedia = (cursor: number): void => {
+    const seq = cursor === 0 ? mediaWalk.current + 1 : mediaWalk.current
+    if (cursor === 0) mediaWalk.current = seq
     setMediaLoading(true)
     setMediaError('')
-    const params: string[] = []
-    if (cat !== 'all') params.push('kind=' + cat)
-    if (cursor > 0) params.push('cursor=' + String(cursor))
-    const q = '/infer-gallery/media' + (params.length > 0 ? '?' + params.join('&') : '')
-    void fetch(q)
-      .then(async (res: Response): Promise<MediaFilesPage> => {
-        if (!res.ok) throw new Error('HTTP ' + String(res.status))
-        return decodeMediaFiles(await res.json().catch((): null => null))
-      })
-      .then((page: MediaFilesPage) => {
-        // cursor 0 REPLACES (a scope/kind/refresh re-ask); a cursor
-        // page APPENDS (the More verb continues the walk — the
-        // no-silent-cap law, browse's own shape)
-        setMediaPage(page)
-        setMediaLoaded((was) => cursor === 0 ? page.files : [...was, ...page.files])
-      })
-      .catch((e: unknown) => {
-        setMediaError(e instanceof Error ? e.message : String(e))
-      })
-      .finally(() => { setMediaLoading(false) })
+    // "All files" means ALL files: a fresh ask walks EVERY cursor page
+    // to nextCursor null (tiles render progressively as pages append);
+    // the More verb remains only as the resume door after a dead page
+    const walk = (at: number): void => {
+      const params: string[] = ['limit=500']
+      if (cat !== 'all') params.push('kind=' + cat)
+      if (at > 0) params.push('cursor=' + String(at))
+      void fetch('/infer-gallery/media?' + params.join('&'))
+        .then(async (res: Response): Promise<MediaFilesPage> => {
+          if (!res.ok) throw new Error('HTTP ' + String(res.status))
+          return decodeMediaFiles(await res.json().catch((): null => null))
+        })
+        .then((page: MediaFilesPage) => {
+          if (mediaWalk.current !== seq) return
+          // page 0 REPLACES (a scope/kind/refresh re-ask); a cursor
+          // page APPENDS (the walk continues — the no-silent-cap law)
+          setMediaPage(page)
+          setMediaLoaded((was) => at === 0 ? page.files : [...was, ...page.files])
+          if (page.nextCursor !== null) { walk(page.nextCursor); return }
+          setMediaLoading(false)
+        })
+        .catch((e: unknown) => {
+          if (mediaWalk.current !== seq) return
+          setMediaError(e instanceof Error ? e.message : String(e))
+          setMediaLoading(false)
+        })
+    }
+    walk(cursor)
   }
 
   useEffect(() => {

@@ -3549,24 +3549,35 @@ window.__ModuleLoader__.load({
 			const [mediaLoading, setMediaLoading] = (0, react.useState)(false);
 			const [mediaError, setMediaError] = (0, react.useState)("");
 			const [mediaNonce, setMediaNonce] = (0, react.useState)(0);
+			const mediaWalk = (0, react.useRef)(0);
 			const loadMedia = (cursor) => {
+				const seq = cursor === 0 ? mediaWalk.current + 1 : mediaWalk.current;
+				if (cursor === 0) mediaWalk.current = seq;
 				setMediaLoading(true);
 				setMediaError("");
-				const params = [];
-				if (cat !== "all") params.push("kind=" + cat);
-				if (cursor > 0) params.push("cursor=" + String(cursor));
-				const q = "/infer-gallery/media" + (params.length > 0 ? "?" + params.join("&") : "");
-				fetch(q).then(async (res) => {
-					if (!res.ok) throw new Error("HTTP " + String(res.status));
-					return decodeMediaFiles(await res.json().catch(() => null));
-				}).then((page) => {
-					setMediaPage(page);
-					setMediaLoaded((was) => cursor === 0 ? page.files : [...was, ...page.files]);
-				}).catch((e) => {
-					setMediaError(e instanceof Error ? e.message : String(e));
-				}).finally(() => {
-					setMediaLoading(false);
-				});
+				const walk = (at) => {
+					const params = ["limit=500"];
+					if (cat !== "all") params.push("kind=" + cat);
+					if (at > 0) params.push("cursor=" + String(at));
+					fetch("/infer-gallery/media?" + params.join("&")).then(async (res) => {
+						if (!res.ok) throw new Error("HTTP " + String(res.status));
+						return decodeMediaFiles(await res.json().catch(() => null));
+					}).then((page) => {
+						if (mediaWalk.current !== seq) return;
+						setMediaPage(page);
+						setMediaLoaded((was) => at === 0 ? page.files : [...was, ...page.files]);
+						if (page.nextCursor !== null) {
+							walk(page.nextCursor);
+							return;
+						}
+						setMediaLoading(false);
+					}).catch((e) => {
+						if (mediaWalk.current !== seq) return;
+						setMediaError(e instanceof Error ? e.message : String(e));
+						setMediaLoading(false);
+					});
+				};
+				walk(cursor);
 			};
 			(0, react.useEffect)(() => {
 				if (tab !== "artifacts" || scope !== "all") return;

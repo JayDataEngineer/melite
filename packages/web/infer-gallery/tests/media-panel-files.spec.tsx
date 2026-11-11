@@ -214,7 +214,7 @@ describe('the all-files scope — EVERY media leaf, not the last 500 runs (opera
     expect(screen.getByText('1 of 1 file on disk')).toBeTruthy()
   })
 
-  it('More continues the cursor walk and the kind chips re-ask the walk at the source', async () => {
+  it('a fresh ask walks EVERY page unprompted — All files means ALL files — and the kind chips re-ask at the source', async () => {
     const calls: string[] = []
     stub((url) => {
       if (!url.startsWith('/infer-gallery/media')) return browsePage({ path: '', total: 0, nextCursor: null, entries: [] })
@@ -227,15 +227,43 @@ describe('the all-files scope — EVERY media leaf, not the last 500 runs (opera
     render(<MediaPanel />)
     await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
     fireEvent.click(screen.getByText('All files'))
-    await waitFor(() => { expect(screen.getByText(/run-abcd-1\/a\.png/)).toBeTruthy() })
-    fireEvent.click(screen.getByText('More'))
+    // BOTH pages land with NO operator press — the walk does not stop
+    // at the first page (the 2026-11-18 burn: "All files" served the
+    // last 200 and hid 11,000 behind a More pill)
     await waitFor(() => { expect(screen.getByText(/run-beef-2\/b\.mp4/)).toBeTruthy() })
     expect(screen.getByText('2 of 2 files on disk')).toBeTruthy()
     expect(calls.some((u) => u.includes('cursor=1'))).toBe(true)
+    // the walk drained itself: no More pill remains
+    expect(screen.queryByText('More')).toBe(null)
     // a kind chip re-asks the walk SERVER-SIDE (the filter rides the
     // route, never a second client-side spelling)
     fireEvent.click(screen.getByText(/Images/))
     await waitFor(() => { expect(calls.some((u) => u.includes('kind=image'))).toBe(true) })
+  })
+
+  it('a mid-walk dead page banners and More RESUMES the walk from the cursor', async () => {
+    let secondDead = true
+    stub((url) => {
+      if (!url.startsWith('/infer-gallery/media')) return browsePage({ path: '', total: 0, nextCursor: null, entries: [] })
+      if (url.includes('cursor=1')) {
+        if (secondDead) return Promise.resolve(new Response('boom', { status: 502 }))
+        return mediaPage({ files: [{ path: 'run-beef-2/b.mp4', kind: 'video', size: 9, mtime: 2 }], total: 2, nextCursor: null })
+      }
+      return mediaPage({ files: [{ path: 'run-abcd-1/a.png', kind: 'image', size: 9, mtime: 1 }], total: 2, nextCursor: 1 })
+    })
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    // page 1 landed, page 2 died: the banner names the door and the
+    // first page's tiles STAY (never a silent blank)
+    await waitFor(() => { expect(screen.getByText(/HTTP 502/)).toBeTruthy() })
+    expect(screen.getByText(/run-abcd-1\/a\.png/)).toBeTruthy()
+    // the resume door appears only because the walk is unfinished
+    secondDead = false
+    fireEvent.click(screen.getByText('More'))
+    await waitFor(() => { expect(screen.getByText(/run-beef-2\/b\.mp4/)).toBeTruthy() })
+    expect(screen.getByText('2 of 2 files on disk')).toBeTruthy()
+    expect(screen.queryByText('More')).toBe(null)
   })
 
   it('a dead media door banners — never a silent blank grid', async () => {
