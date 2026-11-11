@@ -388,6 +388,37 @@ if [ "$DO_BUILD" -eq 1 ]; then
         head -4 /tmp/ship-dts.log | sed 's/^/        /'
         exit 1
       fi
+      # THE TYPERT DOORS (the estate four): their generator owns lib
+      # doors tsc never emits — the same regen the canonical build
+      # runs for in-scope packages. A ship without it serves stale
+      # typert doors whenever their inputs moved.
+      if [ -f "$REPO/$p/scripts/typert.mjs" ]; then
+        if ! (cd "$REPO/$p" && node scripts/typert.mjs >/tmp/ship-typert.log 2>&1); then
+          bad "$p — the typert regen refused:"
+          head -4 /tmp/ship-typert.log | sed 's/^/        /'
+          exit 1
+        fi
+      fi
+      # THE CANONICAL FINISH (the v0.2.3-rc.1 ship day): tsc's emit
+      # is BARE — maps and text files land without the final newline
+      # the file-end law requires, and the next commit reds the
+      # freshness wall over damage a ship left sitting. The same two
+      # passes the canonical build runs finish here: maps compact +
+      # one trailing newline, lib text exactly one. Most COMPILED
+      # packages run noEmit (nothing to finish — the passes no-op in
+      # milliseconds); the emitting minority is the estate four.
+      map_args=()
+      while IFS= read -r m; do [ -n "$m" ] && map_args+=("$m"); done < <(cd "$REPO" && find "$p/lib" -name '*.map' 2>/dev/null)
+      if [ "${#map_args[@]}" -gt 0 ]; then
+        if ! (cd "$REPO" && node scripts/canonicalize-sourcemaps.mjs "${map_args[@]}" >/dev/null); then
+          bad "$p — the map canonicalization pass refused"
+          exit 1
+        fi
+      fi
+      if ! node --input-type=module -e "const { ensureFinalNewlines } = await import('file://' + process.argv[1] + '/tools/build-plane.mjs'); ensureFinalNewlines(process.argv[1] + '/' + process.argv[2] + '/lib')" "$REPO" "$p" >/dev/null 2>&1; then
+        bad "$p — the final-newline pass refused"
+        exit 1
+      fi
       write_stamp "$p"
       ok "$p"
     else
@@ -611,13 +642,26 @@ post() { # post <path> <json>
     -X POST "$ORIGIN$1" -H 'content-type: application/json' -d "$2"
 }
 
+# THE PROOF RIDES ITS OWN BENCH (the CAS lesson, 2026-11-11): the
+# probes used to post to /v1/bench/main/<verb> while reading the rev
+# the ensure minted for session "ship-lane-probe" — two different
+# benches. On a virgin lane the pair coincided (both rev 0) and the
+# proof passed; the first ship against a LIVED-IN lane answered
+# bench/cas-conflict (main sat at rev 47, the probe bench at 0) and
+# the red read like a doors failure. One bench for the whole proof:
+# the session the ensure created, at the rev $rev names — and the
+# operator's main bench is never written by a ship again (the old
+# probe stage landed ON the operator's bench and trusted a cleanup
+# remove to leave it as it was).
+BENCH=ship-lane-probe
+
 rev=$(python3 -c "import json;print(json.load(open('/tmp/ship-ensure.json')).get('rev',0))" 2>/dev/null || echo 0)
 
 # 1. the model board (the OLD law — proves the doors row answers at all)
 # FATAL (the ship audit's hole 2: this probe printed FAIL and the
 # script still printed SHIPPED — a fail-open model board shipped
 # green. A gate that cannot fail is a log line.)
-code=$(post "/v1/bench/main/add_stage" \
+code=$(post "/v1/bench/$BENCH/add_stage" \
   "{\"card\":\"tts\",\"params\":{\"model\":\"definitely-not-a-model\",\"text\":\"x\"},\"expect_rev\":$rev}")
 if [ "$code" = "400" ] && grep -q "bench/bad-model" /tmp/ship-probe.json; then
   ok "the model board refuses an unknown model"
@@ -637,7 +681,7 @@ fi
 # family's declared floor refuses HERE, through the same door the
 # agent crosses — a lane whose relation rows did not reach it would
 # admit the burn and ship green.
-code=$(post "/v1/bench/main/add_stage" \
+code=$(post "/v1/bench/$BENCH/add_stage" \
   "{\"card\":\"image-edit\",\"params\":{\"model\":\"qwen-img-edit-21\",\"prompt\":\"make it night\",\"image1\":\"x.png\",\"width\":-50,\"height\":1024},\"expect_rev\":$rev}")
 if [ "$code" = "400" ] && grep -q "outside this lane's range" /tmp/ship-probe.json; then
   ok "the declared edit lane refuses an out-of-range width at write time (the DECL rows are live)"
@@ -647,7 +691,7 @@ else
 fi
 
 # 2. the lane law (the NEW law — this is the one a stale build loses)
-code=$(post "/v1/bench/main/add_stage" \
+code=$(post "/v1/bench/$BENCH/add_stage" \
   "{\"card\":\"tts\",\"params\":{\"model\":\"qwen3-tts\",\"variant\":\"customvoice\",\"text\":\"x\",\"design_prompt\":\"a warm narrator\"},\"expect_rev\":$rev}")
 if [ "$code" = "400" ] && grep -q "bench/lane-refusal" /tmp/ship-probe.json; then
   ok "the lane law refuses incident A (the state the form used to build)"
@@ -660,15 +704,15 @@ else
 fi
 
 # 3. the cure lands (a door that refuses everything is not a working door)
-code=$(post "/v1/bench/main/add_stage" \
+code=$(post "/v1/bench/$BENCH/add_stage" \
   "{\"card\":\"tts\",\"params\":{\"model\":\"qwen3-tts\",\"variant\":\"customvoice\",\"text\":\"x\",\"design_prompt\":\"a warm narrator\",\"voice_name\":\"ship_probe\"},\"expect_rev\":$rev}")
 if [ "$code" = "200" ]; then
   stage=$(python3 -c "import json;print(json.load(open('/tmp/ship-probe.json')).get('stage',''))" 2>/dev/null || echo "")
   ok "the cured state lands (stage $stage)"
   say "CLEAN UP the probe stage"
-  rev2=$(post "/v1/bench/main/remove_stage" "{\"stage\":\"$stage\",\"expect_rev\":$((rev + 1))}")
+  rev2=$(post "/v1/bench/$BENCH/remove_stage" "{\"stage\":\"$stage\",\"expect_rev\":$((rev + 1))}")
   if [ "$rev2" = "200" ]; then
-    ok "probe stage removed — the operator's bench is as it was"
+    ok "probe stage removed — the probe bench is as it was"
   else
     bad "could not remove the probe stage $stage (HTTP $rev2) — remove it by hand"
   fi

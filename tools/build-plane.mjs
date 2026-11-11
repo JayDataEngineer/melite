@@ -559,7 +559,10 @@ export function buildFaces(pkgDir) {
 
 // Exactly one trailing newline on every emitted text file (see
 // buildOne) — the pre-commit final-newline gate reads them all.
-function ensureFinalNewlines(libDir) {
+// tsc's emit is bare — this trues the file-end law (exactly one
+// trailing newline) across lib text files. Exported for the ship
+// lane's per-package finish (the same pass, one home).
+export function ensureFinalNewlines(libDir) {
   let touched = 0
   const walk = (dir) => {
     let entries

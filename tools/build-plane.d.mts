@@ -10,3 +10,8 @@
  * under libDir to their .js twins; returns the number of
  * declarations touched. */
 export function rewriteDeclSpecifiers(libDir: string): number
+
+/** True the file-end law across lib text files (js, d.ts, maps) —
+ * exactly one trailing newline; returns the number of files
+ * corrected. */
+export function ensureFinalNewlines(libDir: string): number
