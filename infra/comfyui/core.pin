@@ -57,4 +57,4 @@
 # core_node_types roster against the clone's objects at this sha,
 # and regen-node-vocab's two legs re-derive the census from the
 # live /object_info after the restart.
-74eb0c4b8
+74eb0c4b8a1a894e7210326882a8d9a016e37ccb

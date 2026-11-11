@@ -332,18 +332,19 @@ function rootModelsReadRoot(repoRoot) {
         return "";
     }
 }
-/** A lane seat that reads present must carry bytes. A 0-byte
+/** A lane seat that reads present must carry substance. A 0-byte
  *  regular file at a weight seat is a failed download's corpse,
- *  never a loadable weight — the 2026-11-11 unet-stub burn:
- *  aborted download loops left 0-byte shadows beside the real
- *  diffusion_models weights, presence called them present, the
- *  run rode into ComfyUI and died at the safetensors header.
- *  Presence treats a 0-byte file as ABSENT so the lane refusal
- *  names it (and a dangling symlink throws to the same absent). */
+ *  never a loadable weight — the 2026-11-11 unet-stub burn: aborted
+ *  download loops left 0-byte shadows beside the real
+ *  diffusion_models weights, presence called them present, the run
+ *  rode into ComfyUI and died at the safetensors header. A
+ *  DIRECTORY seat stays plain-present (the model_path class —
+ *  kimodo's Kimodo-SOMA-RP-v1.1 is a repo directory; emptiness is
+ *  not this probe's law); a dangling symlink throws to absent. */
 function presentWeight(path) {
     try {
         const st = statSync(path);
-        return st.isFile() && st.size > 0 ? path : null;
+        return st.isDirectory() || (st.isFile() && st.size > 0) ? path : null;
     }
     catch {
         return null;

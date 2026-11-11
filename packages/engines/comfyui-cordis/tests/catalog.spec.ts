@@ -181,6 +181,14 @@ describe("findModelPresent (runtime first, then the mount leg)", () => {
     // probe judges BYTES, not directory contamination
     writeFileSync(join(dir, "live.safetensors"), "bytes");
     assert.equal(findModelPresent("models/checkpoints", "live.safetensors", root, null), join(dir, "live.safetensors"));
+    // a DIRECTORY seat stays plain-present (the model_path class —
+    // the kimodo burn: Kimodo-SOMA-RP-v1.1 is a repo directory the
+    // same probe serves; emptiness is not this probe's law)
+    mkdirSync(join(dir, "Kimodo-SOMA-RP-v1.1"), { recursive: true });
+    assert.equal(
+      findModelPresent("models/checkpoints", "Kimodo-SOMA-RP-v1.1", root, null),
+      join(dir, "Kimodo-SOMA-RP-v1.1"),
+    );
   });
 
   it("finds a declared model directory through the endpoint mount", () => {

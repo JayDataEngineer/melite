@@ -94,7 +94,7 @@ describe("the shared diffusion param surface (one home)", () => {
     assert.deepEqual(ADOPTERS.length, 10, "the adopter census changed — update this pin and the named assertions together");
   });
 
-  it("the five text-to-image families declare the factory's rows, not a hand copy", () => {
+  it("the seven text-to-image families declare the factory's rows, not a hand copy", () => {
     for (const [family, action, own] of [
       ["qwen-img-21", qwenImg21T2I, QWEN21_OWN_TAIL],
       ["z-image", zImageT2I, []],
@@ -102,7 +102,11 @@ describe("the shared diffusion param surface (one home)", () => {
       ["krea-2", krea2T2I, []],
       ["flux-klein", fluxKleinT2I, QWEN21_OWN_TAIL],
       ["moss-image", mossImageT2I, []],
-      ["h3-image", h3ImageT2I, QWEN21_OWN_TAIL],
+      // the phantom-port law (c5f03df9): the reference seat fires on
+      // qwen-img-21 (and its flux-klein sharer) ALONE — h3-image's
+      // t2i face carries NO tail row (its vision path serves the
+      // edit twin as input_images)
+      ["h3-image", h3ImageT2I, []],
     ] as const) {
       assert.deepEqual(
         action.params,
