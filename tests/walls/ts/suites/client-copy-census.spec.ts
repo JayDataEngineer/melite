@@ -609,7 +609,15 @@ const PINS: Record<string, number> = {
   // route only walks run-relative directories), no_artifact (no such
   // run directory). Machine codes travel beside them; the client
   // banners ride galleryCopy (browseFailed), never these literals.
-  'packages/web/infer-gallery/src': 39,
+  // 39→41 (2026-11-11 re-pin; the all-files face landed at 229cd1359
+  // two commits before this row caught up): the same disk-walk door's
+  // two wire voices on the all-files route — gateway_media_unavailable
+  // (cross-host has no upstream listing to relay; refuses loud, never
+  // synthesizes) and bad_kind (the walk classifies with mediaKindOf —
+  // the kind filter speaks the contract's five or refuses). Same
+  // wire-voice class — machine codes travel beside them; no
+  // dictionary fork.
+  'packages/web/infer-gallery/src': 41,
   // action_cards: 0 — the pose stage, motion poster/viewer and poster
   // shell ride actionCopy.ts.
   'packages/engines/comfyui/src/action_cards': 0,
