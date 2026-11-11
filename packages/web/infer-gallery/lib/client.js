@@ -10913,7 +10913,10 @@ window.__ModuleLoader__.load({
 				return params;
 			}
 			if (!cat) return params;
-			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			if (!family) {
+				if (cat.cards?.[model] !== void 0) return params;
+				throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			}
 			try {
 				await loadFamilySchemas$1();
 			} catch {
@@ -12756,7 +12759,10 @@ window.__ModuleLoader__.load({
 				return params;
 			}
 			if (!cat) return params;
-			if (!family) throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			if (!family) {
+				if (cat.cards?.[model] !== void 0) return params;
+				throw new Error(`Parameter validation failed — model '${model}' is not in the catalog. The picker showed a model that DOES NOT EXIST; the catalog is the source of truth and this key is not in it. (The backend wire gate would 400 the same request.)`);
+			}
 			try {
 				await loadFamilySchemas();
 			} catch {

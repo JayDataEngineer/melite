@@ -418,8 +418,16 @@ describe('preview body (attach / convert / fall back)', () => {
     // THE CARD DOOR (flows-are-compositions, 2026-11-14): the
     // body-to-somax wrapper row is retired; the same lane presses the
     // rig card through the model door (gem-soma auto = SOMA-77).
+    // THE CARD-UNIT ADDRESS (the gem-soma catalog burn, diagnosed live
+    // 2026-11-17): the body names the CARD id — gem-soma is unoffered,
+    // no catalog models row carries it, and the pre-submit gate
+    // refused the old {model:'gem-soma'} press before any wire left
+    // ("model 'gem-soma' is not in the catalog" — the toast this seat
+    // wore). 'rig' is the bench Run press's own spelling and composes
+    // green through the card-unit arm; this pin reds if the seat ever
+    // re-addresses an unoffered family id.
     expect(runCompiledGeneration.mock.calls[0]?.[0]).toEqual({
-      model: 'gem-soma',
+      model: 'rig',
       mesh_glb: 'https://host/bare.glb',
       mode: 'auto',
       preserve_texture: true,

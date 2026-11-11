@@ -598,6 +598,18 @@ export async function assertParamsMatchFamilySchema(model, params) {
     if (!cat)
         return params; // cache not populated — backend gate decides
     if (!family) {
+        // THE CARD-UNIT ADDRESS (the gem-soma catalog burn, diagnosed live
+        // 2026-11-17): a run body's model key may name a CARD, not a family
+        // — the bench Run press's own spelling (stage-run.ts: fam ?? card);
+        // family-less cards (rig, trim, frames, track) compose by their own
+        // id and bind their action families in-card, so no models row ever
+        // carries them. A carried card id in the catalog's cards table is
+        // NOT a phantom: it passes ungated — the card's own form-spec
+        // admission is the server's judge (the params are the card's
+        // schema, never a family overlay). An id in NEITHER roster is the
+        // phantom the throw below names.
+        if (cat.cards?.[model] !== undefined)
+            return params;
         throw new Error(`Parameter validation failed — model '${model}' is not in the ` +
             `catalog. The picker showed a model that DOES NOT EXIST; the ` +
             `catalog is the source of truth and this key is not in it. ` +

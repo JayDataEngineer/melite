@@ -125,6 +125,37 @@ export type CardSummary = {
  *     the honesty gate asserts the declared sets match across those families.
  */
 
+/**
+ * CardCatalogEntry
+ * @description One row in the catalog's ``cards`` table (the card
+ *     registry's own face — cardSections in melite-tools/discovery,
+ *     one row per card package, sorted by id). The table is the
+ *     CARD-UNIT ADDRESS's judge: a run body's {model:} key may name
+ *     a family OR a family-less card's own id (the run plane's law,
+ *     PROOF-13 — admitStageModel's card-unit arm, stage-run's
+ *     ``fam ?? card`` resting value); this table is what tells the
+ *     two spellings apart from a phantom.
+ */
+export type CardCatalogEntry = {
+    /** Id — the card package id; the card-unit address's own key */
+    id: string;
+    /** Label */
+    label: string;
+    /** Description */
+    description: string;
+    /** Genre */
+    genre: string;
+    /** Families — the OWNING atoms the faces display (never the raw boarded routes) */
+    families: string[];
+    /** Principles */
+    principles: string[];
+    /** Skills */
+    skills: string[];
+    /** Has Inference — cards compose, never infer; always false on this table */
+    has_inference: boolean;
+    /** Has Rubric */
+    has_rubric: boolean;
+};
 export type CatalogResponse = {
     /** Families */
     families: {
@@ -134,6 +165,10 @@ export type CatalogResponse = {
     models: {
         [key: string]: ModelEntryWire;
     };
+    /** Cards — the card registry's rows (one per card package); the model-less cards live ONLY here, never in models */
+    cards?: {
+        [key: string]: CardCatalogEntry;
+    } | null;
     /** Capabilities */
     capabilities?: {
         [key: string]: CapabilityEntryWire;

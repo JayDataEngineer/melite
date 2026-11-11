@@ -69,6 +69,37 @@ describe("loader cache phases (ordered: cold first)", () => {
     await assert.rejects(assertParamsMatchFamilySchema("ghost", {}), /not in the catalog/);
   });
 
+  // THE CARD-UNIT ADDRESS (the gem-soma burn's gate arm): a run
+  // body's {model:} may name a CARD, not a family — the run plane's
+  // own law (stage-run's `fam ?? card` resting value; a family-less
+  // card composes by its own id). The wire carries the cards table
+  // (cardSections serves it beside models); a key found THERE is an
+  // address, not a phantom — it passes ungated, the card's own
+  // form-spec admission judges the params server-side. A key in
+  // NEITHER table stays the phantom A5 throws on.
+  it("A5b: a card-unit address passes ungated; an unoffered family id still throws", async () => {
+    // the wire shape cardSections serves (discovery.ts cardSections):
+    // one row per card package; family-less cards live ONLY here
+    const cardRow = (id: string, families: string[]) => ({
+      id, label: id, description: "", genre: "3d",
+      families, principles: [], skills: [],
+      has_inference: false, has_rubric: false,
+    });
+    getCachedCatalogMock.mockReturnValue({
+      models: { "pixal3d": { family: "pixal3d" } },
+      families: { "pixal3d": {} },
+      cards: { rig: cardRow("rig", []), "img-to-mesh": cardRow("img-to-mesh", ["pixal3d", "trellis2-native"]) },
+    });
+    // the family-less card's own id — the resting value fam ?? card
+    // lands on: an address, never a phantom
+    assert.deepEqual(await assertParamsMatchFamilySchema("rig", { mesh_glb: "x.glb" }), { mesh_glb: "x.glb" });
+    // a family-ful card's id names a card too — same table, same arm
+    assert.deepEqual(await assertParamsMatchFamilySchema("img-to-mesh", { input_image: "y.png" }), { input_image: "y.png" });
+    // gem-soma: an unoffered FAMILY id — in neither table, the
+    // phantom the burn hit; the throw is unchanged
+    await assert.rejects(assertParamsMatchFamilySchema("gem-soma", {}), /not in the catalog/);
+  });
+
   it("A6: the gate defers when the schema fetch fails", async () => {
     getCachedCatalogMock.mockReturnValue({ models: { m: { family: "f" } }, families: {} });
     apiJsonMock.mockReset();

@@ -169,9 +169,19 @@ export function useMotionMedia({
             // presses the rig CARD through the model door: gem-soma's
             // auto mode is the SOMA-77 template transfer the wrapper
             // staged (mesh in, preserve_texture, SOMAX rig out).
+            // THE CARD-UNIT ADDRESS (the gem-soma catalog burn,
+            // 2026-11-12, diagnosed live 2026-11-17): the body names
+            // the CARD id 'rig' — the family gem-soma is UNOFFERED
+            // (declares no actions; the rig card binds its rig action
+            // in-card), so no catalog row carries it and the pre-submit
+            // gate refused the press before any wire left ("model
+            // 'gem-soma' is not in the catalog", the toast this seat
+            // wore for a season). 'rig' is the bench Run press's own
+            // spelling (stage-run.ts fam ?? card) and composes green
+            // through the card-unit arm — proven live on the dev lane.
             const result = await runCompiledGeneration(
               {
-                model: 'gem-soma',
+                model: 'rig',
                 mesh_glb: bodySrc,
                 mode: 'auto',
                 preserve_texture: true,
