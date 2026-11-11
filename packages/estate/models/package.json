@@ -1,6 +1,6 @@
 {
   "name": "@melite/estate-models",
-  "version": "0.2.2-alpha",
+  "version": "0.2.3-rc.1",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

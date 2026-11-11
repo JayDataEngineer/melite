@@ -1,6 +1,6 @@
 {
   "name": "@melite/viewer-base",
-  "version": "0.2.2-alpha",
+  "version": "0.2.3-rc.1",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
-    "@melite-plugin/melite-run-wire": "workspace:~",
+    "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/contracts": "workspace:*"
   },
   "files": [
