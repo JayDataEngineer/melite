@@ -58,6 +58,13 @@ downloaded_files/
 # mesh-door render fixture: tracked e2e evidence (same law as the
 # card-view negation above) — *.png must not swallow it.
 !packages/web/infer-gallery/e2e/*.png
+# the deck attach/detach sweep's deterministic inputs (2026-11-11):
+# byte-small run-stamp bases (png 178B, mp4 1.6KB, wav 4.9KB) the
+# combination sweep setInputFiles — a keyless clone must carry them
+# or the sweep's arms cannot ride (same law as the feeds above).
+!packages/web/melite-card-deck/e2e/fixtures/*.png
+!packages/web/melite-card-deck/e2e/fixtures/*.mp4
+!packages/web/melite-card-deck/e2e/fixtures/*.wav
 
 # === Runtime / scratch ===
 .dsh_work/
