@@ -676,25 +676,40 @@ fi
 # an unfinished card is addable; the RUN seat is the strict door
 # (pinned in estate-queue's cards-lane-law.spec: a prompt-less edit
 # admits at admitStageRelations and refuses at phase1Card). The
-# write-time refusal that still proves the DECL rows are LIVE is
-# the RANGE rule (the width burn law): a stated width below the
-# family's declared floor refuses HERE, through the same door the
-# agent crosses — a lane whose relation rows did not reach it would
-# admit the burn and ship green.
+# 1b. THE DECLARED LANE LAW RIDES THE LANE (the DECL audit's gap 1
+# closing in production). NOTE THE LAW MOVED TWICE: the write door
+# admits an unstated required word (the RUN seat is the strict
+# door), and the resolution span RETIRED (2026-11-08: the stated
+# pair sizes the render through the lane's own wiring — the shared
+# size law judges integers at every seat, never a DECL span; the
+# v0.2.3-rc.1 ship day caught this probe posting width:-50 into a
+# door that no longer bounds width). The write-time refusal that
+# still proves the DECL rows are LIVE is the VARIANT RAIL's
+# envelope: a stated steps outside the variant's declared envelope
+# (the turbo route is married to its steps) refuses HERE, through
+# the same door the agent crosses — a lane whose variant rows never
+# reached it would admit the burn and ship green.
 code=$(post "/v1/bench/$BENCH/add_stage" \
-  "{\"card\":\"image-edit\",\"params\":{\"model\":\"qwen-img-edit-21\",\"prompt\":\"make it night\",\"image1\":\"x.png\",\"width\":-50,\"height\":1024},\"expect_rev\":$rev}")
-if [ "$code" = "400" ] && grep -q "outside this lane's range" /tmp/ship-probe.json; then
-  ok "the declared edit lane refuses an out-of-range width at write time (the DECL rows are live)"
+  "{\"card\":\"image-edit\",\"params\":{\"model\":\"qwen-img-edit-21\",\"prompt\":\"make it night\",\"image1\":\"x.png\",\"steps\":999},\"expect_rev\":$rev}")
+if [ "$code" = "400" ] && grep -q "route envelope" /tmp/ship-probe.json; then
+  ok "the variant rail's declared envelope refuses an out-of-envelope steps at write time (the DECL rows are live)"
 else
   bad "the edit lane's DECL rows did not fire (HTTP $code) — the lane is running an OLD build or the rows never reached it"
   exit 1
 fi
 
-# 2. the lane law (the NEW law — this is the one a stale build loses)
+# 2. the lane law (the NEW law — this is the one a stale build loses).
+# NOTE THE INCIDENT MOVED (the v0.2.3-rc.1 ship day): the old probe
+# posted design_prompt WITHOUT voice_name — that incident retired
+# when the customvoice surface was restated (design_prompt fires
+# nothing on this lane now; the surface is text, temperature, top_p,
+# top_k, speed, repetition_penalty, seed, voice, style_instruction).
+# The live lane law: a field OFF the variant's declared surface
+# refuses LOUD — a stale build serves the old surface and admits.
 code=$(post "/v1/bench/$BENCH/add_stage" \
   "{\"card\":\"tts\",\"params\":{\"model\":\"qwen3-tts\",\"variant\":\"customvoice\",\"text\":\"x\",\"design_prompt\":\"a warm narrator\"},\"expect_rev\":$rev}")
 if [ "$code" = "400" ] && grep -q "bench/lane-refusal" /tmp/ship-probe.json; then
-  ok "the lane law refuses incident A (the state the form used to build)"
+  ok "the lane law refuses a field off the declared surface (incident A, restated)"
 else
   bad "THE LANE LAW DID NOT FIRE (HTTP $code) — this lane is running an OLD build."
   echo "        For source-only changes: re-run WITHOUT --no-build."
@@ -703,9 +718,11 @@ else
   exit 1
 fi
 
-# 3. the cure lands (a door that refuses everything is not a working door)
+# 3. the cure lands (a door that refuses everything is not a working
+# door): drop the dead field and the plain state on the declared
+# surface admits.
 code=$(post "/v1/bench/$BENCH/add_stage" \
-  "{\"card\":\"tts\",\"params\":{\"model\":\"qwen3-tts\",\"variant\":\"customvoice\",\"text\":\"x\",\"design_prompt\":\"a warm narrator\",\"voice_name\":\"ship_probe\"},\"expect_rev\":$rev}")
+  "{\"card\":\"tts\",\"params\":{\"model\":\"qwen3-tts\",\"variant\":\"customvoice\",\"text\":\"x\"},\"expect_rev\":$rev}")
 if [ "$code" = "200" ]; then
   stage=$(python3 -c "import json;print(json.load(open('/tmp/ship-probe.json')).get('stage',''))" 2>/dev/null || echo "")
   ok "the cured state lands (stage $stage)"
