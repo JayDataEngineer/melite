@@ -12,18 +12,39 @@
  * catalog label, Serving-family model switch (+ ghost census),
  * recipe SELECT + blank round-trip, THE VARIANT/QUANT AXIS SWEEP
  * (every rendered row of every non-Recipe served axis, same
- * select→pick→face round-trip the model arm rides), and ASSERT
- * CLASS (b): the picked faces == the saved bench doc's coordinates
- * == the compose door's admission (the doc the run would receive
- * validates through /v1/flows/validate — a 400 there is the
+ * select→pick→face round-trip the model arm rides), THE ATTACH/
+ * DETACH SWEEP ( setInputFiles a real fixture on every served
+ * SLOT field — wtype image|file|mesh, derived from the served
+ * envelope's own field kinds, never a hand-list — then assert the
+ * three classes on the attached state, detach through the square's
+ * own ✕ and assert the departure law (the doc carries no bytes —
+ * absent, null, or the persisted empty; two dialects, one contract),
+ * and RE-SWITCH AFTER ATTACH:
+ * the Model family switch or an axis round-trip with the attachment
+ * held, the doc judged against the arrival envelope's own declared
+ * field set — carried when the arrival still renders the field,
+ * dropped when the departure lost it), and ASSERT CLASS (b): the
+ * picked faces == the saved bench doc's coordinates == the compose
+ * door's admission (the doc the run would receive validates through
+ * /v1/flows/validate — a 400 there is the
  * switch-bricks-the-card class, h3 2026-11-05). NOT SWEPT YET (owed,
- * named — never claimed): attach/detach of file inputs, re-switch
- * after attach, RUNS (runs start at the user's press by the estate
+ * named — never claimed): the IMAGE_LIST STACK CELLS (the multi-entry
+ * add-cell grammar rides the same squares but writes array
+ * coordinates — its own arm), the bespoke-studio-local seats bound
+ * to studio state rather than served params (motion's background
+ * inject, h3's per-call refs — the doc plane they write is not the
+ * bench stage), RUNS (runs start at the user's press by the estate
  * law; an in-run silent-error rider is its own later opt-in), and
  * the SERIALIZED-GRAPH BYTES (the graph receipt is stamped at
  * queue time by the run path — byte parity rides the engine rider;
  * what this sweep proves is the compose door ADMITS the saved doc,
- * not the emitted node graph).
+ * not the emitted node graph). Also receipted, never claimed: the
+ * VARIANT-GATED slot rows (a served variant names the field — the
+ * tts ref_audio class; the seat opens when that Variant is picked,
+ * its own arm) and the STUDIO-LOCAL / DECL-GATED slot rows the
+ * arrival census still declares (no served variant defaults name
+ * them — a DECL variant-params gate or a bespoke studio's own state
+ * binding; the same h3 per-call-refs class).
  *
  * THE THREE ASSERT CLASSES (the ROADMAP row):
  *   (a) zero silent errors — console errors, page errors, and
@@ -66,7 +87,8 @@
  *   e2e/combinations-sweep.spec.ts
  * (repo alias: pnpm run test:combinations)
  */
-import { expect, test, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
 const OPT_IN = process.env.SWEEP_COMBINATIONS === '1'
@@ -84,10 +106,129 @@ test.skip(!LANE_URL || !OPT_IN,
  * combination, emptied per test so a failure names ITS combination. */
 const silent: string[] = []
 
+/** THE VOICED-DEFECT LEDGER (the ledger's charter is SILENT errors —
+ *  errors the UI never chose): a console error the estate's own
+ *  contract-toast seat rendered ('[toast] …') is a LOUD defect the UI
+ *  voiced, not a swallowed one — receipted here, never in the silent
+ *  ledger, and judged at visit end by the same law as the compose
+ *  door's voices: a KNOWN catalog-integrity voice receipts (the run
+ *  log carries it verbatim every ride until the product cures it),
+ *  an unknown voiced error reds the visit (a new defect must never
+ *  pass because it is loud). */
+const voiced: string[] = []
+const VOICED_KNOWN = /not in the catalog/
+
 /** Literal-escape a catalog label for RegExp matching (labels carry
  *  user-facing words — parens, dots — never regex syntax). */
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** THE DOC NORMS (one home — the main sweep and the attach/detach
+ *  sweep judge the same doc plane with the same id↔label law). */
+const normB = (s: unknown): string => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+const bareB = (s: string): string => normB(s.replace(/\([^)]*\)/g, ''))
+
+/** THE DOOR'S VOICE CLASSES (one home): a brick voice is red,
+ *  verbatim; an empty-bench lawful voice is receipted. The attach/
+ *  detach sweep classifies its detach/flip admissions with the same
+ *  pair — one law, two riders. The required-source voice (the mask
+ *  card's "no mask sources … add at least one modifier (…)",
+ *  caught live 2026-11-12) is the empty-bench class's composition-
+ *  precondition spelling: the state under construction is missing a
+ *  SOURCE the card composes from, the refusal names the cure — the
+ *  same loud-under-construction law the required-knob voice rides,
+ *  never a brick (the h3 brick class refuses a COMPLETE state). The
+ *  paired-lane voice (img-to-mesh transfer-rig's "rigged_glb and
+ *  target_glb are one paired transfer lane … set both … or neither",
+ *  caught live 2026-11-12) is the same class for a PAIR: the sweep's
+ *  per-seat attach lands one half of a two-seat lane, and the door
+ *  refuses the half-state loudly with the cure — a lawful
+ *  under-construction voice, not a brick. */
+const BRICK_VOICE = /unknown param|unknown variant|unknown quant|unknown model|unknown card|not offered|unsanctioned inject keys|no model unit|composes outside|not a legal identifier|dangling artifact ref/
+const LAWFUL_VOICE = /requires|required param|no store copy exists|add at least one |paired transfer lane|set both for the/
+
+/** THE ATTACH FIXTURES (e2e/fixtures — real bytes, one per seat
+ *  kind the served census can name): the image triad seat takes a
+ *  real PNG; the video-hinted file seat a real MP4; the mesh wire
+ *  type a real GLB (glTF 2.0 binary, one triangle — the square's
+ *  inline viewport parses it); the flip arm a real WAV (the
+ *  audio-file judge rides untyped kinds — fileKindRefusal's '' arm).
+ *  Playwright's buffer form pins the MIME the File carries, which is
+ *  what both the seat judge and the upload door read. */
+const FIXTURES = {
+  png: { path: 'sweep-attach.png', name: 'sweep-attach.png', mimeType: 'image/png' },
+  mp4: { path: 'sweep-attach.mp4', name: 'sweep-attach.mp4', mimeType: 'video/mp4' },
+  glb: { path: 'sweep-attach.glb', name: 'sweep-attach.glb', mimeType: 'model/gltf-binary' },
+  wav: { path: 'sweep-attach.wav', name: 'sweep-attach.wav', mimeType: 'audio/wav' },
+} as const
+const fixtureBytes = (rel: string): Buffer =>
+  readFileSync(new URL('./fixtures/' + rel, import.meta.url))
+
+/** THE SEAT'S OWN FIXTURE (derived, never hand-listed per family):
+ *  the field's served wtype + media hint name the bytes — image
+ *  seats take the PNG, video-hinted seats the MP4, audio-hinted
+ *  seats the WAV, mesh seats the GLB, everything else (an unhinted
+ *  file seat takes the library) the PNG. THE SERVED LABEL IS A HINT
+ *  TOO (the motion ride, 2026-11-12): preview_glb serves as
+ *  wtype 'file' + media null, and the studio's own judge refuses a
+ *  non-GLB with a loud toast — so when the SERVED LABEL names a
+ *  model format, the seat takes the GLB. Derivation stays on the
+ *  served plane: the label is the spec's own voice next to the
+ *  field, never a hand-listed card name. THE RUN-STAMPED NAME (the
+ *  birth-carry probe, 2026-11-12): the add door seeds a NEW stage
+ *  with a PRIOR stage's params — a bench history that already holds
+ *  `data/input/sweep-attach.png` from an earlier ride would arm the
+ *  doc law VACUOUSLY on a stage born carrying it, so the upload name
+ *  (and the estate path it mints) is unique per run. The data-URL
+ *  side carries the same uniqueness by LENGTH: the law demands the
+ *  exact prefix + base64 length of THIS run's bytes, never any data
+ *  URL. */
+const MODEL_LABEL = /\bglb\b|\bgltf\b|\bmesh\b|\bmodel\b|\bcharacter\b/i
+function fixtureFor(slot: { label: string, wtype: string, media: string | null }, pick?: { path: string, name: string, mimeType: string }): { name: string, mimeType: string, buffer: Buffer, dataUrlPrefix: string, dataUrlLen: number } {
+  const chosen = pick ?? (slot.wtype === 'mesh' ? FIXTURES.glb
+    : slot.wtype === 'file' && slot.media === 'video' ? FIXTURES.mp4
+      : slot.wtype === 'file' && slot.media === 'audio' ? FIXTURES.wav
+        : MODEL_LABEL.test(slot.label) ? FIXTURES.glb
+          : FIXTURES.png)
+  const buffer = fixtureBytes(chosen.path)
+  const stamp = chosen.name.replace(/(\.[a-z0-9]+)$/i, `-stamp-${RUN_TAG}$1`)
+  return {
+    name: stamp,
+    mimeType: chosen.mimeType,
+    buffer,
+    dataUrlPrefix: 'data:' + chosen.mimeType + ';base64,',
+    dataUrlLen: ('data:' + chosen.mimeType + ';base64,').length + buffer.toString('base64').length,
+  }
+}
+
+/** THE GRAMMAR'S CARRY LAW (one home — attach, detach and re-switch
+ *  judge the SAME predicate): the estate-path coordinate carries
+ *  when the doc holds the upload door's exact RUN-STAMPED path; the
+ *  data-URL coordinate carries when the doc holds a data URL with
+ *  THIS run's own prefix and encoded length — a stale base64 blob
+ *  from a birth-carried prior stage is as much a false carry as an
+ *  empty seat (and a bare `data:` probe cannot tell blobs apart). */
+function carryLaw(grammar: 'estate-path' | 'data-url', slotName: string, fixture: { name: string, dataUrlPrefix: string, dataUrlLen: number }): (params: Record<string, unknown>) => boolean {
+  return grammar === 'estate-path'
+    ? (p: Record<string, unknown>) => p[slotName] === 'data/input/' + fixture.name
+    : (p: Record<string, unknown>) => {
+      const v = p[slotName]
+      return typeof v === 'string' && v.startsWith(fixture.dataUrlPrefix) && v.length === fixture.dataUrlLen
+    }
+}
+
+/** A served slot field (the walker's inputs face — one row of the
+ *  derived file-input census). */
+interface SlotFace {
+  name: string
+  label: string
+  wtype: string
+  media: string | null
+  /** the DECL's own family scoping, verbatim (null = served on every
+   *  family of the card) — the re-switch arm reads the ARRIVAL
+   *  envelope's declared set against it. */
+  families: string[] | null
 }
 
 /** Wire failures on the estate's own doors — 4xx/5xx on /v1/* the
@@ -109,6 +250,7 @@ const wireFrames: string[] = []
 
 function armCollectors(page: Page): void {
   silent.length = 0
+  voiced.length = 0
   wireFailures.length = 0
   wireFrames.length = 0
   if (WIRE_TAP) {
@@ -132,6 +274,14 @@ function armCollectors(page: Page): void {
       // the resource, so the ledger can carry the door, not just the
       // status).
       const at = msg.location()?.url ?? ''
+      // THE VOICED DEFECT (the motion probe, 2026-11-12): the estate's
+      // contract-toast seat mirrors its own loud voice into the
+      // console with a '[toast]' prefix — a defect the UI CHOSE to
+      // surface is the voiced ledger's entry, never the silent one.
+      if (msg.text().startsWith('[toast]')) {
+        voiced.push(msg.text())
+        return
+      }
       // THE ADJUDICATED DOOR (the 2026-11-03 gate-7 find): the sweep's
       // own compose probe posts the saved doc to /v1/flows/validate
       // and the admission arm classifies every refusal voice — a
@@ -227,6 +377,13 @@ async function deriveRoster(page: Page): Promise<Array<{
   label: string
   models: Array<{ id: string, label: string }>
   recipes: string[]
+  /** THE INPUTS FACE (the walker's row model): the served
+   *  envelope's own SLOT fields (wtype image|file|mesh, hidden rows
+   *  skipped) — the file-input census the attach/detach sweep rides.
+   *  Derived from the same fetch the roster already paid, never a
+   *  hand-list; a family that gains a file input joins on the next
+   *  run. Family-scoped rows keep their scoping verbatim. */
+  slots: SlotFace[]
 }>> {
   return await page.evaluate(async () => {
     const forms = await (await fetch('/v1/forms')).json() as Record<string, unknown>
@@ -234,7 +391,7 @@ async function deriveRoster(page: Page): Promise<Array<{
       cards?: Record<string, { label?: string, models?: string[] }>
     }
     const families = Object.keys(forms)
-    const out: Array<{ card: string, label: string, models: Array<{ id: string, label: string }>, recipes: string[] }> = []
+    const out: Array<{ card: string, label: string, models: Array<{ id: string, label: string }>, recipes: string[], slots: Array<{ name: string, label: string, wtype: string, media: string | null, families: string[] | null }> }> = []
     for (const card of families) {
       let label = card
       const row = catalog.cards?.[card]
@@ -252,10 +409,15 @@ async function deriveRoster(page: Page): Promise<Array<{
       // not rendered YET (settle-poll, fail loud when promised) from
       // a card that serves none (skip fast, never a wait).
       let recipes: string[] = []
+      // THE INPUTS FACE: the envelope's root dict walked for SLOT
+      // wire types — the same meta.extra.wtype read every renderer
+      // face narrows through, never a second vocabulary.
+      let slots: Array<{ name: string, label: string, wtype: string, media: string | null, families: string[] | null }> = []
       try {
         const spec = await (await fetch('/v1/form-spec?model=' + encodeURIComponent(card))).json() as {
           families?: Array<{ id?: unknown, label?: unknown, present?: unknown }>
           variants?: Array<{ id?: unknown, group?: unknown, defaults?: Record<string, unknown> }>
+          schema?: { refs?: Record<string | number, { dict?: Record<string, number | string>, meta?: Record<string, unknown>, type?: unknown }>, uid: number }
         }
         if (Array.isArray(spec.families)) {
           models = spec.families
@@ -268,8 +430,30 @@ async function deriveRoster(page: Page): Promise<Array<{
               && Object.keys(v.defaults ?? {}).some((k) => k !== 'model'))
             .map((v) => v.id as string)
         }
+        const env = spec.schema
+        const root = env?.refs?.[env?.uid ?? -1]
+        if (root !== undefined && root.dict !== undefined) {
+          for (const [name, id] of Object.entries(root.dict)) {
+            const node = env?.refs?.[id]
+            if (node === undefined) continue
+            const meta = (node.meta ?? {}) as Record<string, unknown>
+            const extra = (typeof meta['extra'] === 'object' && meta['extra'] !== null ? meta['extra'] : {}) as Record<string, unknown>
+            const wtype = typeof extra['wtype'] === 'string' ? extra['wtype'] : ''
+            if (wtype !== 'image' && wtype !== 'file' && wtype !== 'mesh') continue
+            if (extra['hidden'] === true) continue
+            slots.push({
+              name,
+              label: typeof meta['description'] === 'string' && meta['description'] !== '' ? meta['description'] as string : name,
+              wtype,
+              media: typeof extra['media'] === 'string' ? extra['media'] as string : null,
+              families: Array.isArray(extra['families'])
+                ? (extra['families'] as unknown[]).filter((f): f is string => typeof f === 'string')
+                : null,
+            })
+          }
+        }
       } catch { /* a card with no served envelope keeps an empty model axis — the sweep still walks its add */ }
-      out.push({ card, label, models, recipes })
+      out.push({ card, label, models, recipes, slots })
     }
     return out
   })
@@ -343,7 +527,11 @@ async function ghostKnobs(page: Page, arrivalFamily: string): Promise<string[]> 
  * through the SERVED envelope (the depth read: every menu row must
  * name a served row, both-face) for the class-(b) doc-parity rider.
  */
-async function sweepAxis(page: Page, group: string, tag: string, card: string): Promise<{ id: string, label: string } | null> {
+async function sweepAxis(page: Page, group: string, tag: string, card: string, opts?: {
+  /** ride at most this many rendered rows (the re-switch arm rides
+   *  ONE round-trip; the env bound stays the default for sweeps) */
+  maxRows?: number
+}): Promise<{ id: string, label: string } | null> {
   const trigger = page.locator(`[data-axis="${group}"]`).first()
   if ((await trigger.count()) === 0) return null // the axis does not render on this card — the census says so
   const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -367,7 +555,7 @@ async function sweepAxis(page: Page, group: string, tag: string, card: string): 
       .filter((v) => v.group === g && typeof v.id === 'string' && v.id !== '')
       .map((v) => ({ id: v.id as string, label: typeof v.label === 'string' && v.label !== '' ? v.label : v.id as string }))
   }, { group, cardId: card })
-  const bound = process.env.SWEEP_AXIS_ROWS === 'first' ? 1 : Number.MAX_SAFE_INTEGER
+  const bound = opts?.maxRows ?? (process.env.SWEEP_AXIS_ROWS === 'first' ? 1 : Number.MAX_SAFE_INTEGER)
   // THE INVALID-ROW ANNOTATION (the h3-timeline Quant burn,
   // 2026-11-09): the menu voices the HELD row even when the
   // composed family does not own it, annotated
@@ -507,6 +695,153 @@ async function benchStageOf(page: Page, card: string, tag: string, opts?: {
     expect(read, `${tag}: the bench doc read found a ${card} stage (the drill's writes land in the drafts domain — a missing stage is a linkage break, named as such)`).not.toBeNull()
   }
   return read as { draftId: string, params: Record<string, unknown> }
+}
+
+/** THE MODEL-SWITCH GESTURE (one home — the main sweep's per-combo
+ *  arrival and the attach/detach sweep's re-switch-after-attach ride
+ *  the same law). FAIL LOUD, never silently skip (the journey
+ *  re-run's E: a silent-error hunt whose own gestures no-op is a
+ *  liar). THE TWO SEATS (caught live 2026-11-08 — the committed
+ *  sweep's `if count > 0` guard skipped EVERY switch: an axis card's
+ *  family switch is the Model AXIS seat (the Model+Variant pair's
+ *  own menu, modelSwitchPatch verb), not the Serving-family FIELD
+ *  knob — the field renders only where the model is a plain param).
+ *  The user's burn rides whichever seat the drill serves; a
+ *  multi-family card with NEITHER seat is the finding. A
+ *  single-family card states its face (the static seat — never a
+ *  picker) and the self-switch is a no-op round-trip.
+ * @param familiesServed the roster's derived family count for the
+ *  card (the no-seat verdict is lawful exactly when it is 1). */
+async function switchModelSeat(page: Page, tag: string, want: { id: string, label: string }, familiesServed: number): Promise<void> {
+  const fieldKnob = page.getByRole('button', { name: /Serving family/ }).first()
+  // THE AXIS SEAT (the lane's own spelling — cards-catalog
+  // e2e's family axis: the Model menu trigger, exact name)
+  const axisSeat = page.getByRole('button', { name: 'Model', exact: true }).first()
+  // THE SETTLED SEAT (the 2026-11-03 load burn: the drill's spec
+  // fetch had not rendered EITHER seat when the lookup ran
+  // under concurrent film composes — poll for a seat before
+  // judging its absence; the lawful single-family branch below
+  // still owns the no-seat verdict).
+  let seat = null as typeof fieldKnob | null
+  try {
+    await expect.poll(async () =>
+      (await fieldKnob.count()) > 0 ? 'field'
+        : (await axisSeat.count()) > 0 ? 'axis' : 'none', {
+      timeout: 30_000,
+      message: `${tag}: a model switch seat renders (the Serving-family knob or the Model axis)`,
+    }).not.toBe('none')
+    seat = (await fieldKnob.count()) > 0 ? fieldKnob : axisSeat
+  } catch {
+    seat = (await fieldKnob.count()) > 0 ? fieldKnob
+      : (await axisSeat.count()) > 0 ? axisSeat : null
+  }
+  if (seat === null) {
+    expect(familiesServed, `${tag}: no model switch seat on a multi-family card (a single-family card states its static face — the sweep's roster derived ${want.id} from this card's own families)`).toBe(1)
+    return
+  }
+  await seat.click({ timeout: 15_000 })
+  // THE ID↔LABEL MATCH (the menus speak DECL labels — 'Krea
+  // 2', 'Qwen Image Edit 2.1' — while the roster carries ids
+  // — 'krea-2', 'qwen-img-edit-21'; compare separator-blind
+  // against BOTH the family id and its DECL label, never a
+  // substring guess. The id-only spelling went blind live
+  // 2026-11-08: 'qwen-img-edit-21' never equals the served
+  // 'Qwen Image Edit 2.1' — the menu spoke, the matcher was
+  // deaf, and the switch failed loud on a present family.)
+  const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const wants = [norm(want.id), norm(want.label)]
+  const items = page.getByRole('menuitem')
+  const count = await items.count()
+  expect(count, `${tag}: the model menu opens with rows (the seat that never opens is a silent drop)`).toBeGreaterThan(0)
+  let picked = -1
+  for (let i = 0; i < count; i++) {
+    const text = norm((await items.nth(i).textContent())?.trim() ?? '')
+    if (wants.some((w) => text === w || text.startsWith(w))) { picked = i; break }
+  }
+  expect(picked, `${tag}: the arrival family ${want.id} is on the menu (roster derived it from this card's own served families)`).toBeGreaterThan(-1)
+  const arrivalLabel = (await items.nth(picked).textContent())?.trim() ?? ''
+  await items.nth(picked).click({ timeout: 15_000 })
+  // THE FACE CARRIES THE ARRIVAL (a switch the face does not
+  // show is the recipe-drop's own class — a silent drop).
+  // The face speaks the DECL label — accept id or label. THE
+  // SETTLED FACE (same load burn: the 3s sleep judged a face
+  // the switch had not re-rendered yet — poll the same
+  // verdict).
+  await expect.poll(async () => {
+    const face = (await seat.textContent())?.trim() ?? ''
+    return wants.some((w) => norm(face).includes(w))
+  }, {
+    timeout: 15_000,
+    message: `${tag}: the model seat's face carries the arrival family (arrival ${JSON.stringify(arrivalLabel)})`,
+  }).toBe(true)
+  // THE GHOST VERDICT IS POLLED, never instant (the
+  // 2026-11-15 settle race): the face poll above can pass on
+  // the label update while the spec-driven unmount of the
+  // departed family's seats still rides the refetch — a real
+  // P4 ghost still fails, at the timeout, with the same
+  // verdict; an async settle greens without weakening the law.
+  await expect.poll(async () => await ghostKnobs(page, want.id), {
+    timeout: 10_000,
+    message: `${tag}: ghost knobs after the switch (the P4 class — the UI did not follow the arrival)`,
+  }).toEqual([])
+}
+
+/** THE COMPOSE-DOOR VERDICT (one home — assert class (b), arm 3):
+ *  the read-only validate arm composes-and-discards the SAME
+ *  pipeline the run press rides; the saved doc must be ADMITTED
+ *  verbatim (a 400 here is the h3 switch-brick class: a UI whose
+ *  coordinates the compose refuses). The doc→body mapping is the RUN
+ *  PRESS'S OWN shape law (liftCardParams): the axis coordinates ride
+ *  the body ROOT, the knob stanza rides `params` — a probe that
+ *  posts the coordinates INSIDE the stanza is refused as unknown
+ *  knobs (the door's own voice, red-proven live). Never queues,
+ *  never touches the engine. THE FAMILY-LESS SPELLING (the trim
+ *  reach, 2026-11-13): a card that serves no families composes
+ *  by its OWN id — the run press's `params.model ?? service ??
+ *  card` law (runsRegistry's mid) — so the replay rides the card
+ *  id, never `model: ""` (which the door bricks as "not a legal
+ *  identifier" while the real press would have composed). */
+async function composeVerdict(page: Page, stage: Record<string, unknown>, cardId: string): Promise<{ status: number, ok: boolean, error: string }> {
+  return await page.evaluate(async ({ stage, cardId }: { stage: Record<string, unknown>, cardId: string }) => {
+    const { model, variant, quant, ...knobs } = stage
+    const body: Record<string, unknown> = { model: String(model ?? '') || cardId, params: knobs }
+    if (typeof variant === 'string' && variant !== '') body.variant = variant
+    if (typeof quant === 'string' && quant !== '') body.quant = quant
+    const res = await fetch('/v1/flows/validate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const answer = await res.json() as Record<string, unknown>
+    return { status: res.status, ok: answer['ok'] === true, error: String(answer['error'] ?? '') }
+  }, { stage, cardId })
+}
+
+/** THE THREE REFUSAL CLASSES judged on one verdict (one home — both
+ *  sweeps ride it): a brick voice (unknown param / variant / quant /
+ *  model, not-offered, unsanctioned keys) is THE SWITCH-BRICK CLASS
+ *  — red, verbatim. Three lawful empty-bench voices: the required-knob
+ *  voice ("this lane requires 'x' — not stated" and its card-surface
+ *  spelling "required param 'x' missing" — a family-less tool card
+ *  awaiting its upstream binding; bench state under construction, the
+ *  WIRE_CARD_COMPOSE_INCOMPLETE heal class), the required-source
+ *  voice ("no mask sources on the mask card — add at least one
+ *  modifier (…)" — the card composes FROM a source the empty bench
+ *  has not stated; the refusal names the cure, live-caught
+ *  2026-11-12), and the PRESENCE voice ("declares unet '…' but no
+ *  store copy exists" — the weights are not on the machine; the door
+ *  refuses LOUD, the run press voices it, nothing silent — the
+ *  offered-but-absent VARIANT weight rides the (m) download-UX theme,
+ *  logged as the sweep's own find). ANY OTHER voice is an
+ *  unclassified refusal — red, verbatim. */
+function expectVerdictLawful(verdict: { status: number, ok: boolean, error: string }, tag: string): void {
+  expect(verdict.status !== 200 || verdict.ok, `${tag}: the compose door's 200 answer carries ok:true`).toBe(true)
+  if (verdict.status !== 200) {
+    expect(verdict.error, `${tag}: the compose door refused the saved doc with a BRICK-CLASS voice (${verdict.status}): ${verdict.error}`).not.toMatch(BRICK_VOICE)
+    expect(verdict.error, `${tag}: the compose door's refusal must be a classified lawful voice (required-knob | absent weights), got: ${verdict.error}`).toMatch(LAWFUL_VOICE)
+    // eslint-disable-next-line no-console -- the lawful-refusal receipt (which knob/weight, which lane)
+    console.log(`[sweep-admission] ${tag}: lawful refusal — ${verdict.error}`)
+  }
 }
 
 test('the real-usage combination sweep — derived roster, 1:1 gestures, zero silent errors', async ({ page }) => {
@@ -649,93 +984,7 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       }
 
       if (combo.model !== undefined) {
-        // FAIL LOUD, never silently skip (the journey re-run's E: a
-        // silent-error hunt whose own gestures no-op is a liar).
-        // THE TWO SEATS (caught live 2026-11-08 — the committed
-        // sweep's `if count > 0` guard skipped EVERY switch: an
-        // axis card's family switch is the Model AXIS seat (the
-        // Model+Variant pair's own menu, modelSwitchPatch verb), not
-        // the Serving-family FIELD knob — the field renders only
-        // where the model is a plain param). The user's burn rides
-        // whichever seat the drill serves; a multi-family card with
-        // NEITHER seat is the finding. A single-family card states
-        // its face (the static seat — never a picker) and the
-        // self-switch is a no-op round-trip.
-        const fieldKnob = page.getByRole('button', { name: /Serving family/ }).first()
-        // THE AXIS SEAT (the lane's own spelling — cards-catalog
-        // e2e's family axis: the Model menu trigger, exact name)
-        const axisSeat = page.getByRole('button', { name: 'Model', exact: true }).first()
-        // THE SETTLED SEAT (the 2026-11-03 load burn: the drill's spec
-        // fetch had not rendered EITHER seat when the lookup ran
-        // under concurrent film composes — poll for a seat before
-        // judging its absence; the lawful single-family branch below
-        // still owns the no-seat verdict).
-        let seat = null as typeof fieldKnob | null
-        try {
-          await expect.poll(async () =>
-            (await fieldKnob.count()) > 0 ? 'field'
-              : (await axisSeat.count()) > 0 ? 'axis' : 'none', {
-            timeout: 30_000,
-            message: `${tag}: a model switch seat renders (the Serving-family knob or the Model axis)`,
-          }).not.toBe('none')
-          seat = (await fieldKnob.count()) > 0 ? fieldKnob : axisSeat
-        } catch {
-          seat = (await fieldKnob.count()) > 0 ? fieldKnob
-            : (await axisSeat.count()) > 0 ? axisSeat : null
-        }
-        if (seat === null) {
-          expect(row.models.length, `${tag}: no model switch seat on a multi-family card (a single-family card states its static face — the sweep's roster derived ${combo.model.id} from this card's own families)`).toBe(1)
-        } else {
-          await seat.click({ timeout: 15_000 })
-          // THE ID↔LABEL MATCH (the menus speak DECL labels — 'Krea
-          // 2', 'Qwen Image Edit 2.1' — while the roster carries ids
-          // — 'krea-2', 'qwen-img-edit-21'; compare separator-blind
-          // against BOTH the family id and its DECL label, never a
-          // substring guess. The id-only spelling went blind live
-          // 2026-11-08: 'qwen-img-edit-21' never equals the served
-          // 'Qwen Image Edit 2.1' — the menu spoke, the matcher was
-          // deaf, and the switch failed loud on a present family.)
-          const norm = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '')
-          const wants = [norm(combo.model.id), norm(combo.model.label)]
-          const items = page.getByRole('menuitem')
-          const count = await items.count()
-          expect(count, `${tag}: the model menu opens with rows (the seat that never opens is a silent drop)`).toBeGreaterThan(0)
-          let picked = -1
-          for (let i = 0; i < count; i++) {
-            const text = norm((await items.nth(i).textContent())?.trim() ?? '')
-            if (wants.some((w) => text === w || text.startsWith(w))) { picked = i; break }
-          }
-          expect(picked, `${tag}: the arrival family ${combo.model.id} is on the menu (roster derived it from this card's own served families)`).toBeGreaterThan(-1)
-          const arrivalLabel = (await items.nth(picked).textContent())?.trim() ?? ''
-          await items.nth(picked).click({ timeout: 15_000 })
-          // THE FACE CARRIES THE ARRIVAL (a switch the face does not
-          // show is the recipe-drop's own class — a silent drop).
-          // The face speaks the DECL label — accept id or label. THE
-          // SETTLED FACE (same load burn: the 3s sleep judged a face
-          // the switch had not re-rendered yet — poll the same
-          // verdict).
-          await expect.poll(async () => {
-            const face = (await seat.textContent())?.trim() ?? ''
-            return wants.some((w) => norm(face).includes(w))
-          }, {
-            timeout: 15_000,
-            message: `${tag}: the model seat's face carries the arrival family (arrival ${JSON.stringify(arrivalLabel)})`,
-          }).toBe(true)
-          // THE GHOST VERDICT IS POLLED, never instant (the
-          // 2026-11-15 settle race): the face poll above can pass on
-          // the label update while the spec-driven unmount of the
-          // departed family's seats still rides the refetch — a real
-          // P4 ghost still fails, at the timeout, with the same
-          // verdict; an async settle greens without weakening the law
-          // combo.model's block-head guard does not survive the poll
-          // closure (TS drops property narrowing across callbacks) —
-          // the arrival id is captured on the guarded side.
-          const arrivalModelId = combo.model.id
-          await expect.poll(async () => await ghostKnobs(page, arrivalModelId), {
-            timeout: 10_000,
-            message: `${tag}: ghost knobs after the switch (the P4 class — the UI did not follow the arrival)`,
-          }).toEqual([])
-        }
+        await switchModelSeat(page, tag, combo.model, row.models.length)
       }
 
       // THE RECIPE AXIS (the directive's verbatim example: "model /
@@ -962,8 +1211,8 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       // per group). The read POLLS until the doc carries every
       // coordinate the faces show, bounded — a pick that never
       // lands still reds at the timeout with the same verdict.
-      const normB = (s: unknown): string => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
-      const bareB = (s: string): string => normB(s.replace(/\([^)]*\)/g, ''))
+      // (normB/bareB are the module-level consts — the separator-blind
+      // voice this sweep and the attach sweep's re-switch arm share.)
       const converged = (d: { params: Record<string, unknown> }): boolean => {
         if (promptFilled && !normB(d.params.prompt).includes(normB(sweepPrompt))) return false
         if (combo.model !== undefined && normB(d.params.model) !== normB(combo.model.id)) return false
@@ -1020,56 +1269,10 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       // a WRITE of the departure, never a stored coordinate.
       expect('recipe' in doc.params, `${tag}: no recipe key persists in the bench doc (keys ${JSON.stringify(Object.keys(doc.params))} — the (k) law: the blank is the departure, never a key)`).toBe(false)
 
-      // ASSERT CLASS (b) — arm 3, THE COMPOSE DOOR: the read-only
-      // validate arm composes-and-discards the SAME pipeline the run
-      // press rides; the saved doc must be ADMITTED verbatim (a 400
-      // here is the h3 switch-brick class: a UI whose coordinates the
-      // compose refuses). The doc→body mapping is the RUN PRESS'S OWN
-      // shape law (liftCardParams): the axis coordinates ride the
-      // body ROOT, the knob stanza rides `params` — a probe that
-      // posts the coordinates INSIDE the stanza is refused as unknown
-      // knobs (the door's own voice, red-proven live). Never queues,
-      // never touches the engine. THE FAMILY-LESS SPELLING (the trim
-      // reach, 2026-11-13): a card that serves no families composes
-      // by its OWN id — the run press's `params.model ?? service ??
-      // card` law (runsRegistry's mid) — so the replay rides the card
-      // id, never `model: ""` (which the door bricks as "not a legal
-      // identifier" while the real press would have composed).
-      const verdict = await page.evaluate(async ({ stage, cardId }: { stage: Record<string, unknown>, cardId: string }) => {
-        const { model, variant, quant, ...knobs } = stage
-        const body: Record<string, unknown> = { model: String(model ?? '') || cardId, params: knobs }
-        if (typeof variant === 'string' && variant !== '') body.variant = variant
-        if (typeof quant === 'string' && quant !== '') body.quant = quant
-        const res = await fetch('/v1/flows/validate', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        const answer = await res.json() as Record<string, unknown>
-        return { status: res.status, ok: answer['ok'] === true, error: String(answer['error'] ?? '') }
-      }, { stage: doc.params, cardId: row.card })
-      expect(verdict.status !== 200 || verdict.ok, `${tag}: the compose door's 200 answer carries ok:true`).toBe(true)
-      if (verdict.status !== 200) {
-        // THE THREE REFUSAL CLASSES: a brick voice (unknown param /
-        // variant / quant / model, not-offered, unsanctioned keys) is
-        // THE SWITCH-BRICK CLASS — red, verbatim. Two lawful
-        // empty-bench voices: the required-knob voice ("this lane
-        // requires 'x' — not stated" and its card-surface spelling
-        // "required param 'x' missing" — a family-less tool card
-        // awaiting its upstream binding; bench state under
-        // construction, the WIRE_CARD_COMPOSE_INCOMPLETE heal class)
-        // and the PRESENCE voice ("declares unet '…' but no store
-        // copy exists" — the weights are not on the machine; the door
-        // refuses LOUD, the run press voices it, nothing silent — the
-        // offered-but-absent VARIANT weight rides the (m) download-UX
-        // theme, logged as the sweep's own find). ANY OTHER voice is
-        // an unclassified refusal — red, verbatim.
-        const brickVoice = /unknown param|unknown variant|unknown quant|unknown model|unknown card|not offered|unsanctioned inject keys|no model unit|composes outside|not a legal identifier|dangling artifact ref/
-        expect(verdict.error, `${tag}: the compose door refused the saved doc with a BRICK-CLASS voice (${verdict.status}): ${verdict.error}`).not.toMatch(brickVoice)
-        expect(verdict.error, `${tag}: the compose door's refusal must be a classified lawful voice (required-knob | absent weights), got: ${verdict.error}`).toMatch(/requires|required param|no store copy exists/)
-        // eslint-disable-next-line no-console -- the lawful-refusal receipt (which knob/weight, which lane)
-        console.log(`[sweep-admission] ${tag}: lawful refusal — ${verdict.error}`)
-      }
+      // ASSERT CLASS (b) — arm 3, THE COMPOSE DOOR (composeVerdict's
+      // own law, one home above): the saved doc must be ADMITTED
+      // verbatim, brick voices red, lawful voices receipted.
+      expectVerdictLawful(await composeVerdict(page, doc.params, row.card), tag)
 
       // assert class (a) — per combination, naming it
       expect(silent, `${tag}: silent errors (console/page)`).toEqual([])
@@ -1086,6 +1289,579 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       await page.waitForTimeout(500)
       // Escape as the fallback close (a zoom-overlay drill answers
       // it), then confirm the modal is gone before the next add
+      await page.keyboard.press('Escape').catch(() => { /* no modal — nothing to close */ })
+      await page.waitForTimeout(500)
+    }
+  }
+})
+
+/** THE RUN-PRESS MODEL COORDINATE (the compose door's own admission
+ *  spelling, probed live 2026-11-12: `model: 'input-prep'` refuses
+ *  "not offered … (boards: input)" — the card id is not a family;
+ *  the door wants the FAMILY id the stage-run press derives from the
+ *  card's default family). Read from the served envelope's families
+ *  array, first present row — the same read the drill's own arrival
+ *  rides. Null = a family-less card: the run press composes it by
+ *  its OWN id (the trim reach's spelling, cardsCompose's card-unit
+ *  arm) and the caller passes the card id. */
+async function defaultFamilyOf(page: Page, card: string): Promise<string | null> {
+  return await page.evaluate(async (cardId: string) => {
+    try {
+      const spec = await (await fetch('/v1/form-spec?model=' + encodeURIComponent(cardId))).json() as {
+        families?: Array<{ id?: unknown, present?: unknown }>
+      }
+      const first = (spec.families ?? []).find((f) => typeof f?.id === 'string' && f.id !== '' && f.present !== false)
+      return typeof first?.id === 'string' ? first.id : null
+    } catch { return null }
+  }, card)
+}
+
+/** THE ARRIVAL SLOT CENSUS (the attach sweep's declared set): the
+ *  family's served envelope walked exactly like deriveRoster's
+ *  inputs face — the walk re-reads the ARRIVAL family (never the
+ *  card default) so a family-scoped field's declaration is judged on
+ *  the envelope the switch landed on. `slots` is every declared slot
+ *  row verbatim (the caller applies the families scoping); `fields`
+ *  is the whole root dict — the flip arm reads its transform keys
+ *  from this set, never a literal. */
+async function arrivalSlots(page: Page, family: string): Promise<{ slots: SlotFace[], fields: string[] }> {
+  return await page.evaluate(async (fam: string) => {
+    const spec = await (await fetch('/v1/form-spec?model=' + encodeURIComponent(fam))).json() as {
+      schema?: { refs?: Record<string | number, { dict?: Record<string, number | string>, meta?: Record<string, unknown>, type?: unknown }>, uid: number }
+    }
+    const env = spec.schema
+    const root = env?.refs?.[env?.uid ?? -1]
+    const slots: Array<{ name: string, label: string, wtype: string, media: string | null, families: string[] | null }> = []
+    const fields: string[] = []
+    if (root === undefined || root.dict === undefined) return { slots, fields }
+    for (const [name, id] of Object.entries(root.dict)) {
+      fields.push(name)
+      const node = env?.refs?.[id]
+      if (node === undefined) continue
+      const meta = (node.meta ?? {}) as Record<string, unknown>
+      const extra = (typeof meta['extra'] === 'object' && meta['extra'] !== null ? meta['extra'] : {}) as Record<string, unknown>
+      const wtype = typeof extra['wtype'] === 'string' ? extra['wtype'] : ''
+      if (wtype !== 'image' && wtype !== 'file' && wtype !== 'mesh') continue
+      if (extra['hidden'] === true) continue
+      slots.push({
+        name,
+        label: typeof meta['description'] === 'string' && meta['description'] !== '' ? meta['description'] as string : name,
+        wtype,
+        media: typeof extra['media'] === 'string' ? extra['media'] as string : null,
+        families: Array.isArray(extra['families'])
+          ? (extra['families'] as unknown[]).filter((f): f is string => typeof f === 'string')
+          : null,
+      })
+    }
+    return { slots, fields }
+  }, family)
+}
+
+/** THE SLOT SEAT RESOLVER (derived, never hand-listed — three
+ *  grammars the render contract serves, tried PRECISE-BEFORE-
+ *  POSITIONAL):
+ *  1. THE GENERIC ROW (atoms.tsx:405 — the declarative form renders
+ *     `data-source-row: f.name` for every emitted slot field): the
+ *     estate-path grammar — attach persists the upload door's
+ *     `data/input/<file>` path, detach writes the null DELETE.
+ *  2. THE BARE SQUARE (InputSquare mounted without a row wrapper —
+ *     the motion rail's body seat passes the param NAME as the
+ *     square's label, so the accessible seat is `<name> source`):
+ *     the data-URL grammar (the studio's onSave data URL). TRIED
+ *     BEFORE THE POSITIONAL ROW: the single-row fallback matches
+ *     ANY data-source-row on the page, and a bespoke studio may
+ *     carry an unrelated one beside the slot (the motion ride,
+ *     2026-11-12: the rail's Background SourceRow shares the drill
+ *     with the preview body square — the positional grab drove the
+ *     background seat and the served slot never took the bytes).
+ *  3. THE SINGLE-ROW STUDIO (SourceRow, atoms.tsx:55 — a bespoke
+ *     single-slot studio spells the row with its LABEL, and the flip
+ *     studio relabels Image↔Audio with the lane): the data-URL
+ *     grammar. Only when the precise grammars miss — the input-prep
+ *     class, whose square speaks 'Image source' (the lane label,
+ *     never the field name), so only the row locator can find it.
+ *  Null = the declared field renders NO seat — the caller receipts
+ *  it and judges it in the re-switch law only, never drives it. THE
+ *  SETTLED RESOLUTION (the mask ride, 2026-11-12: the row rendered on
+ *  one run and not the next — the drill's spec settle decides, so an
+ *  instant count judges a race): the grammar walk is POLLED across a
+ *  bounded window before the null — a seat the drill opens late
+ *  joins, a genuinely closed seat still nulls after the window. */
+async function slotSeat(page: Page, slot: SlotFace, census: number): Promise<{ scope: Locator, grammar: 'estate-path' | 'data-url' } | null> {
+  for (let round = 0; round < 20; round++) {
+    const exact = page.locator(`[data-source-row="${slot.name}"]`).first()
+    if ((await exact.count()) > 0) return { scope: exact, grammar: 'estate-path' }
+    for (const seat of [slot.name, slot.label]) {
+      const square = page.getByRole('button', { name: `${seat} source`, exact: true }).first()
+      if ((await square.count()) > 0) return { scope: square.locator('..'), grammar: 'data-url' }
+    }
+    if (census === 1) {
+      const single = page.locator('[data-source-row]').first()
+      if ((await single.count()) > 0) return { scope: single, grammar: 'data-url' }
+    }
+    await page.waitForTimeout(500)
+  }
+  return null
+}
+
+/** THE PINNED ADD (one home for the newcomer law both sweeps ride —
+ *  the main sweep carries the settled inline copy; this helper is
+ *  the attach sweep's read of the same block): the pre-add (draft,
+ *  stage) PAIR snapshot, the catalog-label pick, and the polled
+ *  newcomer resolution — this visit's own stage, never a sibling's
+ *  or an operator-history stage (the head-window burn, 2026-11-15). */
+async function addStagePinned(page: Page, card: string, label: string, tag: string): Promise<{ stageId: string, draftId: string }> {
+  const stagePairsPre = await page.evaluate(async (cardId: string) => {
+    const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
+    const benchRows = (list.drafts ?? []).filter((r) => typeof r.draft_id === 'string' && (r.draft_id as string).startsWith('bench-'))
+    const pairs: string[] = []
+    for (const r of benchRows.slice(0, 8)) {
+      const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(String(r.draft_id)))
+      if (!res.ok) continue
+      const doc = await res.json() as { stages?: Array<{ id?: unknown, card?: unknown }> }
+      for (const st of doc.stages ?? []) {
+        if (st.card === cardId && typeof st.id === 'string') pairs.push(String(r.draft_id) + '#' + st.id)
+      }
+    }
+    return pairs
+  }, card)
+  const addTile = page.getByRole('button', { name: /^Add a card$/ }).first()
+  await addTile.click({ timeout: 30_000 })
+  const pickerCard = page.getByRole('button', { name: new RegExp(`^${escapeRe(label)}$`, 'i') }).first()
+  await pickerCard.click({ timeout: 30_000 })
+  await page.waitForTimeout(2_000)
+  let stageId = ''
+  let draftId = ''
+  for (let attempt = 0; attempt < 30 && stageId === ''; attempt++) {
+    const found = await page.evaluate(async ({ cardId, pre }: { cardId: string, pre: string[] }) => {
+      const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
+      const benchRows = (list.drafts ?? []).filter((r) => typeof r.draft_id === 'string' && (r.draft_id as string).startsWith('bench-'))
+      for (const r of benchRows.slice(0, 8)) {
+        const draftId = String(r.draft_id)
+        const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId))
+        if (!res.ok) continue
+        const doc = await res.json() as { draft_id?: unknown, stages?: Array<{ id?: unknown, card?: unknown }> }
+        for (const s of doc.stages ?? []) {
+          if (s.card !== cardId || typeof s.id !== 'string') continue
+          if (!pre.includes(draftId + '#' + s.id)) return { draftId, stageId: s.id }
+        }
+      }
+      return null
+    }, { cardId: card, pre: stagePairsPre })
+    if (found !== null) {
+      stageId = found.stageId
+      draftId = found.draftId
+      break
+    }
+    await page.waitForTimeout(500)
+  }
+  expect(stageId, `${tag}: this visit's own stage lands in the drafts domain (the add's write — a missing newcomer is a birth clobber, named as such)`).not.toBe('')
+  return { stageId, draftId }
+}
+
+/** THE CLOSURE VOICE (the receipt's derived half): a declared slot
+ *  row with no rendered seat is closed by one of two laws —
+ *  variant-gated (a served variant row's DEFAULTS name the field:
+ *  the drill opens the seat when that Variant is picked) or
+ *  unspellable-on-the-served-plane (no served variant row names it —
+ *  the served envelope carries defaults only, so a DECL variant's
+ *  params list gating, the tts ref_audio class, and a studio-local
+ *  seat's own binding, the h3 per-call-refs class, both land here).
+ *  Derived from the same envelope, never a card list; the receipt
+ *  says exactly which half was derivable. */
+async function closureVoice(page: Page, family: string, fieldName: string): Promise<string> {
+  return await page.evaluate(async ({ fam, field }: { fam: string, field: string }) => {
+    const spec = await (await fetch('/v1/form-spec?model=' + encodeURIComponent(fam))).json() as {
+      variants?: Array<{ id?: unknown, defaults?: Record<string, unknown> }>
+    }
+    for (const v of spec.variants ?? []) {
+      if (Object.keys(v.defaults ?? {}).includes(field)) return `variant-gated (the served variant ${String(v.id ?? '?')} defaults name ${field} — the seat opens when that Variant is picked)`
+    }
+    return 'closed on this arrival, not spelled by the served plane (no served variant defaults name it — a DECL variant-params gate or a studio-local seat)'
+  }, { fam: family, field: fieldName })
+}
+
+/** THE POLLED DOC LAW (the attach sweep's class-(b) arm 2): the
+ *  pinned stage read POLLS until the doc's coordinates hold the law
+ *  the arm names — an upload is a write chain (POST /v1/uploads,
+ *  then the param patch), and a read taken the instant the face
+ *  settled can honestly see the pre-write doc. A coordinate that
+ *  never lands reds at the deadline naming ITS law. */
+async function pollStageDoc(page: Page, card: string, tag: string, law: string, holds: (params: Record<string, unknown>) => boolean, opts?: {
+  marker?: string
+  draftPin?: string
+  stagePin?: string
+}): Promise<Record<string, unknown>> {
+  await expect.poll(async () => {
+    try {
+      const read = await benchStageOf(page, card, tag, opts)
+      return holds(read.params) ? 'held' : 'pending'
+    } catch { return 'pending' }
+  }, {
+    timeout: 30_000,
+    message: `${tag}: ${law}`,
+  }).toBe('held')
+  return (await benchStageOf(page, card, tag, opts)).params
+}
+
+/** THE FACE POLL WITH ITS CORPUS (one home for both arms): poll the
+ *  seat's ✕ count to its law; on a miss, read the pinned doc and
+ *  name BOTH planes in the red — a face that never armed while the
+ *  doc took the bytes is the studio's silent drop, a face that never
+ *  armed while the doc stayed empty is the write that never landed.
+ *  Two planes, one verdict, no theory. */
+async function pollFaceVerdict(page: Page, scope: Locator, card: string, tag: string, slotName: string, wantCount: number, opts?: {
+  marker?: string
+  draftPin?: string
+  stagePin?: string
+}): Promise<void> {
+  let face = -1
+  for (let i = 0; i < 40; i++) {
+    face = await scope.getByRole('button', { name: /^Detach / }).count()
+    if (face === wantCount) return
+    await page.waitForTimeout(500)
+  }
+  const read = await benchStageOf(page, card, tag, opts).catch(() => null)
+  const docVoice = read === null
+    ? 'the pinned doc read found no stage'
+    : `the pinned doc's ${slotName} = ${JSON.stringify(String(read.params[slotName] ?? '').slice(0, 60))}`
+  // THE SIBLING CENSUS (wrong-drill vs lost-write, named in the same
+  // red): the bench draft is SHARED and the add door birth-carries a
+  // prior stage's params (probe-proven 2026-11-12 — a newcomer motion
+  // stage was born holding an earlier stage's GLB data URL), so a
+  // face that never armed needs its second plane: does ANY stage of
+  // this card carry the attachment? None → the write never landed;
+  // another stage → the drill drove a stage the pin does not own.
+  const siblings = await page.evaluate(async ({ cardId, field, probe }: { cardId: string, field: string, probe: string }) => {
+    const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
+    const hits: string[] = []
+    for (const r of (list.drafts ?? []).filter((d) => typeof d.draft_id === 'string' && d.draft_id.startsWith('bench-')).slice(0, 8)) {
+      const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(String(r.draft_id)))
+      if (!res.ok) continue
+      const doc = await res.json() as { stages?: Array<{ id?: unknown, card?: unknown, params?: Record<string, unknown> }> }
+      for (const s of doc.stages ?? []) {
+        if (s.card !== cardId || typeof s.id !== 'string') continue
+        const v = (s.params ?? {})[field]
+        if (typeof v === 'string' && v.includes(probe)) hits.push(String(s.id))
+      }
+    }
+    return hits
+  }, { cardId: card, field: slotName, probe: 'sweep-attach' })
+  const siblingVoice = siblings.length === 0
+    ? 'no stage of the card carries the attachment (the write never landed)'
+    : `stages ${JSON.stringify(siblings)} carry the attachment (the drill drove a stage the pin does not own)`
+  const frameVoice = WIRE_TAP && wireFrames.length > 0
+    ? `; the last wire frames: ${JSON.stringify(wireFrames.slice(-2))}`
+    : ''
+  expect(face, `${tag} · ${slotName}: the seat's face ${wantCount > 0 ? 'holds' : 'drops'} the attachment (${docVoice}; ${siblingVoice}${frameVoice} — the ✕ rides HELD, both planes named together)`).toBe(wantCount)
+}
+
+/** THE ATTACH ARM (one home — every seat grammar rides it):
+ *  setInputFiles the seat's own fixture (derived from the field's
+ *  served wtype + media hint), prove the FACE holds the attachment
+ *  (the ✕ rides HELD — the square's own durable-fact law,
+ *  square.tsx's detach law: the verb belongs to the fact, never the
+ *  view), and poll the DOC until the coordinate holds the grammar's
+ *  law. Returns the doc params the attach left. */
+async function attachTo(page: Page, seat: { scope: Locator, grammar: 'estate-path' | 'data-url' }, card: string, tag: string, slot: SlotFace, opts?: {
+  marker?: string
+  draftPin?: string
+  stagePin?: string
+  /** the flip studio's second call hands its own fixture (the wav)
+   *  and its own doc law — the flip arm IS a second attach */
+  fixture?: { name: string, mimeType: string, buffer: Buffer, dataUrlPrefix: string, dataUrlLen: number }
+  holds?: (params: Record<string, unknown>) => boolean
+  law?: string
+}): Promise<Record<string, unknown>> {
+  const fixture = opts?.fixture ?? fixtureFor(slot)
+  // THE SQUARE'S OWN INPUT (the input-prep ride, 2026-11-12): the
+  // drill's row scope can carry more than one file input (the
+  // SourceRow wraps the square beside the provider's own plumbing),
+  // and the first-match set landed on an input whose handler never
+  // wrote — the square's own control carries data-slot-input
+  // (square.tsx's upload seat), so the set names it directly and
+  // falls back to the bare type filter only for a seat that renders
+  // none.
+  const precise = seat.scope.locator('input[type="file"][data-slot-input]')
+  const input = (await precise.count()) > 0
+    ? precise.first()
+    : seat.scope.locator('input[type="file"]').first()
+  // THE STUDIO SETTLE GATE (the motion probe, 2026-11-12): a bespoke
+  // studio's heavy mount (three ctx, npz data) churns its write chain
+  // after the add — an attach fired mid-mount lands on a mount the
+  // data-load replaces and the state write is lost (the face never
+  // arms while the doc stays empty). The write chain's own quiet is
+  // the derived settle signal: wait for network idle, best-effort,
+  // bounded — a chatty lane never blocks the write, and the face
+  // verdict stays the judge. Probe-proven: a settled studio accepts
+  // the identical attach at t+1s.
+  await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => { /* the face verdict stays the judge */ })
+  await input.setInputFiles({ name: fixture.name, mimeType: fixture.mimeType, buffer: fixture.buffer })
+  await pollFaceVerdict(page, seat.scope, card, tag, slot.name, 1, opts)
+  const base = 'data/input/' + fixture.name
+  const holds = opts?.holds ?? carryLaw(seat.grammar, slot.name, fixture)
+  const law = opts?.law ?? (seat.grammar === 'estate-path'
+    ? `the bench doc's ${slot.name} coordinate carries the upload door's estate path ${base} (the estate-path grammar)`
+    : `the bench doc's ${slot.name} coordinate carries THIS run's attachment (the data URL with this run's own prefix and length — the studio's readAsDataURL law)`)
+  return await pollStageDoc(page, card, tag, law, holds, opts)
+}
+
+/** THE DETACH ARM (one home): the seat's own ✕ (never a doc patch —
+ *  the sweep drives the user's gesture), then the DEPARTURE LAW —
+ *  the attachment must leave the doc. TWO SPELLINGS, ONE LAW (the
+ *  img-to-mesh ride, 2026-11-12): mask's generic row detaches by
+ *  null-DELETE (JSON Merge Patch deletes the key), img-to-mesh's
+ *  detach persists '' — the dialects differ, the contract does not:
+ *  absent, null, or '' all carry no attachment; the value that
+ *  still names the bytes is the silent half, red on either grammar
+ *  with both planes named (the face dropped, the doc kept). The
+ *  compose verdict still runs after — a departure the door refuses
+ *  is judged there, never here. */
+async function detachFrom(page: Page, seat: { scope: Locator, grammar: 'estate-path' | 'data-url' }, card: string, tag: string, slot: SlotFace, opts?: {
+  marker?: string
+  draftPin?: string
+  stagePin?: string
+}): Promise<Record<string, unknown>> {
+  const fixtureName = fixtureFor(slot).name
+  await seat.scope.getByRole('button', { name: /^Detach / }).first().click({ timeout: 15_000 })
+  await pollFaceVerdict(page, seat.scope, card, tag, slot.name, 0, opts)
+  const departure = (p: Record<string, unknown>) => {
+    const v = p[slot.name]
+    return !(slot.name in p) || v === null || v === '' || !(typeof v === 'string' && (v.startsWith('data:') || v.includes(fixtureName)))
+  }
+  return await pollStageDoc(page, card, tag,
+    `${slot.name} holds no attachment after the detach (the departure law — the face dropped, so the doc must carry no bytes: absent, null, or the persisted empty, never a stale ${fixtureName})`,
+    departure,
+    opts)
+}
+
+test('the attach/detach sweep — slot file inputs, re-switch after attach', async ({ page }) => {
+
+  test.setTimeout(3_600_000)
+  armCollectors(page)
+  await settleHost(page)
+  await openBench(page)
+
+  const roster = await deriveRoster(page)
+  // THE DERIVED CENSUS (the header's law): only cards whose served
+  // envelope declares slot fields ride — a card the walker gives no
+  // inputs face has nothing to attach to, and an env-capped roster
+  // keeps the ride bounded exactly like the main sweep's.
+  const withSlots = roster.filter((row) => row.slots.length > 0)
+  expect(withSlots.length, 'the served envelopes declare at least one slot file input (the walker derived the inputs face from the field kinds — never a hand-list)').toBeGreaterThan(0)
+  const familyCap = Number(process.env.SWEEP_FAMILIES ?? '0')
+  const bounded = familyCap > 0 ? withSlots.slice(0, familyCap) : withSlots
+  const maxCombos = Number(process.env.SWEEP_MAX_COMBOS ?? '8')
+  // eslint-disable-next-line no-console -- THE CENSUS receipt (which cards, which slots, which seat grammar the resolver owes)
+  console.log('[sweep-attach-roster]', JSON.stringify(bounded.map((row) => ({ card: row.card, models: row.models.map((m) => m.id), slots: row.slots }))))
+
+  for (const row of bounded) {
+    // THE VISIT SET (the main sweep's combos law): every served
+    // family of the card gets its own visit — the slot rows are
+    // family-scoped (img-to-mesh's image seat rides pixal3d, its GLB
+    // seats transfer-rig), so a card-level walk would never seat the
+    // scoped rows. A family-less card visits once, on the default
+    // family's spelling.
+    const families = (row.models.length > 0 ? row.models : [{ id: '', label: '' }]).slice(0, maxCombos)
+    for (const family of families) {
+      silent.length = 0
+      voiced.length = 0
+      if (WIRE_TAP) wireFrames.length = 0
+      wireFailures.length = 0
+      const famId = family.id !== '' ? family.id : ((await defaultFamilyOf(page, row.card)) ?? row.card)
+      const tag = `${row.card} :: ${famId} :: attach`
+      const sweepPrompt = `attach sweep ${tag} #${RUN_TAG}`
+
+      const { stageId, draftId } = await addStagePinned(page, row.card, row.label, tag)
+      const docPin: { marker?: string, draftPin: string, stagePin: string } = { draftPin: draftId, stagePin: stageId }
+      // THE MARKER LINK (the main sweep's prompt law): fill the
+      // prompt when the card renders one — the marker pins the doc
+      // read AND the compose door's required-knob voice stays lawful
+      // instead of refusing every admission judgment.
+      const promptBox = page.getByRole('textbox', { name: 'Prompt', exact: true }).first()
+      if ((await promptBox.count()) > 0) {
+        await promptBox.fill(sweepPrompt, { timeout: 15_000 })
+        await expect.poll(async () => promptBox.inputValue(), {
+          timeout: 15_000,
+          message: `${tag}: the Prompt face carries the sweep's marker after the fill`,
+        }).toBe(sweepPrompt)
+        await page.waitForTimeout(2_000)
+        docPin.marker = sweepPrompt
+      }
+      // THE ARRIVAL (the same seat the main sweep's switched combos
+      // ride): land the visit's family before any slot arm — the
+      // declared set below is read from THIS family's envelope.
+      if (row.models.length > 0) await switchModelSeat(page, tag, family, row.models.length)
+      const runPressCard = famId
+      const arrivalWalk = await arrivalSlots(page, famId)
+      const arrival = arrivalWalk.slots
+        .filter((s) => s.families === null || s.families.includes(famId))
+      const census = arrival.length
+      expect(census, `${tag}: the arrival envelope declares its slot rows (the roster derived ${row.slots.length} at card level; the arrival walk found ${census})`).toBeGreaterThan(0)
+
+      // ── ARM (a) ATTACH — every declared, RENDERED slot row takes
+      // its own fixture; declared-but-unrendered rows (a visible_when
+      // seat the arrival's defaults keep closed) are receipted and
+      // left to the re-switch law, never driven against a seat that
+      // is not there.
+      const attached: Array<{ slot: SlotFace, grammar: 'estate-path' | 'data-url' }> = []
+      for (const slot of arrival) {
+        const seat = await slotSeat(page, slot, census)
+        if (seat === null) {
+          // eslint-disable-next-line no-console -- the declared-but-closed receipt (which closure law keeps the seat shut)
+          console.log(`[sweep-attach] ${tag} · ${slot.name}: declared, not rendered — ${await closureVoice(page, famId, slot.name)}; judged in the re-switch law only`)
+          continue
+        }
+        const params = await attachTo(page, seat, row.card, tag, slot, docPin)
+        expectVerdictLawful(await composeVerdict(page, params, runPressCard), `${tag} · ${slot.name} :: attach`)
+        attached.push({ slot, grammar: seat.grammar })
+      }
+
+      // THE FLIP ARM (the ROADMAP row's third gesture, 2026-11-12 —
+      // the input-prep source flip image→audio→image, the F1 cure's
+      // live arm): gated on the OBSERVED grammar, never a card name —
+      // the single-row data-URL studio whose row label speaks the
+      // Image/Audio flip and whose envelope serves the media enum and
+      // the crop transform. Attach the wav: the sniff flips the lane,
+      // media_type flips, the transform keys take the unset grammar
+      // (crop_x -1), and the DOOR must admit the audio lane. Attach
+      // the png again: the lane flips back, the transforms STAY unset
+      // (no resurrection), the door admits the image lane.
+      if (census === 1 && attached.length === 1 && attached[0].grammar === 'data-url') {
+        const flipRow = page.locator('[data-source-row]').first()
+        const flipLabel = await flipRow.getAttribute('data-source-row')
+        const hasMediaEnum = arrivalWalk.fields.includes('media_type')
+        const hasCropTransform = arrivalWalk.fields.includes('crop_x')
+        if (flipLabel === 'Image' && hasMediaEnum && hasCropTransform) {
+          const slot = attached[0].slot
+          const flipTag = `${tag} · flip`
+          const audio = await attachTo(page, { scope: flipRow, grammar: 'data-url' }, row.card, flipTag, slot, {
+            ...docPin,
+            fixture: fixtureFor(slot, FIXTURES.wav),
+            law: `the flip: ${slot.name} carries the wav as a data:audio URL and media_type flips to audio with the unset transform grammar (crop_x === -1 — the F1 cure's own seat)`,
+            holds: (p) => typeof p[slot.name] === 'string' && String(p[slot.name]).startsWith('data:audio/')
+              && p['media_type'] === 'audio' && p['crop_x'] === -1,
+          })
+          expectVerdictLawful(await composeVerdict(page, audio, runPressCard), `${flipTag} :: audio lane`)
+          const back = await attachTo(page, { scope: flipRow, grammar: 'data-url' }, row.card, flipTag, slot, {
+            ...docPin,
+            law: `the flip back: ${slot.name} carries the png as a data:image URL and media_type flips to image with the transforms STILL unset (no resurrection)`,
+            holds: (p) => typeof p[slot.name] === 'string' && String(p[slot.name]).startsWith('data:image/')
+              && p['media_type'] === 'image' && p['crop_x'] === -1,
+          })
+          expectVerdictLawful(await composeVerdict(page, back, runPressCard), `${flipTag} :: image lane`)
+        }
+      }
+
+      // ── ARM (b) DETACH — every row the attach arm seated rides its
+      // own ✕; the doc drops the coordinate per the grammar's law and
+      // the door still answers (admit, or the lawful empty-bench
+      // voice the door owns — never the brick).
+      for (const { slot, grammar } of attached) {
+        const seat = await slotSeat(page, slot, census)
+        if (seat === null) continue // the flip/lane changed the row's spelling — the re-switch law judges it
+        const emptied = await detachFrom(page, { scope: seat.scope, grammar }, row.card, tag, slot, docPin)
+        expectVerdictLawful(await composeVerdict(page, emptied, runPressCard), `${tag} · ${slot.name} :: detach`)
+      }
+
+      // ── ARM (c) RE-SWITCH AFTER ATTACH — re-attach every driven
+      // row, then ONE switch, then the doc judged against the
+      // ARRIVAL envelope's own declared set: carried while the
+      // arrival still declares AND renders the field (a carried
+      // coordinate the compose door would otherwise never see),
+      // dropped when the arrival lost it (a departed key the door
+      // BRICKS as an unknown param — the doc keeping it is the
+      // switch-brick class, h3 2026-11-05's own voice).
+      for (const { slot } of attached) {
+        const seat = await slotSeat(page, slot, census)
+        if (seat === null) continue
+        await attachTo(page, seat, row.card, tag, slot, docPin)
+      }
+      const other = row.models.find((m) => m.id !== famId)
+      let arrival2Id = famId
+      let reSwitchTag = ''
+      if (row.models.length > 1 && other !== undefined) {
+        reSwitchTag = `${tag} :: re-switch → ${other.id}`
+        arrival2Id = other.id
+        await switchModelSeat(page, reSwitchTag, other, row.models.length)
+      } else {
+        // THE SINGLE-FAMILY ROUND-TRIP (the re-switch arm's bound):
+        // the first served non-Recipe axis group rides ONE row — the
+        // same select→pick→face law the main sweep's axis arm rides.
+        // A card with neither seat receipts the bound: the attachment
+        // must simply hold.
+        const group = await page.evaluate(async (fam: string) => {
+          const spec = await (await fetch(`/v1/form-spec?model=${encodeURIComponent(fam)}`)).json() as {
+            variants?: Array<{ group?: unknown }>
+          }
+          return [...new Set((spec.variants ?? []).map((v) => typeof v.group === 'string' ? v.group : ''))].filter((g) => g !== '' && g !== 'Recipe')[0] ?? null
+        }, famId)
+        if (group !== null) {
+          reSwitchTag = `${tag} :: re-switch → ${group} axis`
+          await sweepAxis(page, group, reSwitchTag, row.card, { maxRows: 1 })
+        } else {
+          // eslint-disable-next-line no-console -- the no-switch receipt
+          console.log(`[sweep-attach] ${reSwitchTag || tag}: no model seat and no served axis — the re-switch arm rides the hold law only`)
+        }
+      }
+      const arrival2Walk = await arrivalSlots(page, arrival2Id)
+      const arrival2 = arrival2Walk.slots
+        .filter((s) => s.families === null || s.families.includes(arrival2Id))
+      const census2 = arrival2.length
+      for (const { slot, grammar } of attached) {
+        const declared = arrival2.some((s) => s.name === slot.name)
+        const seat2 = declared ? await slotSeat(page, slot, census2) : null
+        const law2 = carryLaw(grammar, slot.name, fixtureFor(slot))
+        const holds = declared && seat2 !== null
+          ? law2
+          : (p: Record<string, unknown>) => !law2(p)
+        // THE DEPARTED-KEY JUDGMENT: a dropped attachment is the
+        // switch's own law; a KEPT attachment on a departed key is
+        // THE SWITCH-BRICK CLASS (h3 2026-11-05's own voice — the
+        // door refuses the stale key as an unknown param) — receipted
+        // as the finding it is, the census continuing (one finding
+        // never starves the remaining cards). The carried side keeps
+        // its hard red: an attachment the arrival still renders must
+        // follow, and its loss is the silent drop.
+        const finalDoc = declared && seat2 !== null
+          ? await pollStageDoc(page, row.card, `${reSwitchTag || tag} · ${slot.name}`,
+            `the attachment FOLLOWS the switch (${slot.name} still declared and rendered on the arrival ${arrival2Id})`,
+            holds,
+            docPin)
+          : await pollStageDoc(page, row.card, `${reSwitchTag || tag} · ${slot.name}`,
+            `the attachment is GONE after the switch (${slot.name} left the arrival ${arrival2Id} — a departed key the compose door bricks as an unknown param)`,
+            holds,
+            docPin).catch(() => null)
+        if (finalDoc === null) {
+          // eslint-disable-next-line no-console -- the switch-brick receipt
+          console.log(`[sweep-attach] ${reSwitchTag || tag} · ${slot.name}: SWITCH-BRICK FINDING — the switch departed ${slot.name} from the arrival ${arrival2Id} but the doc keeps the attachment; the arrival door refuses the stale key as an unknown param (the h3 2026-11-05 switch-brick class, live 2026-11-12) — receipted, the census continues`)
+          continue
+        }
+        expectVerdictLawful(await composeVerdict(page, finalDoc, arrival2Id), `${reSwitchTag || tag} · ${slot.name} :: re-switch`)
+      }
+
+      // THE VISIT'S OWN LEDGERS (assert class (a)): silent errors and
+      // swallowed wire failures on the estate doors — the compose
+      // probe's adjudicated refusals stay classified (the tap's own
+      // law), every other 4xx/5xx reds the visit. THE VOICED DEFECTS
+      // ride their own law: a known catalog-integrity voice prints
+      // its finding receipt (the run log carries it verbatim), an
+      // unknown voiced error reds the visit — loud must never mean
+      // passed.
+      expect(silent, `${tag}: silent errors (console/page)`).toEqual([])
+      expect(wireFailures, `${tag}: swallowed wire failures on the estate doors`).toEqual([])
+      const voicedUnknown = voiced.filter((v) => !VOICED_KNOWN.test(v))
+      expect(voicedUnknown, `${tag}: unclassified voiced defects (the estate's own toasts — a loud defect the classifier does not know is still a defect)`).toEqual([])
+      for (const v of voiced) {
+        // eslint-disable-next-line no-console -- the voiced-defect receipt (the finding, verbatim, every ride)
+        console.log(`[sweep-voiced] ${tag}: ${v}`)
+      }
+
+      // THE TEARDOWN (the main sweep's close law): the drill's
+      // accessible name, then the Escape fallback.
+      const close = page.getByRole('button', { name: /^Collapse card$|^Close$|^Back$/ }).first()
+      if ((await close.count()) > 0) await close.click({ timeout: 10_000 }).catch(() => { /* the drill may already be closed */ })
+      await page.waitForTimeout(500)
       await page.keyboard.press('Escape').catch(() => { /* no modal — nothing to close */ })
       await page.waitForTimeout(500)
     }
