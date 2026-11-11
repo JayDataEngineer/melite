@@ -10,9 +10,16 @@
  * `<name>-<version>.tgz`), so the release record's number and the
  * manifests' number must be one number, set by one command.
  *
- * Internal dependencies ride `workspace:*`, so no dependency row moves
- * with the bump; `workspace:^` and pinned ranges would, and this script
- * refuses to edit those silently.
+ * Internal dependencies ride the workspace protocol, so no dependency
+ * row moves with the bump — `workspace:*` (native @melite/* rows),
+ * `workspace:~` (vendored @melite-plugin/* rows), and `workspace:^`
+ * all resolve against the workspace and move with it; pinned ranges
+ * would not, and this script refuses to edit those silently. The one
+ * exception is the ROOT SEAT: the root package.json pins every
+ * @melite row at the literal release number (the DSH plugin-install
+ * recognition shape — never the workspace protocol a consumer profile
+ * cannot resolve), and root-seat-parity demands the bump move those
+ * pins with the manifests, so this script moves them too.
  *
  * Usage:
  *   node scripts/bump-release-version.mjs --to <version> [--dry-run]
@@ -77,13 +84,13 @@ for (const p of packages) {
   for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
     for (const [dep, spec] of Object.entries(p.manifest[field] ?? {})) {
       if (!OURS.some((scope) => dep.startsWith(scope))) continue
-      if (spec === 'workspace:*' || spec === 'workspace:^') continue
+      if (spec === 'workspace:*' || spec === 'workspace:~' || spec === 'workspace:^') continue
       pinned.push(`${p.name} ${field}.${dep}: ${spec}`)
     }
   }
 }
 if (pinned.length > 0) {
-  die(`a sibling dependency carries a pinned version this command will not edit silently:\n  ${pinned.join('\n  ')}\nConvert the row to workspace:* or bump it by hand, then re-run.`)
+  die(`a sibling dependency carries a pinned version this command will not edit silently:\n  ${pinned.join('\n  ')}\nConvert the row to its tier's workspace spelling (workspace:* for @melite/* native carriers, workspace:~ for @melite-plugin/ vendored — the workspace-protocol law) or bump it by hand, then re-run.`)
 }
 
 const moved = []
@@ -112,5 +119,36 @@ for (const p of packages) {
 console.log(`bump-release-version: ${String(moved.length)} package(s) moved to ${args.to} (of ${String(packages.length)} discovered)`)
 if (versionless.length > 0) console.log(`  versionless private package(s), outside the release set: ${versionless.join(', ')}`)
 for (const line of moved) console.log(`  ${line}`)
+
+// THE ROOT SEAT PIN MOVE (root-seat-parity's law: "the seat pin tracks
+// the package's own version (the release bump moves both)"). The root
+// package.json pins every @melite row at the literal release number —
+// the DSH plugin-install shape, deliberately never the workspace
+// protocol — so the bump re-pins them or the wall reds on the first
+// push after a release bump (the v0.2.3-rc.1 burn: 42 pins left at
+// 0.2.2-alpha refused the push battery the gate chains never saw,
+// because the chains ran pre-bump).
+const rootPath = join(REPO, 'package.json')
+const root = JSON.parse(readFileSync(rootPath, 'utf8'))
+const seatMoved = []
+for (const [dep, spec] of Object.entries(root.dependencies ?? {})) {
+  if (!OURS.some((scope) => dep.startsWith(scope))) continue
+  if (spec === args.to) continue
+  if (/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(spec)) seatMoved.push(`${dep}: ${spec} -> ${args.to}`)
+}
+if (seatMoved.length > 0 && !args.dryRun) {
+  const text = readFileSync(rootPath, 'utf8')
+  let next = text
+  for (const dep of seatMoved.map((l) => l.slice(0, l.indexOf(':')))) {
+    const from = JSON.stringify(root.dependencies?.[dep] ?? '')
+    next = next.replace(`"${dep}": ${from}`, `"${dep}": ${JSON.stringify(args.to)}`)
+  }
+  if (next === text) die(`the root seat pins (${seatMoved.length} rows) did not rewrite verbatim in ${rootPath}`)
+  writeFileSync(rootPath, next)
+}
+if (seatMoved.length > 0) {
+  console.log(`  root seat pins moved: ${String(seatMoved.length)}`)
+  for (const line of seatMoved) console.log(`    ${line}`)
+}
 if (args.dryRun) console.log('bump-release-version: DRY RUN — nothing written')
-else console.log(`bump-release-version: ${args.to} is in every manifest under ${join(REPO, 'packages')}`)
+else console.log(`bump-release-version: ${args.to} is in every manifest under ${join(REPO, 'packages')} and in the root seat pins`)
