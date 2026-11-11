@@ -32,7 +32,7 @@
 // The prefix table is the suites' literal mkdtemp prefixes (audited
 // by grep, 2026-09-14); anything else in /tmp is not ours and is
 // never touched.
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -116,13 +116,31 @@ function sweep(runStart: number): void {
       }
       for (const name of names) {
         // a run root belongs to the RUN, not to a timestamp: a live
-        // owner's tree is never touched, however long its suites run
+        // owner's tree is never touched, however long its suites run.
+        // An OWNER-LESS melite-run-* tree is NOT a run root — it is a
+        // suite's nested mint inside a live run's root (every suite
+        // mkdtemp's melite-run-* under TMPDIR): pid-reaping it is the
+        // mid-run ENOENT burn (variant-switch GESTURE B, 2026-11-11 —
+        // a concurrently-running sweep deleted a live sibling suite's
+        // tree out from under its atomic rename). It falls to the
+        // age-fenced prefix branch below, which keeps fresh mints.
         if (name.startsWith("melite-run-")) {
           const full = join(tmpdir(), name);
           try {
-            if (ownerAlive(full)) continue;
-            rmSync(full, { recursive: true, force: true });
-            swept++;
+            const marked = existsSync(join(full, OWNER_FILE));
+            if (marked && !ownerAlive(full)) {
+              // a marked root with a dead owner is a crashed run's
+              // leftover — ownership alone fences it, however fresh
+              rmSync(full, { recursive: true, force: true });
+              swept++;
+            } else if (!marked) {
+              // an owner-less mint is age-fenced only (a live suite's
+              // tree is fresh; a stale pre-1a leftover is old)
+              if (statSync(full).mtimeMs < runStart - LEGACY_STALE_MS) {
+                rmSync(full, { recursive: true, force: true });
+                swept++;
+              }
+            }
           } catch {
             /* raced */
           }

@@ -81,4 +81,20 @@ describe('the tmp sweeper fences ownership, not staleness', () => {
     teardown()
     expect(existsSync(dead), 'a tree nobody owns is reclaimed').toBe(false)
   })
+
+  test("an OWNER-LESS melite-run-* tree is a live suite's mint, never pid-reaped (the GESTURE B ENOENT burn)", () => {
+    enter()
+    // the burn's exact shape: a sibling suite mints melite-run-*
+    // under the live run root with NO owner file — a concurrently
+    // running sweep (this wall's own setup()/teardown()) must not
+    // delete it out from under its atomic rename
+    const mint = mkdtempSync(join(tmpdir(), 'melite-run-'))
+    minted.push(mint)
+    writeFileSync(join(mint, 'mid-write.tmp'), 'bytes')
+
+    const teardown = setup()
+    expect(existsSync(mint), 'a fresh owner-less mint survives the pre-sweep').toBe(true)
+    teardown()
+    expect(existsSync(mint), 'and the teardown sweep leaves it too (age-fenced, never pid-reaped)').toBe(true)
+  })
 })
