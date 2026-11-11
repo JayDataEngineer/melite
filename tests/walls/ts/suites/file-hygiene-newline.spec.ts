@@ -1,3 +1,4 @@
+// @contract infra-newline-second-seat
 /**
  * file-hygiene-newline — THE TRAILING-NEWLINE LAW'S SECOND SEAT
  * (tier-cures-audit item 2, 2026-11-06): the law had exactly ONE
