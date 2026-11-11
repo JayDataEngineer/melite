@@ -1437,7 +1437,9 @@ export class CardRegistryService extends Service {
             // truth has no live rows) — the null arm is the lane judge's
             // own "declares nothing, judges nothing", exercised with
             // literal sets at laneStaleCarry's wall.
-            /* v8 ignore next */
+            /* v8 ignore next -- no live facts row ships surface: null;
+               the arm is wallable only through laneStaleCarry's literal
+               sets, which v8 does not count into this file's coverage. */
             if (surface === null)
                 return null;
             const taken = new Set(surface);

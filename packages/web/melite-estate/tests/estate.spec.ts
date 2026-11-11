@@ -118,15 +118,26 @@ interface Ctx {
   loader?: { entries(): Array<{ options: { name: string } }> }
 }
 
+// A1.4 residue cure (flake-and-typed-seam-audit): the afterEach rode
+// blind deletes — a shell that carried any of these (the studio-lane
+// ambient MELITE_MCP_ENGINES law below) lost its value to the first
+// suite run. Captured once, restored every teardown.
+const ambientCriticRoute = process.env['MELITE_CRITIC_ROUTE']
+const ambientAgentRoute = process.env['MELITE_AGENT_ROUTE']
+const ambientMcpEngines = process.env['MELITE_MCP_ENGINES']
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
-  delete process.env['MELITE_CRITIC_ROUTE']
-  delete process.env['MELITE_AGENT_ROUTE']
+  if (ambientCriticRoute === undefined) delete process.env['MELITE_CRITIC_ROUTE']
+  else process.env['MELITE_CRITIC_ROUTE'] = ambientCriticRoute
+  if (ambientAgentRoute === undefined) delete process.env['MELITE_AGENT_ROUTE']
+  else process.env['MELITE_AGENT_ROUTE'] = ambientAgentRoute
   // The ambient-env law (dsh-ci-test-reliability): a shell that drove
   // the studio lane can carry a present-but-empty MELITE_MCP_ENGINES,
   // and the mcp-row's own config assertion reads the environment.
-  delete process.env['MELITE_MCP_ENGINES']
+  if (ambientMcpEngines === undefined) delete process.env['MELITE_MCP_ENGINES']
+  else process.env['MELITE_MCP_ENGINES'] = ambientMcpEngines
 })
 
 // apply is async (the models row is awaited so a family refusal
