@@ -30,3 +30,42 @@ describe('the served face (2026-11-05: no film-level prompt)', () => {
     expect(Object.keys(root?.dict ?? {})).not.toContain('prompt')
   })
 })
+
+/* ── THE REFAUDIO TOOLTIP SEATS (defect board D-38 + ESTATE-DOC-FIXES
+ * §14, 2026-11-18: "the duck prose hardcodes a number the card also
+ * exposes as a dial" and the rail "has no stated behaviour") ── the
+ * GUI hover is a prose seat the board judged: the ref_audios tooltip
+ * must state the rail's behaviour (once per window, mixed UNDER a
+ * conditioned row at the dial, not a placed line, audio never rides
+ * the mod bag) and the duck_depth_db tooltip must name both duck
+ * sources and the dial's range. DEPTH: read from the REAL
+ * paramSchema.toJSON() — the same envelope the estate serves. */
+describe('the served face carries the refaudio rail truth (D-38/§14)', () => {
+  const seatTooltips = (): string[] => {
+    const json = paramSchema.toJSON() as unknown as {
+      refs: Record<string, { meta?: { extra?: { tooltip?: string } } }>
+    }
+    return Object.values(json.refs)
+      .map((ref) => ref?.meta?.extra?.tooltip)
+      .filter((t): t is string => typeof t === 'string')
+  }
+
+  it('the ref_audios tooltip states the rail: once per window, UNDER a conditioned row at duck_depth_db, not a placed line, audio never rides ref_mods', () => {
+    const tooltips = seatTooltips()
+    const rail = tooltips.find((t) => t.includes('Sound references'))
+    expect(rail, 'the ref_audios tooltip is served').toBeDefined()
+    expect(rail).toMatch(/Conditions each window's generated voice/)
+    expect(rail).toMatch(/loaded once per window/)
+    expect(rail).toMatch(/mixes UNDER a conditioned row at duck_depth_db/)
+    expect(rail).toMatch(/Not a placed line/)
+    expect(rail).toMatch(/Audio does not ride ref_mods; the mod bag is the image identity bake/)
+  })
+
+  it('the duck_depth_db tooltip names BOTH duck sources (a placed clip or a ref_audios voice) and the dial range', () => {
+    const tooltips = seatTooltips()
+    const duck = tooltips.find((t) => t.includes('mix-desk default'))
+    expect(duck, 'the duck_depth_db tooltip is served').toBeDefined()
+    expect(duck).toMatch(/under a conditioned row — a placed dialogue clip or a ref_audios voice/)
+    expect(duck).toMatch(/range −48–0/)
+  })
+})

@@ -397,8 +397,9 @@ export interface LayerA {
      * rides HEARS that clip (a generation-time MeliteAudioSlice in
      * its ref_audios lane: the model's lip-sync mechanism; bed +
      * dialogue + user refs must fit 3 lanes or the compose REFUSES
-     * loud), and the generated voice DUCKS (−14dB) under the real
-     * clip at its film span. Lip-sync FIDELITY is the model's own
+     * loud), and the generated voice DUCKS under the real
+     * clip at its film span, at the film's own `duck_depth_db` dial
+     * (−14 the mix-desk default). Lip-sync FIDELITY is the model's own
      * capability — the plumbing delivers the dialogue to its ears; a
      * rendered window settles how tightly the mouth tracks. */
     audio_clips?: DocAudioClip[];

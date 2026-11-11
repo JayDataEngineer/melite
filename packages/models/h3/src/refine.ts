@@ -102,6 +102,19 @@ export const REFINE_2X_OOM_FRAMES = 141
  *  variant. */
 export const REFINE_DEFAULT_CLIP_SECONDS = 2.33
 
+/** The whole-film REGION repair's measured-green frame band — the
+ *  per-frame SAM3 mask cost boundary (defect board D-32, 2026-11-18:
+ *  362 f ran green at 768×1344 (run-101654771803, region "a person",
+ *  denoise 0.5, grow 32 / blur 12); 481 f of the same shape
+ *  OOM-killed the engine unit 17 minutes in — kernel oom evidence,
+ *  melite-comfyui.service degraded). The true boundary sits between
+ *  the two; the compose refuses PAST the green datapoint —
+ *  conservative by design, one dead engine is the receipt. The
+ *  whole-frame mask (no SAM3) is the lawful whole-film posture at
+ *  any length; the region repair presses per window. */
+export const REGION_REPAIR_GREEN_FRAMES = 362
+
+
 /** The hard-cut workaround's wide window, in frames — 90 f measured
  *  GREEN at 2x on the operator's box (2688×1536, 48 kHz). It existed
  *  for ONE reason: while the carry was dead, wider windows meant

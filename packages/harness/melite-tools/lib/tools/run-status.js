@@ -190,7 +190,12 @@ export function runStatus(estate) {
                         return id + ':' + st + err + (outs.length > 0 ? ' [' + outs.join(',') + ']' : '');
                     }).join(', ')
                     : '';
-                const artPaths = terminal ? artifacts.slice(0, 4).map((a) => {
+                // D-40 (defect board 2026-11-18): every artifact prints —
+                // the 4-row cap hid the film behind "(+N more)" and the
+                // bytes were reachable only as melite_view's diagnostic side
+                // effect. No slice: the run's whole artifact set is the
+                // receipt (a run's set is small; the cap guarded nothing).
+                const artPaths = terminal ? artifacts.map((a) => {
                     const p = typeof a === 'string' ? a
                         : (typeof a?.path === 'string' ? a.path : '');
                     // THE CANONICAL RECEIPT PATH (023's self-critique #3,
@@ -225,7 +230,6 @@ export function runStatus(estate) {
                     // the maker's shell cwd is NOT that root, and the bare
                     // string used to float with no tree named at all.
                     ? '\nartifacts (rooted at the estate output tree, not your cwd): ' + artPaths.join('\n  ')
-                        + (artifacts.length > 4 ? `\n  (+${artifacts.length - 4} more)` : '')
                     : '';
                 // THE EXPORT-NAME VOICE (023's self-critique #4/#6): a
                 // design/export lane's receipt names the mint — the

@@ -1,7 +1,7 @@
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js';
 import { renderH3ChainUpscale } from './chainUpscale.js';
 import { renderH3Extend } from './extend.js';
-import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL } from './refine.js';
+import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL, REGION_REPAIR_GREEN_FRAMES } from './refine.js';
 import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.js';
 import { resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES, solveWindowComposition } from './timelineContract.js';
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
@@ -249,8 +249,30 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         // already composes every ≤141 f film unstated — min(144,
         // probed) — and the unprobed belt keeps its conservative voice;
         // the D-5 law owns this seat, walled in carry-split.spec.ts)
-        const planFrames = Math.round(statedNumber(entry, 'clip_seconds', 6) * 24);
-        const probed = probedSourceFrames(entry, windowStart);
+        // THE DERIVED-PLAN CEILING (defect board D-28, 2026-11-18: the
+        // 2x ceiling is 141 f and the UNSTATED plan derived 6 s = 144 f,
+        // so every unstated-window 2x refine on a film longer than the
+        // ceiling refused quoting a window the caller never stated —
+        // "a 144 f window at refine 2x is TOO LONG" — while the honest
+        // answer for a probeable film is the TILE guard's: the plan
+        // tiles, the chain cannot join 1x prefixes to 2x windows, one
+        // window per press): when the source IS probed and the caller
+        // stated no clip dial, the derived plan slices at the ceiling
+        // (141 f = 5.875 s, REFINE_2X_OOM_FRAMES at the film clock —
+        // derived from the measured constant, never hand-typed), the
+        // per-window judge passes, and the multi-segment guard owns the
+        // press with its one-window cure. A STATED clip_seconds keeps
+        // the caller's number (the expert's slice judges on its own
+        // feet); an UNPROBED source keeps the 6 s conservative voice —
+        // the D-5 belt: no stamp, no tiling claim, the slice ceiling
+        // speaks.
+        const probedEarly = probedSourceFrames(entry, windowStart);
+        const clipStated = typeof entry['clip_seconds'] === 'number';
+        const derivedClipSeconds = !clipStated && scale >= 2 && probedEarly !== undefined
+            ? REFINE_2X_OOM_FRAMES / 24
+            : 6;
+        const planFrames = Math.round(statedNumber(entry, 'clip_seconds', derivedClipSeconds) * 24);
+        const probed = probedEarly;
         const windowFrames = windowLength > 0
             ? Math.round(windowLength)
             : Math.min(planFrames, probed ?? planFrames);
@@ -320,6 +342,51 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
             };
         })
         : null;
+    // ── THE SILENT-INERT AUDIO GUARD (defect board D-33, 2026-11-18:
+    // a single-window edit press ACCEPTED audio_clips rows with no
+    // error and no warning — and the A/B measured them inert (round
+    // 2, F-236: rows in vs rows out, mouth-curve r 0.995, the same
+    // film) — a silent no-op on the one field an agent believes
+    // conditions the mouth. The film path already refuses the shape
+    // ("audio clips ride the FILM path — this single-window doc has
+    // clips but no film to mix over"); the edit path now owns the
+    // same truth: a single-window edit (no authored calls) cannot
+    // condition on the words — the mouth is re-rendered from source
+    // pixels at denoise with no audio rail while keep_audio muxes the
+    // soundtrack through. Refuse loud, naming both lawful doors.)
+    const clipsOnEdit = Array.isArray(p['audio_clips'])
+        ? p['audio_clips'].length
+        : 0;
+    if (clipsOnEdit > 0 && seamShots === null) {
+        throw new Error(`h3-timeline edit: audio_clips ride the FILM path — this single-window edit press carries ${clipsOnEdit} row${clipsOnEdit === 1 ? '' : 's'} the pass cannot condition on (measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched). Add a second call to author a film, or press the edit first and place the line on the film after (a window's mouth is free — the known 2x sync risk)`);
+    }
+    // ── THE EDIT-CHAIN LATTICE PRE-JUDGE (defect board D-24,
+    // 2026-11-18: the edit chain's plan node judges every shot's
+    // length at 22+17k — "Shot 2 length must be an H3-valid frame
+    // length between 5 and 3592 with length % 17 == 5; got 51" —
+    // while the FILM door's own grid law documents carried spans as
+    // 17k (17, 34, 51 …), so every film-legal carried span authored
+    // onto an edit press died at the ENGINE with the SPAN printed
+    // where a generated length belongs, and the obvious cure
+    // (authoring 22+17k spans at the film door) contradicts the film
+    // grid's carried rung: two doors, two lattices, one press. The
+    // compose owns the reconciliation: judge every authored shot
+    // against the chain's own lattice HERE — zero GPU — and refuse
+    // naming BOTH readings (the span, the lawful generation, and
+    // which door's grid each belongs to), never let the engine's
+    // span-only lecture be the first word. The board's own receipts:
+    // 51 AND 17 both refused at the engine — the chain carves no
+    // carried window, it judges the handed length verbatim.)
+    if (seamShots !== null) {
+        for (let i = 0; i < seamShots.length; i++) {
+            const shot = seamShots[i];
+            const span = shot.length;
+            if (!isGridLength(span)) {
+                const nearest = gridSnap(Math.min(GRID_MAX_FRAMES, Math.max(GRID_BASE_FRAMES, span)));
+                throw new Error(`h3-timeline edit: shot ${i + 1}'s ${span} f span is not a length the edit chain generates — the chain serves 22+17k frames (its lattice judges every shot verbatim: carried or cut, the SPAN is the generated length; ${nearest}f is the nearest). The film grid's carried rungs (17, 34, 51 …) are the FILM door's law, not the edit chain's: retime shot ${i + 1} to a 22+17k span${i > 0 ? ' or declare transition "cut"' : ''}, or press the edit per window (a stated window_length)`);
+            }
+        }
+    }
     // THE MULTI-SEGMENT 2X GUARD (defect board D-2, 2026-11-16: the
     // engine burn `h3_masked_prefix: previous/target video latent
     // geometry differs: (1, 24, 17, 168, 96) vs (1, 24, 17, 84, 48)` —
@@ -347,15 +414,52 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
         // single-window press) — the guard only judges plans the film
         // or the calls actually split.
         const probedTotal = probedSourceFrames(entry, windowStart);
+        // D-28's companion: a total past the slice tiles AT LEAST twice —
+        // when the solver cannot compose the total exactly its own
+        // exactness lecture must not shadow the tile truth (a refine
+        // press past the ceiling is dead either way; the honest first
+        // word is the join burn, never uniform-window arithmetic)
+        const tileCount = (total) => {
+            try {
+                return solveWindowComposition(total, 'edit', carryJoin).windows;
+            }
+            catch {
+                return 2;
+            }
+        };
         const planWindows = windowLength > 0
             ? 1
             : (seamShots !== null
                 ? seamShots.length
                 : (probedTotal !== undefined && probedTotal > planFramesGuard
-                    ? solveWindowComposition(probedTotal, 'edit', carryJoin).windows
+                    ? tileCount(probedTotal)
                     : null));
         if (planWindows !== null && planWindows >= 2) {
             throw new Error(`h3-timeline edit: refine ${scale}x over a ${planWindows}-window plan cannot tile — the chain joins its segments at 1x geometry while each refined window emits ${scale}x latents (the engine dies mid-run: h3_masked_prefix 'previous/target video latent geometry differs'), so a multi-window refine press burns GPU on the first segment to abort on the second. Refine ONE window per press (a stated window_length, or a pre-trimmed clip — the measured posture: 56 f at 2x, ~3 min, AAC kept); the full-film 2x tile owes the assembler its own upscale-after-assembly door`);
+        }
+    }
+    // ── THE REGION-REPAIR MEMORY BAND (defect board D-32,
+    // 2026-11-18: a whole-film region repair has NO band check
+    // anywhere — passes.stage() band-checks only 2x passes — and a
+    // per-frame SAM3 mask over a 481 f film OOM-KILLED the engine
+    // unit (17 minutes in, melite-comfyui.service degraded, kernel
+    // oom), while the SAME shape at 362 f ran green (run-101654771803:
+    // region "a person", denoise 0.5, grow 32 / blur 12, whole film,
+    // 948 → 1142 median Laplacian). The observed boundary sits
+    // between 362 and 481 f and nothing at the door knew it. The
+    // region mask is per-frame SAM3 work over the whole clip BEFORE
+    // the denoise pass consumes it — its cost rides the FILM LENGTH,
+    // not the window the plan derives. THE BAND (conservative, at the
+    // measured-green datapoint): a region-masked whole-film press
+    // over 362 f refuses at compose naming the window law — zero
+    // GPU, zero dead engines. `mask_source: "whole-frame"` (no SAM3)
+    // is the lawful whole-film posture at any length; a pre-trimmed
+    // clip or a stated window_start + window_length presses the
+    // repair per window.) ──
+    if (mask.source === 'region' && windowLength === 0) {
+        const regionProbed = probedSourceFrames(entry, windowStart);
+        if (regionProbed !== undefined && regionProbed > REGION_REPAIR_GREEN_FRAMES) {
+            throw new Error(`h3-timeline edit: a whole-film region repair over ${regionProbed} f exceeds the measured SAM3 mask band — 362 f ran green, 481 f OOM-killed the engine unit (the region mask is per-frame SAM3 work over the whole clip before the denoise pass; its cost rides the film length, not the window). Press the repair per window (window_start + window_length — one window per press), pre-trim the clip, or use mask_source "whole-frame" (no SAM3) for a whole-film pass at any length`);
         }
     }
     // ── the mask dial's own derivation (outside the body, the

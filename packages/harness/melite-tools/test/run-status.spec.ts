@@ -574,7 +574,12 @@ describe('run_status render — the live-age law (§36.6 progress-UX)', () => {
     })
     assert.ok(expanded.includes('output/run-abc'))
     assert.ok(expanded.includes('test-output/') === false)
-    assert.ok(expanded.includes('(+1 more)'))
+    // D-40 (defect board 2026-11-18): the artifact list is NEVER
+    // truncated — "(+N more)" hid the film (the one artifact that
+    // matters) behind a 4-row cap and the bytes were reachable only
+    // as melite_view's diagnostic side effect. Every artifact prints.
+    assert.ok(expanded.includes('(+') === false)
+    assert.ok(expanded.includes('other/four.flac'))
   })
 
   test('test runs select the test output root and the exact run directory arm', () => {

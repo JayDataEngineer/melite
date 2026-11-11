@@ -231,6 +231,49 @@ describe("THE CALLS→EDIT SEAM TRANSLATION (audit item 5 — the timeline's aut
     assert.equal(shots[1]!.id, "w2-cut");
   });
 
+  it("D-24 THE LATTICE PRE-JUDGE: a film-grid carried rung (17 f span) refuses at COMPOSE naming both doors' grids — never the engine's span-only lecture (zero GPU)", () => {
+    // the board's second receipt: [0,124) + [124,141) authored by
+    // the card's own carried-span law died at the ENGINE with
+    // "Shot 2 length must be an H3-valid frame length ... % 17 == 5;
+    // got 17" — the span printed where a generated length belongs
+    assert.throws(
+      () => editPlan({ calls: [
+        { text: "a", start_frame: 0, end_frame: 124 },
+        { text: "b", start_frame: 124, end_frame: 141, transition: "extend" },
+      ], ...FILM }, EDIT_ENTRY()),
+      /shot 2's 17 f span is not a length the edit chain generates — the chain serves 22\+17k frames \(its lattice judges every shot verbatim: carried or cut, the SPAN is the generated length; 22f is the nearest\)\. The film grid's carried rungs \(17, 34, 51 …\) are the FILM door's law, not the edit chain's: retime shot 2 to a 22\+17k span or declare transition "cut", or press the edit per window \(a stated window_length\)/,
+      "the compose names the span, the lawful generation, and WHICH door's grid each belongs to",
+    );
+  });
+
+  it("D-24 the chain-legal carried span still composes (56 f — the lattice's own rung, the both-door shape)", () => {
+    const { shots } = editPlan({ calls: TWO_WINDOWS("extend"), ...FILM }, EDIT_ENTRY());
+    assert.equal(shots[1]!.length, 56);
+  });
+
+  it("D-31 THE OVERRIDE WALL: authored calls + a STATED window is a single-window press — the calls never reach the plan, so no multi-window refine can burn (the trap shape guarded)", () => {
+    // the board's live trap: 3 calls tiling 481 f + window_length 124
+    // + refine 2x "still composes" — in the landed law the stated
+    // window IS the press (the override is the expert's); this wall
+    // pins that the calls do not ride the plan behind the window
+    const g = new GraphBuilder();
+    renderH3Edit({
+      source_clip: "clips/take.mp4", edit_prompt: "upscale the yard", denoise: 0.32, mask: "masks/j.png",
+      refine: true, scale: 2, window_length: 124,
+    }, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, {
+      ...FILM, calls: [
+        { text: "a", start_frame: 0, end_frame: 160 },
+        { text: "b", start_frame: 160, end_frame: 320, transition: "extend" },
+        { text: "c", start_frame: 320, end_frame: 481, transition: "extend" },
+      ],
+    }, FACTS, g, "run_d31");
+    const o = out(g);
+    const plan = ofClass(o, "MiniMaxH3ChainPlanModern")[0]![1];
+    const shots = (JSON.parse(String(plan.inputs.plan_json)) as { shots: Array<{ length: number }> }).shots;
+    assert.equal(shots.length, 1, "one shot — the stated window's own press, the 3 calls never ride");
+    assert.equal(loadCap(o), 124, "the loader caps at the stated window");
+  });
+
   it("carry+keyframe translates to the CARRY join, STATED in the id (a keyframe is a gen-side anchor; a masked edit carries — never a silent downgrade)", () => {
     const { shots } = editPlan({ calls: TWO_WINDOWS("carry+keyframe"), ...FILM }, EDIT_ENTRY());
     assert.equal(shots[1]!.context_length, 39);
@@ -336,16 +379,21 @@ describe("D-5 THE PROBED WINDOW (defect board 2026-11-16: the refine 2x press on
     assert.doesNotThrow(() => compose(REFINE_ENTRY({ __source_frames: 56, window_start: 48 })));
   });
 
-  it("a film that OUTLIVES the plan slice still refuses at the slice (400 f probed, unstated window → the 144 f first segment)", () => {
+  it("D-28 a film that OUTLIVES the ceiling refuses at the TILE guard (400 f probed, unstated window — the derived plan caps at 141, never quotes a 144 the caller never stated)", () => {
     assert.throws(
       () => compose(REFINE_ENTRY({ __source_frames: 400 })),
-      /a 144 f window at refine 2x is TOO LONG — the 2x pass was measured OOM at 141 f/,
-      "the true positive keeps firing",
+      /refine 2x over a \d+-window plan cannot tile — the chain joins its segments at 1x geometry/,
+      "the honest first word is the join burn and the one-window cure (D-28: the derived 144 f slice refusal was the board's trap)",
     );
+    assert.doesNotThrow(() => {
+      try { compose(REFINE_ENTRY({ __source_frames: 400 })) } catch (e) {
+        if (/144 f window at refine 2x is TOO LONG/.test(String((e as Error).message))) throw e
+      }
+    }, "the derived-plan trap sentence never fires on an unstated press (a STATED clip_seconds keeps its own voice below)");
     assert.throws(
-      () => compose(REFINE_ENTRY({ __source_frames: 400 })),
-      /the source probed 400 f and outlives the 144 f plan slice, so the slice itself judged/,
-      "the refusal states WHICH length judged — the provenance is the cure's receipt",
+      () => compose(REFINE_ENTRY({ __source_frames: 400, clip_seconds: 6 })),
+      /a 144 f window at refine 2x is TOO LONG — the 2x pass was measured OOM at 141 f[\s\S]*the source probed 400 f and outlives the 144 f plan slice, so the slice itself judged/,
+      "a STATED clip dial keeps the caller's number — the slice judges on its own feet",
     );
   });
 
@@ -493,5 +541,80 @@ describe("THE DEFECT-BOARD MESSAGE PASS (D-6 + D-3, 2026-11-16: a refusal that d
       /window_length 300f is not on the film's grid — \d+f is the nearest, or leave the window unstated/,
       "the old voice rides whole for the non-2s press",
     );
+  });
+});
+
+describe("D-32 THE REGION-REPAIR MEMORY BAND (defect board 2026-11-18: 481 f of per-frame SAM3 OOM-killed the engine unit; 362 f ran green — nothing at the door knew the boundary)", () => {
+  const REGION = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    source_clip: "clips/talk.mp4", edit_prompt: "restore the style", denoise: 0.5,
+    mask_grow: 32, mask_blur: 12, carry: true, overlap_frames: 39, keep_audio: true,
+    ...extra,
+  });
+  const composeRegion = (entry: Record<string, unknown>): Record<string, Node> => {
+    const g = new GraphBuilder();
+    renderH3Edit(entry, { source: "region", prompt: "a person" } as never, { mode: "self" } as never, { ...FILM }, FACTS, g, "run_d32");
+    return out(g);
+  };
+
+  it("THE BAND: a 481 f whole-film region repair refuses at compose naming the band, the two green datapoints, and the window law (zero GPU)", () => {
+    assert.throws(
+      () => composeRegion(REGION({ __source_frames: 481 })),
+      /a whole-film region repair over 481 f exceeds the measured SAM3 mask band — 362 f ran green, 481 f OOM-killed the engine unit \(the region mask is per-frame SAM3 work over the whole clip before the denoise pass; its cost rides the film length, not the window\)\. Press the repair per window \(window_start \+ window_length — one window per press\), pre-trim the clip, or use mask_source "whole-frame" \(no SAM3\) for a whole-film pass at any length/,
+      "the refusal names the boundary evidence and every lawful door",
+    );
+  });
+
+  it("the green datapoint still composes (362 f whole-film region repair — the measured run)", () => {
+    assert.doesNotThrow(() => composeRegion(REGION({ __source_frames: 362 })));
+  });
+
+  it("a STATED window never meets the band (the per-window press is the lawful repair posture at any film length)", () => {
+    assert.doesNotThrow(() => composeRegion(REGION({ __source_frames: 481, window_length: 124 })));
+  });
+
+  it("an unprobed source stays the belt (no stamp, no band claim — the D-5 posture)", () => {
+    assert.doesNotThrow(() => composeRegion(REGION({})));
+  });
+
+  it("the whole-frame mask is the lawful whole-film posture at any length (no SAM3, no band)", () => {
+    const g = new GraphBuilder();
+    assert.doesNotThrow(() => {
+      renderH3Edit(REGION({ __source_frames: 900 }), { source: "whole-frame" } as never, { mode: "self" } as never, { ...FILM }, FACTS, g, "run_d32wf");
+    });
+  });
+});
+
+describe("D-33 THE SILENT-INERT AUDIO GUARD (defect board 2026-11-18: the edit door ACCEPTED audio_clips on a single-window press — measured inert, F-236: rows in vs rows out, mouth-curve r 0.995, the same film)", () => {
+  const EDIT = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    source_clip: "clips/take.mp4", edit_prompt: "refine the fight", denoise: 0.32, mask: "masks/j.png",
+    ...extra,
+  });
+  const composeEdit = (entry: Record<string, unknown>, p: Record<string, unknown>): Record<string, Node> => {
+    const g = new GraphBuilder();
+    renderH3Edit(entry, { source: "static-png", image: "k.png" } as never, { mode: "self" } as never, p, FACTS, g, "run_d33");
+    return out(g);
+  };
+
+  it("THE GUARD: audio_clips on a single-window edit press refuse loud — naming the measured inertness and both lawful doors", () => {
+    assert.throws(
+      () => composeEdit(EDIT({}), { ...FILM, audio_clips: [{ id: "l1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 4, dur_frames: 91, text: "four?" }] }),
+      /audio_clips ride the FILM path — this single-window edit press carries 1 row the pass cannot condition on \(measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched\)\. Add a second call to author a film, or press the edit first and place the line on the film after \(a window's mouth is free — the known 2x sync risk\)/,
+      "the silent no-op is dead: the door states what the rows do (nothing) and where they belong",
+    );
+  });
+
+  it("an authored-call edit (the film shape) still takes the rows — the film mix owns them there", () => {
+    assert.doesNotThrow(() => composeEdit(EDIT({}), {
+      ...FILM,
+      calls: [
+        { text: "a", start_frame: 0, end_frame: 56 },
+        { text: "b", start_frame: 56, end_frame: 112, transition: "extend" },
+      ],
+      audio_clips: [{ id: "l1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 4, dur_frames: 91, text: "four?" }],
+    }));
+  });
+
+  it("a clip-free single-window edit composes untouched", () => {
+    assert.doesNotThrow(() => composeEdit(EDIT({}), { ...FILM }));
   });
 });

@@ -125,7 +125,7 @@ export const paramSchema = z.object({
         start_time: z.number().min(0).default(0).description('Start (s)'),
         duration: z.number().min(0).default(0).description('Duration (s)'),
     })).max(REF_CAPS.videos).description("Reference video trims").extra('extra', bag({ order: null, tooltip: "Per-video trims, index-paired with Reference videos — entry i slices guide i (start seconds + duration seconds) before conditioning. duration 0 = to the clip's end; an absent entry = the whole clip." })),
-    ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', bag({ order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." })),
+    ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', bag({ order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone. Conditions each window's generated voice — each clip is loaded once per window and the synthesised voice mixes UNDER a conditioned row at duck_depth_db. Not a placed line: to hear your own take, place it in audio_clips. Audio does not ride ref_mods; the mod bag is the image identity bake." })),
     // THE REFMOD SEAT (audit 010/R1, 2026-10-18): reusable reference
     // mods. The pack injects them as reference tokens through ALL
     // DiT blocks on the conditioning side: no bundle-bus slot is
@@ -159,7 +159,7 @@ export const paramSchema = z.object({
     // generated voice yields under a conditioned clip at its film
     // span. −14dB is the natural mix-desk default; deeper for dense
     // dialogue, shallower when the generated voice should hold.
-    duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a dialogue clip (−14 is the mix-desk default)." })),
+    duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a conditioned row — a placed dialogue clip or a ref_audios voice (−14 is the mix-desk default; range −48–0)." })),
     seed: z.number().description("Seed").step(1).default(42).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" })),
     width: z.number().description("Width").min(448).max(1344).step(32).default(1344).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
     height: z.number().description("Height").min(448).max(1344).step(32).default(768).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
