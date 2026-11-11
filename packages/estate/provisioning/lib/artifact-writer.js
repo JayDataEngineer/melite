@@ -544,12 +544,68 @@ export class VerifiedArtifactWriter {
         await walk(this.root);
         return reaped;
     }
+    /** The 0-byte corpse reaper (the 2026-11-11 unet-stub burn): a
+     *  failed download that writes the FINAL name directly (the
+     *  engine manager's queue downloader — not this writer, whose
+     *  writes are atomic .part+rename) leaves a 0-byte regular file
+     *  that SHADOWS the real weight in the engine's folder lookup
+     *  and satisfied the existence-only presence probe. A weights
+     *  extension carrying ZERO bytes whose mtime froze past
+     *  {@link CORPSE_STALE_MS} is a corpse, never a live flight —
+     *  unlink it. The extension guard protects every non-weight
+     *  file class (the engine's own put_*_here placeholders carry
+     *  no weights extension); .part- sidecars are the stale-part
+     *  law's own (a fresh part is a live download and survives).
+     *  Returns the unlinked count.
+     *  @param options.signal — cancels the walk between directories. */
+    async reapZeroByteWeights(options = {}) {
+        const staleBefore = Date.now() - CORPSE_STALE_MS;
+        let reaped = 0;
+        const walk = async (dir) => {
+            throwIfAborted(options.signal);
+            let entries;
+            try {
+                entries = await readdir(dir, { withFileTypes: true });
+            }
+            catch {
+                return; // a vanished or unreadable subtree has nothing to reap
+            }
+            for (const entry of entries) {
+                const path = join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    await walk(path);
+                    continue;
+                }
+                if (!entry.isFile() || PART_NAME.test(entry.name))
+                    continue;
+                if (!WEIGHTS_EXTENSION.test(entry.name))
+                    continue;
+                const info = await stat(path).catch(() => undefined);
+                if (info === undefined || info.size > 0 || info.mtimeMs > staleBefore)
+                    continue;
+                await rm(path, { force: true }).catch(() => undefined);
+                reaped += 1;
+            }
+        };
+        await walk(this.root);
+        return reaped;
+    }
 }
 /** A part is stale when its mtime froze for this long: the writer
  *  appends chunks continuously, so only a dead process leaves one
  *  this old (downloads legitimately take hours). */
 export const PART_STALE_MS = 24 * 60 * 60 * 1000;
 const PART_NAME = /\.part-/;
+/** A 0-byte weights file is a corpse when its mtime froze this
+ *  long: the manager queue's downloader fills the final name within
+ *  seconds of creating it, so ten silent minutes at zero bytes is a
+ *  dead flight, never a slow one (the burn's waves stamped whole
+ *  fleets in one second and sat). */
+export const CORPSE_STALE_MS = 10 * 60 * 1000;
+/** The weight spellings the store carries; every other file class
+ *  (the engine's put_*_here placeholders, configs, manifests) is
+ *  never corpse-reaped. */
+const WEIGHTS_EXTENSION = /\.(safetensors|sft|pth|onnx|ckpt|pt|bin|gguf)$/;
 export async function writeVerifiedArtifact(request, signal) {
     return await new VerifiedArtifactWriter(request.root).write(request, signal);
 }

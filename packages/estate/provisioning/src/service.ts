@@ -719,11 +719,18 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     // orphans the writer's .part sidecar past every catch — the
     // boot sweep and the periodic sweep unlink the stale ones. A
     // failed sweep never takes the seat down; the next tick retries.
+    // THE CORPSE REAPER rides the same sweeps (the 2026-11-11
+    // unet-stub burn): failed downloads that write the final name
+    // directly (the engine manager's queue) leave 0-byte weights
+    // files that shadow the real weights in the engine's folder
+    // lookup — the sweep unlinks the stale corpses so the store
+    // self-heals between the operator's presses.
     if (this.writer instanceof VerifiedArtifactWriter) {
       const writer = this.writer;
       this.ctx.effect(() => {
         const sweep = (): void => {
           void writer.reapStaleParts().catch(() => undefined);
+          void writer.reapZeroByteWeights().catch(() => undefined);
         };
         sweep();
         const ticker = setInterval(sweep, PART_REAP_INTERVAL_MS);

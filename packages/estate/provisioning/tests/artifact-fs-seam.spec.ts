@@ -427,3 +427,42 @@ describe("the .part reaper (audit K-4)", () => {
     assert.equal(existsSync(part), false);
   });
 });
+
+describe("the 0-byte corpse reaper (the 2026-11-11 unet-stub burn)", () => {
+  test("a stale 0-byte weights corpse unlinks on both folder spellings; every protected class survives", async () => {
+    const { VerifiedArtifactWriter, CORPSE_STALE_MS } = await import("../src/artifact-writer.ts");
+    assert.equal(CORPSE_STALE_MS, 10 * 60 * 1000, "the corpse bound is ten frozen minutes");
+    const store = root();
+    // the burn's exact shape: corpses stamped in one second across
+    // the legacy unet/ spelling while the real weights sit in
+    // diffusion_models/
+    const corpse = join(store, "unet", "anima-turbo-v1.1-int8convrot.safetensors");
+    const corpse2 = join(store, "loras", "dead-lora.safetensors");
+    const real = join(store, "diffusion_models", "anima-turbo-v1.1-int8convrot.safetensors");
+    // the protected classes: a live just-started download (fresh
+    // mtime at 0 bytes), a 0-byte NON-weights file (the engine's
+    // own put_*_here placeholders), a live .part sidecar, and a
+    // real weight
+    const freshFlight = join(store, "unet", "filling.safetensors");
+    const placeholder = join(store, "checkpoints", "put_checkpoints_here");
+    const livePart = join(store, "unet", "filling.safetensors.part-op-live");
+    mkdirSync(dirname(corpse), { recursive: true });
+    mkdirSync(dirname(corpse2), { recursive: true });
+    mkdirSync(dirname(real), { recursive: true });
+    mkdirSync(dirname(placeholder), { recursive: true });
+    for (const p of [corpse, corpse2, freshFlight, placeholder, livePart]) writeFileSync(p, "");
+    writeFileSync(real, "bytes");
+    // only the two corpses are past the frozen bound
+    const dead = new Date(Date.now() - 30 * 60 * 1000);
+    utimesSync(corpse, dead, dead);
+    utimesSync(corpse2, dead, dead);
+    const writer = new VerifiedArtifactWriter(store);
+    assert.equal(await writer.reapZeroByteWeights(), 2);
+    assert.equal(existsSync(corpse), false, "the stale unet corpse is gone");
+    assert.equal(existsSync(corpse2), false, "the stale loras corpse is gone");
+    assert.equal(existsSync(freshFlight), true, "a just-started 0-byte flight survives (mtime is fresh)");
+    assert.equal(existsSync(placeholder), true, "the engine's put_*_here placeholder survives (no weights extension)");
+    assert.equal(existsSync(livePart), true, "a live .part sidecar survives (the stale-part law owns it)");
+    assert.equal(existsSync(real), true, "the real weight survives");
+  });
+});

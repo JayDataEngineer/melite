@@ -115,11 +115,34 @@ export declare class VerifiedArtifactWriter implements ArtifactWriterPort {
         olderThanMs?: number;
         signal?: AbortSignal;
     }): Promise<number>;
+    /** The 0-byte corpse reaper (the 2026-11-11 unet-stub burn): a
+     *  failed download that writes the FINAL name directly (the
+     *  engine manager's queue downloader — not this writer, whose
+     *  writes are atomic .part+rename) leaves a 0-byte regular file
+     *  that SHADOWS the real weight in the engine's folder lookup
+     *  and satisfied the existence-only presence probe. A weights
+     *  extension carrying ZERO bytes whose mtime froze past
+     *  {@link CORPSE_STALE_MS} is a corpse, never a live flight —
+     *  unlink it. The extension guard protects every non-weight
+     *  file class (the engine's own put_*_here placeholders carry
+     *  no weights extension); .part- sidecars are the stale-part
+     *  law's own (a fresh part is a live download and survives).
+     *  Returns the unlinked count.
+     *  @param options.signal — cancels the walk between directories. */
+    reapZeroByteWeights(options?: {
+        signal?: AbortSignal;
+    }): Promise<number>;
 }
 /** A part is stale when its mtime froze for this long: the writer
  *  appends chunks continuously, so only a dead process leaves one
  *  this old (downloads legitimately take hours). */
 export declare const PART_STALE_MS: number;
+/** A 0-byte weights file is a corpse when its mtime froze this
+ *  long: the manager queue's downloader fills the final name within
+ *  seconds of creating it, so ten silent minutes at zero bytes is a
+ *  dead flight, never a slow one (the burn's waves stamped whole
+ *  fleets in one second and sat). */
+export declare const CORPSE_STALE_MS: number;
 export declare function writeVerifiedArtifact(request: VerifiedArtifactRequest, signal?: AbortSignal): Promise<VerifiedArtifactResult>;
 export declare function newOperationId(): string;
 //# sourceMappingURL=artifact-writer.d.ts.map
