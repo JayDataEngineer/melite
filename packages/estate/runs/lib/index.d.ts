@@ -9,6 +9,9 @@ interface RunsSeat {
     start(doc: unknown, signal: AbortSignal): Promise<RunStartRow>;
     status(runId: string, signal: AbortSignal, includeLog?: boolean): Promise<Record<string, unknown>>;
     stop(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** The output-rename door (queue 12 Phase B): patch a settled
+     *  run's gallery row display label. */
+    renameOutput(runId: string, stageIndex: number, galleryIndex: number, label: string, signal: AbortSignal): Promise<Record<string, unknown>>;
     list(rawLimit: string, signal: AbortSignal): Promise<{
         count: number;
         runs: Record<string, unknown>[];
@@ -37,6 +40,10 @@ export declare class RunsRemoteService extends TypertRemoteService {
     remoteExportStatus(runId: string, signal: AbortSignal): Promise<RunRow>;
     /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */
     remoteExportStop(runId: string, signal: AbortSignal): Promise<RunRow>;
+    /** Endpoint `runs/rename-output` — the post-run gallery label patch
+     *  (queue 12 Phase B, registry seat). The answer is a JSON-flat row
+     *  (the rename receipt: indexes, the untouched name, the new label). */
+    remoteExportRenameOutput(runId: string, stageIndex: number, galleryIndex: number, label: string, signal: AbortSignal): Promise<RunRow>;
     /** Endpoint `runs/list` — the restore-port envelope (registry
      *  seat; the raw limit string keeps int() semantics). */
     remoteExportList(rawLimit: string, signal: AbortSignal): Promise<{

@@ -54,6 +54,7 @@ import css from './card.module.css'
 import { FormSkeleton } from './skeleton.tsx'
 import { StudioShell } from '@melite/card-base/client'
 import { fetchMediaLibrary, fetchChainRunCandidates } from './cards-resource.ts'
+import { renameRunOutput, runMediaAddressOf } from './cards-resource.ts'
 import { uploadInputFile } from '@melite/card-base/client'
 import { paramsDiffKeys, previewArtifactsFor, previewReportsFor, primaryKindFor } from './preview-kinds.ts'
 import { removeStageWire, ungroupStageWire } from './add-stage.ts'
@@ -2071,6 +2072,27 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             // deeper; the ends hold (drilldown.spec pins the law).
             siblings: drillWalk,
             onNavigate: (next) => { setDrillItem(next) },
+            // THE OUTPUT-RENAME VERB (queue 12 Phase B): the
+            // drilldown owns the inline-rename face (the gallery's
+            // own pattern — input + save/cancel + the refusal's
+            // words); this seat owns the door. The media-route url
+            // names the run and the machine file; the estate's door
+            // patches the gallery row's display label post-settle.
+            // A refusal THROWS — the drilldown paints the door's own
+            // words and the old label stands; a landed rename
+            // re-points this seat's walk items (url never moves, so
+            // the walk survives) and the run-row readers pick the
+            // label up on their next read.
+            onRename: async (item: MediaDrilldownItem, name: string): Promise<void> => {
+              const addr = runMediaAddressOf(item.url)
+              if (addr === null) throw new Error(chromeCopy.renameAddressMiss({ name: item.file }))
+              const answer = await renameRunOutput({ runId: addr.runId, name: addr.name, label: name })
+              const label = typeof answer['label'] === 'string' && answer['label'] !== '' ? answer['label'] : name
+              const named = (m: MediaDrilldownItem): MediaDrilldownItem =>
+                m.url === item.url ? { ...m, file: label } : m
+              setDrillWalk((walk) => walk.map(named))
+              setDrillItem((cur) => (cur !== null && cur.url === item.url ? named(cur) : cur))
+            },
           })
           : null,
         // THE REPORT SECTION (ROADMAP 11e, the result row's claim):

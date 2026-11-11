@@ -385,6 +385,21 @@ export declare class RunsRuntimeService extends Service {
      *  claim/settle law, and the change rides notifyRunChanged so the
      *  tab's poller re-fires on the truth. */
     attribute(runId: string, value: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** THE OUTPUT-RENAME DOOR (queue 12 Phase B): a settled run's
+     *  gallery row gets a new display `label`, post-run — the output_name
+     *  mint at settle named the rows once; this door owns every rename
+     *  after. The `name` (the machine file key the media route and every
+     *  dedup law ride) NEVER moves — the patch rewrites the addressed
+     *  row's label alone: no sibling renumbering, no `stem · 2…n`
+     *  auto-repair; a caller with several rows to rename patches each
+     *  row it wants. Guards speak before any write: unknown run
+     *  (runs/run-unknown, the searched-trees voice), a live row (rename
+     *  waits for settle), an empty/whitespace label, an out-of-range
+     *  stage or gallery index. The patch lands in the live row, the
+     *  change rides notifyRunChanged (the tab's poller re-fires), and
+     *  the sidecar rewrite persists it (the disk fallback and every
+     *  boot re-read spread the new label). */
+    renameOutput(runId: string, stageIndex: number, galleryIndex: number, label: string, signal: AbortSignal): Promise<Record<string, unknown>>;
     /** The live map (the queue seat's core registry — rich rows). */
     private liveRun;
     /** THE SETTLED-TRUTH RESYNC (the stuck-run cure, 2026-11-09): a

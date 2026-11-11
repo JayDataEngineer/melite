@@ -10,6 +10,7 @@ import type { RunRow, RunStartDoc, RunStartRow } from '@melite/estate-runs/types
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$72756e73 {
     list: (rawLimit: string, signal?: AbortSignal) => Promise<RemoteResult<{ count: number; runs: RunRow[]; }>>
+    renameOutput: (runId: string, stageIndex: number, galleryIndex: number, label: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     start: (doc: RunStartDoc, signal?: AbortSignal) => Promise<RemoteResult<RunStartRow>>
     status: (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     stop: (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
@@ -18,6 +19,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
   interface TypertRemoteMap {
     'runs/list': (rawLimit: string, signal?: AbortSignal) => Promise<RemoteResult<{ count: number; runs: RunRow[]; }>>
+    'runs/renameOutput': (runId: string, stageIndex: number, galleryIndex: number, label: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     'runs/start': (doc: RunStartDoc, signal?: AbortSignal) => Promise<RemoteResult<RunStartRow>>
     'runs/status': (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
     'runs/stop': (runId: string, signal?: AbortSignal) => Promise<RemoteResult<RunRow>>
@@ -31,6 +33,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 
 export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'runs/list': TypertRemoteMethod<{ readonly 'rawLimit': string }, { count: number; runs: RunRow[]; }>
+  readonly 'runs/renameOutput': TypertRemoteMethod<{ readonly 'runId': string; readonly 'stageIndex': number; readonly 'galleryIndex': number; readonly 'label': string }, RunRow>
   readonly 'runs/start': TypertRemoteMethod<{ readonly 'doc': RunStartDoc }, RunStartRow>
   readonly 'runs/status': TypertRemoteMethod<{ readonly 'runId': string }, RunRow>
   readonly 'runs/stop': TypertRemoteMethod<{ readonly 'runId': string }, RunRow>

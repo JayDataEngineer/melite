@@ -272,6 +272,18 @@ export declare function claimPersist(run: RunRecord): Promise<void>;
  *  run.attribution in memory).
  * @returns when the write completed or self-swallowed its fault. */
 export declare function attributionPersist(run: RunRecord): Promise<void>;
+/** THE RENAME PERSIST (queue 12 Phase B): the runs registry's rename
+ *  door rewrites the run's _flow.json the moment a gallery row's
+ *  `label` lands — the display name must survive a registry reload
+ *  (the status door's disk fallback spreads this row) and every
+ *  later boot's re-read. Best-effort by the claim/settle law: the
+ *  in-memory row is the truth, a persist failure never blocks the
+ *  rename. The row's `name` is untouched — this write carries the
+ *  patched row only because sidecarFacesOf mirrors the live stages.
+ * @param run the patched row (the caller already rewrote the gallery
+ *  label in memory).
+ * @returns when the write completed or self-swallowed its fault. */
+export declare function galleryLabelPersist(run: RunRecord): Promise<void>;
 /** The synthesized log tail (door-verbatim port: the retired
  *  oracle's status voice, synthesized from the live row). */
 export declare function runLogTail(obj: {

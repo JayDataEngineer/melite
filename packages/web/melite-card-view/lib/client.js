@@ -282,15 +282,15 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema7$1())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema7$1())).readonly()
 		]);
-		let JsonValueRemoteCodec$schema8$value;
-		const JsonValueRemoteCodec$schema8 = () => JsonValueRemoteCodec$schema8$value ??= zod.z.union([
+		let JsonValueRemoteCodec$schema8$value$1;
+		const JsonValueRemoteCodec$schema8$1 = () => JsonValueRemoteCodec$schema8$value$1 ??= zod.z.union([
 			zod.z.literal(null),
 			zod.z.string(),
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8$1())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8$1())).readonly()
 		]);
 		let JsonValueRemoteCodec$schema9$value;
 		const JsonValueRemoteCodec$schema9 = () => JsonValueRemoteCodec$schema9$value ??= zod.z.union([
@@ -439,8 +439,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8$1())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8$1())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_archive_result$schema$value;
 		const _melite_estate_drafts_bench_archive_result$schema = () => _melite_estate_drafts_bench_archive_result$schema$value ??= zod.z.object({
@@ -2428,6 +2428,16 @@ window.__ModuleLoader__.load({
 			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema7())),
 			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema7())).readonly()
 		]);
+		let JsonValueRemoteCodec$schema8$value;
+		const JsonValueRemoteCodec$schema8 = () => JsonValueRemoteCodec$schema8$value ??= zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()
+		]);
 		let _melite_estate_runs_runs_list_parameter_0$schema$value;
 		const _melite_estate_runs_runs_list_parameter_0$schema = () => _melite_estate_runs_runs_list_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_runs_runs_list_result$schema$value;
@@ -2439,10 +2449,28 @@ window.__ModuleLoader__.load({
 				zod.z.number(),
 				zod.z.literal(false),
 				zod.z.literal(true),
-				zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema2())),
-				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()
+				zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema4())),
+				zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema4())).readonly()
 			])).readonly())
 		});
+		let _melite_estate_runs_runs_renameOutput_parameter_0$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_0$schema = () => _melite_estate_runs_runs_renameOutput_parameter_0$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_renameOutput_parameter_1$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_1$schema = () => _melite_estate_runs_runs_renameOutput_parameter_1$schema$value ??= zod.z.number();
+		let _melite_estate_runs_runs_renameOutput_parameter_2$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_2$schema = () => _melite_estate_runs_runs_renameOutput_parameter_2$schema$value ??= zod.z.number();
+		let _melite_estate_runs_runs_renameOutput_parameter_3$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_3$schema = () => _melite_estate_runs_runs_renameOutput_parameter_3$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_renameOutput_result$schema$value;
+		const _melite_estate_runs_runs_renameOutput_result$schema = () => _melite_estate_runs_runs_renameOutput_result$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
+			zod.z.literal(null),
+			zod.z.string(),
+			zod.z.number(),
+			zod.z.literal(false),
+			zod.z.literal(true),
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema3())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema3())).readonly()
+		])).readonly();
 		let _melite_estate_runs_runs_start_parameter_0$schema$value;
 		const _melite_estate_runs_runs_start_parameter_0$schema = () => _melite_estate_runs_runs_start_parameter_0$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
 			zod.z.literal(null),
@@ -2450,8 +2478,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema6())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema6())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema8())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema8())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_start_result$schema$value;
 		const _melite_estate_runs_runs_start_result$schema = () => _melite_estate_runs_runs_start_result$schema$value ??= zod.z.object({
@@ -2469,8 +2497,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema7())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema7())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_stop_parameter_0$schema$value;
 		const _melite_estate_runs_runs_stop_parameter_0$schema = () => _melite_estate_runs_runs_stop_parameter_0$schema$value ??= zod.z.string();
@@ -2481,8 +2509,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema2())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_subscribe_parameter_0$schema$value;
 		const _melite_estate_runs_runs_subscribe_parameter_0$schema = () => _melite_estate_runs_runs_subscribe_parameter_0$schema$value ??= zod.z.string();
@@ -2493,8 +2521,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema5())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema5())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema7())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema7())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_validate_parameter_0$schema$value;
 		const _melite_estate_runs_runs_validate_parameter_0$schema = () => _melite_estate_runs_runs_validate_parameter_0$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
@@ -2503,8 +2531,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema3())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema3())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema5())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema5())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_validate_result$schema$value;
 		const _melite_estate_runs_runs_validate_result$schema = () => _melite_estate_runs_runs_validate_result$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
@@ -2513,8 +2541,8 @@ window.__ModuleLoader__.load({
 			zod.z.number(),
 			zod.z.literal(false),
 			zod.z.literal(true),
-			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema4())),
-			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema4())).readonly()
+			zod.z.array(zod.z.lazy(() => JsonValueRemoteCodec$schema6())),
+			zod.z.record(zod.z.string(), zod.z.lazy(() => JsonValueRemoteCodec$schema6())).readonly()
 		])).readonly();
 		let closed$JsonValueRemoteCodec$schema$value;
 		const closed$JsonValueRemoteCodec$schema = () => closed$JsonValueRemoteCodec$schema$value ??= zod.z.union([
@@ -2538,6 +2566,14 @@ window.__ModuleLoader__.load({
 		]);
 		let _melite_estate_runs_runs_list_parameter_0_strict$schema$value;
 		const _melite_estate_runs_runs_list_parameter_0_strict$schema = () => _melite_estate_runs_runs_list_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_renameOutput_parameter_0_strict$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_0_strict$schema = () => _melite_estate_runs_runs_renameOutput_parameter_0_strict$schema$value ??= zod.z.string();
+		let _melite_estate_runs_runs_renameOutput_parameter_1_strict$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_1_strict$schema = () => _melite_estate_runs_runs_renameOutput_parameter_1_strict$schema$value ??= zod.z.number();
+		let _melite_estate_runs_runs_renameOutput_parameter_2_strict$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_2_strict$schema = () => _melite_estate_runs_runs_renameOutput_parameter_2_strict$schema$value ??= zod.z.number();
+		let _melite_estate_runs_runs_renameOutput_parameter_3_strict$schema$value;
+		const _melite_estate_runs_runs_renameOutput_parameter_3_strict$schema = () => _melite_estate_runs_runs_renameOutput_parameter_3_strict$schema$value ??= zod.z.string();
 		let _melite_estate_runs_runs_start_parameter_0_strict$schema$value;
 		const _melite_estate_runs_runs_start_parameter_0_strict$schema = () => _melite_estate_runs_runs_start_parameter_0_strict$schema$value ??= zod.z.record(zod.z.string(), zod.z.union([
 			zod.z.literal(null),
@@ -2597,7 +2633,91 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 110,
+						"line": 133,
+						"column": 9
+					}
+				},
+				"runs/renameOutput": {
+					service: "runsRemote",
+					description: "Endpoint `runs/rename-output` — the post-run gallery label patch (queue 12 Phase B, registry seat). The answer is a JSON-flat row (the rename receipt: indexes, the untouched name, the new label).",
+					implementation: "remoteExportRenameOutput",
+					invocation: { kind: "direct" },
+					parameters: [
+						{
+							name: "runId",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:runId",
+								create: _melite_estate_runs_runs_renameOutput_parameter_0$schema,
+								jsonSchema: { "type": "string" }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:runId",
+								create: _melite_estate_runs_runs_renameOutput_parameter_0_strict$schema,
+								jsonSchema: { "type": "string" }
+							}
+						},
+						{
+							name: "stageIndex",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:stageIndex",
+								create: _melite_estate_runs_runs_renameOutput_parameter_1$schema,
+								jsonSchema: { "type": "number" }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:stageIndex",
+								create: _melite_estate_runs_runs_renameOutput_parameter_1_strict$schema,
+								jsonSchema: { "type": "number" }
+							}
+						},
+						{
+							name: "galleryIndex",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:galleryIndex",
+								create: _melite_estate_runs_runs_renameOutput_parameter_2$schema,
+								jsonSchema: { "type": "number" }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:galleryIndex",
+								create: _melite_estate_runs_runs_renameOutput_parameter_2_strict$schema,
+								jsonSchema: { "type": "number" }
+							}
+						},
+						{
+							name: "label",
+							source: "json",
+							codec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:label",
+								create: _melite_estate_runs_runs_renameOutput_parameter_3$schema,
+								jsonSchema: { "type": "string" }
+							},
+							strictCodec: {
+								mode: "strict",
+								typeSymbol: "@melite/estate-runs#runs/renameOutput:label",
+								create: _melite_estate_runs_runs_renameOutput_parameter_3_strict$schema,
+								jsonSchema: { "type": "string" }
+							}
+						}
+					],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs/types#RunRow",
+						create: _melite_estate_runs_runs_renameOutput_result$schema,
+						jsonSchemaError: "typert tool schema: recursive selected type requires a supported JSON value declaration"
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 120,
 						"column": 9
 					}
 				},
@@ -2649,7 +2769,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 82,
+						"line": 91,
 						"column": 9
 					}
 				},
@@ -2683,7 +2803,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 91,
+						"line": 100,
 						"column": 9
 					}
 				},
@@ -2717,7 +2837,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 100,
+						"line": 109,
 						"column": 9
 					}
 				},
@@ -2751,7 +2871,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 135,
+						"line": 158,
 						"column": 10
 					}
 				},
@@ -2785,7 +2905,7 @@ window.__ModuleLoader__.load({
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 119,
+						"line": 142,
 						"column": 9
 					}
 				}
@@ -3187,7 +3307,7 @@ window.__ModuleLoader__.load({
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
 		function runMediaPrefixOf(value) {
-			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX$1;
 			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
 			return null;
 		}
@@ -3197,7 +3317,7 @@ window.__ModuleLoader__.load({
 		function canonicalRunMediaUrl(value) {
 			const prefix = runMediaPrefixOf(value);
 			if (prefix === null || prefix === "/melite-media/runs") return value;
-			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+			return RUN_MEDIA_PREFIX$1 + value.slice(prefix.length);
 		}
 		/** THE HOST-PATH MIRROR (the agent-slot preview burn, 2026-11-12: the
 		*  operator put an image into a card's image input slot and the square
@@ -3222,7 +3342,7 @@ window.__ModuleLoader__.load({
 			const segs = value.split("/");
 			for (let i = 0; i < segs.length - 1; i++) {
 				if (!RUN_ID_RE.test(segs[i])) continue;
-				return RUN_MEDIA_PREFIX + "/" + segs.slice(i).map(encodeURIComponent).join("/");
+				return RUN_MEDIA_PREFIX$1 + "/" + segs.slice(i).map(encodeURIComponent).join("/");
 			}
 			return null;
 		}
@@ -3462,10 +3582,10 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS$1, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE$1, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX$1, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS$1, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE$1, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
-			RUN_MEDIA_PREFIX = "/melite-media/runs";
+			RUN_MEDIA_PREFIX$1 = "/melite-media/runs";
 			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
 			BIRTH_STRIP_KEYS$1 = [
 				"history",
@@ -3771,7 +3891,7 @@ window.__ModuleLoader__.load({
 		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
 		function toRunMediaUrl(runId, url) {
 			if (url === "") return "";
-			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX$1 + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 			return url;
 		}
 		/** Fold the served `graph_receipt` face (the silent UI-drop
@@ -5193,7 +5313,12 @@ window.__ModuleLoader__.load({
 			autoModeOnDetail: "The AI starts runs itself — generations no longer wait for your Run press",
 			/** The popup's Off row (Off hands the run press back to the user). */
 			autoModeOffLabel: "Auto mode off",
-			autoModeOffDetail: "Runs wait for your Run press again — the AI only stages"
+			autoModeOffDetail: "Runs wait for your Run press again — the AI only stages",
+			/** The output-rename verb's address-miss voice (queue 12 Phase B):
+			*  the artifact's url named no gallery row on the run the estate
+			*  serves — the rename cannot be addressed, and the face says so
+			*  instead of a silent no-op. */
+			renameAddressMiss: (p) => "rename skipped — no gallery row on the run carries \"" + p.name + "\""
 		};
 		//#endregion
 		//#region src/client/run-rescue-core.ts
@@ -6308,63 +6433,6 @@ window.__ModuleLoader__.load({
 				this.name = "RemoteError";
 			}
 		};
-		//#endregion
-		//#region ../../vendor/typert-protocol/src/index.ts
-		/**
-		* Remote decorators and explicit Gateway bindings backed by versioned
-		* descriptors carried on decorated class prototypes. Strict reflection
-		* remains a Typert compiler responsibility.
-		* @module @deepseek-ai/dsh-typert-protocol
-		*/
-		//#endregion
-		//#region ../../web-kit/catalog/src/sleep.ts
-		/**
-		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
-		*
-		* Four clones across this package's own sources carried three
-		* different contracts: an abortable sleep that rejects with an
-		* `AbortError` (api.ts's retry backoff), a plain delay
-		* (text-to-pose's poll), and two inline `new Promise(r =>
-		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
-		* function with an optional signal: a caller with no signal gets the
-		* plain delay, a caller with one gets the abort that clears the timer.
-		*
-		* Why this is a local module and not the DSH timer seat: this package
-		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
-		* by the Cordis plugin. The cross-package fold the row names is
-		* unavailable to every one of these sites for that reason alone; what
-		* IS available is one implementation per package, which is this.
-		* @module @melite/catalog/sleep
-		*/
-		/**
-		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
-		* rejects with a DOM `AbortError`, the spelling the retry path
-		* already catches.
-		* @param ms - delay in milliseconds.
-		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
-		* @returns resolves after the delay, rejects on abort.
-		*/
-		function sleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				if (signal?.aborted === true) {
-					reject(new DOMException("Aborted", "AbortError"));
-					return;
-				}
-				const timer = setTimeout(() => {
-					signal?.removeEventListener("abort", onAbort);
-					resolve();
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(timer);
-					reject(new DOMException("Aborted", "AbortError"));
-				};
-				signal?.addEventListener("abort", onAbort, { once: true });
-			});
-		}
-		var init_sleep$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
-		init_sleep$1();
 		/** THE BIRTH STRIP (the cross-bench history leak, 2026-09-23,
 		*  live proof bench-session-2bd2a61f): the wand restores onto fresh
 		*  sessions carrying rows from a FOREIGN bench's run snapshot, and
@@ -6438,7 +6506,54 @@ window.__ModuleLoader__.load({
 			return literal;
 		}
 		//#endregion
+		//#region ../../web-kit/catalog/src/sleep.ts
+		/**
+		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
+		*
+		* Four clones across this package's own sources carried three
+		* different contracts: an abortable sleep that rejects with an
+		* `AbortError` (api.ts's retry backoff), a plain delay
+		* (text-to-pose's poll), and two inline `new Promise(r =>
+		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
+		* function with an optional signal: a caller with no signal gets the
+		* plain delay, a caller with one gets the abort that clears the timer.
+		*
+		* Why this is a local module and not the DSH timer seat: this package
+		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
+		* by the Cordis plugin. The cross-package fold the row names is
+		* unavailable to every one of these sites for that reason alone; what
+		* IS available is one implementation per package, which is this.
+		* @module @melite/catalog/sleep
+		*/
+		/**
+		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
+		* rejects with a DOM `AbortError`, the spelling the retry path
+		* already catches.
+		* @param ms - delay in milliseconds.
+		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
+		* @returns resolves after the delay, rejects on abort.
+		*/
+		function sleep$1(ms, signal) {
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted === true) {
+					reject(new DOMException("Aborted", "AbortError"));
+					return;
+				}
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					reject(new DOMException("Aborted", "AbortError"));
+				};
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
+		var init_sleep$1 = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/contracts/src/benchSnapshot.ts
+		init_sleep$1();
 		function isRecord$1(v) {
 			return typeof v === "object" && v !== null && !Array.isArray(v);
 		}
@@ -7103,6 +7218,56 @@ window.__ModuleLoader__.load({
 		async function freshStageRow(draftId, stageId, signal) {
 			const read = await readStageRow(draftId, stageId, signal);
 			return read.status === "ready" ? read.row : null;
+		}
+		/** The media-route address a run artifact's url carries, parsed back:
+		*  toRunMediaUrl stamps `/melite-media/runs/<runId>/<name>` — the run
+		*  id and the machine file name the rename verb is addressed through
+		*  (the gallery row's `name` never moves; the label patch rides it).
+		*  null for any other spelling — the legacy /v1/assets route, the
+		*  gallery proxy, a foreign absolute url: those rows rename nowhere. */
+		function runMediaAddressOf(url) {
+			if (!url.startsWith("/melite-media/runs/")) return null;
+			const rest = url.slice(19);
+			const slash = rest.indexOf("/");
+			if (slash <= 0) return null;
+			let runId;
+			let name;
+			try {
+				runId = decodeURIComponent(rest.slice(0, slash));
+				name = rest.slice(slash + 1).split("/").map((seg) => decodeURIComponent(seg)).join("/");
+			} catch {
+				return null;
+			}
+			if (runId === "" || name === "") return null;
+			return {
+				runId,
+				name
+			};
+		}
+		/** The rename verb (queue 12 Phase B): resolve the gallery row's
+		*  address off the run row's OWN gallery — the row the estate mints
+		*  at settle is the only truth about where a name sits — then patch
+		*  its display label through the runs rename door. The door's
+		*  refusals (still executing, empty label, out-of-range) throw with
+		*  their own words (unwrapRemote carries the message verbatim); the
+		*  caller renders them and the old label stands. The answer row is
+		*  the door's rename receipt (indexes, the untouched name, the new
+		*  label). */
+		async function renameRunOutput(args) {
+			const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(args.runId, args.signal), "runs/status");
+			const row = readRunStatus(args.runId, doc);
+			let stageIndex = -1;
+			let galleryIndex = -1;
+			for (let si = 0; si < row.stages.length; si++) {
+				const gi = (Array.isArray(row.stages[si]?.gallery) ? row.stages[si]?.gallery ?? [] : []).findIndex((g) => typeof g?.name === "string" && g.name === args.name);
+				if (gi >= 0) {
+					stageIndex = si;
+					galleryIndex = gi;
+					break;
+				}
+			}
+			if (stageIndex < 0) throw new Error(chromeCopy.renameAddressMiss({ name: args.name }));
+			return await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.renameOutput(args.runId, stageIndex, galleryIndex, args.label, args.signal), "runs/rename-output");
 		}
 		/** Normalize a `drafts/get` doc into the draft-stage value: stage
 		*  rows keep the string-id filter (mirroring readBench — the door's
@@ -12709,7 +12874,7 @@ window.__ModuleLoader__.load({
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
-			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX$1,
 			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS$1,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
@@ -18973,7 +19138,7 @@ window.__ModuleLoader__.load({
 		*  every dedup compares canonical forms, never wire spellings. The
 		*  run-media prefix rides the contract's constant — the closure
 		*  gate's no-second-copy law. */
-		const MEDIA_RUNS = RUN_MEDIA_PREFIX + "/";
+		const MEDIA_RUNS = RUN_MEDIA_PREFIX$1 + "/";
 		function canonicalOutputUrl(url) {
 			if (url.startsWith(MEDIA_RUNS)) return url.slice(MEDIA_RUNS.length);
 			if (url.startsWith("/infer-gallery/artifact?path=")) try {
@@ -22849,6 +23014,22 @@ window.__ModuleLoader__.load({
 					siblings: drillWalk,
 					onNavigate: (next) => {
 						setDrillItem(next);
+					},
+					onRename: async (item, name) => {
+						const addr = runMediaAddressOf(item.url);
+						if (addr === null) throw new Error(chromeCopy.renameAddressMiss({ name: item.file }));
+						const answer = await renameRunOutput({
+							runId: addr.runId,
+							name: addr.name,
+							label: name
+						});
+						const label = typeof answer["label"] === "string" && answer["label"] !== "" ? answer["label"] : name;
+						const named = (m) => m.url === item.url ? {
+							...m,
+							file: label
+						} : m;
+						setDrillWalk((walk) => walk.map(named));
+						setDrillItem((cur) => cur !== null && cur.url === item.url ? named(cur) : cur);
 					}
 				}) : null, (() => {
 					const reports = previewReportsFor(stage);

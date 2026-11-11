@@ -40,6 +40,7 @@ let RunsRemoteService = (() => {
     let _remoteExportStart_decorators;
     let _remoteExportStatus_decorators;
     let _remoteExportStop_decorators;
+    let _remoteExportRenameOutput_decorators;
     let _remoteExportList_decorators;
     let _remoteExportValidate_decorators;
     let _subscribe_decorators;
@@ -49,12 +50,14 @@ let RunsRemoteService = (() => {
             _remoteExportStart_decorators = [Remote("start")];
             _remoteExportStatus_decorators = [Remote("status")];
             _remoteExportStop_decorators = [Remote("stop")];
+            _remoteExportRenameOutput_decorators = [Remote("renameOutput")];
             _remoteExportList_decorators = [Remote("list")];
             _remoteExportValidate_decorators = [Remote("validate")];
             _subscribe_decorators = [Remote({ mode: "stream" })];
             __esDecorate(this, null, _remoteExportStart_decorators, { kind: "method", name: "remoteExportStart", static: false, private: false, access: { has: obj => "remoteExportStart" in obj, get: obj => obj.remoteExportStart }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportStatus_decorators, { kind: "method", name: "remoteExportStatus", static: false, private: false, access: { has: obj => "remoteExportStatus" in obj, get: obj => obj.remoteExportStatus }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportStop_decorators, { kind: "method", name: "remoteExportStop", static: false, private: false, access: { has: obj => "remoteExportStop" in obj, get: obj => obj.remoteExportStop }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportRenameOutput_decorators, { kind: "method", name: "remoteExportRenameOutput", static: false, private: false, access: { has: obj => "remoteExportRenameOutput" in obj, get: obj => obj.remoteExportRenameOutput }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportList_decorators, { kind: "method", name: "remoteExportList", static: false, private: false, access: { has: obj => "remoteExportList" in obj, get: obj => obj.remoteExportList }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportValidate_decorators, { kind: "method", name: "remoteExportValidate", static: false, private: false, access: { has: obj => "remoteExportValidate" in obj, get: obj => obj.remoteExportValidate }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _subscribe_decorators, { kind: "method", name: "subscribe", static: false, private: false, access: { has: obj => "subscribe" in obj, get: obj => obj.subscribe }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -76,6 +79,12 @@ let RunsRemoteService = (() => {
         /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */
         async remoteExportStop(runId, signal) {
             return (await this.ctx.runs.stop(runId, signal));
+        }
+        /** Endpoint `runs/rename-output` — the post-run gallery label patch
+         *  (queue 12 Phase B, registry seat). The answer is a JSON-flat row
+         *  (the rename receipt: indexes, the untouched name, the new label). */
+        async remoteExportRenameOutput(runId, stageIndex, galleryIndex, label, signal) {
+            return (await this.ctx.runs.renameOutput(runId, stageIndex, galleryIndex, label, signal));
         }
         /** Endpoint `runs/list` — the restore-port envelope (registry
          *  seat; the raw limit string keeps int() semantics). */

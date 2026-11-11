@@ -531,6 +531,17 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         if (runDocs.length === 0) liveRun['status'] = 'stopped'
         return ok({ run_id: runId, status: 'stopped' })
       },
+      renameOutput: async (runId: string, stageIndex: number, galleryIndex: number, label: string, signal?: AbortSignal) => {
+        void signal
+        calls.push({ method: 'runs/rename-output', args: { runId, stageIndex, galleryIndex, label } })
+        takeThrow('runs/rename-output')
+        const refused = takeRefusal('runs/rename-output')
+        if (refused !== undefined) return refused
+        // The answer mirrors the real door's rename receipt (scripted
+        // refusals carry the door's voice verbatim through the
+        // refusal queue).
+        return ok({ run_id: runId, stage: stageIndex, gallery: galleryIndex, name: '', label, status: 'completed' })
+      },
       list: async (rawLimit: string, signal?: AbortSignal) => {
         void signal
         calls.push({ method: 'runs/list', args: { rawLimit } })

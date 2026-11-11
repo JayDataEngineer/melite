@@ -425,6 +425,13 @@ export declare const chromeCopy: {
     /** The popup's Off row (Off hands the run press back to the user). */
     readonly autoModeOffLabel: "Auto mode off";
     readonly autoModeOffDetail: "Runs wait for your Run press again — the AI only stages";
+    /** The output-rename verb's address-miss voice (queue 12 Phase B):
+     *  the artifact's url named no gallery row on the run the estate
+     *  serves — the rename cannot be addressed, and the face says so
+     *  instead of a silent no-op. */
+    readonly renameAddressMiss: (p: {
+        name: string;
+    }) => string;
 };
 /** The dictionary's key union — the typed seat's domain. */
 export type ChromeCopyKey = keyof typeof chromeCopy;

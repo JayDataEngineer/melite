@@ -48,6 +48,9 @@ import {
   readRunStatus,
   toRunMediaUrl,
 } from '@melite-plugin/melite-run-wire'
+import { RUN_MEDIA_PREFIX } from '@melite/contracts/benchStage'
+import type { RunRow } from '@melite/estate-runs/types'
+import { chromeCopy } from '../chromeCopy.ts'
 import {
   fetchLatestRunForDraft,
   fetchListRow,
@@ -1249,6 +1252,72 @@ export async function freshStageRow(
 ): Promise<BenchStageView | null> {
   const read = await readStageRow(draftId, stageId, signal)
   return read.status === 'ready' ? read.row : null
+}
+
+// ── THE OUTPUT-RENAME VERB (queue 12 Phase B) ─────────────────────
+
+/** The media-route address a run artifact's url carries, parsed back:
+ *  toRunMediaUrl stamps `/melite-media/runs/<runId>/<name>` — the run
+ *  id and the machine file name the rename verb is addressed through
+ *  (the gallery row's `name` never moves; the label patch rides it).
+ *  null for any other spelling — the legacy /v1/assets route, the
+ *  gallery proxy, a foreign absolute url: those rows rename nowhere. */
+export function runMediaAddressOf(url: string): { runId: string, name: string } | null {
+  const prefix = RUN_MEDIA_PREFIX + '/'
+  if (!url.startsWith(prefix)) return null
+  const rest = url.slice(prefix.length)
+  const slash = rest.indexOf('/')
+  if (slash <= 0) return null
+  let runId: string
+  let name: string
+  try {
+    runId = decodeURIComponent(rest.slice(0, slash))
+    name = rest.slice(slash + 1).split('/').map((seg) => decodeURIComponent(seg)).join('/')
+  } catch {
+    return null
+  }
+  if (runId === '' || name === '') return null
+  return { runId, name }
+}
+
+/** The rename verb (queue 12 Phase B): resolve the gallery row's
+ *  address off the run row's OWN gallery — the row the estate mints
+ *  at settle is the only truth about where a name sits — then patch
+ *  its display label through the runs rename door. The door's
+ *  refusals (still executing, empty label, out-of-range) throw with
+ *  their own words (unwrapRemote carries the message verbatim); the
+ *  caller renders them and the old label stands. The answer row is
+ *  the door's rename receipt (indexes, the untouched name, the new
+ *  label). */
+export async function renameRunOutput(args: {
+  runId: string
+  name: string
+  label: string
+  signal?: AbortSignal
+}): Promise<RunRow> {
+  const doc: Record<string, unknown> = await unwrapRemote<Record<string, unknown>>(
+    estateRemote().runs.status(args.runId, args.signal),
+    'runs/status',
+  )
+  const row = readRunStatus(args.runId, doc)
+  let stageIndex = -1
+  let galleryIndex = -1
+  for (let si = 0; si < row.stages.length; si++) {
+    const gallery = Array.isArray(row.stages[si]?.gallery) ? row.stages[si]?.gallery ?? [] : []
+    const gi = gallery.findIndex((g) => typeof g?.name === 'string' && g.name === args.name)
+    if (gi >= 0) {
+      stageIndex = si
+      galleryIndex = gi
+      break
+    }
+  }
+  if (stageIndex < 0) {
+    throw new Error(chromeCopy.renameAddressMiss({ name: args.name }))
+  }
+  return await unwrapRemote<RunRow>(
+    estateRemote().runs.renameOutput(args.runId, stageIndex, galleryIndex, args.label, args.signal),
+    'runs/rename-output',
+  )
 }
 
 /** Normalize a `drafts/get` doc into the draft-stage value: stage

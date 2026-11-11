@@ -33,7 +33,7 @@ import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.js"
 import { searchedVoice } from "./rootsManifest.js";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, planResurrect, bootSweep, appendLedger, refusal, walkSubmitEnvelope } from "./queue.js";
 import { graphReceiptOf, graphReceiptStageOf } from "./queueSidecar.js";
-import { attributionPersist } from "./runsTypes.js";
+import { attributionPersist, galleryLabelPersist } from "./runsTypes.js";
 import { sweepRunIds } from "./queueCore.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
 import { lifecycleInFlight } from "./lifecycleLatch.js";
@@ -2759,6 +2759,69 @@ export class RunsRuntimeService extends Service {
         notifyRunChanged(run.runId);
         await attributionPersist(run);
         return { run_id: runId, attribution: run.attribution ?? "" };
+    }
+    /** THE OUTPUT-RENAME DOOR (queue 12 Phase B): a settled run's
+     *  gallery row gets a new display `label`, post-run — the output_name
+     *  mint at settle named the rows once; this door owns every rename
+     *  after. The `name` (the machine file key the media route and every
+     *  dedup law ride) NEVER moves — the patch rewrites the addressed
+     *  row's label alone: no sibling renumbering, no `stem · 2…n`
+     *  auto-repair; a caller with several rows to rename patches each
+     *  row it wants. Guards speak before any write: unknown run
+     *  (runs/run-unknown, the searched-trees voice), a live row (rename
+     *  waits for settle), an empty/whitespace label, an out-of-range
+     *  stage or gallery index. The patch lands in the live row, the
+     *  change rides notifyRunChanged (the tab's poller re-fires), and
+     *  the sidecar rewrite persists it (the disk fallback and every
+     *  boot re-read spread the new label). */
+    async renameOutput(runId, stageIndex, galleryIndex, label, signal) {
+        signal.throwIfAborted();
+        const run = this.liveRun(runId);
+        if (run === undefined) {
+            // the same miss voice as stop/attribute: the door names the
+            // trees it searched, never a bare unknown.
+            throw new RemoteError("runs/run-unknown", "unknown run_id " + JSON.stringify(runId) + " " +
+                searchedVoice(this.ctx.queue.stateRoots), { runId });
+        }
+        if (run.status === "queued" || run.status === "running" || run.status === "stopping") {
+            // THE SETTLE GUARD: the gallery is the settle's own build — a
+            // rename pressed mid-execution would patch rows the executor
+            // is still minting. The refusal names the wait, never a silent
+            // no-op.
+            throw new RemoteError("runs/invalid-request", "run " + JSON.stringify(runId) + " still executing — rename waits for settle", { loc: "run_id", expected: "a settled run (completed/failed/stopped)", got: run.status });
+        }
+        const trimmed = label.trim();
+        if (trimmed === "") {
+            throw new RemoteError("runs/invalid-request", "rename refused — the label is empty (whitespace is emptiness; a gallery row needs display words)", { loc: "label", expected: "non-empty text", got: JSON.stringify(label) });
+        }
+        const stage = run.stages[stageIndex];
+        if (stage === undefined) {
+            throw new RemoteError("runs/invalid-request", "stage index " + String(stageIndex) + " out of range — run " + JSON.stringify(runId) +
+                " carries " + String(run.stages.length) + " stage(s)", { loc: "stage", expected: "0.." + String(run.stages.length - 1), got: String(stageIndex) });
+        }
+        const gallery = stage["gallery"];
+        if (!Array.isArray(gallery) || gallery.length === 0) {
+            throw new RemoteError("runs/invalid-request", "stage " + String(stageIndex) + " carries no gallery — nothing to rename", { loc: "gallery", expected: "a settled stage with artifacts", got: String(stageIndex) });
+        }
+        if (!Number.isInteger(galleryIndex) || galleryIndex < 0 || galleryIndex >= gallery.length) {
+            throw new RemoteError("runs/invalid-request", "gallery index " + String(galleryIndex) + " out of range — stage " + String(stageIndex) +
+                " carries " + String(gallery.length) + " artifact row(s)", { loc: "gallery", expected: "0.." + String(gallery.length - 1), got: String(galleryIndex) });
+        }
+        const row = gallery[galleryIndex];
+        const name = typeof row["name"] === "string" ? row["name"] : "";
+        // label-only patch: the row keeps its name and position; the
+        // spread rebuilds the row with exactly one field changed.
+        gallery[galleryIndex] = { ...row, label: trimmed };
+        notifyRunChanged(run.runId);
+        await galleryLabelPersist(run);
+        return {
+            run_id: runId,
+            stage: stageIndex,
+            gallery: galleryIndex,
+            name,
+            label: trimmed,
+            status: run.status,
+        };
     }
     /** The live map (the queue seat's core registry — rich rows). */
     liveRun(runId) {

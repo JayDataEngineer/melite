@@ -376,5 +376,10 @@ export const chromeCopy = {
     /** The popup's Off row (Off hands the run press back to the user). */
     autoModeOffLabel: 'Auto mode off',
     autoModeOffDetail: 'Runs wait for your Run press again — the AI only stages',
+    /** The output-rename verb's address-miss voice (queue 12 Phase B):
+     *  the artifact's url named no gallery row on the run the estate
+     *  serves — the rename cannot be addressed, and the face says so
+     *  instead of a silent no-op. */
+    renameAddressMiss: (p) => 'rename skipped — no gallery row on the run carries "' + p.name + '"',
 };
 //# sourceMappingURL=chromeCopy.js.map
