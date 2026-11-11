@@ -3770,23 +3770,16 @@ window.__ModuleLoader__.load({
 				sort,
 				showArchived
 			]);
-			const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
+			const grouped = (0, react.useMemo)(() => groupPage(shown), [shown]);
+			const pageCount = Math.max(1, Math.ceil(grouped.length / pageSize));
 			const safePage = Math.min(page, pageCount - 1);
-			const pageItems = (0, react.useMemo)(() => shown.slice(safePage * pageSize, (safePage + 1) * pageSize), [shown, safePage]);
-			const grouped = (0, react.useMemo)(() => groupPage(pageItems), [pageItems]);
+			const pageGroups = (0, react.useMemo)(() => grouped.slice(safePage * pageSize, (safePage + 1) * pageSize), [grouped, safePage]);
 			const groupsByRun = (0, react.useMemo)(() => {
 				const m = /* @__PURE__ */ new Map();
-				for (const g of grouped) if (g.sections.length > 0) m.set(g.hero.runId, g);
+				for (const g of pageGroups) if (g.sections.length > 0) m.set(g.hero.runId, g);
 				return m;
-			}, [grouped]);
-			const visibleItems = (0, react.useMemo)(() => pageItems.filter((it) => {
-				const g = groupsByRun.get(it.runId);
-				return g === void 0 || it.id === g.hero.id || expandedGroups.has(it.runId);
-			}), [
-				pageItems,
-				groupsByRun,
-				expandedGroups
-			]);
+			}, [pageGroups]);
+			const visibleItems = (0, react.useMemo)(() => pageGroups.flatMap((g) => expandedGroups.has(g.hero.runId) ? [g.hero, ...g.sections] : [g.hero]), [pageGroups, expandedGroups]);
 			const selectedLive = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && !it.archived), [items, selected]);
 			const selectedTucked = (0, react.useMemo)(() => items.filter((it) => selected.has(it.id) && it.archived), [items, selected]);
 			const toggleSelect = (it) => {
@@ -3830,7 +3823,7 @@ window.__ModuleLoader__.load({
 					const next = new Set(was);
 					next.add(it.id);
 					if (anchor !== null) {
-						const ids = pageItems.map((p) => p.id);
+						const ids = visibleItems.map((p) => p.id);
 						const a = ids.indexOf(anchor);
 						const b = ids.indexOf(it.id);
 						if (a !== -1 && b !== -1) {
@@ -4616,7 +4609,7 @@ window.__ModuleLoader__.load({
 								})
 							]
 						}),
-						scope === "all" && mediaPage !== null && mediaPage.nextCursor !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						scope === "all" && !mediaLoading && mediaPage !== null && mediaPage.nextCursor !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							style: {
 								display: "flex",
 								justifyContent: "center",
@@ -4624,9 +4617,8 @@ window.__ModuleLoader__.load({
 							},
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 								active: false,
-								"aria-busy": mediaLoading,
 								onClick: () => {
-									if (!mediaLoading) loadMedia(mediaPage.nextCursor ?? 0);
+									loadMedia(mediaPage.nextCursor ?? 0);
 								},
 								children: galleryCopy.moreAction
 							})
@@ -4832,11 +4824,10 @@ window.__ModuleLoader__.load({
 									gap: 6,
 									justifyContent: "center"
 								},
-								children: [browse.nextCursor !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								children: [browse.nextCursor !== null && !browseLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
 									active: false,
-									"aria-busy": browseLoading,
 									onClick: () => {
-										if (!browseLoading) loadBrowse(browse.nextCursor ?? 0);
+										loadBrowse(browse.nextCursor ?? 0);
 									},
 									children: galleryCopy.moreAction
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {

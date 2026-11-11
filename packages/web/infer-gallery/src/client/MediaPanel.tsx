@@ -1128,34 +1128,36 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     else if (sort === 'name') out.sort((a, b) => a.file.localeCompare(b.file))
     return out
   }, [items, cat, search, sort, showArchived])
-  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize))
+  /* THE RUN GROUPS OVER THE WHOLE SHOWN LIST (operator 2026-11-18,
+   * the fold-counts-as-one law): grouping happens BEFORE the page
+   * dial — a run's fold is ONE page slot no matter how much it
+   * covers. The old order (slice flat, then fold per page) split a
+   * 4,000-file dump across 67 pages, each stranded with one lonely
+   * hero tile ("page 17 of 137: +59 ▾ and nothing else"). The dial
+   * now counts GROUP slots; the count label keeps naming the
+   * artifact total. */
+  const grouped = useMemo(() => groupPage(shown), [shown])
+  const pageCount = Math.max(1, Math.ceil(grouped.length / pageSize))
   // shown shrinking (a delete, a filter) must never strand the scan
   // past the last page.
   const safePage = Math.min(page, pageCount - 1)
-  const pageItems = useMemo(
-    () => shown.slice(safePage * pageSize, (safePage + 1) * pageSize),
-    [shown, safePage],
+  const pageGroups = useMemo(
+    () => grouped.slice(safePage * pageSize, (safePage + 1) * pageSize),
+    [grouped, safePage],
   )
-  /* THE RUN GROUPS ON THE PAGE (operator 2026-11-10): fold each
-   * multi-artifact run to its hero film + count badge; sections
-   * render only while expanded. visibleItems keeps the tile stream
-   * shape (the grid, selection, pagination all ride it unchanged):
-   * an item survives when its run has no sections (a lone tile is
-   * its own face), when it IS the hero, or when its group is
-   * expanded. Collapsed sections are folded, never deleted — the
-   * badge names their count and one click restores them. */
-  const grouped = useMemo(() => groupPage(pageItems), [pageItems])
   const groupsByRun = useMemo(() => {
     const m = new Map<string, MediaGroup>()
-    for (const g of grouped) if (g.sections.length > 0) m.set(g.hero.runId, g)
+    for (const g of pageGroups) if (g.sections.length > 0) m.set(g.hero.runId, g)
     return m
-  }, [grouped])
+  }, [pageGroups])
+  /* visibleItems keeps the tile stream shape (the grid, selection,
+   * lightbox all ride it unchanged): a group renders its hero, and
+   * its sections only while expanded. Collapsed sections are
+   * folded, never deleted — the badge names their count and one
+   * click restores them. */
   const visibleItems = useMemo(
-    () => pageItems.filter((it) => {
-      const g = groupsByRun.get(it.runId)
-      return g === undefined || it.id === g.hero.id || expandedGroups.has(it.runId)
-    }),
-    [pageItems, groupsByRun, expandedGroups],
+    () => pageGroups.flatMap((g) => (expandedGroups.has(g.hero.runId) ? [g.hero, ...g.sections] : [g.hero])),
+    [pageGroups, expandedGroups],
   )
   /* THE VERB SUBSETS (mass-archive law): one selection, three verbs —
    * archive + delete sweep the live subset, restore sweeps the tucked
@@ -1214,7 +1216,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       const next = new Set(was)
       next.add(it.id)
       if (anchor !== null) {
-        const ids = pageItems.map((p) => p.id)
+        const ids = visibleItems.map((p) => p.id)
         const a = ids.indexOf(anchor)
         const b = ids.indexOf(it.id)
         if (a !== -1 && b !== -1) {
@@ -1910,13 +1912,16 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       <Pill active={false} onClick={() => { if (safePage < pageCount - 1) setPage(safePage + 1) }}>{galleryCopy.nextPage}</Pill>
                     </div>
                   )}
-                  {/* THE MORE VERB (the all-files scope): the disk walk
-                      continues while a cursor rides — the no-silent-cap
-                      law; the stat line's loaded-of-total stays honest
-                      on every hop. */}
-                  {scope === 'all' && mediaPage !== null && mediaPage.nextCursor !== null && (
+                  {/* THE MORE VERB (the all-files scope): the RESUME door —
+                      it renders only when the auto-walk has STOPPED with a
+                      cursor still owed (a dead page). While the walk drains
+                      unprompted the pill must NOT render: a visible verb
+                      that ignores presses is a dead control (2026-11-18
+                      burn: "More at the bottom DOES NOTHING" — it was the
+                      walk-in-flight pill, guarded but painted). */}
+                  {scope === 'all' && !mediaLoading && mediaPage !== null && mediaPage.nextCursor !== null && (
                     <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-                      <Pill active={false} aria-busy={mediaLoading} onClick={() => { if (!mediaLoading) loadMedia(mediaPage.nextCursor ?? 0) }}>{galleryCopy.moreAction}</Pill>
+                      <Pill active={false} onClick={() => { loadMedia(mediaPage.nextCursor ?? 0) }}>{galleryCopy.moreAction}</Pill>
                     </div>
                   )}
                 </>
@@ -2034,8 +2039,8 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       — before, during and after the cursor. The verb
                       rides only while a cursor remains. */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-                    {browse.nextCursor !== null && (
-                      <Pill active={false} aria-busy={browseLoading} onClick={() => { if (!browseLoading) loadBrowse(browse.nextCursor ?? 0) }}>{galleryCopy.moreAction}</Pill>
+                    {browse.nextCursor !== null && !browseLoading && (
+                      <Pill active={false} onClick={() => { loadBrowse(browse.nextCursor ?? 0) }}>{galleryCopy.moreAction}</Pill>
                     )}
                     <span data-infer-files-count="1" style={{ fontSize: 11, color: labelPrimary3 }}>
                       {String(browse.entries.length)} / {String(browse.total)}

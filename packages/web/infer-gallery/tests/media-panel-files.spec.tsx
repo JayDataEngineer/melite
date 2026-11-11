@@ -266,6 +266,50 @@ describe('the all-files scope — EVERY media leaf, not the last 500 runs (opera
     expect(screen.queryByText('More')).toBe(null)
   })
 
+  it('the More verb never paints while the walk is draining — a visible verb that ignores presses is dead', async () => {
+    // page 2 hangs forever: the walk is IN FLIGHT (loading true, a
+    // cursor owed) — the exact state that painted the dead pill
+    stub((url) =>
+      url.startsWith('/infer-gallery/media')
+        ? url.includes('cursor=1')
+          ? new Promise<Response>(() => { /* never resolves */ })
+          : mediaPage({ files: [{ path: 'run-abcd-1/a.png', kind: 'image', size: 9, mtime: 1 }], total: 2, nextCursor: 1 })
+        : browsePage({ path: '', total: 0, nextCursor: null, entries: [] }))
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    // page 1 landed (the tile paints, a cursor rides, loading true)
+    await waitFor(() => { expect(screen.getByText(/run-abcd-1\/a\.png/)).toBeTruthy() })
+    // the burn (2026-11-18): More painted here and swallowed presses
+    expect(screen.queryByText('More')).toBe(null)
+  })
+
+  it('the fold counts as ONE page slot — a 64-file run never strands a lonely tile on its own page (2026-11-18)', async () => {
+    // 65 files over TWO runs: flat paging (60/page) would split the
+    // dump — page 2 stranded with one lonely hero. Group paging: 2
+    // groups, ONE page, both heroes, the badge naming all 63 folds.
+    const files = Array.from({ length: 64 }, (_, i) => ({ path: `run-abcd-1/dump/m_${String(i).padStart(4, '0')}.png`, kind: 'image' as const, size: 1, mtime: i + 1 }))
+    files.push({ path: 'run-beef-2/solo.png', kind: 'image' as const, size: 1, mtime: 999 })
+    stub((url) =>
+      url.startsWith('/infer-gallery/media')
+        ? mediaPage({ files, total: 65, nextCursor: null })
+        : browsePage({ path: '', total: 0, nextCursor: null, entries: [] }))
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    await waitFor(() => { expect(screen.getByText(/run-abcd-1\/dump\/m_0000\.png/)).toBeTruthy() })
+    // BOTH runs share page 1 — one page total (the dial renders
+    // only when pages > 1: no dial, no Next, nothing stranded)
+    expect(screen.getByText(/run-beef-2\/solo\.png/)).toBeTruthy()
+    expect(screen.getByText('65 of 65 files on disk')).toBeTruthy()
+    expect(screen.queryByText(/page 1 of/)).toBe(null)
+    // the fold badge names the WHOLE group (63 sections), never a
+    // page-sliced remainder
+    expect(screen.getByText('+63 ▾')).toBeTruthy()
+    // no second page exists to strand anything on
+    expect(screen.queryByText('Next ›')).toBe(null)
+  })
+
   it('a dead media door banners — never a silent blank grid', async () => {
     stub((url) =>
       url.startsWith('/infer-gallery/media')
