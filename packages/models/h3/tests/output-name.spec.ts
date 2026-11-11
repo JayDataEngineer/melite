@@ -29,7 +29,7 @@ import { getModel, registryIds, registryModel } from "../../../engines/comfyui-c
 import { film } from "../src/actions.ts";
 import { renderH3Extend } from "../src/extend.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
-import { OUTPUT_NAME_SLUG_RE, outputNameTailOf, schema } from "../src/schema.ts";
+import { OUTPUT_NAME_SLUG_RE, outputNameTailOf, paramSchema, schema } from "../src/schema.ts";
 import type { H3Facts } from "../src/actions.ts";
 
 const FACTS: H3Facts = {
@@ -185,5 +185,31 @@ describe("THE OUTPUT-NAME FILE PLANE (queue 12's owed half — the born-named de
       { message: /output_name must be a filename slug/ },
       "a path escape refuses loud at the prefix seam itself",
     );
+  });
+
+  it("THE GROUP FOLD (2026-11-19, the operator's tab-room ask): the slug rides GENERAL — no 'naming' group survives the served face, the sixth tab dies", () => {
+    // toJSON() is schemastery's serialization — the SAME envelope the
+    // estate serves and card-base's form.tsx reads for the tab rail
+    // (groupFields → titleCaseId(g.group ?? 'General')). Judging the
+    // extras HERE judges the rail: a row's group extra IS its tab.
+    const json = paramSchema.toJSON() as unknown as {
+      uid: number
+      refs: Record<string, { meta?: { extra?: { group?: string } }, dict?: Record<string, number> }>
+    };
+    const root = json.refs[String(json.uid)];
+    assert.ok(root?.dict, "the root object serializes its field map");
+    const slugRef = String(root.dict?.["output_name"]);
+    assert.ok(slugRef !== "undefined", "the output_name row rides the served face");
+    assert.equal(json.refs[slugRef]?.meta?.extra?.group, undefined,
+      "the slug row carries NO group extra — it renders under General, never its own tab");
+    const live = new Set(
+      Object.values(json.refs).map((ref) => ref?.meta?.extra?.group),
+    );
+    assert.ok(!live.has("naming"),
+      "no served row carries group 'naming' — the Naming tab is dead at the rail");
+    assert.deepEqual(
+      [...live].filter((g): g is string => typeof g === "string").sort(),
+      ["refmod", "sampling", "second_pass", "sla"],
+      "exactly four named groups ride the rail beside General (five tabs — the room the operator asked for)");
   });
 });

@@ -437,8 +437,10 @@ export interface LayerA {
   model?: string
   audio_stem?: string
   /** THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
-   *  the deliverable-naming slug — a served schema row (group
-   *  'naming') the studio CARRIES end-to-end: hydrated from the
+   *  the deliverable-naming slug — a served schema row
+   *  (General's tab since the 2026-11-19 group fold — born on its
+   *  own 'naming' tab, folded under General for tab room) the
+   *  studio CARRIES end-to-end: hydrated from the
    *  doc, emitted by serializeLayerA's loop (undefined/"" = absent,
    *  the label seam's silence law), and threaded by the compose
    *  into every DELIVERABLE save prefix (`h3_t4_film_<slug>`,

@@ -480,7 +480,10 @@ export const paramSchema = z.object({
   // outputs the operator means. SLUG LAW: a filename segment and
   // nothing else — lowercase alnum + hyphen, 64 max; no separator
   // can smuggle a path escape into the `${runId}/` prefix wiring.
-  output_name: z.string().max(64).pattern(OUTPUT_NAME_SLUG_RE).description("Output name").extra('extra', bag({ order: null, group: 'naming', wtype: 'text', tooltip: "Names the delivered files: the composed film and re-shoot plates are BORN with this stem beside the machinery prefix (h3_t4_film_<name>_00001_.mp4). Absent = the machinery name, byte-frozen." })),
+  // THE GROUP FOLD (2026-11-19, the operator's tab-room ask): the
+  // slug rode its own 'naming' tab — a SIXTH tab for ONE row. It
+  // rides General now (no group extra), the tab dies at the rail.
+  output_name: z.string().max(64).pattern(OUTPUT_NAME_SLUG_RE).description("Output name").extra('extra', bag({ order: null, wtype: 'text', tooltip: "Names the delivered files: the composed film and re-shoot plates are BORN with this stem beside the machinery prefix (h3_t4_film_<name>_00001_.mp4). Absent = the machinery name, byte-frozen." })),
   // THE LEGACY ALIASES (renderer-era spellings of the mod switches)
   // — gate-admitted for old drafts, never user surface: the MODS
   // own the switches (the operator's law), one face each.

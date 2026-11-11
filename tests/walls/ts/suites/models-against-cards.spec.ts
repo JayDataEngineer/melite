@@ -522,7 +522,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // card's claim-law drop.
     // 480 -> 481 (2026-11-19, queue 12's file plane): h3's
     // output_name row joins the judged face — the deliverable slug,
-    // the ONE deliberate text field (group 'naming').
+    // the ONE deliberate text field (born on its own 'naming' tab,
+    // folded under General the same day — the tab-room ask; the
+    // census count never moved).
     assert.equal(walked, 481,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit

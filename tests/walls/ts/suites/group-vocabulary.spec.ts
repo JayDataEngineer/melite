@@ -71,9 +71,13 @@ const GENRE_GROUPS = new Map([
   ['reshoot', 'h3'],
   // THE DELIVERABLE-NAMING SEAT (queue 12's file plane, 2026-11-19):
   // the output_name slug row — the ONE field that names the born
-  // files (group 'naming', the h3 kit's own subcategory beside sla
-  // and refmod; the operator's ask: "offering the AI the ability to
-  // name the actual outputs").
+  // files (the operator's ask: "offering the AI the ability to
+  // name the actual outputs"). Rode its own 'naming' tab for one
+  // day; FOLDED under General 2026-11-19 (the operator's tab-room
+  // ask — a sixth tab for one row). Like 'reshoot' above, this row
+  // stays as the vocabulary's memory of the spelling, never a live
+  // claim — the fold's judge is output-name.spec.ts's GROUP FOLD
+  // arm.
   ['naming', 'h3'],
   ['chain', 'motion'], ['guidance', 'motion'], ['output', 'motion'],
   // THE MANNEQUIN ARM'S OWN SURFACE (the swap-parity build,
