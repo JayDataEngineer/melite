@@ -276,4 +276,42 @@ describe("THE OUTPUT-RENAME VERB (queue 12 Phase B — the outputs face)", () =>
     fireEvent.keyDown(window, { key: "ArrowRight" });
     await screen.findByText("golden hour · 2", {}, { timeout: 4000 });
   });
+
+  test("a non-run artifact url refuses at the address parse — the verb never fires a door call", async () => {
+    // THE URL IS NOT AN ADDRESS: a draft-stage artifact (no run yet —
+    // a local preview the estate never minted a run row for) does
+    // not parse as a run-media address at all; the verb refuses with
+    // the miss voice before any door is touched.
+    stubFetch();
+    fakes?.unmount();
+    const draftStage = goldStage();
+    draftStage.result = {
+      run_id: "draft-preview",
+      url: "/melite-media/drafts/bench-p/look.png",
+      artifacts: { "draft look": "/melite-media/drafts/bench-p/look.png" },
+    };
+    fakes = mountEstateFakes({ runDocs: [runRow()] });
+    render(h(StageDrill, {
+      stage: draftStage,
+      bench: {
+        kind: "bench", draftId: "bench-p", rev: 1, log: [],
+        stages: [draftStage], sessionKey: "main",
+      } as never,
+      running: false,
+      onRun: () => {}, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
+      onPatchParams: () => {},
+      renderStageView: (_o: StageViewOwnerProps, fallback: ReturnType<typeof h>): ReturnType<typeof h> => fallback,
+    }));
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 }));
+    await user.click(await screen.findByTestId("drill-rename", {}, { timeout: 4000 }));
+    const input = await screen.findByTestId("drill-rename-input", {}, { timeout: 4000 });
+    await user.clear(input);
+    await user.type(input, "hero look");
+    await user.click(screen.getByTestId("drill-rename-save"));
+    expect(fakes?.calls.find((c) => c.method === "runs/rename-output")).toBeUndefined();
+    const voice = await screen.findByTestId("drill-op-error", {}, { timeout: 4000 });
+    expect(voice.textContent).toBe('rename skipped — no gallery row on the run carries "draft look"');
+    expect(screen.getByText("draft look")).toBeTruthy();
+  });
 });

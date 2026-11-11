@@ -266,11 +266,11 @@ def _mint_windows(output_dir: Path, count: int = 2) -> None:
 def test_wired_row_parses_without_src(monkeypatch):
     fm = _load_film_mix(monkeypatch, {})
     clips = fm._parse_clips('[{"wired": 1, "start_sec": 0.5, "dur_sec": 0.0, "class": "music"}]')
-    assert clips == [{"wired": 1, "start_sec": 0.5, "dur_sec": 0.0, "class": "music"}]
+    assert clips == [{"wired": 1, "start_sec": 0.5, "dur_sec": 0.0, "in_sec": 0.0, "class": "music"}]
     assert "src" not in clips[0]
     # a path row keeps its shape byte-identically (the lawful handoff)
     path_clips = fm._parse_clips('[{"src": "bed.flac", "start_sec": 0, "dur_sec": 1, "class": "sfx"}]')
-    assert path_clips == [{"src": "bed.flac", "start_sec": 0.0, "dur_sec": 1.0, "class": "sfx"}]
+    assert path_clips == [{"src": "bed.flac", "start_sec": 0.0, "dur_sec": 1.0, "in_sec": 0.0, "class": "sfx"}]
 
 
 def test_srcless_row_without_a_valid_wired_seat_keeps_the_refusal(monkeypatch):
