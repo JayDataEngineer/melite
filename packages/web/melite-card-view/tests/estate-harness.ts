@@ -158,6 +158,10 @@ export interface EstateFakesOptions {
   patchGate?: () => Promise<void>
   refusals?: EstateRefusal[]
   throws?: EstateThrow[]
+  /** Scripted runs/rename-output receipts, served per call in doc
+   *  order over the default typed-label mirror (the same law as
+   *  startDocs: verbatim test-authored rows). */
+  renameDocs?: Array<Record<string, unknown>>
   listRows?: Array<Record<string, unknown>>
   startDocs?: Array<Record<string, unknown>>
   mediaItems?: Array<Record<string, unknown>>
@@ -534,12 +538,18 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       renameOutput: async (runId: string, stageIndex: number, galleryIndex: number, label: string, signal?: AbortSignal) => {
         void signal
         calls.push({ method: 'runs/rename-output', args: { runId, stageIndex, galleryIndex, label } })
+        const gate = opts.verbGates?.['runs/rename-output']?.shift()
+        if (gate !== undefined) await gate
         takeThrow('runs/rename-output')
         const refused = takeRefusal('runs/rename-output')
         if (refused !== undefined) return refused
         // The answer mirrors the real door's rename receipt (scripted
         // refusals carry the door's voice verbatim through the
-        // refusal queue).
+        // refusal queue); a scripted renameDocs row overrides it —
+        // the receipt-shape arms (a door that answers no label) ride
+        // verbatim test-authored rows.
+        const scripted = opts.renameDocs?.shift()
+        if (scripted !== undefined) return ok(scripted as RunRow)
         return ok({ run_id: runId, stage: stageIndex, gallery: galleryIndex, name: '', label, status: 'completed' })
       },
       list: async (rawLimit: string, signal?: AbortSignal) => {

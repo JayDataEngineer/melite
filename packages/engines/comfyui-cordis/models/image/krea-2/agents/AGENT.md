@@ -16,7 +16,7 @@ FOUR checkpoints, each owning its sampler marriage. Pick the route,
 let it marry; never hand-stamp steps/cfg against a distilled lane.
 
 - **turbo** (DEFAULT): the 8-step distilled checkpoint. Family
-  defaults ARE its marriage — steps 8, cfg 1, euler/normal; declared
+  defaults ARE its marriage — steps 8, cfg 1, euler/simple; declared
   envelope steps [4, 8] / cfg [1, 2]. Compose with NO steps/cfg
   stated; the rail resolves 8/1. A stated value outside the envelope
   REFUSES at compose — a turbo run at 25 steps is not agency.

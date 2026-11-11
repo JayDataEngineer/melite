@@ -56,7 +56,7 @@ it) — and a blank `edit_prompt` is lawful (the pass asks no
 action). ONE WINDOW PER PRESS: a film longer than the ceiling
 cannot 2x in one press — the chain joins its segments at 1x
 geometry while each refined window emits 2x latents, so the door
-refuses a multi-window refine plan naming that burn; the whole-film
+refuses a multi-window refine plan; the whole-film
 2x tile owes the assembler its own upscale-after-assembly door (a
 feature, not a posture — press per window or pre-trim). State a
 seat only to override (a prompt steers the re-render; a stated

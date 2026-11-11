@@ -122,7 +122,7 @@ statement about the film's own audio, never a placeholder.
 voice: the engine loads each reference clip once per window and synthesises a
 voice that is mixed UNDER a conditioned row at `duck_depth_db` (default
 -14 dB). It is not a placed line — to hear your own take, place the line in
-`audio_clips`. Audio rides `ref_mods` too — any media boards the bag (image, video, audio; the system bakes each kind), a path is a path (the operator's 1:1 law); this rail is the voice seat, the bag is the identity bake.
+`audio_clips`. Audio rides `ref_mods` too — any media kind boards the bag, be it image, video, or audio, and the system bakes each kind; a path is a path (the operator's 1:1 law); this rail is the voice seat, the bag is the identity bake.
 
 **NO SPOKEN LINE IS NOT SILENCE — say "no dialogue" in the window that has
 none.** H3 fills any silence the audio does not account for: a window whose

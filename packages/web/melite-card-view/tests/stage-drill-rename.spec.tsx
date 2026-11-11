@@ -84,12 +84,18 @@ const runRow = (): Record<string, unknown> => ({
   }],
 });
 
-function mountDrill(opts: { refusals?: Array<{ method: string; message: string; code?: string }> } = {}): EstateFakes {
+function mountDrill(opts: {
+  refusals?: Array<{ method: string; message: string; code?: string }>
+  renameDocs?: Array<Record<string, unknown>>
+  verbGates?: Record<string, Array<Promise<void>>>
+} = {}): EstateFakes {
   stubFetch();
   fakes?.unmount();
   fakes = mountEstateFakes({
     runDocs: [runRow()],
     ...(opts.refusals !== undefined ? { refusals: opts.refusals } : {}),
+    ...(opts.renameDocs !== undefined ? { renameDocs: opts.renameDocs } : {}),
+    ...(opts.verbGates !== undefined ? { verbGates: opts.verbGates } : {}),
   });
   render(h(StageDrill, {
     stage: goldStage(),
@@ -225,5 +231,49 @@ describe("THE OUTPUT-RENAME VERB (queue 12 Phase B — the outputs face)", () =>
     const rename = f.calls.find((c) => c.method === "runs/rename-output");
     expect(rename?.args).toMatchObject({ runId: "run-gold", stageIndex: 0, galleryIndex: 1, label: "window two" });
     await screen.findByText("window two", {}, { timeout: 4000 });
+  });
+
+  test("a receipt that answers no label wears the typed word — the fallback is the operator's own name", async () => {
+    // THE RECEIPT'S SHAPE IS NOT THE FACE'S LAW: the door may answer
+    // a rename receipt whose label row is absent (an older door, a
+    // foreign spelling) — the face re-points on the TYPED word, the
+    // one the operator submitted, never on an empty caption.
+    mountDrill({
+      renameDocs: [{ run_id: "run-gold", stage: 0, gallery: 0, name: "", status: "completed" }],
+    });
+    await openDrilldown();
+    await renameTo("second take");
+    const rename = fakes?.calls.find((c) => c.method === "runs/rename-output");
+    expect(rename?.args).toMatchObject({ label: "second take" });
+    await screen.findByText("second take", {}, { timeout: 4000 });
+  });
+
+  test("a write that lands after the walk moved on re-points only the renamed row — the drilled sibling stands", async () => {
+    // THE IN-FLIGHT WALK: the rename write is held mid-flight
+    // (verbGates parks the door's answer) while the operator walks
+    // to the sibling — the landed write re-points the WALK row it
+    // addressed and leaves the drilled item's own title untouched.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    mountDrill({ verbGates: { "runs/rename-output": [gate] } });
+    await openDrilldown();
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("drill-rename"));
+    const input = await screen.findByTestId("drill-rename-input", {}, { timeout: 4000 });
+    await user.clear(input);
+    await user.type(input, "second take");
+    await user.click(screen.getByTestId("drill-rename-save"));
+    // THE WALK MOVES ON while the write is still in flight
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    await screen.findByText("golden hour · 2", {}, { timeout: 4000 });
+    release();
+    // let the landed write re-point the walk before walking back
+    await new Promise((r) => setTimeout(r, 100));
+    // the walk row the write addressed wears the new label…
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    await screen.findByText("second take", {}, { timeout: 4000 });
+    // …and the drilled sibling never wore another row's caption
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    await screen.findByText("golden hour · 2", {}, { timeout: 4000 });
   });
 });

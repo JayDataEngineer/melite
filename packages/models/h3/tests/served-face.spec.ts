@@ -58,7 +58,7 @@ describe('the served face carries the refaudio rail truth (D-38/§14)', () => {
     expect(rail).toMatch(/loaded once per window/)
     expect(rail).toMatch(/mixes UNDER a conditioned row at duck_depth_db/)
     expect(rail).toMatch(/Not a placed line/)
-    expect(rail).toMatch(/Audio rides ref_mods too — any media boards the bag \(image, video, audio; the system bakes each kind\), a path is a path \(the operator's 1:1 law\); this rail is the voice seat, the bag is the identity bake\./)
+    expect(rail).toMatch(/Audio rides ref_mods too — any media kind boards the bag, be it image, video, or audio, and the system bakes each kind; a path is a path \(the operator's 1:1 law\); this rail is the voice seat, the bag is the identity bake\./)
   })
 
   it('the duck_depth_db tooltip names BOTH duck sources (a placed clip or a ref_audios voice) and the dial range', () => {

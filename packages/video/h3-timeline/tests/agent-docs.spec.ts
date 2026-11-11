@@ -216,7 +216,7 @@ describe("THE REFAUDIO RAIL TRUTH (defect board D-38 + ESTATE-DOC-FIXES §14, 20
         /It is not a placed line — to hear your own take, place the line in `audio_clips`/,
       );
       expect(md, `${seat}: the mod bag's audio arm is named beside the voice rail`).toMatch(
-        /Audio rides `ref_mods` too — any media boards the bag \(image, video, audio; the system bakes each kind\), a path is a path \(the operator's 1:1 law\); this rail is the voice seat, the bag is the identity bake\./,
+        /Audio rides `ref_mods` too — any media kind boards the bag, be it image, video, or audio, and the system bakes each kind; a path is a path \(the operator's 1:1 law\); this rail is the voice seat, the bag is the identity bake\./,
       );
     }
   });
