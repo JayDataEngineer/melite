@@ -529,6 +529,14 @@ window.__ModuleLoader__.load({
 			tabFlows: (p) => `Flows ${p.count}`,
 			/** The artifacts tab pill face. */
 			tabArtifacts: (p) => `Artifacts ${p.count}`,
+			/** The scope pill: the runs-feed window (the recent 500). */
+			scopeRecent: "Last 500 runs",
+			/** The scope pill: the all-files disk walk (the old-image cure —
+			* every media file on disk, newest first, past the runs window). */
+			scopeAll: "All files",
+			/** The all-files face's stat body: loaded-of-total, honest before,
+			* during and after the cursor walk. */
+			statAllFiles: (p) => `${p.loaded} of ${p.total} file${p.total === 1 ? "" : "s"} on disk`,
 			/** The sort pill: newest first. */
 			sortNewest: "Newest",
 			/** The sort pill: oldest first. */
@@ -2374,6 +2382,26 @@ window.__ModuleLoader__.load({
 				nextCursor: typeof d.nextCursor === "number" ? d.nextCursor : null
 			};
 		}
+		function decodeMediaFiles(json) {
+			const d = json ?? {};
+			const files = [];
+			for (const raw of row(d.files)) {
+				const e = raw ?? {};
+				if (typeof e.path !== "string" || e.path === "") continue;
+				if (e.kind !== "image" && e.kind !== "video" && e.kind !== "audio" && e.kind !== "model" && e.kind !== "text") continue;
+				files.push({
+					path: e.path,
+					kind: e.kind,
+					size: typeof e.size === "number" ? e.size : 0,
+					mtime: typeof e.mtime === "number" ? e.mtime : 0
+				});
+			}
+			return {
+				files,
+				total: typeof d.total === "number" ? d.total : files.length,
+				nextCursor: typeof d.nextCursor === "number" ? d.nextCursor : null
+			};
+		}
 		//#endregion
 		//#region src/client/useFeed.ts
 		/**
@@ -2919,6 +2947,33 @@ window.__ModuleLoader__.load({
 			} catch {
 				return "";
 			}
+		}
+		/** A media-route row maps onto the panel's own MediaItem currency
+		* (browseItemOf's twin, module-level: the items seam mints from a
+		* memo with no closure state). The artifact route serves the nested
+		* run-relative path; the lightbox's verbs ride artifactPathOfUrl
+		* verbatim; runId is the path's first segment — nested files still
+		* name their run. The kind rides the row (the walk classified at
+		* the source — the contract's mediaKindOf, never a second spelling). */
+		function mediaFileItemOf(f) {
+			const url = "/infer-gallery/artifact?path=" + encodeURIComponent(f.path);
+			const slash = f.path.indexOf("/");
+			return {
+				id: url,
+				kind: f.kind,
+				url,
+				face: url,
+				poster: f.kind === "image" ? url : "",
+				segment: false,
+				head: "\"" + f.path + "\"",
+				final: false,
+				runId: slash > 0 ? f.path.slice(0, slash) : "",
+				draftId: draftIdOf$1(""),
+				time: timeLabel(f.mtime / 1e3),
+				file: f.path.split("/").pop() ?? f.path,
+				created: f.mtime / 1e3,
+				archived: false
+			};
 		}
 		/** Flatten the runs feed into media tiles (poster map, frame-flood
 		*  guard, dedup by url, label law, final-film-first sort tie-break).
@@ -3488,6 +3543,49 @@ window.__ModuleLoader__.load({
 			/** The dir's media files in listed order — the lightbox's prev/next
 			*  walks exactly what the rows show (the walk-arrows law). */
 			const browseMediaItems = (0, react.useMemo)(() => browse === null ? [] : browse.entries.filter((e) => e.kind === "file" && kindOfName(e.name) !== null).map((e) => browseItemOf(e)), [browse, dirPath]);
+			const [scope, setScope] = (0, react.useState)("recent");
+			const [mediaPage, setMediaPage] = (0, react.useState)(null);
+			const [mediaLoaded, setMediaLoaded] = (0, react.useState)([]);
+			const [mediaLoading, setMediaLoading] = (0, react.useState)(false);
+			const [mediaError, setMediaError] = (0, react.useState)("");
+			const [mediaNonce, setMediaNonce] = (0, react.useState)(0);
+			const loadMedia = (cursor) => {
+				setMediaLoading(true);
+				setMediaError("");
+				const params = [];
+				if (cat !== "all") params.push("kind=" + cat);
+				if (cursor > 0) params.push("cursor=" + String(cursor));
+				const q = "/infer-gallery/media" + (params.length > 0 ? "?" + params.join("&") : "");
+				fetch(q).then(async (res) => {
+					if (!res.ok) throw new Error("HTTP " + String(res.status));
+					return decodeMediaFiles(await res.json().catch(() => null));
+				}).then((page) => {
+					setMediaPage(page);
+					setMediaLoaded((was) => cursor === 0 ? page.files : [...was, ...page.files]);
+				}).catch((e) => {
+					setMediaError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					setMediaLoading(false);
+				});
+			};
+			(0, react.useEffect)(() => {
+				if (tab !== "artifacts" || scope !== "all") return;
+				loadMedia(0);
+			}, [
+				tab,
+				scope,
+				cat,
+				mediaNonce
+			]);
+			/** THE ITEMS SEAM: one MediaItem stream, two feeds — the runs
+			* window (recent scope) or the disk walk's rows (all-files scope).
+			* Everything downstream (chips, search, sort, pages, groups,
+			* selection, lightbox, verbs) is feed-blind. */
+			const items = (0, react.useMemo)(() => scope === "all" ? mediaLoaded.map(mediaFileItemOf) : flatten(runs), [
+				scope,
+				mediaLoaded,
+				runs
+			]);
 			/** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11;
 			*  RUN-FIRST law, the media-sidebar audit 2026-09-22): "recover
 			*  the cards that made this media" restores the run's workflow onto
@@ -3632,7 +3730,6 @@ window.__ModuleLoader__.load({
 				});
 				load();
 			};
-			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
 			const liveItems = (0, react.useMemo)(() => items.filter((it) => !it.archived), [items]);
 			const archivedCount = items.length - liveItems.length;
 			const truncatedRuns = (0, react.useMemo)(() => runs.filter((r) => r.truncated !== void 0 && r.truncated.total > r.truncated.listed).length, [runs]);
@@ -3862,7 +3959,10 @@ window.__ModuleLoader__.load({
 								children: galleryCopy.panelTitle
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Stat, { children: [
-								galleryCopy.statRunsArtifacts({
+								tab === "artifacts" && scope === "all" ? galleryCopy.statAllFiles({
+									loaded: mediaLoaded.length,
+									total: mediaPage === null ? mediaLoaded.length : mediaPage.total
+								}) : galleryCopy.statRunsArtifacts({
 									runs: runs.length,
 									artifacts: liveItems.length
 								}),
@@ -4040,13 +4140,28 @@ window.__ModuleLoader__.load({
 								})
 							] }),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshButton, {
-								loading: tab === "files" ? browseLoading : loading,
+								loading: tab === "files" ? browseLoading : tab === "artifacts" && scope === "all" ? mediaLoading : loading,
 								onClick: () => {
 									if (tab === "files") setBrowseNonce((n) => n + 1);
+									else if (tab === "artifacts" && scope === "all") setMediaNonce((n) => n + 1);
 									else load();
 								}
 							})
 						]
+					}),
+					tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						style: {
+							display: "flex",
+							gap: 4
+						},
+						children: ["recent", "all"].map((s) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+							active: scope === s,
+							onClick: () => {
+								setScope(s);
+								setPage(0);
+							},
+							children: s === "recent" ? galleryCopy.scopeRecent : galleryCopy.scopeAll
+						}, s))
 					}),
 					tab === "artifacts" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
@@ -4187,307 +4302,326 @@ window.__ModuleLoader__.load({
 					tab === "artifacts" && deleteNote !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: deleteNote }) : null,
 					tab === "artifacts" && uiError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.openFailed({ error: uiError }) }) : null,
 					tab === "artifacts" && feedError !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: galleryCopy.feedFailed({ error: feedError }) }) : null,
-					tab === "artifacts" && (feedError !== "" && shown.length === 0 ? null : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						"data-infer-media-grid": "1",
-						onPointerUp: () => {
-							dragSelecting.current = false;
-							dragAnchorId.current = null;
-						},
-						onPointerCancel: () => {
-							dragSelecting.current = false;
-							dragAnchorId.current = null;
-						},
-						style: {
-							display: "grid",
-							gridTemplateColumns: `repeat(auto-fill, minmax(${String(TILE_W[tileSize])}px, 1fr))`,
-							gap: 10,
-							touchAction: "pan-y",
-							userSelect: selectMode ? "none" : void 0
-						},
-						children: visibleItems.map((it) => {
-							const grp = groupsByRun.get(it.runId);
-							const isGroupHero = grp !== void 0 && it.id === grp.hero.id;
-							const groupOpen = grp !== void 0 && expandedGroups.has(it.runId);
-							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-								onClick: (e) => {
-									if (!selectMode) {
-										setPreview(it);
-										return;
-									}
-									if (suppressSelectClick.current) {
+					tab === "artifacts" && (feedError !== "" && shown.length === 0 ? null : (scope === "all" ? mediaLoading : loading) && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: galleryCopy.loadingRuns }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: scope === "all" && mediaError !== "" ? mediaError : galleryCopy.noArtifacts }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-infer-media-grid": "1",
+							onPointerUp: () => {
+								dragSelecting.current = false;
+								dragAnchorId.current = null;
+							},
+							onPointerCancel: () => {
+								dragSelecting.current = false;
+								dragAnchorId.current = null;
+							},
+							style: {
+								display: "grid",
+								gridTemplateColumns: `repeat(auto-fill, minmax(${String(TILE_W[tileSize])}px, 1fr))`,
+								gap: 10,
+								touchAction: "pan-y",
+								userSelect: selectMode ? "none" : void 0
+							},
+							children: visibleItems.map((it) => {
+								const grp = groupsByRun.get(it.runId);
+								const isGroupHero = grp !== void 0 && it.id === grp.hero.id;
+								const groupOpen = grp !== void 0 && expandedGroups.has(it.runId);
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									onClick: (e) => {
+										if (!selectMode) {
+											setPreview(it);
+											return;
+										}
+										if (suppressSelectClick.current) {
+											suppressSelectClick.current = false;
+											return;
+										}
+										if (e.shiftKey) rangeSelect(it);
+										else toggleSelect(it);
+									},
+									onPointerDown: (e) => {
+										if (!selectMode) return;
+										if (e.pointerType === "mouse" && e.button !== 0) return;
+										dragSelecting.current = true;
+										dragMoved.current = false;
+										dragAnchorId.current = it.id;
+										dragAdd.current = !selected.has(it.id);
 										suppressSelectClick.current = false;
-										return;
-									}
-									if (e.shiftKey) rangeSelect(it);
-									else toggleSelect(it);
-								},
-								onPointerDown: (e) => {
-									if (!selectMode) return;
-									if (e.pointerType === "mouse" && e.button !== 0) return;
-									dragSelecting.current = true;
-									dragMoved.current = false;
-									dragAnchorId.current = it.id;
-									dragAdd.current = !selected.has(it.id);
-									suppressSelectClick.current = false;
-								},
-								onPointerEnter: () => {
-									if (!selectMode || !dragSelecting.current) return;
-									if (!dragMoved.current && dragAnchorId.current !== null) paintSelect(dragAnchorId.current);
-									dragMoved.current = true;
-									suppressSelectClick.current = true;
-									paintSelect(it.id);
-								},
-								onPointerUp: () => {
-									dragSelecting.current = false;
-									dragAnchorId.current = null;
-								},
-								"aria-pressed": selectMode ? selected.has(it.id) : void 0,
-								className: overlay_module_css_default.tile,
-								style: {
-									position: "relative",
-									aspectRatio: "16 / 9",
-									borderRadius: 10,
-									overflow: "hidden",
-									border: "1px solid " + (selectMode && selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"),
-									cursor: "pointer",
-									padding: 0,
-									background: tileBgFor(it.kind),
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
-									textAlign: "left",
-									fontFamily: "inherit",
-									opacity: it.archived ? .55 : void 0
-								},
-								children: [
-									it.poster !== "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-										src: it.poster,
-										alt: "",
-										loading: "lazy",
-										style: {
-											position: "absolute",
-											inset: 0,
-											width: "100%",
-											height: "100%",
-											objectFit: "cover"
-										}
-									}) : it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-										src: it.face,
-										poster: it.poster !== "" && it.poster !== it.url && it.poster !== it.face ? it.poster : void 0,
-										muted: true,
-										playsInline: true,
-										preload: "metadata",
-										disablePictureInPicture: true,
-										"aria-hidden": "true",
-										tabIndex: -1,
-										style: {
-											position: "absolute",
-											inset: 0,
-											width: "100%",
-											height: "100%",
-											objectFit: "contain",
-											pointerEvents: "none"
-										}
-									}) : it.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelTilePreview, {
-										url: it.url,
-										file: it.file
-									}) : null,
-									it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											position: "absolute",
-											right: 6,
-											bottom: 6,
-											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-											borderRadius: 6,
-											padding: 3,
-											lineHeight: 0,
-											color: "var(--dsw-alias-label-primary, #e2e8f0)"
-										},
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
-											kind: "video",
-											size: 14
-										})
-									}) : null,
-									it.segment ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											position: "absolute",
-											left: 6,
-											bottom: 6,
-											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-											borderRadius: 6,
-											padding: "3px 6px",
-											lineHeight: 0,
-											color: "var(--dsw-alias-label-primary, #e2e8f0)",
-											fontSize: 10,
-											letterSpacing: "0.04em"
-										},
-										children: galleryCopy.chipSegment
-									}) : null,
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
-									isGroupHero && grp !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-										role: "button",
-										tabIndex: 0,
-										"aria-expanded": groupOpen,
-										"aria-label": galleryCopy.groupBadgeAria({
-											count: grp.sections.length,
-											expanded: groupOpen
-										}),
-										"data-infer-media-group": it.runId,
-										onClick: (e) => {
-											e.stopPropagation();
-											toggleGroup(it.runId);
-										},
-										onKeyDown: (e) => {
-											if (e.key === "Enter") {
+									},
+									onPointerEnter: () => {
+										if (!selectMode || !dragSelecting.current) return;
+										if (!dragMoved.current && dragAnchorId.current !== null) paintSelect(dragAnchorId.current);
+										dragMoved.current = true;
+										suppressSelectClick.current = true;
+										paintSelect(it.id);
+									},
+									onPointerUp: () => {
+										dragSelecting.current = false;
+										dragAnchorId.current = null;
+									},
+									"aria-pressed": selectMode ? selected.has(it.id) : void 0,
+									className: overlay_module_css_default.tile,
+									style: {
+										position: "relative",
+										aspectRatio: "16 / 9",
+										borderRadius: 10,
+										overflow: "hidden",
+										border: "1px solid " + (selectMode && selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"),
+										cursor: "pointer",
+										padding: 0,
+										background: tileBgFor(it.kind),
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
+										textAlign: "left",
+										fontFamily: "inherit",
+										opacity: it.archived ? .55 : void 0
+									},
+									children: [
+										it.poster !== "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+											src: it.poster,
+											alt: "",
+											loading: "lazy",
+											style: {
+												position: "absolute",
+												inset: 0,
+												width: "100%",
+												height: "100%",
+												objectFit: "cover"
+											}
+										}) : it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+											src: it.face,
+											poster: it.poster !== "" && it.poster !== it.url && it.poster !== it.face ? it.poster : void 0,
+											muted: true,
+											playsInline: true,
+											preload: "metadata",
+											disablePictureInPicture: true,
+											"aria-hidden": "true",
+											tabIndex: -1,
+											style: {
+												position: "absolute",
+												inset: 0,
+												width: "100%",
+												height: "100%",
+												objectFit: "contain",
+												pointerEvents: "none"
+											}
+										}) : it.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelTilePreview, {
+											url: it.url,
+											file: it.file
+										}) : null,
+										it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												position: "absolute",
+												right: 6,
+												bottom: 6,
+												background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+												borderRadius: 6,
+												padding: 3,
+												lineHeight: 0,
+												color: "var(--dsw-alias-label-primary, #e2e8f0)"
+											},
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
+												kind: "video",
+												size: 14
+											})
+										}) : null,
+										it.segment ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												position: "absolute",
+												left: 6,
+												bottom: 6,
+												background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+												borderRadius: 6,
+												padding: "3px 6px",
+												lineHeight: 0,
+												color: "var(--dsw-alias-label-primary, #e2e8f0)",
+												fontSize: 10,
+												letterSpacing: "0.04em"
+											},
+											children: galleryCopy.chipSegment
+										}) : null,
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
+										isGroupHero && grp !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											role: "button",
+											tabIndex: 0,
+											"aria-expanded": groupOpen,
+											"aria-label": galleryCopy.groupBadgeAria({
+												count: grp.sections.length,
+												expanded: groupOpen
+											}),
+											"data-infer-media-group": it.runId,
+											onClick: (e) => {
 												e.stopPropagation();
 												toggleGroup(it.runId);
-											}
-										},
-										style: {
-											position: "absolute",
-											left: 6,
-											top: selectMode ? 30 : 6,
-											zIndex: 3,
-											borderRadius: 6,
-											padding: "3px 6px",
-											lineHeight: 1,
-											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-											color: "var(--dsw-alias-label-primary, #e2e8f0)",
-											fontSize: 10,
-											fontWeight: 700,
-											letterSpacing: "0.04em"
-										},
-										children: [galleryCopy.groupBadge({ count: grp.sections.length }), groupOpen ? " ▴" : " ▾"]
-									}) : null,
-									it.archived ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											position: "absolute",
-											left: 6,
-											bottom: 6,
-											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-											borderRadius: 6,
-											padding: "3px 6px",
-											lineHeight: 1,
-											color: "var(--dsw-alias-label-primary, #e2e8f0)",
-											fontSize: 10,
-											letterSpacing: "0.04em"
-										},
-										children: galleryCopy.archivedBadge
-									}) : null,
-									selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											position: "absolute",
-											left: 6,
-											top: 6,
-											width: 18,
-											height: 18,
-											borderRadius: "50%",
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "center",
-											fontSize: 11,
-											lineHeight: 1,
-											background: selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-											color: selected.has(it.id) ? "var(--dsw-alias-bg-base, #000)" : "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
-											border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"
-										},
-										children: selected.has(it.id) ? "✓" : ""
-									}) : null,
-									!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										role: "button",
-										tabIndex: 0,
-										className: overlay_module_css_default.wand,
-										"aria-label": galleryCopy.wandAria,
-										onClick: (e) => {
-											e.stopPropagation();
-											openCards(it);
-										},
-										onKeyDown: (e) => {
-											if (e.key === "Enter") {
+											},
+											onKeyDown: (e) => {
+												if (e.key === "Enter") {
+													e.stopPropagation();
+													toggleGroup(it.runId);
+												}
+											},
+											style: {
+												position: "absolute",
+												left: 6,
+												top: selectMode ? 30 : 6,
+												zIndex: 3,
+												borderRadius: 6,
+												padding: "3px 6px",
+												lineHeight: 1,
+												background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+												color: "var(--dsw-alias-label-primary, #e2e8f0)",
+												fontSize: 10,
+												fontWeight: 700,
+												letterSpacing: "0.04em"
+											},
+											children: [galleryCopy.groupBadge({ count: grp.sections.length }), groupOpen ? " ▴" : " ▾"]
+										}) : null,
+										it.archived ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												position: "absolute",
+												left: 6,
+												bottom: 6,
+												background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+												borderRadius: 6,
+												padding: "3px 6px",
+												lineHeight: 1,
+												color: "var(--dsw-alias-label-primary, #e2e8f0)",
+												fontSize: 10,
+												letterSpacing: "0.04em"
+											},
+											children: galleryCopy.archivedBadge
+										}) : null,
+										selectMode ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												position: "absolute",
+												left: 6,
+												top: 6,
+												width: 18,
+												height: 18,
+												borderRadius: "50%",
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+												fontSize: 11,
+												lineHeight: 1,
+												background: selected.has(it.id) ? "var(--dsw-alias-state-business-primary, rgb(147,197,253))" : "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+												color: selected.has(it.id) ? "var(--dsw-alias-bg-base, #000)" : "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
+												border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))"
+											},
+											children: selected.has(it.id) ? "✓" : ""
+										}) : null,
+										!selectMode && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											role: "button",
+											tabIndex: 0,
+											className: overlay_module_css_default.wand,
+											"aria-label": galleryCopy.wandAria,
+											onClick: (e) => {
 												e.stopPropagation();
 												openCards(it);
-											}
-										},
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
-									}),
-									restoringId === it.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: {
-											position: "absolute",
-											left: 6,
-											top: 6,
-											zIndex: 3,
-											borderRadius: 6,
-											padding: "4px 6px",
-											background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
-											color: "var(--dsw-alias-label-primary, rgb(226,232,240))",
-											fontSize: 9,
-											fontWeight: 700,
-											letterSpacing: "0.4px"
-										},
-										children: galleryCopy.restoringAction
-									}),
-									it.poster === "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
-									}) : null,
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-										style: {
-											position: "absolute",
-											left: 0,
-											right: 0,
-											bottom: 0,
-											padding: "16px 6px 4px",
-											background: gradientCaption,
-											fontSize: 10,
-											lineHeight: 1.35,
-											color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
-											display: "-webkit-box",
-											WebkitLineClamp: 2,
-											WebkitBoxOrient: "vertical",
-											overflow: "hidden"
-										},
-										children: [it.head !== "" ? it.head + " — " : "", [it.time, it.file].filter(Boolean).join(" · ")]
-									})
-								]
-							}, it.id);
-						})
-					}), pageCount > 1 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						style: {
-							display: "flex",
-							alignItems: "center",
-							gap: 6,
-							marginTop: 10,
-							justifyContent: "center"
-						},
-						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-								active: false,
-								onClick: () => {
-									if (safePage > 0) setPage(safePage - 1);
-								},
-								children: galleryCopy.prevPage
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								style: {
-									fontSize: 11,
-									color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))"
-								},
-								children: galleryCopy.pageOf({
-									page: safePage + 1,
-									pages: pageCount,
-									count: shown.length
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-								active: false,
-								onClick: () => {
-									if (safePage < pageCount - 1) setPage(safePage + 1);
-								},
-								children: galleryCopy.nextPage
+											},
+											onKeyDown: (e) => {
+												if (e.key === "Enter") {
+													e.stopPropagation();
+													openCards(it);
+												}
+											},
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(HistoryIcon, {})
+										}),
+										restoringId === it.id && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: {
+												position: "absolute",
+												left: 6,
+												top: 6,
+												zIndex: 3,
+												borderRadius: 6,
+												padding: "4px 6px",
+												background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+												color: "var(--dsw-alias-label-primary, rgb(226,232,240))",
+												fontSize: 9,
+												fontWeight: 700,
+												letterSpacing: "0.4px"
+											},
+											children: galleryCopy.restoringAction
+										}),
+										it.poster === "" && it.kind !== "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
+										}) : null,
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											style: {
+												position: "absolute",
+												left: 0,
+												right: 0,
+												bottom: 0,
+												padding: "16px 6px 4px",
+												background: gradientCaption,
+												fontSize: 10,
+												lineHeight: 1.35,
+												color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
+												display: "-webkit-box",
+												WebkitLineClamp: 2,
+												WebkitBoxOrient: "vertical",
+												overflow: "hidden"
+											},
+											children: [it.head !== "" ? it.head + " — " : "", [it.time, it.file].filter(Boolean).join(" · ")]
+										})
+									]
+								}, it.id);
 							})
-						]
-					})] })),
+						}),
+						pageCount > 1 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 6,
+								marginTop: 10,
+								justifyContent: "center"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: false,
+									onClick: () => {
+										if (safePage > 0) setPage(safePage - 1);
+									},
+									children: galleryCopy.prevPage
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 11,
+										color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))"
+									},
+									children: galleryCopy.pageOf({
+										page: safePage + 1,
+										pages: pageCount,
+										count: shown.length
+									})
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: false,
+									onClick: () => {
+										if (safePage < pageCount - 1) setPage(safePage + 1);
+									},
+									children: galleryCopy.nextPage
+								})
+							]
+						}),
+						scope === "all" && mediaPage !== null && mediaPage.nextCursor !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: {
+								display: "flex",
+								justifyContent: "center",
+								marginTop: 10
+							},
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+								active: false,
+								"aria-busy": mediaLoading,
+								onClick: () => {
+									if (!mediaLoading) loadMedia(mediaPage.nextCursor ?? 0);
+								},
+								children: galleryCopy.moreAction
+							})
+						})
+					] })),
+					tab === "artifacts" && scope === "all" && mediaError !== "" && mediaLoaded.length > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ErrorBanner, { children: mediaError }) : null,
 					tab === "files" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						"data-infer-media-files": "1",
 						style: {

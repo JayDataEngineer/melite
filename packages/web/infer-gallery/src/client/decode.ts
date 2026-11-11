@@ -158,3 +158,49 @@ export function decodeBrowse(json: unknown): BrowsePage {
     nextCursor: typeof d.nextCursor === 'number' ? d.nextCursor : null,
   }
 }
+
+/** One all-files row — a MEDIA leaf the disk walk served (kind rides
+ * every row; path is run-relative, the artifact route's own grammar).
+ * The all-files face is the operator's old-image cure (2026-11-18):
+ * every media file on disk, newest-first, past the runs window. The
+ * kind union is the panel's own five (media-kinds.ts, itself the
+ * contract's vocabulary — never a second spelling). */
+export interface MediaFileRow {
+  path: string
+  kind: 'image' | 'video' | 'audio' | 'model' | 'text'
+  size: number
+  /** ms since epoch (the route serves stat mtimeMs). */
+  mtime: number
+}
+
+/** One all-files answer — cursor-paginated with an honest total
+ * (nextCursor null means the walk is complete, never a silent cap). */
+export interface MediaFilesPage {
+  files: MediaFileRow[]
+  total: number
+  nextCursor: number | null
+}
+
+export function decodeMediaFiles(json: unknown): MediaFilesPage {
+  const d = (json ?? {}) as { files?: unknown; total?: unknown; nextCursor?: unknown }
+  /* the wire guard, one law with browse: a row without a string path
+   * or a media kind is unrenderable — dropped, never painted as a
+   * partial face over a malformed answer. */
+  const files: MediaFileRow[] = []
+  for (const raw of row<unknown>(d.files)) {
+    const e = (raw ?? {}) as { path?: unknown; kind?: unknown; size?: unknown; mtime?: unknown }
+    if (typeof e.path !== 'string' || e.path === '') continue
+    if (e.kind !== 'image' && e.kind !== 'video' && e.kind !== 'audio' && e.kind !== 'model' && e.kind !== 'text') continue
+    files.push({
+      path: e.path,
+      kind: e.kind,
+      size: typeof e.size === 'number' ? e.size : 0,
+      mtime: typeof e.mtime === 'number' ? e.mtime : 0,
+    })
+  }
+  return {
+    files,
+    total: typeof d.total === 'number' ? d.total : files.length,
+    nextCursor: typeof d.nextCursor === 'number' ? d.nextCursor : null,
+  }
+}

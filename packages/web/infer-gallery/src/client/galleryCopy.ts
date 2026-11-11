@@ -53,6 +53,15 @@ export const galleryCopy = {
   tabFlows: (p: { count: number }): string => `Flows ${p.count}`,
   /** The artifacts tab pill face. */
   tabArtifacts: (p: { count: number }): string => `Artifacts ${p.count}`,
+  /** The scope pill: the runs-feed window (the recent 500). */
+  scopeRecent: "Last 500 runs",
+  /** The scope pill: the all-files disk walk (the old-image cure —
+   * every media file on disk, newest first, past the runs window). */
+  scopeAll: "All files",
+  /** The all-files face's stat body: loaded-of-total, honest before,
+   * during and after the cursor walk. */
+  statAllFiles: (p: { loaded: number; total: number }): string =>
+    `${p.loaded} of ${p.total} file${p.total === 1 ? "" : "s"} on disk`,
   /** The sort pill: newest first. */
   sortNewest: "Newest",
   /** The sort pill: oldest first. */

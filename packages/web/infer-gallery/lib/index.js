@@ -6,7 +6,7 @@ import { ARCHIVED_DIR_NAME } from "@melite/contracts/mediaKinds";
  *  contract still owns (the media route serves both). */
 const GATEWAY_MEDIA_PREFIX = LEGACY_RUN_MEDIA_PREFIX;
 import { crossRootOrder } from '@melite/contracts/rootsManifest';
-import { segmentConfined, servableLeaf } from '@melite/contracts/mediaKinds';
+import { segmentConfined, servableLeaf, mediaKindOf } from '@melite/contracts/mediaKinds';
 import { contentTypeForArtifact } from '@melite/contracts/mediaKinds';
 import { parseRangeHeader } from '@melite/contracts/mediaRange';
 import { noteRunTreeChanged } from '@melite/estate-queue';
@@ -984,6 +984,116 @@ export function apply(ctx, config = {}) {
             }
         },
     }), 'infer-gallery: /infer-gallery/browse route');
+    /* THE ALL-FILES FACE (operator order, 2026-11-18: "just add the
+     * option to load ALL FILES in the media sidebar and not just the
+     * last 500 runs" — the old image burn: beyond the runs window an
+     * artifact was "effectively lost", and the browse face answers
+     * with folders, not pictures). This door walks EVERY run dir in
+     * every tree RECURSIVELY and serves the MEDIA LEAVES as one
+     * newest-first stream: an image from any month answers as a tile
+     * the panel paints with the same artifact route the grid rides.
+     * The laws mirror the serve + browse doors: `_`-prefixed segments
+     * (private records + `_archived` — "archive hides from LISTINGS")
+     * never descend, leaf names pass the contract's mediaKindOf (a
+     * KIND rides every row, so the panel's chips filter server-side
+     * without a second walk), §23 first-tree-wins dedup per run dir,
+     * and the no-silent-cap law — cursor + honest total always. */
+    ctx.effect(() => ctx.webServer.register({
+        kind: 'exact',
+        path: '/infer-gallery/media',
+        handler: async (req, res) => {
+            try {
+                // A disk walk, like browse: cross-host has no upstream
+                // listing to relay — refuse loud, never synthesize.
+                if (gatewayUrl !== '') {
+                    fail(res, 502, 'gateway_media_unavailable', { message: 'the all-files face walks this tree\'s own disk — cross-host needs the owning DSH\'s UI', gateway: gatewayUrl });
+                    return;
+                }
+                const url = new URL(req.url ?? '/', 'http://infer-gallery.invalid');
+                const kindParam = url.searchParams.get('kind') ?? '';
+                // THE CONTRACT'S FIVE, never a route-private subset (the
+                // walk classifies with mediaKindOf — the filter speaks the
+                // same vocabulary or refuses loud)
+                if (kindParam !== '' && kindParam !== 'image' && kindParam !== 'video' && kindParam !== 'audio' && kindParam !== 'model' && kindParam !== 'text') {
+                    fail(res, 400, 'bad_kind', { message: "kind must be one of image, video, audio, model, text, or empty for every kind", kind: kindParam });
+                    return;
+                }
+                const cursor = Math.max(0, Number(url.searchParams.get('cursor') ?? '0') | 0);
+                const asked = Number(url.searchParams.get('limit') ?? '200') | 0;
+                const limit = Math.min(500, Math.max(1, Number.isFinite(asked) && asked > 0 ? asked : 200));
+                const fs = await import('node:fs/promises');
+                const path = await import('node:path');
+                const trees = flowTrees();
+                const seen = new Set();
+                const rows = [];
+                // ONE RUN DIR, WHOLE: depth-first over its children — `_`
+                // never descends (private records + the archive), a media
+                // leaf is a row, a plain dir keeps walking. The walk is
+                // bounded by the tree itself; the cursor bounds the ANSWER.
+                const walkRun = async (full, rel) => {
+                    let dirents;
+                    try {
+                        dirents = await fs.readdir(full, { withFileTypes: true });
+                    }
+                    catch {
+                        return; // unreadable leaves the walk, never the route
+                    }
+                    for (const d of dirents) {
+                        if (d.name.startsWith('_'))
+                            continue;
+                        const childFull = path.join(full, d.name);
+                        const childRel = rel === '' ? d.name : rel + '/' + d.name;
+                        if (d.isDirectory()) {
+                            await walkRun(childFull, childRel);
+                        }
+                        else if (d.isFile()) {
+                            const kind = mediaKindOf(d.name);
+                            if (kind === undefined)
+                                continue;
+                            if (kindParam !== '' && kind !== kindParam)
+                                continue;
+                            const st = await fs.stat(childFull);
+                            rows.push({ path: childRel, kind, size: st.size, mtime: st.mtimeMs });
+                        }
+                    }
+                };
+                for (const tree of trees) {
+                    let runDirs;
+                    try {
+                        runDirs = await fs.readdir(tree, { withFileTypes: true });
+                    }
+                    catch {
+                        continue; // a tree that is not there holds nothing
+                    }
+                    for (const d of runDirs) {
+                        if (!d.isDirectory() || !RUN_DIR.test(d.name) || seen.has(d.name))
+                            continue;
+                        seen.add(d.name);
+                        await walkRun(path.join(tree, d.name), d.name);
+                    }
+                }
+                // NEWEST-FIRST, the grid's own scan order (the operator's
+                // old-image question is answered by date, not by folder
+                // name; a stable name tiebreak keeps pages deterministic).
+                rows.sort((a, b) => b.mtime - a.mtime || (a.path < b.path ? -1 : 1));
+                const page = rows.slice(cursor, cursor + limit);
+                const body = JSON.stringify({
+                    files: page,
+                    total: rows.length,
+                    // THE NO-SILENT-CAP LAW: more rows always name their
+                    // cursor — the client can load the whole tree.
+                    nextCursor: cursor + limit < rows.length ? cursor + limit : null,
+                });
+                res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) });
+                res.end(Buffer.from(body));
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                ctx.logger.warn('infer-gallery: media walk failed: %s', message);
+                fail(res, 502, 'media_unreadable', { message });
+            }
+        },
+    }), 'infer-gallery: /infer-gallery/media route');
 }
 /** Cross-host upstream answered an error status (its body rides). */
 class GalleryUpstreamError extends Error {

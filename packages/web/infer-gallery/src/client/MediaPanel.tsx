@@ -43,7 +43,7 @@ interface TabInfo {
     readonly actions: { openResource(address: string): void }
   }
 }
-import { decodeRuns, decodeDrafts, decodeBrowse, type BrowseEntry, type BrowsePage } from './decode.ts'
+import { decodeRuns, decodeDrafts, decodeBrowse, decodeMediaFiles, type BrowseEntry, type BrowsePage, type MediaFileRow, type MediaFilesPage } from './decode.ts'
 import { draftIdOf, type DraftId } from '@melite/contracts/benchStage'
 import type { RunArtifact, GalleryRunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
@@ -228,6 +228,34 @@ function timeLabel(sec: unknown): string {
   // a locale the formatter refuses drops the timestamp to an empty label — cosmetic, the tile keeps its media
   } catch {
     return ''
+  }
+}
+
+/** A media-route row maps onto the panel's own MediaItem currency
+ * (browseItemOf's twin, module-level: the items seam mints from a
+ * memo with no closure state). The artifact route serves the nested
+ * run-relative path; the lightbox's verbs ride artifactPathOfUrl
+ * verbatim; runId is the path's first segment — nested files still
+ * name their run. The kind rides the row (the walk classified at
+ * the source — the contract's mediaKindOf, never a second spelling). */
+function mediaFileItemOf(f: MediaFileRow): MediaItem {
+  const url = '/infer-gallery/artifact?path=' + encodeURIComponent(f.path)
+  const slash = f.path.indexOf('/')
+  return {
+    id: url,
+    kind: f.kind,
+    url,
+    face: url,
+    poster: f.kind === 'image' ? url : '',
+    segment: false,
+    head: '"' + f.path + '"',
+    final: false,
+    runId: slash > 0 ? f.path.slice(0, slash) : '',
+    draftId: draftIdOf(''),
+    time: timeLabel(f.mtime / 1000),
+    file: f.path.split('/').pop() ?? f.path,
+    created: f.mtime / 1000,
+    archived: false,
   }
 }
 
@@ -831,6 +859,64 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     [browse, dirPath],
   )
 
+  /* THE ALL-FILES SCOPE (operator order, 2026-11-18: "just add the
+   * option to load ALL FILES in the media sidebar and not just the
+   * last 500 runs" — the old-image burn: past the runs window an
+   * artifact was "effectively lost"). The runs feed stays the
+   * default; the scope pill swaps the artifacts grid's SOURCE to the
+   * media route's disk walk — every media file on disk,
+   * newest-first, cursor-fed. The grid itself (chips, search, sort,
+   * page dial, groups, select, lightbox, verbs) rides the SAME
+   * MediaItem stream unchanged — one items seam, two feeds. */
+  const [scope, setScope] = useState<'recent' | 'all'>('recent')
+  const [mediaPage, setMediaPage] = useState<MediaFilesPage | null>(null)
+  const [mediaLoaded, setMediaLoaded] = useState<MediaFileRow[]>([])
+  const [mediaLoading, setMediaLoading] = useState(false)
+  const [mediaError, setMediaError] = useState('')
+  const [mediaNonce, setMediaNonce] = useState(0)
+
+  const loadMedia = (cursor: number): void => {
+    setMediaLoading(true)
+    setMediaError('')
+    const params: string[] = []
+    if (cat !== 'all') params.push('kind=' + cat)
+    if (cursor > 0) params.push('cursor=' + String(cursor))
+    const q = '/infer-gallery/media' + (params.length > 0 ? '?' + params.join('&') : '')
+    void fetch(q)
+      .then(async (res: Response): Promise<MediaFilesPage> => {
+        if (!res.ok) throw new Error('HTTP ' + String(res.status))
+        return decodeMediaFiles(await res.json().catch((): null => null))
+      })
+      .then((page: MediaFilesPage) => {
+        // cursor 0 REPLACES (a scope/kind/refresh re-ask); a cursor
+        // page APPENDS (the More verb continues the walk — the
+        // no-silent-cap law, browse's own shape)
+        setMediaPage(page)
+        setMediaLoaded((was) => cursor === 0 ? page.files : [...was, ...page.files])
+      })
+      .catch((e: unknown) => {
+        setMediaError(e instanceof Error ? e.message : String(e))
+      })
+      .finally(() => { setMediaLoading(false) })
+  }
+
+  useEffect(() => {
+    if (tab !== 'artifacts' || scope !== 'all') return
+    loadMedia(0)
+    // cat rides the deps: a kind chip re-asks the walk SERVER-SIDE
+    // (the disk walk filters at the source); mediaNonce is the
+    // face's refresh verb
+  }, [tab, scope, cat, mediaNonce])
+
+  /** THE ITEMS SEAM: one MediaItem stream, two feeds — the runs
+   * window (recent scope) or the disk walk's rows (all-files scope).
+   * Everything downstream (chips, search, sort, pages, groups,
+   * selection, lightbox, verbs) is feed-blind. */
+  const items = useMemo(
+    () => scope === 'all' ? mediaLoaded.map(mediaFileItemOf) : flatten(runs),
+    [scope, mediaLoaded, runs],
+  )
+
   /** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11;
    *  RUN-FIRST law, the media-sidebar audit 2026-09-22): "recover
    *  the cards that made this media" restores the run's workflow onto
@@ -995,7 +1081,6 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     load()
   }
 
-  const items = useMemo(() => flatten(runs), [runs])
   /* THE LIVE / TUCKED SPLIT (mass-archive law): chips, the header
    * stat and the tab pill count the LIVE face — tucked rows are
    * provenance-in-waiting, and counting them as artifacts would
@@ -1283,7 +1368,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>{galleryCopy.panelTitle}</span>
         <Stat>
-          {galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: liveItems.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}{runsFeed.stale ? galleryCopy.statStale : ''}
+          {/* the stat line speaks the ACTIVE feed: the runs window's
+              runs/artifacts pair, or the disk walk's honest
+              loaded-of-total (the all-files face never claims more
+              than it loaded) */}
+          {tab === 'artifacts' && scope === 'all'
+            ? galleryCopy.statAllFiles({ loaded: mediaLoaded.length, total: mediaPage === null ? mediaLoaded.length : mediaPage.total })
+            : galleryCopy.statRunsArtifacts({ runs: runs.length, artifacts: liveItems.length })}{gatewayErrors.length > 0 ? galleryCopy.statGatewayNotes({ count: gatewayErrors.length }) : ''}{truncatedRuns > 0 ? galleryCopy.statCapped({ count: truncatedRuns }) : ''}{runsFeed.stale ? galleryCopy.statStale : ''}
         </Stat>
         <span style={{ flex: 1 }} />
         {/* FLOWS ↔ ARTIFACTS: the two faces of the archive — composed
@@ -1420,10 +1511,26 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
         )}
         {/* On the files face the refresh verb re-walks the disk (the
             runs feed's reload would repaint a window the browse face
-            deliberately walks past). */}
-        <RefreshButton loading={tab === 'files' ? browseLoading : loading} onClick={() => { if (tab === 'files') setBrowseNonce((n) => n + 1); else load() }} />
+            deliberately walks past); the all-files scope owns the
+            same law for its walk. */}
+        <RefreshButton loading={tab === 'files' ? browseLoading : tab === 'artifacts' && scope === 'all' ? mediaLoading : loading} onClick={() => { if (tab === 'files') setBrowseNonce((n) => n + 1); else if (tab === 'artifacts' && scope === 'all') setMediaNonce((n) => n + 1); else load() }} />
       </div>
 
+      {/* THE SCOPE PILLS (the all-files option, operator 2026-11-18):
+          the artifacts face's SOURCE — the recent runs window or the
+          whole disk. A flip re-anchors the scan to page 0 (the list
+          underneath changed wholesale). */}
+      {tab === 'artifacts' && (
+        <span style={{ display: 'flex', gap: 4 }}>
+          {(['recent', 'all'] as const).map((s) => (
+            <Pill
+              key={s}
+              active={scope === s}
+              onClick={() => { setScope(s); setPage(0) }}
+            >{s === 'recent' ? galleryCopy.scopeRecent : galleryCopy.scopeAll}</Pill>
+          ))}
+        </span>
+      )}
       {/* THE KIND CHIPS stay on the artifacts face — they count the
           runs feed's live tiles, never the disk walk. */}
       {tab === 'artifacts' && (
@@ -1519,10 +1626,10 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
         // keep (shown empty): the banner alone owns the failure.
         feedError !== '' && shown.length === 0
           ? null
-          : loading && items.length === 0
+          : (scope === 'all' ? mediaLoading : loading) && items.length === 0
             ? <Empty>{galleryCopy.loadingRuns}</Empty>
             : shown.length === 0
-              ? <Empty>{galleryCopy.noArtifacts}</Empty>
+              ? <Empty>{scope === 'all' && mediaError !== '' ? mediaError : galleryCopy.noArtifacts}</Empty>
               : (
                 <>
                   <div
@@ -1790,8 +1897,22 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                       <Pill active={false} onClick={() => { if (safePage < pageCount - 1) setPage(safePage + 1) }}>{galleryCopy.nextPage}</Pill>
                     </div>
                   )}
+                  {/* THE MORE VERB (the all-files scope): the disk walk
+                      continues while a cursor rides — the no-silent-cap
+                      law; the stat line's loaded-of-total stays honest
+                      on every hop. */}
+                  {scope === 'all' && mediaPage !== null && mediaPage.nextCursor !== null && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                      <Pill active={false} aria-busy={mediaLoading} onClick={() => { if (!mediaLoading) loadMedia(mediaPage.nextCursor ?? 0) }}>{galleryCopy.moreAction}</Pill>
+                    </div>
+                  )}
                 </>
               ))}
+      {/* the all-files walk's own failure banner (either-way face:
+          the loaded tiles stay painted; a bare banner owns the miss) */}
+      {tab === 'artifacts' && scope === 'all' && mediaError !== '' && mediaLoaded.length > 0
+        ? <ErrorBanner>{mediaError}</ErrorBanner>
+        : null}
 
       {tab === 'files' && (
         <div data-infer-media-files="1" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

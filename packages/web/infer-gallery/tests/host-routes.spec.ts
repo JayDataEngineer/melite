@@ -133,6 +133,7 @@ describe('registration + posture log', () => {
       '/infer-gallery/browse',
       '/infer-gallery/drafts',
       '/infer-gallery/flow',
+      '/infer-gallery/media',
       '/infer-gallery/runs',
     ])
     expect(ctx.routes.every((r) => r.kind === 'exact')).toBe(true)
@@ -1169,5 +1170,104 @@ describe('GET /infer-gallery/browse (the file-browser face, 2026-11-09)', () => 
     const saw = await hit(ctx, '/infer-gallery/browse', '/infer-gallery/browse')
     expect(saw.status).toBe(502)
     expect(saw.body.toString('utf8')).toContain('gateway_browse_unavailable')
+  })
+})
+
+describe('GET /infer-gallery/media (the all-files face, 2026-11-18)', () => {
+  // THE OPERATOR BURN, verbatim: "If I have an image I want to see
+  // that is old, it is effectively lost." The runs feed caps at 500;
+  // the browse face answers with FOLDERS. This door serves the MEDIA
+  // LEAVES THEMSELVES — every run dir walked recursively, one
+  // newest-first stream. These arms pin its laws: disk truth (no
+  // seat), media-kinds-only + the privacy family, newest-first
+  // order, server-side kind filter, and the no-silent-cap cursor.
+  it('serves EVERY media leaf on disk across runs and subdirs — no seat, no window, nothing lost', async () => {
+    mkdirSync(join(flowDir, 'run-0dd-1', 'gen'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-0dd-1', 'gen', 'old.png'), 'x')
+    mkdirSync(join(flowDir, 'run-2e9-2'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-2e9-2', 'new.jpg'), 'x')
+    writeFileSync(join(flowDir, 'run-2e9-2', 'clip.mp4'), 'x')
+    writeFileSync(join(flowDir, 'run-2e9-2', 'line.flac'), 'x')
+    const ctx = mount({ flowDir }) // NO queue seat at all
+    const saw = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media')
+    expect(saw.status).toBe(200)
+    const body = json(saw) as { files: { path: string; kind: string }[]; total: number; nextCursor: number | null }
+    expect(body.files.map((f) => f.path).sort()).toEqual([
+      'run-0dd-1/gen/old.png', 'run-2e9-2/clip.mp4', 'run-2e9-2/line.flac', 'run-2e9-2/new.jpg',
+    ])
+    expect(body.files.find((f) => f.path === 'run-2e9-2/new.jpg')?.kind).toBe('image')
+    expect(body.files.find((f) => f.path === 'run-2e9-2/clip.mp4')?.kind).toBe('video')
+    expect(body.files.find((f) => f.path === 'run-2e9-2/line.flac')?.kind).toBe('audio')
+    expect(body.total).toBe(4)
+    expect(body.nextCursor).toBe(null)
+  })
+
+  it('newest-first: the younger file answers first, a stable name tiebreak behind it', async () => {
+    mkdirSync(join(flowDir, 'run-d1f-f1'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-d1f-f1', 'young.png'), 'x')
+    await new Promise((r) => setTimeout(r, 12))
+    writeFileSync(join(flowDir, 'run-d1f-f1', 'old.png'), 'x')
+    const ctx = mount({ flowDir })
+    const saw = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media')
+    const body = json(saw) as { files: { path: string }[] }
+    expect(body.files.map((f) => f.path)).toEqual(['run-d1f-f1/old.png', 'run-d1f-f1/young.png'])
+  })
+
+  it('the privacy family stays unlisted: `_` segments never descend; every contract kind rows (text included)', async () => {
+    mkdirSync(join(flowDir, 'run-4a1-1', '_archived'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-4a1-1', 'live.png'), 'x')
+    writeFileSync(join(flowDir, 'run-4a1-1', '_flow.json'), '{}')
+    writeFileSync(join(flowDir, 'run-4a1-1', 'notes.txt'), 'x')
+    writeFileSync(join(flowDir, 'run-4a1-1', '_archived', 'tucked.png'), 'x')
+    const ctx = mount({ flowDir })
+    const saw = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media')
+    const body = json(saw) as { files: { path: string; kind: string }[]; total: number }
+    expect(body.files.map((f) => f.path).sort()).toEqual(['run-4a1-1/live.png', 'run-4a1-1/notes.txt'])
+    expect(body.files.find((f) => f.path === 'run-4a1-1/notes.txt')?.kind).toBe('text')
+    expect(body.total).toBe(2)
+  })
+
+  it('kind filters at the SOURCE (one walk per kind), and a foreign kind refuses loud', async () => {
+    mkdirSync(join(flowDir, 'run-b1d-1'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-b1d-1', 'a.png'), 'x')
+    writeFileSync(join(flowDir, 'run-b1d-1', 'b.mp4'), 'x')
+    const ctx = mount({ flowDir })
+    const img = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?kind=image')
+    expect((json(img) as { files: { path: string }[] }).files.map((f) => f.path)).toEqual(['run-b1d-1/a.png'])
+    const vid = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?kind=video')
+    expect((json(vid) as { files: { path: string }[] }).files.map((f) => f.path)).toEqual(['run-b1d-1/b.mp4'])
+    const bad = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?kind=folder')
+    expect(bad.status).toBe(400)
+    expect(bad.body.toString('utf8')).toContain('bad_kind')
+  })
+
+  it('the cursor walks the WHOLE stream via nextCursor — never a silent cap', async () => {
+    mkdirSync(join(flowDir, 'run-f9e-1'), { recursive: true })
+    for (const n of ['a.png', 'b.png', 'c.png', 'd.png', 'e.png']) {
+      writeFileSync(join(flowDir, 'run-f9e-1', n), 'x')
+    }
+    const ctx = mount({ flowDir })
+    const names: string[] = []
+    let cursor = 0
+    let pages = 0
+    for (;;) {
+      const saw = await hit(ctx, '/infer-gallery/media', `/infer-gallery/media?limit=2${cursor > 0 ? `&cursor=${cursor}` : ''}`)
+      expect(saw.status).toBe(200)
+      const body = json(saw) as { files: { path: string }[]; total: number; nextCursor: number | null }
+      expect(body.total).toBe(5)
+      names.push(...body.files.map((f) => f.path))
+      pages += 1
+      if (body.nextCursor === null) break
+      cursor = body.nextCursor
+    }
+    expect(pages).toBe(3)
+    expect(names).toHaveLength(5)
+  })
+
+  it('cross-host answers the loud 502, never a synthesized stream', async () => {
+    const ctx = mount({ flowDir, gatewayUrl: 'https://owner.example' })
+    const saw = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media')
+    expect(saw.status).toBe(502)
+    expect(saw.body.toString('utf8')).toContain('gateway_media_unavailable')
   })
 })

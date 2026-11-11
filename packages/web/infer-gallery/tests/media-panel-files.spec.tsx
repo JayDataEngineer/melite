@@ -189,3 +189,63 @@ describe('the files face — the disk walk behind the runs window', () => {
     await waitFor(() => { expect(screen.getByText(/browse failed — HTTP 502/)).toBeTruthy() })
   })
 })
+
+describe('the all-files scope — EVERY media leaf, not the last 500 runs (operator 2026-11-18)', () => {
+  /** The all-files answer shape. */
+  const mediaPage = (body: Record<string, unknown>): Promise<Response> =>
+    Promise.resolve(new Response(JSON.stringify(body), { status: 200 }))
+
+  it("the scope pill swaps the grid's SOURCE: an old image the runs window dropped renders as a tile", async () => {
+    stub((url) =>
+      url.startsWith('/infer-gallery/media')
+        ? mediaPage({
+            files: [{ path: 'run-0dd-very-old/gen/still.png', kind: 'image', size: 9, mtime: Date.parse('2026-10-01T00:00:00Z') }],
+            total: 1, nextCursor: null,
+          })
+        : browsePage({ path: '', total: 0, nextCursor: null, entries: [] }))
+    render(<MediaPanel />)
+    // the runs feed served ZERO rows — the window is empty
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    // the tile's label carries the walked path (the label law's
+    // disk-truth head) — the old image is FOUND, not scrolled to
+    await waitFor(() => { expect(screen.getByText(/run-0dd-very-old\/gen\/still.png/)).toBeTruthy() })
+    // the stat line speaks the disk walk's honest loaded-of-total
+    expect(screen.getByText('1 of 1 file on disk')).toBeTruthy()
+  })
+
+  it('More continues the cursor walk and the kind chips re-ask the walk at the source', async () => {
+    const calls: string[] = []
+    stub((url) => {
+      if (!url.startsWith('/infer-gallery/media')) return browsePage({ path: '', total: 0, nextCursor: null, entries: [] })
+      calls.push(url)
+      if (url.includes('cursor=1')) {
+        return mediaPage({ files: [{ path: 'run-beef-2/b.mp4', kind: 'video', size: 9, mtime: 2 }], total: 2, nextCursor: null })
+      }
+      return mediaPage({ files: [{ path: 'run-abcd-1/a.png', kind: 'image', size: 9, mtime: 1 }], total: 2, nextCursor: 1 })
+    })
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    await waitFor(() => { expect(screen.getByText(/run-abcd-1\/a\.png/)).toBeTruthy() })
+    fireEvent.click(screen.getByText('More'))
+    await waitFor(() => { expect(screen.getByText(/run-beef-2\/b\.mp4/)).toBeTruthy() })
+    expect(screen.getByText('2 of 2 files on disk')).toBeTruthy()
+    expect(calls.some((u) => u.includes('cursor=1'))).toBe(true)
+    // a kind chip re-asks the walk SERVER-SIDE (the filter rides the
+    // route, never a second client-side spelling)
+    fireEvent.click(screen.getByText(/Images/))
+    await waitFor(() => { expect(calls.some((u) => u.includes('kind=image'))).toBe(true) })
+  })
+
+  it('a dead media door banners — never a silent blank grid', async () => {
+    stub((url) =>
+      url.startsWith('/infer-gallery/media')
+        ? Promise.resolve(new Response('{"error":"media_unreadable"}', { status: 502 }))
+        : browsePage({ path: '', total: 0, nextCursor: null, entries: [] }))
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    await waitFor(() => { expect(screen.getByText(/HTTP 502/)).toBeTruthy() })
+  })
+})
