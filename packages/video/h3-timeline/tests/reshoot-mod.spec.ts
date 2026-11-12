@@ -254,11 +254,22 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     assert.equal(node.class_type, "SaveVideo", "the armed reshoot resolves to the film tail's SaveVideo (the augmentation's own terminal)");
   });
 
-  it("an armed legacy name beside reshoot refuses through the ONE door (the alias law)", () => {
+  it("every second door beside reshoot refuses through the ONE door (the full pair matrix — reshoot×continuation co-presence is the join-posture row)", () => {
     const edges: Array<[string, Record<string, unknown>, RegExp]> = [
       ['replace', { replace: [{ source_clip: 'c.mp4', swap_prompt: 'x' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
       ['repair', { repair: [{ source_clip: 'c.mp4', repair_prompt: 'x', mask: 'masks/hands.png' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
       ['extend', { extend: [{ source_clip: 'c.mp4', extend_prompt: 'x', extend_seconds: 3.75 }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      // the two legacy names the first cut never pinned: both resolve
+      // into the ONE edit bag ahead of the dispatch, so both land on
+      // the same throw — the matrix is closed, not sampled.
+      ['refine', { refine: [{ source_clip: 'c.mp4', refine_prompt: 'x', clip_seconds: 3.75 }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      ['upscale', { upscale: [{ chain_run: 'runs/prior', prompt: 'x' }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      // the MODERN spellings (the direct edit bag, no legacy key):
+      // the continuation posture is the reshoot×continuation
+      // co-presence row itself, the in-chain posture its twin — both
+      // arm the edit dispatch, both land on the same throw.
+      ['join-posture', { edit: [{ source_clip: 'c.mp4', edit_prompt: 'x', continuation: true, mask_source: 'whole-frame', reference: 'self', denoise: 1, extend_seconds: 3.75 }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
+      ['inchain-posture', { edit: [{ source_clip: 'c.mp4', edit_prompt: 'x', mask_source: 'whole-frame', reference: 'self', denoise: 0.32 }] }, /Video edit and Reshoot are both armed.*empty the Reshoot arm for a video edit/],
     ];
     for (const [name, arm, re] of edges) {
       const walked = def.schema({
