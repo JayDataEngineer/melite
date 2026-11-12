@@ -225,3 +225,52 @@ describe('THE ONE STUCK WATCH, BOTH SEATS (audit F8/fix #7): one wedge, one verd
     ).toBeNull()
   })
 })
+
+describe('THE STUCK HEAL (audit F6c): the ceiling is patience, not a verdict — the background poll keeps reading the ledger', () => {
+  /** Drive the wedge to the stuck face (watch speed), then hand the
+   *  mock to the caller with the heal already polling. */
+  const driveToStuck = async (op: string): Promise<void> => {
+    wire.postManageAction
+      .mockResolvedValueOnce(reply(op, 'acquiring', HELD_AT, TOTAL))
+      .mockResolvedValue(reply(op, 'acquiring', HELD_AT, TOTAL))
+    await startDownload()
+    await act(async () => { await vi.advanceTimersByTimeAsync(WATCH_WINDOW_MS) })
+    expect(screen.getByText(/Weight stuck/i), 'the wedge never landed the stuck face — the heal arms rode no stuck truth').toBeTruthy()
+  }
+
+  it('ARM H1 — the engine failure verdict heals the stuck face to the failed face, the STATE word voicing when the report carried no detail', async () => {
+    vi.useFakeTimers()
+    await driveToStuck('op-h1')
+    // the heal settles failed with NO detail — the fallback voice is
+    // the state word, never an empty note
+    wire.postManageAction.mockResolvedValue({ ok: true, data: { operation_id: 'op-h1', state: 'failed', bytes: HELD_AT, total: TOTAL } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
+    expect(screen.queryByText(/Weight stuck/i), 'the heal landed the verdict but the stuck face never stepped aside').toBeNull()
+    expect(screen.getByText('weight acquisition failed'),
+      'the detail-less failed heal voiced nothing — the state fallback is the only word').toBeTruthy()
+    expect(screen.getByText(/Weight failed/i)).toBeTruthy()
+  })
+
+  it('ARM H2 — the engine landing heals the stuck face to the done face, the acquired-bytes voice serving when the report carried no detail', async () => {
+    vi.useFakeTimers()
+    await driveToStuck('op-h2')
+    wire.postManageAction.mockResolvedValue({ ok: true, data: { operation_id: 'op-h2', state: 'installed', bytes: TOTAL, total: TOTAL } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
+    expect(screen.queryByText(/Weight stuck/i)).toBeNull()
+    expect(screen.getByText(/moss-image acquired \(6\.8 GB of 6\.8 GB\)/),
+      'the detail-less installed heal derived no acquired voice — the done face landed without its word').toBeTruthy()
+  })
+
+  it('ARM H3 — a TORN heal read (the wire rejects mid-heal, no abort) leaves the stuck face standing with its exits', async () => {
+    vi.useFakeTimers()
+    await driveToStuck('op-h3')
+    wire.postManageAction.mockRejectedValueOnce(new Error('wire torn mid-heal'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
+    expect(screen.getByText(/Weight stuck/i),
+      'a torn heal read destroyed the stuck face — the only honest keeper of the last engine report').toBeTruthy()
+    expect(screen.queryByText('wire torn mid-heal'),
+      'the torn read voiced itself — the heal catch owns the silence, the face owns the exits').toBeNull()
+    expect(screen.getByRole('button', { name: 'Retry the download' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Delete stuck operation' })).toBeTruthy()
+  })
+})

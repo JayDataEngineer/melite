@@ -6127,9 +6127,10 @@ window.__ModuleLoader__.load({
 							last = current;
 						}
 						setBusy(false);
-						if (last !== null) setDone({
-							detail: last.detail ?? acquiredDetailOf(target, last),
-							restartRequired: last.state === "restart_required" || last.state === "installed"
+						const finalFlight = last;
+						setDone({
+							detail: finalFlight.detail ?? acquiredDetailOf(target, finalFlight),
+							restartRequired: finalFlight.state === "restart_required" || finalFlight.state === "installed"
 						});
 					} catch (e) {
 						if (signal.aborted) return;
@@ -6146,7 +6147,7 @@ window.__ModuleLoader__.load({
 			if (dismissed) {
 				const handOnly = rescue.kind === "model" && (rescue.handPlaced?.length ?? 0) > 0;
 				return (0, react.createElement)("div", { className: card_module_css_default.rescue }, handOnly ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.weightHandPlaced({
-					files: (rescue.handPlaced ?? []).join(", "),
+					files: rescue.handPlaced.join(", "),
 					folders: (rescue.folders ?? []).join(", ")
 				})) : (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, chromeCopy.missingDownload({ what })), !handOnly ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",

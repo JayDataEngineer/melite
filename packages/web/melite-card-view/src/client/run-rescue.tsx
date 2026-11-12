@@ -607,12 +607,14 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
           last = current
         }
         setBusy(false)
-        if (last !== null) {
-          setDone({
-            detail: last.detail ?? acquiredDetailOf(target, last),
-            restartRequired: last.state === 'restart_required' || last.state === 'installed',
-          })
-        }
+        // the loop always runs at least the lead entry and only a
+        // completing iteration reaches this footer — last is the
+        // final file's settled report by construction, never null
+        const finalFlight = last as WeightAcquireState
+        setDone({
+          detail: finalFlight.detail ?? acquiredDetailOf(target, finalFlight),
+          restartRequired: finalFlight.state === 'restart_required' || finalFlight.state === 'installed',
+        })
       } catch (e: unknown) {
         if (signal.aborted) return // the close/unmount owns the face now
         setBusy(false)
@@ -650,7 +652,9 @@ export function RunRescue({ error, stages, onRun, rescue: structured }: {
         // the error could never be closed out).
         ? h('p', { className: css.rescueNote },
           chromeCopy.weightHandPlaced({
-            files: (rescue.handPlaced ?? []).join(', '),
+            // handOnly's own guard proves handPlaced present — the
+            // popup face's non-null idiom (the 748 branch below)
+            files: rescue.handPlaced!.join(', '),
             folders: (rescue.folders ?? []).join(', '),
           }))
         : h('p', { className: css.rescueNote }, chromeCopy.missingDownload({ what })),

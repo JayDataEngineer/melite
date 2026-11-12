@@ -962,6 +962,26 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     assert.equal(response.body, null);
   });
 
+  test("a consumer cancel mid-flow clears the dial quietly (the poke's cancel arm)", async () => {
+    // the consumer tearing down the piped body mid-flow fires the
+    // TransformStream's cancel — the rearm timer must clear with it
+    // (no dangling dial on a stream nobody reads anymore)
+    const { server, url } = chunkedServer("/cancel.bin", () => 20);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const response = await idleDialFetch(50)(url());
+    assert.equal(response.status, 200);
+    const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
+    const first = await reader.read();
+    assert.equal(first.done, false);
+    await reader.cancel();
+    // a cancelled reader reads DONE (never more bytes) and, past the
+    // dial window, nothing fires on the torn-down stream — the cancel
+    // cleared the rearm timer with the body
+    const after = await reader.read();
+    assert.equal(after.done, true);
+    await new Promise<void>((resolve) => setTimeout(resolve, 120));
+  });
+
   test("a refused connection throws through the catch's clear", async () => {
     const server = createServer(() => undefined);
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));

@@ -369,3 +369,60 @@ test('THE DOWNLOAD TELEMETRY TEARDOWN (audit L-ERROR-3): closing the popup abort
   await new Promise((r) => { setTimeout(r, 1600) })
   expect(wire.postManageAction.mock.calls.length).toBe(settled)
 })
+
+test('the failed face\'s Delete door voices a refused discard inline (the exits never swallow a wire refusal)', async () => {
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-del', state: 'acquiring', bytes: 1, total: 4 } })
+    .mockResolvedValueOnce({ ok: true, detail: 'disk full', data: { operation_id: 'op-del', state: 'failed' } })
+    .mockRejectedValueOnce(new Error('discard refused'))
+  render(
+    <RunRescue error="flow needs weight 'x.safetensors' — not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByText('disk full')).toBeTruthy() }, { timeout: 3000 })
+  await userEvent.click(screen.getByRole('button', { name: 'Delete stuck operation' }))
+  await waitFor(() => { expect(screen.getByText('discard refused')).toBeTruthy() }, { timeout: 3000 })
+  // the discard rode the manage seat with the settled operation's id
+  expect(wire.postManageAction).toHaveBeenLastCalledWith('acquire_discard', { operation_id: 'op-del' })
+})
+
+test('a hand-placed miss with no folders row still names the placement (an absent where is an empty where)', () => {
+  render(
+    <RunRescue
+      error=""
+      stages={STAGES}
+      onRun={() => {}}
+      rescue={{
+        kind: 'model',
+        file: 'merged_lora.safetensors',
+        target: 'h3-timeline',
+        fetchable: false,
+        handPlaced: ['merged_lora.safetensors'],
+      }}
+    />,
+  )
+  expect(screen.getByText(/Hand-placed weight — no fetch exists\. Place merged_lora\.safetensors under/)).toBeTruthy()
+  // the offer law: no Download press exists where no fetch exists
+  expect(screen.queryByTestId('weight-download')).toBe(null)
+})
+
+test('a dismissed hand-placed face collapses to the placement note with NO re-offer (no fetch exists to re-offer)', async () => {
+  render(
+    <RunRescue
+      error=""
+      stages={STAGES}
+      onRun={() => {}}
+      rescue={{
+        kind: 'model',
+        file: 'merged_lora.safetensors',
+        target: 'h3-timeline',
+        fetchable: false,
+        handPlaced: ['merged_lora.safetensors'],
+      }}
+    />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  expect(screen.queryByTestId('weight-popup')).toBe(null)
+  expect(screen.getByText(/Hand-placed weight — no fetch exists/)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Download weight' })).toBe(null)
+})

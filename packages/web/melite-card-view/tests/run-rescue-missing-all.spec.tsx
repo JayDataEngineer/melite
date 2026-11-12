@@ -92,6 +92,29 @@ test('the face lists every missing declared weight with its human size before an
   expect(starts).toEqual([])
 })
 
+test('a declared weight with no size row lists its name BARE — no invented size, and the total counts only the sizes the wire declared', () => {
+  // the wire may legally omit size_bytes (an undeclared DECL row):
+  // the list may not invent a size for it, and the one-face total's
+  // sizes join counts only what was declared
+  const rescue = rescueOfLaneDetails({
+    ...laneDetails(),
+    missing_all: [
+      { slot: 'text_encoder', name: MOSS_TE, fetch_url: 'https://example/te' },
+      { slot: 'vae', name: MOSS_VAE, size_bytes: VAE_TOTAL, fetch_url: 'https://example/vae' },
+    ],
+  })
+  expect(rescue).not.toBeNull()
+  const { getByTestId } = render(
+    <RunRescue error="" stages={[{ params: { model: 'moss-image' } }]} onRun={() => {}} rescue={rescue ?? undefined} />,
+  )
+  const items = Array.from(getByTestId('weight-list').querySelectorAll('li')).map((li) => li.textContent ?? '')
+  expect(items[0], 'the size-less lead row wore a size separator — an undeclared size was invented').toBe(MOSS_TE)
+  expect(items[1]).toBe(MOSS_VAE + ' · 238.0 MB')
+  expect(getByTestId('weight-total').textContent,
+    'the totals join counted the size-less row — the undeclared size leaked into the arithmetic voice').toBe('2 files · 238.0 MB')
+  expect(starts).toEqual([])
+})
+
 test('download fetches both weights in order, one settled operation at a time, then the done face', async () => {
   const rescue = rescueOfLaneDetails(laneDetails())
   const onRun = vi.fn()
