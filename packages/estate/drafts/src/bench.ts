@@ -932,6 +932,26 @@ export function getBench(
 //    rewire/undo — re-homed from the bench door, HTTP vocabulary
 //    dead) ──────────────────────────────────────────────────────
 
+/** THE PERSISTED LANDING STAMP (F3 D3-04 option c, the status-truth
+ *  cure map §2): every write seat that authors or re-settles a stage
+ *  row stamps `compiled_at` (epoch ms) on the row — the one true
+ *  per-row settle signal. The press face's rev-confirm catches only a
+ *  rev that MOVED between the snapshot read and the press; the
+ *  mint-then-press leg (one write, one read, the rev already still)
+ *  had no signal anywhere (the s_89/s_90 burn). The stamp is row
+ *  METADATA like `provenance`, never params: the admission never
+ *  judges it, the diff never voices it, and undo never writes it
+ *  (patch-undo restores params only and leaves the forward write's
+ *  stamp; remove-undo reinserts the recorded row with the stamp it
+ *  carried — an undo is itself a rev-bumping write, so the
+ *  undo-then-press leg belongs to the rev-confirm, not to the
+ *  stamp). A row with no stamp (a pre-law doc, a foreign
+ *  restore) admits nothing at the press — no false warning invented
+ *  from absence. */
+function stampCompiledAt(row: Record<string, unknown>): void {
+  row["compiled_at"] = Date.now();
+}
+
 /** One loaded bench (session-validated, existing). */
 interface LoadedBench {
   readonly draftId: DraftId;
@@ -1390,6 +1410,11 @@ export async function patchBench(
       toleratedByRow([st], liveIdsOf(stagesOf(loaded.doc))).get(stageId),
     );
     st["params"] = stored;
+    // D3-04 (c): a landed patch re-settles the row — the stamp says
+    // the projection this row describes was judged NOW (the undo
+    // inverse below restores params only; the stamp is metadata and
+    // stays the write's own).
+    stampCompiledAt(st);
     // THE STALENESS ARM (the silent no-op cure): a params change
     // invalidates the stage's run memory — the done mark described
     // the PREVIOUS params, and the skip-done law (bench order, Run
@@ -2167,6 +2192,9 @@ export async function addStageBench(
   );
   row["provenance"] = author;
   if (isRecord(body["expected"])) row["expected"] = body["expected"];
+  // D3-04 (c): the mint stamps the row's settle moment — the press
+  // face reads it to warn on a row younger than the settle window.
+  stampCompiledAt(row);
   // THE WIRING ADMISSION (phantom-wire cure) — BEFORE the push: the
   // row's wiring admits against a PROJECTED live set (current ids +
   // this row's). Never push-then-check: the loaded doc is the
@@ -2359,6 +2387,10 @@ export async function addStagesBench(
     );
     row["provenance"] = author;
     if (isRecord(stageBody["expected"])) row["expected"] = stageBody["expected"];
+    // D3-04 (c): every batch row carries its own settle stamp — the
+    // press face judges each row's freshness per-row, never the
+    // batch's.
+    stampCompiledAt(row);
     // the per-stage gates in the single add's own order: admission,
     // then wiring against the PROJECTED live ids (current + batch
     // rows before this one + this row's own)

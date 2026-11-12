@@ -459,6 +459,65 @@ test("add_stage keeps explicit params/inputs/outputs records", async () => {
   assert.deepEqual(row["outputs"], { default: "mask" });
 });
 
+// ── D3-04 (c): the persisted landing stamp ──────────────────────
+// Every write seat that authors or re-settles a row stamps
+// compiled_at (epoch ms); the press face reads it to warn on a row
+// younger than the settle window. Freshness is per-row — a bystander
+// never inherits the write's clock.
+
+test("D3-04 (c) THE WALL: add_stage stamps compiled_at on the row it lands (epoch ms, ~now)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "stamp1" });
+  const before = Date.now();
+  const added = await addStageBench(drafts, "stamp1", {
+    card: "hero", params: { steps: 4 }, expect_rev: 0,
+  });
+  const row = (getBench(drafts, "stamp1").stages as Array<Record<string, unknown>>)
+    .find((x) => x["id"] === added.stage)!;
+  const stamp = row["compiled_at"];
+  assert.ok(typeof stamp === "number" && stamp >= before && stamp <= Date.now(),
+    `the mint persists the settle moment on the row (got ${String(stamp)}) — the press face's fresh-landing voice reads exactly this field`);
+});
+
+test("D3-04 (c): a landed patch RE-STAMPS the row — and a bystander sibling keeps its own older stamp", async () => {
+  const drafts = await boot();
+  await seed(drafts, "stamp2", {
+    stages: [
+      { id: "a", card: "hero", params: { steps: 4 }, compiled_at: 1_000 },
+      { id: "b", card: "hero", params: { steps: 5 }, compiled_at: 1_000 },
+    ],
+  });
+  const before = Date.now();
+  await patchBench(drafts, "stamp2", { stage: "a", params: { steps: 9 }, expect_rev: 0 });
+  const rows = getBench(drafts, "stamp2").stages as Array<Record<string, unknown>>;
+  const a = rows.find((x) => x["id"] === "a")!;
+  const b = rows.find((x) => x["id"] === "b")!;
+  assert.ok(typeof a["compiled_at"] === "number" && a["compiled_at"] >= before,
+    "the patched row re-settles — its stamp is the patch's own moment");
+  assert.equal(b["compiled_at"], 1_000,
+    "the bystander keeps its own stamp: freshness is per-row, never a doc-level clock");
+});
+
+test("D3-04 (c): the batch door stamps EVERY row it lands (per-row, never one clock for the batch)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "stamp3" });
+  const before = Date.now();
+  const { addStagesBench } = await import("../src/bench.ts");
+  const ans = await addStagesBench(drafts, "stamp3", {
+    stages: [
+      { card: "hero", params: { steps: 4 } },
+      { card: "hero", params: { steps: 5 } },
+    ],
+    expect_rev: 0,
+  });
+  const rows = getBench(drafts, "stamp3").stages as Array<Record<string, unknown>>;
+  for (const id of ans.stages) {
+    const row = rows.find((x) => x["id"] === id)!;
+    assert.ok(typeof row["compiled_at"] === "number" && row["compiled_at"] >= before && row["compiled_at"] <= Date.now(),
+      `batch row ${String(id)} carries its own settle stamp (got ${String(row["compiled_at"])})`);
+  }
+});
+
 test("group with duplicate ids refuses: one bench row cannot fill two slots", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }, { id: "b" }] });

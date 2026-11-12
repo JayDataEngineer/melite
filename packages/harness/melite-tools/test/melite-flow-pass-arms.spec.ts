@@ -833,6 +833,70 @@ describe('melite_flow bench — the press census + the rev-confirm landing admis
       'no false warning: the rev stood still between the snapshot read and the press — a settled bench is silent')
     assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the press ran normally')
   })
+
+  test('R-4 arm 4 (THE WALL, D3-04 (c) persisted stamp): a row YOUNGER than the settle window warns on the SAME-REV leg the confirm cannot see — and the press STILL runs', async () => {
+    // THE BURN'S REMAINING HALF: mint → press with the rev already
+    // still. The rev-confirm admits nothing (nothing moved between
+    // the snapshot read and the confirm); the persisted
+    // compiled_at stamp is the ONLY signal this row is mid-settle.
+    const justMinted = { id: 's_1', card: 'image-gen', params: { model: 'anima' }, compiled_at: Date.now() - 2_000 }
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        // the SAME rev on both reads — the rev-race voice stays
+        // silent by construction, so any warning below is the
+        // stamp's own voice
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_arms', rev: 431, stages: [justMinted] } }
+        return undefined
+      },
+      ...settledLanes('r_stamp', '/runs/stamp.png'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the stamp warning is an ADMISSION, never a gate — the press ran')
+    const pass = out.pass as Array<Record<string, unknown>>
+    const warning = String(pass[0]!['warning'] ?? '')
+    assert.match(warning, /stage s_1 was written \d+s before this press \(compiled_at fresh\)/, warning)
+    assert.match(warning, /it may still be landing/, 'the warning names the D3-04 settle race in the stamp\'s own voice')
+    assert.doesNotMatch(warning, /bench rev moved/, 'the rev stood still — this voice is the stamp\'s alone')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the press still ran')
+  })
+
+  test('R-4 arm 4b (stamp guard): a row OLDER than the settle window presses warning-free — the stamp never makes the settle mandatory; an ABSENT stamp admits nothing', async () => {
+    const aged = { id: 's_1', card: 'image-gen', params: { model: 'anima' }, compiled_at: Date.now() - 60_000 }
+    for (const row of [aged, freshRow]) {
+      const fake = fakeEstateStatus([
+        (lane: string) => {
+          if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_arms', rev: 90, stages: [row] } }
+          return undefined
+        },
+        ...settledLanes('r_aged', '/runs/aged.png'),
+      ])
+      const tool = meliteFlow(fake.estate)
+      const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+      assert.equal(out.status, 'done')
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass[0]!['warning'], undefined,
+        `no false warning from the stamp (row compiled_at: ${String(row['compiled_at'])}) — a settled or pre-law row presses silent`)
+    }
+  })
+
+  test('R-4 arm 4c (joined voice): a fresh stamp under an h3 admission shares the row — the F18 admission leads, the stamp follows', async () => {
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_arms', rev: 5, stages: [
+          { id: 's_1', card: 'h3-timeline', params: { extend: [{ source_clip: 'film_a', resolution: '736p' }] }, compiled_at: Date.now() - 1_000 },
+        ] } }
+        return undefined
+      },
+      ...settledLanes('r_stamph3', '/runs/stamph3.mp4'),
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const warning = String((out.pass as Array<Record<string, unknown>>)[0]!['warning'] ?? '')
+    assert.ok(warning.startsWith('h3-timeline: CROSS-REGIME JOIN'), 'the F18 admission still leads the row voice')
+    assert.ok(warning.includes('compiled_at fresh'), 'the stamp voice follows — joined, never shadowed')
+  })
 })
 
 // THE BRANCH-EDGE BURN (scope C, 2026-11-19): every stop face spreads

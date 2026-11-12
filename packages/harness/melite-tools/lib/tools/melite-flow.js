@@ -282,6 +282,31 @@ async function revConfirmLanding(estate, bench, snapshotRev, signal) {
         return undefined;
     }
 }
+/** D3-04 option (c) — THE PERSISTED STAMP'S PRESS VOICE (the
+ *  estate-side half, landed 2026-11-19): the bench write doors stamp
+ *  `compiled_at` (epoch ms) on every row they author or re-settle,
+ *  and this seat reads it — a pressed row YOUNGER than the settle
+ *  window admits the same landing race the rev-confirm catches, on
+ *  the one leg the confirm CANNOT see: mint → press with the rev
+ *  already still (one write, one snapshot read, nothing moved). An
+ *  absent or unreadable stamp admits nothing (a pre-law doc, a
+ *  foreign restore — no false warning invented from absence, the
+ *  rev-confirm's own law). An ADMISSION, never a gate: the press
+ *  still runs.
+ *
+ * @param row - the pressed stage row from the snapshot read.
+ * @returns the fresh-landing warning text, or undefined when the row is settled.
+ */
+const LANDING_SETTLE_MS = 12_000;
+function freshLandingOf(row) {
+    const stamp = row['compiled_at'];
+    if (typeof stamp !== 'number' || !Number.isFinite(stamp))
+        return undefined;
+    const age = Date.now() - stamp;
+    if (age >= LANDING_SETTLE_MS)
+        return undefined;
+    return `stage ${String(row['id'])} was written ${Math.max(1, Math.round(age / 1000))}s before this press (compiled_at fresh) — it may still be landing; if it is missing from what the run pressed, re-press it`;
+}
 /** BENCH (the AI-control pillar, 2026-09-12): the agent drives THE
  *  shared bench exactly like the user's Run press — ONE SEQUENTIAL
  *  PASS, agent-side, one card at a time through the serial queue.
@@ -625,12 +650,15 @@ async function runBench(estate, a, signal, only) {
         // math, cited); this is the pass voice, the one face the
         // operator reads during a bench press.
         const regimeWarning = crossRegimeAdmissionOf(card, resolved);
-        // R-4: one warning seat per row — the row's own admission (F18)
-        // first, the landing race (D3-04) second; joined so neither voice
-        // shadows the other.
-        const rowWarning = regimeWarning !== null
-            ? (landingWarning !== undefined ? regimeWarning + ' ' + landingWarning : regimeWarning)
-            : landingWarning;
+        // R-4 + D3-04 (c): one warning seat per row — the row's own
+        // admission (F18) first, the landing race (rev-confirm) second,
+        // the persisted stamp's fresh-landing voice third; joined so no
+        // voice shadows another.
+        const freshStampWarning = freshLandingOf(row);
+        const joined = [regimeWarning, landingWarning, freshStampWarning]
+            .filter((w) => w !== null && w !== undefined)
+            .join(' ');
+        const rowWarningText = joined !== '' ? joined : undefined;
         // A familyless stage presses the DRAFT ARM alone (the same body
         // runSingle's wired path rides): the run door composes the bench's
         // stages — the familyless one by its own card id. A model key here
@@ -725,7 +753,7 @@ async function runBench(estate, a, signal, only) {
         }
         pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
             ...(staleVoice !== undefined ? { stale: staleVoice } : {}),
-            ...(rowWarning !== undefined ? { warning: rowWarning } : {}),
+            ...(rowWarningText !== undefined ? { warning: rowWarningText } : {}),
             ...(outcome.url !== '' ? { url: outcome.url } : {}),
             ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
             ...(outcome.asset_urls.length > 0 ? { asset_urls: outcome.asset_urls } : {}),
