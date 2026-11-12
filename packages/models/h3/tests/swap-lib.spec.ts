@@ -10,7 +10,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { renderH3Swap } from "../src/index.ts";
+import { renderH3Repair, renderH3Swap } from "../src/index.ts";
 import type { H3Facts } from "../src/actions.ts";
 
 const FACTS: H3Facts = {
@@ -181,5 +181,58 @@ describe("THE TILING LAW (operator 2026-11-14: \"EVERY MOD MUST BE ABLE TO BE BR
       segs[0]![1].inputs.images_with_overlap, [trimId, 2],
       "the segment's with-overlap frames ride the SAME trim's overlap seat — the per-scene carry travels with its segment",
     );
+  });
+
+  it("E. separate presses share no seam — each press roots at its own staged clip and resumes nothing but itself (the multi-window/carry wall debt cell: cross-press carry ABSENCE, replace + repair — OBSERVED absence, now DECLARED law)", () => {
+    // No carry is implemented between separate presses, and none is
+    // promised: the composed press carries NO cross-press addressing
+    // at all. Press B's emission names press A nowhere; LoopStart
+    // opens the press's OWN lineage at start_clip 1 with an empty
+    // scene_range (the requeue driver patches those two seats per
+    // owed scene engine-side at the execute door — the graph itself
+    // never continues another press); the only run-tree addresses
+    // ride the press's own runId.
+    const a = new GraphBuilder();
+    renderH3Swap(ENTRY(), {}, FACTS, a, "run_press_a");
+    assert.ok(
+      JSON.stringify(a.toJSON()).includes("run_press_a"),
+      "press A addresses its own run tree (the control — run ids do appear in emissions)",
+    );
+
+    const b = new GraphBuilder();
+    renderH3Swap({ ...ENTRY(), source_clip: "clips/other.mp4" }, {}, FACTS, b, "run_press_b");
+    const bout = b.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(
+      !JSON.stringify(bout).includes("run_press_a"),
+      "press B names press A nowhere — no seam between separate presses",
+    );
+    const vhsB = Object.entries(bout).filter(([, n]) =>
+      n.class_type === "VHS_LoadVideo" && n.inputs.video === "clips/other.mp4");
+    assert.equal(vhsB.length, 1, "press B roots at its OWN staged clip, never press A's");
+    const loopsB = Object.entries(bout).filter(([, n]) => n.class_type === "MiniMaxH3ChainLoopStart");
+    assert.equal(loopsB.length, 1, "one loop start opens press B's lineage");
+    assert.equal(loopsB[0]![1].inputs.start_clip, 1, "the lineage starts at the head scene — never mid-way into another press's scenes");
+    assert.equal(loopsB[0]![1].inputs.scene_range, "", "an empty scene range — the press renders its own plan's scenes, continues none");
+    for (const [, n] of Object.entries(bout)) {
+      for (const v of Object.values(n.inputs)) {
+        if (typeof v === "string" && v.includes("run_press_")) {
+          assert.ok(v.startsWith("run_press_b"), `every run-tree address rides the press's own runId (saw ${v})`);
+        }
+      }
+    }
+
+    // Repair rides the same chain spine — the same absence holds.
+    const c = new GraphBuilder();
+    renderH3Repair(
+      { source_clip: "clips/third.mp4", repair_prompt: "the same hands, clean", mask: "masks/hands_union.png" },
+      {}, FACTS, c, "run_press_c",
+    );
+    const cout = c.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(!JSON.stringify(cout).includes("run_press_a"), "the repair press names the swap press nowhere");
+    assert.ok(!JSON.stringify(cout).includes("run_press_b"), "the repair press names the second swap press nowhere");
+    const loopsC = Object.entries(cout).filter(([, n]) => n.class_type === "MiniMaxH3ChainLoopStart");
+    assert.equal(loopsC.length, 1, "one loop start opens the repair press's lineage");
+    assert.equal(loopsC[0]![1].inputs.start_clip, 1, "the repair lineage starts at its own head");
+    assert.equal(loopsC[0]![1].inputs.scene_range, "", "the repair press continues no other press's scenes");
   });
 });
