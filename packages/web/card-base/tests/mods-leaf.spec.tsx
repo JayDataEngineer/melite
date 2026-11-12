@@ -120,6 +120,18 @@ const MASK = {
   ],
 } as unknown as ModifierKind
 
+// THE HIDDEN-VALUE FIXTURE (modsystem audit gap 5): a FIELD kind
+// whose dial hides mid-draft under the ONE grammar — the wall
+// judges that the save keeps what the draft carried even after the
+// seat leaves the face.
+const GUARDED = {
+  kind: 'guarded', label: 'Guarded', param_key: 'guardeds', cardinality: 'multi',
+  fields: [
+    { name: 'switch', type: 'boolean', label: 'Switch', default: false },
+    { name: 'dial', type: 'number', label: 'Dial', default: 2, visible_when: 'switch=true' },
+  ],
+} as unknown as ModifierKind
+
 const MASK_PAINT = {
   kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
   leaf_face: 'paint-canvas',
@@ -528,6 +540,34 @@ test('FIELD EDIT: a legacy string param cures on open (the seeded draft coerces 
   expect((screen.getByLabelText('Feather') as HTMLInputElement).value).toBe('3')
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 3 }])
+})
+
+// THE HIDDEN-VALUE SAVE LAW (modsystem audit gap 5): "the save
+// keeps what the draft carried" was narrated, never judged. The
+// leaf renders only visible_when-holding fields, but the save
+// spreads the WHOLE draft — so a dial hidden mid-draft must
+// survive the patch frame, never silently drop. The arm hides the
+// dial two ways: flipping the guard switch OFF, and opening an
+// entry whose guard already fails.
+test('FIELD EDIT: a hidden value survives the patch frame — hide mid-draft, save, the value rides', () => {
+  // the entry arrives with the switch ON and a stated dial
+  const { onEdit } = openLeaf({ kinds: [GUARDED], values: { guardeds: [{ switch: true, dial: 9 }] } })
+  openEditTile(tid(GUARDED, [{ switch: true, dial: 9 }], 0))
+  expect((screen.getByLabelText('Dial') as HTMLInputElement).value).toBe('9')
+  // flip the switch OFF — the dial hides from the face…
+  fireEvent.click(screen.getByRole('switch', { name: 'Switch' }))
+  expect(screen.queryByLabelText('Dial')).toBeNull()
+  // …but the save keeps what the draft carried
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('guardeds', [{ switch: false, dial: 9 }])
+})
+
+test('FIELD EDIT: a value hidden at open still rides the save (the unstated-guard entry)', () => {
+  const { onEdit } = openLeaf({ kinds: [GUARDED], values: { guardeds: [{ switch: false, dial: 7 }] } })
+  openEditTile(tid(GUARDED, [{ switch: false, dial: 7 }], 0))
+  expect(screen.queryByLabelText('Dial')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(onEdit).toHaveBeenCalledWith('guardeds', [{ switch: false, dial: 7 }])
 })
 
 test('FIELD EDIT: the entry seeds the draft; a seated field never renders; Remove drops', () => {
