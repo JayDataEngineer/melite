@@ -208,7 +208,8 @@ const PROFILE_BASES = {
   'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate', '@melite/card-base', '@melite/three-client',
     '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery',
-    '@melite/video-h3-timeline', '@melite/motion-motion', '@melite/image-input-prep'],
+    '@melite/video-h3-timeline', '@melite/motion-motion', '@melite/image-input-prep',
+    '@melite/media-preview'],
   // estate = the job server: the SDK JSON-RPC base (estate-drive
   // spawns this profile; the estate row serves the runs lanes
   // in-process — no second app, no HTTP). dsh-estate bundles the

@@ -919,6 +919,9 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
         // atoms compile once here, every card client requires it.
         ["packages/web/card-base", "./lib/client.js", true],
         ["packages/web/infer-gallery", "./lib/client.js", true],
+        // (2026-11-12): media-preview's client face — the share
+        // door's video/audio preview seat. 11 rows.
+        ["packages/web/media-preview", "./lib/client.js", true],
         ["packages/web/melite-card-deck", "./lib/client.js", true],
         ["packages/web/melite-card-view", "./lib/client.js", true],
         // THE ONE-ROW LAW FOR 3D: the three graph row — three and
@@ -947,7 +950,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // externals resolve through the injected require), and this arm
     // refuses any regression to module-format bytes on the wire.
     const built = discoveredRows();
-    expect(built.length, "the discovered set carries the ten bundles (timeline demoted 2026-11-05 F1; input-prep joined 2026-11-06)").toBe(10);
+    expect(built.length, "the discovered set carries the eleven bundles (timeline demoted 2026-11-05 F1; input-prep joined 2026-11-06; media-preview joined 2026-11-12)").toBe(11);
     for (const row of built) {
       const file = join(row.pkg, "lib", "client.js");
       expect(existsSync(file), `${file} exists (build it: pnpm exec tsdown in the package)`).toBe(true);

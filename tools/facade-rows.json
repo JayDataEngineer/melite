@@ -803,6 +803,12 @@
   "@melite-plugin/dsh-gallery/client": [
     "./packages/web/infer-gallery/src/client/index.ts"
   ],
+  "@melite/media-preview": [
+    "./packages/web/media-preview/src/host.ts"
+  ],
+  "@melite/media-preview/client": [
+    "./packages/web/media-preview/src/client/index.ts"
+  ],
   "@melite-plugin/dsh-card-deck": [
     "./packages/web/melite-card-deck/src/index.ts"
   ],

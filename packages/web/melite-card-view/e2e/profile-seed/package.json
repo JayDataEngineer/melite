@@ -61,6 +61,7 @@
     "@melite/models-z-image": "link:../../../../models/z-image",
     "@melite/motion-motion": "link:../../../../motion/motion",
     "@melite/video-h3-timeline": "link:../../../../video/h3-timeline",
+    "@melite/media-preview": "link:../../media-preview",
     "@melite/viewer": "link:../../../viewer",
     "@melite/viewer-base": "link:../../../viewer-base"
   },
@@ -79,7 +80,8 @@
         "@melite/image-input-prep",
         "@melite-plugin/dsh-card-view",
         "@melite-plugin/dsh-card-deck",
-        "@melite-plugin/dsh-gallery"
+        "@melite-plugin/dsh-gallery",
+        "@melite/media-preview"
       ]
     }
   }

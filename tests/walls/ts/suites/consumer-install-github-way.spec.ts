@@ -48,6 +48,7 @@ const STUDIO_ROWS = [
   "@melite/card-base", "@melite/three-client", "@melite-plugin/dsh-card-view",
   "@melite-plugin/dsh-card-deck", "@melite-plugin/dsh-gallery",
   "@melite/video-h3-timeline", "@melite/motion-motion", "@melite/image-input-prep",
+  "@melite/media-preview",
 ];
 
 /** Run the installer; the refusal arms need stderr and the exit code, so

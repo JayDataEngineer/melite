@@ -14,10 +14,10 @@
 // consumer-install renderer's profile composes (the parity law, bin/
 // infer-provision.mjs).
 //
-// Web-surface policy: consumer-install disables the four web-surface rows on
+// Web-surface policy: consumer-install disables the web-surface rows on
 // non-web mounts (no webServer service to activate them). A bundle patch is
 // one static layer that cannot know the mount shape at render time, so the
-// four rows carry a `disabled: !!js` expression over ProfileContext
+// rows carry a `disabled: !!js` expression over ProfileContext
 // .startedBundles instead — the runtime form of the same policy (the
 // dsh-web-app bundle patch's `ctx.get('profileContext')` rows are the
 // precedent).
@@ -48,6 +48,7 @@ const CARRIERS = [
   ['@melite-plugin/dsh-card-view', 'packages/web/melite-card-view'],
   ['@melite-plugin/dsh-card-deck', 'packages/web/melite-card-deck'],
   ['@melite-plugin/dsh-gallery', 'packages/web/infer-gallery'],
+  ['@melite/media-preview', 'packages/web/media-preview'],
   ['@melite/video-h3-timeline', 'packages/video/h3-timeline'],
   ['@melite/motion-motion', 'packages/motion/motion'],
   ['@melite/image-input-prep', 'packages/image/input-prep'],
@@ -55,7 +56,7 @@ const CARRIERS = [
 
 // The web-surface rows, disabled when the composition carries no web app —
 // consumer-install's `webRows`, keyed to the runtime mount check.
-const WEB_SURFACE_IDS = ['melite-tools-doors', 'infer-card-view', 'ray-card-deck', 'infer-gallery']
+const WEB_SURFACE_IDS = ['melite-tools-doors', 'infer-card-view', 'ray-card-deck', 'infer-gallery', 'media-preview']
 const WEB_APP_BUNDLE = '@deepseek-ai/dsh-web-app'
 const WEB_DISABLE_EXPR = `!(ctx.get('profileContext')?.startedBundles ?? []).includes('${WEB_APP_BUNDLE}')`
 
@@ -97,7 +98,7 @@ function renderPatchText() {
     '#   dsh plugin --profile <name> add github:JayDataEngineer/melite#<ref>',
     '# composes the same rows a consumer-install profile composes. Re-render and',
     '# commit after any carrier patch change; the seat-parity wall reds otherwise.',
-    `# The four web-surface rows are disabled at composition time when the profile`,
+    `# The web-surface rows are disabled at composition time when the profile`,
     `# carries no ${WEB_APP_BUNDLE} bundle (the startedBundles check), which is the`,
     '# runtime form of consumer-install\'s non-web mount policy.',
     '',

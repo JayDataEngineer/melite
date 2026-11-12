@@ -140,6 +140,10 @@ CLIENT_BUNDLES=(
   packages/web/melite-card-view
   packages/web/melite-card-deck
   packages/web/infer-gallery
+  # (2026-11-12) media-preview's client face — the share door's
+  # video/audio preview seat (the harness present toolcall's
+  # channel).
+  packages/web/media-preview
   # THE ONE-ROW LAW (operator order 2026-10-01): the card-base graph
   # row — the studio atoms compile ONCE here; every card client
   # requires it through the loader's module table.

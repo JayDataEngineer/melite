@@ -1,7 +1,7 @@
 {
   "tag": "v0.2.3-rc.1",
   "version": "0.2.3-rc.1",
-  "count": 81,
+  "count": 82,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -44,6 +44,7 @@
     "@melite/image-mask-studio",
     "@melite/image-tagger",
     "@melite/image-upscale-tools",
+    "@melite/media-preview",
     "@melite/models-anima",
     "@melite/models-anny",
     "@melite/models-concat",

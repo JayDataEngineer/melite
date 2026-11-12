@@ -61,6 +61,7 @@ const PROFILE_BASES = {
   'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate', '@melite/card-base', '@melite/three-client',
     '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery',
+    '@melite/media-preview',
     '@melite/video-h3-timeline', '@melite/motion-motion', '@melite/image-input-prep'],
   estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate'],
@@ -166,7 +167,7 @@ writeAtomic(join(dst, 'cordis.yml'), '# rendered by consumer-install\n[]\n')
 // fresh profile never boots unpinned. Non-web mounts disable the web
 // rows (no webServer service exists to activate them).
 const webMount = bundles.includes('@deepseek-ai/dsh-web-app')
-const webRows = ['melite-tools-doors', 'infer-card-view', 'ray-card-deck', 'infer-gallery']
+const webRows = ['melite-tools-doors', 'infer-card-view', 'ray-card-deck', 'infer-gallery', 'media-preview']
 const estateRow =
   '# The estate seats (runs, drafts, artifacts) are pinned here:\n'
   + '# stateRoot is where this profile keeps its runs and artifacts.\n'

@@ -5,7 +5,7 @@
 #   dsh plugin --profile <name> add github:JayDataEngineer/melite#<ref>
 # composes the same rows a consumer-install profile composes. Re-render and
 # commit after any carrier patch change; the seat-parity wall reds otherwise.
-# The four web-surface rows are disabled at composition time when the profile
+# The web-surface rows are disabled at composition time when the profile
 # carries no @deepseek-ai/dsh-web-app bundle (the startedBundles check), which is the
 # runtime form of consumer-install's non-web mount policy.
 - id: skill-filesystem
@@ -103,6 +103,10 @@
 - insert:
     - id: infer-gallery
       name: "@melite-plugin/dsh-gallery"
+      disabled: !!js "!(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-web-app')"
+- insert:
+    - id: media-preview
+      name: "@melite/media-preview"
       disabled: !!js "!(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-web-app')"
 - insert:
     - id: h3-studio

@@ -1705,6 +1705,14 @@ export function meliteFlow(estate) {
                             + (Array.isArray(hostPaths) && hostPaths.length > 0
                                 ? '\nartifacts on host (rooted at the estate output tree, not your cwd): '
                                     + hostPaths.join('\n  ')
+                                    // THE SHARE DOOR (operator 2026-11-12: the agent's
+                                    // in-thread media seat is the HARNESS present toolcall
+                                    // — "this already exists for images… extend it for
+                                    // video and audio"; melite mints no share verb). One
+                                    // pointer line on the host-paths arm names the door;
+                                    // the GUI's melite media-preview rows render the video
+                                    // and audio faces in the sidebar the card opens.
+                                    + '\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)'
                                 : ''),
                     }];
             },

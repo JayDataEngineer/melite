@@ -451,7 +451,8 @@ describe('run_status render — the human line', () => {
       text({ run_id: 'run-s94', status: 'completed', stages: [{ id: 's_94', status: 'completed' }], artifacts: ['run-s94/a.mp4'], attribution: 'missed' }),
       'run run-s94 completed — 1/1 stage(s) · 1 artifact(s) — NOT shown on the user\u2019s cards tab (stamp missed; artifacts are fine — re-stamp to show it)\n'
         + 'stages: s_94:completed\n'
-        + 'artifacts (rooted at the estate output tree, not your cwd): output/run-s94/a.mp4',
+        + 'artifacts (rooted at the estate output tree, not your cwd): output/run-s94/a.mp4'
+        + "\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread's only legal media seat)",
     )
     // the unmarked twin stays bare: a landed stamp never hears the voice
     assert.equal(
@@ -503,15 +504,15 @@ describe('run_status render — the human line', () => {
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'] }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)',
     )
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'], test: true }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): test-output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): test-output/run-abc/tts/f.flac\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)',
     )
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [{ path: './output/run-abc/tts/f.flac' }] }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)',
     )
   })
 
@@ -596,7 +597,7 @@ describe('run_status render — the human line', () => {
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/run-abc/tts/f.flac'] }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)',
     )
   })
 })

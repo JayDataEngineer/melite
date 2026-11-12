@@ -16,6 +16,7 @@
     "@melite/harness-provisioner": "0.2.3-rc.1",
     "@melite/harness-tools": "0.2.3-rc.1",
     "@melite/image-input-prep": "0.2.3-rc.1",
+    "@melite/media-preview": "0.2.3-rc.1",
     "@melite/models-anima": "0.2.3-rc.1",
     "@melite/models-anny": "0.2.3-rc.1",
     "@melite/models-concat": "0.2.3-rc.1",

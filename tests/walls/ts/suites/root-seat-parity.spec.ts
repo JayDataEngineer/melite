@@ -158,8 +158,10 @@ describe('THE SEAT PATCH (the rendered rows the profile composes)', () => {
     expect(renderedOverrides, 'the seat carries every carrier override row (the skill-filesystem pin rides the seat)').toEqual(carrierOverrides)
   })
 
-  it('exactly the four web-surface rows carry the startedBundles disable', () => {
-    const WEB_IDS = ['melite-tools-doors', 'infer-card-view', 'ray-card-deck', 'infer-gallery']
+  it('exactly the five web-surface rows carry the startedBundles disable', () => {
+    // (2026-11-12): media-preview joined — the share door's preview
+    // seat rides the same runtime disable.
+    const WEB_IDS = ['melite-tools-doors', 'infer-card-view', 'ray-card-deck', 'infer-gallery', 'media-preview']
     const EXPR = 'startedBundles'
     const rendered = insertEntries(renderedRows())
     const disabled = rendered.filter((entry) => typeof entry.disabled === 'string' && entry.disabled.includes(EXPR)).map((entry) => entry.id)

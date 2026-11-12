@@ -1004,6 +1004,13 @@ export const COVERAGE_BASELINE: Record<string, {
   // 100x4 under their host-face contract spec.
   '**/packages/web/three-client/src/client/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
   '**/packages/web/three-client/src/host.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
+  // media-preview (2026-11-12, the share door's preview face): the
+  // registrations + bodies landed per-file-100 on their own specs
+  // (dom lane) with the wall riding the same sources — floors seat
+  // at the measured face.
+  '**/packages/web/media-preview/src/host.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/media-preview/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/media-preview/src/client/mediaDocument.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/viewer-base/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/web/viewer-base/src/owners.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/web/viewer-base/src/runCard.tsx': { statements: 97.78, branches: 98.39, functions: 90.91, lines: 97.56 },

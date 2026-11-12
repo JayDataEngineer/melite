@@ -18,6 +18,8 @@
           "node"
       ],
       "paths": {
+        "@melite/media-preview": ["./../../web/media-preview/src/host.ts"],
+        "@melite/media-preview/client": ["./../../web/media-preview/src/client/index.ts"],
         "@melite/models-h3-image/mods/mask": ["./../../models/h3-image/mods/mask.ts"],
         "@melite/models-h3-image-edit/mods/mask": ["./../../models/h3-image-edit/mods/mask.ts"],
         "@melite/models-input/scale-vocab": ["./../../models/input/src/scale-vocab.ts"],

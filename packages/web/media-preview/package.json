@@ -1,0 +1,77 @@
+{
+  "name": "@melite/media-preview",
+  "version": "0.2.3-rc.1",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/host.d.ts",
+      "default": "./lib/host.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection"
+      ],
+      "platform": "web"
+    }
+  },
+  "dependencies": {
+    "@melite/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0",
+    "react": "^19.2.6"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar-documentpreview": "0.2.1-rc.2",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
+  },
+  "files": [
+    "lib/client.js",
+    "lib/host.js",
+    "lib/host.d.ts",
+    "lib/client/index.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "cordis.patch.yml"
+  ],
+  "description": "The share door's preview face \u2014 the estate's video/audio vocabulary renders in the GUI's sidebar document seat (the DSH present toolcall's channel).",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/web/media-preview"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
+}

@@ -1,0 +1,8 @@
+// SOLUTION-ONLY root (dual-face F4, 2026-10-17 — the DSH layout law): this face carries no program and no paths block. tsconfig.host.json + tsconfig.client.json are the typecheck faces; tsconfig.build.json (extends the host leaf) is the emit face.
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.host.json" },
+    { "path": "./tsconfig.client.json" }
+  ]
+}

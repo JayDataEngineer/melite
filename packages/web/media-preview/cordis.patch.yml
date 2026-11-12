@@ -1,0 +1,14 @@
+# media-preview bundle patch: inserts the client-only web row into a web
+# profile roster. Applied as a profile bundle layer (the
+# `dsh.bundle.patch` manifest field); the row is a bare plugin by package
+# name — the node half (exports '.', src/host.ts) is the null marker (the
+# card-base law: the row materializes the module-table entry so the
+# browser half's externals resolve), and the dsh.client declaration in
+# package.json loads lib/client.js (the document-preview registrations).
+#
+# The root render (tools/render-seat-patch.mjs) pins this row's runtime
+# disable when the composition carries no web app (the WEB_SURFACE_IDS
+# law, the same policy as the card-view/deck/gallery rows).
+- insert:
+    - id: media-preview
+      name: '@melite/media-preview'

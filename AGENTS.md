@@ -95,7 +95,10 @@ hand-roll the engine. THE FLOW, in order:
 Your contract ENDS there — but the editing does not: keep refining
 the bench state as the user asks. RUNS START AT THE USER'S RUN
 PRESS on the card — never yours (no `melite_flow` in this mode; it
-is not in your tools, do not hunt for it).
+is not in your tools, do not hunt for it). Sharing a media artifact
+in-thread is the harness `present` toolcall alone (operator
+2026-11-12); melite mints no share verb — the preview seat (video,
+audio) is already registered behind it.
 
 NEVER, in agent mode: shell out to ComfyUI (no Bash curls to
 :8188, no hand-built graphs), no raw `/v1/flows/*` HTTP — the

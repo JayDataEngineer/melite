@@ -274,6 +274,12 @@ export function runStatus(estate: Estate): ToolDefinition {
           // the maker's shell cwd is NOT that root, and the bare
           // string used to float with no tree named at all.
           ? '\nartifacts (rooted at the estate output tree, not your cwd): ' + artPaths.join('\n  ')
+            // THE SHARE DOOR (operator 2026-11-12: in-thread media
+            // sharing rides the HARNESS present toolcall — melite
+            // mints no share verb; the GUI's melite media-preview
+            // rows render video/audio in the sidebar the delivery
+            // card opens). Same pointer line as the flow's host arm.
+            + '\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)'
           : ''
         // THE EXPORT-NAME VOICE (023's self-critique #4/#6): a
         // design/export lane's receipt names the mint — the

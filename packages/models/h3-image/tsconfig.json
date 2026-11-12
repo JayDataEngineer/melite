@@ -18,6 +18,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/media-preview": ["./../../web/media-preview/src/host.ts"],
+        "@melite/media-preview/client": ["./../../web/media-preview/src/client/index.ts"],
         "@melite/models-h3-image/mods/mask": ["./mods/mask.ts"],
         "@melite/models-h3-image-edit/mods/mask": ["./../h3-image-edit/mods/mask.ts"],
         "@melite/models-fibo2-edit": ["./../fibo2-edit/src/index.ts"],
