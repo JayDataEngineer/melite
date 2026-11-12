@@ -5,6 +5,7 @@
 // history verdict owns the failure voice.
 
 import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
 import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
 import type { Client } from "@stable-canvas/comfyui-client";
 import { ACTIVE, ComfyError } from "./comfyui-types.ts";
@@ -688,14 +689,18 @@ export function hookProgress(
  *  (after upload staging and chain-selection resolution, before the
  *  submit), so a post-mortem reads what the engine actually received
  *  without replaying the compose. Chain requeues overwrite it — the
- *  latest submit is the truth of what is running. Evidence, never a
- *  gate: a failed write never kills the run (the empty catch names
- *  it — the engine's own history carries the graph regardless). */
+ *  latest submit is the truth of what is running. Only an EXISTING
+ *  dir is written (the queue mints the run dir; the dump never
+ *  mints one — a fake key in a wall fixture writes nothing).
+ *  Evidence, never a gate: a failed write never kills the run (the
+ *  empty catch names it — the engine's own history carries the
+ *  graph regardless). */
 async function dumpGraph(
   runDir: string,
   graph: Record<string, EngineJson>,
 ): Promise<void> {
   try {
+    if (!existsSync(runDir)) return;
     await writeFileAtomic(join(runDir, "_graph.json"), JSON.stringify(graph, null, 2) ?? "null", { mode: 0o644 });
   } catch {
     /* the dump is best-effort evidence — a run whose dump fails still runs */
@@ -730,6 +735,7 @@ export async function executeSingleInner(
   // spellings, zero traffic (the additive law).
   const resolvedGraph = await resolveH3ChainSelections(client, staged.graph);
   await dumpGraph(String(runDir), resolvedGraph);
+  console.log(`[graph-dump] runDir=${String(runDir)} file=_graph.json nodes=${Object.keys(resolvedGraph).length}`);
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   let deadline: number = Date.now() + timeoutS * 1000;
   const { promptId: firstPromptId, clientId } = await withBound(

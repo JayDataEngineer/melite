@@ -289,6 +289,9 @@ import {
   resumeH3ChainFromCheckpoints,
 } from "../src/comfyui-execute.ts";
 import type { H3CheckpointRow } from "../src/comfyui-execute.ts";
+import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const chainGraphWithEnd: Json = {
   ...chainGraph,
@@ -413,5 +416,48 @@ describe("h3 resume — the bridge", () => {
       deadline: (): number => Date.now() + 1000,
       fetchListing: async (): Promise<H3CheckpointRow[]> => [],
     })).rejects.toThrow(/no active checkpoints/i);
+  });
+});
+
+// ── D-06: the run graph dump rides the requeue's own seat ──────────────────
+describe("h3 chain requeue — the _graph.json dump (D-06)", () => {
+  it("a REAL run dir receives the handoff-patched graph; a fake key writes nothing", async () => {
+    const { client } = fakeClient({ handoff_id: "h", start_clip: 4 });
+    const dir = mkdtempSync(join(tmpdir(), "h3-graph-dump-"));
+    try {
+      const submittedGraphs: Json[] = [];
+      const r = ride(client, [(g): Promise<{ promptId: string }> => {
+        submittedGraphs.push(g);
+        return Promise.resolve({ promptId: "p4" });
+      }], [(): Promise<Json> => Promise.resolve(completeEntry as Json)]);
+      // activeKey IS the run dir in production (both in-run callers
+      // set it from String(runDir)) — a REAL dir here proves the seat
+      await driveH3ChainRequeue(client as never, requeueEntry(2, 3), chainGraph, {
+        ...r.ride,
+        activeKey: dir,
+      });
+      const dumpPath = join(dir, "_graph.json");
+      expect(existsSync(dumpPath), "the dump landed beside the run's sidecars").toBe(true);
+      const dumped = JSON.parse(readFileSync(dumpPath, "utf8")) as Json;
+      const start = dumped["h3-film::MiniMaxH3ChainLoopStart.0"] as { inputs: Json };
+      expect(start.inputs["start_clip"], "the dump carries the PATCHED graph — the truth of what was submitted").toBe(4);
+      expect(dumped).toEqual(submittedGraphs[0]);
+
+      // the fake-key law: a wall fixture's relative key writes NOTHING
+      // (the dump never mints a run dir) — its own ride (the first
+      // call consumed the shared submit queue)
+      const fake = "run/dir-that-does-not-exist";
+      const r2 = ride(fakeClient({ handoff_id: "h", start_clip: 4 }).client, [(g): Promise<{ promptId: string }> => {
+        submittedGraphs.push(g);
+        return Promise.resolve({ promptId: "p5" });
+      }], [(): Promise<Json> => Promise.resolve(completeEntry as Json)]);
+      await driveH3ChainRequeue(client as never, requeueEntry(2, 3), chainGraph, {
+        ...r2.ride,
+        activeKey: fake,
+      });
+      expect(existsSync(join(process.cwd(), fake, "_graph.json"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

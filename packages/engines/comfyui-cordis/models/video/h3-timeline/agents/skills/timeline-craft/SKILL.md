@@ -189,9 +189,15 @@ model="h3-timeline"` + your window plan (no curl):
    door does NOT report loudness — that verdict is owed from the engine
    (`metadata.audio.loudness`), so do not claim a mix level you have not
    measured. `melite_read` answers "what did this run actually send?" for
-   a run's TEXT sidecars (`_request.json`, `_flow.json`) — run-scoped and
-   text-only, so it is the door for receipts and `melite_view` is the door
-   for pictures.
+   a run's TEXT sidecars (`_request.json`, `_flow.json`, `_graph.json`)
+   — run-scoped and text-only, so it is the door for receipts and
+   `melite_view` is the door for pictures. The three reads own three
+   different questions: `_request.json` is the DOC the press stated,
+   `_flow.json` is the compiled timeline sidecar, `_graph.json` is the
+   exact `/prompt` graph the engine actually received (node-for-node,
+   written at submit; chain requeues overwrite it with the latest
+   submit) — when a render surprises you, diff the doc against the
+   graph before touching anything else.
 
 1. Duration is ARITHMETIC, not the sum of spans: the film's frames are
    `Σ spans − 22 × (windows − 1)` (each carried window's 22 f head is
@@ -202,8 +208,9 @@ model="h3-timeline"` + your window plan (no curl):
    track audible on both sides of every seam.
 3. Scrub each seam: frame continuity (no teleport), audio bed present on
    both sides, no held-shot freeze (a held shot must keep micro-motion).
-4. Re-read the run's `_request.json` when a render surprises you: the doc
-   that composed it is the truth of what was sent.
+4. Re-read the run's `_request.json` AND `_graph.json` when a render
+   surprises you: the doc is what was stated, the graph is what the
+   engine received — a surprise is which one of them moved.
 5. The submission's own duration cap (if the piece is for a challenge) is
    the submission's rule — the ENGINE has no 90 s cap; it has the 362 f
    per-window cap and as many windows as you spend.
