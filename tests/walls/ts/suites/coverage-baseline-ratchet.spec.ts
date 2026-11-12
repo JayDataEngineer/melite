@@ -1774,13 +1774,15 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-11-28",
     reason: "the card-declared schema_key pass-through added its verbatim-passthrough and refusal arms; the pool exercises the passthrough (every declared kind rides it) but not the refusal face — the row seats at the stable clean-pool face until the refusal arms get spec rows",
   },
-  '**/packages/video/h3-timeline/src/card.ts': {
-    from: { statements: 100, branches: 100, functions: 100, lines: 100 },
-    to: { statements: 97.87, branches: 97.72, functions: 100, lines: 97.36 },
-    roadmapHeading: "The swap build's two-row coverage re-seat — discovery schema_key arms and the h3-timeline replace emission",
-    reviewBy: "2026-11-28",
-    reason: "the REPLACE_MOD schema_key stamp and the replace emission's pending arms (the mannequin-via-REF conditioning and the pending-build refusal paths) sit behind the operator press round — the row seats at the stable clean-pool face until the firing round covers the emission end-to-end",
-  },
+  // (retired 2026-11-12, the compose-door robustness landing) the
+  // h3-timeline card.ts half of the swap build's two-row seat LEFT:
+  // the D-gap cure's malformed-entry arms (edit:[null] and its three
+  // sibling shapes) closed the last uncovered emission paths, and the
+  // full-pool run re-measured the row at 100x4 — its argued from
+  // face — so the cleanup arm voided the entry (commit a7feccf35).
+  // The discovery.ts half of the seat stays: its refusal arms landed
+  // but the row's branches (99.36) have not climbed back to the
+  // argued from face (99.47) yet.
   // THE 2026-10-23 REGEN SPREAD (61 rows — vram-gate era drift): the
   // tables above are verbatim from scripts/coverage-regen.mjs; the
   // spread rides LAST so a key this regen re-drops (a row the 11-06
