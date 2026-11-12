@@ -4,7 +4,8 @@
 // prompt, progress is additive (never load-bearing), and the
 // history verdict owns the failure voice.
 
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
 import type { Client } from "@stable-canvas/comfyui-client";
 import { ACTIVE, ComfyError } from "./comfyui-types.ts";
 import { withBound } from "./comfyui-transport.ts";
@@ -681,6 +682,26 @@ export function hookProgress(
   return tap;
 }
 
+/** THE RUN GRAPH DUMP (D-06, 2026-11-12 audit §3): the exact
+ *  /prompt payload persisted beside the run's own durable evidence —
+ *  `_graph.json` lands in the run dir the moment the graph is FINAL
+ *  (after upload staging and chain-selection resolution, before the
+ *  submit), so a post-mortem reads what the engine actually received
+ *  without replaying the compose. Chain requeues overwrite it — the
+ *  latest submit is the truth of what is running. Evidence, never a
+ *  gate: a failed write never kills the run (the empty catch names
+ *  it — the engine's own history carries the graph regardless). */
+async function dumpGraph(
+  runDir: string,
+  graph: Record<string, EngineJson>,
+): Promise<void> {
+  try {
+    await writeFileAtomic(join(runDir, "_graph.json"), JSON.stringify(graph, null, 2) ?? "null", { mode: 0o644 });
+  } catch {
+    /* the dump is best-effort evidence — a run whose dump fails still runs */
+  }
+}
+
 /** The execute core (no resolution, no registry choice). */
 export async function executeSingleInner(
   runDir: string,
@@ -708,6 +729,7 @@ export async function executeSingleInner(
   // runs without a browser-authored selection_json. Zero bare
   // spellings, zero traffic (the additive law).
   const resolvedGraph = await resolveH3ChainSelections(client, staged.graph);
+  await dumpGraph(String(runDir), resolvedGraph);
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   let deadline: number = Date.now() + timeoutS * 1000;
   const { promptId: firstPromptId, clientId } = await withBound(
@@ -1158,6 +1180,9 @@ export async function driveH3ChainRequeue(
     });
     const submit = ride.submit ?? ((g: Record<string, EngineJson>): Promise<{ promptId: string }> =>
       submitPrompt(client, g));
+    // ride.activeKey IS the run dir (both in-run callers set it from
+    // String(runDir)) — the handoff-patched graph overwrites the dump.
+    await dumpGraph(ride.activeKey, nextGraph);
     const { promptId } = await submit(nextGraph);
     ride.retap(promptId);
     const existing = ride.active.get(ride.activeKey);
@@ -1332,6 +1357,9 @@ export async function resumeH3ChainFromCheckpoints(
     submitPrompt(client, g));
   const wait = opts.wait ?? ((id: string, dl: number): Promise<Record<string, EngineJson>> =>
     waitTerminal(client, id, dl, opts.shouldStop ?? ((): boolean => false)));
+  // no dumpGraph here: the checkpoint-resume utility owns no run dir
+  // (its graph is the checkpoint's STORED graph patched in requeue
+  // mode; the run that owns the dir dumps its own submits).
   const { promptId } = await submit(resumeGraph);
   opts.retap?.(promptId);
   let entry = await wait(promptId, opts.deadline());

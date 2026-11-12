@@ -1212,7 +1212,17 @@ function renderH3Window(p, g, facts, model, runId) {
         min_seq_len: p.sla_min_seq_len,
         dense_last_steps: p.sla_dense_last_steps,
         protect_audio: p.sla_protect_audio,
-        enabled: true,
+        // THE NODE-SEAT BYPASS (the velocity arena's slaoff arm, caught
+        // live 2026-11-12): the pack's own `enabled` input — "turn off to
+        // pass the model straight through, for a like-for-like speed
+        // baseline without rewiring" — is the DESIGNED bypass, and this
+        // seat hardcoded true while sla_enabled:false only flipped the
+        // DOWNSTREAM ComfySwitchNode. Both switch arms ride the SLA-
+        // patched model (the dense arm wraps it), so the flag never
+        // actually bypassed sparsity. The doc's flag now rides the
+        // node's own input: false passes the model through UNPATCHED on
+        // every arm; true (the declared default) is unchanged.
+        enabled: p.sla_enabled,
         dense_steps: p.sla_dense_steps,
         dense_backend: p.sla_dense_backend,
         disable_fp16_accum: p.sla_disable_fp16_accum,

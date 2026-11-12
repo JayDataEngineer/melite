@@ -523,6 +523,9 @@ importers:
 
   packages/engines/comfyui-cordis:
     dependencies:
+      '@deepseek-ai/dsh-atomic-write':
+        specifier: 0.2.1-rc.2
+        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-settings':
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(6ecce53afab4e8455cc861930dfef420)

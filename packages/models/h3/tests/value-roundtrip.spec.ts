@@ -804,6 +804,27 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     assert.equal(switchCarrying(graph, "H3SLAAttention").switch, true, "sla_enabled owns the attention switch");
   });
 
+  it("ARM 15c — sla_enabled rides the NODE's own bypass input (the velocity arena's live catch, 2026-11-12)", async () => {
+    // The burn: the estate hardcoded H3SLAAttention.enabled=true and
+    // let sla_enabled:false flip only the downstream ComfySwitchNode
+    // — but BOTH switch arms ride the SLA-patched model (the dense
+    // arm wraps it), so the flag never actually bypassed sparsity.
+    // The pack's own enabled input is the DESIGNED pass-through
+    // ("turn off to pass the model straight through, for a
+    // like-for-like speed baseline without rewiring"). The doc's
+    // flag must ride it verbatim — both legs, liveness-separated.
+    const onGraph = await composeH3({
+      length: 56, sla_enabled: true, calls: [SHOT()],
+    }, "h3_value_arm15c_on");
+    assertValueAtConsumer(onGraph, "H3SLAAttention", "enabled", true, "sla_enabled (true leg)");
+    const offGraph = await composeH3({
+      length: 56, sla_enabled: false, calls: [SHOT()],
+    }, "h3_value_arm15c_off");
+    assertValueAtConsumer(offGraph, "H3SLAAttention", "enabled", false, "sla_enabled (false leg — the node passes the model through UNPATCHED on every switch arm)");
+    // the switch still owns its arm: false takes the dense backend
+    assert.equal(switchCarrying(offGraph, "H3SLAAttention").switch, false, "sla_enabled:false takes the dense arm at the switch too");
+  });
+
   it("ARM 15b — the switch's other two shapes: sla_enabled:false and a stated sla_switch both pin the literal (no PrimitiveBoolean minted)", () => {
     // (the coverage-arm law, 2026-11-07: the plane's selector is a
     // three-shape seat — the minted PrimitiveBoolean (both knobs
