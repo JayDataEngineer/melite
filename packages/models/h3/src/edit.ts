@@ -264,6 +264,11 @@ export function renderH3Edit(
       steps: statedNumber(entry, 'steps', 6),
       resolution: resolvePlanTier(entry, p),
       overlap_frames: statedNumber(entry, 'overlap_frames', 39),
+      // THE WINDOW ROSTER (D-03 R4b): the per-window prompt seat
+      // rides the continuation verbatim — absent stays absent (the
+      // one-prompt law), and the roster's own judge (line count,
+      // blank lines) lives at the extend door, one law one seat.
+      window_prompts: seatString(entry, 'window_prompts'),
     }, p, facts, g, runId)
     return
   }

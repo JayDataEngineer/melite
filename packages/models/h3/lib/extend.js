@@ -108,6 +108,37 @@ export function renderH3Extend(entry, p, facts, g, runId) {
         throw new Error(`h3-timeline extend: overlap_frames ${overlapFrames} — the multi-window composition law carries the policy's ${CONTEXT_OVERLAP_FRAMES}f context overlap (every law-home pins 39; the knob feeds only the single-window plan head); re-state overlap_frames 39`);
     }
     const clipSeconds = composition.windowFrames / 24;
+    // ── THE WINDOW ROSTER (friction-2-infra D-03 R4b: extend had no
+    // per-segment roster, so figure count and scale drift were
+    // structurally unreachable — one prompt minted every window and
+    // "the same girl twice at two scales" had no lever). The roster is
+    // a TEXT seat, one prompt per line, exactly one line per composed
+    // window; window i rides line i. ABSENT (or empty) the standing
+    // law holds: the one extend_prompt serves EVERY window. A wrong
+    // line count or a blank line refuses LOUD at this door, naming
+    // both numbers — the exactness law's own voice. Per-window SEED
+    // stays the engine's own derivation (base_seed + the chain's
+    // per-window advance) — the roster is a prompt seat, never a seed
+    // matrix. ──
+    const rosterRaw = entry['window_prompts'];
+    if (rosterRaw !== undefined && typeof rosterRaw !== 'string') {
+        throw new Error(`h3-timeline extend: 'window_prompts' is stated as ${JSON.stringify(rosterRaw)} — the roster is a text seat, one prompt per line; a wrong-typed value never silently reads as unbound`);
+    }
+    let roster = null;
+    if (typeof rosterRaw === 'string' && rosterRaw.trim() !== '') {
+        const lines = rosterRaw.split('\n').map((l) => l.trim());
+        if (lines.at(-1) === '')
+            lines.pop(); // ONE trailing newline — the textarea's own artifact
+        for (const [i, line] of lines.entries()) {
+            if (line === '') {
+                throw new Error(`h3-timeline extend: window_prompts line ${i + 1} is blank — every composed window needs its own prompt line; a blank line never silently falls to extend_prompt`);
+            }
+        }
+        if (lines.length !== composition.windows) {
+            throw new Error(`h3-timeline extend: window_prompts states ${lines.length} ${lines.length === 1 ? 'line' : 'lines'} but the composition serves ${composition.windows} ${composition.windows === 1 ? 'window' : 'windows'} — one line per window (window i rides line i); leave window_prompts unstated and the one extend_prompt serves every window`);
+        }
+        roster = lines;
+    }
     // ── the staged media: the WHOLE prior clip on the VHS seat
     // (force_rate 24 — the one clock) and its LAST FRAME as the
     // in-graph anchor (a positive out-of-band index the engine clamps
@@ -121,7 +152,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
     // source slicing is the swap's semantics, never a continuation's;
     // the cure for the re-slice bug the unification's survey found) ──
     const shots = Array.from({ length: composition.windows }, (_k, i) => ({
-        id: `extend-${i + 1}`, prompt: extendPromptSeat,
+        id: `extend-${i + 1}`, prompt: roster ? roster[i] : extendPromptSeat,
     }));
     const planJson = JSON.stringify({ shots });
     const { trimmed, assemblePath, planShape } = renderMaskedEditChain(g, {

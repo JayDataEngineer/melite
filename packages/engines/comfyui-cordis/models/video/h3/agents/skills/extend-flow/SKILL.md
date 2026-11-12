@@ -51,6 +51,20 @@ the edit bag directly in new docs. The seats:
   windows).
 - `seed` — the plan base seed; the reference runs 0. Same seed across
   re-extends of one clip keeps the world texture.
+- `window_prompts` — THE PER-WINDOW ROSTER (optional): one prompt per
+  line, exactly one line per composed window — window i rides line i,
+  so an N-window extend states N lines. ABSENT (or empty) the one
+  `extend_prompt` serves EVERY window (the default law — say that in
+  the confirmation when an extend goes multi-window). A wrong line
+  count or a blank line refuses at the compose door naming both
+  numbers. The roster is the figure-count lever multi-window extends
+  were missing — the burn was "the same girl twice at two scales":
+  with one prompt minting every window, count and scale drift had no
+  lever at all. Write each line as its window's continuation (verb
+  first, sound second; name the roster of figures explicitly per
+  line — the calls lane's per-call text is the same control on the
+  film lane). Per-window seeds stay the engine's own derivation off
+  `seed` — this seat is prompts only.
 
 ## The anchor law
 

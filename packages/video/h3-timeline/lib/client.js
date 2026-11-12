@@ -5189,6 +5189,15 @@ window.__ModuleLoader__.load({
 				tooltip: "RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s)."
 			},
 			{
+				name: "window_prompts",
+				group: "Identity & Polish",
+				label: "Window prompts",
+				type: "text",
+				default: "",
+				visible_when: "continuation=true",
+				tooltip: "THE PER-WINDOW ROSTER (optional): one prompt per line, exactly one line per composed window — window i rides line i, so an N-window extend states N lines. ABSENT (or empty) the one extend_prompt serves EVERY window (the default law). A wrong line count or a blank line refuses at the compose door naming both numbers. The roster is the figure-count lever multi-window extends were missing (the same figure twice at two scales); the calls lane's per-call text is the same control on the film lane. Per-window seeds stay the engine's own derivation (base_seed) — this seat is prompts only."
+			},
+			{
 				name: "chain_run",
 				group: "Identity & Polish",
 				label: "Prior chain run",

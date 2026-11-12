@@ -439,7 +439,11 @@ function translateLegacyCell(key, e, h) {
             };
         case 'extend':
             return {
-                ...pass('source_clip', 'extend_seconds', 'seed', 'steps', 'overlap_frames', 'resolution'),
+                ...pass('source_clip', 'extend_seconds', 'seed', 'steps', 'overlap_frames', 'resolution', 
+                // THE WINDOW ROSTER (D-03 R4b): the per-window prompt seat
+                // rides the legacy cell verbatim — its judge (line count,
+                // blank lines) lives at the extend door, one law one seat.
+                'window_prompts'),
                 edit_prompt: (take('extend_prompt'), seatStr(e, 'extend_prompt')),
                 continuation: true,
                 mask_source: 'whole-frame',

@@ -85,6 +85,91 @@ describe("the Extend name — the continuation posture of the one edit bag (the 
     const viaAlias = compose({ extend: [EXTEND_ENTRY()] }, "run_extend_equiv");
     const viaEdit = compose({ edit: [EDIT_EQUIVALENT()] }, "run_extend_equiv");
     assert.deepEqual(viaAlias, viaEdit, "blank mask + self anchors + full denoise: the same posture, node for node");
+    // THE ROSTER RIDES BOTH SPELLINGS IDENTICALLY (D-03 R4b): the
+    // per-window seat passes the legacy cell verbatim, so a roster
+    // through the alias and the same roster through the edit bag
+    // compose the same graph.
+    const roster = ["she keeps walking toward the door", "the door opens and she steps through"];
+    const viaAliasRoster = compose(
+      { extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24, window_prompts: roster.join("\n") }] },
+      "run_extend_equiv_roster");
+    const viaEditRoster = compose(
+      { edit: [{ ...EDIT_EQUIVALENT(), extend_seconds: 379 / 24, window_prompts: roster.join("\n") }] },
+      "run_extend_equiv_roster");
+    assert.deepEqual(viaAliasRoster, viaEditRoster, "the roster composes identically through both spellings");
+  });
+
+  // THE WINDOW ROSTER (friction-2-infra D-03 R4b): extend had no
+  // per-segment roster, so figure count and scale drift were
+  // structurally unreachable — one prompt minted every window ("the
+  // same girl twice at two scales"). The roster is a text seat, one
+  // prompt per line, one line per composed window; window i rides
+  // line i. The arms read the composed PLAN's own shots (the real
+  // door — MiniMaxH3ChainPlanModern's literal plan_json), never a
+  // re-derived count.
+  const shotsOf = (out: Record<string, Node>): Array<{ id: string; prompt: string }> => {
+    const plan = Object.values(out).find((n) => n.class_type === "MiniMaxH3ChainPlanModern");
+    assert.ok(plan, "the chain plan node composes");
+    const parsed = JSON.parse(String(plan.inputs["plan_json"])) as { shots: Array<{ id: string; prompt: string }> };
+    return parsed.shots;
+  };
+
+  it("THE WINDOW ROSTER (D-03): line i rides window i on the composed plan, and absent roster keeps the one-prompt law", () => {
+    // learn N from the composed plan itself (never a copied literal)
+    const base = compose({ extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }] }, "run_roster_base");
+    const n = shotsOf(base).length;
+    assert.ok(n >= 2, `379f composes a multi-window extend (saw ${n})`);
+    // THE ONE-PROMPT LAW: absent roster, every window rides the one prompt
+    for (const shot of shotsOf(base)) {
+      assert.equal(shot.prompt, EXTEND_ENTRY().extend_prompt, `window ${shot.id} mints from the one extend_prompt`);
+    }
+    // THE ROSTER: exact count, line for line, window i = line i
+    const roster = Array.from({ length: n }, (_k, i): string => `window ${i + 1}: one girl with the sign, one scale — she keeps walking`);
+    const out = compose(
+      { extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24, window_prompts: roster.join("\n") }] },
+      "run_roster_exact");
+    const shots = shotsOf(out);
+    assert.equal(shots.length, n);
+    shots.forEach((shot, i) => {
+      assert.equal(shot.prompt, roster[i], `window ${i} rides roster line ${i}`);
+    });
+    // ONE trailing newline is the textarea's own artifact — admits
+    const trailing = compose(
+      { extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24, window_prompts: `${roster.join("\n")}\n` }] },
+      "run_roster_trailing");
+    assert.equal(shotsOf(trailing).length, n, "a single trailing newline is not a blank window");
+  });
+
+  it("the roster refuses LOUD on a wrong line count, a blank line, and a wrong type", () => {
+    const base = compose({ extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24 }] }, "run_roster_count");
+    const n = shotsOf(base).length;
+    assert.throws(
+      () => compose(
+        { extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24,
+          window_prompts: Array.from({ length: n - 1 }, (_k, i): string => `line ${i}`).join("\n") }] },
+        "run_roster_short"),
+      new RegExp(`window_prompts states ${n - 1} lines? but the composition serves ${n} windows.*one extend_prompt serves every window`, "s"),
+      "a short roster refuses naming both numbers");
+    assert.throws(
+      () => compose(
+        { extend: [{ ...EXTEND_ENTRY(), extend_seconds: 379 / 24,
+          window_prompts: ["first window keeps walking", "  ", "third window turns"].join("\n") }] },
+        "run_roster_blank"),
+      /window_prompts line 2 is blank.*never silently falls to extend_prompt/s,
+      "a blank middle line refuses naming the line");
+    assert.throws(
+      () => compose({ extend: [{ ...EXTEND_ENTRY(), window_prompts: 3 }] }, "run_roster_typed"),
+      /'window_prompts' is stated as 3.*a text seat carries text/s,
+      "a wrong-typed roster refuses at the no-fallback law");
+  });
+
+  it("a single-window extend with a one-line roster composes — the roster is not multi-window-only", () => {
+    const out = compose(
+      { extend: [{ ...EXTEND_ENTRY(), window_prompts: "one window, one girl, one scale" }] },
+      "run_roster_single");
+    const shots = shotsOf(out);
+    assert.equal(shots.length, 1);
+    assert.equal(shots[0]!.prompt, "one window, one girl, one scale");
   });
 
   it("leaves the film byte-identical with the arm absent", () => {
