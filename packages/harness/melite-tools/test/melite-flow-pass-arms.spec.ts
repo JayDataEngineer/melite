@@ -876,7 +876,7 @@ describe('melite_flow bench — the press census + the rev-confirm landing admis
       assert.equal(out.status, 'done')
       const pass = out.pass as Array<Record<string, unknown>>
       assert.equal(pass[0]!['warning'], undefined,
-        `no false warning from the stamp (row compiled_at: ${String(row['compiled_at'])}) — a settled or pre-law row presses silent`)
+        `no false warning from the stamp (row compiled_at: ${String('compiled_at' in row ? row.compiled_at : undefined)}) — a settled or pre-law row presses silent`)
     }
   })
 
