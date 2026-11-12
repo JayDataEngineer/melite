@@ -108,4 +108,31 @@ describe("renderH3ChainUpscale as a library (the bypass face)", () => {
     assert.equal(upscaleArmed({ upscale: [] }), false);
     assert.equal(upscaleArmed({ upscale: [ENTRY()] }), true);
   });
+
+  it("THE LINEAGE-CARRY POSTURE (the multi-window/carry wall debt cell: upscale lineage carry had no emission judge — the head pins the run, THIS pins the resume)", () => {
+    // The head arm above proves the prior run is NAMED; this proves
+    // the pass RESUMES its whole per-scene lineage: the adapter's
+    // start_mode is 'resume' (never a fresh plan over the old scenes),
+    // start_clip 1 + end_clip 0 walk the lineage head-to-tail (the
+    // execute door patches start_clip per owed scene — the seats it
+    // patches must exist with the resume spelling), and the assemble
+    // terminal's manifest rides the UPSCALE LOOP END (the per-scene
+    // segments the loop tail closes, never the adapter's raw state).
+    const g = new GraphBuilder();
+    renderH3ChainUpscale(ENTRY(), {}, FACTS, g, "run_lib_lineage");
+    const out = g.toJSON() as Record<string, Node>;
+    const adapters = ofClass(out, "MiniMaxH3ChainUpscaleAdapter");
+    assert.equal(adapters.length, 1, "one adapter walks the lineage");
+    assert.equal(adapters[0]!.inputs.start_mode, "resume", "the pass resumes the prior run's scenes — never a fresh plan");
+    assert.equal(adapters[0]!.inputs.start_clip, 1, "the walk starts at the head scene (the door patches this per owed scene)");
+    assert.equal(adapters[0]!.inputs.end_clip, 0, "the walk runs to the tail — no scene dropped");
+    const loopEnds = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3ChainUpscaleLoopEnd");
+    assert.equal(loopEnds.length, 1, "one upscale loop tail closes the scenes");
+    const assemble = ofClass(out, "MiniMaxH3ChainAssemble");
+    assert.equal(assemble.length, 1, "one assemble terminal");
+    assert.deepEqual(
+      assemble[0]!.inputs.manifest, [loopEnds[0]![0], 0],
+      "the terminal assembles the LOOP tail's manifest — the per-scene lineage, never the adapter's raw state",
+    );
+  });
 });
