@@ -14,6 +14,13 @@
 // and text arm runs against `git archive HEAD` bytes extracted into
 // a temp dir — exactly what a Manager install clones. A crutch that
 // only resolves inside this repo cannot pass here by construction.
+//
+// TIMING-RACE FLEET, third seat (row gates-walls-fetch-timeout): every
+// python child rides the pySpawn choke point with its own 60 s budget;
+// the wedged-python arm stages a 60 s sleeper under a 500 ms override
+// and pins the ETIMEDOUT kill. Toggle: the `timeout` merge dropped
+// from pySpawn → the arm reds (the sleeper runs out, no kill voice).
+// Restore → green.
 import { describe, it, expect } from "vitest";
 import { execFileSync, spawnSync } from "node:child_process";
 import { pythonBin } from "../lib/python-bin.ts";
@@ -33,8 +40,18 @@ const VENDOR = join(ROOT, "vendor", "comfyui_extensions");
 // naming the missing module. The AST arm above needs no third-party
 // module and judges everywhere.
 let NUMPY_PRESENT = false;
+// THE PYTHON-SPAWN BUDGET (timing-race fleet discipline, third seat —
+// row gates-walls-fetch-timeout): every python child below rides the
+// pySpawn choke point, which merges its OWN timeout. A wedged python
+// under battery load dies in-budget instead of hanging a 120 s arm
+// to its outer budget. Probes answer in seconds; 60 s is the
+// hung-child ceiling, not a latency allowance.
+const PY_SPAWN_TIMEOUT_MS = 60_000;
+function pySpawn(args: string[], opts: { env?: NodeJS.ProcessEnv } = {}, timeoutMs: number = PY_SPAWN_TIMEOUT_MS) {
+  return spawnSync(pythonBin(), args, { encoding: "utf8", ...opts, timeout: timeoutMs });
+}
 try {
-  NUMPY_PRESENT = spawnSync(pythonBin(), ["-c", "import numpy"], { encoding: "utf8" }).status === 0;
+  NUMPY_PRESENT = pySpawn(["-c", "import numpy"]).status === 0;
 } catch {
   // pythonBin throws when NO interpreter exists — every python arm
   // below would fail; the skip gate keeps the same verdict for them.
@@ -228,7 +245,7 @@ describe("THE COLD-CLONE PACK WALL (every published pack imports from its own cl
       try {
         const files = pyFiles(clone);
         expect(files.length, `${repo}: the clone carries no .py files — the archive is empty`).toBeGreaterThan(0);
-        const r = spawnSync(pythonBin(), ["-c", AST_PROBE, ...files], { encoding: "utf8" });
+        const r = pySpawn(["-c", AST_PROBE, ...files]);
         expect(r.status, `${repo}: the AST judge itself died\n${r.stderr}`).toBe(0);
         const violations = JSON.parse(r.stdout) as Array<{ file: string; literals: string[] }>;
         for (const v of violations) {
@@ -251,7 +268,7 @@ describe("THE COLD-CLONE PACK WALL (every published pack imports from its own cl
       // The dev box has kimodo pip-installed (the requirements leg
       // itself); the COLD state is simulated exactly — a meta-path
       // blocker refuses the one name, torch/numpy stay importable.
-      const r = spawnSync(pythonBin(), ["-c", `
+      const r = pySpawn(["-c", `
 import importlib.abc, importlib.util, json, sys
 class _BlockKimodo(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
@@ -271,7 +288,7 @@ print(json.dumps({
     "gained": [p for p in sys.path if p not in before],
     "nodes": len(getattr(mod, "NODE_CLASS_MAPPINGS", {})),
 }))
-`], { encoding: "utf8" });
+`]);
       expect(r.status, `the bare import raised (ComfyUI drops the whole pack on a raise — the register-anyway law):\n${r.stderr}`).toBe(0);
       const out = JSON.parse(r.stdout);
       expect(out.source).toBe(null); // unresolved kimodo is a breadcrumb, never a raise
@@ -299,7 +316,7 @@ print(json.dumps({
       mkdirSync(join(stubRoot, "transformers-5.20.2.dist-info"));
       writeFileSync(join(stubRoot, "transformers-5.20.2.dist-info", "METADATA"),
         "Metadata-Version: 2.1\nName: transformers\nVersion: 5.20.2\n");
-      const r = spawnSync(pythonBin(), ["-c", `
+      const r = pySpawn(["-c", `
 import importlib.util, json, sys
 before = set(sys.path)
 spec = importlib.util.spec_from_file_location(
@@ -314,7 +331,7 @@ print(json.dumps({
     "gained_outside_clone": outside,
     "nodes": len(getattr(mod, "NODE_CLASS_MAPPINGS", {})),
 }))
-`], { encoding: "utf8", env: { ...process.env, PYTHONPATH: stubRoot } });
+`], { env: { ...process.env, PYTHONPATH: stubRoot } });
       expect(r.status, `the pip-leg import raised:\n${r.stderr}`).toBe(0);
       const out = JSON.parse(r.stdout);
       expect(out.source).toBe("installed");
@@ -353,5 +370,19 @@ print(json.dumps({
       const reqs = readFileSync(join(VENDOR, repo, "requirements.txt"), "utf8");
       expect(reqs, `${repo}: imports melite_model_base but requirements.txt carries no pip leg at the vendored gitlink — a cold Manager install resolves it only through the _vendor crutch`).toContain(leg);
     }
+  });
+
+  it("a wedged python child dies on the spawn budget, never on the arm clock (the pySpawn choke point)", () => {
+    // THE HUNG CHILD (the timing-race fleet's own shape, staged in
+    // 60 lines of sleep): the AST/import probes exec real interpreters
+    // — a wedged python under battery load must die in-budget with
+    // the ETIMEDOUT voice, never hang the 120 s arm. (Plain `it`:
+    // no clone, no numpy, judges everywhere the interpreter exists.)
+    const start = Date.now();
+    const r = pySpawn(["-c", "import time; time.sleep(60)"], {}, 500);
+    const elapsed = Date.now() - start;
+    expect(r.error, "a 60 s sleeper under a 500 ms budget must come back killed").toBeDefined();
+    expect((r.error as NodeJS.ErrnoException).code, "the kill voice is the timeout, not a spawn failure").toBe("ETIMEDOUT");
+    expect(elapsed, `the kill must land in-budget (took ${elapsed}ms for a 500ms budget)`).toBeLessThan(10_000);
   });
 });
