@@ -15,7 +15,7 @@
 // VERIFIED stamp naming a receipt that exists plus what is still
 // unproven.
 import "../../../../tests/helpers/boot-models.ts";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -398,5 +398,98 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
         expect(md).toMatch(/PRESET CELL/);
       }
     }
+  });
+});
+
+describe("THE SERVED CRAFT LAWS (F2 R12/R13/R14 — SAFE-ON-STALE: pure capability law, no run ids, no shas, no dates)", () => {
+  // The friction-2 audit's honesty lines: the behavior is competent,
+  // the served line was missing, and the burn was unpreventable. Each
+  // arm pins one line in the leaf agents actually read — a leaf that
+  // loses the line reds here before the next agent burns on the
+  // untaught truth.
+  const EXTEND_LEAF = join(ROOT, "packages/engines/comfyui-cordis/models/video/h3/agents/skills/extend-flow/SKILL.md");
+  const H3_EDIT_SKILL = join(ROOT, "packages/engines/comfyui-cordis/models/image/h3-image-edit/agents/skills/prompt-enhance/SKILL.md");
+  const KREA_SKILL = join(ROOT, "packages/engines/comfyui-cordis/models/image/krea-2/agents/skills/prompt-enhance/SKILL.md");
+
+  it("R12a — the extend leaf teaches prompt-advisory framing (the seam may jump the camera; judge the boundary frames)", () => {
+    const md = readFileSync(EXTEND_LEAF, "utf-8");
+    assert.match(md, /Framing is prompt-advisory/i,
+      "the extend leaf names the law: the prompt never holds the camera");
+    assert.match(md, /camera distance and subject scale may jump/i,
+      "the extend leaf names what may jump at the seam");
+    assert.match(md, /Judge the boundary frames/i,
+      "the extend leaf orders the verdict before calling it done");
+  });
+
+  it("R12b — the extend leaf teaches the seed-roulette law (new text arrives by seed luck; the deterministic route is image-edit → animate)", () => {
+    const md = readFileSync(EXTEND_LEAF, "utf-8");
+    assert.match(md, /seed roulette/i,
+      "the extend leaf names the roulette");
+    assert.match(md, /image-edit → animate/i,
+      "the extend leaf teaches the deterministic route — paint the frame first, then move it");
+  });
+
+  it("R12c — the extend leaf teaches generation-derived, never evidence (audit the ORIGINAL artifact only)", () => {
+    const md = readFileSync(EXTEND_LEAF, "utf-8");
+    assert.match(md, /generation-derived, never evidence/i,
+      "the extend leaf bars the evidence reading");
+    assert.match(md, /Audit the ORIGINAL artifact only/i,
+      "the extend leaf orders the M-01 method: the original, never the extension");
+  });
+
+  it("R12d — the edit leaf teaches the same evidence law for refined/continued frames", () => {
+    // The refine leaf is a legacy-spelling pointer — the measured
+    // craft lives in the ONE edit leaf (ARM 7), so the refined-frames
+    // clause lives beside the seam craft, never duplicated.
+    const md = readSkill("edit");
+    assert.match(md, /Generation-derived, never evidence/i,
+      "the edit leaf bars the evidence reading for refined/continued frames");
+    assert.match(md, /Audit the\s+ORIGINAL artifact only/i,
+      "the edit leaf orders the original-artifact method");
+  });
+
+  it("R13 — the image-edit surface states the re-frame law (composition does not survive; the frame-preserving door is film repair with masks)", () => {
+    const md = readFileSync(H3_EDIT_SKILL, "utf-8");
+    assert.match(md, /RE-FRAMES/i,
+      "the image-edit skill names the side-effect law");
+    assert.match(md, /identity survives, composition does not/i,
+      "the image-edit skill splits what survives from what does not");
+    assert.match(md, /film repair door with masks/i,
+      "the image-edit skill points the frame-preserving ask at the h3-timeline repair cell");
+  });
+
+  it("R14a — the krea-2 skill keeps the no-negation law and carries the filter-bypass reproducibility warning", () => {
+    const md = readFileSync(KREA_SKILL, "utf-8");
+    assert.match(md, /BIND NOTHING/i,
+      "the krea-2 skill keeps the C-01 law: prose negations bind nothing");
+    assert.match(md, /filter-bypass LoRA/i,
+      "the krea-2 skill names the reproducibility-breaking LoRA");
+    assert.match(md, /breaks same-seed reproducibility/i,
+      "the krea-2 skill states the cost in the agent's own currency: the seed stops repeating");
+  });
+
+  it("R14b — the krea-2 skill carries the micro-prop clutter law", () => {
+    const md = readFileSync(KREA_SKILL, "utf-8");
+    assert.match(md, /Micro-props drop under clutter/i,
+      "the krea-2 skill names what vanishes first as scenes get busy");
+  });
+
+  it("R14c — no served agent doc cites the unseated cyborg-face-lock skill (seat it or stop citing it — the tree stopped citing it)", () => {
+    // model:krea-2:cyborg-face-lock names a leaf that does not exist
+    // in the tree; a cited skill an agent cannot load is its own dead
+    // end. The guard walks every served SKILL.md/AGENT.md under
+    // packages/ so a re-cite reds before an agent burns a turn on it.
+    const hits: string[] = [];
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === "node_modules" || e.name === "lib" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        if (e.isDirectory()) { walk(p); continue; }
+        if (e.name !== "SKILL.md" && e.name !== "AGENT.md") continue;
+        if (readFileSync(p, "utf-8").includes("cyborg-face-lock")) hits.push(p);
+      }
+    };
+    walk(join(ROOT, "packages"));
+    assert.deepEqual(hits, [], "no served agent doc cites the unseated cyborg-face-lock leaf");
   });
 });

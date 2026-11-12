@@ -106,6 +106,24 @@ subject at the seam far more than the anchor does — the biggest term
 in the table above. Write `extend_prompt` as a continuation of the
 same action.
 
+## THE HONESTY LINES — say these before the press
+
+- **Framing is prompt-advisory.** The prompt names what happens next,
+  never the camera: camera distance and subject scale may jump at the
+  seam even when the words ask for continuity. Judge the boundary
+  frames before calling it done — never promise a match the prompt
+  cannot hold.
+- **New text is seed roulette.** Anything the source clip never showed
+  (a new sign, a new face, new wording) arrives by seed luck, not by
+  spelling: the same extend at a fresh seed may spell it differently
+  or drop it outright. The deterministic route is image-edit → animate
+  — paint the frame first, then move it.
+- **Extended frames are generation-derived, never evidence.** The new
+  seconds are a fresh render conditioned on the anchor, not
+  measurements of the world: never cite them as identity or spec
+  evidence — no character sheets, no "the footage shows" claims off
+  extended frames. Audit the ORIGINAL artifact only.
+
 ## What lands
 
 The extended film: prior seconds verbatim (their own soundtrack), then

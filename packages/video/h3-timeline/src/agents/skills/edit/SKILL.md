@@ -256,6 +256,11 @@ and the single-clip case are literally the same statement.
 - The measured OOM ceilings: 141 f @2x (the refine handoff), and a
   430 f window @1.0 OOM'd too (20.08 GiB allocated, 830 MiB short) -
   budget the window, never widen it on hope.
+- Generation-derived, never evidence: refined and continued frames are
+  a fresh render conditioned on the source, not measurements of the
+  world — never cite them as identity or spec evidence (no character
+  sheets, no "the footage shows" claims off edited frames). Audit the
+  ORIGINAL artifact only.
 
 ## One door per doc
 

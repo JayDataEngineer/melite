@@ -16,6 +16,8 @@ krea-2: &krea2_enhance
     - "Aim for 60-150 words — long, detailed, vivid descriptions produce the best results"
     - "Negative prompts ARE used — always include one with quality degraders (blurry, low quality, distorted, watermark)"
     - "Prose negations BIND NOTHING on this lane — 'no watermark' written inside the descriptive prose does not suppress it; every suppression belongs in the negative prompt seat, and the prose spends its words on what you DO want"
+    - "The filter-bypass LoRA (krea2filterbypass3) breaks same-seed reproducibility and pulls framing tight — the same seed with the same words will NOT repeat a bypassed render, and expression amplitude rises. Explore with it, never build a matched set on it"
+    - "Micro-props drop under clutter — as scenes get busy, small held objects vanish first. Name at most one hand-held item per render, and check hands and held objects last"
     - "Strong photorealism, fine detail, and composition — lean into cinematic lighting and material textures"
     - "Structure: subject identity → physical description → clothing/textures → environment → lighting/mood → camera/composition"
     - "Be specific and concrete — name garments, materials, light sources, lens choices"

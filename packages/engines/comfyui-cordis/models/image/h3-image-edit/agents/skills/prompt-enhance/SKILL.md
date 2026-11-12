@@ -19,6 +19,7 @@ h3-image-edit: &h3_image_edit_enhance
     - "Multi-image edits are native — up to 100 slots; anchor first, then references in citation order"
     - "The canvas follows the anchor (its post-scaling size is the render size) unless a size pair is stated with match_input_resolution off"
     - "Six steps, cfg 1, euler/simple is the distilled solver truth — put quality into the words, never the chain"
+    - "An edit RE-FRAMES — identity survives, composition does not: the model rebuilds the frame around the change, so camera distance, cropping, and background layout may shift even when the prompt names them fixed. A frame-preserving touch-up is the film repair door with masks (the h3-timeline repair cell), never this lane"
   base: img_gen
 
 # ── Services (form-level prompts — reserved map, merged tree-wide) ──────
