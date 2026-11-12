@@ -227,6 +227,29 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
     );
   });
 
+  it("MALFORMED ENTRIES REFUSE LOUD, NEVER TYPEERROR: a stated bag entry that is not a stanza object names the door and the got-shape (the compose-door robustness arm)", () => {
+    // The burn shape: repair:[null] (and edit:[null]) crashed the
+    // compose door with a TypeError reading .continuation off null —
+    // a malformed doc must refuse with a voice, never kill the door.
+    // Each malformed shape its own firing arm, through the card's
+    // own compose path (schema → compose), the same seat the
+    // placement law above rides.
+    const cases: Array<[string, Record<string, unknown>, RegExp]> = [
+      ["repair", { repair: [null] }, /h3-timeline repair: the bag's single entry is not a knob stanza \(got null\)/],
+      ["edit", { edit: [null] }, /h3-timeline edit: the bag's single entry is not a knob stanza \(got null\)/],
+      ["edit", { edit: ["sharp"] }, /h3-timeline edit: the bag's single entry is not a knob stanza \(got a bare string\)/],
+      ["edit", { edit: [[{ continuation: true }]] }, /h3-timeline edit: the bag's single entry is not a knob stanza \(got an array\)/],
+    ];
+    for (const [name, doc, voice] of cases) {
+      const walked = def.schema(doc) as Record<string, unknown>;
+      assert.throws(
+        () => def.compose(walked, model, new GraphBuilder(), `run_malformed_${name}`),
+        voice,
+        `${name} with a malformed entry refuses loud naming the door (never a TypeError)`,
+      );
+    }
+  });
+
   it("leaves the film byte-clean of the edit vocabulary with the arm empty", () => {
     const walked = def.schema({}) as Record<string, unknown>;
     const g = new GraphBuilder();

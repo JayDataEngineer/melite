@@ -344,7 +344,19 @@ export function editPosture(p: Record<string, unknown>): 'film' | 'inchain' | 'j
   // (card.spec's legacy edge arms bind it — flip the extend
   // translation and the join arm reds).
   const resolved = resolveLegacyEditAliases(p)
-  if (isArmedBag(resolved.edit)) return editEntryPosture((resolved.edit as Array<Record<string, unknown>>)[0])
+  if (isArmedBag(resolved.edit)) {
+    // (D-gap, the compose-door robustness arm) a stated entry that
+    // is not a stanza object (null, a bare value, a nested array)
+    // is a malformed doc, not a TypeError: the refusal names the
+    // door and the got-shape, loud, before any entry read.
+    const first = (resolved.edit as unknown[])[0]
+    if (typeof first !== 'object' || first === null || Array.isArray(first)) {
+      throw new Error(
+        `h3-timeline edit: the bag's single entry is not a knob stanza (got ${Array.isArray(first) ? 'an array' : first === null ? 'null' : `a bare ${typeof first}`}) — an entry is the mask × anchors × denoise stanza object; state it or omit the arm`,
+      )
+    }
+    return editEntryPosture(first as Record<string, unknown>)
+  }
   return 'film'
 }
 
@@ -400,6 +412,15 @@ export function resolveLegacyEditAliases(p: Record<string, unknown>): Record<str
     )
   }
   const e = bag[0]
+  // (D-gap, same arm as the walk's) the legacy bag's one entry is
+  // the preset cell's stanza — null or a bare value is malformed,
+  // refused loud with the got-shape (a TypeError here used to kill
+  // the compose door itself).
+  if (typeof e !== 'object' || e === null || Array.isArray(e)) {
+    throw new Error(
+      `h3-timeline ${key}: the bag's single entry is not a knob stanza (got ${Array.isArray(e) ? 'an array' : e === null ? 'null' : `a bare ${typeof e}`}) — an entry is the preset cell's stanza object; state it or omit the arm`,
+    )
+  }
   const entry = translateLegacyEntry(key, e)
   const out = { ...p }
   for (const k of LEGACY_EDIT_KEYS) delete out[k]
@@ -653,6 +674,18 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
       if (bag.length > 1) {
         throw new Error(`h3-timeline ${key}: the ${key} bag carries ${bag.length} entries — max_stack is 1, so every entry after the first would be silently dropped. Keep exactly one ${noun} entry.`)
       }
+      // (D-gap, the compose-door robustness arm) the ONE entry must
+      // be a stanza object — null/a bare value/a nested array is a
+      // malformed doc refused loud with the got-shape (the burn:
+      // edit:[null] killed the door reading .mask_source off null).
+      // An EMPTY bag stays lawful (the clean-film arm owns it).
+      if (bag.length === 1) {
+        const only = bag[0] as unknown
+        if (typeof only !== 'object' || only === null || Array.isArray(only)) {
+          throw new Error(`h3-timeline ${key}: the bag's single entry is not a knob stanza (got ${Array.isArray(only) ? 'an array' : only === null ? 'null' : `a bare ${typeof only}`}) — an entry is the ${noun} stanza object; state it or omit the arm`)
+        }
+      }
+      // An EMPTY bag stays lawful (the clean-film arm owns it).
     }
     // THE LEGACY ALIAS RESOLUTION (slice 4 — THE DELETION): a doc
     // carrying a legacy key (a saved bench, an old session, a chip
