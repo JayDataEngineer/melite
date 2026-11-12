@@ -231,6 +231,46 @@ describe('THE BASE STRIKE (audits 018 C4 + 016 C5) — the departed base stamp n
   })
 })
 
+describe('THE H3 CARRY (depth debt (c), 2026-11-09 audit) — the strike judges the h3 lane too, never only the image/tts lanes', () => {
+  // The h3 lane serves no variant axis and no quant seat: a base plane
+  // stamped by a departed IMAGE run carries sampler/scheduler/cfg/prompt
+  // ghosts the h3 surface never admitted. The strike names them at the
+  // read seat before the cascade — the studio never re-offers an image
+  // coordinate on the film lane (the 018 shape, generalized).
+  test('H3-1: departed image-lane stamps strike under h3 — sampler, scheduler, cfg, prompt never re-offer', async () => {
+    const spec = await formSpecArm('h3-timeline')
+    expect(spec, 'the served h3-timeline spec resolves').not.toBeNull()
+    const user: SpecValues = {}
+    const base: SpecValues = { quant: 'int8_convrot', steps: 8, cfg: 1, sampler: 'euler', scheduler: 'simple', prompt: 'a cat' }
+    const { strikes, shown } = struckView(spec as FormSpecDoc, user, base)
+    expect(strikes, 'the departed image stamps are named, in the base plane\u2019s own order').toEqual(['cfg', 'sampler', 'scheduler', 'prompt'])
+    expect(shown.steps, 'h3\u2019s own lane seat survives the strike — the run keeps its step count').toBe(8)
+    expect('sampler' in shown, 'the departed stamp clears from the resolved view').toBe(false)
+    const struckBase = strikeDeadLaneStamps(spec as FormSpecDoc, user, base).base
+    expect('sampler' in struckBase, 'the base plane no longer holds the departed stamp').toBe(false)
+  })
+
+  test('H3-2: h3\u2019s own lane stamps never strike — steps, seed, denoise are the lane\u2019s own seats', async () => {
+    const spec = await formSpecArm('h3-timeline')
+    expect(spec, 'the served h3-timeline spec resolves').not.toBeNull()
+    const base: SpecValues = { steps: 8, seed: 0, denoise: 0.32 }
+    const { strikes, shown } = struckView(spec as FormSpecDoc, {}, base)
+    expect(strikes, 'the served lane\u2019s own stamps are not dead carry').toEqual([])
+    expect(shown.steps, 'the lane seats still resolve').toBe(8)
+    expect(shown.denoise, 'the edit pole still resolves').toBe(0.32)
+  })
+
+  test('H3-3: a user-RESTATED image stamp never strikes under h3 — presence is authorship on every lane', async () => {
+    const spec = await formSpecArm('h3-timeline')
+    expect(spec, 'the served h3-timeline spec resolves').not.toBeNull()
+    const user: SpecValues = { sampler: 'euler' }
+    const base: SpecValues = { quant: 'int8_convrot', steps: 8, cfg: 1, sampler: 'euler', scheduler: 'simple' }
+    const strike = strikeDeadLaneStamps(spec as FormSpecDoc, user, base)
+    expect(strike.strikes, 'the restated seat never strikes (cfg + scheduler — stated by nobody — still do)').toEqual(['cfg', 'scheduler'])
+    expect(strike.base.sampler, 'the hand\u2019s word holds the base plane').toBe('euler')
+  })
+})
+
 // ── THE STRIKE NOTE (the named heal, dismissible) ─────────────────
 // Mounted through StageDrill: the served base holds a departed
 // non-axis ghost (the 016 shape — the drill's open seed re-derives
