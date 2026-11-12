@@ -740,7 +740,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 653 (2026-11-11): the H3-Image pair lands — two new model
   // packages (h3-image, h3-image-edit), each emitting index/actions
   // JS + the mask mod.
-  const LIB_CENSUS_PIN = 653;
+  // 657 (2026-11-12): media-preview lands — host.js + the client
+  // bundle (lib/client.js) + the client face's index/mediaDocument
+  // emits, four tracked seats.
+  const LIB_CENSUS_PIN = 657;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
