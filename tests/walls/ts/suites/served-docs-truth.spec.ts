@@ -933,4 +933,41 @@ vdescribe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable row
     vassert.match(refBody, /\n# Full-Reference Mode Rewrite Output Format Guide/);
     vassert.match(refBody, /subject_definitions/);
   });
+
+  vit0("the official H3-Image skill is vendored, served, and byte-true to upstream (operator 2026-11-12)", () => {
+    // MiniMax-AI/MiniMax-H3-Image skills/h3-image-prompt-writing:
+    // the SKILL.md on BOTH twins + the t2i reference on the t2i
+    // family + the edit reference on the edit family — bodies
+    // verbatim under an estate preamble (the h3-guides arm's law).
+    const rows = modelRows(ENGINE);
+    const mainT2i = rows.find((r) => r.row.id === "model:h3-image:h3-prompt-writing.md");
+    const mainEdit = rows.find((r) => r.row.id === "model:h3-image-edit:h3-prompt-writing.md");
+    const t2i = rows.find((r) => r.row.id === "model:h3-image:h3-prompt-writing-t2i.md");
+    const edit = rows.find((r) => r.row.id === "model:h3-image-edit:h3-prompt-writing-edit.md");
+    vassert.ok(mainT2i !== undefined, "model:h3-image:h3-prompt-writing.md serves");
+    vassert.ok(mainEdit !== undefined, "model:h3-image-edit:h3-prompt-writing.md serves");
+    vassert.ok(t2i !== undefined, "model:h3-image:h3-prompt-writing-t2i.md serves");
+    vassert.ok(edit !== undefined, "model:h3-image-edit:h3-prompt-writing-edit.md serves");
+    const mainT2iBody = readFileSync(mainT2i.path, "utf8");
+    const mainEditBody = readFileSync(mainEdit.path, "utf8");
+    const t2iBody = readFileSync(t2i.path, "utf8");
+    const editBody = readFileSync(edit.path, "utf8");
+    // the SKILL.md's title and its load-bearing rules (lettering,
+    // Picture-N grammar, grids) on BOTH twins
+    for (const body of [mainT2iBody, mainEditBody]) {
+      vassert.match(body, /\n# MiniMax-H3-Image Prompt Writing/);
+      vassert.match(body, /Quote every word that appears\./);
+      vassert.match(body, /`<Picture 1>`, `<Picture 2>`/);
+      vassert.match(body, /Grids by rows and columns\./);
+      vassert.match(body, /No vague quality word remains where a visible detail can say it\./);
+      // the attribution preamble names the upstream source
+      vassert.match(body, /MiniMax-AI\/MiniMax-H3-Image `skills\/h3-image-prompt-writing`/);
+    }
+    // the two reference guides: titles + their deepest structural
+    // anchors (the dashboard example; the transfer-law sentence)
+    vassert.match(t2iBody, /\n# Text-to-image prompt writing guide/);
+    vassert.match(t2iBody, /A finished data dashboard/);
+    vassert.match(editBody, /\n# Reference-image edit prompt writing guide/);
+    vassert.match(editBody, /<Subject 2> supplies the exact body color transferred to <Subject 1>\./);
+  });
 });

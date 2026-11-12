@@ -176,7 +176,14 @@ interface SkillLine { id?: string }
 // carry their prompt-enhance skill leaf (h3-image: on image-gen,
 // h3-image-edit: on image-edit); both ids round-tripped 200 with a
 // body in the arm above before this repin.
-const EXPECTED_CARD_SKILLS = 57;
+// 57 → 61 (2026-11-12, the official H3-Image skill): the official
+// MiniMax prompt-writing skill seats on both twins (the main guide
+// on each + the t2i reference on h3-image + the edit reference on
+// h3-image-edit, bodies verbatim from
+// MiniMax-AI/MiniMax-H3-Image skills/h3-image-prompt-writing); all
+// four ids round-tripped 200 with a body in the arm above before
+// this repin.
+const EXPECTED_CARD_SKILLS = 61;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent
