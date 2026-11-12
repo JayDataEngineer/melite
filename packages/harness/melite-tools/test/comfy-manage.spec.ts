@@ -1032,6 +1032,37 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
     assert.match(out, /NOT the engine's application log/)
     assert.match(out, /Main process exited, code=killed, status=9\/KILL/)
     assert.match(out, /Failed with result 'oom-kill'\./)
+    // D3-02 (guard): a STALE app log attaches nothing — the verdict
+    // voice rides the detail, never a stale tail dressed as live.
+    assert.ok(!out.includes('application log tail'), 'a stale app log attaches no tail lines')
+  })
+
+  // D3-02 — THE APP-LOG FALL-THROUGH (F3 R-2's melite half, the
+  // burn: "the operator cannot see a GPU-side stack trace through
+  // sanctioned doors at all" — the journal carried wrapper lines
+  // while the engine's own log held the trace; the estate now serves
+  // the fresh tail beside the journal, and this arm pins the TOOL's
+  // duty to attach it, marked with its path).
+  test('D3-02 THE WALL: a FRESH app log attaches its tail below the journal lines, marked with its path', () => {
+    const tool = comfyManage(stubEstate())
+    const out = text(tool, {
+      ok: true,
+      action: 'logs',
+      detail: '2 journal line(s) — source: systemd unit estate-comfyui.service (the unit\'s stdout capture: 2 systemd wrapper line(s); NOT the engine\'s application log) — engine application log: fresh — last write 2026-11-19T06:00:00.000Z (30s ago); its tail is attached below',
+      data: {
+        source: { kind: 'journal', unit: 'estate-comfyui.service', why: "systemd's capture of the unit's stdout" },
+        app_log: { known: true, verdict: 'fresh', path: '/repo/data/runtime/comfyui/user/comfyui_8289.log', last_write: '2026-11-19T06:00:00.000Z', age_seconds: 30, lines: [
+          "  File \"/tools/comfyui/comfy_api/client.py\", line 68, in decode",
+          'CUDA out of memory. Tried to allocate 2.59 GiB',
+        ] },
+        lines: [
+          'estate-comfyui.service: Scheduled restart job, restart counter is at 3.',
+        ],
+      },
+    })
+    assert.match(out, /engine application log tail \(\/repo\/data\/runtime\/comfyui\/user\/comfyui_8289\.log, fresh\):/, 'the tail attaches under its own marked header, path named')
+    assert.match(out, /CUDA out of memory\. Tried to allocate 2\.59 GiB/, 'the GPU-side trace the burn hunted prints through the sanctioned door')
+    assert.match(out, /restart counter is at 3/, 'the journal lines still print above it')
   })
 
   // THE BRANCH-EDGE BURN (scope C, 2026-11-19): the census carries

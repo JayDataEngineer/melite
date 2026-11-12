@@ -340,6 +340,23 @@ function renderManage(args: unknown, value: unknown): Array<{ type: 'text'; text
     for (const r of (Array.isArray(result.rows) ? result.rows : []).slice(0, 8)) lines.push('  ' + String(r))
   } else if (action === 'logs' || action === 'search_models' || action === 'list_extensions' || action === 'snapshot_list') {
     lines.push(...actionRows(action, data, result.rows))
+    // D3-02 — THE APP-LOG FALL-THROUGH (the logs door's melite half):
+    // a FRESH engine application log attaches its tail below the
+    // journal lines, marked with its path — the detail line already
+    // promises "its tail is attached below", and the GPU-side stack
+    // trace the operator needs lives in exactly these lines, never in
+    // the unit's stdout capture. A stale/absent/unknown app log
+    // attaches nothing (its verdict voice already rides the detail).
+    if (action === 'logs') {
+      const appLog = recordValue(recordValue(data)?.app_log)
+      if (appLog !== null && appLog.verdict === 'fresh' && Array.isArray(appLog.lines)) {
+        const tail = (appLog.lines as unknown[]).slice(0, 200).map((row) => typeof row === 'string' ? row : rowText(row))
+        if (tail.length > 0) {
+          lines.push('engine application log tail (' + String(appLog.path ?? '?') + ', fresh):')
+          lines.push(...tail)
+        }
+      }
+    }
   } else if (result.state !== undefined || result.items !== undefined || result.operations !== undefined || result.operation_id !== undefined || result.bytes !== undefined || result.total !== undefined) {
     if (typeof result.state === 'string') lines.push('state: ' + result.state)
     if (typeof result.operation_id === 'string') lines.push('operation: ' + result.operation_id)
