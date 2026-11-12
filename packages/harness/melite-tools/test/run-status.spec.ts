@@ -131,6 +131,73 @@ describe('run_status execute — the run monitor', () => {
     assert.equal(out.error, long)
   })
 
+  // ── D3-01 (F3 R-1): THE SWEPT-RUN STATUS TRUTH ────────────────
+  // The burn (FRICTION_3:466): a queued run swept by an engine
+  // restart failed as `boot sweep`, the reason visible ONLY in
+  // ledger_tail — run_status answered a status-less refusal fold
+  // and a held row answered bare pending forever ("three
+  // sanctioned doors, zero diagnostics"). The sweep's own note
+  // (`sweep`, `sweep_holds`) rides the sidecar and the status door
+  // serves it; these arms pin the tool's duty to carry it.
+
+  test('D3-01 THE WALL: a boot-swept FAILED row keeps its status AND carries the sweep note — never the status-less refusal fold', async () => {
+    const note = 'host restarted before the run started (never executed)'
+    const { estate } = mockEstate(() => ({
+      run_id: 'r_sw', status: 'failed', error: note, sweep: note,
+      stages: [{ id: 's_0', status: 'failed', error: note }],
+    }))
+    const tool = runStatus(estate)
+    const out = await tool.execute({ runId: 'r_sw' }, exec) as Record<string, unknown>
+    assert.equal(out.status, 'failed',
+      'a status-bearing row with an error is a FAILED RUN, not a refusal — the old fold hid the status and that was the burn')
+    assert.equal(out.sweep, note, 'the sweep note rides the row')
+    assert.equal(out.error, note, 'the error rides whole (W-11 rides this seat now)')
+  })
+
+  test('D3-01: a D-8 replay HOLD renders the hold — a swept-queued row never reads as bare pending', async () => {
+    const note = "host restarted (boot sweep): stale active sidecar from a dead process — held as queued for the next boot's replay (hold 1/3, defect board D-8)"
+    const { estate } = mockEstate(() => ({
+      run_id: 'r_hold', status: 'queued', sweep: note, sweep_holds: 1,
+      stages: [{ id: 's_0', status: 'pending' }], queue_position: 0,
+    }))
+    const tool = runStatus(estate)
+    const out = await tool.execute({ runId: 'r_hold' }, exec) as Record<string, unknown>
+    assert.equal(out.status, 'queued')
+    assert.equal(out.sweep, note)
+    assert.equal(out.sweep_holds, 1)
+    // THE RENDER (the face the agent reads): the swept line names
+    // the hold — polling forever on a bare 'queued — 0/1' was the
+    // burn's exact shape.
+    const view = tool.output.render({}, out as never) as Array<{ type: string; text: string }>
+    const text = view[0]!.text
+    assert.match(text, /swept: host restarted \(boot sweep\).*hold 1\/3 — the next boot replays it/, text)
+  })
+
+  test('D3-01 (render): the swept voice prints on the terminal line too — the note is the story', async () => {
+    const note = 'host restarted before the run started (never executed)'
+    const tool = runStatus(stubEstate())
+    const view = tool.output.render({}, {
+      run_id: 'r_sw2', status: 'failed', sweep: note, stages: [], artifacts: [],
+    } as never) as Array<{ type: string; text: string }>
+    assert.match(view[0]!.text, /run r_sw2 failed/, view[0]!.text)
+    assert.match(view[0]!.text, new RegExp('swept: ' + note.replace(/[()]/g, '\\$&')), 'the note prints whole on its own line')
+  })
+
+  test('D3-01 (guard): a clean row carries NO sweep voice — absence admits nothing', async () => {
+    for (const sweep of [undefined, '']) {
+      const { estate } = mockEstate(() => ({
+        run_id: 'r_clean', status: 'completed', stages: [], artifacts: ['/x.png'],
+        ...(sweep !== undefined ? { sweep } : {}),
+      }))
+      const tool = runStatus(estate)
+      const out = await tool.execute({ runId: 'r_clean' }, exec) as Record<string, unknown>
+      assert.equal('sweep' in out, false, `no sweep key on a clean run (sweep: ${JSON.stringify(sweep)} — jsonClean drops the undefined)`)
+      assert.equal('sweep_holds' in out, false)
+      const view = tool.output.render({}, out as never) as Array<{ type: string; text: string }>
+      assert.ok(!view[0]!.text.includes('swept:'), 'no swept line on a clean run')
+    }
+  })
+
   test('a sparse row falls back honestly (unknown / [] / 0, no error key)', async () => {
     const { estate } = mockEstate(() => ({}))
     const tool = runStatus(estate)

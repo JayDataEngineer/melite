@@ -86,6 +86,9 @@ export function runStatus(estate) {
         name: 'run_status',
         description: 'Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage '
             + 'progress, artifacts (landed bytes with paths) and the EXACT error string on failure. '
+            + 'SWEPT RUNS (D3-01): a run lost to an engine/host restart answers failed with a '
+            + '`sweep` note naming the truth (never executed — resubmit), or queued with a D-8 '
+            + 'replay hold (`sweep_holds`, bounded boots then failed loud) — never a bare pending. '
             + 'Args: runId (from melite_flow). Includes queue_position while waiting on '
             + 'the serial GPU lane. Read-only — the stop door is operator-ordered.',
         // ParameterSchemaSpec grammar: the map IS the implicit object root
@@ -118,6 +121,8 @@ export function runStatus(estate) {
                     stages: { type: 'array', description: 'Per-stage rows: id/name, status, error, declared output channels in [brackets] when present.' },
                     artifacts: { type: 'array', description: 'Landed artifact rows (path, bytes). Empty until completed.' },
                     error: { type: 'string', description: 'The EXACT failure string when status is error/failed, or the refusal text when the fetch refused.' },
+                    sweep: { type: 'string', description: 'D3-01: the sweep\'s own note when the run was swept (engine/host restart under the queue, or a stale sidecar at read) — names never-executed vs resubmit, or the D-8 replay hold. Absent on clean runs.' },
+                    sweep_holds: { type: 'number', description: 'The D-8 hold count when a swept-queued run is held for the next boot\'s replay (bounded; past the bound the row settles failed loud).' },
                     queue_position: { type: 'number', description: '0 = active; >0 = waiting in the FIFO.' },
                     planned_stages: { type: 'array', description: 'The registered plan (id/engine per stage) — present when a live row has no stage rows yet.' },
                     card: { type: 'string', description: 'The card (or pipeline) the run was born from.' },
@@ -285,6 +290,17 @@ export function runStatus(estate) {
                 const missVoice = terminal && v.attribution === 'missed'
                     ? ' — NOT shown on the user\u2019s cards tab (stamp missed; artifacts are fine — re-stamp to show it)'
                     : '';
+                // D3-01 — THE SWEPT VOICE: the sweep's note prints whole on
+                // its own line (boot sweep, read-time sweep, or a D-8 replay
+                // hold — the note itself names never-executed vs resubmit);
+                // the hold count rides beside it when the row is held. The
+                // burn: a swept run polled as bare pending across three
+                // sanctioned doors while the truth sat in ledger_tail.
+                const sweepNote = typeof v.sweep === 'string' && v.sweep !== '' ? v.sweep : undefined;
+                const sweepVoice = sweepNote !== undefined
+                    ? '\nswept: ' + sweepNote
+                        + (typeof v.sweep_holds === 'number' ? ` (hold ${v.sweep_holds}/3 — the next boot replays it if the request still answers)` : '')
+                    : '';
                 return [{
                         type: 'text',
                         text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
@@ -297,7 +313,7 @@ export function runStatus(estate) {
                             + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
                             + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
                             + variantVoice + loudVoice + freshVoice + missVoice
-                            + stageVoice + artVoice + exportVoice,
+                            + stageVoice + artVoice + exportVoice + sweepVoice,
                     }];
             },
         },
@@ -351,11 +367,24 @@ export function runStatus(estate) {
             // string check read that as the refusal shape and returned
             // {run_id, error:""}, which the render voices as "? — 0/0
             // stage(s)" on a COMPLETED run (all four 021 stages). Only a
-            // NON-EMPTY error is a refusal; everything else falls through
-            // to the rich row.
-            if (res && typeof res.error === 'string' && res.error !== '') {
+            // NON-EMPTY error on a row that names NO status is a refusal;
+            // a STATUS-BEARING row with an error is a failed run's own
+            // truth (D3-01, the swept-run law: a boot-swept queued run
+            // answers `failed` + "never executed" — folding that into the
+            // refusal shape hid the status and sold the burn's
+            // `generate:pending` mystery). The rich path below threads
+            // the error as a field.
+            if (res && typeof res.error === 'string' && res.error !== ''
+                && !(typeof res.status === 'string' && res.status !== '')) {
                 return jsonClean({ run_id: runId, error: res.error });
             }
+            // D3-01 — THE SWEPT TRUTH (F3 R-1): the sweep's own note rides
+            // the sidecar (`sweep`, and `sweep_holds` on a D-8 replay hold)
+            // and the status door serves both — the tool threads them so a
+            // swept row reads `failed — swept: host restarted …` or
+            // `queued — swept: held for the next boot's replay (hold 1/3)`,
+            // never a bare pending the agent polls forever.
+            const swept = typeof res.sweep === 'string' && res.sweep !== '' ? res.sweep : undefined;
             const waitedRow = waitExpired
                 ? { wait_expired: true, wait_budget_s: waitS }
                 : (waitS > 0 ? { waited_s: Math.round(waitS - Math.max(0, deadline - Date.now()) / 1000) } : {});
@@ -365,9 +394,14 @@ export function runStatus(estate) {
                 status: typeof res.status === 'string' ? res.status : 'unknown',
                 stages: Array.isArray(res.stages) ? res.stages : [],
                 artifacts: Array.isArray(res.artifacts) ? res.artifacts : [],
-                // The res.error string returns at the refusal above — error rides
-                // undefined on success by construction, never a second copy (2026-09-12).
-                error: undefined,
+                // D3-01: a status-bearing row keeps its error as a FIELD (the
+                // render's failure line reads it whole — W-11's exact-string
+                // law rides this seat now, not the refusal fold).
+                error: typeof res.error === 'string' && res.error !== '' ? res.error : undefined,
+                // D3-01 — the swept truth rides the rich row (absent on clean
+                // runs; jsonClean drops the undefined).
+                sweep: swept,
+                sweep_holds: typeof res.sweep_holds === 'number' ? res.sweep_holds : undefined,
                 queue_position: typeof res.queue_position === 'number' ? res.queue_position : 0,
                 // THE LIVE-ROW PLAN (Fix 2): projected through verbatim — the
                 // render voices it, older consumers ignore it (additive).
