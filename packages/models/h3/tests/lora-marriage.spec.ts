@@ -17,7 +17,11 @@
 // Every expectation is DERIVED from the catalog row (the file's
 // derived-assertion law), never a frozen literal.
 import { describe, it, expect } from "vitest";
+import assert from "node:assert/strict";
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { H3_DEFAULT_LORA_ID, h3DefaultLoraEntry, h3LoraStackOf, h3ShiftVideoOf } from "../src/actions.ts";
+import type { H3Facts } from "../src/actions.ts";
+import { renderH3Extend } from "../src/index.ts";
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
 
 const turbo = H3_LORA_ROWS.find((r) => r.id === H3_DEFAULT_LORA_ID);
@@ -88,5 +92,38 @@ describe("the lora plane's one-owner contracts (the swap + film renderers' share
       shift_video: 6,
       loras: [null, { name: turbo!.filename }],
     })).toBe(turbo!.shift_video);
+  });
+});
+
+describe("the full stack on the N-window film (the multi-window/carry wall debt cell: loras stack-on-every-window)", () => {
+  // The extend emission delegates to ONE renderMaskedEditChain — one
+  // lora plane for the whole film. A stated pair must ride that plane
+  // VERBATIM (both rows, order kept): every window downstream of the
+  // one loader carries the full stack, never a per-window fan-out, a
+  // first-row-only read, or a re-default.
+  const FACTS: H3Facts = {
+    unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+    clip: "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+    vae_video: "minimax_h3_video_vae_int8_convrot.safetensors",
+    vae_audio: "minimax_h3_audio_vae_fp32.safetensors",
+  };
+  it("a stated pair rides verbatim onto the emission's one lora plane — one loader, both rows, the whole 5-window chain downstream", () => {
+    const g = new GraphBuilder();
+    renderH3Extend(
+      { source_clip: "clips/take.mp4", extend_prompt: "carry the walk", extend_seconds: 19.33 },
+      { loras: [{ name: turbo!.filename, strength: 0.9 }, { name: turbo4!.filename, strength: 0.6 }] },
+      FACTS, g, "run_lora_full_stack",
+    );
+    const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const loaders = Object.entries(out).filter(([, n]) => n.class_type === "LTX_lora_loader");
+    assert.equal(loaders.length, 1, "one lora plane on five windows — the stack never fans out per window");
+    assert.deepEqual(
+      JSON.parse(loaders[0][1].inputs.stack_data as string),
+      [
+        { on: true, lora: turbo!.filename, str: 0.9, v: 1, a: 1, t: 1 },
+        { on: true, lora: turbo4!.filename, str: 0.6, v: 1, a: 1, t: 1 },
+      ],
+      "the FULL stated stack rides the one plane verbatim — both rows, order kept, strengths kept (never first-row-only, never re-defaulted)",
+    );
   });
 });
