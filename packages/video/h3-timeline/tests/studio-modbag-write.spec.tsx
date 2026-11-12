@@ -58,12 +58,12 @@ async function serveReal(): Promise<Record<string, unknown>> {
   return wire
 }
 
-function mountStudio(saved: Array<Record<string, unknown>>): void {
+function mountStudio(saved: Array<Record<string, unknown>>, params: Record<string, unknown> = TWO): void {
   render(
     <VideoTimelineStudio
       stageId="s_4"
       cardName="h3-timeline"
-      row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params: TWO }}
+      row={{ id: "s_4", card: "h3-timeline", title: "H3 Timeline", params }}
       runStatus=""
       onPatch={(p: Record<string, unknown>) => { saved.push(p) }}
       onRun={() => {}}
@@ -144,6 +144,74 @@ describe("the mod bag's write journey (the dead Add)", () => {
     const hydrated = hydrateLayerA({ seed: 1, edit: bag })
     assert.deepEqual((hydrated as unknown as Record<string, unknown>).edit, bag,
       "a persisted bag hydrates back into Layer A")
+  })
+
+  it("ARM H — THE SECOND PRESS REFUSES THROUGH THE GESTURE: an armed edit bag + the + box → the served max_stack, never a second tile", async () => {
+    // The audit's first unwalled gesture ("add a second refine
+    // entry"): ARM G proves the first press lands; THIS proves the
+    // second dies AT THE GESTURE on the served max_stack 1 — the
+    // compose door's one-entry law (oneEntryBag) never even sees it.
+    await serveReal()
+    const saved: Array<Record<string, unknown>> = []
+    mountStudio(saved, {
+      ...TWO,
+      edit: [{ mask_source: "whole-frame", reference: "self", denoise: 1, continuation: true, extend_seconds: 5 }],
+    })
+    const plusBox = await waitFor(() => {
+      const el = document.querySelector('[data-subcard-add="mod"]')
+      assert.ok(el, "the + box must render beside the armed tile")
+      return el
+    }, { timeout: 3000 })
+    // the armed tile renders (the first press's own face)
+    await waitFor(() => assert.ok(
+      document.querySelector('[data-mod-tile^="edit#"]') !== null,
+      "the armed edit bag tiles",
+    ), { timeout: 3000 })
+    const before = saved.length
+    fireEvent.click(plusBox)
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Video edit" }))
+    // THE SERVED MAX_STACK FACE (the generic wall's voice, now on
+    // the served kind): the stack-limit sentence, no second leaf,
+    // no bench write
+    expect(await screen.findByText(/stack limit reached \(1\)/)).toBeTruthy()
+    assert.equal(saved.length, before, "the refused second press writes nothing")
+  })
+
+  it("ARM I — THE TYPED DIAL COMMITS: Extend section → Extend seconds typed → Add lands the typed value, never the default", async () => {
+    // The audit's second unwalled gesture ("type Windows=5"): ARM G
+    // commits declared defaults; THIS types a served dial through
+    // the real leaf and proves the TYPED value lands. extend_seconds
+    // rides visible_when continuation=true, so the gesture checks
+    // the Extend section first — the field appears, 5 is typed, Add
+    // carries 5 (2.33 is the field default — landing it would prove
+    // nothing).
+    await serveReal()
+    const saved: Array<Record<string, unknown>> = []
+    mountStudio(saved)
+    fireEvent.click(await waitFor(() => {
+      const el = document.querySelector('[data-subcard-add="mod"]')
+      assert.ok(el, "the + box must render")
+      return el
+    }, { timeout: 3000 }))
+    fireEvent.click(await screen.findByText("Video edit"))
+    // the Continuation switch seeds the posture — the Extend seconds
+    // seat rides visible_when continuation=true (the 2026-11-08
+    // re-rule: no posture layer, the dials state the matrix directly)
+    fireEvent.click(await screen.findByRole("switch", { name: "Continuation" }))
+    const seconds = await waitFor(() => {
+      const el = document.querySelector('input[aria-label="Extend seconds"]') as HTMLInputElement | null
+      assert.ok(el, "the typed Extend seconds seat must render under continuation")
+      return el
+    }, { timeout: 3000 })
+    fireEvent.change(seconds, { target: { value: "5" } })
+    fireEvent.click(await screen.findByRole("button", { name: "Add" }))
+    await waitFor(() => {
+      const withEdit = saved.filter((p) => Array.isArray(p.edit))
+      assert.ok(withEdit.length > 0, "the Add press must land the edit bag")
+      const entry = (withEdit[withEdit.length - 1]!.edit as Array<Record<string, unknown>>)[0]!
+      assert.equal(entry.continuation, true, "the Extend section's posture rides")
+      assert.equal(entry.extend_seconds, 5, "the TYPED seconds land — never the 2.33 default")
+    }, { timeout: 3000 })
   })
 
   it("ARM D — THE CONTROL: the universe stays closed (a nonsense key still strips)", () => {
