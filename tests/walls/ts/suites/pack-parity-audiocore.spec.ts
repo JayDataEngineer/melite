@@ -19,6 +19,14 @@
 // facts extension fold: every class the facts declare for the pack
 // must be defined by the pack's nodes.py.
 //
+// TIMING-RACE FLEET, fourth seat (row gates-walls-fetch-timeout):
+// the engine-venv probes ride the venvExec choke point with a 60 s
+// budget (a timeout kill rethrows naming the stale venv, never the
+// absent-venv stand-down); the wedged-venv arm stages a 60 s sleeper
+// under a 500 ms override and pins the ETIMEDOUT kill. Toggle: the
+// `timeout` merge dropped from venvExec → the arm reds (the sleeper
+// returns unkilled, no ETIMEDOUT voice). Restore → green.
+//
 // The dispatcher-reached files, the shared engine subtree, the
 // model-walk law, the four cured behaviors, the no-shadowed-def
 // arm, the deployed≡vendor arm, the gitlink arm, and the estate
@@ -33,6 +41,28 @@ const VENDOR = join(ROOT, "vendor", "comfyui_extensions");
 const RUNTIME = join(ROOT, "data", "runtime", "comfyui", "custom_nodes");
 /** The engine's own ComfyUI root (operator-local; absent on CI). */
 const RUNTIME_ENGINE = "/home/user/tools/comfyui/custom_nodes";
+/** The engine venv's python (operator-local; absent on CI). */
+const VENDOR_VENV_PY = "/home/user/tools/comfyui/.venv/bin/python";
+
+// THE VENV-SPAWN BUDGET (timing-race fleet discipline, fourth seat —
+// row gates-walls-fetch-timeout): every engine-venv child below rides
+// the venvExec choke point, which merges its OWN timeout. A wedged
+// venv python under battery load dies in-budget instead of hanging
+// the arm to its outer timeout. The probes answer in seconds; 60 s
+// is the hung-child ceiling, not a latency allowance.
+const VENV_SPAWN_TIMEOUT_MS = 60_000;
+function venvExec(args: string[], timeoutMs: number = VENV_SPAWN_TIMEOUT_MS): string {
+  return execFileSync(VENDOR_VENV_PY, args, { encoding: "utf8", timeout: timeoutMs }).trim();
+}
+/** Absent-venv stand-down (the CI law): ENOENT-class failures mean
+ *  the engine venv is not on this box — judge nothing. A timeout
+ *  kill is NEVER absence: it rethrows naming the stale venv. */
+function venvAbsent(e: unknown): boolean {
+  const msg = String(e);
+  return (e as NodeJS.ErrnoException)?.code !== "ETIMEDOUT"
+    && !msg.includes("ETIMEDOUT")
+    && !msg.includes("wedged venv python");
+}
 
 const PACK = "melite-audio-nodes";
 const FACTS = join(ROOT, "packages", "engines", "comfyui-cordis", "data", "model-facts.json");
@@ -446,8 +476,9 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
     ].join("; ");
     let out: string;
     try {
-      out = execFileSync("/home/user/tools/comfyui/.venv/bin/python", ["-c", probe, join(VENDOR, PACK)], { encoding: "utf8" }).trim();
-    } catch {
+      out = venvExec(["-c", probe, join(VENDOR, PACK)]);
+    } catch (e) {
+      if (!venvAbsent(e)) throw new Error(`wedged venv python held the floor-judge probe past ${VENV_SPAWN_TIMEOUT_MS}ms — a stale engine venv is holding the spawn (restart it), not an absent one`);
       // engine venv absent (CI box): stand down like the deployed arm
       return;
     }
@@ -500,14 +531,34 @@ describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
     ].join("\n");
     let out: string;
     try {
-      out = execFileSync("/home/user/tools/comfyui/.venv/bin/python", ["-c", probe, join(VENDOR, PACK)], { encoding: "utf8" }).trim();
+      out = venvExec(["-c", probe, join(VENDOR, PACK)]);
     } catch (e) {
       const msg = String(e);
       if (msg.includes("cuda-less env passed")) throw new Error(msg);
+      if (!venvAbsent(e)) throw new Error(`wedged venv python held the cuda-judge probe past ${VENV_SPAWN_TIMEOUT_MS}ms — a stale engine venv is holding the spawn (restart it), not an absent one`);
       // engine venv absent (CI box): stand down like the deployed arm
       return;
     }
     expect(out).toBe("cuda-judge-live");
+  });
+
+  it("a wedged venv python dies on the spawn budget, never on the arm clock (the venvExec choke point)", () => {
+    // THE HUNG CHILD (the timing-race fleet's own shape, staged in
+    // the engine venv): the floor-judge and cuda-judge probes exec a
+    // real venv interpreter — a wedged python under battery load must
+    // die in-budget with the ETIMEDOUT voice, never hang the arm.
+    // Absent venv (CI) stands down through the same venvAbsent law.
+    const start = Date.now();
+    let threw: unknown = null;
+    try {
+      venvExec(["-c", "import time; time.sleep(60)"], 500);
+    } catch (e) {
+      threw = e;
+    }
+    const elapsed = Date.now() - start;
+    if (threw !== null && venvAbsent(threw)) return; // no engine venv on this box — nothing to wedge
+    expect(String(threw), "a 60 s sleeper under a 500 ms budget must come back killed").toContain("ETIMEDOUT");
+    expect(elapsed, `the kill must land in-budget (took ${elapsed}ms for a 500ms budget)`).toBeLessThan(10_000);
   });
 
   // THE KEYED ENGINE RESIDENCY (the 2026-11-12 eviction cure, audit
