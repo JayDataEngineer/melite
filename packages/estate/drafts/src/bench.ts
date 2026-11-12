@@ -939,7 +939,7 @@ export function getBench(
  *  rev that MOVED between the snapshot read and the press; the
  *  mint-then-press leg (one write, one read, the rev already still)
  *  had no signal anywhere (the s_89/s_90 burn). The stamp is row
- *  METADATA like `provenance`, never params: the admission never
+ *  METADATA, never params: the admission never
  *  judges it, the diff never voices it, and undo never writes it
  *  (patch-undo restores params only and leaves the forward write's
  *  stamp; remove-undo reinserts the recorded row with the stamp it
