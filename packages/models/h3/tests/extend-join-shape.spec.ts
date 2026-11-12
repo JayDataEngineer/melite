@@ -313,3 +313,41 @@ describe("THE NON-EMPTY TAIL (the 2026-11-19 live burn: \"Extend is completely b
     );
   });
 });
+
+describe("THE INITIAL BOUNDARY (the latent-carry law's exception, clause 4 — the multi-window/carry wall debt cell 1)", () => {
+  // A raw prior has no latents: the head seam takes the pixel anchor
+  // and the join by file; in-chain seams assemble in-chain (never a
+  // second pixel anchor, never a latent link across the boundary).
+  // 19.33 s = 464 f = FIVE 124 f windows (the N-window law) — deeper
+  // than the two-window join arm above, so head-uniqueness is judged,
+  // not just join shape.
+  it("the head seam alone is pixel-anchored: exactly one AddGuide at frame_idx 0, and the context rides it", () => {
+    const out = composeExtend({ extend_seconds: 19.33 }, "run_head_anchor");
+    const guides = ofClass(out, "MiniMaxH3AddGuide");
+    assert.equal(guides.length, 1, "one pixel anchor on five windows — in-chain seams assemble, never re-anchor");
+    const [guideId, guide] = guides[0];
+    assert.equal(guide.inputs.frame_idx, 0, "the anchor pins the HEAD seam (frame 0), never a later row");
+    const image = guide.inputs.image as unknown;
+    assert.ok(Array.isArray(image), "the image seat is a link");
+    assert.equal(out[(image as [string, number])[0]].class_type, "ImageFromBatch",
+      "the head anchor rides the prior's LAST-FRAME node — the raw boundary's own pixels, never resumed latents");
+    const contexts = ofClass(out, "MiniMaxH3ChainContext");
+    assert.equal(contexts.length, 1, "one chain context consumes the body");
+    assert.equal((contexts[0][1].inputs.conditioning as [string, number])[0], guideId,
+      "the context's conditioning rides the head AddGuide — the pin rules the boundary, never an orphan beside it");
+  });
+
+  it("the raw boundary joins by FILE on N windows: the concat's prior member is a path string, the assembly rides append", () => {
+    const out = composeExtend({ extend_seconds: 19.33 }, "run_head_join");
+    const concat = ofClass(out, "MeliteConcatVideos");
+    assert.equal(concat.length, 1, "one file join on five windows");
+    assert.equal(concat[0][1].inputs.videos, "run_head_join/x0",
+      "the prior member is a SAVED-FILE path — no latent-decoded pixel link crosses the raw boundary (the no-latent-carry negative)");
+    assert.ok(typeof concat[0][1].inputs.videos === "string" && !Array.isArray(concat[0][1].inputs.videos),
+      "the videos seat is a path, never a node link — a link here would be latent lineage across the exception");
+    const append = concat[0][1].inputs.append as unknown;
+    assert.ok(Array.isArray(append), "the assembled extension appends through the wired append seat");
+    assert.equal(out[(append as [string, number])[0]].class_type, "MiniMaxH3ChainAssemble",
+      "the append rides the in-chain assembly — seams after the first assemble in-chain, the raw boundary joins by file");
+  });
+});
