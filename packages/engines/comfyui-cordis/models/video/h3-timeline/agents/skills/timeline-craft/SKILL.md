@@ -21,6 +21,26 @@ why its authored span is `17k`). Drift control is prompt-side, not
 knob-side: repeat the subject block verbatim and the ambient bed in every
 window (the laws below), and let the engine own the seam geometry.
 
+
+## The three overlaps — one number each, never interchangeable
+
+Three different "overlap" concepts live in this family, and each owns
+exactly one number. Typing one concept's number at another concept's
+seat is the classic dead press:
+
+| seat | frames | what it is |
+|---|---|---|
+| the carried window's generation head (every non-cut join) | **22** | the seam a carried window RE-RENDERS but does not author — its authored span is `17k`, its render `22 + 17k`. Derives from `SEAM_OVERLAP_FRAMES` (`transitionOverlap`, `timelineContract.ts`). |
+| the extend plan head's join | **39** | the AV-legal join the source-slicing plan head serves (`H3OneClickSwapPlan.overlap_frames`, engine vocabulary `[22, 39, 56]`); the ONE value both vocabularies share. Any other derived join at this seat REFUSES at compose. |
+| the edit join's AV boundaries | **39 / 90 / 141 / 192 / 243** (or 0) | the shared video/audio boundary on an AUTHORED seam (`overlap_frames`); unstated + carry derives 39, carry: false serves 0. Wider boundaries belong to authored seams, never the plan head. |
+
+The refine pass rides the FIRST row's 22 f head — its blend width is the
+carried seam's own generation head, not a separate knob. If a press
+refuses naming a boundary or a plan-head join, check this table before
+typing a number: the legal value is derived at every one of these seats
+and stating it is the expert override, never the requirement.
+
+
 To append seconds AFTER a finished film — instead of re-tiling — the
 h3-timeline card's extend arm anchors a fresh window on the film's last
 frame and joins the files (the card is the door); a stated append beyond

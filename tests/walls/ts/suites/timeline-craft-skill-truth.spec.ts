@@ -19,7 +19,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, isGridLength } from "../../../../packages/models/h3/src/timelineContract.ts";
+import { AV_CONTINUITY_OVERLAPS, CARRY_JOIN_OVERLAP, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, SEAM_OVERLAP_FRAMES, isGridLength } from "../../../../packages/models/h3/src/timelineContract.ts";
+import { PLAN_OVERLAP_CHOICES } from "../../../../packages/models/h3/src/chainEdit.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..", "..", "..");
@@ -137,6 +138,41 @@ describe("the timeline-craft doc is the engine's law, derived", () => {
     const agent = readFileSync(AGENT, "utf8");
     assert.match(agent, /timeline-craft/u, "the h3-timeline AGENT.md points at the craft skill");
     assert.match(doc, /^---[\s\S]*?name: timeline-craft/um, "the leaf carries its own frontmatter");
+  });
+
+  // THE ONE-NAME LAW (overlap audit D-02): three "overlap" concepts
+  // live in this family and each owns exactly one number — the carried
+  // window's generation head, the extend plan head's join, the edit
+  // join's AV boundaries. The audit's burn was interchange: a number
+  // typed at the wrong seat is the classic dead press. The doc seats
+  // a naming table and every number in it DERIVES from the code's own
+  // constants read at wall time — an engine-side move reds here before
+  // an agent reads a stale table.
+  it("ARM 5b — the naming table gives each overlap one number, derived from the code's own constants", () => {
+    const head = doc.indexOf("## The three overlaps");
+    assert.ok(head !== -1, "the doc seats the three-overlaps section");
+    const next = doc.indexOf("\n## ", head + 1);
+    const table = doc.slice(head, next === -1 ? doc.length : next);
+    // ROW 1 — the carried window's generation head: SEAM_OVERLAP_FRAMES,
+    // named at its own seat (`transitionOverlap`).
+    expect(table, "row 1 names the carried generation head").toContain("generation head");
+    expect(table, "row 1 states the head's own number").toContain(`**${SEAM_OVERLAP_FRAMES}**`);
+    expect(table, "row 1 names the const that owns the number").toContain("SEAM_OVERLAP_FRAMES");
+    // ROW 2 — the extend plan head's join: the AV-legal 39, the one
+    // value the plan widget's vocabulary shares.
+    expect(table, "row 2 names the plan head").toContain("plan head");
+    expect(table, "row 2 states the AV-legal join").toContain(`**${CARRY_JOIN_OVERLAP}**`);
+    expect(table, "row 2 states the engine's widget vocabulary").toContain(`[${PLAN_OVERLAP_CHOICES.join(", ")}]`);
+    expect(table, "row 2 names the widget").toContain("H3OneClickSwapPlan.overlap_frames");
+    // ROW 3 — the edit join's AV boundaries: every legal boundary
+    // (and the cut's 0) is stated.
+    expect(table, "row 3 names the AV boundaries").toContain("AV boundaries");
+    for (const boundary of AV_CONTINUITY_OVERLAPS) {
+      expect(table, `row 3 states the legal boundary ${boundary}`).toContain(String(boundary));
+    }
+    expect(table, "row 3 states the cut's 0").toContain("(or 0)");
+    // the refine pass rides the HEAD's 22 — blend width is not a knob.
+    expect(table, "the refine fold names its blend width as the head").toContain("blend width");
   });
 });
 
