@@ -19,6 +19,14 @@ import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
 import { ModifiersSection } from '../src/mods.tsx'
 import { chromeCopy } from '../src/locales/chromeCopy.ts'
+// THE REAL DECLARATION (depth debt (a), 2026-11-09 audit — cured
+// here): editDecl.ts is the client-safe zero-import leaf (the card
+// serves EDIT_MOD.fields ON it, one spelling), so the face wall can
+// mount the declaration ITSELF instead of only the hand fixture
+// above. The served narrow (internal stripped) mirrors discovery's
+// servedFields (discovery.ts) — the wire's own law, restated in the
+// wall to judge the face's served shape.
+import { EDIT_FIELDS } from '../../../video/h3-timeline/src/editDecl.ts'
 
 afterEach(cleanup)
 
@@ -49,6 +57,18 @@ const EDIT = {
     { id: 'repair-region', label: 'Repair a region', patch: { mask_source: 'region', reference: 'self', denoise: 0.32 } },
     { id: 'identity-swap', label: 'Identity swap', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
   ],
+} as unknown as ModifierKind
+
+/** THE SERVED REAL KIND (depth (a)'s cure): the declaration's own
+ *  rows minus the internal seats — exactly what the wire serves (the
+ *  discovery servedFields narrow: admitted-but-unserved). The face
+ *  mounts the wire's shape, never the declaration raw. */
+const SERVED_EDIT_FIELDS = EDIT_FIELDS.filter(
+  (f) => (f as { internal?: unknown }).internal !== true,
+)
+const REAL_EDIT = {
+  kind: 'edit', label: 'Video edit', param_key: 'edit', cardinality: 'list', max_stack: 1,
+  fields: SERVED_EDIT_FIELDS,
 } as unknown as ModifierKind
 
 /** THE ONE-DOOR ENTRY for a new entry: the plus box opens the kind
@@ -241,4 +261,57 @@ test('(the option shape) the catalog is the seat — the picker and dials ride t
   expect(onEdit).toHaveBeenCalledTimes(1)
   const [, bag] = onEdit.mock.calls[0] as [string, Array<Record<string, unknown>>]
   expect(bag[0]).toMatchObject({ id: 'p1', strength: 0.5, steps: 4 })
+})
+
+// ── THE REAL KIND (depth debt (a), the 2026-11-09 audit: the wall's
+// real-kind content was zero — the fixture above is hand-maintained
+// and never named continuation, extend_seconds, or chain_run, while
+// the invariant does). These arms mount the SERVED declaration
+// itself, so a guard drift in editDecl.ts reds HERE. ──
+
+test('THE REAL KIND — the continuation switch opens the served extend_seconds + window_prompts submenus in the SAME open modal (the declaration judges its own roster law)', () => {
+  render(h(ModifiersSection, { kinds: [REAL_EDIT], values: {}, onEdit: vi.fn(), onPatch: undefined }))
+  openLeafViaPicker('Video edit')
+  // the served continuation switch renders under its declaration label
+  expect(modal().getByText('Continuation')).toBeTruthy()
+  // off: both riding seats are absent from the open modal
+  expect(modal().queryByLabelText('Extend seconds', { selector: 'input[type="number"]' })).toBe(null)
+  expect(modal().queryByText('Window prompts')).toBe(null)
+  const contSwitch = modal().getByText('Continuation').closest('label') ?? modal().getByText('Continuation')
+  fireEvent.click(contSwitch)
+  const extendInput = modal().getByLabelText('Extend seconds', { selector: 'input[type="number"]' }) as HTMLInputElement
+  expect(extendInput).toBeTruthy()
+  expect(extendInput.value).toBe('2.33')
+  expect(modal().getByText('Window prompts')).toBeTruthy()
+})
+
+test('THE REAL KIND — a stated chain run stands down refine + continuation (the upscale posture one-mechanism law, judged on the declaration)', () => {
+  const onEdit = vi.fn()
+  render(h(ModifiersSection, {
+    kinds: [REAL_EDIT],
+    values: { edit: [{ chain_run: 'run-abc123', refine: false, continuation: false }] },
+    onEdit, onPatch: undefined,
+  }))
+  openSeatedLeafViaTile(0)
+  // the upscale posture: both switches stand down under a stated run
+  expect(modal().queryByText('Refine pass')).toBe(null)
+  expect(modal().queryByText('Continuation')).toBe(null)
+  // and their riding seats stand down with them
+  expect(modal().queryByText('Refine scale')).toBe(null)
+  expect(modal().queryByText('Extend seconds')).toBe(null)
+})
+
+test('THE REAL KIND — internal seats never reach the face (window_start/length, clip_seconds, overlap_frames, segment_crf stay admitted-but-unserved)', () => {
+  // the served narrow actually stripped: the declaration holds
+  // internals and the mounted kind holds none of them
+  const internalCount = EDIT_FIELDS.filter((f) => (f as { internal?: unknown }).internal === true).length
+  expect(internalCount).toBeGreaterThan(0)
+  expect(SERVED_EDIT_FIELDS).toHaveLength(EDIT_FIELDS.length - internalCount)
+  render(h(ModifiersSection, { kinds: [REAL_EDIT], values: {}, onEdit: vi.fn(), onPatch: undefined }))
+  openLeafViaPicker('Video edit')
+  expect(modal().queryByText('Window start (frames)')).toBe(null)
+  expect(modal().queryByText('Window length (frames)')).toBe(null)
+  expect(modal().queryByText('Clip seconds')).toBe(null)
+  expect(modal().queryByText('Overlap frames')).toBe(null)
+  expect(modal().queryByText('Segment CRF')).toBe(null)
 })
