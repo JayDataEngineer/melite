@@ -6271,9 +6271,10 @@ window.__ModuleLoader__.load({
 									return;
 								}
 								const idx = barPrompts.findIndex((p) => p.uuid === id);
-								/* v8 ignore else -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
+								/* v8 ignore if -- the idx < 0 skip is a type fence: the kit renders the split seat only for rows of the prompts array it was handed, and the seat arms only where shownPrompts is the unfiltered barPrompts (the dormant face carries no seat — onPromptSplit is undefined there) */
 								if (idx < 0) return;
 								const call = calls[idx];
+								/* v8 ignore if -- call === undefined is the same fence's second rail: barPrompts and calls are parallel arrays built together, so a lawful seat row always has its call */
 								if (call === void 0) return;
 								cutWithCarry(Math.round((call.start_frame + call.end_frame) / 2), () => setLaneErr(studioCopy.splitRefusal));
 							},

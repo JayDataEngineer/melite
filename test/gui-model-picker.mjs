@@ -21,10 +21,11 @@ const URL_BASE = process.env.GUI_URL ?? "http://127.0.0.1:3088";
 const LOG = process.env.GUI_LOG ?? "/home/user/.dsh-dev/melite-test-3088.log";
 
 // What must be visible, per the mirrored web-profile rows (studio-lane-rows.yml).
-const REQUIRED_PROVIDER_GROUPS = ["xiaomi-token-plan-sgp", "openrouter", "zai", "opencode-go", "opencode-go-chat"];
+const REQUIRED_PROVIDER_GROUPS = ["xiaomi-token-plan-sgp", "openrouter", "zai", "opencode-go", "opencode-go-chat", "Sandbox Gateway (coder forward, gpu-01)"];
 const REQUIRED_MODEL_SENTINELS = [
-  "MiMo-V2.5",
+  "MiMo V2.5",
   "DeepSeek V4.1 Flash",
+  "DeepSeek V4.1 Flash (sandbox)",
   "GLM-5.3 Flash (Coding Plan)",
   "Muse Spark 1.3 (Contributor)",
   "LongCat 2.5 Preview Free (Go, limited time)",
