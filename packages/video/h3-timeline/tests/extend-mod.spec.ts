@@ -18,6 +18,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { serializeCalls } from "../src/ui/studio/docCalls.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -128,6 +129,50 @@ describe("the Extend name — the continuation posture of the one edit bag (the 
       ),
       /multi-window composition law carries the policy's 39f context overlap.*re-state overlap_frames 39/s,
     );
+  });
+
+  // THE RAIL ADMISSION LAW (friction-2-infra D-01): the extend arm's
+  // anchors are DERIVED (prior last frame + whole clip); the one
+  // stated rail it reads is ref_images (P0-1's identity sheet, slot 1
+  // after the anchor). The film-lane rails ref_videos/ref_audios
+  // reach no conditioning on this arm — the audit's silent-no-op
+  // class — and refuse LOUD, teaching the recipe-of-record. Each rail
+  // refuses in its own voice (its own firing assertion).
+  it("THE RAIL ADMISSION LAW (D-01): the film-lane rails refuse on an extend-armed doc, teaching the recipe-of-record", () => {
+    for (const [rail, voice] of [
+      ["ref_videos", /ref_videos is stated \(motion guides\).*one stated image rail it reads is ref_images.*Leave ref_videos unstated/s],
+      ["ref_audios", /ref_audios is stated \(voice references\).*reaches no conditioning.*Leave ref_audios unstated/s],
+    ] as const) {
+      assert.throws(
+        () => compose({ extend: [EXTEND_ENTRY()], [rail]: ["refs/guide.mp4"] }, `run_extend_rail_${rail}`),
+        voice,
+        `${rail} refuses in its own voice`,
+      );
+    }
+  });
+
+  it("the rail law is scoped: ref_images on extend IS the sheet (slot 1 after the derived anchor), and the film lane still rides its rails", () => {
+    // ref_images does NOT refuse on extend — it is the identity
+    // sheet P0-1 serves (the anchor owns slot 0, the sheet follows
+    // at 1; edit-sheet-seat's extend arm pins the slot wiring —
+    // this arm pins the ADMISSION: a stated sheet composes).
+    const out = compose(
+      { extend: [EXTEND_ENTRY()], ref_images: ["refs/sheet.png"] },
+      "run_extend_sheet_alive",
+    );
+    assert.ok(Object.keys(out).length > 0, "a stated sheet on extend composes");
+    // the film path composes with LIVE rails — they stay served
+    // where they live; only the extend arm's dead rails refuse.
+    assert.doesNotThrow(() =>
+      compose({
+        calls: serializeCalls([{ text: "a walk down the hall", start_frame: 0, end_frame: 22 }]),
+        ref_images: ["refs/sheet.png"],
+        ref_videos: ["refs/guide.mp4"],
+      }, "run_film_rail_live"));
+    // an empty dead rail is unstated — admission never judges a
+    // vacuous array (the schema's own default fill).
+    assert.doesNotThrow(() =>
+      compose({ extend: [EXTEND_ENTRY()], ref_videos: [] }, "run_extend_rail_empty"));
   });
 
   it("ONE DOOR: extend beside an armed edit bag refuses", () => {

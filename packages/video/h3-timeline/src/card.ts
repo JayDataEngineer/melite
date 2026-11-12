@@ -823,8 +823,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // one authored combinability sentence — two image rails, both
     // live, naming every seat the rails law needs. Served in the
     // load digest through the existing craft seat (zero derivation).
+    // FILM-LANE SCOPED (friction-2-infra D-01 R2): the rails ride the
+    // film lane's windows; the extend arm derives its own anchors
+    // from the prior clip, reads ref_images as the identity sheet
+    // only, and refuses the motion/voice rails at its compose door —
+    // the hint must not teach the film's rails onto that arm.
     craft: {
-      promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames on the timeline\'s keyframes lane). Two reference rails, both live, combinable: the anchor (image / the keyframes lane) pins the opening AND conditions identity while the loose rails (ref_images and ref_videos) stack after it — both rails ride one window.',
+      promptHint: 'one continuous action line per shot — the card frames each shot at render (no "shot 1:" prefixes, no first-frame/last-frame language; pin frames on the timeline\'s keyframes lane). Two reference rails, both live, combinable on the FILM lane: the anchor (image / the keyframes lane) pins the opening AND conditions identity while the loose rails (ref_images and ref_videos) stack after it — both rails ride one window. The extend arm is the exception: its anchors are derived from the prior clip (identity = the last frame, motion = the whole clip), it reads ref_images as the identity sheet alone, and it refuses stated ref_videos/ref_audios — leave those unstated there.',
     },
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen

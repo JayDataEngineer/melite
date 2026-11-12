@@ -144,6 +144,31 @@ export function renderH3Extend(
   g: GraphBuilder,
   runId: string,
 ): void {
+  // THE RAIL ADMISSION LAW (friction-2-infra D-01): this arm derives
+  // its own anchors (ref_image_0 = the prior clip's last frame,
+  // ref_video_0 = the whole clip) and the chain spine reads exactly
+  // one stated rail here — ref_images, the SHEET (P0-1: operator
+  // 2026-11-08, "ref_mods and ref_images should appear the same to
+  // the AI, they are input slots", wired at the first free slot
+  // after the anchor). The FILM-lane rails ref_videos/ref_audios
+  // reach no conditioning on this arm — the audit's silent-no-op
+  // class — so they refuse LOUD here at the compose door, teaching
+  // the recipe-of-record instead of dropping the rail silently.
+  // (The audit's "ref_images is read by nothing" half was stale at
+  // write time: P0-1 had landed the sheet seat a week earlier; the
+  // correction rides this row's receipt.)
+  const STATED_RAILS: ReadonlyArray<readonly [string, string]> = [
+    ['ref_videos', 'motion guides'],
+    ['ref_audios', 'voice references'],
+  ]
+  for (const [rail, what] of STATED_RAILS) {
+    const stated = p[rail]
+    if (Array.isArray(stated) && stated.length > 0) {
+      throw new Error(
+        `h3-timeline extend: ${rail} is stated (${what}) but the extend arm serves no such rail — its anchors are derived (ref_image_0 IS the prior clip's last frame, ref_video_0 the whole clip) and the one stated image rail it reads is ref_images (the identity sheet, slot 1 after the anchor); a stated ${rail} reaches no conditioning on this arm (the pixel-proven no-op class). The recipe of record: identity rides the prior clip itself (or the ref_images sheet), per-window pins ride the calls lane's keyframes, and motion/voice guides ride the film lane's windows. Leave ${rail} unstated`,
+      )
+    }
+  }
   // NO FALLBACK READS: every required seat narrows through its own
   // refusal (a validated seat re-read through a forgiving helper is
   // a second, weaker validator below the law — a silent error). An
