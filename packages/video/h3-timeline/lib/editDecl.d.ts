@@ -22,7 +22,10 @@ export declare const EDIT_FIELDS: readonly Record<string, unknown>[];
  *  the row rides — the grammar the served form renders (guards
  *  joined by `&`, `key=value`, `!=` negation, `|`-sets), spelled
  *  once at the declaration's owner so the rail judges the same
- *  conditions the form shows for the SAME entry.
+ *  conditions the form shows for the SAME entry. THE NULL-IS-UNSET
+ *  LAW (the canonical grammar, spec.ts fieldVisible): the literal
+ *  `null` matches the UNSET face (absent/empty), so
+ *  `chain_run=null` holds when no prior run is stated.
  *  @param guard the field's declared visible_when ("key=value&…")
  *  @param entry the edit bag's first entry (the sibling values)
  *  @returns true when every guard holds */

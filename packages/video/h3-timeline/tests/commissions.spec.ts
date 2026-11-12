@@ -38,6 +38,8 @@ import {
   CALLS_READING_KINDS, COMMISSION_KINDS, callsLaneFace, deriveCommissions,
   isStarterCallText, type CommissionKind,
 } from "../src/ui/studio/commissions.ts"
+import { editGuardHolds } from "../src/editDecl.ts"
+import { fieldVisible } from "../../../../packages/web/card-base/src/spec.ts";
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 
@@ -469,7 +471,63 @@ describe("THE EDIT ROW SPEAKS THE SPLIT (2026-11-09 — the pasted timeline DOM)
     expect(refineDetail).toContain("scale 2")
     const continuationDetail = editDetail({ ...STAMPED_DEFAULTS, continuation: true })
     expect(continuationDetail).toContain("extend_seconds 2.33")
-  })
+  });
+
+  // THE HARD FACES (modsystem wall-coverage audit gap 4): the
+  // visible_when grammar's !=/=/!=null spellings were unit-judged
+  // only (spec-corners/-matrix.spec.ts); these arms render each hard
+  // face through the REAL declaration rows + the rail's own
+  // projection, judging the seat's presence — the rendered plane the
+  // operator reads.
+  it("ARM C5b — the HARD visible_when faces render on the real declaration (!=, =null, !=null)", () => {
+    const seatKeys = (entry: Record<string, unknown>): string[] =>
+      deriveCommissions({ edit: [entry] })[0]!.seats.map((s) => s.key);
+    // != — mask_grow guards on mask_source!=whole-frame: a STATED
+    // grow prints under static-png AND region (guard holds), hides
+    // under whole-frame (guard fails)
+    expect(seatKeys({ ...STAMPED_DEFAULTS, mask_source: "static-png", mask_grow: 16 })).toContain("mask_grow");
+    expect(seatKeys({ ...STAMPED_DEFAULTS, mask_source: "region", mask_grow: 16 })).toContain("mask_grow");
+    expect(seatKeys({ ...STAMPED_DEFAULTS, mask_source: "whole-frame", mask_grow: 16 })).not.toContain("mask_grow");
+    // =null — continuation guards on chain_run=null (absent): the
+    // stated posture prints with no prior run, hides under one
+    expect(seatKeys({ ...STAMPED_DEFAULTS, continuation: true })).toContain("continuation");
+    expect(seatKeys({ ...STAMPED_DEFAULTS, continuation: true, chain_run: "prior-run" })).not.toContain("continuation");
+    // !=null — segment_crf guards on chain_run!=null; its guard HOLDS
+    // under a stated run yet internal beats posture (C6's law): the
+    // face's rendered truth on this declaration is the suppression
+    // itself (the grammar's hold/fail pair stays unit-judged at
+    // spec-corners/-matrix).
+    expect(seatKeys({ ...STAMPED_DEFAULTS, chain_run: "prior-run" })).not.toContain("segment_crf");
+  });
+
+  // THE GRAMMAR PARITY LAW (this arm caught the drift it pins: the
+  // rail's editGuardHolds duplicated the visible_when grammar but
+  // dropped the client's null-is-unset law, so `chain_run=null`
+  // held on the form while failing on the rail — the operator's
+  // continuation switch hid on the commissions row). Every guard
+  // spelling the declaration serves is judged against the CANONICAL
+  // evaluator (card-base fieldVisible) on both faces of its key —
+  // a grammar copy can never silently drift again.
+  it("ARM C5c — the rail's guard grammar equals the canonical form grammar on every served spelling", () => {
+    const pairs: Array<[string, Record<string, unknown>, Record<string, unknown>]> = [
+      ["continuation=true", { continuation: true }, { continuation: false }],
+      ["mask_source!=whole-frame", { mask_source: "region" }, { mask_source: "whole-frame" }],
+      ["mask_source=region", { mask_source: "region" }, { mask_source: "static-png" }],
+      ["mask_source=static-png", { mask_source: "static-png" }, { mask_source: "region" }],
+      ["mask_source=video", { mask_source: "video" }, { mask_source: "region" }],
+      ["reference=still+mannequin", { reference: "still+mannequin" }, { reference: "self" }],
+      ["refine=true", { refine: true }, { refine: false }],
+      ["chain_run=null", {}, { chain_run: "prior-run" }],
+      ["chain_run!=null", { chain_run: "prior-run" }, {}],
+    ];
+    for (const [guard, hold, fail] of pairs) {
+      const field = { visible_when: guard } as Parameters<typeof fieldVisible>[0];
+      expect(editGuardHolds(guard, hold), `rail holds ${guard}`).toBe(true);
+      expect(editGuardHolds(guard, fail), `rail fails ${guard} on the other face`).toBe(false);
+      expect(fieldVisible(field, hold as never), `canonical holds ${guard}`).toBe(true);
+      expect(fieldVisible(field, fail as never), `canonical fails ${guard} on the other face`).toBe(false);
+    }
+  });
 
   it("ARM C6 — internal is stronger than posture: segment_crf NEVER prints, even stated under its own chain_run posture", () => {
     const detail = editDetail({ ...STAMPED_DEFAULTS, chain_run: "prior-run" })

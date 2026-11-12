@@ -73,17 +73,22 @@ export const EDIT_FIELDS: readonly Record<string, unknown>[] = [
  *  the row rides — the grammar the served form renders (guards
  *  joined by `&`, `key=value`, `!=` negation, `|`-sets), spelled
  *  once at the declaration's owner so the rail judges the same
- *  conditions the form shows for the SAME entry.
+ *  conditions the form shows for the SAME entry. THE NULL-IS-UNSET
+ *  LAW (the canonical grammar, spec.ts fieldVisible): the literal
+ *  `null` matches the UNSET face (absent/empty), so
+ *  `chain_run=null` holds when no prior run is stated.
  *  @param guard the field's declared visible_when ("key=value&…")
  *  @param entry the edit bag's first entry (the sibling values)
  *  @returns true when every guard holds */
 export function editGuardHolds(guard: string, entry: Record<string, unknown>): boolean {
   for (const clause of guard.split('&')) {
-    const negated = clause.includes('!=')
-    const eq = clause.indexOf('=')
-    const key = clause.slice(0, negated ? eq - 1 : eq).trim()
-    const want = clause.slice(eq + 1).split('|').map((v) => v.trim())
-    const hit = want.includes(String(entry[key] ?? ''))
+    const g = clause.trim()
+    const negated = g.includes('!=')
+    const eq = g.indexOf('=')
+    const key = g.slice(0, negated ? eq - 1 : eq).trim()
+    const want = g.slice(eq + 1).split('|').map((v) => v.trim())
+    const val = String(entry[key] ?? '')
+    const hit = want.some((w) => (w === 'null' ? val === '' : w === val))
     if (negated ? hit : !hit) return false
   }
   return true
