@@ -33,18 +33,26 @@
 //     the served census equals the built census. Lane down, no
 //     token, or no rev → LOUD STAND-DOWN (skip with the reason
 //     printed — lane state is not this invariant).
+//   FETCH TIMEOUT — a hung socket aborts on the fetch's own budget
+//     (AbortSignal.timeout), surfacing a NAMED stale-lane timeout —
+//     never hanging the arm to its 120 s outer budget. Staged
+//     localhost (a server that never answers), lane-independent.
 // Toggles (receipt, 2026-10-27, all probed on the built bytes — the
 // plane this wall judges): (A) the errorRow anchor declaration cut →
 // ANCHORS reds naming errorRow; (B) the view bundle's dismiss
 // mechanism (rule + refs + label) stripped → DISMISS SURVIVAL reds;
 // (C) built bytes doctored past the lane's rewrite → SERVED reds
-// (served vs built diverge). Restore → green, each. The JSX-structure
+// (served vs built diverge). (D) (receipt, 2026-11-12) the `signal`
+// line dropped from fetchLaneText → FETCH TIMEOUT reds on the
+// vitest test-timeout (the hung socket never aborts). Restore →
+// green, each. The JSX-structure
 // toggle (a × deleted from src) is the package specs' firing path —
 // stated, not silently unjudged: this wall judges the built/served
 // planes those cures must survive.
 // Run: npx vitest run --project walls tests/walls/ts/suites/error-dismiss-census.spec.ts
 import { describe, expect, it } from 'vitest'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { homedir } from 'node:os'
@@ -79,6 +87,40 @@ function packageName(pkg: string): string {
   } catch {
     return pkg
   }
+}
+
+// THE SERVED-FETCH BUDGET (timing-race fleet discipline, first seat):
+// every fetch this wall aims at the lane carries its OWN timeout — a
+// stale lane process holding the socket aborts in-budget and NAMES
+// the stale lane instead of hanging the arm to its outer timeout.
+// Lane-local fetches answer in milliseconds; 30 s is the hung-socket
+// ceiling, not a latency allowance.
+const LANE_FETCH_TIMEOUT_MS = 30_000
+
+async function fetchLaneText(
+  url: string,
+  jar: Record<string, string>,
+  timeoutMs: number = LANE_FETCH_TIMEOUT_MS,
+): Promise<{ status: number; text: string }> {
+  const cookie = Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ')
+  const res = await fetch(url, {
+    headers: cookie === '' ? {} : { cookie },
+    redirect: 'manual',
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  // Both cookie faces: undici's getSetCookie (node) and the raw
+  // set-cookie header (happy-dom's fetch polyfill).
+  const raw = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.()
+    ?? res.headers.get('set-cookie')?.split(/,(?=[^;]+?=)/) ?? []
+  for (const set of raw) {
+    const [pair] = set.split(';')
+    const eq = pair.indexOf('=')
+    if (eq > 0) jar[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim()
+  }
+  if (res.status >= 300 && res.status < 400 && res.headers.get('location') !== null) {
+    return fetchLaneText(new URL(res.headers.get('location')!, url).toString(), jar, timeoutMs)
+  }
+  return { status: res.status, text: await res.text() }
 }
 
 function censusBundle(pkg: string, bytes: string): BundleCensus {
@@ -248,32 +290,19 @@ describe('THE ERROR-DISMISS CENSUS — every served error seat carries × + anch
       return
     }
     const jar: Record<string, string> = {}
-    const fetchText = async (url: string): Promise<{ status: number; text: string }> => {
-      const cookie = Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ')
-      const res = await fetch(url, { headers: cookie === '' ? {} : { cookie }, redirect: 'manual' })
-      // Both cookie faces: undici's getSetCookie (node) and the raw
-      // set-cookie header (happy-dom's fetch polyfill).
-      const raw = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.()
-        ?? res.headers.get('set-cookie')?.split(/,(?=[^;]+?=)/) ?? []
-      for (const set of raw) {
-        const [pair] = set.split(';')
-        const eq = pair.indexOf('=')
-        if (eq > 0) jar[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim()
-      }
-      if (res.status >= 300 && res.status < 400 && res.headers.get('location') !== null) {
-        return fetchText(new URL(res.headers.get('location')!, url).toString())
-      }
-      return { status: res.status, text: await res.text() }
-    }
     let landing: string
     try {
-      const r = await fetchText(`http://127.0.0.1:3088/?token=${token}`)
+      const r = await fetchLaneText(`http://127.0.0.1:3088/?token=${token}`, jar)
       if (r.status !== 200) {
         console.warn(`STAND-DOWN: lane answered ${r.status} on the landing — the served plane is unjudgeable from here`)
         return
       }
       landing = r.text
-    } catch {
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'TimeoutError') {
+        console.warn(`STAND-DOWN: lane :3088 held the landing past ${LANE_FETCH_TIMEOUT_MS}ms — a stale lane process is holding the socket (restart the lane to judge this arm)`)
+        return
+      }
       console.warn('STAND-DOWN: lane :3088 unreachable — served bytes unjudgeable (start the melite-test profile to judge this arm)')
       return
     }
@@ -297,13 +326,17 @@ describe('THE ERROR-DISMISS CENSUS — every served error seat carries × + anch
       }
       let served: string
       try {
-        const r = await fetchText(`http://127.0.0.1:3088/plugins/??${name}/client.js&rev=${rev}`)
+        const r = await fetchLaneText(`http://127.0.0.1:3088/plugins/??${name}/client.js&rev=${rev}`, jar)
         if (r.status !== 200) {
           failures.push(`${d}: lane serves ${name} at rev ${rev} with status ${r.status}`)
           continue
         }
         served = r.text
-      } catch {
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'TimeoutError') {
+          failures.push(`${d}: served fetch held past ${LANE_FETCH_TIMEOUT_MS}ms — a stale lane process is holding the socket (restart the lane; the wall carries its own timeout, never the arm's 120s budget)`)
+          continue
+        }
         failures.push(`${d}: fetch of the served bundle failed mid-arm`)
         continue
       }
@@ -323,4 +356,28 @@ describe('THE ERROR-DISMISS CENSUS — every served error seat carries × + anch
     console.log(`served: compared=${compared} unboarded=[${unboarded.join(', ')}]`)
     expect(failures, 'the lane serves bytes the census did not judge').toEqual([])
   }, 120000)
+
+  it('FETCH TIMEOUT — a hung socket aborts in-budget, never on the arm clock', async () => {
+    // THE HUNG SOCKET (the timing-race fleet's own shape, staged
+    // localhost): a server that accepts and never answers. The
+    // served-lane fetches must abort on THEIR budget — a stale lane
+    // process holding :3088 must surface as a named timeout, never
+    // hang this wall to its 120 s outer budget.
+    const server = createServer(() => {})
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const port = (server.address() as { port: number }).port
+    try {
+      const start = Date.now()
+      const err = await fetchLaneText(`http://127.0.0.1:${port}/hangs`, {}, 500).then(
+        () => null,
+        (e: unknown) => e,
+      )
+      const elapsed = Date.now() - start
+      expect(err, 'a hung socket must reject, never resolve').toBeInstanceOf(DOMException)
+      expect((err as DOMException).name, 'the rejection must be the abort timeout, not a socket error').toBe('TimeoutError')
+      expect(elapsed, `the abort must land in-budget (took ${elapsed}ms for a 500ms budget)`).toBeLessThan(10_000)
+    } finally {
+      server.close()
+    }
+  }, 15000)
 })
