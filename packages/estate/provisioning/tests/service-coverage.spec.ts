@@ -28,6 +28,7 @@ import type {
   ResourceRef,
   VerifiedArtifactResult,
 } from "../src/index.ts";
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 
 const contexts: Context[] = [];
 const roots: string[] = [];
@@ -41,6 +42,21 @@ function tempRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "provisioning-service-coverage-"));
   roots.push(root);
   return root;
+}
+
+// (timing-race fleet rollout, sixth seat — the fixed-count starvation
+// shape, same class as the seed-sweep polls): count-based ledger polls
+// read a merely-slow settle as a wrong state under a loaded pool. Every
+// ledger wait rides the shared settle budget — deadline-based, never
+// count-based. A real hang still exhausts LOADED_WAIT and the assert
+// below it reds on the true state.
+async function untilLedgerSettled(poll: () => boolean): Promise<void> {
+  const deadline = Date.now() + LOADED_WAIT();
+  for (;;) {
+    if (poll()) return;
+    if (Date.now() >= deadline) return;
+    await new Promise((resolve) => { setTimeout(resolve, 10); });
+  }
 }
 
 function modelRef(over: Partial<Extract<ResourceRef, { kind: "model" }>> = {}): Extract<ResourceRef, { kind: "model" }> {
@@ -1117,9 +1133,16 @@ describe("ProvisioningService public seams", () => {
     // completion write can land seconds later. The poll waits for
     // the record that CARRIES the item (the begin-record is not the
     // answer; a window that reads it reds as integrity undefined).
-    for (let attempt = 0; attempt < 600 && (record === null || record.items[0] === undefined); attempt += 1) {
-      record = await reloaded.load(result.operationId);
-      if (record === null || record.items[0] === undefined) await new Promise((resolve) => { setTimeout(resolve, 25); });
+    // Deadline-based on the shared settle budget (sixth seat) — the
+    // old 600-count window starves the same way the ledger polls did.
+    {
+      const deadline = Date.now() + LOADED_WAIT();
+      while (record === null || record.items[0] === undefined) {
+        record = await reloaded.load(result.operationId);
+        if (record !== null && record.items[0] !== undefined) break;
+        if (Date.now() >= deadline) break;
+        await new Promise((resolve) => { setTimeout(resolve, 25); });
+      }
     }
     assert.ok(record !== null,
       "the activate's record must persist — a refused integrity leaves the stale begin-record forever");
@@ -1306,10 +1329,7 @@ describe("ProvisioningService public seams", () => {
       throw new Error("declaration refused");
     })).service;
     const id = await service.startWeightAcquire(ref);
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      if (service.progressOf(id)?.state === "failed") break;
-      await new Promise((resolve) => { setTimeout(resolve, 10); });
-    }
+    await untilLedgerSettled(() => service.progressOf(id)?.state === "failed");
     assert.equal(service.progressOf(id)?.state, "failed");
     assert.equal(service.progressOf(id)?.total, 0);
   });
@@ -1323,11 +1343,10 @@ describe("ProvisioningService public seams", () => {
     // the ledger's detail lands one microtask after the terminal
     // state (the state mirror runs inside complete, the detail
     // spread in the start's own settlement arm), so poll for both
-    for (let attempt = 0; attempt < 100; attempt += 1) {
+    await untilLedgerSettled(() => {
       const current = service.progressOf(id);
-      if (current !== null && current.state !== "acquiring" && current.detail !== undefined) break;
-      await new Promise((resolve) => { setTimeout(resolve, 10); });
-    }
+      return current !== null && current.state !== "acquiring" && current.detail !== undefined;
+    });
     const ledger = service.progressOf(id);
     assert.equal(ledger?.state, "blocked");
     assert.equal(ledger?.total, 4);
@@ -1348,10 +1367,7 @@ describe("ProvisioningService public seams", () => {
       },
     })).service;
     const id = await service.startWeightAcquire(ref);
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      if (service.progressOf(id)?.state === "failed") break;
-      await new Promise((resolve) => { setTimeout(resolve, 10); });
-    }
+    await untilLedgerSettled(() => service.progressOf(id)?.state === "failed");
     assert.equal(service.progressOf(id)?.state, "failed");
     assert.equal(service.progressOf(id)?.detail, "disk offline");
   });
@@ -1369,10 +1385,7 @@ describe("ProvisioningService public seams", () => {
       },
     })).service;
     const id = await service.startWeightAcquire(ref);
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      if (service.progressOf(id)?.state === "failed") break;
-      await new Promise((resolve) => { setTimeout(resolve, 10); });
-    }
+    await untilLedgerSettled(() => service.progressOf(id)?.state === "failed");
     assert.equal(service.progressOf(id)?.state, "failed");
     assert.equal(service.progressOf(id)?.detail, "disk offline");
   });
@@ -1399,10 +1412,7 @@ describe("ProvisioningService public seams", () => {
     }).service;
     const id = await service.startWeightAcquire(ref);
     assert.equal(service.progressOf(id)?.total, 0);
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      if (service.progressOf(id)?.state === "active") break;
-      await new Promise((resolve) => { setTimeout(resolve, 10); });
-    }
+    await untilLedgerSettled(() => service.progressOf(id)?.state === "active");
     assert.equal(service.progressOf(id)?.state, "active");
     assert.equal(service.progressOf(id)?.total, 4);
   });

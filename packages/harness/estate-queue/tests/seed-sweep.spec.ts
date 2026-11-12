@@ -38,6 +38,7 @@ import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
 import { FlowsSeatService } from "../src/flowsData.ts";
 import { expandSeedSweep, SEED_SWEEP_MAX, DOOR_KNOB_PROBES } from "../src/queueSubmit.ts";
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts";
 import { CARD_ENVELOPE_KEYS } from "../src/cardsRegistry.ts";
 import { liftCardParams } from "../src/cardsVariant.ts";
 import { sweepRunIds } from "../src/queueCore.ts";
@@ -156,20 +157,31 @@ const engineOf = (s: Seat): GatedEngine => {
 };
 
 const waitUntil = async (what: string, probe: () => boolean): Promise<void> => {
-  for (let i = 0; i < 300; i++) {
+  // (timing-race fleet rollout, fifth seat — the fixed-count starvation
+  // shape): 300 x 10ms sleeps stretch under a loaded pool, and the pump
+  // being merely slow reads as never-observed. The wait rides the shared
+  // settle budget — deadline-based, never count-based — so load buys
+  // headroom, never a false red. A real hang still exhausts LOADED_WAIT
+  // and names what was never observed.
+  const deadline = Date.now() + LOADED_WAIT();
+  for (;;) {
     if (probe()) return;
+    if (Date.now() >= deadline) break;
     await new Promise((r) => setTimeout(r, 10));
   }
   throw new Error("never observed: " + what);
 };
 
 const rowSettled = async (s: Seat, runId: string): Promise<RunRecord> => {
-  for (let i = 0; i < 300; i++) {
+  // (same fifth seat — the settle poll is the same starvation shape).
+  const deadline = Date.now() + LOADED_WAIT();
+  for (;;) {
     const row = s.core.runs.get(runId) as RunRecord | undefined;
     if (row !== undefined &&
         (row.status === "completed" || row.status === "failed" || row.status === "stopped")) {
       return row;
     }
+    if (Date.now() >= deadline) break;
     await new Promise((r) => setTimeout(r, 10));
   }
   throw new Error("run never settled " + runId);
