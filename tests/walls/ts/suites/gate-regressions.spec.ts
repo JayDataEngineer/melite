@@ -742,8 +742,9 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // JS + the mask mod.
   // 657 (2026-11-12): media-preview lands — host.js + the client
   // bundle (lib/client.js) + the client face's index/mediaDocument
-  // emits, four tracked seats.
-  const LIB_CENSUS_PIN = 657;
+  // emits, four tracked seats. 658 repinned 2026-11-12: the h3-timeline
+  // prompt-gate handoff seats promptGate.js (cards-h3-prompt-gate).
+  const LIB_CENSUS_PIN = 658;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
