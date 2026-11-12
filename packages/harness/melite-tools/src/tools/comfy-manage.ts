@@ -350,7 +350,8 @@ function renderManage(args: unknown, value: unknown): Array<{ type: 'text'; text
     if (action === 'logs') {
       const appLog = recordValue(recordValue(data)?.app_log)
       if (appLog !== null && appLog.verdict === 'fresh' && Array.isArray(appLog.lines)) {
-        const tail = (appLog.lines as unknown[]).slice(0, 200).map((row) => typeof row === 'string' ? row : rowText(row))
+        const rawLines: unknown[] = appLog.lines
+        const tail = rawLines.slice(0, 200).map((row) => typeof row === 'string' ? row : rowText(row))
         if (tail.length > 0) {
           lines.push('engine application log tail (' + String(appLog.path ?? '?') + ', fresh):')
           lines.push(...tail)

@@ -295,12 +295,13 @@ export function editPosture(p) {
     // (card.spec's legacy edge arms bind it — flip the extend
     // translation and the join arm reds).
     const resolved = resolveLegacyEditAliases(p);
-    if (isArmedBag(resolved.edit)) {
+    const edit = resolved.edit;
+    if (isArmedBag(edit)) {
         // (D-gap, the compose-door robustness arm) a stated entry that
         // is not a stanza object (null, a bare value, a nested array)
         // is a malformed doc, not a TypeError: the refusal names the
         // door and the got-shape, loud, before any entry read.
-        const first = resolved.edit[0];
+        const first = edit[0];
         if (typeof first !== 'object' || first === null || Array.isArray(first)) {
             throw new Error(`h3-timeline edit: the bag's single entry is not a knob stanza (got ${Array.isArray(first) ? 'an array' : first === null ? 'null' : `a bare ${typeof first}`}) — an entry is the mask × anchors × denoise stanza object; state it or omit the arm`);
         }

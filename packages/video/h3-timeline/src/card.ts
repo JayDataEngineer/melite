@@ -324,7 +324,7 @@ export const CROSS_REGIME_BAG_KEYS: readonly string[] = [
   ...LEGACY_EDIT_KEYS,
 ]
 
-const isArmedBag = (v: unknown): boolean => Array.isArray(v) && v.length > 0
+const isArmedBag = (v: unknown): v is unknown[] => Array.isArray(v) && v.length > 0
 
 /** Which edit posture a walked doc rides — the ONE law the flow
  * output bindings and the compose door both read (one truth home):
@@ -344,12 +344,13 @@ export function editPosture(p: Record<string, unknown>): 'film' | 'inchain' | 'j
   // (card.spec's legacy edge arms bind it — flip the extend
   // translation and the join arm reds).
   const resolved = resolveLegacyEditAliases(p)
-  if (isArmedBag(resolved.edit)) {
+  const edit = resolved.edit
+  if (isArmedBag(edit)) {
     // (D-gap, the compose-door robustness arm) a stated entry that
     // is not a stanza object (null, a bare value, a nested array)
     // is a malformed doc, not a TypeError: the refusal names the
     // door and the got-shape, loud, before any entry read.
-    const first = (resolved.edit as unknown[])[0]
+    const first = edit[0]
     if (typeof first !== 'object' || first === null || Array.isArray(first)) {
       throw new Error(
         `h3-timeline edit: the bag's single entry is not a knob stanza (got ${Array.isArray(first) ? 'an array' : first === null ? 'null' : `a bare ${typeof first}`}) — an entry is the mask × anchors × denoise stanza object; state it or omit the arm`,
@@ -684,7 +685,7 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
       // edit:[null] killed the door reading .mask_source off null).
       // An EMPTY bag stays lawful (the clean-film arm owns it).
       if (bag.length === 1) {
-        const only = bag[0] as unknown
+        const only: unknown = bag[0]
         if (typeof only !== 'object' || only === null || Array.isArray(only)) {
           throw new Error(`h3-timeline ${key}: the bag's single entry is not a knob stanza (got ${Array.isArray(only) ? 'an array' : only === null ? 'null' : `a bare ${typeof only}`}) — an entry is the ${noun} stanza object; state it or omit the arm`)
         }
