@@ -153,4 +153,33 @@ describe("THE TILING LAW (operator 2026-11-14: \"EVERY MOD MUST BE ABLE TO BE BR
     assert.equal(assemble.length, 1, "the join terminal exists — N windows land as one film");
     assert.equal(assemble[0]![1].inputs.filename, "run_lib_tile/swap", "the assembled swap rides the run tree");
   });
+
+  it("D. the per-scene masked_av carry rides the terminal pair (the multi-window/carry wall debt cell: swap/repair per-scene carry — the overlap seats had only indirect judges)", () => {
+    // The tiling above (A–C) proves windows join; THIS proves they
+    // join WITH the AV lineage: the assemble's generated-audio join
+    // rides the policy's own 'av_overlap' (the masked_av context at
+    // the joint — a cut join would drop the shared boundary the
+    // engine's AV continuity requires), and the segment save carries
+    // the trim's with-overlap frames beside the trimmed pair (the
+    // per-scene overlap travels checkpointed with its segment, never
+    // orphaned beside it).
+    const out = graph();
+    const assemble = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3ChainAssemble");
+    assert.equal(assemble.length, 1, "one join terminal");
+    assert.equal(
+      assemble[0]![1].inputs.generated_audio_join, "av_overlap",
+      "the joint joins at the AV overlap — the masked_av lineage, never a cut",
+    );
+    const trims = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3LoopTrim");
+    assert.equal(trims.length, 1, "one loop trim feeds the terminal pair");
+    const segs = Object.entries(out).filter(([, n]) => n.class_type === "MiniMaxH3ChainSegmentSave");
+    assert.equal(segs.length, 1, "one segment save checkpoints the scene");
+    const trimId = trims[0]![0];
+    assert.deepEqual(segs[0]![1].inputs.images, [trimId, 0], "the segment's images ride the trim");
+    assert.deepEqual(segs[0]![1].inputs.audio, [trimId, 1], "the segment's audio rides the same trim");
+    assert.deepEqual(
+      segs[0]![1].inputs.images_with_overlap, [trimId, 2],
+      "the segment's with-overlap frames ride the SAME trim's overlap seat — the per-scene carry travels with its segment",
+    );
+  });
 });
