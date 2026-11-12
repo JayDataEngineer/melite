@@ -16,6 +16,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAWFUL_TEXT } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -37,7 +38,7 @@ beforeAll(async () => {
 describe("the refine stack guard's own arm (card.ts refineStackBag)", () => {
   it("a present-but-non-array refine bag refuses loud — the bag is window entries or nothing", () => {
     const walked = def.schema({
-      calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }],
       length: 56,
       refine: {},
     }) as Record<string, unknown>;

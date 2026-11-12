@@ -30,6 +30,7 @@ import {
 import { LAST_FRAME_BATCH_INDEX } from "@melite/models-h3/timelineContract"
 import { serializeCalls } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -57,8 +58,8 @@ const scoped = (out: Record<string, Node>, scope: string, cls: string): [string,
  *  third mode. 17k authored on window 2 (56→124), the legal carried
  *  span — the mode changes the SEAM, never the grid. */
 const DOC = (): DocCall[] => [
-  { text: "a", start_frame: 0, end_frame: 56 },
-  { text: "b", start_frame: 56, end_frame: 124, transition: "carry+keyframe" },
+  { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+  { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, transition: "carry+keyframe" },
 ]
 
 const compose = (calls: DocCall[]): Record<string, Node> => {
@@ -97,16 +98,16 @@ describe("THE THIRD CARRY MODE — carry+keyframe (§0.9)", () => {
 
   it("CONTROL — the mode's siblings mount no pin: plain carry (extend) and stock (cut) stay pinless", () => {
     const carry = compose([
-      { text: "a", start_frame: 0, end_frame: 56 },
-      { text: "b", start_frame: 56, end_frame: 124 },
+      { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+      { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 },
     ])
     assert.equal(scoped(carry, "window2_", "MiniMaxH3FiniteLatentContinuation").length, 1,
       "plain carry still chains")
     assert.equal(scoped(carry, "window2_", "ImageFromBatch").length, 0,
       "plain carry pins no final frame")
     const stock = compose([
-      { text: "a", start_frame: 0, end_frame: 56 },
-      { text: "b", start_frame: 56, end_frame: 146, transition: "cut" },
+      { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+      { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 146, transition: "cut" },
     ])
     assert.equal(scoped(stock, "window2_", "MiniMaxH3FiniteLatentContinuation").length, 0,
       "stock never chains")

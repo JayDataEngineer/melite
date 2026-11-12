@@ -63,6 +63,7 @@ import { film as _filmSentinel } from "../../../../packages/models/h3/src/index.
 import { paramSchema } from "../../../../packages/models/h3/src/schema.ts";
 import { REF_CAPS } from "../../../../packages/models/h3/src/timelineContract.ts";
 import { H3_LORA_ROWS } from "../../../../packages/models/h3/mods/loras.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 void _filmSentinel;
 
 const FACTS_PATH = join(
@@ -140,10 +141,10 @@ async function composeH3(doc: Record<string, unknown>): Promise<Graph> {
 }
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 const FILM_DOC = {
-  calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+  calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
   length: 124,
 };
 
@@ -178,7 +179,7 @@ describe("the refmod image reaches the composed graph at its consumer node (ERRO
       ...FILM_DOC,
       calls: [
         SHOT({ refs: { mods: REFMOD_IMAGE } }),
-        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
       ],
     };
     const graph = await composeH3(doc);
@@ -281,7 +282,7 @@ describe("the refmod image reaches the composed graph at its consumer node (ERRO
       ref_mods: [REFMOD_IMAGE_B],
       calls: [
         SHOT({ refs: { mods: REFMOD_IMAGE } }),
-        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
       ],
     };
     const graph = await composeH3(doc);
@@ -505,7 +506,7 @@ describe("the two mods seats MERGE (study §2b, G7: the either/or never silently
       ref_mods: [REFMOD_IMAGE],
       calls: [
         SHOT({ refs: { mods: REFMOD_STEM } }),
-        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
       ],
     };
     const graph = await composeH3(doc);
@@ -548,7 +549,7 @@ describe("the two mods seats MERGE (study §2b, G7: the either/or never silently
       ref_mods: [REFMOD_IMAGE],
       calls: [
         SHOT({ refs: { mods: REFMOD_IMAGE } }),
-        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
       ],
     };
     const graph = await composeH3(doc);
@@ -573,7 +574,7 @@ describe("the two mods seats MERGE (study §2b, G7: the either/or never silently
       () => composeH3({
         ...FILM_DOC,
         ref_mods: atCap,
-        calls: [SHOT({ refs: { mods: "flux_stem.safetensors" } }), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT({ refs: { mods: "flux_stem.safetensors" } }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       }),
       (err: unknown) => err instanceof Error && /ref_mods/.test(err.message),
       "the merged list over the loader's slots refuses named at the seam — never a truncated tail composing",

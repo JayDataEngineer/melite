@@ -24,6 +24,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAWFUL_TEXT } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -165,7 +166,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     // green the compose and red this arm — the toggle-proof).
     assert.throws(
       () => def.compose(def.schema({
-        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }],
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }],
         reshoot_enabled: true,
         reshoot_clip: 'clips/take3.mp4',
       }) as Record<string, unknown>, model, new GraphBuilder(), 'run_rsmod_flat'),
@@ -176,7 +177,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     // whole retired group, not just the master switch)
     assert.throws(
       () => def.compose(def.schema({
-        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }],
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }],
         reshoot_orbit: 24,
       }) as Record<string, unknown>, model, new GraphBuilder(), 'run_rsmod_flat_dial'),
       /undeclared param\(s\): reshoot_orbit/,
@@ -186,7 +187,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
 
   it("a doc with no reshoot bag leaves the film path byte-identical (zero chain classes)", () => {
     const walked = def.schema({
-      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56,
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_rsmod_off");
@@ -198,7 +199,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
 
   it("an EMPTY bag is the unused arm (present-but-empty stays disarmed — the fourth arm's own shape guard)", () => {
     const walked = def.schema({
-      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56,
       reshoot: [],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
@@ -208,7 +209,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
 
   it("an armed bag augments the FILM on the OFFICIAL loader posture — core LoadVideo → prepare, the film's own SaveVideo terminal", () => {
     const walked = def.schema({
-      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56,
       reshoot: [RESHOOT_ENTRY()],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
@@ -241,7 +242,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
 
   it("the flow output binding resolves SaveVideo for an armed reshoot doc (the film tail serves the fourth arm)", () => {
     const walked = def.schema({
-      calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56,
       reshoot: [RESHOOT_ENTRY()],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
@@ -273,7 +274,7 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     ];
     for (const [name, arm, re] of edges) {
       const walked = def.schema({
-        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56 }], length: 56,
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56,
         reshoot: [RESHOOT_ENTRY()],
         ...arm,
       }) as Record<string, unknown>;

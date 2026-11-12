@@ -31,6 +31,7 @@ import { getModel, registryIds, registryModel } from "../../../engines/comfyui-c
 import { chooseLaneClips, computeFilmMix, parseFilmMixClips } from "../src/filmMix.ts";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -52,8 +53,8 @@ const SEAM_DOC = {
     { src: "/art/tts/line2.flac", start_frame: 150, dur_frames: 92, text: "the second line, starting inside window two", class: "dialogue" },
   ],
   calls: [
-    { text: "a woman at a table", start_frame: 0, end_frame: 124 },
-    { text: "she looks up", start_frame: 124, end_frame: 243 },
+    { text: LAWFUL_TEXT, start_frame: 0, end_frame: 124 },
+    { text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 243 },
   ],
 };
 

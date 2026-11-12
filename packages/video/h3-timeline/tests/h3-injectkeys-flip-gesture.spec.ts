@@ -43,6 +43,7 @@ import {
 } from "@melite/card-base/client"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
 import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 /** THE BURN'S FOUR (the operator's (g) refusal named them sorted). */
 const FOUR = ["interpolate_enabled", "second_pass_enabled", "sharpen_enabled", "sr_switch"] as const
@@ -70,7 +71,7 @@ function stampedHolding(): { base: Record<string, unknown>, user: Record<string,
 function stampedOpenHolding(): { base: Record<string, unknown>, user: Record<string, unknown> } {
   const base: Record<string, unknown> = {
     seed: 7, width: 768, height: 448, steps: 12,
-    calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+    calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
   }
   const user: Record<string, unknown> = {
     second_pass_enabled: true, sr_switch: true,

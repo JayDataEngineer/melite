@@ -2032,9 +2032,19 @@ export class RunsRuntimeService extends Service {
         // F-6(b): the admission warn computes pre-registration so
         // it rides the record AND the queued sidecar (disk rows
         // carry it after a reload).
+        // THE PROMPT GATE'S RECEIPT HALF (the VID GEN handoff,
+        // 2026-11-12): the card's own admissionWarns hook — the
+        // prompt gate's warn severities and every NAMED waiver
+        // (params.prompt_waivers) as one line each — rides the same
+        // stamp: a waived rule passes the press and is recorded,
+        // never silent. The lines derive from the card's own gate
+        // over the admitted doc (cardRequestBody — the same doc the
+        // compose judged), so the receipt and the refusal can never
+        // disagree.
         warnings: [
           ...benchWarnings,
           ...(await this.filmAdmissionWarnings(p1.card, body)),
+          ...((cards.defsSync().get(p1.card)?.admissionWarns?.(cardRequestBody)) ?? []),
         ],
         door: {
           runId,

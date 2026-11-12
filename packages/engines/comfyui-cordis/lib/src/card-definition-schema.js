@@ -37,6 +37,12 @@ const CardDefinitionSchema = z.object({
     schema: z.any(),
     schemaCarrier: z.any(),
     compose: z.any(),
+    // THE ADMISSION-WARN SEAM (the VID GEN handoff, 2026-11-12): the
+    // card's non-refusing gate findings (warn severities, named
+    // waivers) as lines the start door stamps on the run record.
+    // z.any() like compose: a function, typed at the boundary, judged
+    // by its caller — the envelope only admits the key's existence.
+    admissionWarns: z.any(),
     finalize: z.any(),
     identity: z.any(),
     provisions: z.any(),

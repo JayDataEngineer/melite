@@ -1,0 +1,316 @@
+{
+    "version": 1,
+    "name": "h3-prompt-dictionary",
+    "description": "Machine rules for H3 call text and dialogue rows. A gate reads this file and refuses or warns by name; the prompt-writing skill documents the same law in prose. One source of truth, two consumers.",
+    "applies_to": {
+        "card": "h3-timeline",
+        "fields": [
+            "params.calls[].text",
+            "params.audio_clips[]",
+            "params.ref_audios"
+        ]
+    },
+    "waivers": {
+        "law": "A press may name a waiver (params.prompt_waivers: [\"RULE-ID\"]). The gate refuses by default; a named waiver passes the press and is recorded in the run receipt with the rule id and the message it overrode. Never add a waiver silently.",
+        "record": [
+            "rule_id",
+            "press_sha",
+            "operator_or_agent",
+            "reason"
+        ]
+    },
+    "rules": [
+        {
+            "id": "DENSITY-FLOOR",
+            "severity": "refuse",
+            "scope": "call",
+            "check": {
+                "kind": "min_words",
+                "value": 90
+            },
+            "message": "call {index} has {words} words. H3 needs at least 90 (target 95-128): state style, scene + subject, pose/motion continuity, and camera + ambient sound. Under 90 the model invents the missing detail.",
+            "cite": "vendor examples 85/81/93 words at 5.2/8.0/6.0 s; estate conformance floor"
+        },
+        {
+            "id": "STYLE-LINE",
+            "severity": "warn",
+            "scope": "call",
+            "check": {
+                "kind": "any_phrase",
+                "values": [
+                    "live-action",
+                    "live action",
+                    "2d-animated",
+                    "2d animated",
+                    "3d-animated",
+                    "3d animated",
+                    "stop-motion",
+                    "stop motion",
+                    "anime",
+                    "cel shading",
+                    "ink"
+                ]
+            },
+            "message": "call {index} never states the medium. Open with one flat style line ('Live-action, cinematic, ...' / '2D-animated, flat cel shading, ...') and repeat it in every call of the film.",
+            "cite": "vendor \u00a75 examples open with the medium"
+        },
+        {
+            "id": "CAMERA-VERB",
+            "severity": "refuse",
+            "scope": "call",
+            "check": {
+                "kind": "camera_verb",
+                "verbs": [
+                    "zoom in",
+                    "zoom out",
+                    "push in",
+                    "pull out",
+                    "pan left",
+                    "pan right",
+                    "truck left",
+                    "truck right",
+                    "tilt up",
+                    "tilt down",
+                    "pedestal up",
+                    "pedestal down",
+                    "arc shot",
+                    "tracking shot",
+                    "static shot",
+                    "shake slightly",
+                    "shake strongly",
+                    "pov",
+                    "roll clockwise",
+                    "roll counterclockwise"
+                ],
+                "rate_required_except": [
+                    "static shot"
+                ]
+            },
+            "message": "call {index} has no camera move from the closed vocabulary. Use one of the vendor verbs (Push In, Pull Out, Pan Left/Right, Truck Left/Right, Tilt Up/Down, Pedestal Up/Down, Arc Shot, Tracking Shot, Static Shot, Shake Slightly/Strongly, POV, Roll Clockwise/Counterclockwise) with amplitude and speed.",
+            "cite": "base-en.txt \u00a74.3"
+        },
+        {
+            "id": "PAN-UP",
+            "severity": "refuse",
+            "scope": "call",
+            "check": {
+                "kind": "forbid_phrase",
+                "values": [
+                    "pan up",
+                    "pans up",
+                    "panning up",
+                    "pan down",
+                    "pans down",
+                    "panning down"
+                ]
+            },
+            "message": "call {index} says 'pan up/down'. A pan pivots horizontally; a vertical scan is 'Tilt Up/Down' or 'Pedestal Up/Down'. Write the vendor verb.",
+            "cite": "base-en.txt \u00a74.3 (the list has no pan up)"
+        },
+        {
+            "id": "NO-VENDOR-SCAFFOLDING",
+            "severity": "refuse",
+            "scope": "call",
+            "check": {
+                "kind": "regex",
+                "values": [
+                    "\\[\\s*shot\\s*\\d+",
+                    "for the target video",
+                    "how the reference pictures align"
+                ]
+            },
+            "message": "call {index} pastes vendor scaffolding or a shot header. The card composes those; a call stays ONE continuous action line with no [Shot n] header and no 'For the target video' lines.",
+            "cite": "card doc: the card composes the guide's scaffolding itself"
+        },
+        {
+            "id": "SPOKEN-FORM",
+            "severity": "warn",
+            "scope": "call",
+            "check": {
+                "kind": "spoken_form",
+                "require": {
+                    "speaker": "\\(S\\d\\)",
+                    "dialogue": "<d>\\[[A-Za-z -]+\\][^<]*</d>"
+                }
+            },
+            "message": "call {index} names speech without the vendor spoken form. Speakers are (S1)/(S2) and the words ride verbatim in <d>[English] ...</d>. Better: put the line in an audio_clips row and keep the call free of dialogue.",
+            "cite": "base-en.txt \u00a74.4; ref-en.txt \u00a72.4/\u00a75.2"
+        },
+        {
+            "id": "ROW-IS-THE-VOICE",
+            "severity": "warn",
+            "scope": "film",
+            "check": {
+                "kind": "call_has_speech_without_rows",
+                "detect": [
+                    " says:",
+                    " says,",
+                    "speaks",
+                    "speaking",
+                    "asks:",
+                    "replies:"
+                ],
+                "rows": "params.audio_clips"
+            },
+            "message": "the film's call text describes speech but no audio_clips row carries it in that window. The words move the mouth only when placed as a row (text = exact words, start_frame, dur_frames). Prose does not move it.",
+            "cite": "card doc: the words move the mouth; measured round 37"
+        },
+        {
+            "id": "REF-AUDIO-WITH-ROWS",
+            "severity": "warn",
+            "scope": "film",
+            "check": {
+                "kind": "armed_and_rows",
+                "armed": "params.ref_audios",
+                "rows": "params.audio_clips"
+            },
+            "message": "ref_audios is armed while dialogue rows are placed. Measured: the row's voice wins and the audio reference adds nothing (copy correlation 0.827/0.545 identical in both arms, RMS equal to 4 dp). Keep the reference only when the row's voice must be replaced; otherwise disarm it to avoid the last-window collage.",
+            "cite": "estate measurement: four-arm A/B, round 37"
+        }
+    ],
+    "acceptance_cases": [
+        {
+            "name": "thin call refused",
+            "input": {
+                "calls": [
+                    {
+                        "text": "A woman stands on a beach.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ]
+            },
+            "expect": {
+                "verdict": "refused",
+                "rule": "DENSITY-FLOOR"
+            }
+        },
+        {
+            "name": "good call passes",
+            "input": {
+                "calls": [
+                    {
+                        "text": "Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pushes in with small amplitude at slow speed toward her face, holding as the light comes through the spray. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ]
+            },
+            "expect": {
+                "verdict": "pass"
+            }
+        },
+        {
+            "name": "shot header refused",
+            "input": {
+                "calls": [
+                    {
+                        "text": "[Shot 2] Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pushes in with small amplitude at slow speed toward her face, holding as the light comes through the spray. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ]
+            },
+            "expect": {
+                "verdict": "refused",
+                "rule": "NO-VENDOR-SCAFFOLDING"
+            }
+        },
+        {
+            "name": "pan up refused",
+            "input": {
+                "calls": [
+                    {
+                        "text": "Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pans up her body with small amplitude at slow speed, sliding from her feet to her face. It ends on a static shot. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ]
+            },
+            "expect": {
+                "verdict": "refused",
+                "rule": "PAN-UP"
+            }
+        },
+        {
+            "name": "no camera refused",
+            "input": {
+                "calls": [
+                    {
+                        "text": "Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The light comes through the spray as she looks toward the water, and the wind keeps lifting the loose strands. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ]
+            },
+            "expect": {
+                "verdict": "refused",
+                "rule": "CAMERA-VERB"
+            }
+        },
+        {
+            "name": "speech in call, no rows warned",
+            "input": {
+                "calls": [
+                    {
+                        "text": "Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pushes in with small amplitude at slow speed toward her face, holding as the light comes through the spray. She turns her head and says, quietly, that it is finished. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ],
+                "audio_clips": []
+            },
+            "expect": {
+                "verdict": "warned",
+                "rule": "ROW-IS-THE-VOICE"
+            }
+        },
+        {
+            "name": "ref audio plus rows warned",
+            "input": {
+                "calls": [
+                    {
+                        "text": "Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pushes in with small amplitude at slow speed toward her face, holding as the light comes through the spray. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ],
+                "ref_audios": [
+                    "voice.flac"
+                ],
+                "audio_clips": [
+                    {
+                        "text": "I told you I would finish it before dawn.",
+                        "start_frame": 12,
+                        "dur_frames": 91
+                    }
+                ]
+            },
+            "expect": {
+                "verdict": "warned",
+                "rule": "REF-AUDIO-WITH-ROWS"
+            }
+        },
+        {
+            "name": "waiver passes and records",
+            "input": {
+                "calls": [
+                    {
+                        "text": "Live-action, cinematic, She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pushes in with small amplitude at slow speed toward her face, holding as the light comes through the spray. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.",
+                        "start_frame": 0,
+                        "end_frame": 124
+                    }
+                ],
+                "prompt_waivers": [
+                    "DENSITY-FLOOR"
+                ]
+            },
+            "expect": {
+                "verdict": "pass",
+                "receipt_records": [
+                    "DENSITY-FLOOR"
+                ]
+            }
+        }
+    ]
+}

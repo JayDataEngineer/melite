@@ -47,6 +47,7 @@ import { RESHOOT_DIAL_BOUNDS } from "../../../../packages/models/h3/src/reshoot.
 import {
   hydrateLayerA, serializeLayerA, LAYERA_KEY_UNIVERSE,
 } from "../../../../packages/video/h3-timeline/src/ui/studio/docHydrate.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const FACTS_PATH = join(ROOT, "packages", "engines", "comfyui-cordis", "data", "model-facts.json");
@@ -72,7 +73,7 @@ const ofClass = (out: Record<string, Node>, cls: string): [string, Node][] =>
   Object.entries(out).filter(([, n]) => n.class_type === cls);
 
 const BASE = {
-  calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }],
+  calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }],
 };
 const ARMED = { ...BASE, reshoot: [{ source_clip: "sources/take3.mp4" }] };
 
@@ -350,7 +351,7 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     }
     const r2v = ofClass(out, "MiniMaxH3ReferenceToVideo");
     expect(r2v).toHaveLength(1);
-    expect(r2v[0]![1].inputs.prompt).toBe("crossview. a slow push in");
+    expect(r2v[0]![1].inputs.prompt).toBe(`crossview. ${LAWFUL_TEXT}`);
     expect(String(r2v[0]![1].inputs["ref_videos.ref_video_0"])).toBe(`${prepId},0`);
     // THE SHAPE IS THE PREPARE NODE'S OWN (audit F5): node 20 takes
     // width/height from CrossViewPrepareClip's slots 1/2, so the
@@ -437,8 +438,8 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
       width: 1344,
       height: 768,
       calls: [
-        { text: "a slow push in", start_frame: 0, end_frame: 124 },
-        { text: "turn", start_frame: 124, end_frame: 214, transition: "cut" },
+        { text: LAWFUL_TEXT, start_frame: 0, end_frame: 124 },
+        { text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 214, transition: "cut" },
       ],
       reshoot: [{ source_clip: "sources/take3.mp4", orbit: 25 }],
     };
@@ -451,7 +452,7 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     expect(() => compose({
       ...BASE,
       length: 22,
-      calls: [{ text: "short", start_frame: 0, end_frame: 22 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 22 }],
       reshoot: [{ source_clip: "sources/take3.mp4" }],
     })).toThrow(/window too short for the camera guide — 22 frames is below the 24-frame floor/);
   });

@@ -28,8 +28,8 @@
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis';
 import type { DocumentPreviewDefinition } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client';
-export { AudioDocumentBody, VideoDocumentBody } from './mediaDocument.tsx';
-export { documentLeaf, useDocumentBlobUrl } from './mediaDocument.tsx';
+export { AudioDocumentBody, VideoDocumentBody } from './mediaDocument.js';
+export { documentLeaf, useDocumentBlobUrl } from './mediaDocument.js';
 export declare const VIDEO_PREVIEW_ID = "melite.preview.video";
 export declare const AUDIO_PREVIEW_ID = "melite.preview.audio";
 /** The video renderer's metadata: the estate's video vocabulary,

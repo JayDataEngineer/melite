@@ -19,6 +19,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { serializeCalls } from "../src/ui/studio/docCalls.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -250,7 +251,7 @@ describe("the Extend name — the continuation posture of the one edit bag (the 
     // where they live; only the extend arm's dead rails refuse.
     assert.doesNotThrow(() =>
       compose({
-        calls: serializeCalls([{ text: "a walk down the hall", start_frame: 0, end_frame: 22 }]),
+        calls: serializeCalls([{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 22 }]),
         ref_images: ["refs/sheet.png"],
         ref_videos: ["refs/guide.mp4"],
       }, "run_film_rail_live"));

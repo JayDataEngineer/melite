@@ -38,6 +38,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "@melite/comfyui-cordis";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -82,7 +83,7 @@ function assertNoPostLimbs(graph: Graph, what: string): void {
 }
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 describe("the h3 post chain mirrors the doc (burn b — the serialized graph is the backend's own face)", () => {

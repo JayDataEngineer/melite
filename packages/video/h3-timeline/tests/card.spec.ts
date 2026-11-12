@@ -19,6 +19,7 @@ import { ACTION_BINDINGS } from "../src/card.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -38,7 +39,7 @@ beforeAll(async () => {
 });
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 describe("the h3-timeline compose gate", () => {
@@ -112,7 +113,7 @@ describe("the h3-timeline compose gate", () => {
   it("binds the final film SaveVideo as the declared video output", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       length: 124,
     }), model, g, "run_output_binding");
     const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
@@ -179,7 +180,7 @@ describe("the h3-timeline compose gate", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         length: 124,
       }),
       model, g, "run_chain",
@@ -241,7 +242,7 @@ describe("the h3-timeline compose gate", () => {
     const byClass = (rows: [string, { class_type: string; inputs: Record<string, unknown> }][], cls: string) =>
       rows.filter(([, n]) => n.class_type === cls);
     const windowsDoc = {
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       length: 124,
     };
     // 1. the plain multi-window film: windows save, THEN the file
@@ -444,7 +445,7 @@ describe("the family admission face is retired — the walk admits the finish ke
 
   it("the same stamps on a t4_chain film walk", () => {
     const walked = def.schema!({
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       length: 124,
       sr_switch: true,
       second_pass_enabled: true,

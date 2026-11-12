@@ -60,6 +60,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { fillFor, namedMulti, undeclaredNames } from "../../../../packages/engines/comfyui-cordis/scripts/compose-probe.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 const SEED = seedFlowsSeat();
 const CARD_PLANE_ENGINE = "comfyui";
@@ -861,7 +862,7 @@ describe("U1 PRODUCER AGREEMENT: every flow producer is bound (declared bindings
       params: {
         model: "h3-timeline",
         length: 56,
-        calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }],
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }],
         ref_audios: ["$ref_audios"],
       },
     };

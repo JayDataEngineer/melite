@@ -20,6 +20,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -39,9 +40,9 @@ beforeAll(async () => {
 });
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
-const FILM = (): Record<string, unknown>[] => [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })];
+const FILM = (): Record<string, unknown>[] => [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })];
 
 type Node = { class_type: string; inputs: Record<string, unknown> };
 const graphOf = (g: GraphBuilder): Record<string, Node> => g.toJSON() as Record<string, Node>;
@@ -81,7 +82,7 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
   it("each class owns its prompt field: <d> words / soundscape event / non_diegetic_music", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({
-      calls: [SHOT({ text: "she works the bench, then speaks" }), SHOT({ text: "she turns", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       audio_clips: [
         clip({ id: "d1", src: "/v1/assets/runs/run-t/tts/words.flac", start_frame: 8, dur_frames: 40, text: "I told you I would finish it before dawn." }),
         clip({ id: "m1", src: "/v1/assets/runs/run-m/music/score.flac", class: "music", start_frame: 0, dur_frames: 124, text: "a low synth pad, warm and slow" }),
@@ -110,7 +111,7 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
   it("three lanes pin one window: guides chain (dialogue first), one slice per class", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({
-      calls: [SHOT({ text: "she speaks over the score as the blast lands" }), SHOT({ text: "aftermath", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       audio_clips: [
         clip({ id: "d1", start_frame: 10, dur_frames: 40, text: "get down, now." }),
         clip({ id: "s1", class: "sfx", src: "/v1/assets/runs/run-s/sfx/boom.flac", start_frame: 24, dur_frames: 30, text: "a sudden explosion rocks the room" }),
@@ -145,7 +146,7 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
   it("THE DOOR GUARD: dialogue/sfx strip the ref audios; the bed is GONE — a legacy bed field wires no slice anywhere", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({
-      calls: [SHOT({ text: "the score plays" }), SHOT({ text: "silence then", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       ref_audios: ["/v1/assets/uploads/voice_ref.wav"],
       audio_clips: [
         // music pins window 1 (frames 0-30); the dialogue clip pins
@@ -185,7 +186,7 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     ];
     const g = new GraphBuilder();
     def.compose(def.schema({
-      calls: [SHOT({ text: "she speaks over the score" }), SHOT({ text: "turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       audio_clips: rawClips,
     }), model, g, "run_duck_matrix");
     const out = graphOf(g);
@@ -229,7 +230,7 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     ];
     const g = new GraphBuilder();
     def.compose(def.schema({
-      calls: [SHOT({ text: "she speaks over the score" }), SHOT({ text: "turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       audio_clips: rawClips,
     }), model, g, "run_film_clock");
     const out = graphOf(g);
@@ -273,9 +274,9 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({
       calls: [
-        SHOT({ text: "bench" }),
-        SHOT({ text: "turn", start_frame: 56, end_frame: 141 }),
-        SHOT({ text: "speak", start_frame: 141, end_frame: 260 }),
+        SHOT(),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 141 }),
+        SHOT({ start_frame: 141, end_frame: 260 }),
       ],
       audio_clips: rawClips,
     }), model, g, "run_three_window_seat");

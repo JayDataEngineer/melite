@@ -60,6 +60,7 @@ import { film } from "../src/actions.ts";
 import { h3MaskedEditPlane } from "../src/chainEdit.ts";
 import { DECL } from "../src/index.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -141,7 +142,7 @@ const SEED_B = 7777;
 const STEPS_B = 12;
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value law, hop [4]→[5])", () => {
@@ -189,7 +190,7 @@ describe("the h3 sampler knobs ride VERBATIM to their consumers (purge P2 value 
     // says window1_ hears the film, window2_ the call.
     const graph = await composeH3({
       length: 124,
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124, knobs: { seed: SEED_B, steps: STEPS_B } })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, knobs: { seed: SEED_B, steps: STEPS_B } })],
       seed: SEED,
       sampler_name: SAMPLER,
       sched_name: SCHED,
@@ -658,7 +659,7 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     // window's clock set.
     const film = await composeH3({
       length: 124, fps: 16, ref_images: ["data/input/ref1.png"],
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
     }, "h3_value_arm13b");
     const clockValues = Object.entries(film)
       .filter(([id, n]) => n.class_type === "PrimitiveFloat" && id.startsWith("window1_"))
@@ -1035,7 +1036,7 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
   it("ARM 21 — the k pin: a two-window film's window ordinal reaches the graph as the run-scoped save naming (w1 AND w2)", async () => {
     const graph = await composeH3({
       length: 124,
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
     }, "h3_value_arm21");
     const prefixes = Object.values(graph)
       .filter((n) => n.class_type === "SaveVideo")
@@ -1054,7 +1055,7 @@ describe("the h3 class knobs ride VERBATIM to their consumers (P0 witness extens
     const film = await composeH3({
       length: 124, duck_depth_db: -22,
       audio_clips: [{ src: "data/input/take.wav", start_frame: 0, dur_frames: 24, text: "hello there" }],
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
     }, "h3_value_arm22");
     assertValueAtConsumer(film, "MeliteFilmAudioMix", "duck_db", -22, "duck_depth_db");
     // THE ALIAS HALF: the call-level alias is the compose's documented
@@ -1350,7 +1351,7 @@ describe("the h3 knob-block remainder: per-class liveness + the mis-narrated and
   it("ARM 34 — the per-window noise_seed row: the film-level word fills BOTH windows' RandomNoise, and the call's own knob REPLACES it per window (window1_ / window2_)", async () => {
     const graph = await composeH3({
       length: 124, noise_seed: 909,
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124, knobs: { noise_seed: 555 } })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, knobs: { noise_seed: 555 } })],
     }, "h3_knob_arm34");
     assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 909, "film-level noise_seed", "window1_");
     assertValueAtConsumer(graph, "RandomNoise", "noise_seed", 555, "call-level noise_seed", "window2_");
@@ -1766,7 +1767,7 @@ describe("the h3 latent-upscale route: the handoff arm mounts behind second_pass
     // the pin's generation-local row (no carry on window 1).
     const graph = await composeH3({
       length: 175,
-      calls: [SHOT({ text: "first", end_frame: 90 }), SHOT({ text: "then a turn", start_frame: 90, end_frame: 175 })],
+      calls: [SHOT({ end_frame: 90 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 175 })],
       keyframes: [
         { image: "pin_open.png", frame: 0 },
         { image: "pin_mid.png", frame: 20 },
@@ -1929,7 +1930,7 @@ const CENSUS_DOCS = {
   film: {
     length: 124, duck_depth_db: -22,
     audio_clips: [{ src: "data/input/take.wav", start_frame: 0, dur_frames: 24, text: "hello there" }],
-    calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
   },
   // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19): the
   // film doc with the deliverable stem spelled — the census judge row
@@ -1937,14 +1938,14 @@ const CENSUS_DOCS = {
   // machinery film prefix survives beside it.
   named: {
     length: 124, output_name: "chase",
-    calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
   },
   // ARM 22b — the call-level guide alias.
   alias: { length: 56, calls: [SHOT({ image_name: "data/input/alias.png" })] },
   // ARM 47 — the any-frame pins lane.
   pins: {
     length: 175,
-    calls: [SHOT({ text: "first", end_frame: 90 }), SHOT({ text: "then a turn", start_frame: 90, end_frame: 175 })],
+    calls: [SHOT({ end_frame: 90 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 175 })],
     keyframes: [
       { image: "pin_open.png", frame: 0 },
       { image: "pin_mid.png", frame: 20 },

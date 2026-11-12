@@ -31,6 +31,7 @@ import { renderH3Extend } from "../src/extend.ts";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { OUTPUT_NAME_SLUG_RE, outputNameTailOf, paramSchema, schema } from "../src/schema.ts";
 import type { H3Facts } from "../src/actions.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS: H3Facts = {
   unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
@@ -72,8 +73,8 @@ const EXTEND_ENTRY = (): Record<string, unknown> => ({
 const filmDoc = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   variant: "t4_open", length: 124, seed: 42,
   calls: [
-    { text: "a slow push in", start_frame: 0, end_frame: 56 },
-    { text: "then a turn", start_frame: 56, end_frame: 124 },
+    { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+    { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 },
   ],
   ...over,
 });

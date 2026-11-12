@@ -20,6 +20,7 @@ import { fieldsOfEnvelope } from "@melite/card-base/client";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAWFUL_TEXT } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -39,7 +40,7 @@ beforeAll(async () => {
 });
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 type GNode = { class_type: string; inputs: Record<string, unknown> };

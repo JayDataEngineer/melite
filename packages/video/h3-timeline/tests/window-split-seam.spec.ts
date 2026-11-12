@@ -33,6 +33,7 @@ import { SEAM_OVERLAP_FRAMES, transitionOverlap } from "@melite/models-h3/timeli
 import { useCallMutations } from "../src/ui/studio/useCallMutations.ts"
 import { serializeCalls } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -58,8 +59,8 @@ const scoped = (out: Record<string, Node>, scope: string, cls: string): [string,
 
 /** The split doc, built by the gesture the strip's split seat rides. */
 function splitByGesture(): DocCall[] {
-  const A: DocCall = { text: "a", start_frame: 0, end_frame: 56 }
-  const B: DocCall = { text: "b", start_frame: 56, end_frame: 124 }
+  const A: DocCall = { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }
+  const B: DocCall = { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }
   const { result } = renderHook(() => {
     const [calls, setCalls] = useState<DocCall[]>([A, B])
     return { calls, ...useCallMutations(setCalls, 24) }
@@ -102,8 +103,8 @@ describe("THE SPLIT'S CUT SEAM (§0.5 — the halves never chain)", () => {
     // a cut window authors 22+17k (90 here) — the same arithmetic the
     // split's right half lands
     const cut: DocCall[] = [
-      { text: "a", start_frame: 0, end_frame: 56 },
-      { text: "a", start_frame: 56, end_frame: 146, transition: "cut" },
+      { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+      { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 146, transition: "cut" },
     ]
     const g1 = new GraphBuilder()
     def.compose(def.schema({ calls: serializeCalls(cut) }), model, g1, "run_control_cut")
@@ -111,8 +112,8 @@ describe("THE SPLIT'S CUT SEAM (§0.5 — the halves never chain)", () => {
     // the same span un-cut is off-grid for extend — the control rides
     // the legal carried spelling (17k authored)
     const extend: DocCall[] = [
-      { text: "a", start_frame: 0, end_frame: 56 },
-      { text: "a", start_frame: 56, end_frame: 124 },
+      { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+      { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 },
     ]
     const g2 = new GraphBuilder()
     def.compose(def.schema({ calls: serializeCalls(extend) }), model, g2, "run_control_extend")
@@ -125,8 +126,8 @@ describe("THE SPLIT'S CUT SEAM (§0.5 — the halves never chain)", () => {
     // stronger carry (its own wall judges the pin). transitionOverlap
     // is the vocabulary's one reader at the compose door.
     const stock: DocCall[] = [
-      { text: "a", start_frame: 0, end_frame: 56 },
-      { text: "a", start_frame: 56, end_frame: 146, transition: "cut" },
+      { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+      { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 146, transition: "cut" },
     ]
     const g = new GraphBuilder()
     def.compose(def.schema({ calls: serializeCalls(stock) }), model, g, "run_stock_mode")

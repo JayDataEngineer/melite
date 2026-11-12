@@ -183,7 +183,12 @@ interface SkillLine { id?: string }
 // MiniMax-AI/MiniMax-H3-Image skills/h3-image-prompt-writing); all
 // four ids round-tripped 200 with a body in the arm above before
 // this repin.
-const EXPECTED_CARD_SKILLS = 61;
+// 61 → 62 (2026-11-12, the VID GEN handoff): the timeline card's
+// skills/prompt-writing directory leaf (the H3 call-text craft, the
+// prompt dictionary's served rendering) seats as
+// card:h3-timeline:prompt-writing; its id round-tripped 200 with a
+// body in the arm above before this repin.
+const EXPECTED_CARD_SKILLS = 62;
 // 8 → 11 (2026-10-11): object-forge's skillRefs — image-gen +
 // img-to-mesh card lines and z-image's prompt-enhance ride the flow
 // bundle (card:quad-remesh resolves null — the card ships no agent

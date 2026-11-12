@@ -20,6 +20,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAWFUL_TEXT } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -94,7 +95,7 @@ describe("the Refine name — the refine switch of the one edit bag (the collaps
   it("leaves the film byte-identical with the arm absent", () => {
     for (const bag of [undefined, []]) {
       const out = compose(
-        { calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }], length: 56, ...(bag === undefined ? {} : { refine: bag }) },
+        { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56, ...(bag === undefined ? {} : { refine: bag }) },
         "run_refine_empty",
       );
       assert.equal(ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 0,

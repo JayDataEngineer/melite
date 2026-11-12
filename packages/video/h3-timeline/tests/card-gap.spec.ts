@@ -34,6 +34,7 @@ import { DECL as h3decl } from "../../../models/h3/src/index.ts";
 import { H3_LORA_ROWS } from "../../../models/h3/mods/loras.ts";
 import { film } from "../../../models/h3/src/actions.ts";
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED, LAWFUL_TEXT_QUIET } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -53,7 +54,7 @@ beforeAll(async () => {
 });
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 type Node = { class_type: string; inputs: Record<string, unknown> };
@@ -253,7 +254,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       }),
       model, g, "run_carry_seam",
     );
@@ -281,7 +282,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         second_pass_enabled: true, upscale_route: "latent_2x",
       }),
       model, g, "run_seam_currency_upscale",
@@ -315,7 +316,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         second_pass_enabled: true, refine_lora: "h3_silver_dareties",
       }),
       model, g, "run_seam_currency_rider",
@@ -340,8 +341,8 @@ describe("the merged film (the drift-control seam, automatic)", () => {
       def.schema({
         calls: [
           SHOT(),
-          SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
-          SHOT({ text: "and a return", start_frame: 124, end_frame: 277 }),
+          SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
+          SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 }),
         ],
         second_pass_enabled: true, upscale_route: "latent_2x",
       }),
@@ -373,7 +374,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         second_pass_enabled: true, upscale_route: "latent_2x", refine_lora: "h3_silver_dareties",
       }),
       model, g, "run_seam_currency_both",
@@ -412,7 +413,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         // a positioned clip no longer closes a valve: the overlay
         // seats moved to filmMix.ts, so even a clips-carrying doc
         // emits windows only (the estate joins from disk).
@@ -447,8 +448,14 @@ describe("the merged film (the drift-control seam, automatic)", () => {
         // is GONE — a prompt key at this door is itself refused
         // (unknown-param); the no-fallback law judges the blank CALL
         // text alone now.
+        // (re-pin 2026-11-12, the prompt gate) a blank text is the
+        // thinnest call — the gate refuses it FIRST (DENSITY-FLOOR,
+        // 0 words). This arm waives the gate's text rules so the
+        // ACTION's own no-fallbacks law stays proven behind the
+        // gate — the waivers are named, never silent.
         def.schema({
           calls: [SHOT(), SHOT({ text: "   ", start_frame: 56, end_frame: 124 })],
+          prompt_waivers: ["DENSITY-FLOOR", "CAMERA-VERB", "STYLE-LINE"],
         }),
         model, g, "run_blank_text",
       ),
@@ -471,7 +478,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     // its generated span+carry lands on 22+17k.
     const CHAIN: ReadonlyArray<readonly [number, number]> = [[0, 56], [56, 124], [124, 277], [277, 396]];
     const shot = (i: number): Record<string, unknown> =>
-      SHOT({ text: `window ${i + 1} of the film`, start_frame: CHAIN[i]![0], end_frame: CHAIN[i]![1] });
+      SHOT({ start_frame: CHAIN[i]![0], end_frame: CHAIN[i]![1] });
     def.compose(
       def.schema({ calls: [shot(0), shot(1), shot(2), shot(3)] }),
       model, g, "run_standing_seam",
@@ -520,7 +527,7 @@ describe("the merged film (the drift-control seam, automatic)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "a hard cut", start_frame: 56, end_frame: 129, transition: "cut" })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 129, transition: "cut" })],
       }),
       model, g, "run_hard_cut",
     );
@@ -549,9 +556,9 @@ describe("the film's per-window stanza (guides, refs, lora steps, length pins)",
         ],
         calls: [
           SHOT({ image: "/m/a.png" }),
-          SHOT({ text: "a held wide", start_frame: 56, end_frame: 124, knobs: { length: 90, steps: 20 } }),
+          SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, knobs: { length: 90, steps: 20 } }),
           SHOT({
-            text: "then a turn", start_frame: 124, end_frame: 192,
+            text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 192,
             refs: { images: ["r1.png", "", 42 as never], videos: "v1.mp4, , v2.mp4" },
           }),
         ],
@@ -575,7 +582,7 @@ describe("the film's per-window stanza (guides, refs, lora steps, length pins)",
 
   it("multi-call length stands INERT at the walked default (no nulls — spans own the film)", () => {
     const gated = def.schema({
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
     }) as Record<string, unknown>;
     assert.equal(gated.length, 56, "no null through the gate — the walked default stands (the doc-level length is a WINDOW knob; chains have no doc-level window)");
     const g = new GraphBuilder();
@@ -617,7 +624,7 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT({ end_frame: 124 }), SHOT({ text: "then a turn", start_frame: 124, end_frame: 277 })],
+        calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 })],
       }),
       model, g, "run_grid_legal_carried",
     );
@@ -629,7 +636,7 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
   it("an illegal carried multi-call span refuses at schema with the exact range and neighbors", () => {
     assert.throws(
       () => def.schema({
-        calls: [SHOT({ end_frame: 124 }), SHOT({ text: "then a turn", start_frame: 124, end_frame: 282 })],
+        calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 282 })],
       }),
       /calls\[1\]: authored range 124→282 cannot land on the 22\+17k carried grid; generated snapped range 102→277; legal neighboring end frames 277 and 294/,
     );
@@ -637,7 +644,7 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
 
   it("the renderer repeats the carried-grid refusal when a walked document is stale", () => {
     const walked = def.schema({
-      calls: [SHOT({ end_frame: 124 }), SHOT({ text: "then a turn", start_frame: 124, end_frame: 277 })],
+      calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 })],
     }) as Record<string, unknown>;
     ((walked.calls as Array<Record<string, unknown>>)[1]!.end_frame) = 282;
     assert.throws(
@@ -672,7 +679,7 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
   it("the compose carrier repeats the uniform span refusal for a stale opener", () => {
     // the film door re-rides the same law the walk admitted under:
     // a mutated opener span refuses before any node is built
-    const walked = def.schema({ calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })] }) as Record<string, unknown>;
+    const walked = def.schema({ calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })] }) as Record<string, unknown>;
     ((walked.calls as Array<Record<string, unknown>>)[0]!).end_frame = 68;
     assert.throws(
       () => def.compose(walked, model, new GraphBuilder(), "run_grid_illegal_opener"),
@@ -684,7 +691,7 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
     // a stale or direct caller bypassing the walk — the compose door
     // still refuses before any node builds (zero GPU)
     const walked = def.schema({
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
     }) as Record<string, unknown>;
     ((walked.calls as Array<Record<string, unknown>>)[1]!.knobs as Record<string, unknown>) = { length: 136 };
     const g = new GraphBuilder();
@@ -1134,7 +1141,7 @@ describe("the single-window doors", () => {
     const g = new GraphBuilder();
     // (re-pin 2026-11-06, c7bc662b7) calls own prompts — the film-level
     // prompt key is dead at this door; the sole call carries the text.
-    def.compose({ variant: "t4_open", calls: [SHOT({ text: "a slow push in" })] }, model, g, "run_nocalls");
+    def.compose({ variant: "t4_open", calls: [SHOT({ text: LAWFUL_TEXT })] }, model, g, "run_nocalls");
     const saves = ofClass(graphOf(g), "SaveVideo");
     assert.ok(saves.some(([, n]) => n.inputs.filename_prefix === "run_nocalls/h3_t4_w1"));
   });
@@ -1228,7 +1235,7 @@ describe("the overlays cannot go around Schemaster", () => {
   it("a bounded knob in the single-call lift rides the anchor window verbatim", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { width: 896 } }] }),
+      def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, knobs: { width: 896 } }] }),
       model, g, "run_lift_ok",
     );
     const out = graphOf(g);
@@ -1241,7 +1248,7 @@ describe("the overlays cannot go around Schemaster", () => {
     const g = new GraphBuilder();
     assert.throws(
       () => def.compose(
-        { calls: [SHOT(), SHOT({ text: "a second push", start_frame: 56, end_frame: 124, knobs: { steps: 999 } })] },
+        { calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, knobs: { steps: 999 } })] },
         model, g, "run_stanza_oob",
       ),
       /window 2 knobs.*steps.*30/,
@@ -1251,7 +1258,7 @@ describe("the overlays cannot go around Schemaster", () => {
   it("a bounded knob on a film window rides that window's scheduler verbatim", () => {
     const g = new GraphBuilder();
     def.compose(
-      { calls: [SHOT(), SHOT({ text: "a second push", start_frame: 56, end_frame: 124, knobs: { steps: 8 } })] },
+      { calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, knobs: { steps: 8 } })] },
       model, g, "run_stanza_ok",
     );
     const out = graphOf(g);
@@ -1263,7 +1270,7 @@ describe("the overlays cannot go around Schemaster", () => {
   it("an unknown knob rides inert (the lenient-object law — it never reaches a node input)", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { bogus_knob: 1 } }] }),
+      def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, knobs: { bogus_knob: 1 } }] }),
       model, g, "run_lift_unknown",
     );
     const json = JSON.stringify(graphOf(g));
@@ -1280,7 +1287,7 @@ describe("the overlays cannot go around Schemaster", () => {
   it("PORTRAIT: a 576x1024 (9:16) lift composes and the geometry rides the graph verbatim", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { width: 576, height: 1024 } }] }),
+      def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, knobs: { width: 576, height: 1024 } }] }),
       model, g, "run_lift_portrait",
     );
     const out = graphOf(g);
@@ -1293,7 +1300,7 @@ describe("the overlays cannot go around Schemaster", () => {
   it("PORTRAIT: a 32-step width (480) rides the lift (the 64 grid refused the operator's reels)", () => {
     const g = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90, knobs: { width: 480, height: 832 } }] }),
+      def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, knobs: { width: 480, height: 832 } }] }),
       model, g, "run_lift_32step",
     );
     const out = graphOf(g);
@@ -1314,28 +1321,28 @@ describe("the overlays cannot go around Schemaster", () => {
     const g = new GraphBuilder();
     assert.throws(
       () => def.compose(
-        def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], motion_prompt: "a retired rail's ghost" } as never),
+        def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }], motion_prompt: "a retired rail's ghost" } as never),
         model, g, "run_motion_refuses",
       ),
       /motion_prompt/,
     );
     assert.throws(
       () => def.compose(
-        def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], promptt: "typo of prompt" }),
+        def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }], promptt: "typo of prompt" }),
         model, g, "run_doc_typo",
       ),
       /promptt/,
     );
     assert.throws(
       () => def.compose(
-        def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], widht: 9999 }),
+        def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }], widht: 9999 }),
         model, g, "run_doc_typo2",
       ),
       /widht/,
     );
     // the riders still serve (a stated variant composes)
     def.compose(
-      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], variant: "t4_open" }),
+      def.schema({ calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }], variant: "t4_open" }),
       model, new GraphBuilder(), "run_doc_rider",
     );
   });
@@ -1369,7 +1376,7 @@ describe("the overlays cannot go around Schemaster", () => {
       () => def.compose(
         def.schema({
           calls: [
-            { text: "first push", start_frame: 0, end_frame: 56 },
+            { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
             { text: 123, start_frame: 56, end_frame: 124 },
           ],
         }),
@@ -1384,8 +1391,8 @@ describe("the overlays cannot go around Schemaster", () => {
     def.compose(
       def.schema({
         calls: [
-          { text: "first push", start_frame: 0, end_frame: 90, knobs: { fps_seconds: 4 } },
-          { text: "second push", start_frame: 90, end_frame: 192 },
+          { text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, knobs: { fps_seconds: 4 } },
+          { text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 192 },
         ],
       }),
       model, g, "run_nobed_pin",
@@ -1403,8 +1410,8 @@ describe("the overlays cannot go around Schemaster", () => {
     def.compose(
       {
         calls: [
-          { text: "first push", start_frame: 0, end_frame: 56 },
-          { text: "junk frames", start_frame: Number.NaN, end_frame: 124 },
+          { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+          { text: LAWFUL_TEXT_CARRIED, start_frame: Number.NaN, end_frame: 124 },
         ],
       },
       model, g, "run_nan_frames",
@@ -1441,7 +1448,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: rawClips,
       }),
       model, g, "run_clips_mix",
@@ -1508,7 +1515,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: rawClips,
       }),
       model, g, "run_clips_chain",
@@ -1536,7 +1543,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       }),
       model, g, "run_clips_absent",
     );
@@ -1559,7 +1566,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     assert.throws(
       () => def.compose(
         def.schema({
-          calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+          calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
           audio_clips: [{ id: "junk", name: "", src: "", start_frame: 10 }],
         }),
         model, new GraphBuilder(), "run_clips_positioned_junk",
@@ -1573,7 +1580,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     assert.throws(
       () => def.compose(
         def.schema({
-          calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+          calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
           audio_clips: [{ noSrc: true }],
         }),
         model, new GraphBuilder(), "run_clips_junk",
@@ -1584,7 +1591,7 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     assert.throws(
       () => def.compose(
         def.schema({
-          calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+          calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
           audio_clips: [{ id: "c", name: "x", src: "data:audio/wav;base64,AAA" }],
         }),
         model, g2, "run_clips_no_start",
@@ -1622,7 +1629,7 @@ describe("the valve's second arm (audio-carrying films free per-window)", () => 
     id: "c1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 100, dur_frames: 48, text: "get down, now.", ...over,
   });
   const FILM = {
-    calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+    calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
   };
 
   it("(a) the in-graph AUDIO stitch is GONE for audio-clips docs (the video join stays)", () => {
@@ -1761,7 +1768,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: [CLIP({ text: "finish it, please." })],
       }),
       model, g, "run_no_speech",
@@ -1784,7 +1791,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     // authored spelling → no second stamp
     const g1 = new GraphBuilder();
     def.compose(
-      def.schema({ calls: [SHOT({ text: "a quiet street, no dialogue, wind only" }), SHOT({ start_frame: 56, end_frame: 124 })] }),
+      def.schema({ calls: [SHOT({ text: LAWFUL_TEXT_QUIET }), SHOT({ start_frame: 56, end_frame: 124 })] }),
       model, g1, "run_no_speech_authored",
     );
     const out1 = graphOf(g1);
@@ -1808,7 +1815,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: [CLIP({ text: "finish it, please." })],
       }),
       model, g, "run_dialogue_cond",
@@ -1919,7 +1926,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: [CLIP()],
       }),
       model, g, "run_dialogue_seam",
@@ -1954,7 +1961,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: rawClips,
       }),
       model, g, "run_dialogue_duck",
@@ -1986,7 +1993,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: rawClips,
         duck_depth_db: -22,
       }),
@@ -1994,7 +2001,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     );
     assert.equal(ofClass(graphOf(g), "MeliteFilmAudioMix")[0]![1].inputs.duck_db, -22, "the knob wires the mix node's depth verbatim");
     const gated = def.schema({
-      calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+      calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
       audio_clips: rawClips,
       duck_depth_db: -22,
     }) as Record<string, unknown>;
@@ -2019,7 +2026,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: rawClips,
       }),
       model, g, "run_music_only",
@@ -2051,7 +2058,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const g = new GraphBuilder();
     def.compose(
       def.schema({
-        calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+        calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
         audio_clips: rawClips,
       }),
       model, g, "run_dur0",
@@ -2075,7 +2082,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
       def.schema({
         calls: [
           SHOT({ image: "/m/guide.png" }),
-          SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+          SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
         ],
         sla_enabled: false,
       }),
@@ -2110,7 +2117,7 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     def.compose(
       def.schema({
         calls: [SHOT(), SHOT({
-          text: "then a turn", start_frame: 56, end_frame: 124,
+          text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124,
           refs: { audios: ["a.mp3", "b.mp3"] },
         })],
         audio_clips: [CLIP({ text: "get down, now." })],

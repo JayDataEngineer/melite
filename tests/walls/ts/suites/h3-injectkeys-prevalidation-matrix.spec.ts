@@ -66,6 +66,7 @@ import { deriveWindowFamily, FAMILY_LAW } from "@melite/models-h3/timelineContra
 import { axisPickPatch, composeValidate } from "@melite/card-base/client";
 import type { FormSpecDoc, FormVariantRow } from "@melite/card-base/client";
 import { omitFilmOnlyField, omitFilmRecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitLaneRecipe.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 /** THE FINISH QUARTET + the route — the burn's keys, lawful on every
  *  lane since the chain hoist (2026-11-15). The sorted spelling is
@@ -108,14 +109,14 @@ const LANES: Array<{ lane: string, assemble: () => Record<string, unknown> }> = 
     lane: "t4_open",
     assemble: () => ({
       seed: 7, width: 768, height: 448, steps: 12,
-      calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
     }),
   },
   {
     lane: "t4r",
     assemble: () => ({
       seed: 7, width: 768, height: 448, steps: 12,
-      calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
       keyframes: [{ image: "anchor.png", frame: 0 }],
     }),
   },
@@ -127,8 +128,8 @@ const LANES: Array<{ lane: string, assemble: () => Record<string, unknown> }> = 
       // cut window is 22+17k, a carried window's span 17f): 0→39 is
       // the 22+17 first window, 39→56 the carried 17f span.
       calls: [
-        { text: "the harbour holds its breath", start_frame: 0, end_frame: 39 },
-        { text: "then the tide turns", start_frame: 39, end_frame: 56 },
+        { text: LAWFUL_TEXT, start_frame: 0, end_frame: 39 },
+        { text: LAWFUL_TEXT_CARRIED, start_frame: 39, end_frame: 56 },
       ],
     }),
   },
@@ -364,8 +365,8 @@ describe("THE PRE-VALIDATION SEAT, re-aimed (the matrix — no served cell refus
     // the ref-surface wire literals, and the blank edges (the presence
     // grammar's agreement with normalizeDeclaredRefs).
     const probes: Array<{ doc: Record<string, unknown>; family: string; why: string }> = [
-      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 39 }, { text: "b", start_frame: 39, end_frame: 56 }] }, family: "t4_chain", why: "two calls" },
-      { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], keyframes: [{ image: "anchor.png", frame: 0 }] }, family: "t4r", why: "the keyframe pin" },
+      { doc: { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 39 }, { text: LAWFUL_TEXT_CARRIED, start_frame: 39, end_frame: 56 }] }, family: "t4_chain", why: "two calls" },
+      { doc: { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }], keyframes: [{ image: "anchor.png", frame: 0 }] }, family: "t4r", why: "the keyframe pin" },
       { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], last_frame: "end.png" }, family: "t4r", why: "the last_frame string" },
       { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90 }], ref_images: "a.png, b.png" }, family: "t4r", why: "the wire-literal ref surface" },
       { doc: { calls: [{ text: "a", start_frame: 0, end_frame: 90, image: "guide.png" }] }, family: "t4r", why: "the per-call guide" },

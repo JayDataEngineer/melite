@@ -221,12 +221,12 @@ lower resolution tier, fewer armed arms), and re-submit.
     "seed": 42,
     "calls": [
       {
-        "text": "A quiet harbour at dawn; the camera drifts toward the water while gulls call overhead.",
+        "text": "Live-action, cinematic, shallow depth of field. A quiet harbour at dawn: still water holding the last of the blue night, moored boats dark against a paling sky, a single gull working the far shallows with slow, deliberate wingbeats. The frame holds the same balance throughout — the quay's edge low in the picture, the masts rising through the mist without crossing. The camera pushes in with small amplitude at slow speed toward the water, settling as the first light warms the hulls. Gulls call overhead, ropes knock gently against the wood, and the water laps the stone quay in a slow, even rhythm that never breaks the calm.",
         "start_frame": 0,
         "end_frame": 124
       },
       {
-        "text": "The camera continues over the same water; the light warms and a small boat enters from the left.",
+        "text": "Live-action, cinematic, shallow depth of field. The same harbour as the light warms: the water turned to low gold, the boats' reflections steadying, a small boat entering from the left with an even, unhurried stroke. The gull has landed on the near piling and stays there, folded. The camera pans right with small amplitude at slow speed, following the boat across the frame without losing the quay's edge. Gulls call overhead, the boat's wake spreads and flattens behind it, and the water keeps its slow rhythm against the worn stone quay.",
         "start_frame": 124,
         "end_frame": 243
       }
@@ -243,3 +243,9 @@ For camera language — shot sizes, moves, seams, and the re-shoot chain —
 `skills/cinemadir/SKILL.md` is the focused skill; when the ask names a
 camera move it is the deeper teacher beyond this card doc. For the edit
 door's dials and cells, `skills/edit/SKILL.md`.
+
+## Call text and dialogue
+
+Read `skills/prompt-writing/SKILL.md` before writing the first `params.calls[].text` of a film.
+Dialogue law is the dictionary at `references/h3/reference.json` — rows move the mouth, never prose.
+The gate at compose/press refuses thin calls by rule id (`h3-prompt-dictionary.json`).

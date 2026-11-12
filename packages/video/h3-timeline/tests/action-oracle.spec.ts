@@ -18,6 +18,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -63,14 +64,14 @@ function refuses(doc: Record<string, unknown>): string {
 /** the estate's own shot-row shape (card.spec's SHOT): the calls
  *  vocabulary the schema's CALL_KEYS gate admits. */
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 describe("the h3 film action oracle (the interlock)", () => {
   it("a frozen single-window doc (t4_open) composes through the declared action", () => {
     // (re-pin 2026-11-06, c7bc662b7) the film-level prompt is DEAD —
     // calls own prompts; the sole-call lift carries the text.
-    const graph = oneWay({ calls: [SHOT({ text: "a lantern pushes off through the rain", knobs: { width: 768, height: 448 } })], length: 56 });
+    const graph = oneWay({ calls: [SHOT({ knobs: { width: 768, height: 448 } })], length: 56 });
     const nodes = Object.values(graph);
     assert.ok(nodes.some((n) => n.class_type === "MiniMaxH3ReferenceToVideo"), "the r2v lane composes (r2v is the only lane)");
     assert.ok(nodes.some((n) => n.class_type === "SaveVideo"), "the window saves");
@@ -88,7 +89,7 @@ describe("the h3 film action oracle (the interlock)", () => {
       variant: "t4r",
       image: "/bench/guide.png",
       ref_images: ["/bench/ref_a.png", "/bench/ref_b.png"],
-      calls: [SHOT({ text: "the courier turns to face the camera" })],
+      calls: [SHOT()],
       length: 56,
     });
     const nodes = Object.values(graph);
@@ -100,7 +101,7 @@ describe("the h3 film action oracle (the interlock)", () => {
     const graph = oneWay({
       calls: [
         SHOT(),
-        SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 }),
       ],
       length: 124,
     });
@@ -123,7 +124,7 @@ describe("the h3 film action oracle (the interlock)", () => {
 
   it("the single-call lift composes through the declared action", () => {
     const graph = oneWay({
-      calls: [SHOT({ text: "one lifted window", image: "/bench/first.png", knobs: { width: 768, height: 448 } })],
+      calls: [SHOT({ image: "/bench/first.png", knobs: { width: 768, height: 448 } })],
       length: 56,
     });
     const nodes = Object.values(graph);
@@ -132,8 +133,12 @@ describe("the h3 film action oracle (the interlock)", () => {
     // THE VOID PIN (2026-10-11): the lifted text MUST reach the
     // graph — the incident composed seed-only placeholders from a
     // calls-carrying doc. Shape alone never proves content rode.
+    // (re-pin 2026-11-12, the prompt gate) the lifted window rides
+    // the default lawful call text — the pin asserts THAT text
+    // reaches the graph, never a caption-grade literal the gate
+    // would (correctly) refuse.
     assert.ok(
-      JSON.stringify(graph).includes("one lifted window"),
+      JSON.stringify(graph).includes(LAWFUL_TEXT),
       "the lifted call text reaches the composed graph",
     );
   });
@@ -151,8 +156,8 @@ describe("the h3 film action oracle (the interlock)", () => {
     const graph = oneWay({
       width: 512, height: 640,
       calls: [
-        SHOT({ text: "window one plain" }),
-        SHOT({ text: "window two knobbed", start_frame: 56, end_frame: 124, knobs: { width: 768, height: 448 } }),
+        SHOT(),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, knobs: { width: 768, height: 448 } }),
       ],
       length: 124,
     });
@@ -174,7 +179,7 @@ describe("the h3 film action oracle (the interlock)", () => {
 
   it("the lora-steps arm (single window + a steps-carrying lora bag) composes through the declared action", () => {
     const graph = oneWay({
-      calls: [SHOT({ text: "the drone shot holds on the bridge" })],
+      calls: [SHOT()],
       loras: [{ on: true, lora: "h3/distill_v4.safetensors", str: 0.6, steps: 8 }],
       length: 56,
     });

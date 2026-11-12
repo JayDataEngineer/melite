@@ -84,6 +84,7 @@ import type { MergeRow } from "../../../engines/comfyui-cordis/src/comfyui-merge
 import { join } from "node:path";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -140,7 +141,7 @@ function assertNoLoaderBuilt(graph: Graph, cls: string, input: string, spell: st
 }
 
 const SHOT = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  text: "a slow push in", start_frame: 0, end_frame: 56, ...over,
+  text: LAWFUL_TEXT, start_frame: 0, end_frame: 56, ...over,
 });
 
 /** A producer row the merge reads: one Save* node publishing `default`
@@ -278,7 +279,7 @@ describe("the h3 spell arms ride the wire (GAPS-20: the value crosses through th
 const FILM_DOC = (audio_clips: Array<Record<string, unknown>>): Record<string, unknown> => ({
   length: 56,
   audio_clips,
-  calls: [SHOT(), SHOT({ text: "then a turn", start_frame: 56, end_frame: 124 })],
+  calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
 });
 
 const findMix = (graph: Graph): [string, GNode] => {

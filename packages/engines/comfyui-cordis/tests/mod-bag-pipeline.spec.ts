@@ -54,6 +54,9 @@ const stackRows = (graph: Graph): Array<Array<Record<string, unknown>>> =>
 // proving hand-copies rot; a wall judging a copy of the truth passes
 // while the truth burns). Import the served rows; never retype them.
 import { H3_LORA_ROWS } from "@melite/models-h3/mods/loras";
+// the gate-lawful call text (one source: the h3 card own verified
+// fixture texts - the compose door refuses caption-grade text now)
+import { LAWFUL_TEXT } from "../../../video/h3-timeline/tests/lawfulText.ts";
 const turbo = H3_LORA_ROWS.find((r) => r.id === "h3_lightx2v_turbo")!;
 // the DECL's birth row (2026-11-01, the silver-dareties default
 // order: silveroxides' OFFICIAL silver_official_releases DARE-TIES
@@ -74,7 +77,7 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
 
   it("THE CLASS LAW: every stack row carries a non-empty lora filename — a row without one is the silent no-op, anywhere in the graph", () => {
     const graph = svc.compose(H3_CARD, H3_MODEL, {
-      calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
       loras: [{ id: "h3_lightx2v_turbo", strength: 1 }],
       seed: 42,
     }, "wall_bag") as Graph;
@@ -100,14 +103,14 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     for (const strength of [9, -0.5, Number.NaN]) {
       assert.throws(
         () => svc.compose(H3_CARD, H3_MODEL, {
-          calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+          calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
           loras: [{ id: "h3_lightx2v_turbo", strength }],
         }, "wall_strength"),
         /lora-strength-range|a number in \[0, 2\] is required/,
       );
     }
     const graph = svc.compose(H3_CARD, H3_MODEL, {
-      calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
       loras: [{ id: "h3_lightx2v_turbo", strength: 0.5 }],
     }, "wall_strength_ok") as Graph
     assert.ok(
@@ -119,7 +122,7 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
   it("AN UNKNOWN ID REFUSES LOUD at the service door — never a silent plain run", () => {
     assert.throws(
       () => svc.compose(H3_CARD, H3_MODEL, {
-        calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
         loras: [{ id: "ghost", strength: 1 }],
       }, "wall_ghost"),
       /unknown-lora|names lora id 'ghost'/,
@@ -132,7 +135,7 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
     // entry carries before listing the catalog.
     assert.throws(
       () => svc.compose(H3_CARD, H3_MODEL, {
-        calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
         loras: [{ loras: "krea2_darkbrush" }],
       }, "wall_shape"),
       /neither 'name'.*nor 'id'.*entries are shaped/,
@@ -147,7 +150,7 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
   // default the UI never showed).
   it("AN ABSENT BAG rides the family default — and THAT row too carries the DECL'S real filename", () => {
     const graph = svc.compose(H3_CARD, H3_MODEL, {
-      calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
       seed: 1,
     }, "wall_empty") as Graph;
     const rows = stackRows(graph).flat();
@@ -168,7 +171,7 @@ describe("THE MOD-BAG PIPELINE (studio bag → service door → loader stack)", 
 
   it("THE EMPTY BAG IS THE NO-LORAS OVERRIDE (J1): loras: [] composes ZERO rows — never the family default", () => {
     const graph = svc.compose(H3_CARD, H3_MODEL, {
-      calls: [{ text: "x", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
       loras: [],
       seed: 1,
     }, "wall_empty_bag") as Graph;

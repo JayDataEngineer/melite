@@ -44,6 +44,7 @@ import { parseH3Facts } from '@melite/models-h3/actions'
 import { assertOverlayGated } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { EDIT_FIELDS } from './editDecl.ts'
+import { checkPressParams, refusePress, promptAdmissionWarns } from './promptGate.ts'
 
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
@@ -771,6 +772,19 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
       renderH3Edit(entry, mask, reference, p, parseH3Facts(model.lane_inputs), g, runId)
       return
     }
+    // THE PROMPT GATE (the VID GEN handoff, operator 2026-11-12):
+    // the film contract's calls judge against the prompt
+    // dictionary (src/agents/h3-prompt-dictionary.json — the same
+    // rules the prompt-writing skill documents in prose; one
+    // source, two consumers) at EVERY compose, press included:
+    // caption-grade text REFUSES with the rule id and the
+    // dictionary's message verbatim (the message is the
+    // teaching), craft misses WARN, and a named waiver
+    // (params.prompt_waivers) passes with a receipt line stamped
+    // on the run record — never silent. The edit arms return
+    // above and skip this gate: they re-film an existing
+    // contract's windows, never author fresh call text.
+    refusePress(checkPressParams(p as Record<string, unknown>))
     instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
   },
 }
@@ -1010,6 +1024,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // module the client compose mirror derives through. The
     // per-card reseatFamily face (the ERROR g/h cure's spelling,
     // 2026-11-08) is dead.
+    // THE GATE'S RECEIPT HALF (the VID GEN handoff, 2026-11-12): the
+    // prompt gate's non-refusing findings — warn severities and every
+    // NAMED waiver — as admission-warn lines the start door stamps on
+    // the run record (served on run_status): a waived rule or a craft
+    // miss is never silent. A function like schema/compose (never
+    // serialized).
+    admissionWarns: promptAdmissionWarns,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
       // schemaCarrier equivalent: this card is WRAPPED, so the served
@@ -1054,9 +1075,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // `recipe` LEFT THIS LIST TOO (2026-10-16, audit 0be61df8 F5):
       // no reader, no producer, no admit — a doc carrying it refuses
       // loud here, which is the dead-layer law working.
+      // `prompt_waivers` rides for the prompt gate (the VID GEN
+      // handoff, 2026-11-12): the named rule ids a press waives —
+      // recorded on the run record, never silent.
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
         'refs', 'replace', 'repair', 'extend', 'edit', 'reshoot', 'variant', 'quant', 'refine', 'upscale', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
+        'prompt_waivers',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

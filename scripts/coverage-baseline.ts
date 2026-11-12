@@ -659,6 +659,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/useTimelineEnvelope.ts': { statements: 94.74, branches: 87.5, functions: 75, lines: 94.12 },
   '**/packages/video/h3-timeline/src/card.ts': { statements: 99.37, branches: 99.34, functions: 95.83, lines: 99.26 },
   '**/packages/video/h3-timeline/src/editDecl.ts': { statements: 90.9, branches: 78.26, functions: 100, lines: 88.88 },
+  // (row 2026-11-12: promptGate — the VID GEN handoff's oracle port;
+  // branches 95.49 is the dictionary's waiver-shortcut and the
+  // non-call rule kinds' else arms, judged by prompt-gate.spec)
+  '**/packages/video/h3-timeline/src/promptGate.ts': { statements: 100, branches: 95.49, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/client/index.ts': { statements: 87.5, branches: null, functions: 66.67, lines: 85.71 },
   '**/packages/video/h3-timeline/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
   '**/packages/video/h3-timeline/src/tool.ts': { statements: 75, branches: 50, functions: 50, lines: 75 },

@@ -37,6 +37,7 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { renderH3RefineBag } from "../../../models/h3/src/refine.ts";
+import { LAWFUL_TEXT } from "./lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -79,7 +80,7 @@ const REFINE_ENTRY = (): Record<string, unknown> => ({
 });
 
 const body = (refine: Array<Record<string, unknown>>): Record<string, unknown> => ({
-  calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }], length: 56,
+  calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }], length: 56,
   refine,
 });
 

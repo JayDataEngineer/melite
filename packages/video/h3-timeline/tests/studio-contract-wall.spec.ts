@@ -46,6 +46,7 @@ import { omitFilmRecipeRow } from "../src/ui/studio/omitLaneRecipe.ts"
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 /** The card's declared surface: the params schema's own names (the
  * same walk the freshness gate trusts). The model knob rides the
@@ -516,7 +517,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
   // delete ride survives where it belongs: a base-carried stamp the
   // state explicitly cleared rides the merge-patch null ONCE.
   it("derived-t4r serialization carries every finish stamp and composes green (the retirement's positive proof)", () => {
-    const t4rCalls = [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }]
+    const t4rCalls = [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, image: "anchor.png" }]
     const base = { seed: 1, calls: t4rCalls, sr_switch: true, second_pass_enabled: true }
     // every finish pole stated: masters, switches, methods, models, targets
     const stamped = { ...hydrateLayerA(base as never),
@@ -593,14 +594,14 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
         family: "t4r",
         seats: {
           keyframes: [{ image: "anchor.png", frame: 0 }],
-          calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90 }],
+          calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
         },
         residue: { sr_switch: true, second_pass_enabled: true },
       },
-      { family: "t4_open", seats: { calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }] }, residue: null },
+      { family: "t4_open", seats: { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }] }, residue: null },
       {
         family: "t4_chain",
-        seats: { calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }, { text: "the gulls turn east", start_frame: 90, end_frame: 158 }] },
+        seats: { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }, { text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 158 }] },
         residue: null,
       },
     ]
@@ -662,7 +663,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
       seed: 7, width: 768, height: 448, steps: 12,
       second_pass_enabled: true, sr_switch: true,
       sharpen_enabled: false, interpolate_enabled: false,
-      calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
     }
     expect(deriveWindowFamily(base)).toBe("t4_open")
     // THE PIN: base + the keyframe pin derives t4r with the stamps
@@ -727,7 +728,7 @@ describe("the studio contract wall (Layer A writes only card truth)", () => {
         film,
         h3schemaFn({
           variant: undefined,
-          calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+          calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, image: "anchor.png" }],
           second_pass_enabled: true, sr_switch: true,
           seed: 1,
         }),

@@ -83,6 +83,7 @@ import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
 } from "@deepseek-ai/dsh-storage-domain";
 import type { Plugin } from "@deepseek-ai/cordis";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -866,19 +867,19 @@ const H3_LANE_DOCS: ReadonlyArray<{ seats: Record<string, unknown>; extra: Recor
     // since the hoist the lane fires them and the doc composes.
     seats: {
       keyframes: [{ image: "anchor.png", frame: 0 }],
-      calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90 }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
     },
     extra: { seed: 7, sr_switch: true, second_pass_enabled: true },
   },
   {
-    seats: { calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }] },
+    seats: { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }] },
     extra: H3_STAMP_COMPLETION,
   },
   {
     seats: {
       calls: [
-        { text: "the harbour holds its breath", start_frame: 0, end_frame: 90 },
-        { text: "the gulls turn east", start_frame: 90, end_frame: 158 },
+        { text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 },
+        { text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 158 },
       ],
     },
     extra: H3_STAMP_COMPLETION,
@@ -898,7 +899,7 @@ const H3_BURN_FOUR = ["interpolate_enabled", "second_pass_enabled", "sharpen_ena
  *  behind the undefined-means-absent law. The emitted set here is the
  *  writer's full persisted vocabulary; the coverage clause judges it. */
 function h3CoverageDoc(): Record<string, unknown> {
-  const base: Record<string, unknown> = { calls: [{ text: "x", start_frame: 0, end_frame: 90 }] };
+  const base: Record<string, unknown> = { calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }] };
   const state: Record<string, unknown> = {
     ...hydrateLayerA(base as never), ...H3_STAMP_COMPLETION,
     fps: 30, variant: "timeline", length: 90,
@@ -1360,7 +1361,7 @@ describe("every studio tenant's persisted key set composes on its own derived la
           for (const v of finishStampRows) {
             const openBase: Record<string, unknown> = {
               seed: 7,
-              calls: [{ text: "the harbour holds its breath", start_frame: 0, end_frame: 90 }],
+              calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
               ...H3_STAMP_COMPLETION,
             };
             try {
@@ -1374,7 +1375,7 @@ describe("every studio tenant's persisted key set composes on its own derived la
             const t4rBase: Record<string, unknown> = {
               seed: 7,
               keyframes: [{ image: "anchor.png", frame: 0 }],
-              calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+              calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, image: "anchor.png" }],
               ...(v.defaults ?? {}),
             };
             try {
@@ -1389,7 +1390,7 @@ describe("every studio tenant's persisted key set composes on its own derived la
           const fourKeyDoc: Record<string, unknown> = {
             seed: 7,
             keyframes: [{ image: "anchor.png", frame: 0 }],
-            calls: [{ text: "the courier steps in", start_frame: 0, end_frame: 90, image: "anchor.png" }],
+            calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, image: "anchor.png" }],
             interpolate_enabled: true, second_pass_enabled: true, sharpen_enabled: true, sr_switch: true,
           };
           let burnRefused = "";
@@ -1637,7 +1638,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
       model: "h3",
       variant: "timeline",
       quant: "int8",
-      calls: [{ text: "one shot", start_frame: 0, end_frame: 90, image: "webp/run1/pin-0.png" }],
+      calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, image: "webp/run1/pin-0.png" }],
       sr_switch: true,
     };
     assert.equal(deriveWindowFamily(t4rBody as never), "t4r", "the probe body derives t4r on the walk's own derivation — a stale derivation invalidates this arm, not the door");
@@ -1683,7 +1684,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
         stage: String(seeded.stage),
         params: {
           model: "h3", variant: "timeline", quant: "int8",
-          calls: [{ text: "one shot", start_frame: 0, end_frame: 90, image: "webp/run1/pin-0.png" }],
+          calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90, image: "webp/run1/pin-0.png" }],
           sr_switch: true,
         },
         expect_rev: seeded.rev,

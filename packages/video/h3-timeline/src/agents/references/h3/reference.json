@@ -1,0 +1,93 @@
+{
+ "about": "The dialogue modes this card can press — an index that points at the detailed description of each. The vendor guides say what the model accepts; this file says what WE do with it, and where the full explanation lives.",
+ "updated": "2026-11-12",
+ "law": "The kit makes the dialogue beforehand (operator, 2026-11-11): a window carries OUR line or declares no dialogue — never a line the render invents. The mode is DERIVED from the payload (which of audio_clips rows and ref_audios the doc carries), never declared by an author.",
+ "authority": {
+  "code": "the card's compose walk (card.ts) — the film arm reads rows and references off the admitted doc",
+  "detail": "skills/prompt-writing/SKILL.md §5 — the mode table there is this file's rendering, never a second source",
+  "gate": "promptGate.ts — checkPress runs the dialogue rules (h3-prompt-dictionary.json) at compose and press"
+ },
+ "vendor": [
+  {
+   "file": "base-en.txt",
+   "covers": "the three core fields, [Shot N] + cut times, speakers (S1)/<d>, the camera vocabulary, overall_soundscape, non_diegetic_music"
+  },
+  {
+   "file": "ref-en.txt",
+   "covers": "Ref2VA's six sections, the <Subject N>/<Picture N>/<Video N>/<Audio N> labels and the relationship markers"
+  },
+  {
+   "file": "requirements.json",
+   "covers": "the 230-record conformance oracle, each record quoted verbatim from a guide section"
+  },
+  {
+   "file": "SKILL.md",
+   "covers": "the vendor's agent skill: workflow, mode router, output rules"
+  }
+ ],
+ "modes": [
+  {
+   "id": "placed",
+   "rides": [
+    "audio_clips"
+   ],
+   "derived_by": "rows only",
+   "action_line_says": "the line the audio carries",
+   "must_not_say": [
+    "no dialogue"
+   ],
+   "scores": [
+    "measure.lipsync.sync",
+    "dialogue.mix onsets"
+   ],
+   "status": "pressed"
+  },
+  {
+   "id": "referenced",
+   "rides": [
+    "audio_clips",
+    "ref_audios"
+   ],
+   "derived_by": "rows + reference audio",
+   "action_line_says": "the line the audio carries",
+   "must_not_say": [
+    "no dialogue"
+   ],
+   "scores": [
+    "measure.lipsync.sync",
+    "the operator's ear"
+   ],
+   "status": "closed — with rows placed the soundtrack is identical (corr 0.827 both arms); the reference adds nothing the row has not set",
+   "experiment": "the same rows plus the same audio as ref_audios, one variable against `placed` at seed 8251; the naturalness half of the verdict is the operator's, because the agent cannot hear the film",
+   "result": "the reference voice changed the soundtrack (bed -14.73/-12.84 dB vs the join at -44.78 dB) but not the mouth (corr0 0.4605 vs 0.4156, mouth_std 0.0693 vs 0.0699)."
+  },
+  {
+   "id": "silent",
+   "rides": [],
+   "derived_by": "neither rows nor references",
+   "action_line_says": "no dialogue",
+   "must_not_say": [],
+   "scores": [
+    "the landed mix's audio peak",
+    "the mouth's aperture"
+   ],
+   "status": "pressed"
+  },
+  {
+   "id": "ref-only",
+   "rides": [
+    "ref_audios"
+   ],
+   "derived_by": "reference audio only",
+   "action_line_says": "the voice in the reference audio",
+   "must_not_say": [
+    "no dialogue"
+   ],
+   "scores": [
+    "measure.lipsync.sync",
+    "the landed mix's audio peak"
+   ],
+   "status": "closed — without rows the model places the voices itself (measured 1.92 s late, the silent window speaks)"
+  }
+ ]
+}

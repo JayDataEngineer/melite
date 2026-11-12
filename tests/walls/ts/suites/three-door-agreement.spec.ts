@@ -67,6 +67,7 @@ import { CardRegistryService } from "../../../../packages/harness/estate-queue/s
 import { composeValidate } from "../../../../packages/web/card-base/src/spec.ts";
 import { FAMILY_LAW, deriveWindowFamily } from "@melite/models-h3/timelineContract";
 import { familyAdmissionOf } from "../../../../packages/estate/drafts/src/remote.ts";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 let svc: CardRegistryService;
 let cards: CardRegistryLike;
@@ -79,7 +80,7 @@ let cards: CardRegistryLike;
 const BURN_QUARTET: Record<string, unknown> = {
   model: "h3", variant: "timeline", quant: "int8",
   keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
-  calls: [{ text: "one shot", start_frame: 0, end_frame: 90 }],
+  calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
   interpolate_enabled: true, second_pass_enabled: true,
   sharpen_enabled: true, sr_switch: true,
 };
@@ -87,7 +88,7 @@ const BURN_QUARTET: Record<string, unknown> = {
 const FILM_ONLY_DOC: Record<string, unknown> = {
   model: "h3", variant: "timeline", quant: "int8",
   keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
-  calls: [{ text: "one shot", start_frame: 0, end_frame: 90 }],
+  calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
   duck_depth_db: -14,
 };
 
@@ -95,11 +96,11 @@ const FILM_ONLY_DOC: Record<string, unknown> = {
 const CLEAN_T4R: Record<string, unknown> = {
   model: "h3", variant: "timeline", quant: "int8",
   keyframes: [{ image: "webp/run1/pin-0.png", frame: 0 }],
-  calls: [{ text: "one shot", start_frame: 0, end_frame: 90 }],
+  calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
 };
 const CLEAN_T4_OPEN: Record<string, unknown> = {
   model: "h3", variant: "timeline", quant: "int8",
-  calls: [{ text: "one shot", start_frame: 0, end_frame: 90 }],
+  calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 }],
   sr_switch: true,
 };
 // (the spans ride the door's own grid law — first window 22+17·4,
@@ -108,8 +109,8 @@ const CLEAN_T4_OPEN: Record<string, unknown> = {
 const CLEAN_FILM: Record<string, unknown> = {
   model: "h3", variant: "timeline", quant: "int8",
   calls: [
-    { text: "one", start_frame: 0, end_frame: 90 },
-    { text: "two", start_frame: 90, end_frame: 175 },
+    { text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 },
+    { text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 175 },
   ],
   sr_switch: true,
 };

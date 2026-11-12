@@ -535,8 +535,8 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
           model: "h3",
           width: 768, height: 448, steps: 8,
           calls: [
-            { text: "a slow push in", start_frame: 0, end_frame: 56 },
-            { text: "then a turn", start_frame: 56, end_frame: 124 },
+            { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+            { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 },
           ],
           length: 124,
           audio_clips: audioClips,
@@ -585,8 +585,8 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
         refmod_save: false,
         ref_mods: ["refs/refmod_identity.png"],
         calls: [
-          { text: "a slow push in", start_frame: 0, end_frame: 56 },
-          { text: "then a turn", start_frame: 56, end_frame: 124 },
+          { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+          { text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 },
         ],
         length: 124,
       };
@@ -648,7 +648,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
       const body = {
         model: "h3",
         width: 768, height: 448, steps: 8,
-        calls: [{ text: "a slow push in", start_frame: 0, end_frame: 56 }],
+        calls: [{ text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 }],
         length: 56,
       };
       const admitted = coerceSnapshotBody(door.defsSync().get("h3-timeline")!, body);
@@ -740,6 +740,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
 // roster the sweep rides.
 import { CARD_DROPPABLE, unjustifiedDropped } from "../../../../packages/harness/estate-queue/src/cardsDroppable.ts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 describe("runs-graph-receipt — THE DROPPED-KNOB ALLOWABILITY LAW (F3-04)", () => {
   it("ARM i — THE RIG-P0-15 SHAPE: a declared router drop is justified; the same drop undeclared, or a stray key beside it, is the unjustified drop this law reds on", () => {

@@ -122,6 +122,14 @@ export interface CardDefinition {
    *  the old `unknown` forced cast-throughs at every walk site.) */
   schemaCarrier?: Schema
   compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string, estate?: ComposeEstate): void
+  /** THE ADMISSION-WARN SEAM (the VID GEN handoff, 2026-11-12): the
+   * card's non-refusing gate findings (warn severities, named
+   * waivers) as lines the start door stamps on the run record at
+   * registration — served on run_status, never a refusal, never
+   * silent. A function like schema/compose (never serialized — the
+   * receipt derives from the admitted doc at press time). Absent =
+   * the card voices no admission warns. */
+  admissionWarns?: (params: Record<string, unknown>) => readonly string[]
   /** Post-serialize pass — the lane's autofill-strip calibration
    *  (stripAutofill / stripEmptyAutofill). Cards whose renderer
    *  strips port the table here. */

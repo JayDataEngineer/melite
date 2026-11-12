@@ -48,6 +48,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "@melite/comfyui-cordis";
+import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -77,8 +78,8 @@ const FILM = (over: Record<string, unknown> = {}, w2knobs?: Record<string, unkno
   model: "h3", variant: "timeline", quant: "int8",
   ...over,
   calls: [
-    { text: "one", start_frame: 0, end_frame: 90 },
-    { text: "two", start_frame: 90, end_frame: 175, ...(w2knobs !== undefined ? { knobs: w2knobs } : {}) },
+    { text: LAWFUL_TEXT, start_frame: 0, end_frame: 90 },
+    { text: LAWFUL_TEXT_CARRIED, start_frame: 90, end_frame: 175, ...(w2knobs !== undefined ? { knobs: w2knobs } : {}) },
   ],
 });
 
