@@ -288,6 +288,31 @@ describe('specBody — the one-bag-one-row serve (F34 synthetic arms)', () => {
       'merging by a value matching nothing would leave every chip fact-free while the suite stays green',
     )
   })
+
+  test('a keyed field on an option_key-less pack falls to the id key — and an empty engine catalog refuses loud', () => {
+    // THE 'id' DEFAULT's firing arm (the swap re-seat, 2026-11-12):
+    // neither the card kind nor the pack row names an option_key
+    // (the mask pack declares none), so the keyed-field walk rides
+    // the 'id' default — and with zero catalog rows every stated id
+    // is foreign, so the F6 refusal fires naming 'id' and the pack.
+    // The honest-empty engine (nothing installed) never serves
+    // fact-free chips off a card-declared key.
+    reset()
+    mockState.decls = { 'syn-fam': decl({ mods: ['mask'] }) }
+    mockState.envelopes = { mask: ENVELOPE }
+    mockState.catalog = { mask: [] }
+    const kind = {
+      kind: 'mask', label: 'Region Mask', param_key: 'mask', cardinality: 'list',
+      fields: [
+        { name: 'id', label: 'Mask', type: 'select', options: ['ghost'] },
+      ],
+    } as unknown as DeclaredModifierKind
+    assert.throws(
+      () => serve({ identity: { label: 'Syn', genre: 'image' }, mods: [kind] }),
+      /form-spec: card 'syn-card' declares params\.mask whose 'id' options name no catalog row of pack 'mask' — the bag's ids must come from the pack's own catalog/,
+      'the walk keys on id by default, and an empty catalog makes every stated id foreign',
+    )
+  })
 })
 
 describe('specBody — the runtimes block and the boot facts arm', () => {

@@ -895,13 +895,22 @@ function specModifiers(
       const key = entry.option_key ?? packRow.option_key ?? 'id'
       const keyedField = (entry.fields ?? []).find((f) => f.name === key)
       if (keyedField !== undefined && Array.isArray(keyedField.options) && keyedField.options.length > 0) {
-        const catalogValues = new Set((packRow.options ?? []).map((o) => o.value))
+        // THE MIRROR OWNS the array: the envelope walk assigns
+        // entry.options unconditionally (empty when the catalog serves
+        // none), so a suppressed pack row always carries it — the
+        // wave-33 deletion class: a fallback that cannot fire is dead
+        // code, and the ratchet counts the one side it never takes.
+        const catalogValues = new Set(packRow.options!.map((o) => o.value))
         const foreign = keyedField.options.filter((o) => {
           const value = typeof o === 'string' ? o : o.value
           return !catalogValues.has(value)
         })
         if (foreign.length === keyedField.options.length) {
-          throw new Error(`form-spec: card '${card}' declares params.${entry.param_key} whose '${key}' options name no catalog row of pack '${packRow.schema_key ?? entry.param_key}' — the bag's ids must come from the pack's own catalog`)
+          // packRow.schema_key rides verbatim (the envelope walk stamps
+          // it unconditionally — the wave-33 deletion class: the
+          // entry.param_key fallback could never fire, and the ratchet
+          // counted it).
+          throw new Error(`form-spec: card '${card}' declares params.${entry.param_key} whose '${key}' options name no catalog row of pack '${packRow.schema_key}' — the bag's ids must come from the pack's own catalog`)
         }
       }
     }
@@ -1041,14 +1050,11 @@ function runtimeRowsOf(boarded: readonly string[]): NonNullable<FormSpecDoc['run
     const override = runtimeEnvView(rt.env)
     let present = false
     if (override.value !== "") {
-      present = rt.sentinel.every((s) => {
-        try {
-          return existsSync(join(override.value, s))
-        // an unprobeable sentinel path (a malformed env override value) counts as absent — the row carries the provision command
-        } catch {
-          return false
-        }
-      })
+      // No probe guard: the value is a trimmed string (runtimeEnvView),
+      // every sentinel is a string (the DECL's zod array), and existsSync
+      // on strings never throws — the wave-33 deletion class: a catch
+      // that cannot fire is dead code, and the ratchet counts it.
+      present = rt.sentinel.every((s) => existsSync(join(override.value, s)))
     } else {
       const root = engineRootOf()
       present = root !== null && resolveRuntimeHome(engineOutputDir(root), rt as never) !== null
@@ -1334,8 +1340,11 @@ export function specBody(
     // provision command — so the face can mark the consuming input
     // and the operator never learns a missing runtime at run press
     // (the packs' own law, finally given its runtime half). Absent
-    // from the doc when no boarded family declares one.
-    ...(runtimeRowsOf(def.boarded ?? []).length > 0 ? { runtimes: runtimeRowsOf(def.boarded ?? []) } : {}),
+    // from the doc when no boarded family declares one. Reads the
+    // hoisted boarded list — the second read's own default inside
+    // the true arm could never fire (a non-empty probe proves it
+    // defined), so it rode as dead code the ratchet counted.
+    ...(runtimeRowsOf(boarded).length > 0 ? { runtimes: runtimeRowsOf(boarded) } : {}),
     // THE FAMILY FACE (operator, 2026-09-16 — supersedes the
     // stroke-19 ids-only law): every family row serves the DECL's
     // own label (registryModel — "MOSS-SFX v2"), version included;

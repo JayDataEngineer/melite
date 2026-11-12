@@ -353,7 +353,12 @@ const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches
   '**/packages/harness/estate-queue/src/runsRefusalVoices.ts': { statements: 100, branches: 97.5, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/runsStart.ts': { statements: 97.65, branches: 98.08, functions: 96.42, lines: 98.91 },
   '**/packages/harness/estate-queue/src/runsTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // discovery.ts left this table 2026-11-12 (the swap re-seat's
+  // ratchet-back round): the baseline row climbed back to this
+  // table's 100x4 from face (the F6 'id' arm + the three wave-33
+  // dead-arm deletions re-measured the full pool at 100/100/100/100),
+  // so the cleanup arm demanded the key's removal in the same
+  // landing — the spread no longer re-seats it.
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.84, branches: 98.2, functions: 100, lines: 98.66 },
   '**/packages/harness/melite-tools/src/index.ts': { statements: 88.37, branches: 97.43, functions: 94.44, lines: 90.78 },
@@ -421,7 +426,9 @@ const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: number, branches
   '**/packages/harness/estate-queue/src/runsRefusalVoices.ts': { statements: 95.45, branches: 92.85, functions: 100, lines: 94.82 },
   '**/packages/harness/estate-queue/src/runsStart.ts': { statements: 97.65, branches: 96.28, functions: 96.42, lines: 98.91 },
   '**/packages/harness/estate-queue/src/runsTypes.ts': { statements: 100, branches: 97.93, functions: 100, lines: 100 },
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 98.91, branches: 99.47, functions: 98.14, lines: 98.66 },
+  // discovery.ts left this table 2026-11-12 (same landing as the OLD
+  // table's removal above — the pair's key must leave BOTH tables or
+  // the spread re-seats it).
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 99.3, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.2, branches: 97.65, functions: 100, lines: 97.93 },
   '**/packages/harness/melite-tools/src/index.ts': { statements: 88.37, branches: 91.48, functions: 94.11, lines: 90.78 },
@@ -1762,27 +1769,21 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-12-07",
     reason: "one branch path of the switch-law surface dropped below the regen face SUSTAINED: six consecutive full-gate runs (two triples) measured branches 98.03 with every test green — not jitter but the current fleet's stable face (one dom arm's branch interleave lost under the grown walls load); pinned at the sustained face",
   },
-  // THE SWAP BUILD'S TWO ROWS (2026-10-28, R6): the parity landing's
-  // own arms — seated at the stable clean-pool face (two consecutive
-  // env-clean full runs, A==B, zero drift). The 59 pre-existing gate
-  // reds (83 at HEAD) and the wholesale K=1 margin era are the
-  // coverage track's ledger, NOT this argument's.
-  '**/packages/harness/melite-tools/src/discovery.ts': {
-    from: { statements: 98.91, branches: 99.47, functions: 98.14, lines: 98.66 },
-    to: { statements: 98.65, branches: 99.23, functions: 98.14, lines: 98.36 },
-    roadmapHeading: "The swap build's two-row coverage re-seat — discovery schema_key arms and the h3-timeline replace emission",
-    reviewBy: "2026-11-28",
-    reason: "the card-declared schema_key pass-through added its verbatim-passthrough and refusal arms; the pool exercises the passthrough (every declared kind rides it) but not the refusal face — the row seats at the stable clean-pool face until the refusal arms get spec rows",
-  },
+  // (retired 2026-11-12, the swap re-seat's ratchet-back round) the
+  // discovery.ts half of the swap build's two-row seat LEFT: the
+  // F6 keyed-field refusal arms landed (the cluster burn's synthetic
+  // rows plus the option_key-less 'id' arm), and the three wave-33
+  // dead arms were DELETED (the sentinel catch, the packRow.options
+  // and schema_key ?? fallbacks, the runtimes spread's second
+  // def.boarded read) — the full-pool run re-measured the row at
+  // 100/100/100/100, above its argued from face, so the cleanup arm
+  // voided the entry.
   // (retired 2026-11-12, the compose-door robustness landing) the
   // h3-timeline card.ts half of the swap build's two-row seat LEFT:
   // the D-gap cure's malformed-entry arms (edit:[null] and its three
   // sibling shapes) closed the last uncovered emission paths, and the
   // full-pool run re-measured the row at 100x4 — its argued from
   // face — so the cleanup arm voided the entry (commit a7feccf35).
-  // The discovery.ts half of the seat stays: its refusal arms landed
-  // but the row's branches (99.36) have not climbed back to the
-  // argued from face (99.47) yet.
   // THE 2026-10-23 REGEN SPREAD (61 rows — vram-gate era drift): the
   // tables above are verbatim from scripts/coverage-regen.mjs; the
   // spread rides LAST so a key this regen re-drops (a row the 11-06

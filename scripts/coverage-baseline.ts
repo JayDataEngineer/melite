@@ -435,7 +435,11 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/provisioner/src/index.ts': { statements: 0, branches: null, functions: null, lines: 0 },
   // 2026-11-06 follow-up regen: the deletion cure (28edf55c9) retired the
   // one dead statement/branch pair; the full gate re-measured 100x4.
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 99.75, branches: 99.33, functions: 100, lines: 99.7 },
+  // 2026-11-12 swap re-seat: the F6 keyed-field option_key-less 'id' arm
+  // landed and the three wave-33 dead arms were deleted (sentinel catch,
+  // packRow.options/schema_key fallbacks, the runtimes double read) —
+  // full pool re-measured 100x4; the argued entry retired same landing.
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 99.32, branches: 98.52, functions: 97.85, lines: 99.49 },
   '**/packages/harness/melite-tools/src/enhance-agent.ts': { statements: 96.3, branches: 96.3, functions: 75, lines: 96 },
   // F-1 (2026-11-05): the typed-lane rewrite re-measured this row.
@@ -1074,7 +1078,7 @@ export const COVERAGE_BASELINE_UNSEATED: Record<string, {
   // trayLoras: the loras-tray wall's conditional arms take their
   // absent-branch faces where the runtime tree does not stand.
   '**/packages/engines/comfyui-cordis/src/mods/trayLoras.ts': { statements: 81, branches: 62, functions: 57, lines: 86 },
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 99.75, branches: 99, functions: 100, lines: 99.7 },
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
 }
 
 /**
