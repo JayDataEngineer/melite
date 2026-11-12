@@ -22,6 +22,12 @@
 //   EQUALS the pinned benign warning set — bundle-resolution and
 //   patch drift on the non-web mounts, deterministic and keyless.
 //
+// - FETCH TIMEOUT (fleet discipline, row gates-walls-fetch-timeout):
+//   every lane fetch above carries its own AbortSignal budget; a
+//   hung-socket arm (staged localhost, lane-independent) pins the
+//   abort. Toggle: the `signal` lines dropped → the arm reds on the
+//   vitest test-timeout. Restore → green.
+//
 // Skip laws (the suite's own class): a broken pnpm store skips the
 // render (PNPM_OK, below); a missing or under-floor dsh skips the
 // boot (the provisioner's own pin, 0.2.0-rc.1 — a bare PATH dsh
@@ -33,6 +39,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir, homedir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,6 +117,21 @@ const FORBIDDEN: readonly string[] = [
   "startup failed",
 ];
 
+// THE SERVED-FETCH BUDGET (timing-race fleet discipline, second seat
+// — row gates-walls-fetch-timeout): every fetch below aimed at a
+// booted lane carries its OWN timeout. A stale lane process holding
+// the socket aborts in-budget instead of hanging a 120 s arm to its
+// outer budget. Lane-local fetches answer in milliseconds; 30 s is
+// the hung-socket ceiling, not a latency allowance.
+const LANE_FETCH_TIMEOUT_MS = 30_000;
+
+// THE SINGLE CHOKE POINT: every lane fetch below rides this helper,
+// so the budget cannot drift per call site — dropping the `signal`
+// line reds the hung-socket arm below.
+function laneFetch(url: string | URL, init: RequestInit = {}, timeoutMs: number = LANE_FETCH_TIMEOUT_MS): Promise<Response> {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+}
+
 // THE SERVE-AND-FETCH PROBE (B1). The closure judged here is the
 // served graph's own: every entry's `external` names another entry
 // — the incident's exact shape (three plugins externalized
@@ -150,10 +172,10 @@ boot("the melite-test profile serves a web boot whose client graph is closed (th
     await new Promise((r) => setTimeout(r, 1_500)); // let the graph finish composing
 
     // fetch the page through the token door (303 → cookie → /)
-    const r1 = await fetch(url, { redirect: "manual" });
+    const r1 = await laneFetch(url, { redirect: "manual" });
     const cookies: string = (r1.headers.getSetCookie?.() ?? [])
       .map((c) => c.split(";")[0]).join("; ");
-    const page = await fetch(new URL("/", url), { headers: { cookie: cookies } });
+    const page = await laneFetch(new URL("/", url), { headers: { cookie: cookies } });
     assert.equal(page.status, 200, "the tokened page must serve");
     const html: string = await page.text();
 
@@ -303,14 +325,14 @@ boot("the rendered lane seats its brain and serves the operator's faces (runs, c
     // probe misses while composition is still running — observed
     // live under battery load); a 502 that still stands past the
     // window is the incident's exact voice and fails below
-    const r1 = await fetch(url, { redirect: "manual" });
+    const r1 = await laneFetch(url, { redirect: "manual" });
     const cookies: string = (r1.headers.getSetCookie?.() ?? [])
       .map((c) => c.split(";")[0]).join("; ");
     const feedDeadline: number = Date.now() + 100_000;
     let feedStatus = 0;
     let feedBody = "";
     for (;;) {
-      const feed = await fetch(new URL("/infer-gallery/runs", url), { headers: { cookie: cookies } });
+      const feed = await laneFetch(new URL("/infer-gallery/runs", url), { headers: { cookie: cookies } });
       feedStatus = feed.status;
       feedBody = await feed.text();
       const waiting: boolean = feedStatus === 503
@@ -323,7 +345,7 @@ boot("the rendered lane seats its brain and serves the operator's faces (runs, c
     const feed = JSON.parse(feedBody) as { runs?: unknown };
     assert.ok(Array.isArray(feed.runs), `the runs feed answers a runs list (got: ${feedBody.slice(0, 200)})`);
 
-    const catalog = await fetch(new URL("/v1/model-catalog", url), { headers: { cookie: cookies } });
+    const catalog = await laneFetch(new URL("/v1/model-catalog", url), { headers: { cookie: cookies } });
     assert.equal(catalog.status, 200, "the model catalog answers");
     const cat = await catalog.json() as { models?: Record<string, unknown> };
     assert.ok(cat.models !== undefined && Object.keys(cat.models).length > 0,
@@ -418,4 +440,28 @@ test("no second home carries a melite-test composition (the single-setup guard)"
   // THE REJECTION PATH: the judge refuses a unit that claims nothing
   assert.equal(judge("WorkingDirectory=/tmp\nExecStart=dsh"), false,
     "a unit claiming no dev home and no profile must not pass the guard");
+});
+
+// THE HUNG-SOCKET ARM (timing-race fleet discipline, second seat —
+// row gates-walls-fetch-timeout): a server that accepts and never
+// answers must abort on the fetch's own budget. (Plain `test`, not
+// boot-gated: the socket is staged localhost, no lane needed.)
+test("a hung socket aborts on the fetch budget, never on the arm clock", { timeout: 15_000 }, async () => {
+  const server = createServer(() => {});
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = (server.address() as { port: number }).port;
+  try {
+    const start = Date.now();
+    const err = await laneFetch(`http://127.0.0.1:${port}/hangs`, {}, 500).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    const elapsed = Date.now() - start;
+    assert.ok(err instanceof DOMException, "a hung socket must reject, never resolve");
+    assert.equal((err as DOMException).name, "TimeoutError",
+      "the rejection must be the abort timeout, not a socket error");
+    assert.ok(elapsed < 10_000, `the abort must land in-budget (took ${elapsed}ms for a 500ms budget)`);
+  } finally {
+    server.close();
+  }
 });
