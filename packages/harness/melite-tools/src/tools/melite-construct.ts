@@ -59,6 +59,7 @@ import { createHash } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import { faceStamp } from '../faceStamp.js'
 import type { Estate, BenchVerb } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
@@ -146,22 +147,37 @@ const MUTATION_VERBS = new Set<string>(
   CONSTRUCT_VERBS.filter((v) => v !== 'read' && v !== 'validate'),
 )
 
-/** The ambiguous-no-write landing fragment for a failed mutation —
- *  a Record so the payload's index signature stays JsonValue (an
- *  optional `landing?: undefined` property is not a JsonValue). */
-function unprovenLandingOf(verb: string): Record<string, JsonValue> {
-  return MUTATION_VERBS.has(verb) ? { landing: 'ambiguous_no_write' } : {}
+/** The landing fragment a FAILED mutation claims (D3-05: ambiguity
+ *  scoped to transport-class failures). A refusal the estate itself
+ *  answered — a RemoteError with a code: the CAS verdict, the schema
+ *  gate, the kind gate — PROVED the write never applied (the seat
+ *  judges before it writes), so the landing says refused_no_write.
+ *  A transport-class failure (no structured answer: socket, timeout,
+ *  abort) proves nothing either way: ambiguous_no_write. Read-only
+ *  verbs and validate never claim a landing. A Record so the
+ *  payload's index signature stays JsonValue (an optional
+ *  `landing?: undefined` property is not a JsonValue). */
+function failedLandingOf(verb: string, estateAnswered: boolean): Record<string, JsonValue> {
+  if (!MUTATION_VERBS.has(verb)) return {}
+  return { landing: estateAnswered ? 'refused_no_write' : 'ambiguous_no_write' }
 }
 
 /** Refusal formatting shared by every verb (the remote's RemoteError
  *  first — code + message, the CAS detail rides details.current_rev —
  *  then any Error's message; lanes still awaiting their remote refuse
- *  loudly as plain errors). A mutation's failure carries the third
- *  landing state: the write is UNPROVEN (a transport failure cannot
- *  prove the seat did not apply), so the answer says re-read before
- *  retrying instead of implying a clean no-write. */
-function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
-  const landing = unprovenLandingOf(verb)
+ *  loudly as plain errors). A mutation's failure carries its landing
+ *  state, and an ambiguous one carries THE READ-BACK (D3-05): one
+ *  bounded raw benchGet puts the bench's own rev in the answer — the
+ *  agent's fresh eyes on the very bench it may have moved — instead
+ *  of a blind ambiguous stamp. The read-back is a RAW get (never
+ *  readBench: a not-found bench must not be BORN by a refusal's
+ *  probe), and a read that also fails names the unreachable bench,
+ *  never a guess. Every answer carries the estate's face_stamp so a
+ *  refusal is attributable to the build that served it (D-07). */
+async function refusalOf(
+  e: unknown, verb: string, bench: string,
+  estate: Estate, signal: AbortSignal,
+): Promise<ConstructResult> {
   const refusal = remoteErrorOf(e)
   if (refusal !== undefined) {
     const details = refusal.details as Record<string, unknown> | undefined
@@ -169,16 +185,30 @@ function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
       ? details['current_rev'] as number
       : undefined
     return jsonClean<ConstructResult>({
-      verb, bench,
+      verb, bench, face_stamp: faceStamp(),
       error: refusal.message,
       error_kind: refusal.code,
       ok: false,
       ...(currentRev !== undefined ? { current_rev: currentRev } : {}),
-      ...landing,
+      ...failedLandingOf(verb, true),
     })
   }
   const error = e instanceof Error ? e.message : String(e)
-  return jsonClean<ConstructResult>({ verb, bench, error, error_kind: 'remote', ok: false, ...landing })
+  const readBack: Record<string, JsonValue> = {}
+  if (MUTATION_VERBS.has(verb)) {
+    try {
+      const fresh = await estate.benchGet(bench, signal, 15000) as Record<string, unknown>
+      if (typeof fresh['rev'] === 'number') readBack['read_back_rev'] = fresh['rev'] as number
+      else readBack['read_back'] = 'no_rev'
+    } catch {
+      readBack['read_back'] = 'unreachable'
+    }
+  }
+  return jsonClean<ConstructResult>({
+    verb, bench, face_stamp: faceStamp(),
+    error, error_kind: 'remote', ok: false,
+    ...failedLandingOf(verb, false), ...readBack,
+  })
 }
 
 // ── THE COMPILE VERDICT ON EVERY WIRING MUTATION (session
@@ -1336,7 +1366,7 @@ export function meliteConstruct(
           error: { type: 'string', description: 'Refusal text (ok: false).' },
           landing: {
             type: 'string',
-            description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | ambiguous_no_write (the write is UNPROVEN — re-read before retrying). Absent when the verb wrote no stage.',
+            description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | refused_no_write (the estate answered — the write never applied) | ambiguous_no_write (no structured answer — the write is UNPROVEN; read_back_rev is the bench\'s own rev when the read-back reached it, read_back names unreachable otherwise). Absent when the verb wrote no stage.',
           },
           applied_derivations: {
             type: 'array',
@@ -1352,9 +1382,14 @@ export function meliteConstruct(
       render: (_args, value) => {
         const v = value as { verb?: string; rev?: number; ok?: boolean; error?: string; intent?: string; hint?: string; stages?: unknown; landing?: unknown }
         if (v && typeof v.error === 'string' && v.error !== '') {
-          const landing = v.landing === 'ambiguous_no_write'
-            ? '\nlanding: ambiguous_no_write — the write is UNPROVEN (the seat failed after the call left); re-read before retrying, never assume it did not land'
-            : ''
+          const rb = typeof (v as { read_back_rev?: unknown }).read_back_rev === 'number'
+            ? `the bench read back at rev ${(v as { read_back_rev?: number }).read_back_rev} — compare before retrying`
+            : 'the bench could not be read back (unreachable) — never assume it did not land'
+          const landing = v.landing === 'refused_no_write'
+            ? '\nlanding: refused_no_write — the estate answered the refusal; nothing landed, retry is safe'
+            : v.landing === 'ambiguous_no_write'
+              ? `\nlanding: ambiguous_no_write — the write is UNPROVEN (the seat failed without answering); ${rb}`
+              : ''
           return [{ type: 'text', text: 'melite_construct REFUSED: ' + v.error + landing }]
         }
         // STROKE 85 (the operator's report — the blind read that
@@ -1645,12 +1680,15 @@ export function meliteConstruct(
       const agentBench = benchKeyOfExec(exec as { agent?: { id?: unknown } })
       const bench = agentBench !== DEFAULT_BENCH ? agentBench : benchKeyOf(a)
       const signal = exec.signal
+      // D-07: every answer carries the estate's face_stamp (the
+      // serving build's id) — a stale-face answer is attributable
+      // without hunting, the same law the cardToolsArm rows carry.
       const out = (payload: Record<string, unknown>): ConstructResult =>
-        jsonClean<ConstructResult>({ verb, bench, ok: true, ...payload })
+        jsonClean<ConstructResult>({ verb, bench, ok: true, face_stamp: faceStamp(), ...payload })
       // A pre-write refusal is a VALUE (ok:false) — the payload's own
       // error_kind names the law, and nothing was read or written.
       const refuse = (payload: Record<string, unknown>): ConstructResult =>
-        jsonClean<ConstructResult>({ verb, bench, ok: false, ...payload })
+        jsonClean<ConstructResult>({ verb, bench, ok: false, face_stamp: faceStamp(), ...payload })
       // THE VERB IS REQUIRED (slice 5, correction 1 of the rework's
       // adjudication, 2026-11-12: "Verb-default-to-add is a safety
       // regression — the 'no verb' refusal was a write-guard. Make
@@ -1663,7 +1701,7 @@ export function meliteConstruct(
       // while the agent believed it was composing).
       if (a.verb === undefined) {
         return jsonClean<ConstructResult>({
-          verb, bench, ok: false,
+          verb, bench, ok: false, face_stamp: faceStamp(),
           error: 'verb is required — the call was refused before anything was read or written (a payload never derives a verb; a WRITE is never guessed). '
             + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params | params_file, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
           error_kind: 'verb-required',
@@ -2374,7 +2412,7 @@ export function meliteConstruct(
           return out({ rev: r.rev, undone: r.undone, stages: r.stages })
         }
       } catch (e) {
-        return refusalOf(e, verb, bench)
+        return await refusalOf(e, verb, bench, estate, signal)
       }
     },
   })

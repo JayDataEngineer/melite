@@ -2870,9 +2870,102 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     assert.equal(out['ok'], false)
     assert.equal(out['error_kind'], 'remote')
     assert.equal(out['landing'], 'ambiguous_no_write')
+    // THE READ-BACK (D3-05): the transport is down BOTH ways here —
+    // the answer names the unreachable bench, never a guessed rev.
+    assert.equal(out['read_back'], 'unreachable')
     const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
     const text = blocks.map((b) => b.text ?? '').join('\n')
     assert.match(text, /landing: ambiguous_no_write — the write is UNPROVEN/)
+    assert.match(text, /never assume it did not land/)
+  })
+
+  // D3-05 = D-07, the read-back shape (2026-11-12 audit §3): the
+  // ambiguous_no_write stamp used to ride EVERY mutation failure —
+  // including RemoteError-with-code refusals the estate itself
+  // ANSWERED (the CAS verdict, the schema gate), which prove the
+  // write never applied; and a transport-class ambiguity carried no
+  // read-back, so the agent retried blind against a bench it may
+  // have already moved. The landing vocabulary now splits by who
+  // answered, and the ambiguous arm carries the bench's own rev.
+  test('D3-05: an ESTATE-answered refusal is refused_no_write — the write provably never applied', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return { rev: 7, stages: [] } // must never be read — the estate already answered
+      throw new RemoteError('bench/cas-conflict', 'bench moved: rev is 7, caller held 6', {
+        current_rev: 7, expect_rev: 6,
+      })
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false)
+    assert.equal(out['landing'], 'refused_no_write', 'the estate judged before writing — no ambiguity')
+    assert.equal(out['read_back'], undefined)
+    assert.equal(out['read_back_rev'], undefined)
+    assert.equal(seen.filter((r) => r.lane === 'benchGet').length, 0,
+      'an answered refusal reads nothing back — the verdict is complete')
+    const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
+    const text = blocks.map((b) => b.text ?? '').join('\n')
+    assert.match(text, /landing: refused_no_write — the estate answered the refusal; nothing landed, retry is safe/)
+  })
+
+  test('D3-05: a transport-ambiguous mutation READS THE BENCH BACK — the answer carries the bench\'s own rev', async () => {
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') throw new Error('socket closed after send')
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 9, stages: [{ id: 's1' }] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(out['landing'], 'ambiguous_no_write')
+    assert.equal(out['read_back_rev'], 9, 'the bench\'s fresh rev rides the answer — fresh eyes, no blind retry')
+    assert.equal(out['read_back'], undefined)
+    assert.equal(seen.filter((r) => r.lane === 'benchGet').length, 1,
+      'exactly ONE read-back, a raw get (no birth, no re-write)')
+    const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
+    const text = blocks.map((b) => b.text ?? '').join('\n')
+    assert.match(text, /the bench read back at rev 9 — compare before retrying/)
+  })
+
+  test('D3-05: a read-only verb never claims a landing — even transport-ambiguous', async () => {
+    const { estate } = mockEstate(() => {
+      throw new Error('socket closed before the read')
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false)
+    assert.equal(out['landing'], undefined, 'no write was attempted — no landing state to claim')
+    assert.equal(out['read_back_rev'], undefined)
+    assert.equal(out['read_back'], undefined)
+  })
+
+  // D-07's stamp half: every answer — success and refusal alike —
+  // carries the serving build's face_stamp, so a stale-face answer
+  // is attributable without hunting (the same law F-7 seated for the
+  // cardToolsArm rows).
+  test('D-07: every answer carries the estate face_stamp — success, refusal, and pre-write refusal alike', async () => {
+    const ok = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 7 }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 6, stages: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(ok.estate)
+    const good = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(good['ok'], true)
+    assert.equal(typeof good['face_stamp'], 'string')
+    assert.notEqual(good['face_stamp'], '', 'the stamp is present and non-empty (unknown is a legal VALUE, empty is not)')
+
+    const refused = mockEstate(() => {
+      throw new RemoteError('bench/cas-conflict', 'bench moved', { current_rev: 8 })
+    })
+    const tool2 = meliteConstruct(refused.estate)
+    const bad = await tool2.execute({ verb: 'patch', stage: 's1', params: {}, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(bad['ok'], false)
+    assert.equal(typeof bad['face_stamp'], 'string')
+    // The verb-required pre-write refusal stamps its build too, but
+    // the WRAPPER's schema gate owns that refusal (ToolArgsError
+    // before execute — pinned by the schema-gate arm); the
+    // in-execute guard is the direct-seat backstop and rides the
+    // same stamped jsonClean base by construction.
   })
 })
 
