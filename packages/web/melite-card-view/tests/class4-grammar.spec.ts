@@ -120,7 +120,12 @@ describe('THE S7 CLASS-4 WALL · card-view · TIP GRAMMAR', () => {
     expect(count(seats, 'bench-view.tsx', 'component'), 'bench-view.tsx').toBe(4)
     expect(count(seats, 'run-rescue.tsx', 'component'), 'run-rescue.tsx').toBe(3)
     expect(count(seats, 'draft-run-views.tsx', 'component'), 'draft-run-views.tsx').toBe(1)
-    const argued = ['sortable-tile.tsx', 'zoom.tsx', 'add-card-door.tsx', 'bench-view.tsx', 'run-rescue.tsx', 'draft-run-views.tsx']
+    // the verb bar's local-only hover (1): a disabled verb button
+    // carries its label visibly AND the why on the rest channel —
+    // a local-only verb is never a dead button without a voice
+    // (MHR slice 2, the bar's own law; chromeCopy.verbLocalOnly).
+    expect(count(seats, 'verb-bar.tsx', 'component'), 'verb-bar.tsx').toBe(1)
+    const argued = ['sortable-tile.tsx', 'zoom.tsx', 'add-card-door.tsx', 'bench-view.tsx', 'run-rescue.tsx', 'draft-run-views.tsx', 'verb-bar.tsx']
     expect(seats.filter((s) => !argued.includes(s.file)), 'no native-title seat outside the argued files').toEqual([])
   })
 
