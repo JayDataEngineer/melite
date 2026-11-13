@@ -981,14 +981,14 @@ export function verbFieldsEnvelope(fields) {
  *  this answers false. Reads the same dict the client walker walks
  *  (fieldsOfEnvelope's root projection — one truth, both planes). */
 function envelopeDeclaresOutputName(e) {
-    // the served-envelope narrowing (isSchemaEnvelope), then the
-    // stampOptionsFrom dual read through the same string-keyed cast
-    // (the live envelope keys by uid, a JSON-roundtripped one by
-    // string — both spellings answer)
-    if (!isSchemaEnvelope(e))
-        return false;
+    // the stampOptionsFrom read shape (:987): one unknown→StampEnv
+    // narrowing (the single-as legal class), then String(uid) — the
+    // runtime key space is strings whichever spelling serialized the
+    // envelope (live number-keyed or JSON-roundtripped string-keyed)
     const env = e;
-    const root = env.refs?.[String(env.uid)];
+    if (env == null || env.refs == null || env.uid == null)
+        return false;
+    const root = env.refs[String(env.uid)];
     return root?.dict?.['output_name'] !== undefined;
 }
 export function specBody(svc, defs, res, engineLoras) {
