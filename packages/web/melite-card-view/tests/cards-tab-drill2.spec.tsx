@@ -18,6 +18,61 @@ import { resetStageWrites } from "../src/client/draft.ts";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
+// THE REAL-SHAPE FAMILIES DOC (D8/D9 depth cure, 2026-11-13): the
+// families-axis arms pick REAL family rows — krea-2 (the image-gen
+// card's first-boarded family, the catalog stub's own boarded[0])
+// and qwen3-tts — each row the DECL's own truth (id, label,
+// presence mark). The minted v-img/v-tts rows defaulting
+// {model:<card-id>} are GONE: that shape the real door never serves
+// (D8), and the doc now carries the features.variant_groups block
+// the real door sends with any matrix (D9). The variant rows ride
+// krea-2's real matrix in the discovery mapper's shape
+// (specVariants: resolver_defaults merged, quant cells appended
+// with collision-namespaced ids — the KREA_REAL pattern from
+// model-axes.spec.tsx). The card-offers-both-families SCENARIO
+// stays authored (the test's own construction); every ROW in it is
+// real — a DECL drift (id, label, variant, envelope) moves this
+// doc and reds here first.
+import { DECL as krea2Decl } from "../../../models/krea-2/src/index.ts";
+import { DECL as ttsDecl } from "../../../models/qwen3-tts/src/index.ts";
+
+/** krea-2's served rows, derived (the discovery mapper's shape). */
+function krea2ServedRows(): Array<Record<string, unknown>> {
+  const rows: Array<Record<string, unknown>> = [];
+  for (const v of krea2Decl.variants ?? []) {
+    if (v.hide_from_dropdown === true) continue;
+    rows.push({
+      id: v.id,
+      label: v.label,
+      group: "Variant",
+      defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
+      route: v.route ?? "",
+      hint: v.hint ?? null,
+      engine: krea2Decl.engine ?? "",
+      sampler_envelope: v.sampler_envelope ?? null,
+      quant: null,
+      vram_peak_gb: null,
+      owner: "",
+    });
+    for (const c of v.cells ?? []) {
+      if (c.hide_from_dropdown === true || !c.quant || !c.route) continue;
+      const id = rows.some((r) => r["id"] === c.quant) ? `${v.id}__${c.quant}` : c.quant;
+      rows.push({
+        id,
+        label: c.label || c.quant,
+        group: "Quant",
+        defaults: c.resolver_defaults ?? {},
+        route: c.route,
+        hint: null,
+        engine: krea2Decl.engine ?? "",
+        quant: c.quant,
+        vram_peak_gb: c.vram_peak_gb ?? null,
+        owner: v.id,
+      });
+    }
+  }
+  return rows;
+}
 
 afterEach(() => {
   cleanup();
@@ -111,11 +166,17 @@ function stubFetch(): void {
       return new Response(JSON.stringify({
         form: "image-gen", genre: "image", engine: "comfyui",
         ...(doors.specFamilies ? {
-          families: [{ id: "image-gen", present: true }, { id: "tts", present: true }],
-          variants: [
-            { id: "v-img", label: "Img", group: "Variant", defaults: { model: "image-gen" }, route: "image-gen" },
-            { id: "v-tts", label: "Tts", group: "Variant", defaults: { model: "tts" }, route: "tts" },
+          families: [
+            { id: krea2Decl.id, present: true },
+            { id: ttsDecl.id, present: true, label: ttsDecl.label },
           ],
+          features: {
+            variant_groups: {
+              Variant: { label: "Variant" },
+              Quant: { label: "Quant" },
+            },
+          },
+          variants: krea2ServedRows(),
         } : {}),
         ...(doors.specPreview ? { preview: { historyStrip: false } } : {}),
         ...(doors.specInputs ? { inputs: [{ name: "input_image", kind: "image", required: true }] } : {}),
@@ -257,9 +318,9 @@ describe("the family arms — undefined engine and the model re-key", () => {
     const axes = document.querySelector('[data-model-axes="1"]');
     if (axes === null) throw new Error("model axes not found");
     await user.click(within(axes as HTMLElement).getByLabelText("Model"));
-    await user.click(screen.getByRole("menuitem", { name: "Tts" }));
+    await user.click(screen.getByRole("menuitem", { name: "Qwen3-TTS" }));
     await waitFor(() => {
-      expect(doors.specUrls.some((u) => u.includes("model=tts"))).toBe(true);
+      expect(doors.specUrls.some((u) => u.includes("model=qwen3-tts"))).toBe(true);
     });
     // the re-key reseeds from the CURRENT user state — the pick
     // rides, the typed prompt is never reseeded away
@@ -294,17 +355,17 @@ describe("the family arms — undefined engine and the model re-key", () => {
       return el as HTMLElement;
     });
     await user.click(within(axes).getByLabelText("Model"));
-    await user.click(screen.getByRole("menuitem", { name: "Tts" }));
+    await user.click(screen.getByRole("menuitem", { name: "Qwen3-TTS" }));
     // thrown fetch verb's settlement: 15s/30s (flake-slowness-wave2)
     expect(await screen.findByText("door down", {}, { timeout: LOADED_WAIT() * 0.5 })).toBeTruthy();
     doors.formSpec = "ok";
     await user.click(within(document.querySelector('[data-model-axes="1"]') as HTMLElement).getByLabelText("Model"));
-    await user.click(screen.getByRole("menuitem", { name: "Image Gen" }));
+    await user.click(screen.getByRole("menuitem", { name: "Krea 2" }));
     await waitFor(() => {
       expect(screen.queryByText("door down")).toBeNull();
     });
     expect(await screen.findByText("Prompt", {}, { timeout: 4000 })).toBeTruthy();
-    expect(doors.specUrls.some((u) => u.includes("model=tts"))).toBe(true);
+    expect(doors.specUrls.some((u) => u.includes("model=qwen3-tts"))).toBe(true);
   });
 });
 
