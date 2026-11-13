@@ -506,6 +506,11 @@ describe('live door arms', () => {
       'mod_schemas',
       'model',
       'model_defaults',
+      // THE ESTATE NAMING SEAT (queue 12's A2 remainder, 2026-11-13):
+      // tts declares no output row of its own, so the estate's
+      // label-plane seat serves — the row the client appends to the
+      // walked fields and the admittedKeys fold sanctions.
+      'naming',
       'outputs',
       'packs',
       // THE DECLARED SURFACE (the drill null-set cure, 2026-11-08):
@@ -584,6 +589,55 @@ describe('live door arms', () => {
     const tts = await formSpecSweep('tts') as FormSpecDoc | null
     assert.ok(tts !== null, 'the tts form serves')
     assert.equal('verbs' in tts, false, 'a card with no mounted verbs serves no verbs seat')
+  })
+
+  test('THE ESTATE NAMING SEAT (queue 12\'s A2 remainder): the label plane serves on every family that declares no row of its own; the declared row always wins', async () => {
+    // LIVE ARM 1 — the seat serves where no envelope declares the
+    // row: tts's envelope walks no output_name, so the estate seat
+    // rides the doc with the row's whole contract (the label the
+    // row renders, the tooltip it voices, the cap the input clamps).
+    const tts = await formSpecSweep('tts') as FormSpecDoc | null
+    assert.ok(tts !== null, 'the tts form serves')
+    assert.ok(tts.naming !== undefined, 'a family declaring no output row serves the estate naming seat')
+    assert.equal(tts.naming.label, 'Output name')
+    assert.equal(tts.naming.max, 64)
+    assert.ok(tts.naming.tooltip.includes('gallery'), 'the tooltip voices the label plane — gallery rows, never the file names')
+    // LIVE ARM 2 — the declared row wins: h3's own envelope declares
+    // output_name (the deliverable slug, the file plane), so the
+    // estate seat NEVER duplicates it.
+    const h3 = await formSpecSweep('h3') as FormSpecDoc | null
+    assert.ok(h3 !== null, 'the h3 form serves')
+    assert.equal('naming' in h3, false, 'a family declaring its own output row serves no estate seat')
+    // SYNTHETIC ARM 1 — the declared-row test fires on the dict: a
+    // card whose envelope root carries output_name serves no seat,
+    // whatever card it is.
+    const svc = theService()
+    const realFormSchemas = svc.formSchemas.bind(svc)
+    const declaredDefs = new Map([['__declnaming__', card({
+      identity: { label: 'Declared', description: 'declares its own row', genre: 'image' },
+      flowKinds: { inputs: { frame: 'image' }, outputs: { default: 'image' }, requiresModel: false },
+    })]])
+    const declaredSvc = {
+      formSchemas: (c: string, key: string): unknown => {
+        if (c !== '__declnaming__') return realFormSchemas(c, key)
+        return { schema: { uid: 0, refs: { 0: { type: 'object', dict: { output_name: 1 } }, 1: { type: 'string' } } }, mods: {} }
+      },
+      modCatalog: (): unknown => ({ shared: false, rows: [] }),
+      cardModFields: (): unknown[] => [],
+      packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+        packs.map((id) => ({ id, present: null })),
+      cardVerbs: (): never[] => [],
+    } as unknown as ReturnType<typeof theService>
+    const declared = specBody(declaredSvc, declaredDefs, { card: '__declnaming__', service: '__declnaming__', model: '__declnaming__' })
+    assert.equal('naming' in declared, false, 'the envelope dict carrying output_name IS the declaration — no estate seat')
+    // SYNTHETIC ARM 2 — the envelope-less legacy shape (schema null)
+    // still serves the seat: the label plane rides no envelope.
+    const nullSvc = {
+      ...declaredSvc,
+      formSchemas: (): unknown => ({ schema: null, mods: {} }),
+    } as unknown as ReturnType<typeof theService>
+    const nullSchema = specBody(nullSvc, declaredDefs, { card: '__declnaming__', service: '__declnaming__', model: '__declnaming__' })
+    assert.ok(nullSchema.naming !== undefined, 'a card serving no envelope still serves the estate seat — the label plane is envelope-independent')
   })
 
   test('formSpecArm serves the card-only mask envelope (the studio retired at parity, stroke 75)', async () => {

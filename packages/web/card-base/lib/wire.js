@@ -129,6 +129,20 @@ export function assertFormSpecDoc(doc, model) {
     if (wtypeErrors.length > 0) {
         throw new Error(`form-spec ${model}: ${wtypeErrors.join('; ')}`);
     }
+    // THE ESTATE NAMING SEAT'S BOUNDARY JUDGMENT (queue 12's A2
+    // remainder): the seat crosses the wire like every other served
+    // fact — a malformed seat (the label the row renders, the tooltip
+    // it voices, the cap the input clamps) refuses here in the doc's
+    // voice rather than rendering a half-seat on the face.
+    const naming = doc['naming'];
+    if (naming !== undefined) {
+        const n = naming;
+        if (typeof n.label !== 'string' || n.label === ''
+            || typeof n.tooltip !== 'string'
+            || typeof n.max !== 'number' || !(n.max > 0)) {
+            throw new Error(`form-spec ${model}: malformed naming seat — label, tooltip, and max (> 0) are the seat's whole contract`);
+        }
+    }
     return doc;
 }
 /** /v1/form-spec?model=<family> — the card family's emission (the

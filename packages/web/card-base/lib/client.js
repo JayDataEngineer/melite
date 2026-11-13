@@ -9986,7 +9986,18 @@ window.__ModuleLoader__.load({
 		* families-scoped to the served family). Memoize at the caller for
 		* hot loops — the walk is pure. */
 		function fieldsOf(spec) {
-			return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
+			const declared = fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
+			if (spec.naming === void 0) return declared;
+			if (declared.some((f) => f.name === "output_name")) return declared;
+			return [...declared, {
+				name: "output_name",
+				label: spec.naming.label,
+				type: "string",
+				wtype: "text",
+				tooltip: spec.naming.tooltip,
+				max: spec.naming.max,
+				placeholder: ""
+			}];
 		}
 		/** THE MOD-BAG KEYS (the per-model law's truth seat, operator
 		*  2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL"): the envelope
@@ -11105,6 +11116,7 @@ window.__ModuleLoader__.load({
 			declared.add("model");
 			for (const k of spec.studio_writes ?? []) declared.add(k);
 			for (const k of modOwnedFields(spec)) declared.add(k);
+			if (spec.naming !== void 0) declared.add("output_name");
 			for (const a of spec.admits ?? []) if (a.endsWith("*")) prefixes.push(a.slice(0, -1));
 			else declared.add(a);
 			return {
@@ -13919,6 +13931,11 @@ window.__ModuleLoader__.load({
 			judgeEnvelope(doc["schema"], "schema");
 			for (const [pack, env2] of Object.entries(doc["mod_schemas"] ?? {})) judgeEnvelope(env2, `mod:${pack}`);
 			if (wtypeErrors.length > 0) throw new Error(`form-spec ${model}: ${wtypeErrors.join("; ")}`);
+			const naming = doc["naming"];
+			if (naming !== void 0) {
+				const n = naming;
+				if (typeof n.label !== "string" || n.label === "" || typeof n.tooltip !== "string" || typeof n.max !== "number" || !(n.max > 0)) throw new Error(`form-spec ${model}: malformed naming seat — label, tooltip, and max (> 0) are the seat's whole contract`);
+			}
 			return doc;
 		}
 		/** /v1/form-spec?model=<family> — the card family's emission (the

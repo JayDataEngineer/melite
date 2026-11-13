@@ -134,6 +134,40 @@ test('THE FAMILY-KEY RESOLUTION (2026-09-21, the families-DRY law): a composed v
   expect(fieldsOf({ ...doc, model: 'trellis2-native' }).map((f) => f.name)).toEqual(['lift'])
 })
 
+test('THE ESTATE NAMING ROW (queue 12\'s A2 remainder, 2026-11-13): the seat appends exactly one label-plane row; the declared row always wins', () => {
+  const env = schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt' } },
+  })
+  const seat = { label: 'Output name', tooltip: 'Labels this run\'s gallery rows — the files keep their machine names.', max: 64 }
+  // THE SEAT SERVES: one more row than the envelope declares, with
+  // the seat's whole contract (label, tooltip, cap) on the row the
+  // form renders — its value rides the reserved output_name param.
+  const rows = fieldsOf({ form: 'tts', model: 'qwen3-tts', schema: env, naming: seat })
+  expect(rows.map((f) => f.name)).toEqual(['prompt', 'output_name'])
+  expect(rows[1]).toMatchObject({
+    name: 'output_name',
+    label: 'Output name',
+    type: 'string',
+    wtype: 'text',
+    tooltip: seat.tooltip,
+    max: 64,
+    placeholder: '',
+  })
+  // THE DECLARED ROW WINS: an envelope carrying its own output_name
+  // (h3's deliverable slug) serves ONE row — the declared one — and
+  // the seat never doubles it, even when both truths ride the doc.
+  const declaredEnv = schemaEnvelope({
+    output_name: { type: 'string', meta: { description: 'Output name', extra: { wtype: 'text' } } },
+  })
+  const declaredRows = fieldsOf({ form: 'h3', model: 'h3', schema: declaredEnv, naming: seat })
+  const named = declaredRows.filter((f) => f.name === 'output_name')
+  expect(named).toHaveLength(1)
+  expect(named[0]!.tooltip).toBeUndefined()
+  // NO SEAT: the walk serves the envelope verbatim — nothing
+  // appended, the legacy doc is untouched.
+  expect(fieldsOf({ form: 'tts', model: 'qwen3-tts', schema: env }).map((f) => f.name)).toEqual(['prompt'])
+})
+
 test('THE FAMILY-SCOPED SLOT NULL (the deck sweep\'s switch-brick finding, 2026-11-12): a cross-family switch nulls the departed family\'s scoped keys — shared fields pass along', () => {
   // img-to-mesh's own shape: the paired GLB slot (rigged_glb /
   // target_glb) is transfer-rig-scoped; the lift field serves

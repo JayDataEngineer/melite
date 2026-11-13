@@ -114,3 +114,30 @@ describe('the reopen carry drop sanctions the studio-owned document plane (the D
     expect(studioClaimsRow(writesless, { refine: [] })).toBe(true)
   })
 })
+
+describe('the reopen carry drop sanctions the estate naming seat (queue 12\'s A2 remainder)', () => {
+  test('a persisted output_name NEVER drops on a seat-serving spec — the fold that seats the mirror seats this heal', () => {
+    // the label-plane row is estate surface: the same admittedKeys
+    // fold that sanctions the compose mirror's judgment sanctions
+    // this heal, so a saved stem survives every fresh open (the
+    // heal's null is the merge-patch delete — the saved label would
+    // vanish at drill open without the fold).
+    const spec: FormSpecDoc = { ...studioSpec(), naming: { label: 'Output name', tooltip: 'Labels the gallery rows.', max: 64 } }
+    const held: SpecValues = {
+      model: 'film',
+      variant: 'timeline',
+      prompt: 'a single shot',
+      output_name: 'my-film',
+    }
+    expect(dropStaleReopenCarry(spec, held)).toEqual({})
+  })
+  test('THE TEETH — a seatless spec still drops the name (nothing sanctions it)', () => {
+    const held: SpecValues = {
+      model: 'film',
+      variant: 'timeline',
+      prompt: 'a single shot',
+      output_name: 'my-film',
+    }
+    expect(dropStaleReopenCarry(studioSpec(), held)).toEqual({ output_name: null })
+  })
+})

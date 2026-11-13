@@ -973,6 +973,23 @@ export function verbFieldsEnvelope(fields) {
     const out = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null;
     return isSchemaEnvelope(out) ? out : null;
 }
+/** THE DECLARED-ROW TEST for the estate naming seat: does the
+ *  family's own envelope root carry `output_name`? The declared row
+ *  (h3's deliverable slug — the file plane) always wins and the
+ *  estate seat never duplicates it, so the seat serves exactly when
+ *  this answers false. Reads the same dict the client walker walks
+ *  (fieldsOfEnvelope's root projection — one truth, both planes). */
+function envelopeDeclaresOutputName(e) {
+    // the served-envelope narrowing (isSchemaEnvelope), then the
+    // stampOptionsFrom dual read through the same string-keyed cast
+    // (the live envelope keys by uid, a JSON-roundtripped one by
+    // string — both spellings answer)
+    if (!isSchemaEnvelope(e))
+        return false;
+    const env = e;
+    const root = env.refs?.[String(env.uid)];
+    return root?.dict?.['output_name'] !== undefined;
+}
 export function specBody(svc, defs, res, engineLoras) {
     // ONE VOICE FOR AN UNKNOWN CARD: the defs map is this function's
     // own input and its only caller builds res.card FROM it, so a miss
@@ -1072,6 +1089,23 @@ export function specBody(svc, defs, res, engineLoras) {
         fields: verbFieldsEnvelope(verb.fields),
         writes: verb.writes,
     }));
+    // THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder): the
+    // label plane serves on every family that does not declare the
+    // row itself — h3's declared slug (the file plane: names the
+    // born files) ALWAYS wins and the seat never duplicates it. The
+    // seat's row writes the stage's reserved `output_name` param:
+    // the estate door lifts that reserved key beside the graph
+    // (STAGE_RESERVED_PARAMS) whatever the card declares, and the
+    // settle mints the gallery rows' display labels from it — one
+    // seat, agent patch and GUI write alike (the operator's 2026-11-08
+    // ruling: a card param both constituencies ride).
+    const naming = envelopeDeclaresOutputName(schemas.schema)
+        ? undefined
+        : {
+            label: 'Output name',
+            tooltip: 'Labels this run\'s gallery rows — the stem rides the outputs\' display labels while the delivered files keep their machine names.',
+            max: 64,
+        };
     // THE EDGE EMISSION (operator order, 2026-09-12: "whenever a card
     // emits via the package system, it needs to have 'input'
     // 'required=True', or 'output', so the edges are defined"). The
@@ -1137,6 +1171,11 @@ export function specBody(svc, defs, res, engineLoras) {
         // (the legacy wire is untouched; the client keys off presence,
         // the runtimes-block law one section up).
         ...(verbs.length > 0 ? { verbs } : {}),
+        // THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder): served
+        // only where the family's envelope declares no row of its own —
+        // the declared row always wins, the wire grows only where the
+        // seat serves (the verbs-block presence law).
+        ...(naming !== undefined ? { naming } : {}),
         // NO MINTED MODEL (the minted-model kill, 2026-10-12): a card
         // that boards no models serves null here — the old body minted
         // the card id as the model and the run door refused the card's

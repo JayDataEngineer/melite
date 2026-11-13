@@ -484,7 +484,27 @@ export function resolveFamilyKey(spec) {
  * families-scoped to the served family). Memoize at the caller for
  * hot loops — the walk is pure. */
 export function fieldsOf(spec) {
-    return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
+    const declared = fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
+    // THE ESTATE NAMING ROW (queue 12's A2 remainder): a spec serving
+    // the estate seat carries one more row than its envelope declares
+    // — the label-plane text row whose value rides the stage's
+    // reserved `output_name` param. The declared row ALWAYS wins
+    // (h3's slug names the born files; the seat serves only where the
+    // envelope declares no row, and this guard keeps the two truths
+    // from ever doubling).
+    if (spec.naming === undefined)
+        return declared;
+    if (declared.some((f) => f.name === 'output_name'))
+        return declared;
+    return [...declared, {
+            name: 'output_name',
+            label: spec.naming.label,
+            type: 'string',
+            wtype: 'text',
+            tooltip: spec.naming.tooltip,
+            max: spec.naming.max,
+            placeholder: '',
+        }];
 }
 /** THE MOD-BAG KEYS (the per-model law's truth seat, operator
  *  2026-10-16: "MODS (LIKE LORAS) ARE PER MODEL"): the envelope
@@ -2198,6 +2218,14 @@ function admittedKeys(spec, surface) {
         declared.add(k);
     for (const k of modOwnedFields(spec))
         declared.add(k);
+    // THE ESTATE NAMING SANCTION (queue 12's A2 remainder): a spec
+    // serving the naming seat admits its row's write exactly as the
+    // estate door spares the reserved `output_name` key beside the
+    // graph (STAGE_RESERVED_PARAMS — the lift the settle's label mint
+    // reads). One spelling: the compose mirror, the reopen heal, and
+    // the door all sanction the same name.
+    if (spec.naming !== undefined)
+        declared.add('output_name');
     for (const a of spec.admits ?? []) {
         if (a.endsWith('*'))
             prefixes.push(a.slice(0, -1));

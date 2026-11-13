@@ -507,6 +507,27 @@ export interface FormSpecDoc {
     fields: SchemaEnvelope | null
     writes: readonly string[]
   }>
+  /** THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder, the
+   *  operator 2026-11-08 ask — "no place for the ai agent or the
+   *  user through the card UI to label output names" — on every
+   *  family, not only the one that declares the row): the spec
+   *  serves this seat exactly when the family's own envelope does
+   *  NOT declare `output_name` (h3 declares it — the deliverable
+   *  slug, the file plane; the declared row ALWAYS wins, the seat
+   *  never duplicates it). The client derives one text row off it
+   *  (fieldsOf appends the field; the admittedKeys fold sanctions
+   *  the write) whose value rides the stage's reserved
+   *  `output_name` param — the label plane: the door lifts the
+   *  reserved key beside the graph (STAGE_RESERVED_PARAMS) and the
+   *  settle mints the gallery rows' display labels from it; the
+   *  machine file names never move. Absent = the family's envelope
+   *  declares the row itself (or a pre-seat server: the wire grows
+   *  only where the seat serves). */
+  naming?: {
+    label: string
+    tooltip: string
+    max: number
+  }
   /** The estate's surface envelope (served TOP-LEVEL by the door —
    *  2026-09-12 lane read): layout='studio' means a registered view
    *  exists (the client's business is the keyed slot, not this flag);

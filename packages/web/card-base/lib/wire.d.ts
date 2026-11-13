@@ -5,7 +5,7 @@
  * own orchestration). Fetchers for the emission (catalog, form-spec)
  * and the one upload door.
  */
-import type { CatalogCard, FormSpecDoc } from './spec.js';
+import type { CatalogCard, FormSpecDoc } from './spec.ts';
 import type { ManageJsonValue } from '@melite/estate-manage/types';
 export interface ManageActionReply {
     ok: boolean;

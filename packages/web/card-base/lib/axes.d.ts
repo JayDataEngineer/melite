@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
 import type { ReactElement } from 'react';
-import { type FormSpecDoc, type SpecValues, type FormVariantRow } from './spec.js';
+import { type FormSpecDoc, type SpecValues, type FormVariantRow } from './spec.ts';
 /** THE PACK PROMPT (the no-silent-drop law's extension half,
  *  stroke 18): the card's DECLARED extension packs that the engine
  *  cannot see render AS THEMSELVES — marked missing, with the

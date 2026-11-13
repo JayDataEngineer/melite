@@ -243,3 +243,24 @@ describe('composeCandidateDoc — composition itself (later layers win, null del
     expect(composeValidate(spec, doc)).toHaveLength(1)
   })
 })
+
+describe('THE ESTATE NAMING SANCTION (queue 12\'s A2 remainder): the mirror admits the label-plane row exactly when the seat serves', () => {
+  const base: FormSpecDoc = { form: 'tts', model: 'qwen3-tts', params: ['prompt'] }
+  test('a doc stating output_name on a seat-serving spec is CLEAN — the fold sanctions what the estate door spares', () => {
+    // the door lifts the reserved output_name key beside the graph
+    // (STAGE_RESERVED_PARAMS) and the settle mints the gallery
+    // labels from it; the mirror sanctions the same name when the
+    // spec serves the seat — one spelling, both judges.
+    const seated: FormSpecDoc = { ...base, naming: { label: 'Output name', tooltip: 'Labels the gallery rows.', max: 64 } }
+    expect(composeValidate(seated, { prompt: 'hi', output_name: 'my-film' })).toEqual([])
+  })
+  test('the SAME doc on a seatless spec refuses FIELD-NAMED — the mirror speaks the door\'s voice', () => {
+    // the toggle proof's other half: without the seat (and no
+    // declared row) the name is unowned surface and the mirror
+    // banners it exactly as the estate admission gate would.
+    const v = composeValidate(base, { prompt: 'hi', output_name: 'my-film' })
+    expect(v).toHaveLength(1)
+    expect(v[0]!.field).toBe('output_name')
+    expect(v[0]!.message).toContain("field 'output_name' fires nothing on this lane")
+  })
+})

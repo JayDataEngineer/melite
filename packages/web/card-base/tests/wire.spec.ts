@@ -540,3 +540,31 @@ test('uploadLoraDoor seats a filename-only answer with the door\'s soft refusal 
     globalThis.fetch = real
   }
 })
+
+// THE ESTATE NAMING SEAT'S BOUNDARY JUDGMENT (queue 12's A2
+// remainder): the seat crosses the wire like every served fact —
+// malformed refuses in the doc's voice, well-formed passes.
+
+test('a well-formed naming seat passes the boundary judgment untouched', () => {
+  const doc = {
+    schema: { uid: 1, refs: {} },
+    naming: { label: 'Output name', tooltip: 'Labels the gallery rows.', max: 64 },
+  }
+  expect(assertFormSpecDoc(doc, 'tts')).toBe(doc)
+})
+
+test('a malformed naming seat refuses naming the doc and the seat\'s whole contract', () => {
+  // each malformed arm refuses with the same voice: an empty label,
+  // a numeric tooltip, and a non-positive cap are all half-seats.
+  const arms: unknown[] = [
+    { label: '', tooltip: 'x', max: 64 },
+    { label: 'Output name', tooltip: 7, max: 64 },
+    { label: 'Output name', tooltip: 'x', max: 0 },
+  ]
+  for (const naming of arms) {
+    const doc = { schema: { uid: 1, refs: {} }, naming }
+    expect(() => assertFormSpecDoc(doc, 'tts')).toThrow(
+      'form-spec tts: malformed naming seat — label, tooltip, and max (> 0) are the seat\'s whole contract',
+    )
+  }
+})
