@@ -18,9 +18,12 @@
 //     options EQUAL the action's cited vocabulary IN SERVED ORDER
 //     (the card's dropdown order is the user's menu order);
 // (4) SET EQUALITY both ways: every served knob is declared by an
-//     action row, except the named card-owned set below; every
-//     action row is served, except that same named set. A rename
-//     on either side turns this red.
+//     action row, except the named card-owned set below and the
+//     ESTATE naming row (queue 12: output_name, synthesized on
+//     every card declaring none of its own — estate surface, never
+//     an action row, judged by the one spelling the faces serve);
+//     every action row is served, except that same named set. A
+//     rename on either side turns this red.
 // (5) the shared-factory mechanism: the seven families' diffusion
 //     rows ride `diffusionParamRows()` (the F2 wall deep-equals
 //     the rows themselves; this arm pins the SERVED ORDER and the
@@ -49,6 +52,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { instantiateAction } from "@melite/comfyui-card-kit";
 import { diffusionParamRows, EDIT_DIFFUSION_BOUNDS, type DiffusionParamBounds } from "../../../../packages/engines/comfyui-card-kit/src/paramRows.ts";
 import { emitParamsSchema } from "../../../../packages/engines/comfyui-card-kit/src/params-emit.ts";
+import { ESTATE_NAMING_ROW } from "../../../../packages/web-kit/contracts/src/formSpec.ts";
 import { schema as imageGenSchema } from "../../../../packages/image/image-gen/src/card.ts";
 import { schema as imageEditSchema } from "../../../../packages/image/image-edit/src/card.ts";
 import { t2i as qwenImg21T2I } from "../../../../packages/models/qwen-img-21/src/actions.ts";
@@ -208,11 +212,14 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
         }
       }
       // SET EQUALITY, the other direction: every served knob is a
-      // declared row or on the named card-owned set. A card-side
-      // RENAME lands here.
+      // declared row or on the named card-owned set — or the estate's
+      // own naming row (queue 12's ONE SEAT: served by the emitter
+      // estate-wide, admitted at the compose door, minted by the
+      // settle; never an action row because it never touches the
+      // latent). A card-side RENAME lands here.
       for (const name of served.keys()) {
         assert.ok(
-          declared.has(name) || card.cardOwned.includes(name),
+          declared.has(name) || card.cardOwned.includes(name) || name === ESTATE_NAMING_ROW.name,
           `${card.name} serves a knob "${name}" that no boarded action declares and that is not on the named card-owned set ${JSON.stringify(card.cardOwned)} — the two surfaces must be the same set (F3)`,
         );
       }
@@ -267,9 +274,12 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     assert.deepEqual([inputDecl.id], ["input"], "the input family's address is the input lane — the judged set's routing key");
     assert.ok(!served.has("model"), "input-prep boards one family — no synthesized model picker is served");
     const declared = new Set(action.params.map((r) => r.name));
+    // THE ESTATE NAMING ROW rides the served surface here too (queue
+    // 12: the emitter synthesizes it on every card declaring none of
+    // its own — estate surface, never a prep action row).
     assert.deepEqual(
       [...served.keys()].sort(),
-      [...declared].sort(),
+      [...declared, ESTATE_NAMING_ROW.name].sort(),
       `input-prep serves knobs ${JSON.stringify([...served.keys()].sort())} but the prep action declares ${JSON.stringify([...declared].sort())} — the two surfaces must be the same set (F3)`,
     );
     const asserted: string[] = [];

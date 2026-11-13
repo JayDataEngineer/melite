@@ -4,6 +4,7 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { owningAtom, theService } from "@melite/comfyui-cordis";
 import { cardAdmits } from "./cardsCompose.js";
+import { ESTATE_NAMING_ROW } from "@melite/contracts/formSpec";
 /**
  * The overlay's mod-fold scoping decision (round-22 compose audit
  * Q3a): which family scopes the absorbed mod surface for a stage's
@@ -123,7 +124,11 @@ export function applyFlowParamsOverride(flowName, stages, overrideRaw, decls, fa
     };
     const admitsParam = (row, key) => {
         const card = typeof row["card"] === "string" ? row["card"] : "";
-        return cardAdmits(decls[card], modNamesOf(card), key);
+        // THE ESTATE NAMING ROW (queue 12): compose's admission door
+        // sanctions it estate-wide (the faces teach it on every card
+        // declaring none of its own); validate over-admitting into that
+        // door is this overlay's own law.
+        return key === ESTATE_NAMING_ROW.name || cardAdmits(decls[card], modNamesOf(card), key);
     };
     // THE FAMILY ROWS TAKE NO PARAMS (round-23 audit Q2): a family
     // stage carries card "" (the either/or row contract), so no decl

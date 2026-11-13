@@ -50,6 +50,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService, CardArmError } from "../src/cardsRegistry.ts";
 import { admissionRefusal } from "../src/cardsCompose.ts";
+import { ESTATE_NAMING_ROW } from "@melite/contracts/formSpec";
 import { factsPath } from "../src/cardsFacts.ts";
 import { liftCardParams } from "../src/cardsVariant.ts";
 import { deriveDecls, type ModelFactsRow } from "../src/cardsFacts.ts";
@@ -284,6 +285,36 @@ describe("T5 — every family's studio writes admit (the bg-brick class)", () =>
     const motionDecl = decls["motion"];
     expect(motionDecl?.admits.includes("motion_bg_image"),
       "the cardsFacts projection unions studio.writes into admits").toBe(true);
+  });
+});
+
+describe("T6 — THE ESTATE NAMING ROW'S DOOR SANCTION (queue 12's ONE SEAT law)", () => {
+  // The faces teach output_name on every card declaring none of its
+  // own (the UI naming seat + the agent params_schema property, one
+  // spelling ESTATE_NAMING_ROW); a face that teaches a knob the
+  // admission door refuses is the no-cheat lie. Toggle the estate
+  // arm out of cardsCompose's `admitted` and every non-declaring
+  // card × family below reds with the compose-door refusal — this
+  // tier is that arm's firing proof (receipt 2026-11-13, queue 12).
+  it("output_name admits at the real door on EVERY matrix card (h3 declares; the estate arm serves the rest)", () => {
+    const facts = svc.modelFacts();
+    const failures: string[] = [];
+    let cells = 0;
+    let viaEstateArm = 0;
+    for (const { card, families } of matrixRows()) {
+      for (const fam of families) {
+        cells += 1;
+        const declared = deriveDecls(cardDefsNow() ?? new Map(), facts)[card]?.schemaNames.includes(ESTATE_NAMING_ROW.name) ?? false;
+        if (!declared) viaEstateArm += 1;
+        const v = verdict(card, fam, ESTATE_NAMING_ROW.name, facts);
+        if (!v.admitted) failures.push(`${card} × ${fam}: the estate naming row refused at admission (${v.error})`);
+      }
+    }
+    expect(cells, "the matrix went vacuous").toBeGreaterThan(0);
+    // the arm is live, not vacuous: most cards ride the estate arm
+    // (h3's slug is the one DECL declaring the row today)
+    expect(viaEstateArm, "every card declares its own output_name — the estate arm went dead").toBeGreaterThan(0);
+    expect(failures).toEqual([]);
   });
 });
 

@@ -4,6 +4,7 @@
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
 import { cardAdmits, familyLanesOf } from "./cardsFacts.ts";
+import { ESTATE_NAMING_ROW } from "@melite/contracts/formSpec";
 export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
@@ -249,7 +250,15 @@ export function admissionRefusal(
       // surface is empty here; the knobs+admits rows still gate
       // (compose's own admission gate re-judges with the fold).
     }
-    const admitted = (key: string): boolean => cardAdmits(decl, modNames, key)
+    // THE ESTATE NAMING ROW'S ADMISSION (queue 12's ONE SEAT law): the
+    // faces teach the row on every card declaring none of its own (the
+    // UI naming seat + the agent params_schema property, one spelling
+    // ESTATE_NAMING_ROW), and the stage plane already carries the key —
+    // STAGE_RESERVED_PARAMS lifts it beside the graph, the settle mints
+    // the gallery labels from it. A face that teaches a knob this door
+    // refuses is the no-cheat lie; the declared row (h3's slug) already
+    // admits through schemaNames — this arm serves every OTHER card.
+    const admitted = (key: string): boolean => key === ESTATE_NAMING_ROW.name || cardAdmits(decl, modNames, key)
     const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort()
     if (unknown.length > 0) {
       const hints = unknown

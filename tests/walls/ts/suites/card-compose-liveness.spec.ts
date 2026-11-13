@@ -59,6 +59,7 @@ import type { ModelFactsRow } from "../../../../packages/harness/estate-queue/sr
 import type {} from "../../../../packages/harness/estate-queue/src/service.ts";
 import { formSpecArm } from "../../../../packages/harness/melite-tools/src/discovery.ts";
 import { fieldsOf } from "../../../../packages/web/card-base/src/spec.ts";
+import { ESTATE_NAMING_ROW } from "../../../../packages/web-kit/contracts/src/formSpec.ts";
 // THE H3 STUDIO'S OWN SERIALIZER (B4/R1's serializer writer face): the
 // tenant-tree probe below dispatches on the file carrying this export
 // — the arm drives THE module it imports, and a second hand-serializer
@@ -1313,6 +1314,14 @@ describe("every studio tenant's persisted key set composes on its own derived la
         const dict = (def.schema as { dict?: Record<string, unknown> } | undefined)?.dict;
         assert.ok(dict !== undefined, `${tenant}: card '${rows[0]!.row.card}' carries no schema dict — the declarative face's machine home is unjudgable`);
         for (const k of persisted) {
+          // THE ESTATE SEAT (queue 12's ONE SEAT law): output_name is
+          // the estate-owned naming row — the faces synthesize it off
+          // ESTATE_NAMING_ROW on every card declaring none of its own,
+          // and the compose admission door sanctions it estate-wide
+          // (cardsCompose's estate arm). It is estate surface, not
+          // card DECL surface, so the dict/writes fold never carries
+          // it; judged here by the same one spelling the faces serve.
+          if (k === ESTATE_NAMING_ROW.name) continue;
           if (k in dict || rows[0]!.writes.includes(k)) continue;
           offenders.push(`${tenant}: the served spec stages '${k}' but the card's schema dict declares no such knob and the studio.writes row does not carry it — the SSOT drifted off the declaration`);
         }
