@@ -432,6 +432,43 @@ export declare const chromeCopy: {
     readonly renameAddressMiss: (p: {
         name: string;
     }) => string;
+    /** THE VERB BAR (MHR slice 2, 2026-11-13): a local-only verb's
+     *  disabled-button hover — the bar never renders a dead button
+     *  without naming why it cannot be pressed from here. */
+    readonly verbLocalOnly: "this verb runs locally — no flow route served";
+    /** The verb dialog's run button at rest (the verb's own label
+     *  rides along: "Run estimate body"). */
+    readonly verbRunWord: (p: {
+        label: string;
+    }) => string;
+    /** The verb dialog's run button while the run is in flight. */
+    readonly verbRunning: "Running…";
+    /** The intake refusal: the verb's initial maps to a card param
+     *  the stage does not currently carry — named, never guessed. */
+    readonly verbIntakeMissing: (p: {
+        init: string;
+        param: string;
+    }) => string;
+    /** The intake note's one mapped initial (each mapping one clause;
+     *  the dialog joins them with "; "). */
+    readonly verbIntakeNote: (p: {
+        init: string;
+        param: string;
+    }) => string;
+    /** The hydration note: the verb's write landed as a param read
+     *  from the settled run's stage url. */
+    readonly verbSeated: (p: {
+        write: string;
+        runId: string;
+    }) => string;
+    /** The terminal-without-artifact voice: the run finished but its
+     *  stage row carries no url — the verb's write cannot hydrate. */
+    readonly verbNoArtifact: (p: {
+        runId: string;
+        status: string;
+    }) => string;
+    /** The verb dialog's ×-close aria label (the Modal's closeLabel). */
+    readonly verbCloseDialog: "Close";
 };
 /** The dictionary's key union — the typed seat's domain. */
 export type ChromeCopyKey = keyof typeof chromeCopy;

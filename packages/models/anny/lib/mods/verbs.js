@@ -12,6 +12,12 @@ export function apply(ctx) {
         engines: [{ id: 'estimator', flow: 'anny-hmr-estimator' }],
         writes: ['body_glb'],
         requires: ['melite-kimodo-nodes'],
+        // THE INTAKE (MHR slice 2): the estimator flow's `photo` initial
+        // sources from the card's own (l) photo face — params.body_image
+        // (the same slot compose's estimator arm reads, the family's
+        // declared surface). The verb declares both sides because it owns
+        // both: its flow's initial name and its card's param.
+        initials: { photo: 'body_image' },
         fields: z.object({
             person_index: z.number().min(0).step(1).default(0).description('Person')
                 .extra('extra', bag({ wtype: 'number', tooltip: 'Which detected person to fit (0 = the most confident detection).' })),

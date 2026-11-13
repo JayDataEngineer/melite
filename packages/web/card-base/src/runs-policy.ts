@@ -373,6 +373,35 @@ export async function startFlowInlineRun(
   }, signal)
 }
 
+/** THE VERB PRESS (MHR slice 2, the verb bar's run call): a
+ * {flow:} registry press for a served verb row — the flow id is the
+ * verb's ROUTE (served on the wire like a variant's route; the
+ * compose stays server-side), the initials are the invocation's
+ * inputs (the estimator's photo), and the params overlay carries
+ * the dialog's field values onto the expanded stage row. */
+export interface StartVerbRunInput {
+  flowId: string
+  /** The flow's initials, top-level (the door's convention). */
+  initials: Record<string, unknown>
+  /** The per-request params overlay (the verb dialog's fields). */
+  params: Record<string, unknown>
+  draftId: DraftId
+}
+
+/** Start a served verb's registry flow (the drill's verb bar). */
+export async function startVerbRun(
+  input: StartVerbRunInput,
+  signal?: AbortSignal,
+): Promise<StartOutcome> {
+  return await startRun({
+    flow: input.flowId,
+    ...input.initials,
+    params: input.params,
+    draft_id: input.draftId,
+    test: false,
+  }, signal)
+}
+
 /** pollRunStageUrl's knobs. */
 export interface PollStageOpts {
   /** Fires exactly once when the stage's artifact url lands. */

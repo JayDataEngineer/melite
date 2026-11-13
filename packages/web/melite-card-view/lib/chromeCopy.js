@@ -381,5 +381,28 @@ export const chromeCopy = {
      *  serves — the rename cannot be addressed, and the face says so
      *  instead of a silent no-op. */
     renameAddressMiss: (p) => 'rename skipped — no gallery row on the run carries "' + p.name + '"',
+    /** THE VERB BAR (MHR slice 2, 2026-11-13): a local-only verb's
+     *  disabled-button hover — the bar never renders a dead button
+     *  without naming why it cannot be pressed from here. */
+    verbLocalOnly: 'this verb runs locally — no flow route served',
+    /** The verb dialog's run button at rest (the verb's own label
+     *  rides along: "Run estimate body"). */
+    verbRunWord: (p) => 'Run ' + p.label,
+    /** The verb dialog's run button while the run is in flight. */
+    verbRunning: 'Running…',
+    /** The intake refusal: the verb's initial maps to a card param
+     *  the stage does not currently carry — named, never guessed. */
+    verbIntakeMissing: (p) => 'the stage carries no ' + p.param + ' — set it on the card first (the verb\'s ' + p.init + ' reads it)',
+    /** The intake note's one mapped initial (each mapping one clause;
+     *  the dialog joins them with "; "). */
+    verbIntakeNote: (p) => p.init + ' ← ' + p.param + ' (the stage\'s current value)',
+    /** The hydration note: the verb's write landed as a param read
+     *  from the settled run's stage url. */
+    verbSeated: (p) => p.write + ' seated from run ' + p.runId,
+    /** The terminal-without-artifact voice: the run finished but its
+     *  stage row carries no url — the verb's write cannot hydrate. */
+    verbNoArtifact: (p) => 'run ' + p.runId + ' settled ' + p.status + ' with no artifact',
+    /** The verb dialog's ×-close aria label (the Modal's closeLabel). */
+    verbCloseDialog: 'Close',
 };
 //# sourceMappingURL=chromeCopy.js.map

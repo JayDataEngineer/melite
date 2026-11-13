@@ -17576,6 +17576,16 @@ window.__ModuleLoader__.load({
 				test: input.test ?? false
 			}, signal);
 		}
+		/** Start a served verb's registry flow (the drill's verb bar). */
+		async function startVerbRun(input, signal) {
+			return await startRun({
+				flow: input.flowId,
+				...input.initials,
+				params: input.params,
+				draft_id: input.draftId,
+				test: false
+			}, signal);
+		}
 		/** THE ARTIFACT POLL (the old pollFlowRun law, moved verbatim onto
 		*  the mounted runs namespace — stroke 81 dropped it by accident and
 		*  the img-to-mesh studio's import caught the hole): the run is the
@@ -19540,6 +19550,7 @@ window.__ModuleLoader__.load({
 		exports.specDefaults = specDefaults;
 		exports.startCardRun = startCardRun;
 		exports.startFlowInlineRun = startFlowInlineRun;
+		exports.startVerbRun = startVerbRun;
 		exports.stopRun = stopRun;
 		exports.studioClaimsRow = studioClaimsRow;
 		exports.subscribe = subscribe;

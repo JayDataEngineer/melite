@@ -98,6 +98,13 @@ export interface VerbRegistration {
     readonly writes: readonly string[];
     readonly requires: readonly string[];
     readonly fields: ModFields;
+    /** THE INTAKE MAPPING (MHR slice 2, the verb bar's press): each
+     *  flow initial the verb's engine needs, mapped to the CARD PARAM
+     *  that sources it (the family owns both sides — its flow's
+     *  initial name and its card's surface key). Absent = the verb
+     *  declares no intake; the bar still presses and the door's
+     *  initial gate voices the gap. */
+    readonly initials?: Readonly<Record<string, string>>;
 }
 /** A mod's absorbed contract (the family scope attached — the
  *  emission filter). */

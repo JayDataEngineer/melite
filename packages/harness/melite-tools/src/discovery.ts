@@ -1193,18 +1193,23 @@ export function specBody(
   }
   const surface = def.surface ?? {}
   const boarded = def.boarded ?? []
-  // THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1): the
-  // card's mounted verbs (svc.cardVerbs — the same read the
-  // mod-interlock wall pins registration-side), each with its
-  // serialized fields envelope (the verb's own toJSON, the same
-  // walker as the card fields — the client verb bar renders the
-  // invocation dialog off it). The routing (engines) stays
-  // server-side; slice 2's verb bar designs the run call.
+  // THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1; slice 2
+  // serves the route): the card's mounted verbs (svc.cardVerbs —
+  // the same read the mod-interlock wall pins registration-side),
+  // each with its serialized fields envelope (the verb's own
+  // toJSON, the same walker as the card fields — the client verb
+  // bar renders the invocation dialog off it) and the press's
+  // ROUTE (the first engine's registry flow id, the variant-route
+  // law: a served address the press names, compose stays
+  // server-side; a local-only engine (preset-save) serves null and
+  // the bar renders its own refusal, never a dead button).
   const verbs = svc.cardVerbs(res.card).map((verb) => ({
     id: verb.id,
     label: verb.label,
     fields: verbFieldsEnvelope(verb.fields),
     writes: verb.writes,
+    flow: verb.engines[0]?.flow ?? null,
+    initials: verb.initials ?? {},
   }))
   // THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder): the
   // label plane serves on every family that does not declare the

@@ -35,6 +35,7 @@ export function liveEffectiveParams(
 import { createElement as h, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Button, IconCloseOutlineRegular, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
+import { VerbBar } from './verb-bar.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, resolveFamilyKey, uploadLoraDoor, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
@@ -1906,6 +1907,32 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
                     settleCommit(() => { setStrikeDismissed(true) })
                   },
                 }, h(IconCloseOutlineRegular, { size: 12 }))))
+          : null,
+        // THE VERB BAR (MHR slice 2, 2026-11-13): every verb the
+        // spec serves (FormSpecDoc.verbs, slice 1 — the registry's
+        // mounted surface) gets its press here. The bar opens the
+        // verb's OWN dialog (the SubActionMod law), the press rides
+        // the {flow:} door, and the settled artifact hydrates the
+        // stage through the same patch verb every edit rides — a
+        // verb write is a write (the one-ledger law).
+        spec !== null && spec.verbs !== undefined && spec.verbs.length > 0
+          ? h(VerbBar, {
+            verbs: spec.verbs,
+            draftId: bench.draftId,
+            stageId: stage.id,
+            params: liveEffectiveParams(held, user, touchedRef.current),
+            onWrite: (write) => {
+              const settleDraftId = bench.draftId
+              const settleStageId = stage.id
+              void patchStageParamsChained(settleDraftId, settleStageId, write).catch(() => {
+                // draft.ts stamped the error as the row's lastError
+                // before rethrowing — the row owns the words (the
+                // one-voice law, same as onWireSlot's arm).
+                if (!guardStage(settleStageId)) return
+                settleCommit(() => { setWriteFace(unlandedWriteVoice(settleDraftId, settleStageId)) })
+              })
+            },
+          })
           : null,
         h('div', { className: css.params },
         // THE REAL SKELETON (operator 2026-11-15: "Instead of form… —

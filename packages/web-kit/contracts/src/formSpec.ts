@@ -491,21 +491,30 @@ export interface FormSpecDoc {
     env: string
     consuming_param: string
   }>
-  /** THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1): every
-   *  verb mounted on the card's boarded families (the SubActionMod
-   *  law — verbs own their knobs; they ride the verb's own
-   *  invocation dialog, never the card surface), served with the
-   *  serialized fields envelope so a client verb bar renders each
-   *  verb's dialog without a second door. The invocation routing
-   *  (engines) stays server-side — slice 2's verb bar designs the
-   *  run call. Absent when the card boards no verb-bearing family
-   *  (legacy cards serve no new key — the wire grows only where
-   *  verbs live). */
+  /** THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1; slice 2
+   *  serves the route): every verb mounted on the card's boarded
+   *  families (the SubActionMod law — verbs own their knobs; they
+   *  ride the verb's own invocation dialog, never the card
+   *  surface), served with the serialized fields envelope so a
+   *  client verb bar renders each verb's dialog without a second
+   *  door. `flow` is the press's ROUTE — the verb's first engine's
+   *  registry flow id, the same law as a variant's `route` (a
+   *  served address the press names; the COMPOSE stays
+   *  server-side). null when the verb's engine is local-only
+   *  (preset-save) — the bar renders it disabled with its own
+   *  voice, never a dead button. Absent when the card boards no
+   *  verb-bearing family (legacy cards serve no new key — the wire
+   *  grows only where verbs live). */
   verbs?: Array<{
     id: string
     label: string
     fields: SchemaEnvelope | null
     writes: readonly string[]
+    flow: string | null
+    /** The intake mapping (initial name → card param): the press
+     *  sources each mapped initial from the stage's current param
+     *  value. Empty when the verb declares none. */
+    initials: Readonly<Record<string, string>>
   }>
   /** THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder, the
    *  operator 2026-11-08 ask — "no place for the ai agent or the

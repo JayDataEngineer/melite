@@ -278,6 +278,16 @@ export async function startFlowInlineRun(input, signal) {
         test: input.test ?? false,
     }, signal);
 }
+/** Start a served verb's registry flow (the drill's verb bar). */
+export async function startVerbRun(input, signal) {
+    return await startRun({
+        flow: input.flowId,
+        ...input.initials,
+        params: input.params,
+        draft_id: input.draftId,
+        test: false,
+    }, signal);
+}
 /** THE ARTIFACT POLL (the old pollFlowRun law, moved verbatim onto
  *  the mounted runs namespace — stroke 81 dropped it by accident and
  *  the img-to-mesh studio's import caught the hole): the run is the

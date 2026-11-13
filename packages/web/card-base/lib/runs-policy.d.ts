@@ -153,6 +153,22 @@ export interface StartFlowInlineInput {
  *  honest refusal when the stages carry no workflow or the bench is
  *  multi-stage: the single-stage policy is the estate's). */
 export declare function startFlowInlineRun(input: StartFlowInlineInput, signal?: AbortSignal): Promise<StartOutcome>;
+/** THE VERB PRESS (MHR slice 2, the verb bar's run call): a
+ * {flow:} registry press for a served verb row — the flow id is the
+ * verb's ROUTE (served on the wire like a variant's route; the
+ * compose stays server-side), the initials are the invocation's
+ * inputs (the estimator's photo), and the params overlay carries
+ * the dialog's field values onto the expanded stage row. */
+export interface StartVerbRunInput {
+    flowId: string;
+    /** The flow's initials, top-level (the door's convention). */
+    initials: Record<string, unknown>;
+    /** The per-request params overlay (the verb dialog's fields). */
+    params: Record<string, unknown>;
+    draftId: DraftId;
+}
+/** Start a served verb's registry flow (the drill's verb bar). */
+export declare function startVerbRun(input: StartVerbRunInput, signal?: AbortSignal): Promise<StartOutcome>;
 /** pollRunStageUrl's knobs. */
 export interface PollStageOpts {
     /** Fires exactly once when the stage's artifact url lands. */
