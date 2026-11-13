@@ -25,6 +25,32 @@ import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 import { draftIdOf } from '@melite/contracts/benchStage';
+// THE REAL-DECL ROWS (the N7 depth cure, 2026-11-13): this suite
+// hand-copied krea-2's turbo envelope [4,8]/[1,2], the turbo
+// marriage, and raw's 52 at every fixture seat — accurate but
+// silent drift fodder (a DECL change left the fixtures serving the
+// old truth green). The values now ride the DECL itself (the same
+// source-path import pattern as studio.spec's family roster); the
+// outcome asserts (the reseat bounds 2/8, the cfg ceiling, the
+// served 52) are the tripwires that red when the DECL's story
+// changes.
+import { DECL as krea2Decl } from '../../../models/krea-2/src/index.ts'
+
+/** Turbo's served arm — the variant every envelope seat below pins. */
+const KREA_TURBO = krea2Decl.variants.find((v) => v.id === 'turbo')
+if (KREA_TURBO === undefined) throw new Error('krea-2 DECL lost its turbo variant — the N7 fixtures cannot derive')
+/** Raw's 52-step marriage — the resolved serve the 1:1 law rides. */
+const KREA_RAW_STEPS = krea2Decl.variants.find((v) => v.id === 'raw')?.resolver_defaults?.steps
+
+test('the N7 fixtures ride the krea-2 DECL (turbo envelope [4,8]/[1,2], marriage 8/1, raw 52) — a DECL drift reds here first', () => {
+  // The depth tripwire: every fixture below serves THESE derived
+  // values, and the outcome asserts (reseat 2/8, cfg ceiling 2,
+  // served 52) pin the story. If the DECL moves, this pin names the
+  // change BEFORE the outcome arms red with mystery numbers.
+  expect(KREA_TURBO.sampler_envelope).toEqual({ steps: [4, 8], cfg: [1, 2] })
+  expect(KREA_TURBO.resolver_defaults).toEqual({ model: 'krea-2', steps: 8, cfg: 1 })
+  expect(KREA_RAW_STEPS).toBe(52)
+})
 
 const BENCH: CardsBenchValue = {
   kind: 'bench',
@@ -677,13 +703,13 @@ test('the drill renders the SERVED resolved map under the user layer (the 1:1 la
   const served = {
     draft_id: 'bench-s1', rev: 7,
     stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
-      params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
+      params: { prompt: 'a red cube' }, resolved: { steps: KREA_RAW_STEPS } }],
     log: [],
   }
   stubWire({
     bench: served,
     draftStages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
-      params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
+      params: { prompt: 'a red cube' }, resolved: { steps: KREA_RAW_STEPS } }],
   })
   const user = userEvent.setup()
   render(createElement(CardsTab, {
@@ -703,7 +729,7 @@ test('the drill renders the SERVED resolved map under the user layer (the 1:1 la
         kind: 'bench', draftId: 'bench-s1', rev: 7,
         sessionKey: 's1',
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
-          params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
+          params: { prompt: 'a red cube' }, resolved: { steps: KREA_RAW_STEPS } }],
         log: [],
       } as unknown as CardsBenchValue,
     }),
@@ -826,7 +852,7 @@ test('TWO-HOP: picking an envelope-owning family on a stage holding stated numer
     }),
     variants: [
       { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
-        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+        sampler_envelope: KREA_TURBO.sampler_envelope },
     ],
   }
   const specsSeen: string[] = []
@@ -1148,15 +1174,15 @@ test('THE DRAGBAR CLAMP: sliding 9 against turbo\'s [1,2] cannot author the impo
       cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
     }),
     variants: [
-      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
-        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: KREA_TURBO.resolver_defaults, route: 'krea-2',
+        sampler_envelope: KREA_TURBO.sampler_envelope },
     ],
   }
   const { calls } = stubWire({
     formSpecs: { 'krea-2': kreaSpec },
     bench: {
       draft_id: 'bench-s1', rev: 7,
-      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: 4, cfg: 1 } }],
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: KREA_TURBO.resolver_defaults?.steps, cfg: KREA_TURBO.resolver_defaults?.cfg } }],
       log: [],
     },
   })
@@ -1206,8 +1232,8 @@ test('THE COMPOSE GATE: a HELD cfg outside the envelope (a foreign writer\'s 3.8
       cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
     }),
     variants: [
-      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
-        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: KREA_TURBO.resolver_defaults, route: 'krea-2',
+        sampler_envelope: KREA_TURBO.sampler_envelope },
     ],
   }
   const { calls } = stubWire({
@@ -1260,15 +1286,15 @@ test('THE COMPOSE GATE\'S POSITIVE CONTROL: cfg inside the envelope writes as be
       cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
     }),
     variants: [
-      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
-        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: KREA_TURBO.resolver_defaults, route: 'krea-2',
+        sampler_envelope: KREA_TURBO.sampler_envelope },
     ],
   }
   const { calls } = stubWire({
     formSpecs: { 'krea-2': kreaSpec },
     bench: {
       draft_id: 'bench-s1', rev: 7,
-      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: 4, cfg: 1 } }],
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: KREA_TURBO.resolver_defaults?.steps, cfg: KREA_TURBO.resolver_defaults?.cfg } }],
       log: [],
     },
   })
