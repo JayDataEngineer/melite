@@ -239,6 +239,8 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
       ["edit", { edit: [null] }, /h3-timeline edit: the bag's single entry is not a knob stanza \(got null\)/],
       ["edit", { edit: ["sharp"] }, /h3-timeline edit: the bag's single entry is not a knob stanza \(got a bare string\)/],
       ["edit", { edit: [[{ continuation: true }]] }, /h3-timeline edit: the bag's single entry is not a knob stanza \(got an array\)/],
+      ["repair", { repair: [[{ source_clip: "c" }]] }, /h3-timeline repair: the bag's single entry is not a knob stanza \(got an array\)/],
+      ["repair", { repair: [42] }, /h3-timeline repair: the bag's single entry is not a knob stanza \(got a bare number\)/],
     ];
     for (const [name, doc, voice] of cases) {
       const walked = def.schema(doc) as Record<string, unknown>;
@@ -246,6 +248,27 @@ describe("the edit bag's door (stage 2b: one bag, the whole matrix)", () => {
         () => def.compose(walked, model, new GraphBuilder(), `run_malformed_${name}`),
         voice,
         `${name} with a malformed entry refuses loud naming the door (never a TypeError)`,
+      );
+    }
+  });
+
+  it("EDITPOSTURE'S OWN EXPORTED DOOR REFUSES MALFORMED ENTRIES WITH THE GOT-SHAPE (the one-law surface the flow bindings read — the compose walk pre-validates, so the export's own guard is pinned on the export, not through compose)", () => {
+    // The exported posture law is a public door: a caller that did
+    // not pass the compose walk (a flow binding, a future seat)
+    // must get the loud got-shape refusal, never a TypeError
+    // reading .continuation off a malformed entry. The compose
+    // path itself refuses earlier (the walk's oneEntryBag owns it
+    // there) — this arm pins the export's own voice.
+    const cases: Array<[unknown, RegExp]> = [
+      [null, /h3-timeline edit: the bag's single entry is not a knob stanza \(got null\)/],
+      ["sharp", /\(got a bare string\)/],
+      [[{ continuation: true }], /\(got an array\)/],
+    ];
+    for (const [entry, voice] of cases) {
+      assert.throws(
+        () => cardMod.editPosture({ edit: [entry] }),
+        voice,
+        "the exported posture law refuses a malformed edit entry with the got-shape, never a TypeError",
       );
     }
   });

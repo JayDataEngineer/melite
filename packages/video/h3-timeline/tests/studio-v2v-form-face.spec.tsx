@@ -529,4 +529,70 @@ describe("THE V2V WINDOWS FORM FACE (queue 11 reopened — the operator's correc
     assert.ok(document.querySelector("[data-v2v-refusal]"), "the refusal voices loud")
     unmount()
   })
+
+  it("THE PER-ROW SEAT'S OWN REFUSAL EDGES — the untouched field (the ?? fallback), the malformed second, the fps-0 row math, and the lattice's own refusal each voice the form's words and land nothing", () => {
+    const commits: V2vWindowView[][] = []
+    // THE UNTOUCHED FIELD: a row press with no seconds stated rides
+    // the rowSec fallback to the empty string and refuses in the
+    // form's words (never a NaN frame, never a silent split)
+    const { unmount } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 180, transition: "cut" },
+        ] as DocCall[], fps: 24 }}
+        onChange={(next) => { commits.push(next as V2vWindowView[]) }}
+      />,
+    )
+    fireEvent.click(document.querySelector("[data-testid='v2v-row-split-1']") as HTMLElement)
+    assert.equal(commits.length, 0, "the untouched row field never commits")
+    assert.ok(document.querySelector("[data-v2v-refusal]"), "the untouched field refuses in the form's words")
+    // THE MALFORMED SECOND: a negative value refuses the same loud way
+    const neg = document.querySelector("[data-testid='v2v-row-split-at-1']") as HTMLInputElement
+    fireEvent.change(neg, { target: { value: "-3" } })
+    fireEvent.input(neg, { target: { value: "-3" } })
+    fireEvent.click(document.querySelector("[data-testid='v2v-row-split-1']") as HTMLElement)
+    assert.equal(commits.length, 0, "a negative second never commits")
+    unmount()
+    // THE LATTICE'S OWN REFUSAL: a floor-length row (22f) admits no
+    // interior lattice point — a stated, interior, legal-prose
+    // second refuses LOUD through the split law, landing nothing
+    const { unmount: u2 } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 112, transition: "cut" },
+        ] as DocCall[], fps: 24 }}
+        onChange={(next) => { commits.push(next as V2vWindowView[]) }}
+      />,
+    )
+    const tiny = document.querySelector("[data-testid='v2v-row-split-at-1']") as HTMLInputElement
+    fireEvent.change(tiny, { target: { value: "0.5" } })
+    fireEvent.input(tiny, { target: { value: "0.5" } })
+    fireEvent.click(document.querySelector("[data-testid='v2v-row-split-1']") as HTMLElement)
+    assert.equal(commits.length, 0, "the floor-length row's split refuses (the lattice owns the row too)")
+    assert.ok(document.querySelector("[data-v2v-refusal]"), "the lattice refusal voices in the form's words")
+    u2()
+    // THE FPS-0 ROW MATH: the row's frame math falls to the film
+    // clock's 24 exactly like the global seat — 1s into W2 lands the
+    // split at the snapped lattice point
+    const { unmount: u3 } = render(
+      <V2vLeafFace
+        value={{ calls: [
+          { text: "a", start_frame: 0, end_frame: 90 },
+          { text: "b", start_frame: 90, end_frame: 180, transition: "cut" },
+        ] as DocCall[], fps: 0 }}
+        onChange={(next) => { commits.push(next as V2vWindowView[]) }}
+      />,
+    )
+    const at0 = document.querySelector("[data-testid='v2v-row-split-at-1']") as HTMLInputElement
+    fireEvent.change(at0, { target: { value: "1" } })
+    fireEvent.input(at0, { target: { value: "1" } })
+    fireEvent.click(document.querySelector("[data-testid='v2v-row-split-1']") as HTMLElement)
+    assert.equal(commits.length, 1, "the fps-0 row press lands through the 24 clock")
+    const rowDoc = commits[0] as unknown as DocCall[]
+    assert.equal(rowDoc.length, 3, "the fps-0 row split grows the doc by one window")
+    assert.equal(rowDoc[2]!.start_frame, 112, "the seam sits at the lattice point the 24 clock computed (90+24=114 → snapped to 112, the cut row's own grid)")
+    u3()
+  })
 })

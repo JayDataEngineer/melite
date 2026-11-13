@@ -82,6 +82,7 @@ function strip(over?: Record<string, unknown>) {
     firstCut: Array<[number, number, (() => void) | undefined]>
     promptUpdate: unknown[]
     promptMove: unknown[]
+    promptResize: unknown[]
     promptDelete: unknown[]
     seam: unknown[]
   } = {
@@ -89,6 +90,7 @@ function strip(over?: Record<string, unknown>) {
     firstCut: [],
     promptUpdate: [],
     promptMove: [],
+    promptResize: [],
     promptDelete: [],
     seam: [],
   }
@@ -113,7 +115,7 @@ function strip(over?: Record<string, unknown>) {
       handleKeyframeDelete={() => {}}
       handlePromptUpdate={(id, t) => { rec.promptUpdate.push([id, t]) }}
       handlePromptMove={(id, s, e) => { rec.promptMove.push([id, s, e]) }}
-      handlePromptResize={() => {}}
+      handlePromptResize={(id: string, s: number, e: number) => { rec.promptResize.push([id, s, e]) }}
       handlePromptDelete={(id) => { rec.promptDelete.push([id]) }}
       handleExtend={() => {}}
       addCallAt={(f: number, onRefuse?: () => void) => { rec.addCall.push([f, onRefuse]) }}
@@ -326,6 +328,111 @@ describe("THE VIDEO-TO-VIDEO AND CUTS FACE (queue 11 — the cut door)", () => {
       "the derived window never moves — the stock handler sees no gesture (the pre-cure path resolved uuid −1 and dropped it SILENT)")
     assert.ok(els.container.textContent?.includes(studioCopy.v2vDerivedReadonly),
       "the read-only refusal speaks LOUD in the shared laneErr slot")
+    els.unmount()
+  })
+
+  it("THE DERIVED ROW'S OTHER GESTURES REFUSE TOO — resize and delete on the read-only window voice the same loud refusal, the stock handlers never see them (the D-19 law's remaining arms)", () => {
+    const { els, rec } = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 56,
+      frameIdx: 28,
+    })
+    // RESIZE: a real edge drag on the derived row's own edge seat.
+    // The RIGHT grip — the left one renders dead on a sole row (the
+    // frame-0 wall) and its bubble would arm a body MOVE instead.
+    const derivedRow = els.container.querySelector(`[data-prompt-clip="${V2V_DERIVED_WINDOW_UUID}"]`)!
+    const edge = derivedRow.querySelector('[data-prompt-edge="r"]')
+    assert.ok(edge instanceof HTMLElement, "the derived row renders its live right-edge grip")
+    fireEvent.pointerDown(edge, { clientX: 200, buttons: 1 })
+    fireEvent.pointerMove(window, { clientX: 320, buttons: 1 })
+    fireEvent.pointerUp(window)
+    assert.equal(rec.promptResize.length, 0,
+      "the derived window never resizes — the stock handler sees no gesture")
+    assert.ok(els.container.textContent?.includes(studioCopy.v2vDerivedReadonly),
+      "the resize refusal speaks in the shared laneErr slot")
+    // DELETE: the row's own × seat refuses the same loud way
+    const del = derivedRow.querySelector('[aria-label="Delete this prompt card"]')
+    if (del instanceof HTMLElement) {
+      fireEvent.click(del)
+      assert.equal(rec.promptDelete.length, 0,
+        "the derived window never deletes — the stock handler sees no gesture")
+      assert.ok(els.container.textContent?.includes(studioCopy.v2vDerivedReadonly),
+        "the delete refusal speaks in the shared laneErr slot")
+    }
+    els.unmount()
+  })
+
+  it("THE REFUSED FIRST CUT AND DIVIDE — a floor-length film (22f) has no legal split: the verbs still route, the refusal voices through the pane's own callback, and NO seam is framed (a reframe against nothing)", () => {
+    const { els, rec } = strip({
+      calls: [] as never,
+      barPrompts: [] as never,
+      barTotal: 22,
+      frameIdx: 11,
+    })
+    // the ADD CUT press on a floor-length derived window: willSplit
+    // is false — the verb routes, the seam write NEVER fires, and
+    // the pane's own onRefuse callback (the one the real hook calls
+    // when the lattice refuses) voices the shared refusal
+    fireEvent.click(els.container.querySelector('[data-testid="tl-add-cut"]')!)
+    assert.equal(rec.firstCut.length, 1, "the press still routes the first-window cut verb")
+    const onRefuse = rec.firstCut[0]![2]
+    assert.ok(typeof onRefuse === "function", "the press wires the refusal callback")
+    act(() => { onRefuse!() })
+    assert.ok(els.container.textContent?.includes(studioCopy.splitRefusal),
+      "the refused cut voices the §0.5 words through the pane's own callback")
+    assert.deepEqual(rec.seam, [],
+      "no seam is framed against a refused split (the predictor law)")
+    // the DIVIDE seat on the same floor-length row: same refusal
+    const divide = els.container.querySelector(`[data-split-toggle="${V2V_DERIVED_WINDOW_UUID}"] button`)
+    assert.ok(divide, "the divide seat renders on the floor-length derived row")
+    fireEvent.click(divide)
+    assert.equal(rec.firstCut.length, 2, "the divide routes the verb too")
+    assert.deepEqual(rec.seam, [],
+      "the refused divide frames no seam either")
+    const onRefuseDivide = rec.firstCut[1]![2]
+    assert.ok(typeof onRefuseDivide === "function", "the divide wires the refusal callback")
+    act(() => { onRefuseDivide!() })
+    assert.ok(els.container.textContent?.includes(studioCopy.splitRefusal),
+      "the refused divide voices the same §0.5 words")
+    els.unmount()
+  })
+
+  it("THE STOCK PICK RESTATES THE CARRY BUTTON — the escape hatch is a menu row, and picking it wears Stock's own label on the control (the resting state stays Carry)", async () => {
+    const { els } = strip()
+    const carryBtn = els.container.querySelector('[data-testid="tl-split-carry"]')!
+    assert.ok(carryBtn.textContent?.includes(studioCopy.splitCarryCarry.split(" — ")[0] as string) || carryBtn.textContent?.includes(studioCopy.splitCarryCarry),
+      "the resting label is the Carry voice (stock is never the default)")
+    fireEvent.click(carryBtn)
+    const stockRow = (await screen.findAllByRole("menuitem"))
+      .find((n) => n.textContent?.toLowerCase().startsWith("stock"))
+    assert.ok(stockRow, "the Stock escape hatch serves in the menu")
+    fireEvent.click(stockRow)
+    await waitFor(() => {
+      assert.ok(els.container.querySelector('[data-testid="tl-split-carry"]')!.textContent?.includes(studioCopy.splitCarryStock.split(" — ")[0] as string) || els.container.querySelector('[data-testid="tl-split-carry"]')!.textContent?.includes("Stock"),
+        "after the pick the control wears Stock's own label")
+    })
+    els.unmount()
+  })
+
+  it("THE V2V PROMPT SEAT COMMITS THROUGH THE EMPTY LAYER A — typing + Enter (and a second draft + blur) authors the edit bag's own first entry through setLayerAKey", () => {
+    const layerWrites: Array<[string, unknown]> = []
+    const { els } = strip({ setLayerAKey: (k: string, v: unknown) => { layerWrites.push([k, v]) } })
+    const input = els.container.querySelector('[data-testid="tl-v2v-prompt-input"]') as HTMLInputElement
+    assert.ok(input, "the prompt seat renders under the v2v face")
+    fireEvent.input(input, { target: { value: "make it snow" } })
+    fireEvent.change(input, { target: { value: "make it snow" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    assert.equal(layerWrites.length, 1, "the Enter press commits the draft once")
+    assert.deepEqual(layerWrites[0], ["edit", [{ edit_prompt: "make it snow" }]],
+      "a doc with NO edit bag authors its FIRST entry — the bag is born with the prompt alone")
+    // the blur commits a changed draft the same way (the second door)
+    fireEvent.input(input, { target: { value: "make it hail" } })
+    fireEvent.change(input, { target: { value: "make it hail" } })
+    fireEvent.blur(input)
+    assert.equal(layerWrites.length, 2, "the blur commits the second draft")
+    assert.deepEqual(layerWrites[1], ["edit", [{ edit_prompt: "make it hail" }]],
+      "the born bag carries the updated prompt")
     els.unmount()
   })
 

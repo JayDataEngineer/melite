@@ -465,4 +465,47 @@ describe("the 0-byte corpse reaper (the 2026-11-11 unet-stub burn)", () => {
     assert.equal(existsSync(livePart), true, "a live .part sidecar survives (the stale-part law owns it)");
     assert.equal(existsSync(real), true, "the real weight survives");
   });
+
+  test("a corpse that vanishes between the walk and its stat is skipped, never fatal", async () => {
+    const { VerifiedArtifactWriter } = await import("../src/artifact-writer.ts");
+    const store = root();
+    // the walk readdir'd the name, the stat loses it (the downloader
+    // replaced/removed the file mid-sweep) — the reaper skips the
+    // vanished entry and keeps sweeping the siblings
+    const vanished = join(store, "unet", "vanished.safetensors");
+    const corpse = join(store, "unet", "real-corpse.safetensors");
+    mkdirSync(dirname(vanished), { recursive: true });
+    writeFileSync(vanished, "");
+    writeFileSync(corpse, "");
+    const dead = new Date(Date.now() - 30 * 60 * 1000);
+    utimesSync(vanished, dead, dead);
+    utimesSync(corpse, dead, dead);
+    fsMocks.stat.mockImplementation(async (...args: unknown[]) => {
+      if (args[0] === vanished) throw new Error("stat lost the race");
+      return actualFs.stat(...(args as Parameters<ActualFs["stat"]>));
+    });
+    const writer = new VerifiedArtifactWriter(store);
+    const reaped = await writer.reapZeroByteWeights();
+    assert.equal(reaped, 1, "only the stat-able corpse counts");
+    assert.equal(existsSync(vanished), true, "the vanished name is skipped — nothing to unlink");
+    assert.equal(existsSync(corpse), false, "the stat-able corpse still reaps");
+  });
+
+  test("a refused unlink is swallowed — the sweep answers and the corpse waits for the next boot", async () => {
+    const { VerifiedArtifactWriter } = await import("../src/artifact-writer.ts");
+    const store = root();
+    const corpse = join(store, "unet", "stuck.safetensors");
+    mkdirSync(dirname(corpse), { recursive: true });
+    writeFileSync(corpse, "");
+    const dead = new Date(Date.now() - 30 * 60 * 1000);
+    utimesSync(corpse, dead, dead);
+    fsMocks.rm.mockImplementation(async (...args: unknown[]) => {
+      if (args[0] === corpse) throw new Error("unlink refused");
+      return actualFs.rm(...(args as Parameters<ActualFs["rm"]>));
+    });
+    const writer = new VerifiedArtifactWriter(store);
+    const reaped = await writer.reapZeroByteWeights();
+    assert.equal(reaped, 1, "the sweep stays non-fatal and answers its best-effort count");
+    assert.equal(existsSync(corpse), true, "the refused corpse waits for the next boot's sweep");
+  });
 });

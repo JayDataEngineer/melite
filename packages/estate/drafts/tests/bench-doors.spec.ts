@@ -392,6 +392,80 @@ describe("the drafts/patch door: the diff voice (D-22) and the element merge (D-
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
     expect((stage["params"] as { refs: string[] }).refs).toEqual(["c.png"]);
   });
+
+  test("the element merge walks the bag's DEEP shapes — nested records recurse, record arrays merge, null unsets, a longer arrival replaces (D-23)", async () => {
+    const { svc, drafts } = await bootRemote();
+    const bag: Record<string, unknown> = {
+      rec: { b: 1 }, arr: [{ c: 1 }], flat: [1, 2], nul: 5, y: null, z: 5, d: 7,
+    };
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_89", params: { edit: [bag] } }] });
+    const answer = await svc.patch(
+      MAIN, "s_89",
+      { params: { edit: [
+        { rec: { b: 2 }, arr: [{ c: 2, e: 3 }], flat: "now-flat", nul: null, y: { q: 1 }, z: { q: 2 }, d: null, f: 9 },
+        { g: 1 },
+      ] } },
+      0, sig,
+    );
+    const doc = await svc.get(MAIN, sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    const edit = (stage["params"] as { edit: Array<Record<string, unknown>> }).edit;
+    const merged = edit[0] as Record<string, unknown>;
+    // the deep shapes under the patch law, one arm per door face:
+    expect(merged["rec"]).toEqual({ b: 2 });          // a nested record recurses (the same law one level down)
+    expect(merged["arr"]).toEqual([{ c: 2, e: 3 }]);  // a record array merges element-wise
+    expect(merged["flat"]).toBe("now-flat");          // a scalar arrival over a stored array rides verbatim
+    expect(merged["y"]).toEqual({ q: 1 });            // a stored null carries nothing — the arrival wins
+    expect(merged["z"]).toEqual({ q: 2 });            // a stored scalar under a record arrival rides verbatim
+    expect(merged["f"]).toBe(9);                      // a new key lands
+    expect("nul" in merged).toBe(false);              // a null arrival unsets inside the element too
+    expect("d" in merged).toBe(false);
+    expect(edit[1]).toEqual({ g: 1 });                // an arrival past the stored length lands — nothing to merge onto
+    // the diff names the leaves at every depth, the removals, and
+    // the element that never had a stored twin
+    const diff = (answer as { diff?: unknown }).diff as string[];
+    expect(diff).toContain("edit[0].rec.b 1 → 2");
+    expect(diff).toContain("edit[0].arr[0].c 1 → 2");
+    expect(diff).toContain("edit[0].arr[0].e = 3");
+    expect(diff).toContain("edit[0].flat [1,2] → now-flat");
+    expect(diff).toContain("edit[0].nul removed");
+    expect(diff).toContain("edit[0].d removed");
+    expect(diff).toContain("edit[1] = {\"g\":1}");
+  });
+
+  test("a non-record stored element carries nothing — the carry receipt names records only (D-23's guard face)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_89", params: { edit: [{ seed: 1 }, "legacy"] } }] });
+    const answer = await svc.patch(
+      MAIN, "s_89",
+      { params: { edit: [{ seed: 2 }, { seed: 9 }] } },
+      0, sig,
+    );
+    const doc = await svc.get(MAIN, sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    // the scalar sibling poisons the bag: the element merge is for
+    // record bags only, so the WHOLE array rides verbatim
+    expect((stage["params"] as { edit: unknown[] }).edit).toEqual([{ seed: 2 }, { seed: 9 }]);
+    const diff = (answer as { diff?: unknown }).diff as string[];
+    expect(diff).toContain("edit[0].seed 1 → 2");
+    // the spelled leaf for the element that never merged onto anything
+    expect(diff.some((d) => d.startsWith("edit[1] ") && d.includes("legacy"))).toBe(true);
+    // and the carry receipt never names a slot that was never a record
+    expect(diff.some((d) => d.includes("carried (element merge)"))).toBe(false);
+  });
+
+  test("a value JSON cannot spell rides its String() face in the diff — the spell never crashes the door", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_89", params: { probe_run: 7 } }] });
+    const spellMe = (): string => "probe-marker-source";
+    const answer = await svc.patch(MAIN, "s_89", { params: { probe_run: spellMe } }, 0, sig);
+    const diff = (answer as { diff?: unknown }).diff as string[];
+    // JSON.stringify of a function is undefined — the spell falls to
+    // String() and the answer still names what the patch wrote
+    const line = diff.find((d) => d.startsWith("probe_run 7 → "));
+    expect(line).toBeDefined();
+    expect(line).toContain("probe-marker-source");
+  });
 });
 
 describe("the bench verb's own patch arm: D-22/D-23 (the agent transport — melite_construct patch)", () => {

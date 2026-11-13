@@ -238,6 +238,64 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     // verdict's own voice, never noise on a settled row.
     assert.equal(data.engine_unit.note, undefined);
   });
+
+  // ── the census WORDS' sparse shapes (D3-02's map spelling): the
+  // degraded voice composes only the fields the row actually carries —
+  // no invented restarts, the raw signal named when the map misses it,
+  // a word-form exit code carried with its status. Same real exec
+  // seam, byte-exact detail faces.
+  it.skipIf(WIN_NO_SYSTEMD)("an oom-only degradation carries no restarts word — absent fields stay absent", async () => {
+    mkRoot();
+    fakeBin({
+      // no NRestarts printed, no exit status: the restart/exit words
+      // have nothing to compose from, the oom evidence alone degrades
+      systemctl: { out: "ExecMainCode=n/a\n", code: 0 },
+      journalctl: { out: WRAPPER_JOURNAL, code: 0 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "degraded");
+    assert.equal(env.detail, "server degraded (oom 2)");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.restarts, undefined);
+    assert.equal(data.engine_unit.last_exit_status, undefined);
+    assert.equal(data.engine_unit.oom_kills, 2);
+    assert.equal(data.engine_unit.verdict, "degraded");
+  });
+
+  it.skipIf(WIN_NO_SYSTEMD)("a killed exit outside the signal map spells the raw SIG number — never a bare number", async () => {
+    mkRoot();
+    fakeBin({
+      // signal 31 (SIGSYS) is a real kill the 1-15 map does not name
+      systemctl: { out: "NRestarts=3\nExecMainStatus=31\nExecMainCode=killed\n", code: 0 },
+      journalctl: { out: "INFO: engine ready\n", code: 0 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "degraded");
+    assert.equal(env.detail, "server degraded (restarts 3, last exit 31/SIG31)");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.last_exit_status, 31);
+    assert.equal(data.engine_unit.last_exit_code, "killed");
+  });
+
+  it.skipIf(WIN_NO_SYSTEMD)("a word-form exit code rides its status — `last exit 1/exited`, never the killed spelling", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: "NRestarts=3\nExecMainStatus=1\nExecMainCode=exited\n", code: 0 },
+      journalctl: { out: "INFO: engine ready\n", code: 0 },
+    });
+    routeEngineUp();
+    const [code, env] = await manage({ action: "status" });
+    assert.equal(code, 200);
+    assert.equal(env.state, "degraded");
+    assert.equal(env.detail, "server degraded (restarts 3, last exit 1/exited)");
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.last_exit_status, 1);
+    assert.equal(data.engine_unit.last_exit_code, "exited");
+  });
 });
 
 // ── the census's unset words and silent journal (the unset-enum

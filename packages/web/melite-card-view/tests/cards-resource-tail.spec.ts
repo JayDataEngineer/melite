@@ -306,6 +306,39 @@ describe("a rejecting dispose is noise — never a tail death (runs F4)", () => 
   // fake opens through stubWire's runs/subscribe, not the remote param
 });
 
+describe("the abort-path dispose refusal is noise too — the holder's let-go never wedges (runs F4's abort face)", () => {
+  const captureWarn = (): { warns: unknown[][]; restore: () => void } => {
+    const warns: unknown[][] = [];
+    const orig = console.warn;
+    console.warn = (...args: unknown[]): void => { warns.push(args); };
+    return { warns, restore: (): void => { console.warn = orig; } };
+  };
+
+  test("a holder aborting mid-tail voices the refused dispose as a warn and the loop still ends", async () => {
+    const cap = captureWarn();
+    try {
+      const remote = bespokeStream([{ doc: benchDoc(7, "user") }, { done: true }], {
+        disposed: () => { throw new Error("dispose kablam"); },
+      });
+      const controller = new AbortController();
+      const frames: unknown[] = [];
+      for await (const frame of openCardsResource(
+        "dsh-resource://cards/bench", { signal: controller.signal }, remote, benchNs as never,
+      )) {
+        frames.push(frame);
+        if (frames.length === 1) controller.abort();
+      }
+      // the abort unwound the tail — the snapshot was the only frame
+      expect(frames).toHaveLength(1);
+      // the fire-and-forget dispose rejection is named, never unhandled
+      await until(() => cap.warns.length > 0);
+      expect(cap.warns[0]?.[0]).toBe("[melite-card-view] tail dispose refused:");
+    } finally {
+      cap.restore();
+    }
+  });
+});
+
 describe("the pre-aborted tail — dispose, no frames", () => {
   test("an aborted holder opens nothing and reads nothing", async () => {
     const bench = fakeRemote();

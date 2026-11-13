@@ -480,3 +480,68 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
     }
   });
 });
+
+describe("withBound (the fuse cousin, direct on its export)", () => {
+  it("bound expiry refuses closed; resolve and reject settle through their own arms", async () => {
+    const { withBound } = await import("../src/comfyui-transport.ts");
+    // expiry: the work never settles and the bound fires — the fuse voice carries the refusals
+    await assert.rejects(
+      () => withBound((): Promise<string> => new Promise<string>(() => {}), 5, "GET /test"),
+      (e: unknown) => e instanceof Error && /GET \/test did not answer within its bound \(5ms\) — refusing closed/.test(e.message),
+    );
+    // a resolve inside the bound settles the caller with the work's value
+    assert.equal(await withBound(async () => "v", 60_000, "GET /test"), "v");
+    // a work rejection settles the caller with the ORIGINAL error, not a wrap
+    const boom = new Error("boom");
+    await assert.rejects(
+      () => withBound(async () => { throw boom; }, 60_000, "GET /test"),
+      (e: unknown) => e === boom,
+    );
+  });
+});
+
+describe("liveObjectInfo abort rails (the oiFuse listener door)", () => {
+  it("a mid-flight abort rejects with the signal's own Error reason; a bare abort wraps a DOMException", async () => {
+    const { createServer } = await import("node:http");
+    const { liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    const srv = createServer((req, res) => {
+      if (String(req.url).includes("object_info")) {
+        // slow enough that the abort lands while the fetch is in flight
+        setTimeout(() => {
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ Node: {} }));
+        }, 120);
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end("{}");
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
+    try {
+      // an Error reason rides through untouched (the instanceof-true rail)
+      const owned = new Error("operator pressed stop");
+      const a = new AbortController();
+      const call1 = assert.rejects(
+        () => liveObjectInfo(base, a.signal, 60_000),
+        (e: unknown) => e === owned,
+      );
+      await new Promise((r) => setTimeout(r, 30));
+      a.abort(owned);
+      await call1;
+      // a bare abort wraps the DOMException (the instanceof-false rail)
+      const b = new AbortController();
+      const call2 = assert.rejects(
+        () => liveObjectInfo(base, b.signal, 60_000),
+        (e: unknown) => e instanceof DOMException && e.name === "AbortError",
+      );
+      await new Promise((r) => setTimeout(r, 30));
+      b.abort();
+      await call2;
+    } finally {
+      srv.close();
+    }
+  });
+});

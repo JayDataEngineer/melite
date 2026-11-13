@@ -138,6 +138,49 @@ describe("THE OUTPUT-NAME FILE PLANE (queue 12's owed half — the born-named de
       "no slug-tailed extend prefix mints on an un-named doc");
   });
 
+  // ── THE WINDOW ROSTER refusals on the RAW extend door (bb26b78aa's
+  //    roster seat). The video card's schema walk types window_prompts
+  //    first, so its door never reaches this file's own guard — this
+  //    suite composes entries verbatim, which is exactly the bypassed-
+  //    door class the guard refuses: a wrong-typed seat or a wrong line
+  //    count never silently reads as unbound / falls to extend_prompt. ──
+  it("THE ROSTER WRONG TYPE: a non-string window_prompts refuses loud, naming the stated value", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Extend(
+        { ...EXTEND_ENTRY(), window_prompts: 3 }, {}, FACTS, g, "run_roster_type",
+      ),
+      /'window_prompts' is stated as 3.*a wrong-typed value never silently reads as unbound/s,
+    );
+  });
+
+  it("THE ROSTER LINE-COUNT REFUSAL: one line against a two-window composition names both numbers in the singular/plural spellings", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Extend(
+        {
+          ...EXTEND_ENTRY(),
+          extend_seconds: 379 / 24, // composes exactly 2 windows under the 39f overlap
+          overlap_frames: 39,
+          window_prompts: "only one line",
+        },
+        {}, FACTS, g, "run_roster_one_line",
+      ),
+      /window_prompts states 1 line but the composition serves 2 windows.*one line per window/s,
+    );
+  });
+
+  it("THE ROSTER LINE-COUNT REFUSAL (single window): two lines against a one-window composition names both numbers in the plural/singular spellings", () => {
+    const g = new GraphBuilder();
+    assert.throws(
+      () => renderH3Extend(
+        { ...EXTEND_ENTRY(), window_prompts: "first window\nsecond window" },
+        {}, FACTS, g, "run_roster_two_lines",
+      ),
+      /window_prompts states 2 lines but the composition serves 1 window.*one line per window/s,
+    );
+  });
+
   // ── THE RE-SHOOT PLATES (the film action's camera commission) ──
   it("THE RE-SHOOT PLATES NAMED: both delivered faces carry the one stem", () => {
     const g = new GraphBuilder();

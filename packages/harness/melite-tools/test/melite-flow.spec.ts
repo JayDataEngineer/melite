@@ -823,6 +823,61 @@ describe('melite_flow card — the live allowlist', () => {
       ],
     })
   })
+  test('card mode dedups a gallery that names one file twice — the first row\u2019s label wins, the repeat is silence', async () => {
+    // The dedup law the label arm does not meet: a settled gallery can
+    // carry the same file `name` on two rows (a re-listed output), and
+    // the stamp must key it ONCE — by the FIRST row's label, never a
+    // duplicated url seat under a second label.
+    let patchBody: Record<string, unknown> | undefined
+    let resolvePatch!: () => void
+    const patched = new Promise<void>((resolve) => { resolvePatch = resolve })
+    const seen = mockEstate([
+      okBenchWith('d-headless'),
+      okDraftThenStart('d-headless', 'r-dup'),
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus') {
+          return { status: 200, body: {
+            status: 'completed',
+            stages: [{
+              id: 's_0',
+              url: 'h3-film/film.mp4',
+              gallery: [
+                { name: 'h3-film/film.mp4', label: 'golden hour' },
+                { name: 'h3-film/film.mp4', label: 'duplicate listing' },
+                { name: 'h3-film/mix.flac' },
+              ],
+            }],
+          } }
+        }
+        if (lane === 'draftsStagePatch' && args[1] === 's_0') {
+          patchBody = args[2] as Record<string, unknown>
+          resolvePatch()
+          return { status: 200, body: { delivered: true } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'h3-timeline',
+      model: 'h3',
+      params: { calls: [{ text: 'a shot', start_frame: 0, end_frame: 56 }] },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.run_id, 'r-dup')
+    await patched
+    assert.deepEqual(patchBody?.result, {
+      run_id: 'r-dup',
+      url: '/melite-media/runs/r-dup/h3-film/film.mp4',
+      artifacts: {
+        'golden hour': '/melite-media/runs/r-dup/h3-film/film.mp4',
+        'h3-film/mix.flac': '/melite-media/runs/r-dup/h3-film/mix.flac',
+      },
+      assetUrls: [
+        '/melite-media/runs/r-dup/h3-film/film.mp4',
+        '/melite-media/runs/r-dup/h3-film/mix.flac',
+      ],
+    })
+  })
 })
 
 describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {

@@ -9,6 +9,7 @@
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { createElement as h } from "react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
@@ -754,6 +755,46 @@ describe("drag gestures (every door maps film→doc)", () => {
     fireEvent.click(screen.getByLabelText("Delete Keyframes keyframe at frame 40"))
     assert.deepEqual(rec.kfDel, [["k1"]])
   })
+
+  it("THE PACKED CUT TRAVELS THE PREVIOUS CARD'S SPAN — a body drag past the wall pins the start at prevStart+1, one frame of the neighbor survives", () => {
+    // packed neighbors are CUTS, not piles: the shared frame travels
+    // like an edge drag (the prompt-l rule), so the floor is the
+    // previous card's OWN start + 1 — the loose-world floor (one frame
+    // past prev END = 81) would read a different number and red.
+    const { rec } = strip({ docFromFilm: (g: number) => g } as never)
+    drag(document.body.querySelector('[data-prompt-clip="p2"]')!, 400, 0)
+    assert.deepEqual(rec.promptMove, [["p2", 1, 89]])
+  })
+
+  it("THE TAIL CARD PAST THE WALL GROWS THE ENVELOPE TO FIT THE MOVED CARD — never its duration (DaVinci's rule on a body drag)", () => {
+    const { rec } = strip({ docFromFilm: (g: number) => g } as never)
+    drag(document.body.querySelector('[data-prompt-clip="p2"]')!, 100, 400)
+    // duration stays 88: the end travels WITH the start past the wall
+    // (the mount scale rides initialSeconds: 800px / 10s / 24fps = 10/3 px per frame — 300px = 90 frames)
+    assert.deepEqual(rec.promptMove, [["p2", 170, 258]])
+    // the envelope grows to ne+1, through the pane's own film→doc map
+    assert.deepEqual(rec.extend, [[259]])
+  })
+
+  it("THE PACKED RIGHT EDGE IS THE SHARED CUT — it travels the next card's whole span but one frame of it survives", () => {
+    // p1's right edge pulled hard right: the wall clamp is nextEnd-1
+    // (167) — the loose-world floor (nextStart-1 = 79) reads different.
+    const { rec } = strip({ docFromFilm: (g: number) => g } as never)
+    drag(document.body.querySelector('[data-prompt-clip="p1"] [data-prompt-edge="r"]')!, 100, 600)
+    assert.deepEqual(rec.promptResize, [["p1", 0, 167]])
+  })
+
+  it("A 3PX WIGGLE IS STILL A CLICK — the DRAG_ARM_PX gate keeps the release on the click-seek path (never a drag)", () => {
+    const { rec } = strip({ docFromFilm: (g: number) => g } as never)
+    const kf = screen.getByLabelText("Keyframes keyframe at frame 40")
+    fireEvent.pointerDown(kf, { button: 0, clientX: 100 })
+    // under the arm threshold the gesture never becomes a drag: the
+    // move streams the pin's live write, the release is the click-seek
+    fireEvent.pointerMove(document.body, { clientX: 103 })
+    fireEvent.pointerUp(document.body, { clientX: 103 })
+    assert.deepEqual(rec.kfMove, [["k1", 41]])
+    assert.deepEqual(rec.bar, [[40]])
+  })
 })
 
 describe("scrub (the cap owns the gesture; seek pairs the interaction state)", () => {
@@ -903,6 +944,36 @@ describe("the Music row (drops land positioned; foreign writes nothing)", () => 
     fireEvent.click(screen.getByLabelText("Detach Music"))
     assert.deepEqual(rec.keys, [["audio_clips", undefined], ["audio_stem", undefined]])
   })
+
+  it("THE SEQUENCE LAW HOLDS ON THE AUDIO LANE — a dragged clip stops one frame past its neighbor in BOTH directions, never on top of it", () => {
+    // three clips on one music lane (c1 10-50, c2 70-110, c3 130-170):
+    // the bound reads the layer's OTHER clips — prev end + 1 below,
+    // one frame of air before the next start above.
+    const three = [
+      { id: "c1", name: "a.mp3", start_frame: 10, dur_frames: 40 },
+      { id: "c2", name: "b.mp3", start_frame: 70, dur_frames: 40 },
+      { id: "c3", name: "c.mp3", start_frame: 130, dur_frames: 40 },
+    ]
+    const { rec } = strip({ barAudioClips: three, docFromFilm: (g: number) => g } as never)
+    // c3 pulled hard left: the raw math lands 31 — the prev bound pins 111
+    drag(document.body.querySelector('[data-audio-clip="c3"]')!, 400, 0)
+    assert.deepEqual(rec.movedClip, [["c3", 111]])
+    // c1 pushed hard right: the raw math lands past the wall — the next
+    // bound pins 29 (both writes ride one recorder; assert the pair)
+    drag(document.body.querySelector('[data-audio-clip="c1"]')!, 100, 600)
+    assert.deepEqual(rec.movedClip, [["c3", 111], ["c1", 29]])
+  })
+
+  it("AN AUDIO CLICK IS NOT A DESELECT — the clip's press-release arms the suppress, so the content's click-away seat eats its own click", () => {
+    const { rec } = strip()
+    const clip = document.body.querySelector('[data-audio-clip="c1"]')!
+    fireEvent.pointerDown(clip, { button: 0, clientX: 100 })
+    fireEvent.pointerUp(document.body, { clientX: 100 })
+    // the click the release authors lands on the content seat: with the
+    // suppress armed it deselects NOTHING (the pre-cure face: [[null]])
+    fireEvent.click(screen.getByTestId("motion-timeline-content"))
+    assert.deepEqual(rec.select, [])
+  })
 })
 
 // THE SEAM CHIP (the collapse's cuts, 2026-11-09) — the TENANT half:
@@ -1036,5 +1107,103 @@ describe("THE SPLIT SEAT — the sixth edit door", () => {
     const face = els.container.querySelector('[data-testid="tl-strip-file-error"]')
     assert.equal(face?.textContent, studioCopy.splitRefusal,
       "the no-legal-split refusal rides the strip's shared refusal slot")
+  })
+
+})
+
+// THE MID-GESTURE DELETE (the snapshot fallbacks): a drag session lives
+// on WINDOW listeners — deleting the dragged card mid-gesture (a
+// rerender without it) must not wedge the session. The math completes
+// on the pointerdown SNAPSHOT (the live row is gone), the neighbors
+// read all-null, and the gesture still lands its honest write.
+describe("the mid-gesture delete (the snapshot fallbacks)", () => {
+  function stripRerenderable() {
+    const rec: Record<string, unknown[]> = { promptMove: [], promptResize: [] }
+    const props = (prompts: Array<Record<string, unknown>>) => ({
+      calls: [{ n: 1 }, { n: 2 }] as never,
+      refAudiosBlocked: false,
+      fps: 24,
+      barPrompts: prompts as never,
+      barLanes: [K1] as never,
+      barAudioClips: [CLIP],
+      commissions: [] as never,
+      barTotal: 200,
+      frameIdx: 0,
+      callPreviews: {},
+      selectedBarId: null,
+      filmMap: null,
+      handleBarFrame: () => {},
+      handleScrubStart: () => {},
+      handleScrubEnd: () => {},
+      handleKeyframeMove: () => {},
+      handleKeyframeDelete: () => {},
+      handlePromptUpdate: () => {},
+      handlePromptMove: (id: string, s: number, e: number) => { rec.promptMove.push([id, s, e]) },
+      handlePromptResize: (id: string, s: number, e: number) => { rec.promptResize.push([id, s, e]) },
+      handlePromptDelete: () => {},
+      handleExtend: () => {},
+      addCallAt: () => {},
+      addFirstWindowCut: () => {},
+      setCallTransition: () => {},
+      handleTimelineSelect: () => {},
+      layerA: { audio_stem: "https://u/bed.mp3" } as never,
+      addAudioClip: () => {},
+      takeAudioFile: () => {},
+      moveAudioClip: () => {},
+      deleteAudioClip: () => {},
+      updateAudioClip: () => {},
+      setLayerAKey: () => {},
+      artifactIndex: { byUrl: new Map() } as never,
+      docFromFilm: (g: number) => g,
+      keyframes: [{}] as never,
+      addKeyframeWithImage: () => "k77",
+      enterKfView: () => {},
+      enterAudioView: () => {},
+    })
+    const els = render(h(StudioStripPane, props([P1, P2]) as never))
+    void els.container.querySelectorAll("*").length
+    return {
+      rec,
+      remove: (uuid: string) => {
+        const rest = ([P1, P2] as Array<Record<string, unknown>>).filter((p) => p.uuid !== uuid)
+        els.rerender(h(StudioStripPane, props(rest) as never))
+      },
+    }
+  }
+
+  it("a body drag whose card is deleted mid-gesture completes on the SNAPSHOT — the write lands, the session unwinds", () => {
+    const { rec, remove } = stripRerenderable()
+    fireEvent.pointerDown(document.body.querySelector('[data-prompt-clip="p1"]')!, { button: 0, clientX: 100 })
+    remove("p1")
+    // the window listeners outlive the unmounted row: the move runs the
+    // drag math on the pointerdown snapshot (start 0, span 80)
+    fireEvent.pointerMove(document.body, { clientX: 150 })
+    fireEvent.pointerUp(document.body, { clientX: 150 })
+    // 50px at the mount scale (10/3 px/frame) = 15 frames on the snapshot
+    assert.deepEqual(rec.promptMove, [["p1", 15, 95]])
+  })
+
+  it("a left-edge drag whose card is deleted mid-gesture keeps the SNAPSHOT far edge and the all-null neighbors", () => {
+    const { rec, remove } = stripRerenderable()
+    fireEvent.pointerDown(
+      document.body.querySelector('[data-prompt-clip="p2"] [data-prompt-edge="l"]')!,
+      { button: 0, clientX: 100 },
+    )
+    remove("p2")
+    fireEvent.pointerMove(document.body, { clientX: 150 })
+    fireEvent.pointerUp(document.body, { clientX: 150 })
+    assert.deepEqual(rec.promptResize, [["p2", 95, 168]])
+  })
+
+  it("a right-edge drag whose card is deleted mid-gesture keeps the SNAPSHOT near edge", () => {
+    const { rec, remove } = stripRerenderable()
+    fireEvent.pointerDown(
+      document.body.querySelector('[data-prompt-clip="p1"] [data-prompt-edge="r"]')!,
+      { button: 0, clientX: 100 },
+    )
+    remove("p1")
+    fireEvent.pointerMove(document.body, { clientX: 150 })
+    fireEvent.pointerUp(document.body, { clientX: 150 })
+    assert.deepEqual(rec.promptResize, [["p1", 0, 95]])
   })
 })

@@ -233,6 +233,44 @@ describe("addFirstWindowCut (D-19 — the derived whole-film first cut)", () => 
       "the occupied doc refuses loud (the disease class this cure names is the silent drop)")
     assert.ok(result.current.calls === before, "the authored doc is untouched")
   })
+
+  it("THE refused FLAG COLLAPSES THE DOUBLE-QUEUED UPDATER — onRefuse voices ONCE (React dev mode queues one updater twice; the flag is the once-law)", () => {
+    // The refused flag exists for React's documented development
+    // behavior: StrictMode double-invokes state updaters. A caller
+    // that queues the SAME updater twice (React's own dev-mode
+    // shape) would voice onRefuse twice through a naive call — the
+    // flag collapses the second invocation to silence. This arm
+    // passes the hook a double-queueing setCalls and pins the
+    // once-law on every refusing door.
+    const strictHarness = (initial: DocCall[], fps = 24) =>
+      renderHook(() => {
+        const [calls, setCalls] = useState(initial)
+        // the React dev-mode caller shape: one updater, queued twice
+        // (the param is the updater VALUE the hook would receive —
+        // SetStateAction, not the dispatch signature itself)
+        const setCallsTwice = (updater: Parameters<typeof setCalls>[0]) => { setCalls(updater); setCalls(updater) }
+        const m = useCallMutations(setCallsTwice as typeof setCalls, fps)
+        return { calls, ...m }
+      })
+    // addCallAt's split refusal (the 22f window has no interior split)
+    const onRefuseSplit = vi.fn()
+    const split = strictHarness([{ text: "a", start_frame: 0, end_frame: 22 }])
+    act(() => { split.result.current.addCallAt(10, onRefuseSplit) })
+    assert.equal(onRefuseSplit.mock.calls.length, 1,
+      "the split refusal voices ONCE though the updater ran twice")
+    // addFirstWindowCut's occupied guard
+    const onRefuseOccupied = vi.fn()
+    const occupied = strictHarness([A])
+    act(() => { occupied.result.current.addFirstWindowCut(56, 28, onRefuseOccupied) })
+    assert.equal(onRefuseOccupied.mock.calls.length, 1,
+      "the occupied guard voices ONCE under the double-queued updater")
+    // addFirstWindowCut's own split refusal ([0,34) has no legal split)
+    const onRefuseFirst = vi.fn()
+    const first = strictHarness([])
+    act(() => { first.result.current.addFirstWindowCut(34, 17, onRefuseFirst) })
+    assert.equal(onRefuseFirst.mock.calls.length, 1,
+      "the first-cut refusal voices ONCE under the double-queued updater")
+  });
 })
 
 describe("setCallGuide", () => {

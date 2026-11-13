@@ -17,6 +17,7 @@ import {
   parseCardsAddress,
   readBench,
   readDraft,
+  runMediaAddressOf,
 } from "../src/client/cards-resource.ts";
 import type { CardsRunValue } from "../src/client/cards-resource.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
@@ -124,6 +125,29 @@ describe("readBench — the door's wire is untyped at this seam", () => {
   });
   test("emptyBench sanitizes its key (never a forged draft id)", () => {
     expect(emptyBench("no spaces").draftId).toBe("bench-main");
+  });
+  test("THE FLOW MARKER IS NOT A CARD (the flows-are-compositions law, 2026-11-14): a card-less row carrying ref_flow stays card-less — the honest '?' face, never an id the card plane refuses", () => {
+    const bench = readBench(
+      { intent: "craft-loop", stages: [{ id: "s_0", params: {}, ref_flow: "flow-9" }] },
+      "main",
+    );
+    expect(bench.stages).toEqual([{ id: "s_0", params: {}, ref_flow: "flow-9" }]);
+  });
+});
+
+describe("the media-address grammar — the rename seat's null refusals (a row that renames nowhere)", () => {
+  test("a url off the run-media route addresses nothing (the legacy /v1 assets route, the gallery proxy, a foreign absolute url)", () => {
+    expect(runMediaAddressOf("/v1/assets/runs/r_1/out.png")).toBeNull();
+    expect(runMediaAddressOf("/melite-gallery/runs/r_1/out.png")).toBeNull();
+    expect(runMediaAddressOf("https://elsewhere.example/out.png")).toBeNull();
+  });
+  test("the run segment alone addresses nothing (a gallery row needs its name)", () => {
+    expect(runMediaAddressOf("/melite-media/runs/r_1")).toBeNull();
+    expect(runMediaAddressOf("/melite-media/runs/r_1/")).toBeNull();
+  });
+  test("a malformed escape refuses (never a half-decoded name)", () => {
+    expect(runMediaAddressOf("/melite-media/runs/%/out.png")).toBeNull();
+    expect(runMediaAddressOf("/melite-media/runs/r_1/out%.png")).toBeNull();
   });
 });
 

@@ -82,10 +82,13 @@ function oiFuse(work, signal, boundMs) {
         const onAbort = () => {
             settle(signal?.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError"));
         };
-        if (signal?.aborted === true) {
-            onAbort();
-            return;
-        }
+        // No pre-aborted-signal guard here on purpose (proof, 2026-11-13): the
+        // only caller reaches the fuse in the same synchronous window as its own
+        // `signal?.aborted` throw in liveObjectInfo, so an aborted-at-entry signal
+        // fires there first; a mid-flight abort fires the listener below, whose
+        // settle-once guard makes a post-settle retry impossible. The drop-race
+        // re-fetch runs in one continuation with no await boundary for a
+        // cross-task abort to land inside — this guard can never fire.
         signal?.addEventListener("abort", onAbort, { once: true });
         work().then((value) => settle(null, value), (err) => settle(err));
     });

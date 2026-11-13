@@ -18,7 +18,7 @@
 //   keys on the sibling cell by the same token. GREEN on the cured
 //   tree; toggling the cure out re-reds them.
 import { describe, expect, test } from 'vitest'
-import { composeValidate, dropStaleReopenCarry, type FormSpecDoc, type SpecValues } from '../src/spec.ts'
+import { axisPickPatch, composeValidate, dropStaleReopenCarry, modelSwitchPatch, recipeDeparturePatch, type FormSpecDoc, type SpecValues } from '../src/spec.ts'
 import type { LaneContractRow } from '@melite/contracts/laneRelations'
 
 /** A lanes-served spec shaped like the qwen3-tts burn: family base
@@ -152,5 +152,128 @@ describe('THE REOPEN CARRY DROP (the saved-doc heal, the stale-carry reopen cure
   test('THE NEVER-A-GUESS LAW — a carrier with NO lanes block drops nothing (the legacy truth has no surface to judge against)', () => {
     const spec: FormSpecDoc = { model: 'legacy', label: null, form: 'form_legacy', params: ['prompt'], variants: [] }
     expect(dropStaleReopenCarry(spec, { model: 'legacy', ghost: 1 })).toEqual({})
+  })
+})
+
+// ── THE PICK'S CARRY DROP + THE OWN-ROW LAW (batch 16): the same
+// prev ∩ ¬next drop seated at the PICK (axisPickPatch + held), the
+// guards that keep it a judge and never a guess, the switch frame's
+// shared-word pass-along, and the family clause's own-row chain. ──
+describe('the pick carry drop rides the real pick door (axisPickPatch + held)', () => {
+  /** lanesSpec with the AXIS VOCABULARY served — the axes exist so the
+   *  pick re-keys the lane and the carry judge runs at all. */
+  function carrySpec(): FormSpecDoc {
+    return {
+      model: 'synth',
+      label: null,
+      form: 'form_synth',
+      params: ['prompt', 'steps', 'departed_knob'],
+      schema: {
+        uid: 0,
+        refs: {
+          0: { type: 'object', dict: { input_images: 1, loras: 2 } },
+          1: { type: 'array', meta: { extra: { wtype: 'image_list' } } },
+          2: { type: 'array' },
+        },
+      },
+      features: { variant_groups: { Variant: { label: 'Variant' }, Quant: { label: 'Quant' } } },
+      variants: [
+        { id: 'big', label: 'Big', group: 'Variant', defaults: {}, route: 'synth-big' },
+        { id: 'small', label: 'Small', group: 'Variant', defaults: {}, route: 'synth-small' },
+        { id: 'big__large', label: 'Large', group: 'Quant', defaults: {}, route: 'big-large', quant: 'large', owner: 'big' },
+        { id: 'big__small', label: 'Small', group: 'Quant', defaults: {}, route: 'big-small', quant: 'small', owner: 'big' },
+      ],
+      lanes: {
+        base: ['prompt', 'steps'],
+        variants: {
+          big: { params: ['persona'], cells: { large: { params: ['instruct'] } } },
+          small: { params: [] },
+        },
+      } as LaneContractRow,
+    }
+  }
+
+  test('THE VARIANT SWITCH DROPS THE DEPARTING LANE OWN CARRY — a big-lane persona never rides the small pick', () => {
+    const spec = carrySpec()
+    const small = spec.variants![1]
+    const patch = axisPickPatch(spec, small, { model: 'synth', variant: 'big', persona: 'vivian' })
+    expect(patch).toEqual({ variant: 'small', quant: '', persona: null })
+  })
+
+  test('THE BLANK CARRY IS AUTHORED — an empty carried value is the user clear, never the carry judge business', () => {
+    const spec = carrySpec()
+    const small = spec.variants![1]
+    const patch = axisPickPatch(spec, small, { model: 'synth', variant: 'big', persona: '', prompt: 'say it' })
+    expect(patch).toEqual({ variant: 'small', quant: '' })
+  })
+
+  test('THE NEVER-A-GUESS GUARD AT THE PICK — a departing coordinate that names no row judges nothing (the ghost prev returns)', () => {
+    const spec = carrySpec()
+    const small = spec.variants![1]
+    const patch = axisPickPatch(spec, small, { model: 'synth', variant: 'ghost-row', persona: 'vivian' })
+    expect(patch).toEqual({ variant: 'small', quant: '' })
+  })
+
+  test('THE NEVER-A-GUESS SURFACE GUARD — a lanes block with an ABSENT base serves no surface to judge against (the carry stands)', () => {
+    const spec: FormSpecDoc = {
+      ...carrySpec(),
+      lanes: {
+        variants: {
+          big: { params: ['persona'], cells: { large: { params: ['instruct'] } } },
+          small: { params: [] },
+        },
+      } as LaneContractRow,
+    }
+    const small = spec.variants![1]
+    const patch = axisPickPatch(spec, small, { model: 'synth', variant: 'big', persona: 'vivian' })
+    expect(patch).toEqual({ variant: 'small', quant: '' })
+  })
+
+  test('THE SHARED WORD RIDES THE SWITCH — a word both families declare never nulls, the image subject survives, the departed words die', () => {
+    const spec = carrySpec()
+    const patch = modelSwitchPatch(spec, 'arrival', {}, { params: ['prompt'] } as never as FormSpecDoc)
+    expect(patch).toEqual({
+      model: 'arrival',
+      variant: null,
+      quant: null,
+      loras: null,
+      steps: null,
+      departed_knob: null,
+    })
+    expect(patch).not.toHaveProperty('prompt')
+    expect(patch).not.toHaveProperty('input_images')
+  })
+
+  test('THE SPEC OWN ROW ID IS THE SPEC LAW — a held model matching a row ID (not its route) stays on this spec, and the mirror still judges it', () => {
+    const spec = carrySpec()
+    const doc: SpecValues = { model: 'big', variant: 'big', ghost: 1, prompt: 'say it', steps: 4 }
+    const violations = composeValidate(spec, doc)
+    // 'big' is a row ID (its route is 'synth-big') — the own-row chain
+    // seats the doc HERE, and the mirror refusal keeps its teeth
+    expect(hits(violations, 'ghost').length).toBeGreaterThan(0)
+  })
+
+  test('THE BLANK RECIPE WRITE UNSTATES THE STAMP THE PICK WROTE — never the transport model, never the off-lane key the pick could not stamp', () => {
+    const spec: FormSpecDoc = {
+      model: 'synth',
+      label: null,
+      form: 'form_synth',
+      params: ['prompt', 'steps'],
+      features: { variant_groups: { Variant: { label: 'Variant' } } },
+      variants: [
+        { id: 'big', label: 'Big', group: 'Variant', defaults: {}, route: 'big' },
+        { id: 'author-base', label: 'A', group: 'Recipe', defaults: { model: 'other-model', steps: 50, checkpoint: 'ckpt-a' }, route: 'author' },
+      ],
+      lanes: { base: ['prompt', 'steps'], variants: { big: { params: ['persona'] } } } as LaneContractRow,
+    }
+    const row = spec.variants![1]
+    expect(recipeDeparturePatch(spec, row, { model: 'synth', steps: 50, checkpoint: 'hand-typed' })).toEqual({ steps: null })
+  })
+
+  test('A DOC OF ANOTHER FAMILY RIDES OUT UNJUDGED WHEN THIS SPEC BOARDS NO ROWS — the empty own-chain hands the doc to its own spec', () => {
+    const spec = { model: 'synth', params: ['prompt'] } as never as FormSpecDoc
+    // no variants plane: the own-row chain has nothing to seat the
+    // held model with — another family's doc, the door reads ITS spec
+    expect(composeValidate(spec, { model: 'other-family', ghost: 1 })).toEqual([])
   })
 })

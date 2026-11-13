@@ -13,7 +13,7 @@
 //   ONE storage, zero second spellings) → the answer names the
 //   window count (a payload key nobody prints is a voice nobody
 //   hears) → the refusal arms fire loud, never a silent drop.
-import { describe, test } from 'vitest'
+import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { meliteConstruct } from '../src/tools/melite-construct.ts'
 import { assertSpanGrid, transitionOverlap } from '@melite/models-h3/timelineContract'
@@ -21,6 +21,26 @@ import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
 const SIG = AbortSignal.timeout(5000)
+
+// THE CARD-DEF SEAT (flag-gated: null rides the real tree). The one
+// arm that needs a card def — the craft-rewrite face — seeds its def
+// here and resets in its own finally; every other test reads the real
+// defs exactly as before.
+const mockState = vi.hoisted(() => ({
+  defs: null as null | Record<string, Record<string, unknown>>,
+}))
+
+vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@melite/comfyui-cordis')>()
+  return {
+    ...orig,
+    loadCardDefs: async () => {
+      const real = await (orig as unknown as { loadCardDefs(): Promise<Map<string, unknown>> }).loadCardDefs()
+      if (mockState.defs === null) return real
+      return new Map<string, unknown>([...real, ...Object.entries(mockState.defs)])
+    },
+  }
+})
 
 /** The beach-film tiling (the proven law): first window 22+17k,
  * carried windows 17k with their 22f seam from the generation head. */
@@ -45,7 +65,8 @@ describe('THE CUTS VERB — the agent\'s door into the one storage', () => {
         return { rev: 8, stage: 's_0', patched: true, changed: true, diff: ['calls'] }
       },
     })
-    const out = await meliteConstruct(estate).execute(
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute(
       { verb: 'patch', stage: 's_0', params: { cuts: '2.5' } },
       fakeExec(SIG, { agent: { id: 'session-cut1' } }),
     ) as Record<string, unknown>
@@ -79,6 +100,13 @@ describe('THE CUTS VERB — the agent\'s door into the one storage', () => {
     }
     // the answer names what was built (the model reads the count)
     assert.equal(out['cuts_windows'], 4)
+    // and the count PRINTS at the model's read — a payload key nobody
+    // prints is a voice nobody hears: the render carries the one
+    // storage's new window face.
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's_0' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(rendered.includes('cuts → 4 windows: the calls rows are rewritten'),
+      'the render names the window count the verb built: ' + rendered)
     // the refusal never fired: the write lane was reached exactly once
     assert.equal(seen.filter((c) => c.lane === 'benchVerb').length, 1)
   })
@@ -112,6 +140,47 @@ describe('THE CUTS VERB — the agent\'s door into the one storage', () => {
         fakeExec(SIG, { agent: { id: 'session-cut4' } }),
       ) as Record<string, unknown>
       assert.match(String(out['error']), /seconds/, `cuts '${bad}' must refuse as a spelling fault`)
+    }
+  })
+
+  test('a cuts patch on a stage the bench does not list reads no held windows — the one-storage refusal precedes any write', async () => {
+    // heldParams is the named row's OWN params, read off the projected
+    // bench: a stage the doc does not list holds no windows for the
+    // verb to split (and the projection always heals a listed row to a
+    // params record, so the held bag is undefined only here). The
+    // refusal is the one-storage voice, and the write lane never flew.
+    const { estate, seen } = fakeEstate({ benchGet: benchWith(BEACH_CALLS) })
+    const out = await meliteConstruct(estate).execute(
+      { verb: 'patch', stage: 's_ghost', params: { cuts: '2.5' } },
+      fakeExec(SIG, { agent: { id: 'session-cut5' } }),
+    ) as Record<string, unknown>
+    assert.match(String(out['error']), /no calls rows to split/, 'an unlisted stage splits nothing: ' + String(out['error']))
+    assert.match(String(out['error']), /ONE storage/)
+    assert.equal(seen.filter((c) => c.lane === 'benchVerb').length, 0, 'a refusal never writes')
+  })
+
+  test('a card whose craft law rewrites params away from the cuts spelling refuses — the verb reads the merged bag, never guesses', async () => {
+    // The split law reads the bag the write will LAND (deriveParams'
+    // output), not the caller's spelling alone: a craft normalize that
+    // folds params can drop the verb's key mid-derive, and the honest
+    // answer is the empty-split-point refusal — never a silent pass
+    // typed as frames (the run-e79f3b304e4b law).
+    mockState.defs = {
+      'h3-film-cuttest': {
+        craft: { normalize: (p: Record<string, unknown>) => ({ params: { ...p, cuts: undefined }, fixed: [] }) },
+      },
+    }
+    try {
+      const { estate, seen } = fakeEstate({ benchGet: benchWith(BEACH_CALLS) })
+      const out = await meliteConstruct(estate).execute(
+        { verb: 'patch', stage: 's_0', params: { cuts: '2.5' } },
+        fakeExec(SIG, { agent: { id: 'session-cut6' } }),
+      ) as Record<string, unknown>
+      assert.match(String(out['error']), /states an empty split point/,
+        'the derive-dropped spelling degrades to the empty-split refusal, loud: ' + String(out['error']))
+      assert.equal(seen.filter((c) => c.lane === 'benchVerb').length, 0, 'the write lane never flew — a refusal precedes every write')
+    } finally {
+      mockState.defs = null
     }
   })
 

@@ -560,7 +560,10 @@ async function dumpGraph(runDir, graph) {
     try {
         if (!existsSync(runDir))
             return;
-        await writeFileAtomic(join(runDir, "_graph.json"), JSON.stringify(graph, null, 2) ?? "null", { mode: 0o644 });
+        // JSON.stringify of the typed Record always returns a string (undefined
+        // only rides a non-object top level, which the parameter forbids) — the
+        // former `?? "null"` was dead on every real door.
+        await writeFileAtomic(join(runDir, "_graph.json"), JSON.stringify(graph, null, 2), { mode: 0o644 });
     }
     catch {
         /* the dump is best-effort evidence — a run whose dump fails still runs */

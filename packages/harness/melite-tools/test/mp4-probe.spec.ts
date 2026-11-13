@@ -805,8 +805,8 @@ describe('the stbl-without-stsd arm (walker bounds, second seat)', () => {
 // total(36). The bytes below are hand-built — no fixture file, the
 // parser tested against bytes it cannot cheat on.
 describe('the FLAC STREAMINFO arm (the TTS estate\'s own container)', () => {
-  const flac = (over: { rate?: number, channels?: number, bps?: number, total?: number, withStreaminfo?: boolean } = {}): Uint8Array => {
-    const { rate = 24000, channels = 2, bps = 16, total = 48000, withStreaminfo = true } = over
+  const flac = (over: { rate?: number, channels?: number, bps?: number, total?: number, withStreaminfo?: boolean, streaminfoLast?: boolean } = {}): Uint8Array => {
+    const { rate = 24000, channels = 2, bps = 16, total = 48000, withStreaminfo = true, streaminfoLast = true } = over
     const out = new Uint8Array(4 + 4 + 34)
     const v = new DataView(out.buffer)
     for (let i = 0; i < 4; i++) out[i] = 'fLaC'.charCodeAt(i)
@@ -816,7 +816,7 @@ describe('the FLAC STREAMINFO arm (the TTS estate\'s own container)', () => {
       out[4] = 0x80 | 4
       return out.subarray(0, 8)
     }
-    out[4] = 0x80 // last-block flag + type 0 = STREAMINFO
+    out[4] = (streaminfoLast ? 0x80 : 0x00) // last-block flag + type 0 = STREAMINFO
     v.setUint8(5, 0); v.setUint8(6, 0); v.setUint8(7, 34) // block length
     v.setUint16(8, 4096) // min block size
     v.setUint16(10, 4096) // max block size
@@ -849,5 +849,43 @@ describe('the FLAC STREAMINFO arm (the TTS estate\'s own container)', () => {
 
   test('a FLAC with no STREAMINFO refuses by the fmt-less WAV law', () => {
     assert.throws(() => probeMedia(flac({ withStreaminfo: false })), /found no streams/)
+  })
+
+  // The truncation/multi-block arms (06d0d3897's FLAC seat): real
+  // estates hand the probe cut and padded files — the walk reads what
+  // exists, stops at the end, and refuses rather than fabricates.
+  test('STREAMINFO not marked last (more metadata follows) still parses — the walk reads past it and stops at the end', () => {
+    const row = probeMedia(flac({ streaminfoLast: false }))
+    assert.equal(row.duration_s, 2)
+    assert.deepEqual(row.streams, [{ codec: 'flac', codec_type: 'audio', sample_rate: 24000, channels: 2 } satisfies ProbedStream])
+  })
+
+  test('a lawful padding block after STREAMINFO is walked past, never mistaken for corruption', () => {
+    const base = flac({ streaminfoLast: false })
+    const out = new Uint8Array(base.length + 4)
+    out.set(base)
+    out[base.length] = 0x80 | 1 // last-block flag + type 1 = PADDING, zero length
+    const row = probeMedia(out)
+    assert.equal(row.streams[0]!.sample_rate, 24000)
+    assert.equal(row.duration_s, 2)
+  })
+
+  test('a metadata run cut before the block length is complete reads nothing and refuses', () => {
+    // 'fLaC' + one header byte (type 0, not last): the three length
+    // bytes and the body never arrive.
+    const bytes = new Uint8Array(5)
+    for (let i = 0; i < 4; i++) bytes[i] = 'fLaC'.charCodeAt(i)
+    bytes[4] = 0x00
+    assert.throws(() => probeMedia(bytes), /found no streams/)
+  })
+
+  test('a STREAMINFO whose packed row is truncated leaves the facts unset and refuses', () => {
+    // the block header CLAIMS 34 bytes; only 12 follow — the packed
+    // row's u32 reads come up short and the facts stay unset.
+    const bytes = new Uint8Array(4 + 4 + 12)
+    for (let i = 0; i < 4; i++) bytes[i] = 'fLaC'.charCodeAt(i)
+    bytes[4] = 0x00 // STREAMINFO, not last
+    bytes[5] = 0; bytes[6] = 0; bytes[7] = 34
+    assert.throws(() => probeMedia(bytes), /found no streams/)
   })
 })

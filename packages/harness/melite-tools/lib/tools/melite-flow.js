@@ -741,15 +741,16 @@ async function runBench(estate, a, signal, only) {
             // answered): the face is the pending receipt carrying the
             // run_id, never a `thrown` stage row and never a phantom press
             // of the remaining stages on a dead signal.
-            if (signal.aborted) {
-                const why = thrown instanceof Error ? thrown.message : String(thrown);
-                pass.push({ stage: stageId, card, run_id: runId, status: 'queued', aborted: why });
-                return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass };
-            }
+            // THE ONLY ESCAPE IS THE ABORT: every throw out of
+            // observeAndAttribute is the signal's own reason — its loop-top
+            // signal.throwIfAborted(); every lane call inside is locally
+            // caught (the poll retry, both stamp seats, the run-row mark)
+            // and sleepAbort resolves, never rejects — so `aborted` always
+            // holds here and no thrown-row face exists for observe. The
+            // dead non-abort arm is removed (coverage debt 2026-11-19).
             const why = thrown instanceof Error ? thrown.message : String(thrown);
-            pass.push({ stage: stageId, card, run_id: runId, thrown: why });
-            failures.push({ stage: stageId, card, status: 'threw', run_id: runId });
-            continue;
+            pass.push({ stage: stageId, card, run_id: runId, status: 'queued', aborted: why });
+            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass };
         }
         pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
             ...(staleVoice !== undefined ? { stale: staleVoice } : {}),

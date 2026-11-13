@@ -152,4 +152,125 @@ describe("the cap-only playhead law (operator 2026-10-29, told 10+ times)", () =
     fireEvent.pointerUp(window, { clientX: 66 })
     expect(onFrameChange).toHaveBeenCalled()
   })
+
+  it("ARM 5 — THE WRONG BUTTON: a right-button press arms NOTHING — not on the cap, not on a clip", () => {
+    const onFrameChange = vi.fn()
+    const onScrubStart = vi.fn()
+    const onPromptMove = vi.fn()
+    const noop = (): void => {}
+    const { container } = render(
+      h(MotionTimelineBar, {
+        prompts: [{ uuid: "p1", text: "a", start_frame: 0, end_frame: 40, color: null }] as never,
+        keyframes: [],
+        frameIdx: 0,
+        totalFrames: 96,
+        fps: 24,
+        onFrameChange,
+        onScrubStart,
+        onSelect: noop,
+        onKeyframeAdd: () => "kf",
+        onKeyframeMove: noop,
+        onKeyframeDelete: noop,
+        onPromptUpdate: noop,
+        onPromptMove,
+        onPromptResize: noop,
+      } as never),
+    )
+    const scroll = screen.getByTestId("motion-timeline-scroll")
+    Object.defineProperty(scroll, "getBoundingClientRect", {
+      value: () => ({ left: 0, top: 0, right: 800, bottom: 200, width: 800, height: 200, x: 0, y: 0, toJSON: () => ({}) }),
+      configurable: true,
+    })
+    // the cap: a non-primary press never opens the scrub session — the
+    // move that follows seeks nothing
+    fireEvent.pointerDown(screen.getByTestId("motion-timeline-playhead-cap"), { clientX: 10, button: 2 })
+    fireEvent.pointerMove(window, { clientX: 66 })
+    expect(onScrubStart).not.toHaveBeenCalled()
+    expect(onFrameChange).not.toHaveBeenCalled()
+    // the clip: a non-primary press never arms the drag — the move and
+    // release that follow write nothing
+    const clip = container.querySelector('[data-prompt-clip="p1"]')
+    expect(clip).not.toBeNull()
+    fireEvent.pointerDown(clip!, { clientX: 10, button: 2 })
+    fireEvent.pointerMove(window, { clientX: 66 })
+    fireEvent.pointerUp(window, { clientX: 66 })
+    expect(onPromptMove).not.toHaveBeenCalled()
+  })
+
+  it("ARM 6 — THE SELF-HEAL: a mouse move with zero buttons ends the session — a swallowed pointerup never ghost-drives the playhead", () => {
+    const onFrameChange = vi.fn()
+    const onScrubStart = vi.fn()
+    const onScrubEnd = vi.fn()
+    const noop = (): void => {}
+    render(
+      h(MotionTimelineBar, {
+        prompts: [],
+        keyframes: [],
+        frameIdx: 0,
+        totalFrames: 96,
+        fps: 24,
+        onFrameChange,
+        onScrubStart,
+        onScrubEnd,
+        onSelect: noop,
+        onKeyframeAdd: () => "kf",
+        onKeyframeMove: noop,
+        onKeyframeDelete: noop,
+        onPromptUpdate: noop,
+        onPromptMove: noop,
+      } as never),
+    )
+    const scroll = screen.getByTestId("motion-timeline-scroll")
+    Object.defineProperty(scroll, "getBoundingClientRect", {
+      value: () => ({ left: 0, top: 0, right: 800, bottom: 200, width: 800, height: 200, x: 0, y: 0, toJSON: () => ({}) }),
+      configurable: true,
+    })
+    const cap = screen.getByTestId("motion-timeline-playhead-cap")
+    fireEvent.pointerDown(cap, { clientX: 10, button: 0 })
+    expect(onScrubStart).toHaveBeenCalledTimes(1)
+    // the browser's pointercancel swallowed the release: the next mouse
+    // move reports ZERO held buttons — the session heals there, the
+    // healing move seeks nothing, and the scrub pairing closes once
+    fireEvent.pointerMove(window, { clientX: 66, pointerType: "mouse", buttons: 0 })
+    fireEvent.pointerMove(window, { clientX: 90, pointerType: "mouse", buttons: 0 })
+    fireEvent.pointerUp(window, { clientX: 90 })
+    expect(onScrubEnd).toHaveBeenCalledTimes(1)
+    expect(onFrameChange).not.toHaveBeenCalled()
+  })
+
+  it("ARM 7 — THE UNMEASURED BAR: a scrub whose xToFrame never resolves seeks NOTHING (a scale without geometry writes no frame)", () => {
+    const onFrameChange = vi.fn()
+    const onScrubStart = vi.fn()
+    const onScrubEnd = vi.fn()
+    const noop = (): void => {}
+    render(
+      h(MotionTimelineBar, {
+        prompts: [],
+        keyframes: [],
+        frameIdx: 0,
+        totalFrames: 96,
+        fps: 24,
+        onFrameChange,
+        onScrubStart,
+        onScrubEnd,
+        onSelect: noop,
+        onKeyframeAdd: () => "kf",
+        onKeyframeMove: noop,
+        onKeyframeDelete: noop,
+        onPromptUpdate: noop,
+        onPromptMove: noop,
+      } as never),
+    )
+    // NO rect patch: happy-dom's zero-width strip and the deleted
+    // ResizeObserver leave the scale unmeasured — the grab still arms
+    // (a press never jumps and never needs geometry), but the move's
+    // frame read is null and the seek is skipped whole
+    const cap = screen.getByTestId("motion-timeline-playhead-cap")
+    fireEvent.pointerDown(cap, { clientX: 10, button: 0 })
+    expect(onScrubStart).toHaveBeenCalledTimes(1)
+    fireEvent.pointerMove(window, { clientX: 66 })
+    fireEvent.pointerUp(window, { clientX: 66 })
+    expect(onScrubEnd).toHaveBeenCalledTimes(1)
+    expect(onFrameChange).not.toHaveBeenCalled()
+  })
 })

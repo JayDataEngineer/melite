@@ -368,6 +368,45 @@ describe("the adapter's post-splice wiring walk (production's submit path)", () 
     ).rejects.toThrow(/card 's0' wired node class 'EmptyLatentImage'/);
     expect(flow).not.toHaveBeenCalled();
   });
+
+  // THE WARN-NOT-REFUSE SEAT: a composition that carries NO wiring
+  // provider at all (the bare seat — no comfyuiWiring row mounted)
+  // never refuses on wiring grounds. The adapter warns once through
+  // warnWiringAbsent and stands the walls down: the same smuggled
+  // input the declared-input arm above refuses (no_such_knob on
+  // EmptyLatentImage) passes UNJUDGED and the submit proceeds. The
+  // warn voice itself dedupes module-globally (wiringAbsentSeats),
+  // so the arm asserts the stand-DOWN — the estate's observable —
+  // never the log line.
+  it("NO wiring provider: the walk stands down with one warn — the smuggled input passes unjudged and the submit proceeds", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({
+      stages: { s0: { outputs: { default: "run-x/a.png" }, artifacts: ["a.png"] } },
+      promptId: "prompt-1",
+    }));
+    // the estate bundle MINUS its wiring row: contract, host, adapter
+    const ctx = new Context();
+    await ctx.plugin(enginesContract);
+    await ctx.plugin(comfyuiHostProvider, { url: "http://seat-stub:1" });
+    await ctx.plugin(comfyuiEngine);
+    const seat = ctx.get("engines") as EnginesService;
+    const host = ctx.get("comfyui") as unknown as ComfyUIHostService;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (host as any).executeFlow = flow;
+    const row = stageRow();
+    const wf = row.params.workflow as Record<
+      string,
+      { class_type: string; inputs: Record<string, unknown> }
+    >;
+    wf["1"]!.inputs["no_such_knob"] = 1;
+    const record = seat.resolve("comfyui");
+    await record.executor.executeStages(
+      [row],
+      "/tmp/run-x",
+      {},
+      { shouldStop: (): boolean => false, report: vi.fn() },
+    );
+    expect(flow).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ── THE ENGINEREF BRAND (F3, nativity audit 2026-11-05) ───────────

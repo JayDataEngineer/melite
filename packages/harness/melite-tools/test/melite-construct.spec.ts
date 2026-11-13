@@ -572,6 +572,26 @@ describe('melite_construct mutations — every verb', () => {
     assert.ok(!rendered.includes('no value change'), 'a LANDED write is never reported as a non-event: ' + rendered)
   })
 
+  test('D-22 edge: a landed write whose answer carries no diff renders the moved-state voice — the change truth never reads as a non-event', async () => {
+    // The diff array is the door's OPTION: a changed:true answer with
+    // no diff array (the estate judged a derived-only move and named
+    // no leaf) still renders the change — the moved-state voice, never
+    // the keep-done "no value change" line a silent diff would read as.
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 74, stage: 's_89', patched: ['steps'], changed: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's_89', params: { steps: 6 }, expect_rev: 73 }, exec()) as Record<string, unknown>
+    assert.equal(out['changed'], true)
+    assert.equal(out['diff'], undefined, 'no diff array rode — the door answered the truth it had')
+    const blocks = tool.output!.render!({ verb: 'patch', stage: 's_89' } as never, out as never) as Array<{ type?: string, text?: string }>
+    const rendered = blocks.map((b) => b.text ?? '').join('\n')
+    assert.ok(rendered.includes('patched — the stored params moved (a derived field changed; the doc on disk is the truth)'),
+      'a changed:true with no diff names the moved state: ' + rendered)
+    assert.ok(!rendered.includes('no value change'), 'the keep-done voice never fires for a landed write: ' + rendered)
+  })
+
   test('D-23 (THE CARRY VOICE): an element-merged bag renders the leaf diff and the carry receipt', async () => {
     const { estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') return { rev: 73, stage: 's_89', patched: ['edit'], changed: true, diff: ['edit[0].denoise 0.32 → 0.33', 'edit[0]: carry, keep_audio, seed carried (element merge)'] }
@@ -688,6 +708,27 @@ describe('melite_construct mutations — every verb', () => {
       assert.equal(seated.path, tmp)
       assert.match(seated.sha, /^[0-9a-f]{12}$/)
       assert.ok(seated.bytes > 0, 'the byte length rides the echo')
+      // THE FILE-DOOR ECHO, RENDERED (the mint names the seated
+      // artifact at the model's read too — path, canonical sha, byte
+      // length; the payload key above is the tool's, this line is the
+      // model's one-compare diff face).
+      const blocks = tool.output!.render!({ verb: 'add_stage' } as never, out as never) as Array<{ type?: string, text?: string }>
+      const rendered = blocks.map((b) => b.text ?? '').join('\n')
+      assert.match(rendered, new RegExp('params seated from file: ' + tmp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\(sha256 [0-9a-f]{12}, \\d+ B\\)'),
+        'the render names the seated file with its sha + byte length: ' + rendered)
+      // THE DEGRADED ECHO: a seated payload that names only its path
+      // still renders — the unknown sha/bytes say '?' (never a crash,
+      // never a fabricated digest); a seated payload whose path is
+      // junk prints no seated line at all — the echo is the file's,
+      // not the bag's.
+      const degraded = tool.output!.render!({ verb: 'add_stage' } as never,
+        { verb: 'add_stage', rev: 9, stage: 's3', params_file_seated: { path: '/repo/bag.json' } } as never) as Array<{ type?: string, text?: string }>
+      assert.ok(degraded.map((b) => b.text ?? '').join('\n').includes('params seated from file: /repo/bag.json (sha256 ?, ? B)'),
+        'a path-only seat renders with ? placeholders for the digest it cannot know')
+      const junk = tool.output!.render!({ verb: 'add_stage' } as never,
+        { verb: 'add_stage', rev: 9, stage: 's3', params_file_seated: { path: 42 } } as never) as Array<{ type?: string, text?: string }>
+      assert.ok(!junk.map((b) => b.text ?? '').join('\n').includes('params seated from file'),
+        'a non-string path seats no line — never a junk echo')
     } finally {
       rmSync(tmp, { force: true })
     }
@@ -715,6 +756,32 @@ describe('melite_construct mutations — every verb', () => {
       assert.match(String(unparseable['error']), /not parseable JSON/)
     } finally {
       rmSync(bad, { force: true })
+    }
+    // THE ROOT LAW's two non-object parses: a JSON array and a bare
+    // scalar both PARSE (the unparseable refusal above is not theirs
+    // to fire) and both root no params bag — the refusal names what
+    // the file rooted ('got an array' / 'got number'), never a silent
+    // coercion of bytes the card's knobs cannot seat.
+    const array = join(tmpdir(), 'melite-d37-array-' + Date.now() + '.json')
+    writeFileSync(array, '[1,2]', 'utf8')
+    const scalar = join(tmpdir(), 'melite-d37-scalar-' + Date.now() + '.json')
+    writeFileSync(scalar, '5', 'utf8')
+    try {
+      const rooted = await tool.execute(
+        { verb: 'add_stage', card: 'c', params_file: array },
+        exec(),
+      ) as Record<string, unknown>
+      assert.match(String(rooted['error']), /must root in a JSON object[\s\S]*got an array/,
+        'a JSON array parses but roots no params bag')
+      const scalarOut = await tool.execute(
+        { verb: 'add_stage', card: 'c', params_file: scalar },
+        exec(),
+      ) as Record<string, unknown>
+      assert.match(String(scalarOut['error']), /must root in a JSON object[\s\S]*got number/,
+        'a bare scalar parses but roots no params bag')
+    } finally {
+      rmSync(array, { force: true })
+      rmSync(scalar, { force: true })
     }
   })
 
@@ -2923,6 +2990,27 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
     const text = blocks.map((b) => b.text ?? '').join('\n')
     assert.match(text, /the bench read back at rev 9 — compare before retrying/)
+  })
+
+  test('D3-05 edge: a read-back that answers a doc with no rev names no_rev — the ambiguity stays ambiguous, never a guessed rev', async () => {
+    // The read-back's honest split: the bench ANSWERED (the transport
+    // is up) but the doc carries no rev to compare — the answer says
+    // exactly that ('no_rev'), never a fabricated read_back_rev the
+    // agent would treat as fresh eyes.
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') throw new Error('socket closed after send')
+      if (lane === 'benchGet') return { session: 'session-chat7', stages: [{ id: 's1' }] }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
+    assert.equal(out['landing'], 'ambiguous_no_write')
+    assert.equal(out['read_back'], 'no_rev', 'a rev-less read-back says no_rev — the shape it got, named')
+    assert.equal(out['read_back_rev'], undefined)
+    assert.equal(seen.filter((r) => r.lane === 'benchGet').length, 1, 'exactly ONE read-back, a raw get (no birth, no re-write)')
+    const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
+    const text = blocks.map((b) => b.text ?? '').join('\n')
+    assert.match(text, /the bench could not be read back/, 'no rev to compare — the render falls to the unreadable voice')
   })
 
   test('D3-05: a read-only verb never claims a landing — even transport-ambiguous', async () => {

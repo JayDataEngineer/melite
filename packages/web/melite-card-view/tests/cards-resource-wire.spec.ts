@@ -17,6 +17,7 @@ import {
   readDraft,
   readRun,
   readStageRow,
+  renameRunOutput,
   restoreRunToBench,
 } from "../src/client/cards-resource.ts";
 import type { CardsRunValue } from "../src/client/cards-resource.ts";
@@ -448,6 +449,98 @@ describe("restoreRunToBench — the outcome carry (the run view previews after a
       expect(batchRows(fakes.calls)[0]?.["outcome"]).toMatchObject({ runStatus: "done" });
       const bench = await fetchBench("main");
       expect(bench.stages[0]).toMatchObject({ id: "s_0", runStatus: "done" });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("a draft whose every row lacks a card seats NOTHING — the skip is counted client-side, the batch door never rides (the whole-batch pre-shape's empty face)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ id: "s_0" }, { note: "no card either" }],
+      benchDoc: { rev: 0, stages: [], log: [] },
+    });
+    try {
+      const report = await restoreRunToBench(doneRun(), "main");
+      expect(report).toMatchObject({ added: 0, skipped: 2, carried: 0 });
+      expect(report.notes).toEqual([
+        "skipped a stage with no card (add-stage requires one)",
+        "skipped a stage with no card (add-stage requires one)",
+      ]);
+      // the early return precedes the ONE write — an empty batch is
+      // never offered to a door whose refusal is whole-batch
+      expect(fakes.calls.filter((c) => c.method === "bench/add-stages")).toEqual([]);
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("a bench whose stages field is not an array claims nothing — the row's own id rides (estate drift never mints a collision)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ id: "s_0", card: "image-gen" }],
+      benchDoc: { rev: 0, stages: "nope", log: [] },
+    });
+    try {
+      const report = await restoreRunToBench(doneRun(), "main");
+      expect(report).toMatchObject({ added: 1 });
+      expect(report.notes.some((n) => n.includes("already on the bench"))).toBe(false);
+      expect(batchRows(fakes.calls)[0]?.["id"]).toBe("s_0");
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("bench rows without string ids claim nothing — the row's own id rides (a held id is only one the door could have minted)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ id: "s_0", card: "image-gen" }],
+      benchDoc: { rev: 0, stages: [7, { card: "x" }, { id: 42 }], log: [] },
+    });
+    try {
+      const report = await restoreRunToBench(doneRun(), "main");
+      expect(report).toMatchObject({ added: 1 });
+      expect(report.notes.some((n) => n.includes("already on the bench"))).toBe(false);
+      expect(batchRows(fakes.calls)[0]?.["id"]).toBe("s_0");
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("THE RECIPE WINS EVEN WITH NOWHERE TO EDIT: a snapshot against a param-less, id-less draft row rebuilds the ran params and voices the card (the F27 burn's bare face)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ card: "image-gen" }],
+      benchDoc: { rev: 0, stages: [], log: [] },
+    });
+    try {
+      const report = await restoreRunToBench(
+        run({
+          runId: "run-echo",
+          cardSnapshot: { card: "image-gen", params: { prompt: "what ran" } },
+        }),
+        "main",
+      );
+      expect(report).toMatchObject({ added: 1, carried: 0 });
+      expect(report.notes).toEqual([
+        "rebuilt image-gen from the run's own request echo — the draft was edited after it ran",
+      ]);
+      const [row] = batchRows(fakes.calls);
+      // no draft id to drop (the row never had one) and no params to
+      // overwrite — the snapshot's body is the whole truth
+      expect(row !== undefined && !("id" in row)).toBe(true);
+      expect(row?.["params"]).toEqual({ prompt: "what ran" });
+    } finally {
+      fakes.unmount();
+    }
+  });
+});
+
+describe("renameRunOutput — the gallery row is the only address (the row renames nowhere else)", () => {
+  test("a run whose stages hold no gallery row carrying the name refuses with the seat's voice — the rename door never rides", async () => {
+    const fakes = mountEstateFakes({
+      runDocs: [{ run_id: "r_1", status: "completed", stages: [{ id: "s_0", status: "completed" }] }],
+    });
+    try {
+      await expect(renameRunOutput({ runId: "r_1", name: "out.png", label: "hero" }))
+        .rejects.toThrow('rename skipped — no gallery row on the run carries "out.png"');
+      expect(fakes.calls.filter((c) => c.method === "runs/rename-output")).toEqual([]);
     } finally {
       fakes.unmount();
     }

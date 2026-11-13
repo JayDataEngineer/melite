@@ -613,6 +613,224 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       vi.useRealTimers()
     }
   })
+  test('a null abort reason rides the face\u2019s default voice — the receipt names the intent and the pressed stage', async () => {
+    // abort(null) carries a reason that is neither an Error nor a
+    // string: the face's why arm falls to its default voice ('the
+    // call was aborted') — never "[object Object]", never "null" —
+    // and the receipt still names the bench intent and the stage the
+    // dead signal stopped at (the only-staged press).
+    const controller = new AbortController()
+    controller.abort(null)
+    const fake = fakeEstateStatus([
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: {
+            draft_id: 'd_arms', rev: 3, intent: 'press the duo',
+            stages: [
+              { id: 's_0', card: 'h3-timeline', params: {} },
+              { id: 's_1', card: 'h3-timeline', params: {} },
+            ],
+          } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ stage: 's_1' }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_1', 'the only-staged press stops at the asked stage')
+    assert.equal(out.intent, 'press the duo', 'the bench intent rides the abort receipt')
+    assert.equal(out.stage, 's_1', 'the pressed stage rides the abort receipt')
+    assert.match(String(out.error), /aborted before stage s_1 was pressed \(the call was aborted\)/,
+      'a null reason speaks the default why voice: ' + String(out.error))
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'a dead signal presses nothing')
+  })
+  test('an abort BETWEEN stages names the durable pressed run(s) — the re-press counsel counts what is on the queue', async () => {
+    // The guard's own census: stage s_0 pressed and observed to done,
+    // the signal dies before s_1 — the receipt's counsel names the
+    // pressed run as DURABLE (poll run_status before re-pressing; a
+    // blind re-press doubles the queue).
+    const controller = new AbortController()
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: {
+            draft_id: 'd_arms', rev: 4, intent: 'press the duo',
+            stages: [
+              { id: 's_0', card: 'h3-timeline', params: {} },
+              { id: 's_1', card: 'h3-timeline', params: {} },
+            ],
+          } }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_between', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          controller.abort(new Error('sheet tear'))
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out.png' }] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_1', 'the receipt names the stage the dead signal stopped')
+    assert.equal(out.intent, 'press the duo', 'the bench intent rides this abort face too')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass.length, 1, 'only s_0 pressed — the sibling was never sent')
+    assert.equal(pass[0]!['run_id'], 'r_between')
+    assert.equal(pass[0]!['status'], 'done')
+    assert.match(String(out.error), /the 1 pressed run\(s\) are durable on the queue: poll run_status/,
+      'the durable-run counsel names the count: ' + String(out.error))
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the sibling was never minted')
+  })
+  test('a mid-start abort carrying a NON-Error throw names the flat reason — the receipt still points at ledger_tail', async () => {
+    // The start lane's death is whatever the transport threw: a bare
+    // string rides String(thrown) verbatim (the same voice the
+    // non-aborted thrown-start face speaks), and the receipt carries
+    // the bench intent and the pressed stage name beside the counsel.
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: {
+            draft_id: 'd_arms', rev: 5, intent: 'press the duo',
+            stages: [
+              { id: 's_0', card: 'h3-timeline', params: {} },
+              { id: 's_1', card: 'h3-timeline', params: {} },
+            ],
+          } }
+        }
+        if (lane === 'runsStart') throw 'socket died flat'
+        return undefined
+      },
+    ]
+    const controller = new AbortController()
+    const fake = fakeEstateStatus(lanes)
+    const origStart = fake.estate.runsStart.bind(fake.estate)
+    fake.estate.runsStart = ((_body: unknown, signal: AbortSignal) => {
+      controller.abort(new Error('lane died'))
+      return origStart(_body, signal)
+    }) as typeof fake.estate.runsStart
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ stage: 's_0' }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.equal(out.intent, 'press the duo', 'the bench intent rides the mid-start receipt')
+    assert.equal(out.stage, 's_0', 'the only-staged press names its stage')
+    assert.match(String(out.error), /aborted mid-start at stage s_0 \(socket died flat\)/,
+      'the flat throw rides String(thrown) verbatim: ' + String(out.error))
+    assert.match(String(out.error), /read ledger_tail/)
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, "only the first stage's start flew")
+  })
+  test('a mid-observe abort carrying a NON-Error reason keeps the run durable — the pending receipt rides the flat reason', async () => {
+    // The poller's only escape is the signal's own reason: abort with
+    // a bare string and the catch's String(thrown) arm voices it on
+    // the queued pass row — the run_id still rides (the run lives),
+    // the sibling is never sent, and the receipt names intent + stage.
+    const controller = new AbortController()
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: {
+            draft_id: 'd_arms', rev: 6, intent: 'press the duo',
+            stages: [{ id: 's_0', card: 'h3-timeline', params: {} }],
+          } }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_flat', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          controller.abort('flat death')
+          return { status: 200, body: { status: 'running', stages: [] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ stage: 's_0' }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'pending', "the durable run's receipt is pending, never stopped")
+    assert.equal(out.run_id, 'r_flat')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.equal(out.intent, 'press the duo', 'the bench intent rides the mid-observe receipt')
+    assert.equal(out.stage, 's_0', 'the only-staged press names its stage')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass.length, 1)
+    assert.equal(pass[0]!['aborted'], 'flat death', 'the flat reason rides the queued row verbatim')
+    assert.ok(!('thrown' in pass[0]!), 'an aborted observe is not a thrown stage — the run lives')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'nothing else was minted')
+  })
+  test('the press budget bounds the NEXT stage\u2019s start — the pre-observe check returns the pending receipt with the queued note', async () => {
+    // The budget face the observe-expiry receipt does not own: s_0
+    // observes to DONE while its stamp takes burn the budget past the
+    // press deadline, so s_1 — started, durable — hits the pre-observe
+    // check with nothing remaining and returns NOW: the queued note on
+    // its own pass row, the receipt carrying s_1's fresh run_id. Two
+    // presses: one with a bench intent (the receipt carries it), one
+    // without (the receipt stays quiet) — the intent word is the
+    // bench's, never the caller's.
+    const press = async (intent: string | undefined): Promise<Record<string, unknown>> => {
+      let starts = 0
+      let polls = 0
+      const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+        (lane: string) => {
+          if (lane === 'benchGet') {
+            const doc: Record<string, unknown> = {
+              draft_id: 'd_budget', rev: 7,
+              stages: [
+                { id: 's_0', card: 'h3-timeline', params: {} },
+                { id: 's_1', card: 'h3-timeline', params: {} },
+              ],
+            }
+            if (intent !== undefined) doc['intent'] = intent
+            return { status: 200, body: doc }
+          }
+          if (lane === 'runsStart') {
+            starts += 1
+            return { status: 202, body: { run_id: 'r_budget_' + starts, status: 'queued' } }
+          }
+          if (lane === 'runsStatus') {
+            polls += 1
+            if (polls < 73) return { status: 200, body: { status: 'running', stages: [] } }
+            return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'done.png' }] } }
+          }
+          if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: false, reason: 'tab closed' } }
+          if (lane === 'runsAttribute') return { status: 200, body: { ok: true } }
+          return undefined
+        },
+      ]
+      const fake = fakeEstateStatus(lanes)
+      const tool = meliteFlow(fake.estate)
+      const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
+      const runP = tool.execute({ bench: true }, exec) as Promise<Record<string, unknown>>
+      // 72 poll cadences (108 s) + the completed poll's stamp takes
+      // (two 1.2 s refusals) land the terminal stamp at ~111.9 s —
+      // past the 110 s press budget, before s_1's pre-observe check.
+      await vi.advanceTimersByTimeAsync(115_000)
+      const out = await runP
+      assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 2, 's_1\u2019s start flew before the check — the run is durable')
+      return out
+    }
+    vi.useFakeTimers()
+    try {
+      const withIntent = await press('press the duo')
+      assert.equal(withIntent.status, 'pending')
+      assert.equal(withIntent.stoppedAt, 's_1')
+      assert.equal(withIntent.run_id, 'r_budget_2', "the receipt carries s_1's fresh run_id")
+      assert.equal(withIntent.intent, 'press the duo', 'the bench intent rides the budget receipt')
+      const pass = withIntent.pass as Array<Record<string, unknown>>
+      assert.equal(pass.length, 2)
+      assert.equal(pass[0]!['status'], 'done', 's_0 observed to its end before the budget died')
+      assert.equal(pass[1]!['status'], 'queued')
+      assert.equal(pass[1]!['note'], 'the press budget spent — the run is durable on the queue, poll with run_status',
+        'the queued note names the budget, never a failure')
+      const noIntent = await press(undefined)
+      assert.equal(noIntent.status, 'pending')
+      assert.equal(noIntent.intent, undefined, 'a bench with no intent rides no intent key — the word is the bench\u2019s')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('melite_flow bench — the run-id-less start (the empty-error trap’s twin: a gateway that names no run and no error still observes)', () => {

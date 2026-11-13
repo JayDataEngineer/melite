@@ -438,6 +438,36 @@ describe("sweepSidecar (the deep resettle)", () => {
     assert.equal(r.held, false);
     assert.equal(r.wasQueued, true);
   });
+  it("a hold with no queued-why borrows the caller's why for the replay note", () => {
+    // the bare-restart caller (no queue voice to name) still holds —
+    // the note spells the why it was handed, never an empty prefix
+    const doc: Record<string, unknown> = { status: "queued", stages: [{ id: "s1", status: "queued" }] };
+    const r = sweepSidecar(doc, "server.restart", "", 3);
+    assert.equal(doc["status"], "queued");
+    assert.equal(doc["sweep_holds"], 1);
+    assert.match(
+      String(doc["sweep"]),
+      /^server\.restart — held as queued for the next boot's replay \(hold 1\/3/,
+    );
+    assert.equal(r.held, true);
+    assert.equal(r.touched, true);
+    assert.equal(r.wasQueued, true);
+  });
+  it("past the bound with no queued-why, the settle note spells the bare why and never an error", () => {
+    // the error key is the queued-why voice's own (a boot-restart row
+    // was never executed); a bare restart why rides the sweep note alone
+    const doc: Record<string, unknown> = { status: "queued", sweep_holds: 3 };
+    const r = sweepSidecar(doc, "server.restart", "", 3);
+    assert.equal(doc["status"], "failed");
+    assert.match(
+      String(doc["sweep"]),
+      /^server\.restart — held 4 boots without a replay; settling failed \(resubmit\)$/,
+    );
+    assert.equal(doc["error"], undefined);
+    assert.equal(r.held, false);
+    assert.equal(r.wasQueued, true);
+    assert.equal(r.touched, true);
+  });
   it("a stopping row resettles to stopped — the requested stop landed, never failed", () => {
     const doc = { status: "stopping", stages: [{ status: "running" }, { status: "stopping" }] };
     const r = sweepSidecar(doc, "server.restart");

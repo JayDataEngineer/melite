@@ -115,6 +115,29 @@ vi.mock("../src/comfyui-config.ts", () => ({
   resolveEngineBaseUrl: () => "http://config-resolved:8188",
 }));
 
+// THE /proc/meminfo SEAM (D-35's host-swap reading): hostSwapReading
+// dynamically imports node:fs/promises and reads /proc/meminfo. The
+// mock passes EVERY read through to the real fs unless an arm stages
+// a meminfo text or stages a read failure — so the suite's other
+// arms (and writeFileAtomic) keep the real bytes.
+const meminfoStaging = vi.hoisted(() => ({
+  text: null as string | null,
+  fail: false,
+}));
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return {
+    ...actual,
+    readFile: async (path: unknown, enc?: unknown) => {
+      if (path === "/proc/meminfo") {
+        if (meminfoStaging.fail) throw new Error("EIO: the read died");
+        if (meminfoStaging.text !== null) return meminfoStaging.text;
+      }
+      return actual.readFile(path as never, enc as never);
+    },
+  };
+});
+
 let onThrows = false;
 // THE DEAD-TAP RIG (D11): when non-null, the mocked socket refuses
 // with this (thrown verbatim — a non-Error pins the warn's
@@ -1119,6 +1142,99 @@ describe("THE KILL IS NAMED (defect board D-17, 2026-11-18: 'An out-of-memory ki
       const voiced = warn.mock.calls.map((args) => String(args[0])).join("\n");
       expect(voiced).toMatch(/read-bound diagnosis stood after \d+ms of refused reads/);
       expect(voiced).toMatch(/1 salvage re-reads \+ the \/system_stats health probe — \/system_stats said nothing/);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  // ── THE HOST FIGURES' ARMS (the D-35 reading's every face): the
+  //    /proc/meminfo seam rides the staged fs mock — a host that
+  //    publishes nothing, a read that fails, and swap under half each
+  //    get an honest sentence, never a fabricated figure. ──
+  const dyingEngine = (): Client =>
+    fakeClient({
+      // the queue/history reads hang to their bound (the wedged read);
+      // /system_stats refuses outright — the dead process's shape.
+      fetchApi: (route: string, init?: { signal?: AbortSignal }): Promise<unknown> => {
+        if (route.startsWith("/system_stats")) {
+          return Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:8188"));
+        }
+        return hangUntilAbort(init);
+      },
+    } as Partial<Record<string, unknown>>);
+
+  it("a host that publishes no meminfo figures omits the host line — the refusal never fabricates", async () => {
+    meminfoStaging.text = "MemTotal:       32758612 kB\n";
+    try {
+      const err = await waitTerminal(dyingEngine(), "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 40,
+      }).then(
+        (): Error => { throw new Error("the wait settled — the diagnosis never stood"); },
+        (e: unknown) => e as Error,
+      );
+      expect(err.message).toMatch(/ENGINE UNIT-DOWN.*THE UNIT FIRST: a fresh engine boot/s);
+      expect(err.message).not.toMatch(/host:/);
+      expect(err.message).not.toMatch(/the honest headroom/);
+    } finally {
+      meminfoStaging.text = null;
+    }
+  });
+
+  it("a failed meminfo read degrades to the same host-less refusal — the error path never throws", async () => {
+    meminfoStaging.fail = true;
+    try {
+      const err = await waitTerminal(dyingEngine(), "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 40,
+      }).then(
+        (): Error => { throw new Error("the wait settled — the diagnosis never stood"); },
+        (e: unknown) => e as Error,
+      );
+      expect(err.message).toMatch(/ENGINE UNIT-DOWN.*THE UNIT FIRST: a fresh engine boot/s);
+      expect(err.message).not.toMatch(/host:/);
+    } finally {
+      meminfoStaging.fail = false;
+    }
+  });
+
+  it("swap under half speaks used GBs without the stale-whitespace voice", async () => {
+    meminfoStaging.text = [
+      "MemTotal:       32758612 kB",
+      "SwapTotal:       8388608 kB",
+      "SwapFree:        7864320 kB",
+      "MemAvailable:   24117248 kB",
+      "",
+    ].join("\n");
+    try {
+      const err = await waitTerminal(dyingEngine(), "p-1", Date.now() + 60_000, () => false, {
+        readBoundMs: 40,
+        salvageAttempts: 1,
+        healthBoundMs: 40,
+      }).then(
+        (): Error => { throw new Error("the wait settled — the diagnosis never stood"); },
+        (e: unknown) => e as Error,
+      );
+      expect(err.message).toMatch(/host: swap 0\.5\/8\.0 GB used, available 23\.0 GB \(the honest headroom\)/);
+      expect(err.message).not.toMatch(/over half/);
+    } finally {
+      meminfoStaging.text = null;
+    }
+  });
+
+  it("a policy that states no salvage/health knobs rides the defaults — the lane log voices the standing attempt count", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await expect(
+        waitTerminal(dyingEngine(), "p-1", Date.now() + 60_000, () => false, {
+          readBoundMs: 40,
+          salvageRetrySleepMs: 1, // only the two unstated knobs ride their defaults
+        }),
+      ).rejects.toThrow(/ENGINE UNIT-DOWN.*REFUSES connections — the process has died/s);
+      const voiced = warn.mock.calls.map((args) => String(args[0])).join("\n");
+      expect(voiced).toMatch(/3 salvage re-reads \+ the \/system_stats health probe — \/system_stats said nothing/);
     } finally {
       warn.mockRestore();
     }

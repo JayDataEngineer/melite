@@ -1065,6 +1065,47 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
     assert.match(out, /restart counter is at 3/, 'the journal lines still print above it')
   })
 
+  // THE TAIL'S EDGE FACES (the D3-02 arm owns the happy path; these
+  // are its edges): a row object renders through the same rowText the
+  // other doors speak (never a crash, never "[object Object]"), a
+  // census that carries no path names the gap as '?' (never an empty
+  // string), and a fresh log with NO lines attaches nothing — silence
+  // is not a header above an empty tail.
+  test('the fresh tail renders mixed rows and an unnamed path; a fresh log with no lines attaches nothing', () => {
+    const tool = comfyManage(stubEstate())
+    const mixed = text(tool, {
+      ok: true,
+      action: 'logs',
+      detail: '1 journal line(s) — source: systemd unit estate-comfyui.service — engine application log: fresh — its tail is attached below',
+      data: {
+        source: { kind: 'journal', unit: 'estate-comfyui.service', why: "systemd's capture of the unit's stdout" },
+        app_log: { known: true, verdict: 'fresh', last_write: '2026-11-19T06:00:00.000Z', age_seconds: 30, lines: [
+          'CUDA out of memory. Tried to allocate 2.59 GiB',
+          { name: 'oom-kill', state: 'killed', version: 'v2' },
+        ] },
+        lines: [
+          'estate-comfyui.service: Scheduled restart job, restart counter is at 3.',
+        ],
+      },
+    })
+    assert.match(mixed, /engine application log tail \(\?, fresh\):/, 'a fresh census that names no path renders the ? placeholder')
+    assert.match(mixed, /CUDA out of memory\. Tried to allocate 2\.59 GiB/, 'the string rows ride verbatim')
+    assert.match(mixed, /oom-kill — v2 · killed/, 'a row object renders through the same rowText voice the other doors speak')
+    const empty = text(tool, {
+      ok: true,
+      action: 'logs',
+      detail: '1 journal line(s) — engine application log: fresh — its tail is attached below',
+      data: {
+        app_log: { known: true, verdict: 'fresh', path: '/repo/data/runtime/comfyui/user/comfyui_8289.log', last_write: '2026-11-19T06:00:00.000Z', age_seconds: 30, lines: [] },
+        lines: [
+          'estate-comfyui.service: Scheduled restart job, restart counter is at 3.',
+        ],
+      },
+    })
+    assert.ok(!empty.includes('application log tail'), 'a fresh log with NO lines attaches no header — silence, not an empty tail')
+    assert.match(empty, /restart counter is at 3/, 'the journal lines still render above the quiet app log')
+  })
+
   // THE BRANCH-EDGE BURN (scope C, 2026-11-19): the census carries
   // only its PRESENT truth — an absent count says nothing, a zero oom
   // count is silence, an unnamed exit code still names the exit — and

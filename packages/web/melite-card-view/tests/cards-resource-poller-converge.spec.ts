@@ -27,7 +27,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { mountEstateFakes } from "./estate-harness.ts";
 import type { EstateFakesOptions } from "./estate-harness.ts";
-import { reconcileBenchRuns, observeRunOutcome } from "../src/client/cards-resource.ts";
+import { fetchBench, reconcileBenchRuns, observeRunOutcome } from "../src/client/cards-resource.ts";
 import type { CardsBenchValue } from "../src/client/cards-resource.ts";
 import { draftIdOf } from '@melite/contracts/benchStage';
 
@@ -384,4 +384,39 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
       fakes.unmount();
     }
   });
+
+  test("PC-10: the reconcile's own file-era verdict whose delivery budget dies undelivered releases its claim — nothing dishonest ever lands (the undelivered-inline arm, 2026-11-30)", async () => {
+    // the reconcile itself read the verdict: the status read is
+    // refused (the runs door answers unknown run_id), the file-era
+    // list answers completed, and the verdict delivers INLINE — three
+    // patch attempts, the full transport budget. Every patch is
+    // refused, so the budget dies undelivered: the reconcile must
+    // release the armed claim (a later refresh heals the row) and
+    // land NOTHING (a swallowed patch no next run ever rewrote).
+    const fakes = stubEstate({
+      listRows: [{ run_id: "r_1", status: "completed" }],
+      refusals: [
+        { method: "runs/status", message: "unknown run_id" },
+        { method: "drafts/patch", message: "admission: the draft moved on" },
+        { method: "drafts/patch", message: "admission: the draft moved on" },
+        { method: "drafts/patch", message: "admission: the draft moved on" },
+      ],
+    });
+    try {
+      const armed = new Set<string>();
+      await reconcileBenchRuns(bench(), { armed });
+      expect(armed.has("s_0:r_1"), "the undelivered inline verdict still holds the armed claim").toBe(false);
+      // the budget knocked three times (the full VERDICT_DELIVERY_ATTEMPTS
+      // burn, backoff and all) — and every knock was refused
+      expect(patchesOf(fakes), "the delivery did not spend its whole budget").toHaveLength(3);
+      // the row keeps its live face: no terminal stamp ever landed on it
+      const benchAfter = await fetchBench("main");
+      const row = benchAfter.stages[0] as Record<string, unknown>;
+      expect(row["id"]).toBe("s_0");
+      expect(row["runStatus"]).toBeUndefined();
+      expect(row["result"]).toBeUndefined();
+    } finally {
+      fakes.unmount();
+    }
+  }, 20_000);
 });
