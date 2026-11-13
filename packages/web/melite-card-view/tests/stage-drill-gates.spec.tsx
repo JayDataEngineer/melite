@@ -637,6 +637,50 @@ describe("writes settling after a re-target (each half's own guard)", () => {
   });
 });
 
+describe("the wire-in's NOW law (R2-2's timing barrier)", () => {
+  test("a WIRE-IN lands on the wire BEFORE the trailing window could fire — one call, the picked url, no coalescer", async () => {
+    // R2-2's qualifier (drill-cure-accuracy-r2, 2026-10-30): the
+    // wire-in oneness wall waited 8s — a 300ms-trailing
+    // implementation passes it, so "writes NOW" was narrated but
+    // unjudged. THIS is the barrier: the wire verb rides the send
+    // chain's microtask drain (patchStageParamsChained — never the
+    // coalescer), so the door call lands well inside 150ms — HALF
+    // the trailing window. A seat that falls back to the coalescer
+    // misses the deadline and reds with zero calls.
+    stubFetch();
+    fakes?.unmount();
+    let wireOwner: { onWireSlot?: (slot: string, source: string | null) => void } | undefined;
+    fakes = mountEstateFakes();
+    const done: BenchStageView =
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "krea-2" }, result: { url: "/source.png" } };
+    const open: BenchStageView = { id: "s_1", card: "image-gen", engine: "comfyui", params: { model: "krea-2" } };
+    const bench = { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [done, open], sessionKey: "main" };
+    render(h(StageDrill, {
+      ...drillProps(open),
+      bench,
+      renderStageView: (owner: unknown, fallback: unknown) => {
+        wireOwner = owner as { onWireSlot?: (slot: string, source: string | null) => void };
+        return fallback;
+      },
+    } as never));
+    await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    if (wireOwner?.onWireSlot === undefined) throw new Error("wire owner not captured");
+    wireOwner.onWireSlot("input_image", "s_0");
+    // THE BARRIER — landed-before-TRAILING_MS: poll a 150ms ceiling
+    // (the stack seat's own immediacy precedent), then judge. The
+    // assert runs at the deadline if nothing landed, so a trailing
+    // implementation fails LOUD with the calls it managed (zero).
+    const started = Date.now();
+    while (patchCalls().length < 1 && Date.now() - started < 150) {
+      await new Promise((resolve) => { setTimeout(resolve, 20); });
+    }
+    const landed = patchCalls();
+    expect(landed.length).toBe(1); // NOW and ONE — never a coalescer's second row
+    expect(JSON.stringify(landed)).toContain('"/source.png"');
+    expect(JSON.stringify(landed)).toContain("input_image");
+  });
+});
+
 describe("the unset's refused write and the run seat's refused sync — both speak the row's voice", () => {
   test("an UNSET (slot-empty) refusal speaks the row's voice on the write face (prefix, reason, unlanded key)", async () => {
     // THE SLOT-EMPTY ARM'S OWN JUDGE (the 2026-11-04 one-voice
