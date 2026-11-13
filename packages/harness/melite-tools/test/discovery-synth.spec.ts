@@ -81,6 +81,9 @@ function svc(partial: Record<string, unknown>): ComfyUIService {
   // synth fakes carry no engine facts, so the default marks unknown
   return {
     packPresence: (packs: readonly string[]) => packs.map((id) => ({ id, present: null })),
+    // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synth
+    // fakes mount no verbs — [] is the truthful double.
+    cardVerbs: (): never[] => [],
     ...partial,
   } as unknown as ComfyUIService
 }

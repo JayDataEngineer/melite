@@ -1,8 +1,9 @@
 import type { ComfyUIService } from '@melite/comfyui-cordis';
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit';
+import type { ModFields } from '@melite/comfyui-card-kit/service-faces';
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract';
-import type { FormSpecDoc, FormVariantRow } from '@melite/contracts/formSpec';
+import type { FormSpecDoc, SchemaEnvelope, FormVariantRow } from '@melite/contracts/formSpec';
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
  *  resolution rides the SAME table form-spec serves — one truth). */
@@ -129,6 +130,15 @@ export declare function stampOptionsFrom(schema: unknown, svc: {
  *  both build the same sentence from this function. Two literals is
  *  how they drifted apart in the first place. */
 export declare const unknownCardVoice: (card: string) => string;
+/** THE VERB FIELDS ENVELOPE (the verbs-on-wire slice 1, 2026-11-13):
+ *  one mounted verb's served fields seat — the verb's own toJSON
+ *  through the envelope predicate (the same walker as the card
+ *  fields). A verb whose fields carry no serializer, or whose
+ *  serializer yields no envelope, serves a null seat: the serve
+ *  never throws for one bad verb (the pack-envelope mirror — a
+ *  pack with no envelope serves no entry; absence, never a brick).
+ *  Exported for the wall: every arm below fires direct. */
+export declare function verbFieldsEnvelope(fields: ModFields): SchemaEnvelope | null;
 export declare function specBody(svc: ComfyUIService, defs: Map<string, CardDefinition>, res: SpecResolution, engineLoras?: readonly string[]): FormSpecDoc;
 /** The forms table (the /v1/forms body — card meta only, no fields).
  *  Sorted by (sidebar order, card id) — deterministic. */

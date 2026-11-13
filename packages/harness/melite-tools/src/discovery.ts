@@ -41,6 +41,7 @@ import { loraNamesFromObjectInfo } from '@melite/comfyui-cordis/user-loras'
 import type { ComfyUIService } from '@melite/comfyui-cordis'
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
+import type { ModFields } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
 import { deriveVariants, type MatrixVariant } from '@melite/comfyui-card-kit/facts'
 import { agentFormDoc } from '@melite/engine-agent'
@@ -1071,6 +1072,20 @@ function runtimeRowsOf(boarded: readonly string[]): NonNullable<FormSpecDoc['run
   return rows
 }
 
+/** THE VERB FIELDS ENVELOPE (the verbs-on-wire slice 1, 2026-11-13):
+ *  one mounted verb's served fields seat — the verb's own toJSON
+ *  through the envelope predicate (the same walker as the card
+ *  fields). A verb whose fields carry no serializer, or whose
+ *  serializer yields no envelope, serves a null seat: the serve
+ *  never throws for one bad verb (the pack-envelope mirror — a
+ *  pack with no envelope serves no entry; absence, never a brick).
+ *  Exported for the wall: every arm below fires direct. */
+export function verbFieldsEnvelope(fields: ModFields): SchemaEnvelope | null {
+  const carrier = fields as { toJSON?: () => unknown }
+  const out = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null
+  return isSchemaEnvelope(out) ? out : null
+}
+
 export function specBody(
   svc: ComfyUIService,
   defs: Map<string, CardDefinition>,
@@ -1160,6 +1175,19 @@ export function specBody(
   }
   const surface = def.surface ?? {}
   const boarded = def.boarded ?? []
+  // THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1): the
+  // card's mounted verbs (svc.cardVerbs — the same read the
+  // mod-interlock wall pins registration-side), each with its
+  // serialized fields envelope (the verb's own toJSON, the same
+  // walker as the card fields — the client verb bar renders the
+  // invocation dialog off it). The routing (engines) stays
+  // server-side; slice 2's verb bar designs the run call.
+  const verbs = svc.cardVerbs(res.card).map((verb) => ({
+    id: verb.id,
+    label: verb.label,
+    fields: verbFieldsEnvelope(verb.fields),
+    writes: verb.writes,
+  }))
   // THE EDGE EMISSION (operator order, 2026-09-12: "whenever a card
   // emits via the package system, it needs to have 'input'
   // 'required=True', or 'output', so the edges are defined"). The
@@ -1225,6 +1253,11 @@ export function specBody(
     //  contracts' own toJSON; the modifier surface walks these for
     //  its param rows, the same walker as the card fields).
     mod_schemas: servedModEnvelopes(schemas.mods, res.card),
+    // THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1): served
+    // only where verbs live — a verb-less card serves no new key
+    // (the legacy wire is untouched; the client keys off presence,
+    // the runtimes-block law one section up).
+    ...(verbs.length > 0 ? { verbs } : {}),
     // NO MINTED MODEL (the minted-model kill, 2026-10-12): a card
     // that boards no models serves null here — the old body minted
     // the card id as the model and the run door refused the card's

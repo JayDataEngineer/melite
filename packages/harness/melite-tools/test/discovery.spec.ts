@@ -65,6 +65,7 @@ import {
   resolveSpecKeyForTool,
   specBody,
   specVariants,
+  verbFieldsEnvelope,
 } from '../src/discovery.ts'
 
 /** THE TRANSIENT-GENRE RACE (stroke 83): enhance-recipes.spec
@@ -535,6 +536,56 @@ describe('live door arms', () => {
     assert.equal('defaults' in spec, false)
   })
 
+  test('THE VERB FIELDS ENVELOPE (the verbs-on-wire slice 1, every fallback arm fires direct)', () => {
+    // no serializer on the fields: a null seat, never a throw
+    const bare = (): Record<string, unknown> => ({})
+    assert.equal(verbFieldsEnvelope(bare), null)
+    // a serializer yielding no envelope: a null seat, never the garbage
+    const garbage = Object.assign((): Record<string, unknown> => ({}), { toJSON: () => ({ nope: 1 }) })
+    assert.equal(verbFieldsEnvelope(garbage), null)
+    // a serializer yielding an envelope: the envelope rides verbatim
+    const env = { uid: 7, refs: { 7: { dict: { person_index: 0 } } } }
+    const good = Object.assign((): Record<string, unknown> => ({}), { toJSON: () => env })
+    assert.equal(verbFieldsEnvelope(good), env)
+  })
+
+  test('THE VERBS WIRE (2026-11-13, the verbs-on-wire slice 1): every mounted verb serves with its envelope; verb-less cards serve no verbs seat', async () => {
+    const svc = theService()
+    // THE MOUNTED SET (the registration the mod-interlock wall pins):
+    // anny's five verbs ride the served doc — id, label, writes, and
+    // each verb's own serialized fields envelope.
+    const mounted = svc.cardVerbs('anny').map((v) => v.id).sort()
+    assert.deepEqual(mounted, ['dress', 'hmr-estimate', 'preset-load', 'preset-save', 'prop'])
+    const doc = await formSpecSweep('anny') as FormSpecDoc | null
+    assert.ok(doc !== null && doc.form === 'anny', 'the anny form serves')
+    assert.deepEqual((doc.verbs ?? []).map((v) => v.id).sort(), mounted, 'every mounted verb rides the served doc, none other')
+    for (const row of doc.verbs ?? []) {
+      const live = svc.cardVerbs('anny').find((v) => v.id === row.id)
+      assert.ok(live !== undefined, `served verb ${row.id} is a mounted verb`)
+      assert.equal(row.label, live.label, `verb ${row.id} serves its registered label`)
+      assert.deepEqual([...row.writes], [...live.writes], `verb ${row.id} serves its writes`)
+      if (row.fields === null) {
+        const f = live.fields as { toJSON?: () => unknown }
+        assert.equal(typeof f.toJSON === 'function' ? f.toJSON() : null, null, `verb ${row.id} null envelope means no serializer`)
+      } else {
+        assert.equal(typeof row.fields.uid, 'number', `verb ${row.id} fields is a schema envelope`)
+        assert.equal(typeof row.fields.refs, 'object', `verb ${row.id} fields carries its ref table`)
+      }
+    }
+    // hmr-estimate's own knobs ride the verb's envelope, never the
+    // card surface (the knobs-never-join-the-surface law, wire-side):
+    // the estimate dialog renders its person picker off this envelope.
+    const est = (doc.verbs ?? []).find((v) => v.id === 'hmr-estimate')
+    assert.ok(est !== undefined && est.fields !== null, 'hmr-estimate serves a fields envelope')
+    const root = est.fields.refs[est.fields.uid]
+    assert.ok(root !== undefined && root.dict !== undefined && 'person_index' in root.dict, 'the estimate envelope carries the person picker')
+    // THE VERB-LESS CARD (tts boards no verb family): no new key
+    // rides the legacy wire — the wire grows only where verbs live.
+    const tts = await formSpecSweep('tts') as FormSpecDoc | null
+    assert.ok(tts !== null, 'the tts form serves')
+    assert.equal('verbs' in tts, false, 'a card with no mounted verbs serves no verbs seat')
+  })
+
   test('formSpecArm serves the card-only mask envelope (the studio retired at parity, stroke 75)', async () => {
     const spec = await formSpecSweep('mask')
     assert.ok(spec !== null)
@@ -680,6 +731,8 @@ describe('live door arms', () => {
       // facts — unknown marks, the honest serve
       packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
         packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__solo2__', service: '__solo2__', model: '__solo2__' })
     // PRIMARY via the card arm (boarded empty — res.card === key):
@@ -723,6 +776,8 @@ describe('live door arms', () => {
       cardModFields: (): unknown[] => [],
       packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
         packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
     } as unknown as ReturnType<typeof theService>
     const fam1 = specBody(fakeSvc, defs, { card: '__sliced__', service: '__sliced__', model: 'fam1' })
     const fam2 = specBody(fakeSvc, defs, { card: '__sliced__', service: '__sliced__', model: 'fam2' })
@@ -763,6 +818,8 @@ describe('live door arms', () => {
       cardModFields: (): unknown[] => [],
       packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
         packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__maskform__', service: '__maskform__', model: '__maskform__' })
     const kinds = body.features?.modifiers ?? []
@@ -815,6 +872,8 @@ describe('live door arms', () => {
       cardModFields: (): unknown[] => [],
       packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
         packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__kindfull__', service: '__kindfull__', model: '__kindfull__' })
     const kinds = body.features?.modifiers ?? []
@@ -845,6 +904,8 @@ describe('live door arms', () => {
       cardModFields: (): unknown[] => [],
       packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
         packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
     } as unknown as ReturnType<typeof theService>
     assert.throws(
       () => specBody(fakeSvc, defs, { card: '__badmod__', service: '__badmod__', model: '__badmod__' }),
@@ -875,6 +936,8 @@ describe('live door arms', () => {
         cardModFields: (): unknown[] => [],
         packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
           packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
       }) as unknown as ReturnType<typeof theService>
     const key = { card: '__badenv__', service: '__badenv__', model: '__badenv__' }
     // 1) the MAIN envelope without refs: uid number + refs object
@@ -907,6 +970,8 @@ describe('live door arms', () => {
         cardModFields: (): unknown[] => [],
         packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
           packs.map((id) => ({ id, present: null })),
+      // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synthetic fakes mount no verbs — [] is the truthful double, what the live service returns for a verb-less card.
+      cardVerbs: (): never[] => [],
       } as unknown as ReturnType<typeof theService>
       return { defs, svc: fakeSvc }
     }

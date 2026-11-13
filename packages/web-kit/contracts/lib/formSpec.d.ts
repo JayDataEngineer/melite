@@ -501,6 +501,22 @@ export interface FormSpecDoc {
         env: string;
         consuming_param: string;
     }>;
+    /** THE VERB ROWS (2026-11-13, the verbs-on-wire slice 1): every
+     *  verb mounted on the card's boarded families (the SubActionMod
+     *  law — verbs own their knobs; they ride the verb's own
+     *  invocation dialog, never the card surface), served with the
+     *  serialized fields envelope so a client verb bar renders each
+     *  verb's dialog without a second door. The invocation routing
+     *  (engines) stays server-side — slice 2's verb bar designs the
+     *  run call. Absent when the card boards no verb-bearing family
+     *  (legacy cards serve no new key — the wire grows only where
+     *  verbs live). */
+    verbs?: Array<{
+        id: string;
+        label: string;
+        fields: SchemaEnvelope | null;
+        writes: readonly string[];
+    }>;
     /** The estate's surface envelope (served TOP-LEVEL by the door —
      *  2026-09-12 lane read): layout='studio' means a registered view
      *  exists (the client's business is the keyed slot, not this flag);

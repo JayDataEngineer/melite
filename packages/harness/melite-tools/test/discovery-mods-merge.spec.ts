@@ -88,6 +88,9 @@ function svc(): ComfyUIService {
     formSchemas: (): unknown => ({ schema: ENVELOPE, mods: mockState.envelopes }),
     modCatalog: (pack: string): unknown => ({ shared: false, rows: mockState.catalog[pack] ?? [] }),
     cardModFields: (): unknown[] => [],
+    // cardVerbs (the verbs-on-wire slice 1, 2026-11-13): the synth
+    // fake mounts no verbs — [] is the truthful double.
+    cardVerbs: (): never[] => [],
   } as unknown as ComfyUIService
 }
 
