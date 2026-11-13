@@ -161,7 +161,13 @@ describe.skipIf(!REGISTRY_PRESENT)('THE REGISTRY WALL (every law accounted, ever
           walk(p)
         } else if (/\.spec\.(ts|tsx)$/.test(e.name)) {
           const text = readFileSync(p, 'utf8')
-          for (const m of text.matchAll(/\/\/\s*@contract\s+([a-z0-9-]+)/g)) {
+          // THE ID CLASS (A5 installment 2, 2026-11-13): the capture
+          // matches every id shape the registry itself carries —
+          // lowercase rows AND the uppercase legacy rows (e.g.
+          // CARDS-MOD-SURFACE). The first draft's [a-z0-9-]+ silently
+          // ignored an uppercase-id header (the match fails, the
+          // header is never judged, the seat only looks seated).
+          for (const m of text.matchAll(/\/\/\s*@contract\s+([A-Za-z0-9-]+)/g)) {
             declared.push({ file: p.slice(ROOT.length + 1), id: m[1]! })
           }
         }

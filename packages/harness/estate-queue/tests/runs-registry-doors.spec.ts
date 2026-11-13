@@ -1,4 +1,10 @@
 // @contract flows-bench-unwired-spell-voice
+// @contract flows-card-press-names-its-row
+// @contract flows-one-press-one-card
+// @contract flows-param-overlay-twin
+// @contract flows-runs-raw-inline-card-compose
+// @contract flows-stamp-back-confirmation
+// @contract cards-restore-outcome-carry
 // runs-registry-doors.spec.ts — the runs seat, list, validate, status + stop: split from runs-registry.spec.ts
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
