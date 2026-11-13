@@ -434,6 +434,11 @@
       }
     }
   },
+  "naming": {
+    "label": "Output name",
+    "tooltip": "Labels this run's gallery rows — the stem rides the outputs' display labels while the delivered files keep their machine names.",
+    "max": 64
+  },
   "model": "qwen-img-edit-21",
   "params": [
     "input_images",

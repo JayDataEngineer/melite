@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactElement, ReactNode } from "react";
-import { StudioRail } from "./studioRail.tsx";
+import { StudioRail } from "./studioRail.js";
 /** One loud failure row — the tenant derives them; the shell
  *  renders them as DOM text. */
 export interface StudioShellError {

@@ -58,6 +58,7 @@ import type {
   SpecField,
   FormVariantRow,
 } from '@melite/contracts/formSpec'
+import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec'
 
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
@@ -1218,9 +1219,9 @@ export function specBody(
   const naming = envelopeDeclaresOutputName(schemas.schema)
     ? undefined
     : {
-      label: 'Output name',
-      tooltip: 'Labels this run\'s gallery rows — the stem rides the outputs\' display labels while the delivered files keep their machine names.',
-      max: 64,
+      label: ESTATE_NAMING_ROW.label,
+      tooltip: ESTATE_NAMING_ROW.tooltip,
+      max: ESTATE_NAMING_ROW.max,
     }
   // THE EDGE EMISSION (operator order, 2026-09-12: "whenever a card
   // emits via the package system, it needs to have 'input'

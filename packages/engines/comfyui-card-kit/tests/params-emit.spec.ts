@@ -6,6 +6,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { emitKnob, emitParamsSchema, emitParamsSpec } from "../src/params-emit.ts";
 import type { Schema } from "../src/params-emit.ts";
+import { ESTATE_NAMING_ROW } from "@melite/contracts/formSpec";
 
 const shape = (s: Record<string, unknown>): Schema => s as unknown as Schema;
 const c = (v: unknown): Record<string, unknown> => ({ type: "const", value: v });
@@ -149,8 +150,38 @@ describe("emitParamsSchema (the served projection)", () => {
   const knob = (extra?: Record<string, unknown>): Record<string, unknown> =>
     ({ type: "string", meta: { ...(extra === undefined ? {} : { extra }) } });
 
-  it("a dict-less carrier serves an empty object (the ?? {} arm)", () => {
-    assert.deepEqual(emitParamsSchema(carrier(), []), { type: "object", properties: {} });
+  it("a dict-less carrier serves the estate naming row alone (the ?? {} arm)", () => {
+    // THE AGENT FACE'S ESTATE ROW (queue 12's ONE SEAT law): the
+    // projection synthesizes the label-plane row wherever the dict
+    // declares none — the UI face serves the same facts as the
+    // spec's naming seat (specBody), off the ONE spelling.
+    assert.deepEqual(emitParamsSchema(carrier(), []), {
+      type: "object",
+      properties: {
+        output_name: { type: "string", maxLength: ESTATE_NAMING_ROW.max, description: ESTATE_NAMING_ROW.tooltip },
+      },
+    });
+  });
+
+  it("THE ESTATE NAMING ROW, AGENT FACE: a row-less dict serves it; the declared row always wins", () => {
+    // row-less: the estate row rides beside the declared knobs
+    const out = emitParamsSchema(carrier({ prompt: knob() }), ["krea-2"]);
+    assert.deepEqual(Object.keys(out.properties), ["prompt", "output_name"]);
+    assert.deepEqual(out.properties["output_name"], {
+      type: "string",
+      maxLength: ESTATE_NAMING_ROW.max,
+      description: ESTATE_NAMING_ROW.tooltip,
+    });
+    assert.equal(out.required, undefined, "the label plane is never required — absent is the machine name");
+    // declared: the dict's own row serves verbatim, never doubled —
+    // and the estate shape (maxLength/description) NEVER rides: the
+    // declared row's projection is the dict's own (h3's slug carries
+    // its own law on the UI face; the agent reads the plain knob)
+    const declared = emitParamsSchema(
+      carrier({ output_name: knob({ wtype: "text", tooltip: "Names the born files" }) }),
+      ["h3"],
+    );
+    assert.deepEqual(declared.properties["output_name"], { type: "string" });
   });
 
   it("a single-family board serves no model knob; required rides", () => {

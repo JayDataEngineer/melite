@@ -1,4 +1,5 @@
 import { extraOf } from '@melite/contracts/extraKeys';
+import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec';
 export const emitKnob = (s) => {
     const m = (s.meta ?? {});
     // THE ONE VOCABULARY (2026-10-10): the bag narrows through the
@@ -246,6 +247,23 @@ export const emitParamsSchema = (schemaCarrier, boarded, semantic) => {
         const ex = extraOf(v);
         if (ex.required === true)
             required.push(k);
+    }
+    // THE ESTATE NAMING ROW, AGENT FACE (queue 12's ONE SEAT law): the
+    // UI face renders the estate naming seat wherever the family's
+    // envelope declares no row of its own (specBody serves
+    // FormSpecDoc.naming) — this face serves the SAME row as the
+    // params_schema property, off the ONE spelling
+    // (ESTATE_NAMING_ROW, @melite/contracts) — the agent and the user
+    // are taught one surface. The declared row ALWAYS wins (h3's own
+    // slug; the guard never doubles it). No default: the label plane
+    // never defaults — absent is the machine name, so the no-cheat
+    // walk (declaredDefaults reads `.default` only) skips the row.
+    if (properties.output_name === undefined) {
+        properties.output_name = {
+            type: 'string',
+            maxLength: ESTATE_NAMING_ROW.max,
+            description: ESTATE_NAMING_ROW.tooltip,
+        };
     }
     const out = { type: 'object', properties };
     if (required.length > 0)

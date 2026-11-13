@@ -15,7 +15,7 @@
  * surface (the sidebar cards tab), the same scope the toolview
  * itself carries.
  */
-import type { FieldOwnerProps, FormOwnerProps } from './owners.ts';
+import type { FieldOwnerProps, FormOwnerProps } from './owners.js';
 import type { StageViewOwnerProps, PreviewOwnerProps } from '@melite/contracts';
 import type { SlotEntryDef } from '@deepseek-ai/dsh-client-ui-slots';
 /** The seams' entry defs, checked against the merged contract. */

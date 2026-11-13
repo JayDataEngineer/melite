@@ -21,8 +21,10 @@ export const declaredDefaults = (schemaCarrier, boarded) => {
         // enumeration — served.properties — carries no hidden row (the
         // re-audit, 2026-10-16). The declared key still VALIDATES —
         // compose reads it and its refusals fire verbatim when a draft
-        // carries it. (dict[k] is non-null here: the projection's only
-        // synthesized key is 'model', excluded above — every remaining
+        // carries it. (dict[k] is non-null here: the projection's
+        // synthesized keys are 'model', excluded above, and the estate
+        // naming row (queue 12), which serves NO default — the walk
+        // below reads `.default` only and skips it — every remaining
         // served key is a declared knob.)
         const d = knob.default;
         if (d !== undefined && d !== null)

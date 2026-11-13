@@ -29,7 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, type ReactNode } from 'react';
-export { ASSET_DRAG_MIME } from './chrome.ts';
+export { ASSET_DRAG_MIME } from './chrome.js';
 /**
  * @param value - the attached value to test (estate path, artifact URL, or data URL).
  * @returns true when the value renders an image thumbnail on the square.
