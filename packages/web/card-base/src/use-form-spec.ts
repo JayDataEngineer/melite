@@ -57,7 +57,12 @@ export function useFormSpec(modelId: string | null | undefined): {
     const token = ++tokenRef.current
     try {
       const doc = await fetchFormSpec(id)
-      if (tokenRef.current === token) setSpec(doc)
+      // the doc and the voice retire TOGETHER (the latch cure,
+      // 2026-11-15): a healed refresh that left the standing
+      // refusal voiced kept every consumer's error strip refusing
+      // over a healthy spec forever — the error never latches past
+      // its own cure
+      if (tokenRef.current === token) { setSpec(doc); setError(null) }
     } catch (e: unknown) {
       // the standing spec survives a refused refresh — the operator
       // keeps editing against the last healthy serve

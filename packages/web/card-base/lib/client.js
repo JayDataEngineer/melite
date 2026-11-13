@@ -15449,7 +15449,10 @@ window.__ModuleLoader__.load({
 					const token = ++tokenRef.current;
 					try {
 						const doc = await fetchFormSpec(id);
-						if (tokenRef.current === token) setSpec(doc);
+						if (tokenRef.current === token) {
+							setSpec(doc);
+							setError(null);
+						}
 					} catch (e) {
 						if (tokenRef.current === token) setError(rejectionVoice(e));
 					}
@@ -18045,7 +18048,9 @@ window.__ModuleLoader__.load({
 			const { declaration, row, runStatus, onPatch, onRun, onStop } = props;
 			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
 			const [spec, setSpec] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
+			const [specVoice, setSpecVoice] = (0, react.useState)(null);
+			const [hostVoice, setHostVoice] = (0, react.useState)(null);
+			const error = hostVoice ?? specVoice;
 			const [user, setUser] = (0, react.useState)(params);
 			const [open, setOpen] = (0, react.useState)({});
 			const departedRef = (0, react.useRef)(/* @__PURE__ */ new Set());
@@ -18069,10 +18074,11 @@ window.__ModuleLoader__.load({
 			const { spec: liveSpec, error: specError } = useFormSpec((typeof user["model"] === "string" && user["model"] !== "" ? user["model"] : void 0) ?? declaration.model);
 			(0, react.useEffect)(() => {
 				if (specError !== null) {
-					setError(specError);
+					setSpecVoice(specError);
 					return;
 				}
 				if (liveSpec === null) return;
+				setSpecVoice(null);
 				setSpec(liveSpec);
 				setUser((prev) => {
 					const held = typeof prev["model"] === "string" && prev["model"] !== "" ? prev["model"] : void 0;
@@ -18127,13 +18133,18 @@ window.__ModuleLoader__.load({
 			})) });
 			const run = () => {
 				if (spec === null) return;
+				setHostVoice(null);
 				const patch = {};
 				const userKeys = new Set(Object.keys(user));
 				for (const k of userKeys) patch[k] = user[k];
 				for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null;
 				seat.now(patch);
 				if (writeFailedRef.current) return;
-				onRun();
+				try {
+					onRun();
+				} catch (e) {
+					setHostVoice(rejectionVoice(e));
+				}
 			};
 			const runRef = (0, react.useRef)(run);
 			runRef.current = run;

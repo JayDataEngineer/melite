@@ -21,6 +21,7 @@ import {
   type FormSpecDoc, type SpecField, type SpecValues,
 } from './spec.ts'
 import { useFormSpec } from './use-form-spec.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 import { useSquareProvider, type SquareHost } from './square-provider.tsx'
 import { writeThroughSeat } from './write-through.ts'
 import { ModelAxes } from './axes.tsx'
@@ -98,7 +99,18 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
   const { declaration, row, runStatus, onPatch, onRun, onStop } = props
   const params = typeof row['params'] === 'object' && row['params'] !== null ? row['params'] as SpecValues : {}
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // THE FAIL→HEAL FACE (R2-5's owed halves): one rendered strip,
+  // two retirement laws split by source. The SPEC claim's voice
+  // (the form-spec door's refusal) dies when a healthy doc lands on
+  // the same mount — the door healed, the strip over the healthy
+  // form is a lie. The HOST verb's voice (a run press that threw)
+  // SURVIVES that settle — the operator still reads why the last
+  // press refused while the form re-serves — and dies at the NEXT
+  // press (survival never bricks the face). The host voice outranks
+  // the spec voice when both stand: the press is the newer gesture.
+  const [specVoice, setSpecVoice] = useState<string | null>(null)
+  const [hostVoice, setHostVoice] = useState<string | null>(null)
+  const error = hostVoice ?? specVoice
   const [user, setUser] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
   // THE DEPARTED-KEY SHADOW (the gate-11 transfer-rig burn, the
@@ -145,8 +157,11 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
     ? user['model'] as string : undefined
   const { spec: liveSpec, error: specError } = useFormSpec(heldModel ?? declaration.model)
   useEffect(() => {
-    if (specError !== null) { setError(specError); return }
+    if (specError !== null) { setSpecVoice(specError); return }
     if (liveSpec === null) return
+    // THE SAME-MOUNT SPEC-HEAL: the doc and the spec voice retire
+    // together (the effect's own law — never the host voice)
+    setSpecVoice(null)
     setSpec(liveSpec)
     // THE USER LAYER IS THE FROZEN BENCH ROW VERBATIM (the settings
     // law): presence IS the override mark; defaults derive per
@@ -242,6 +257,11 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
   })
   const run = (): void => {
     if (spec === null) return
+    // A NEW PRESS RETIRES THE HOST VOICE (the drill's own first
+    // line): the surviving refusal tells the operator why the LAST
+    // press failed — this press answers for itself, and a healthy
+    // verb clears the strip it no longer speaks for
+    setHostVoice(null)
     // PATCH FIRST (the generic drill's law, kept): the run reads what
     // the user SEES — the USER layer verbatim, plus nulls for keys
     // the frozen row held that left the map (JSON Merge Patch
@@ -257,7 +277,18 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
     // the press-stops law: a row whose own write refused never
     // composes (the door's refusal is already voiced by the seat)
     if (writeFailedRef.current) return
-    onRun()
+    // THE HOST-VERB SURVIVAL BARRIER (the drill R2-1's studio twin,
+    // 2026-11-15): a throwing host verb never escapes the press —
+    // it VOICES on the strip and the face stays usable. No resync
+    // verb here, by structure: the studio's row is a PROP, so the
+    // host's re-render IS the fresh read — the drill's onResync
+    // exists because IT holds a bench snapshot that can go stale;
+    // this face holds nothing to re-pull.
+    try {
+      onRun()
+    } catch (e: unknown) {
+      setHostVoice(rejectionVoice(e))
+    }
   }
   // THE GESTURE BINDING (hour-26): the frame's top-bar pill calls
   // THIS verb (patch-domain-first). A REF DISPATCHER: the bound fn

@@ -210,3 +210,30 @@ test('A SUPERSEDED REFUSAL never lands: a rejected stale refresh leaves the face
     expect(errorNow()).toBe('')
   } finally { d.restore() }
 })
+
+// THE HEALED-REFRESH FACE (the latch cure, 2026-11-15): a refused
+// refresh voices, and the NEXT refresh that lands retires the voice
+// with the doc — the error never latches past its own cure. Before
+// this the hook's refresh cleared neither half on success, so every
+// consumer's strip kept refusing over a healthy spec forever.
+
+test('A HEALED REFRESH retires the refused voice (the error never latches past its own cure)', async () => {
+  const d = door()
+  try {
+    d.queue.push(async () => new Response(JSON.stringify(docOf('h3', 'standing')), { status: 200 }))
+    const refreshRef = { current: null as (() => Promise<void>) | null }
+    render(h(Probe, { model: 'h3', refreshRef }))
+    await waitFor(() => { expect(specNow()).toBe('standing') })
+    d.queue.push(async () => new Response('nope', { status: 503 }))
+    await refreshRef.current?.()
+    await waitFor(() => { expect(errorNow()).not.toBe('') }) // the refusal voices
+    // the healed flight: the doc lands AND the voice retires in the
+    // same settle — one waitFor judges both halves
+    d.queue.push(async () => new Response(JSON.stringify(docOf('h3', 'fresh')), { status: 200 }))
+    await refreshRef.current?.()
+    await waitFor(() => {
+      expect(specNow()).toBe('fresh')
+      expect(errorNow()).toBe('')
+    })
+  } finally { d.restore() }
+})

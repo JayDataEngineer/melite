@@ -445,6 +445,99 @@ test('a picked family whose re-keyed spec fetch REFUSES surfaces the voice and n
   expect((screen.getByLabelText('Model') as HTMLButtonElement).textContent).toContain('Trellis2 Native')
 })
 
+// ── THE FAIL→HEAL FACE (R2-5's owed halves, seated 2026-11-15) ───────
+// The r2 accuracy finding (drill-cure-accuracy-r2 R2-5b): the studio
+// LATCHED a spec error by construction — nothing retired the voice,
+// so a healed door kept its refused strip over a healthy form
+// forever. Two retirement laws, one strip: the SPEC claim's voice
+// dies when a healthy doc lands on the SAME mount (a fresh mount's
+// null state judges nothing — the old remount heal wall passed with
+// the retire mechanism deleted); the HOST verb's voice SURVIVES that
+// settle (the drill's R2-1 survival barrier, studio twin: the
+// operator still reads why the press refused while the form
+// re-serves) and dies at the NEXT press (survival never bricks).
+describe('THE FAIL→HEAL FACE (the voice retires by its own cure, never latches)', () => {
+  /** Per-model serving, keyed on the flight's OWN model param (the
+   * real re-key surface, never call order): the declared model
+   * serves the families doc; a family in `marks` serves its own
+   * marked doc (the marker knob renders only when THAT family's doc
+   * landed — the settle's observable); a family in `flap` refuses
+   * ONCE first (F13's door-flap), then serves. */
+  function stubPerModelDoor(flap: Set<string>, marks: Record<string, string>): void {
+    vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
+      const u = String(url)
+      if (!u.includes('/v1/form-spec')) return new Response('{}', { status: 200 })
+      const at = u.indexOf('model=')
+      const model = at === -1 ? 'img-to-mesh' : decodeURIComponent(u.slice(at + 'model='.length))
+      if (flap.has(model)) {
+        flap.delete(model)
+        return new Response(JSON.stringify({ error: 'the picked family door refused' }), { status: 503, headers: { 'content-type': 'application/json' } })
+      }
+      const doc = model === 'img-to-mesh' ? FAMILIES_SPEC : {
+        ...FAMILIES_SPEC,
+        schema: schemaEnvelope({
+          marker_knob: { type: 'number', meta: { description: marks[model], extra: { group: 'generation' } } },
+        }),
+      }
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+  }
+
+  test('THE SAME-MOUNT SPEC-HEAL — a refused re-keyed fetch voices, and the healed re-key RETIRES the voice', async () => {
+    stubPerModelDoor(new Set([trellis2NativeDecl.id]), {
+      [pixal3dDecl.id]: 'Pixal marker knob',
+      [trellis2NativeDecl.id]: 'Trellis marker knob',
+    })
+    render(studio())
+    await screen.findByText('Resolution', {}, { timeout: 4000 })
+    // F13's flap: the picked family's flight refuses — the voice lands
+    fireEvent.click(screen.getByLabelText('Model'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Trellis2 Native/ }))
+    await screen.findByText('the picked family door refused', {}, { timeout: 4000 })
+    // the heal on the SAME mount: re-key again (back to pixal3d) —
+    // the healthy doc lands (its marker renders) and the refused
+    // voice RETIRES with it, never latches past the cure
+    fireEvent.click(screen.getByLabelText('Model'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Pixal3d/ }))
+    await screen.findByText('Pixal marker knob', {}, { timeout: 4000 })
+    expect(screen.queryByText('the picked family door refused')).toBeNull()
+  })
+
+  test('THE HOST-VERB SURVIVAL BARRIER — a throwing onRun never escapes the press, voices on the strip, and the voice SURVIVES the spec settle', async () => {
+    stubPerModelDoor(new Set(), {
+      [trellis2NativeDecl.id]: 'Trellis marker knob',
+    })
+    let refuse = true
+    const onRun = vi.fn(() => {
+      if (refuse) throw new Error('the host run verb refused')
+    })
+    const bound: Array<() => void> = []
+    render(studio({ onRun, bindRun: (r: () => void) => { bound.push(r) } }))
+    await screen.findByText('Resolution', {}, { timeout: 4000 })
+    // the press: the host verb throws — NEVER into the bound caller
+    // (before the cure the throw propagated bare: no face, no
+    // survival, the pill's caller ate the crash)
+    let escaped: unknown = null
+    try { bound[bound.length - 1]!() } catch (e) { escaped = e }
+    expect(escaped).toBe(null)
+    await screen.findByText('the host run verb refused', {}, { timeout: 4000 })
+    // THE SETTLE HALF (the drill R2-1's studio twin): the re-key's
+    // healthy doc lands (its marker renders — the settle FIRED) and
+    // the host voice still voices over it — the heal never eats the
+    // press's own refusal
+    fireEvent.click(screen.getByLabelText('Model'))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Trellis2 Native/ }))
+    await screen.findByText('Trellis marker knob', {}, { timeout: 4000 })
+    expect(screen.getByText('the host run verb refused')).toBeTruthy()
+    // THE RETIREMENT (survival never bricks the face): the NEXT
+    // press — the verb healthy — runs and retires the voice
+    refuse = false
+    bound[bound.length - 1]!()
+    await waitFor(() => { expect(onRun).toHaveBeenCalledTimes(2) }, { timeout: 4000 })
+    expect(screen.queryByText('the host run verb refused')).toBeNull()
+  })
+})
+
 describe('THE SETTINGS-EATER LAW (every edit fires through the door, 2026-10-21)', () => {
   // THE BURN CLASS (write-through.ts's own docstring, never wired):
   // an edit that lives only in component state dies with the view —
