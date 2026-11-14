@@ -8,7 +8,7 @@
 // runs-registry-doors.spec.ts — the runs seat, list, validate, status + stop: split from runs-registry.spec.ts
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
-import { describe, it, afterEach, beforeEach, vi } from "vitest";
+import { describe, it, afterEach, beforeEach, beforeAll, vi } from "vitest";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
@@ -29,6 +29,21 @@ import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 import { FlowsSeatService, linkedStage, plainStage } from "../src/flowsData.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
+import { installLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
+
+// THE HERMETIC STORE (the 2026-11-14 cold-split class, second seat):
+// the FakeEngine compose arms below expect `completed` — the claim
+// probe re-runs the REAL gate against whatever root the process
+// holds, and a cold runner (or a leaked endpoint/root from a prior
+// file sharing this fork) strands the weights the gate names. The
+// operator's full store masked the leak green for a month. The
+// overlay seeds every declared row the walk can resolve (idempotent
+// per process); the stranded-dir probes below still strand — they
+// set their OWN root inside the test and restore around it.
+beforeAll(async () => {
+  await import("../../../../tests/helpers/boot-models.ts");
+  installLaneStoreOverlay();
+});
 
 let TMP = "";
 afterEach(async () => {
