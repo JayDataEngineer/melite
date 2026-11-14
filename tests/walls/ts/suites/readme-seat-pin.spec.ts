@@ -37,6 +37,12 @@
  *      bare tag that outranks the install door — the absolution hole
  *      (2026-11-14: rc.1/rc.2 excused while they were the newest
  *      tags on the remote, wall green) is closed.
+ *   8. NOTES ARE THE DOOR'S FACE (CI) — with GITHUB_TOKEN, the seat
+ *      release's BODY is consumer-grade: at least two markdown
+ *      section headings, an install command, and 400+ characters of
+ *      prose. The 2026-11-14 burn: the seat's body was four lines of
+ *      internal ticket codes (W-1, F3-05, D3-02) — zero consumer
+ *      meaning on the one page every install follows.
  *
  * Run: npx vitest run tests/walls/ts/suites/readme-seat-pin.spec.ts
  */
@@ -217,5 +223,31 @@ describe("the seat pin (README + install guide + census)", () => {
       absolved,
       "exclusion rows outranking the seat — an exclusion covers history (tags the seat superseded), never the future: mint the release and move the seat, or delete the tag. A reason string is not a mint.",
     ).toEqual([]);
+  });
+
+  it("ARM 8 — NOTES ARE THE DOOR'S FACE (CI): the seat body is consumer-grade", { timeout: 60_000 }, async () => {
+    const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+    if (!token) {
+      console.warn("[seat-pin] no GITHUB_TOKEN — skipping the notes arm (CI owns this judgment)");
+      return;
+    }
+    const res = await fetch(`https://api.github.com/repos/JayDataEngineer/melite/releases/tags/${census.seat}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    });
+    expect(res.status, `the seat ${census.seat} must have a GitHub release`).toBe(200);
+    const body = ((await res.json()) as { body?: string }).body ?? "";
+    const headings = [...body.matchAll(/^##\s+\S/gm)].length;
+    expect(
+      headings,
+      `the seat's release body carries ${headings} section headings — the body is the one page every install follows; internal ticket codes are not consumer notes (2026-11-14 burn: a 411-char code-soup body sat on the seat)`,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      body,
+      "the seat's release body must carry an install command",
+    ).toContain("dsh plugin --profile");
+    expect(
+      body.length,
+      `the seat's release body is ${body.length} chars — real notes, not a stub`,
+    ).toBeGreaterThanOrEqual(400);
   });
 });
