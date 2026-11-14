@@ -1076,7 +1076,15 @@ describe('melite_view audio — the §33 gap-6 observe arm (fakes for the engine
     }
     assert.deepEqual(thinOut.audio.streams, [{ codec: 'pcm', codec_type: 'audio' }])
     const thinText = (meliteView(ctx, fakeAudioProc()).output!.render!({} as never, thinOut as never)[0] as { text: string }).text
-    assert.ok(!thinText.includes('undefined') && !thinText.includes('Hz') && !thinText.includes('ch)'), thinText)
+    // THE STREAMS ROW IS THE FACE JUDGED (the flake cure, 2026-11-14:
+    // the whole-text 'Hz' probe false-tripped on a random tmp suffix —
+    // the host path legally rolls 'melite-run-HzC8vH' under the
+    // battery's nested TMPDIR chain, twice live). The row must print
+    // EXACTLY the codec: no rate, no channels, no invented zero, no
+    // undefined — a targeted read, never the whole text.
+    const thinStreams = /streams: ([^;]*)/.exec(thinText)?.[1] ?? ''
+    assert.equal(thinStreams, 'pcm', thinText)
+    assert.ok(!thinText.includes('undefined'), thinText)
     // a real RIFF/WAVE whose data chunk is missing: the stream row
     // reads, the duration stays ABSENT (never a fabricated zero)
     const nodata = join(root, 'output', 'run-e3e3e3-nodata')
