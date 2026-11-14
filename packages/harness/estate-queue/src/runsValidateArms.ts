@@ -16,6 +16,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody, type FlowError } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import type { ModelFactsRow } from "./cardsFacts.ts";
+import { liftStageReservedForAdmission } from "./cardsFacts.ts";
 import { CardArmError } from "./cardsArmError.ts";
 import { prepareCardParams } from "./cardsCompose.ts";
 import type { PreparedCard } from "./cardsRegistry.ts";
@@ -315,7 +316,21 @@ export async function validate(
         // before any phase1Card resolution folds the stated model
         // into a stranger's lane (trim + krea-2 lived as image-gen).
         refuseFamilylessHijack(svc, String(st["card"]), params["model"] ?? service);
-        await svc.phase1Card(body, mid);
+        // THE STAGE-RESERVED LIFT AT THE VALIDATE WALK (the F41
+        // re-press finding, 2026-11-14): this dry compose is the
+        // bench write doors' PRE-MINT GATE (composeVerdictOf rides
+        // it) — the run compose lifts the stage-policy keys before
+        // ITS phase1Card (composeCardStageRow's carry), and this
+        // walk judged the raw bag, so the add door's own compose
+        // check refused the knob the run would carry. The same
+        // judged copy the write door's admission rides
+        // (liftStageReservedForAdmission): policy keys out, the
+        // row's own bag never touched, a declared reserved key still
+        // judged.
+        await svc.phase1Card(
+          liftStageReservedForAdmission(svc.cardDecls()[String(st["card"])], body),
+          mid,
+        );
       } catch (e) {
         if (e instanceof CardArmError) {
           // THE INCOMPLETE CLASS KEEPS ITS CODE (the GUI-add burn,

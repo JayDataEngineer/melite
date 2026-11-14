@@ -97,7 +97,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusal, phaseRefusalCode } from ".
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } from "./cardsFacts.ts";
-import { cardAdmits, factsPath, deriveDecls, familyLanesOf } from "./cardsFacts.ts";
+import { cardAdmits, factsPath, deriveDecls, familyLanesOf, liftStageReservedForAdmission } from "./cardsFacts.ts";
 import { reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
 import { dropAuthoringIncomplete, isEitherOrHalfVoice, isTogetherHalfVoice, isUnstatedRequiredVoice, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
@@ -1259,9 +1259,24 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
   ): { ok: true } | { ok: false; error: string } {
+    // THE STAGE-RESERVED LIFT AT THE WRITE DOOR (the F41 re-press
+    // finding, 2026-11-14): the merge plane's stage-policy keys ride
+    // the STAGE row, never the card surface — this door judged them
+    // as undeclared card params and refused, so a knob the run
+    // compose lifts (runsRegistry THE STAGE-RESERVED CARRY) could be
+    // composed but never AUTHORED: every bench write door (add,
+    // add-stages, patch, load) funnels here, and the live trellis
+    // re-press died at each with the unknown-param refusal. The same
+    // shared predicate the run carry rides (cardsFacts
+    // liftStageReservedForAdmission / stageReservedKeyLifts) lifts
+    // the policy keys out of the judged view — the STORED row keeps
+    // its bag verbatim (the store is its truth home; only the judged
+    // copy sheds them), and a declared reserved key (a card's own
+    // output_name) stays judged.
+    const judged = liftStageReservedForAdmission(this.cardDecls()[card], params);
     // THE WRITE DOOR'S OWN CALL passes admitIncomplete — the ONLY
     // seat that admits an unstated required word (the law above).
-    const verdict = this.laneVerdict(card, params, true);
+    const verdict = this.laneVerdict(card, judged, true);
     return verdict === null ? { ok: true } : { ok: false, error: verdict };
   }
 

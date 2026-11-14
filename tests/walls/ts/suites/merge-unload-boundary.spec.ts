@@ -470,4 +470,209 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("ARM 7 THE WRITE DOOR (the F41 re-press unblock, 2026-11-14): the reserved stage-policy keys AUTHOR — the bench add door's admission lifts them out of the card walk, the stored row keeps the bag verbatim, the judge keeps its teeth on every non-reserved unknown, and a declared reserved key stays judged", { timeout: 120_000 }, async () => {
+    // THE UNCOVERED HOP, CLOSED (the F41 re-press finding): ARM 6
+    // seats its knob-carrying doc through a STUBBED draftsRemote —
+    // the compose plane was walled, the WRITE plane never was. Every
+    // authored bench row (add, add-stages, patch, load) funnels
+    // through admitStageRelations, whose dry card compose judged the
+    // reserved keys as undeclared card params: the knob could be
+    // COMPOSED but never AUTHORED — the live trellis re-press died at
+    // each write door with the unknown-param refusal while the
+    // validate walk admitted the same row. The cure lifts the
+    // STAGE-RESERVED set (minus a card's own declared reserved key)
+    // out of the judged view at the same predicate the run carry
+    // rides (cardsFacts stageReservedKeyLifts). THIS arm crosses the
+    // real write door end to end: BenchRemoteService over the drafts
+    // domain with the REAL booted card registry — the row lands in
+    // storage or the wall is a lie. Toggling the lift OUT of
+    // admitStageRelations reds the first assertion with the live
+    // press's own voice (bench/lane-refusal, the compose-door
+    // unknown-param text) while ARM 6 stays green — that contrast is
+    // the receipt.
+    const { Context } = await import("@deepseek-ai/cordis");
+    const { CardRegistryService } = await import(
+      "../../../../packages/harness/estate-queue/src/cardsRegistry.ts"
+    );
+    const { FlowsSeatService } = await import(
+      "../../../../packages/harness/estate-queue/src/flowsData.ts"
+    );
+    const { cardAdmits, stageReservedKeyLifts } = await import(
+      "../../../../packages/harness/estate-queue/src/cardsFacts.ts"
+    );
+    const { loadCardDefs } = await import("@melite/comfyui-cordis");
+    const { installLaneStoreOverlay, restoreLaneStoreOverlay } = await import(
+      "../../../helpers/lane-store-overlay.ts"
+    );
+    const { bootCtx, sig } = await import(
+      "../../../../packages/estate/drafts/tests/bench-helpers.ts"
+    );
+    const { BenchRemoteService } = await import("@melite/estate-drafts");
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const { ctx } = await bootCtx();
+    new FlowsSeatService(ctx);
+    (ctx as unknown as { queue: unknown }).queue = {
+      stateRoot: mkdtempSync(join(tmpdir(), "boundary-write-door-")),
+      stateRoots: [] as string[],
+    };
+    const reg = new CardRegistryService(ctx);
+    await reg.prime();
+    await loadCardDefs();
+    installLaneStoreOverlay();
+    const session = "boundary-write-door";
+    try {
+      const bench = new BenchRemoteService(ctx);
+      await bench.ensure({ session, author: "agent" }, sig);
+      const rev = (await bench.get(session, sig)).rev as number;
+
+      // THE KNOB AUTHORS through the real add door (rig — the
+      // journey arm's own keyless card; the lift is card-generic).
+      const row = await bench.addStage(session, {
+        card: "rig",
+        params: { boundary_unload_models: true, vram_budget_mb: 2048 },
+        expect_rev: rev,
+      }, sig);
+      expect(row.stage, "the knob row lands").toBe("s_0");
+
+      // THE STORE IS ITS TRUTH HOME: the stored doc keeps the
+      // reserved bag verbatim — admission's judged copy sheds the
+      // policy keys, storage never does.
+      const stored = ((await bench.get(session, sig)).stages as Array<Record<string, unknown>>)
+        .find((s) => s["id"] === "s_0") as { params: Record<string, unknown> };
+      expect(stored.params["boundary_unload_models"], "the knob rides the stored row verbatim").toBe(true);
+      expect(stored.params["vram_budget_mb"], "the whole reserved set authors, not a key list").toBe(2048);
+      const rev2 = (await bench.get(session, sig)).rev as number;
+
+      // THE JUDGE KEEPS ITS TEETH: a NON-reserved unknown (the knob,
+      // mistyped) refuses with the live press's own voice — the lift
+      // is the reserved set, never a blind pass.
+      const refusal = await bench.addStage(session, {
+        card: "rig",
+        params: { boundary_unload_modles: true },
+        expect_rev: rev2,
+      }, sig).then(
+        () => null,
+        (e: unknown) => e as { code?: string; message?: string },
+      );
+      expect(refusal, "the non-reserved unknown still refuses").not.toBeNull();
+      expect(refusal?.code, "the write door's refusal code").toBe("bench/lane-refusal");
+      expect(String(refusal?.message ?? "")).toMatch(/unknown param\(s\) on the rig card: boundary_unload_modles/);
+      expect(
+        ((await bench.get(session, sig)).stages as unknown[]).length,
+        "the refused row never lands",
+      ).toBe(1);
+
+      // THE DECLARED-KEY SPARING (the predicate's own truth, the run
+      // carry's mirror): h3-timeline DECLARES output_name on its own
+      // carrier, so that reserved key is the card's param — it does
+      // NOT lift and stays judged — while the undeclared policy keys
+      // keep lifting on the same card (the live press's row class).
+      const h3Decl = reg.cardDecls()["h3-timeline"];
+      expect(h3Decl, "the h3-timeline decl projects").toBeDefined();
+      expect(cardAdmits(h3Decl, new Set(), "output_name"),
+        "the sparing arm cannot pass vacuously — h3 declares output_name (queue 12's file plane)").toBe(true);
+      expect(stageReservedKeyLifts(h3Decl, "output_name"),
+        "a declared reserved key is the card's own param — judged, never lifted").toBe(false);
+      expect(stageReservedKeyLifts(h3Decl, "boundary_unload_models"),
+        "the undeclared knob lifts on the live press's own card").toBe(true);
+    } finally {
+      restoreLaneStoreOverlay();
+    }
+  });
+
+  it("ARM 7b THE PRE-MINT GATE (the F41 re-press finding's second seat): with the runs seat LIVE the bench add door's compose gate (composeVerdictOf → the validate walk's phase1Card) lifts the reserved keys too — the knob row lands through BOTH write-door judges", { timeout: 240_000 }, async (itCtx) => {
+    // The live press's second refusal: with the lane admission cured
+    // the add door STILL refused — bench/compile-refused, the
+    // pre-mint compose gate riding the validate walk, which judged
+    // the RAW bag while the run compose lifts before its own
+    // phase1Card. The registry-less boot of ARM 7 never crosses this
+    // seat (composeVerdictOf returns undefined with no runs seat) —
+    // this arm seats the runs service like the live lane. Toggling
+    // the lift OUT of runsValidateArms reds the landing assertion
+    // with the live press's second voice (bench/compile-refused,
+    // card_compose phase 1) — the seat-naming receipt.
+    const ctxSkip = (): void => itCtx.skip();
+    const { Context } = await import("@deepseek-ai/cordis");
+    const { CardRegistryService } = await import(
+      "../../../../packages/harness/estate-queue/src/cardsRegistry.ts"
+    );
+    const { FlowsSeatService } = await import(
+      "../../../../packages/harness/estate-queue/src/flowsData.ts"
+    );
+    const { RunsRuntimeService } = await import(
+      "../../../../packages/harness/estate-queue/src/runsRegistry.ts"
+    );
+    const { QueueCore } = await import("../../../../packages/harness/estate-queue/src/queue.ts");
+    const { ComfyUIHostService } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/comfyui.ts"
+    );
+    const { loadCardDefs } = await import("@melite/comfyui-cordis");
+    const { installLaneStoreOverlay, restoreLaneStoreOverlay } = await import(
+      "../../../helpers/lane-store-overlay.ts"
+    );
+    const { bootCtx, sig } = await import(
+      "../../../../packages/estate/drafts/tests/bench-helpers.ts"
+    );
+    const { BenchRemoteService } = await import("@melite/estate-drafts");
+    const { mkdtempSync, mkdirSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const dir = mkdtempSync(join(tmpdir(), "boundary-premint-"));
+    const { ctx } = await bootCtx();
+    new FlowsSeatService(ctx);
+    const core = new QueueCore();
+    const state = join(dir, "state");
+    mkdirSync(state, { recursive: true });
+    (ctx as unknown as { queue: unknown }).queue = {
+      core,
+      stateRoot: state,
+      get stateRoots(): string[] { return [state]; },
+    };
+    class FakeEngine extends ComfyUIHostService {
+      constructor(c: Context) {
+        super(c as unknown as never, {});
+      }
+    }
+    new FakeEngine(ctx);
+    const reg = new CardRegistryService(ctx);
+    await reg.prime();
+    await loadCardDefs();
+    installLaneStoreOverlay();
+    // THE LIVE CENSUS (ARM 6's own law): the dry compose refuses
+    // closed without it; skip loud when the seat's engine is down.
+    if (!(await reg.primeObjectInfo(10_000))) {
+      console.warn("ARM 7b skipped loud: the seat's engine is down — the live census cannot arm");
+      restoreLaneStoreOverlay();
+      ctxSkip();
+      return;
+    }
+    new RunsRuntimeService(ctx);
+    const session = "boundary-premint";
+    try {
+      const bench = new BenchRemoteService(ctx);
+      await bench.ensure({ session, author: "agent" }, sig);
+      const rev = (await bench.get(session, sig)).rev as number;
+      // the producer's source path is a verified run source — real
+      // bytes on disk, never rendered (the fake engine executes
+      // nothing; ARM 6's own law)
+      const { writeFileSync } = await import("node:fs");
+      writeFileSync(join(dir, "producer-mesh.glb"), "glb-placeholder\n");
+      const row = await bench.addStage(session, {
+        card: "rig",
+        params: { mesh_glb: join(dir, "producer-mesh.glb"), boundary_unload_models: true },
+        expect_rev: rev,
+      }, sig);
+      expect(row.stage, "the knob row lands through BOTH judges — the lane admission and the pre-mint compose gate").toBe("s_0");
+      const stored = ((await bench.get(session, sig)).stages as Array<Record<string, unknown>>)
+        .find((s) => s["id"] === "s_0") as { params: Record<string, unknown> };
+      expect(stored.params["boundary_unload_models"], "the stored row keeps the knob verbatim past the pre-mint gate").toBe(true);
+    } finally {
+      restoreLaneStoreOverlay();
+    }
+  });
 });

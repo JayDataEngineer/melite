@@ -21,7 +21,7 @@ import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
 import { STAGE_RESERVED_PARAMS } from "@melite/comfyui-cordis";
 import { expandRegistryFlow, extractRequestInitials, initialFileCandidates, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
-import { cardAdmits } from "./cardsFacts.js";
+import { stageReservedKeyLifts } from "./cardsFacts.js";
 import { isFile } from "./skillFs.js";
 import { kindsOk } from "./runsValidateStages.js";
 import { replayJudgeRows } from "./runsStart.js";
@@ -678,9 +678,11 @@ export class RunsRuntimeService extends Service {
         // declared output_name threads the deliverable save prefixes at
         // compose; the settle's label mint reads it from the composed row
         // either way). The spared truth is the same one admission judges
-        // (the DECL's schemaNames + admits — cardAdmits, cardsFacts.ts);
-        // an undeclared reserved key on any other family keeps lifting
-        // verbatim, so the all-families label blanket survives.
+        // (the DECL's schemaNames + admits — cardAdmits via cardsFacts
+        // stageReservedKeyLifts, the ONE spelling this loop and the write
+        // door's lift both ride); an undeclared reserved key on any other
+        // family keeps lifting verbatim, so the all-families label
+        // blanket survives.
         const reserved = {};
         const spared = {};
         const card = String(row["card"] ?? "");
@@ -688,7 +690,7 @@ export class RunsRuntimeService extends Service {
         for (const k of STAGE_RESERVED_PARAMS) {
             if (params[k] === undefined)
                 continue;
-            if (cardAdmits(decl, new Set(), k)) {
+            if (!stageReservedKeyLifts(decl, k)) {
                 // A declared reserved key WALKS (the card's own param) — and
                 // still rides the composed row's params bag below, so the
                 // settle's label mint and planMerge's paramsByStage read the

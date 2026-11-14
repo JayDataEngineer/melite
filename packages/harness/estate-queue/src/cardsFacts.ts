@@ -3,7 +3,7 @@
 // facts/decl plane owns model-facts.json reads and the pure
 // defs+facts->rows derivation. No Service state — module truth.
 import { join } from "node:path";
-import { getModel, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { getModel, resolveRepoRoot, STAGE_RESERVED_PARAMS } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { LaneRelations, SamplerEnvelope } from "@melite/contracts/laneRelations";
 
@@ -189,4 +189,57 @@ export function cardAdmits(
     modNames.has(key) ||
     decl.admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))))
   );
+}
+
+/** THE STAGE-RESERVED LIFT PREDICATE (the F41 re-press finding,
+ * 2026-11-14): a key in the merge plane's STAGE_RESERVED_PARAMS that
+ * the card's own DECLARATION does not admit is STAGE POLICY, not a
+ * card param — it lives on the stage row (planMerge's
+ * paramsByStage), never on the card surface, so card admission
+ * judges it NOWHERE. Both reserved-key seats ride this one
+ * spelling: the run compose's carry (runsRegistry.ts THE
+ * STAGE-RESERVED CARRY, whose declared-key sparing this mirrors) and
+ * the write door's admission (cardsRegistry.admitStageRelations) —
+ * before this predicate the knob could be COMPOSED but never
+ * AUTHORED (the live trellis re-press died at every bench write door
+ * with the unknown-param refusal while the validate walk admitted
+ * the same row). A declared reserved key (h3's carrier-declared
+ * output_name) is the card's own param: it does NOT lift, and the
+ * admission walk keeps judging it.
+ * @param decl the card's DECL projection — undefined lifts (no card
+ *  admits a policy key by default; cardAdmits's own undefined law).
+ * @param key the params key being judged.
+ * @returns true when the key is stage policy that admission lifts
+ *  out of the card walk. */
+export function stageReservedKeyLifts(
+  decl: CardDeclRow | undefined,
+  key: string,
+): boolean {
+  return (STAGE_RESERVED_PARAMS as readonly string[]).includes(key) && !cardAdmits(decl, new Set(), key);
+}
+
+/** THE JUDGED COPY a compose/admission seat hands its card walk when
+ * the row carries stage-reserved policy keys (stageReservedKeyLifts
+ * above): the reserved set lifts OUT, everything else rides verbatim.
+ * The stored row is NEVER this copy's business — the store is its
+ * own truth home; only the judged view sheds the policy keys. The
+ * seats: the write door's admission (cardsRegistry
+ * admitStageRelations) and the validate walk's phase1Card call
+ * (runsValidateArms — the pre-mint compose gate's dry walk, the
+ * bench add door's second judge). The run compose's own carry
+ * (runsRegistry composeCardStageRow) splits its bags on the same
+ * predicate.
+ * @param decl the card's DECL projection (undefined lifts all
+ *  reserved keys — no card admits a policy key by default).
+ * @param params the row's params bag.
+ * @returns the judged copy (never the caller's record). */
+export function liftStageReservedForAdmission(
+  decl: CardDeclRow | undefined,
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  const judged: Record<string, unknown> = { ...params };
+  for (const k of Object.keys(judged)) {
+    if (stageReservedKeyLifts(decl, k)) delete judged[k];
+  }
+  return judged;
 }

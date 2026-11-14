@@ -85,7 +85,7 @@ import { probeMedia } from '@melite/contracts/media-probe';
 import { resolveSourceRefs } from "./runsSourceEcho.js";
 import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError.js";
 export { CardArmError } from "./cardsArmError.js";
-import { cardAdmits, factsPath, deriveDecls, familyLanesOf } from "./cardsFacts.js";
+import { cardAdmits, factsPath, deriveDecls, familyLanesOf, liftStageReservedForAdmission } from "./cardsFacts.js";
 import { reseatDeadKeys } from "@melite/contracts/familyLane";
 import { dropAuthoringIncomplete, isUnstatedRequiredVoice, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.js";
@@ -1221,9 +1221,24 @@ export class CardRegistryService extends Service {
      *    with its own (the tolerance law, li-j: the write door never
      *    grew the run door's other refusals). */
     admitStageRelations(card, params) {
+        // THE STAGE-RESERVED LIFT AT THE WRITE DOOR (the F41 re-press
+        // finding, 2026-11-14): the merge plane's stage-policy keys ride
+        // the STAGE row, never the card surface — this door judged them
+        // as undeclared card params and refused, so a knob the run
+        // compose lifts (runsRegistry THE STAGE-RESERVED CARRY) could be
+        // composed but never AUTHORED: every bench write door (add,
+        // add-stages, patch, load) funnels here, and the live trellis
+        // re-press died at each with the unknown-param refusal. The same
+        // shared predicate the run carry rides (cardsFacts
+        // liftStageReservedForAdmission / stageReservedKeyLifts) lifts
+        // the policy keys out of the judged view — the STORED row keeps
+        // its bag verbatim (the store is its truth home; only the judged
+        // copy sheds them), and a declared reserved key (a card's own
+        // output_name) stays judged.
+        const judged = liftStageReservedForAdmission(this.cardDecls()[card], params);
         // THE WRITE DOOR'S OWN CALL passes admitIncomplete — the ONLY
         // seat that admits an unstated required word (the law above).
-        const verdict = this.laneVerdict(card, params, true);
+        const verdict = this.laneVerdict(card, judged, true);
         return verdict === null ? { ok: true } : { ok: false, error: verdict };
     }
     /** THE FAMILY ADMISSION (journey-closure B5, 2026-10-17 — hop 3's

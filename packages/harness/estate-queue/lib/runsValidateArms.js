@@ -7,6 +7,7 @@ import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.js";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody } from "./runsValidate.js";
 import { FLOW_ID_RE } from "./runsGates.js";
+import { liftStageReservedForAdmission } from "./cardsFacts.js";
 import { CardArmError } from "./cardsArmError.js";
 import { prepareCardParams } from "./cardsCompose.js";
 export async function validate(doc, signal, ctx) {
@@ -252,7 +253,18 @@ async function composeCardStagesAtValidate(liveDoc, svc) {
             // before any phase1Card resolution folds the stated model
             // into a stranger's lane (trim + krea-2 lived as image-gen).
             refuseFamilylessHijack(svc, String(st["card"]), params["model"] ?? service);
-            await svc.phase1Card(body, mid);
+            // THE STAGE-RESERVED LIFT AT THE VALIDATE WALK (the F41
+            // re-press finding, 2026-11-14): this dry compose is the
+            // bench write doors' PRE-MINT GATE (composeVerdictOf rides
+            // it) — the run compose lifts the stage-policy keys before
+            // ITS phase1Card (composeCardStageRow's carry), and this
+            // walk judged the raw bag, so the add door's own compose
+            // check refused the knob the run would carry. The same
+            // judged copy the write door's admission rides
+            // (liftStageReservedForAdmission): policy keys out, the
+            // row's own bag never touched, a declared reserved key still
+            // judged.
+            await svc.phase1Card(liftStageReservedForAdmission(svc.cardDecls()[String(st["card"])], body), mid);
         }
         catch (e) {
             if (e instanceof CardArmError) {
