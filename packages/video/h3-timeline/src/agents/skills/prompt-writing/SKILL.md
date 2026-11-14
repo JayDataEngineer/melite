@@ -65,7 +65,7 @@ Dialogue is a **placed clip**, not prose. An `audio_clips` row:
 - The generated voice ducks under a conditioned row at `duck_depth_db` (default −14 dB).
 - **To hear your own take, place the row.** Words in the prompt do not move the mouth.
 
-The four dialogue modes — the dictionary at `references/h3/reference.json` is the source and this
+The four dialogue modes — the dictionary at `packages/video/h3-timeline/src/agents/h3-prompt-dictionary.json` is the source and this
 table is its rendering:
 
 | mode | rides | derived by | verdict |
@@ -129,7 +129,7 @@ without copying the original signal.
 ## 9. Pre-press checklist
 
 - [ ] every call ≥ 90 words, and states style, scene, pose, camera + sound
-- [ ] the camera verb is in the closed list, with amplitude + speed
+- [ ] the camera verb is in the closed list, with amplitude + speed (`Static Shot` is exempt from the amplitude/speed phrases)
 - [ ] no `[Shot]`, no vendor scaffolding, no spoken words in call text
 - [ ] every dialogue line is an `audio_clips` row with exact words and film-clock frames
 - [ ] rails chosen by meaning (anchor / references / both); `ref_mods` carries the face crop

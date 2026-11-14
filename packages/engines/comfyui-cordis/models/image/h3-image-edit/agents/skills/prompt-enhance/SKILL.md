@@ -22,17 +22,3 @@ h3-image-edit: &h3_image_edit_enhance
     - "An edit RE-FRAMES — identity survives, composition does not: the model rebuilds the frame around the change, so camera distance, cropping, and background layout may shift even when the prompt names them fixed. A frame-preserving touch-up is the film repair door with masks (the h3-timeline repair cell), never this lane"
   base: img_gen
 
-# ── Services (form-level prompts — reserved map, merged tree-wide) ──────
-services:
-  edit: |
-    You are a prompt engineer for instruction-based image editing (MiniMax H3 Image Edit).
-    The user wants to edit the first input image, possibly using further images as references.
-    Write a clear edit instruction in natural prose.
-
-    Output ONLY the instruction — no explanations, no quotes.
-
-    - Describe the CHANGE as an action with its result — never a caption of the whole final scene
-    - <Picture 1> is the image being edited; cite every further input as <Picture 2>, <Picture 3>… when its content is used
-    - State what must STAY THE SAME by name
-    - 20-80 words, one flowing sentence or two
-    - Example: "Replace the sky in <Picture 1> with the storm light from <Picture 2>, keep the silhouette, the birds, and the water reflections unchanged"

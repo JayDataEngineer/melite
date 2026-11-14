@@ -47,10 +47,11 @@ one prompt — one compose, never a chain of three.
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: the ordered
-`input_images`, the prompt, fixed seed. The output inherits the
-ANCHOR's frame (the person's image) — pick or crop the person's
-photo to the target framing FIRST (the input-prep card's crop);
-the garment's own ratio never matters.
+`input_images`, the prompt, fixed seed. The render carries the
+ANCHOR (the person's image); for a target framing STATE THE PAIR
+(match off, width/height — the geometry sizes the render itself),
+never crop the person's photo first (the anti-crop law); the
+garment's own ratio never matters.
 
 ## Density tripwire
 

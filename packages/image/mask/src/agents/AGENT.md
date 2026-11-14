@@ -32,11 +32,12 @@ stringified JSON blob):
   name; blank falls back to `sam3_<i>`), `prompt` (what to
   segment, in words), `via_rtdetr` (PRIMARY only — switch the
   proposal lane to RT-DETR person boxes), `refine_iterations`
-  (0–8, default 2), `sam_threshold` (0.5–0.99, default 0.93),
+  (0–8, default 2), `sam_threshold` (0.05–1, default 0.5 — 0.93
+  was SAM2's number and scores nothing on SAM3 text),
   `sam_dilation` (0–64 px, default 0), `detection_threshold`
   (0.05–0.95, RT-DETR arm), `max_instances` (0–100, RT-DETR arm),
-  `export_boxes` (default true — draw this entry's RT-DETR boxes
-  on the manifest), and the region quad `bbox_x/y/w/h` (default -1
+  `export_boxes` (default false — opt-in: draw this entry's
+  RT-DETR boxes on the manifest), and the region quad `bbox_x/y/w/h` (default -1
   = unscoped; the popup's embedded canvas draws it — an optional
   search REGION, not a detector box).
 - `sam2[]` — the detector + SAM2 arm (Impact pack), the FULL
@@ -53,7 +54,7 @@ stringified JSON blob):
   `detection_threshold` (0.05–0.95, default 0.5),
   `detection_dilation` (−512–512, default 10), `crop_factor`
   (1–100, default 3), `drop_size` (1–16384, default 10); SAM
-  side — `sam_threshold` (0.5–1, default 0.93),
+  side — `sam_threshold` (0.05–1, default 0.5),
   `sam_dilation` (−512–512, default 0), `box_expansion`
   (0–1000, default 0), `hint_threshold` (0–1, default 0.7).
   The region quad `bbox_x/y/w/h` scopes the detector search
@@ -75,10 +76,10 @@ stringified JSON blob):
   from are the primary's detection.
 - `via_rtdetr` on a later entry refuses: the RT-DETR readback is
   the primary's arm; give the entry a `prompt`.
-- `draw` stacks ONTO a standalone source (the ordered union chain
-  — one MaskComposite hop per payload, terminal
-  `mask_combined_union`); draw without a standalone source
-  refuses loud.
+- A draw alone IS the paint-only lane: the first payload loads as
+  the paint primary and the rest union onto it. `draw` may also
+  stack ONTO a standalone source (the ordered union chain — one
+  MaskComposite hop per payload, terminal `mask_combined_union`).
 - A region quad scopes its selection on BOTH detector kinds (the
   shared canvas's face-owned fields; the primary's scopes
   `mask_combined`, an export's scopes its own search); -1

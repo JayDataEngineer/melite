@@ -181,7 +181,10 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     assert.deepEqual(bandOf(line!.band), [denoise.min, denoise.max],
       "the alias leaf quotes the SERVED edit bag's band (0.05–1), never the retired arm's 0.05–0.5");
     assert.equal(line!.def, 0.32, "the retired arm's declared default rides the banner");
-    assert.match(md, /mask_source: "region"/, "the translation's mask dial is stated");
+    // the RECEIVED-mask cure (skills-vs-code audit, repair leaf): the
+    // repair cell IS the static-png cell — its mask arrives staged, the
+    // dial's region spelling belongs to the edit bag's own doc.
+    assert.match(md, /mask_source: "static-png"/, "the translation's mask dial is stated");
     assert.match(md, /reference: "self"/, "the translation's anchor is stated");
     assert.match(md, /one entry per/i, "the doc states the one-entry law");
   });

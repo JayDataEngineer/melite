@@ -1,11 +1,11 @@
 ---
 name: prompt-enhance
-description: MiniMax H3 prompt rules — prose describing a scene unfolding over time
+description: MiniMax H3 prompt rules — the native three-field format
 ---
 # MiniMax H3 — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).
-# Keys are ROUTE keys of this model — the loader enforces that every key
-# is in this dir's owned-route set.
+# Keys are model-or-family keys — the loader resolves the exact key
+# first, else the family head.
 #
 # The authoritative prompt-format guides are vendored VERBATIM from
 # MiniMax-AI/MiniMax-H3 into this bundle, each as its own skill row:
@@ -41,27 +41,16 @@ h3:
     - "  non_diegetic_music: 1-3 sentences on score instrumentation, speed, rhythm, and dynamic changes — concrete, no mood words; N/A when there is none. Music the characters can hear (radio, sung vocals) is diegetic and belongs in the multimodal description."
     - "Shots (guide §4.2): [Shot 1] gets NO timestamp; later shots open '[Shot 2] At 00:03.500, the camera cuts to ...' — cut times strictly increasing and inside the requested duration."
     - "Camera (guide §4.3): motion type + amplitude + speed written as a natural action — 'The camera pushes in with small amplitude at slow speed toward the folded letter in her hands.'"
+    - "ESTATE SEAT (the card's prompt dictionary): the card composes the shot headers and the mode's alignment line itself — NEVER emit '[Shot n]', 'for the target video', or 'how the reference pictures align'; those strings refuse at the press. Each call stays ONE continuous action line of at least 90 words, opening on a closed-vocabulary camera verb with amplitude + speed, or 'static shot'."
     - "Dialogue/singing (guide §4.4): introduce the speaker, then '<d>[Language] the line.</d>'; on-screen text (guide §4.5) quoted verbatim, untranslated."
-    - "Every detail must be visible or audible at its point on the timeline; timing matches the requested duration (4-15 s; the schema fps default turns seconds into frames)."
+    - "Every detail must be visible or audible at its point on the timeline; timing matches the requested duration (the estate grid admits 22-362 frames ≈ 0.92-15.08 s at the schema fps default)."
   base: video_h3_native
 
-# Ref2VA has its OWN guide with a different structure — skill row
-# model:h3:h3-guide-ref.md (subject_definitions + summary +
-# retention_analysis + detailed_description + overall_soundscape +
-# non_diegetic_music). Do NOT alias h3 here.
-h3-ref2va:
-  role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt following the official Ref2VA (full-reference) guide, condensed into the notes below; the full guide is skill row model:h3:h3-guide-ref.md."
-  notes:
-    - "Six labeled fields in this exact order (guide §1):"
-    - "  subject_definitions: one line per reusable visible/audio unit — '<Subject 1> is the young woman in <Picture 1>, with <key appearance facts>'; one subject may combine assets ('appearance from <Picture 1>, walking motion from <Video 1>')."
-    - "  summary: '[edit type] what the target video does with the references' (guide §3)."
-    - "  retention_analysis: per-subject visible-content and audio preservation/animation (guide §4)."
-    - "  detailed_description: shot-by-shot [Shot N] timeline with reference labels inline at the exact point each appears (guide §5)."
-    - "  overall_soundscape: ambient + physical action + non-verbal sound across the whole video (guide §6)."
-    - "  non_diegetic_music: score only — instrumentation, speed, dynamics; or N/A (guide §6)."
-    - "Reference limits: ≤9 images, ≤3 videos (2-15s each, ≤15s total), ≤3 audio (2-15s each, must accompany an image/video), ≤12 files total."
-    - "Reference labels stay consistent (<Picture 1>, <Video 1>, <Audio 1>) across every section; write sections in English but preserve dialogue, lyrics, and on-screen text in the original language."
-  base: video_h3_native
+# NO h3-ref2va key: no model or family is addressed h3-ref2va, so the
+# resolver can never serve one (dead surface with drifted caps).
+# Full-reference craft rides the vendored guide row
+# model:h3:h3-guide-ref.md (six-section rewrite format; caps 8 images /
+# 3 videos / 3 audios / 12 files).
 
 # ── Shared blocks (reserved map, merged tree-wide) ──────────────────────
 # This file owns two shared blocks:
@@ -118,9 +107,9 @@ shared:
       concrete specifics over abstract words like "cinematic" or "beautiful".
 
     ## Hard constraints
-    - The described timeline must match the requested duration (4-15 s;
-      the schema fps default turns seconds into frames) — never timing
-      that runs past the video length.
+    - The described timeline must match the requested duration (the
+      estate grid admits 22-362 frames ≈ 0.92-15.08 s at the schema
+      fps default) — never timing that runs past the video length.
     - NEVER emit image-prompt tokens ("8K", "masterpiece", "best quality",
       "highly detailed") or other-model sampler syntax ("score_9", "dpm++").
     - Emit the labeled fields as plain 'field: content' lines — no markdown

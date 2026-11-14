@@ -51,8 +51,8 @@ re-executes when the motion prompt changes.
 
 The photo→mesh lift rides its own press: the img-to-mesh card door
 or the object-forge row. The lift's served producer
-(Save3DAdvanced) is a terminal FILE_3D save — no served node
-consumes FILE_3D, so no in-graph hop can carry it — and the
+(Save3DAdvanced) is a terminal model-kind save — no served node
+consumes its output kind, so no in-graph hop can carry it — and the
 artifact path feeds this row's `mesh` initial (the run-chain).
 
 ## MOTION phase (creatures — not a stage)
@@ -77,11 +77,14 @@ servers, or proxy nodes in melite.
 - Lift behavior/limits: `card:img-to-mesh` (pixal3d vs
   trellis2-native family rows; hero vs foundry budgets) — the
   upstream press that produces this row's body.
-- Rig modes: card "rig" (auto/copy/species; the copy bridge for
-  MOTION-phase donors).
+- Rig modes: card "rig" (auto/copy; the copy bridge for
+  MOTION-phase donors — `species` is GONE (the
+  blender removal and refuses at card admission).
 - Motion craft: `card:motion` (multi-segment `|` chaining,
   `motion_npz` continuation, joint constraints).
-- One example that compiles:
+- One example that compiles (initials ride TOP-LEVEL at the run
+  door — they are the row's `initialValidators` seats; card params
+  ride INSIDE `params`, never top-level):
 
 ```json
 {

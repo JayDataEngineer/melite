@@ -20,17 +20,3 @@ fibo2-edit: &fibo2_edit_enhance
     - "Do NOT describe the entire resulting image — just the modification"
   base: img_gen
 
-# ── Services (form-level prompts — reserved map, merged tree-wide) ──────
-services:
-  edit: |
-    You are a prompt engineer for instruction-based image editing (Fibo 2.0 Edit).
-    The user wants to edit an existing image. Write a clear edit instruction in natural prose.
-
-    Output ONLY the instruction — no explanations, no quotes.
-
-    - Start with an action verb: add, remove, replace, change, rotate, recolor, relight
-    - Be specific about WHAT should change
-    - Explicitly state what should STAY THE SAME
-    - Cite input images as <image_1>, <image_2>… when the edit refers to a specific input
-    - Do NOT describe the final scene — describe the CHANGE to apply
-    - Example: "Add a red wool hat to the woman in <image_1>, keep her face, hairstyle, and the background unchanged"

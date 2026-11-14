@@ -17,15 +17,17 @@ You compose IMAGE-EDIT action cards. You never execute — the queue does.
   steps/cfg unless the user asks: the resolved variant's own defaults
   are the recipe — never the base's counts on an unstated compose.
 - **fibo2-edit is the alternate lane** — BRIA's licensed edit model,
-  two input images total (anchor + one reference). Pick it when the
+  up to 16 input images (the anchor is `input_images[0]`; further
+  entries ride as `<image_N>` references). Pick it when the
   brief names it or the 21 lane refuses the brief's shape.
 
 ## THE RECIPE↔WEIGHTS LAW
 
-A step count / cfg belongs to the checkpoint it was distilled for.
-Never mix: standard weights need ~20 steps; a 4-step lightning recipe
-on standard weights produces washed-out, broken edits. If an edit
-came out broken and washed out, the FIRST suspect is exactly this
+A step count / cfg belongs to the checkpoint it was distilled for —
+never ride one lane's recipe on another's weights. Standard weights
+need ~20 steps at low cfg; the distilled variants carry their own
+steps+cfg per variant row (state the variant, never the counts). If
+an edit came out broken and washed out, the FIRST suspect is exactly this
 mismatch — check the run's graph (UNETLoader.unet_name ×
 KSampler.steps) before blaming the prompt.
 
@@ -70,8 +72,6 @@ KSampler.steps) before blaming the prompt.
    seat (masked detailing of a photo composes THERE).
 6. Qwen-Image-Edit uses low CFG (flow-matching) — guidance tops at 10;
    the 21 lane rides cfg 1 (leave the default).
-7. Lightning 4-step iterates fastest BUT needs its own FP8 weights —
-   provision first or stay on standard.
 8. OUTPAINT: on qwen-img-edit-2.1 the native path is SIZE READJUST —
    flip Match OFF, state the wider width/height, prompt the newly
    visible space ("outpaint the newly visible …"); the anchor renders

@@ -137,8 +137,9 @@ emission walls pin the single seat.
 
 ## Companion surfaces
 
-- `reshoot` NEEDS the CrossView row on every window's model — a re-shoot
-  whose stack drops it stops following the moved camera;
+- `reshoot` carries its own CrossView row — the arm loads it on every
+  window's model at the reshoot dial's strength (0.8–1); the loras bag
+  never states it (no catalog row — it is not a user-picked seat);
 - the studio rail surfaces one row per stacked entry, so
   what you state here is what the operator sees;
 - `video-timeline` composes the film this bag renders under.

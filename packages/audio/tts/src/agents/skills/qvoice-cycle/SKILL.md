@@ -76,9 +76,9 @@ THE BARE-PATH GRAMMAR (the qvoice mod bag accepts three spellings):
 - a one-element array of the same — `"qvoice": ["hecate-01"]`
 - a row with the lock strength — `"qvoice": [{ "qvoice": "hecate-01",
   "voice_strength": 1 }]` (omit `voice_strength` to leave the default)
-- **Leave `voice_strength` at 1 by default** — it is not an identity
-  scale; varying it re-rolls the delivery (pacing and phrasing change
-  wholesale) rather than deepening or softening the voice.
+- `voice_strength` IS the identity scale (default 1, range 0–2): below
+  1 pulls the delivery toward neutral, above 1 exaggerates the persona.
+  Audition ~0.6–0.8 when a distinctive persona grips too hard.
 - **Sticky voices need headroom.** The strength is an identity/emotion
   balance: a highly distinctive persona grips the delivery harder, and
   a strong emotion instruct gets through only when the identity pull is
@@ -117,8 +117,8 @@ Direction is honoured faithfully — write the delivery physically
 
 | refusal | cure |
 |---|---|
-| `params 'voice' and 'qvoice' fire together` | ONE voice performs — the lane's DEFAULT preset counts as fired even when you never stated `voice`: state **`voice: null`** alongside qvoice. Dropping "the preset" is impossible when you stated none. |
-| `$.voice expected "ryan" | "serena" | …` | the `voice` seat takes the NINE PRESETS ONLY — a saved persona never rides it. Ride the persona in the **qvoice MOD BAG**: `qvoice: [{ qvoice: "kunoichi_v3", voice_strength: 1 }]` — the bag is what the studio's mods bar renders, so the operator sees the take and the strength handle. A bare-string `qvoice` also composes but stays invisible in the studio; prefer the bag. Either way state `voice: null` beside it. |
+| `params 'voice' and 'qvoice' fire together` | ONE voice performs — and the refusal fires only when YOU stated a preset: remove the `voice` key. Stating nothing is correct beside a qvoice — the overlay skips/releases its own 'ryan' stamp when a persona arrives (the derived-stamp release). |
+| `$.voice expected "ryan" | "serena" | …` | the `voice` seat takes the NINE PRESETS ONLY — a saved persona never rides it. Ride the persona in the **qvoice MOD BAG**: `qvoice: [{ qvoice: "kunoichi_v3", voice_strength: 1 }]` — the bag is what the studio's mods bar renders, so the operator sees the take and the strength handle. A bare-string `qvoice` and the bag both land in the bag (the F49 write-seat promotion) — either spelling renders in the studio. |
 | save writes `voice-run-<runid>.qvoice` | The export lands `<voice_name>.qvoice` at `/mnt/data/models/audio/voices/` and the run receipt prints the deliverable path. No hand-copy. |
 | `'style_instruction' fires nothing on this lane` | the resolved cell has no instruction control — the 0.6B cell (or a lane mismatch); check the address law above |
 | `'design_prompt' missing or empty` | Phase A requires the description — state it |

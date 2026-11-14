@@ -19,14 +19,15 @@ with only the parameters returned by its bundle. Browser sessions stop at the
 user's Run press. A sanctioned headless commission may use `melite_flow` and
 `run_status`.
 
-The five-event set is intentionally serial. Do not start concurrent audio
+The event set is intentionally serial. Do not start concurrent audio
 model runs or invent a bypass.
 
 ## Prompting
 
 Describe one sound per stage: material, action, and space. Use a short,
 concrete phrase such as “wet mud footsteps, close microphone.” Read the
-current schema for seed, duration, and variation fields.
+current schema for the five real knobs: prompt, guidance_scale,
+n_diffusion_steps, duration, seed.
 
 ## Gate and delivery
 

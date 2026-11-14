@@ -16,7 +16,7 @@ can make a character unrecognizable; a doubled comma fries the image.
 The compose gate (`checkAnimaPromptTags` in the family's actions)
 refuses LOUD on a missing space, a doubled comma, or an underscore in
 a tag — write it right, never rely on silent rewriting. Underscores
-are legal ONLY inside score tags (`score_9`, `score_8_up`).
+are legal ONLY inside score tags (`score_9`, `score_8` — the anchored regex refuses `_up` spellings).
 
 ## Tags first, captions mixed in
 

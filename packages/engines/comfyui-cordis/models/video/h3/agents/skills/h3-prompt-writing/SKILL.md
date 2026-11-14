@@ -27,11 +27,23 @@ Ported verbatim from MiniMax-AI/MiniMax-H3
 `skills/h3-prompt-writing@main` (the model's own prompting skill; static
 text guides — no scripts, no APIs).
 
+## Capability deference
+
+Capability questions resolve to the card's load bundle — which seats
+exist, what combines, the caps. This skill teaches the raw model's
+prompt FORMAT only; the card's own AGENT.md owns the when-to-choose
+law. Where the upstream mode taxonomy below conflicts with the card,
+the card wins: the estate serves ONE timeline lane — every
+composition (single shot, keyframes, reference sets included) rides
+its windows on `ref_images`/`ref_videos`/`ref_audios`. There is no
+Ref2VA route to press, and the folded-lane variant routes are
+retired; treat the mode names as craft patterns, never as addresses.
+
 ## Workflow
 
-1. Identify the input mode: T2VA, I2VA, FL2VA, L2VA, or full-reference Ref2VA.
-2. For base text/keyframe modes, read `model:h3:h3-guide-base.md` and follow its final prompt structure.
-3. For full-reference mode, read `model:h3:h3-guide-ref.md` and follow its six-section rewrite format.
+1. Identify the craft pattern: T2VA, I2VA, FL2VA, L2VA, or full-reference (the guide's Ref2VA format).
+2. For base text/keyframe patterns, read `model:h3:h3-guide-base.md` and follow its final prompt structure.
+3. For full-reference pattern, read `model:h3:h3-guide-ref.md` and follow its six-section rewrite format.
 4. Preserve the exact field names, section order, labels, and timing notation from the selected guide.
 
 ## Base Modes
@@ -55,7 +67,7 @@ Read `model:h3:h3-guide-ref.md` for label rules, retention analysis, and complet
 - Describe each shot by composition, subjects, environment, actions, camera, sound, and the exact point where referenced content appears.
 - Avoid plot summaries, unresolved reference labels, and timing that does not match the requested duration.
 ## Tips for Better Results
-- Always match the total duration of the description to the requested video length (4–15 seconds).
+- Always match the total duration of the description to the requested video length (the estate grid admits 22–362 frames ≈ 0.92–15.08 s at the schema fps default).
 - Keep reference labels consistent (e.g. `<Picture 1>`, `<Video 1>`, `<Audio 1>`) across every section.
 - Prefer concrete visual and audio details over abstract words like "cinematic" or "beautiful".
 - When using keyframes (I2VA / FL2VA / L2VA), clearly state how the first and/or last frame connects to the timeline.

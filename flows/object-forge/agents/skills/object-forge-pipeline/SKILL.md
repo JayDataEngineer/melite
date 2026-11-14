@@ -8,8 +8,12 @@ image-upscale's shape).
 ## Call shape
 
 ```
-melite_flow {flow: "object-forge", params: {prompt, image_model}}
+melite_flow {flow: "object-forge", prompt: "…"}
 ```
+
+`prompt` rides TOP-LEVEL (the row's one request initial); there is no
+`image_model` seat — the concept stage stamps z-image and a stated
+value is a dead letter (the image-upscale FL-7 chain).
 
 `add_stage` stages CARDS (`card <id>`), never a flow — a flow is
 driven by `melite_flow`. To drive the stages individually for a
@@ -22,12 +26,16 @@ The compile gate rides the flow's own validate (`melite_construct`
 ## Knobs
 
 - `prompt` (required) — the object: one clear subject, plain
-  background. Empty or missing refuses at the door, never on the GPU.
-- `image_model` — `z-image` (default) or `krea-2`.
+  background. An EMPTY prompt refuses at the door; a MISSING prompt
+  RIDES and kills the run mid-graph — author it explicitly, every
+  time.
 
 Stage knobs ride per-stage params in the registry row: lift
-`model=trellis2-native` (no pack; repair tail at card defaults —
-`remesh_qef`/`drop_inverted`/`drop_enclosed`/`fix_poles`).
+`model=trellis2-native` (no pack; the door-parity high recipe stamps
+— resolution 1536, remesh_resolution 1024, decimate_faces 1000000 —
+plus the card's own remesh tail keys: `remesh_qef`,
+`remesh_drop_inverted`, `remesh_drop_enclosed`, `remesh_fix_poles`;
+the unprefixed three refuse at knob admission).
 
 ## What runs
 

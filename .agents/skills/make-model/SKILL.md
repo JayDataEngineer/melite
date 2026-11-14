@@ -1,6 +1,6 @@
 ---
 name: make-model
-description: Use when authoring a new model family package (a downloadable model declared as a family DECL under packages/models/), or when a family fails the law-hygiene or registry walls. Covers the DECL shape, the mods/ tree, the plugin registration seam, and the gates.
+description: Use when authoring a new model family package (a downloadable model declared as a family DECL under packages/models/), or when a family fails the models-against-cards / models-registry walls. Covers the DECL shape, the mods/ tree, the plugin registration seam, and the gates.
 ---
 
 # Make a model family
@@ -18,11 +18,12 @@ discharge stroke).
 packages/models/<family>/
   package.json     # name "@melite/models-<family>", private,
                    # deps: @melite/comfyui-card-kit (model-contract,
-                   # service-faces) — the ONLY required dep (28 of the
+                   # service-faces) — the ONLY required dep (29 of the
                    # 32 families declare nothing else). Add
                    # @melite/contracts and/or @deepseek-ai/schemastery
                    # ONLY when this family's code imports them (anny,
-                   # fit, h3, skin do; krea-2 does not). NOT
+                   # h3 do; qwen3-tts adds @melite/engine-contract;
+                   # krea-2, fit, skin do not). NOT
                    # comfyui-cordis — the family↔engine cycle died with
                    # the string table; a family that imports the engine
                    # re-opens it. devDeps: typescript ^5.9.3 +
@@ -78,7 +79,7 @@ cards bind: krea-2 `t2i`, h3 `extend`/`refine`/`repair`/`reshoot`/`swap`);
 `src/index.ts` stays the DECL + the re-export face, never a second
 handler body.
 
-`ModelDecl` fields that matter (the law-hygiene wall checks them):
+`ModelDecl` fields that matter (the models-against-cards wall checks them):
 
 - `id` / `label` / `description` — identity (never generated).
 - defaults — every default must live inside its owning card's field
@@ -240,8 +241,9 @@ A family that serves a card face also lands a FACTS row — the engine's
 own data plane, `packages/engines/comfyui-cordis/data/model-facts.json`.
 Model-owned keys (defaults / lane_inputs / variants / variant_groups /
 mods / accepts / studio) DERIVE from the registry at load
-(`src/models/facts.ts`); the file keeps only what the registry cannot
-carry:
+(`@melite/comfyui-card-kit/facts` —
+`packages/engines/comfyui-card-kit/src/facts.ts`, DERIVED not
+declared); the file keeps only what the registry cannot carry:
 
 - `cards.<card>.outputs` — the artifact kinds the card emits
   (`label`, `many`, `patterns`).

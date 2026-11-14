@@ -6,8 +6,17 @@ no card to compose — stage the flow and the user runs it.
 ## Call shape
 
 ```
-melite_flow {flow: "image-upscale", params: {image_model, prompt, seed}}
+melite_flow {flow: "image-upscale", prompt: "…", params: {seed: 7}}
 ```
+
+`prompt` rides TOP-LEVEL (it is the row's one request initial —
+`initialValidators: {prompt}`); `seed` and the size channels ride
+the overlay bag (`params`) — never the call's top level, where the
+envelope law refuses a bare seed. There is NO
+`image_model` seat anywhere: the make stage FIXES the generator at
+krea-2, cardAdmission has no image-gen seat for the key, and a
+stated value is a silent dead letter — never
+teach or state it.
 
 `add_stage` has NO flow seat (it stages CARDS by id) — a flow is its
 own door. To hand the user an editable bench instead, stage the two
@@ -21,44 +30,48 @@ Run.
 
 ## Knobs
 
-- `image_model` (required) — one of `krea-2`, `z-image`. Picks the
-generator family AND its baked graph (krea-2: krea2 CLIP +
-qwen_image_vae, cfg 4.5; z-image: AuraFlow shift 3, lumina2 CLIP,
-ae.safetensors, cfg 1.0). No other value compiles.
-- `prompt` (required) — what to generate, up to 4000 chars. An empty
-or missing prompt 4xxes at the door, never on the GPU.
+- `prompt` (required) — what to generate, up to 4000 chars. An EMPTY
+  prompt refuses at the door; a MISSING prompt RIDES and kills the
+  run mid-graph — author it explicitly, every time.
 - `seed` (optional) — sampler seed, 0 to 2147483647.
-Numeric strings coerce (`"7"` works); booleans never do. Omit it and
-each stage's card default rules (a fresh take, minted per run —
-never a locked repeat).
+  Numeric strings coerce (`"7"` works); booleans never do. Omit it and
+  each stage's card default rules (a fresh take, minted per run —
+  never a locked repeat).
+- `width`/`height` (optional) — the make canvas (16-step, 256–2048;
+  the operator's class is 1344×768).
+- `resolution` (optional) — the SeedVR2 target short side (256–2160;
+  1080 = the FHD rail; state twice the make short side to double,
+  e.g. 1536).
 
 A stated `seed` stamps into the run body, so `_request.json` shows
 exactly what ran; an omitted one rides the card defaults.
-`image_model` has no default — the call names its family, every time.
 
 ## What runs
 
-One `make` stage (comfyui): T2I at 1024×1024, 8 steps, then the
-SeedVR2 chain to 1080p — chained in-graph, always on. There is no
-upscale bypass knob: a bypass would be a second graph shape needing
-its own skill version. The upscaled file lands as the run artifact
-(`image-upscale-<family>` prefix).
+TWO queue stages, one merged run: `make` (the image-gen card on
+krea-2 — T2I at the stated canvas, krea-2's own defaults cfg 1,
+steps 8, euler/simple) wired to `polish` (the upscale-tools card on
+seedvr2-ema) on `$image`. The upscale is ALWAYS on — there is no
+bypass knob: a bypass would be a second graph shape needing its own
+skill version. The artifact lands under the run id (`${runId}/gen` —
+filename_prefix is retired here, SD-4b).
 
 ## Craft notes (merged skills)
 
 - Prompt craft: `card:image-gen` + the generator rows
-(`model:krea-2`, `model:z-image`).
+  (`model:krea-2`, `model:z-image` — the bench path picks either;
+  the flow row is krea-2).
 - Upscale behavior/limits: `card:upscale-tools` (seedvr2_ema ships
-no model docs, so all upscale craft rides the card row).
+  no model docs, so all upscale craft rides the card row).
 - One example that compiles:
 
 ```json
 {
   "flow": "image-upscale",
+  "prompt": "a fox at dawn, mist, 35mm",
   "params": {
-    "image_model": "krea-2",
-    "prompt": "a fox at dawn, mist, 35mm",
-    "seed": 7
+    "make": { "width": 1344, "height": 768 },
+    "polish": { "resolution": 1536 }
   }
 }
 ```

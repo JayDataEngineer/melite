@@ -38,7 +38,7 @@ window re-conditions on rendered frames, not re-imagined text.
 
 ## Run doors
 
-qwen-img-edit-21:  model qwen-img-edit-21, prompt, image /abs/base.png, seed 7
+qwen-img-edit-21:  model qwen-img-edit-21, prompt, input_images /abs/base.png (first slot), seed 7
 h3:                model h3, prompt, image /abs/frame.png, seed 7
 
 All three recipes (standard / draft / final) share one lora bag —

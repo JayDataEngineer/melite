@@ -12,12 +12,15 @@ law below.
 
 ## The speaker-gender law
 A preset speaker is a BODY — cast it to match the character. The nine
-presets: **female** = Vivian (bright, slightly edgy young female),
-Serena (warm, gentle young female), Ono_Anna (playful Japanese female,
-light and nimble), Sohee (warm Korean female, rich emotion); **male** =
-Uncle_Fu (seasoned male, low mellow timbre), Dylan (youthful Beijing
-male, clear and natural), Eric (lively Sichuan male, husky brightness),
-Ryan (dynamic male, strong rhythmic drive, English), Aiden (sunny
+presets, in their lowercase wire spellings (the schema walk is
+case-anchored — a Title-Case spelling refuses): **female** =
+`vivian` (bright, slightly edgy young female),
+`serena` (warm, gentle young female),
+`ono_anna` (playful Japanese female, light and nimble),
+`sohee` (warm Korean female, rich emotion); **male** =
+`uncle_fu` (seasoned male, low mellow timbre), `dylan` (youthful Beijing
+male, clear and natural), `eric` (lively Sichuan male, husky brightness),
+`ryan` (dynamic male, strong rhythmic drive, English), `aiden` (sunny
 American male, clear midrange). Pick gender first, then
 language/accent, then timbre — and never cast a woman on a male preset
 or the reverse.

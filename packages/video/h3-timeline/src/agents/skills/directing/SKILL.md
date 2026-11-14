@@ -66,9 +66,13 @@ An audio row's `src` is the spoken asset itself, spelled so the run can
 stage it: the run-relative `<run-id>/<file>` name of the TTS run's output,
 its estate URL (`/v1/assets/runs/...`), a gallery artifact URL, an http(s)
 URL, an absolute host path that exists, or a bare name already staged in
-the engine input dir. Every one of those auto-stages at compose. Any other
-spelling refuses at compose with `media input stages nowhere` — never ride
-a display name or an invented placeholder.
+the engine input dir. Every one of those auto-stages at compose. A `$name`
+spell names a WIRED STAGE INPUT instead: the producer's graph link rides
+into the film mix's wired_audio_1..4 seats in every run form (a clip that
+conditions a window slices through MeliteAudioTensorSlice; on the bench the
+wire needs the row's hand-written expected kind, e.g. `{"line1": "audio"}`).
+Every other spelling refuses at compose with `media input stages nowhere` —
+never ride a display name or an invented placeholder.
 
 ## Timeline rules
 

@@ -1,6 +1,6 @@
 ---
 name: gamekit-music
-description: Survival theme music via music3 - three-section structured caption; draft_short iterate, final_long deliver.
+description: Survival theme music via music3 - three-section structured caption; the Recipe rows are short-sting (5s) / full-length (360s).
 ---
 
 ## Caption contract (90% of quality)

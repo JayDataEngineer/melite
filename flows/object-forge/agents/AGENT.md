@@ -28,4 +28,7 @@ the mesh is.
 ## Re-takes
 
 Stage-by-stage through the `{model:}` door when only one stage is
-wrong: `{model:} img-to-mesh, model=trellis2-native,
+wrong: `{model:} img-to-mesh, model=trellis2-native`, repair tail at
+the card's defaults — or re-run the whole `{flow:} object-forge` row
+(a done stage never re-executes).
+

@@ -69,7 +69,10 @@ the edit bag directly in new docs. The seats:
 ## The anchor law
 
 The prior clip's LAST FRAME is the continuation's identity anchor —
-taken in-graph off the loaded clip (negative batch index), riding both
+taken in-graph off the loaded clip (the family's out-of-band
+LAST_FRAME_BATCH_INDEX — a POSITIVE index the engine clamps onto the
+clip's FINAL row; the negative spelling slices empty on the live
+estate and is banned family-wide), riding both
 the plan's picture seat and the r2v reference seats. No frame is
 extracted out-of-graph, no frame count is probed: the engine reads its
 own tail. The whole clip also rides the motion-identity reference

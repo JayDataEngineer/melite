@@ -1,6 +1,6 @@
 ---
 name: repair
-description: "Region repair — the LEGACY `repair` spelling of the one Video edit bag (a preset cell: per-frame SAM3 region mask + self anchors + partial denoise; the rest of the frame and its audio are held). Old repair docs still resolve; new docs state params.edit with mask_source region."
+description: "Region repair — the LEGACY `repair` spelling of the one Video edit bag (a preset cell: a RECEIVED mask, ONE staged PNG + self anchors + partial denoise; the rest of the frame and its audio are held). Old repair docs still resolve; new docs state params.edit with mask_source static-png."
 genre: video
 ---
 
@@ -9,9 +9,11 @@ genre: video
 > repair just uses the original. This leaf documents the LEGACY
 > spelling so old docs keep composing: state the cell on the ONE
 > Video edit bag (`params.edit`). `repair: [{...}]` resolves to
-> `edit: [{ mask_source: "region", reference: "self", denoise: 0.32 }]`
+> `edit: [{ mask_source: "static-png", reference: "self", denoise: 0.32 }]`
 > node for node (the arm's declared default 0.32; the edit bag's
-> denoise band is 0.05–1) — one entry per doc. New docs state the
+> denoise band is 0.05–1) — one entry per doc, and a repair RECEIVES its
+> mask: ONE staged PNG (the track run's pixel-max union is the recommended
+> bridge); a repair without one refuses loud. New docs state the
 > edit bag directly.
 
 ## The pair + arm laws (ONE door per doc)
@@ -29,9 +31,9 @@ genre: video
 
 - `denoise` (0.05–1, 0.32) — the partial pole holds everything
   outside the tracked mask, and the source's audio with it.
-- `mask_source: "region"` + `reference: "self"` — the translation's
-  own dials; the free cells around them (whole-frame, static-png,
-  still+mannequin) compose on the same bag.
+- `mask_source: "static-png"` (the received mask) + `reference:
+  "self"` — the translation's own dials; the free cells around them
+  (whole-frame, region, still+mannequin) compose on the same bag.
 - The full dial table, the named preset chips, the seam and window
   laws live in ONE place: the `edit` skill. Read that leaf — every
   number there is quoted off the served card.

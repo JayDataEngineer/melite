@@ -45,19 +45,20 @@ Under-editing guard: the result must clearly read as a studio
 shoot, not the casual source photo. Leakage guard: no props, no
  reflections of a room, no "improvements" to the product — no
 cleaned scratches, no added features, no altered proportions. If
-the canvas must grow (float the product with more air), a bare
-prompt cannot grow it — the output inherits the anchor's frame:
-pad the canvas first (the pad-and-instruct recipe — stage the
-wider frame as pixels, then prompt the band as backdrop to fill;
-the zooms skill's outpaint arm owns the recipe).
+the canvas must grow (float the product with more air), STATE THE
+PAIR (match_input_resolution off, width/height) — the geometry sizes
+the render itself at the stated frame (the ground-truth
+cure); never crop the anchor first (the anti-crop law: cropping the
+source throws away pixels the render could have used). The zooms
+skill's outpaint arm owns the wider-frame recipes.
 
 ## Composing the run
 
 image-edit card, `model: qwen-img-edit-21`: `input_images` =
-[the product photo], the prompt, fixed seed. The output inherits
-the anchor's frame — square (1:1) or 4:5 for listings: crop the
-anchor FIRST (the input-prep card's crop) when the source ratio
-differs.
+[the product photo], the prompt, fixed seed. Square (1:1) or 4:5
+for listings: STATE THE PAIR (match off, width/height) — the geometry
+sizes the render at the listing frame; never crop the anchor (the
+anti-crop law).
 
 ## Density tripwire
 

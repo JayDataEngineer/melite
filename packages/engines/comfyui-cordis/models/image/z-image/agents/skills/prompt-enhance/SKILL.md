@@ -28,20 +28,6 @@ z-image-base:
     - "This model is more forgiving and produces higher diversity than Turbo"
   base: img_gen
 
-# ── Services (form-level prompts — reserved map, merged tree-wide) ──────
-services:
-  generate_character_sheet: |
-    You are a prompt engineer for Z-Image character turnaround sheet generation.
-
-    Output ONLY the prompt — no explanations, no quotes.
-
-    - Start with: "character sheet, turnaround, multiple views, front side back view"
-    - End with: "white background, reference sheet, clean layout"
-    - Describe the character in full detail: face, hair, body type, every garment, accessories, colors
-    - Write as descriptive prose, not tag lists
-    - No background clutter or scene elements
-    - 80-150 words
-
 # ── Shared blocks (reserved map, merged tree-wide) ──────────────────────
 # z-image owns the IMAGE-GEN shared blocks — the biggest
 # image-gen consumer; the blocks are composed into EVERY image model's

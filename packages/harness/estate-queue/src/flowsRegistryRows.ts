@@ -112,8 +112,8 @@ export const IMAGE_UPSCALE: RegistryFlow = {
   id: "image-upscale",
   description:
     "Prompt → image → 1080p SeedVR2 upscale, one card per stroke (the first " +
-    "two-card flow: image-gen + upscale-tools card= stages; image_model picks " +
-    "the generator). RUNS on the {flow:} door (2026-10-04: the VALIDATE-ONLY " +
+    "two-card flow: image-gen + upscale-tools card= stages; the make stage " +
+    "FIXES the generator at krea-2 — no model seat exists on this row). RUNS on the {flow:} door (2026-10-04: the VALIDATE-ONLY " +
     "stamp is GONE — both card stages compose through the card plane and " +
     "submit as one merged run); the {model:} door drives a single card.",
   stages: [
@@ -164,18 +164,18 @@ export const IMAGE_UPSCALE: RegistryFlow = {
     version: 1,
     description:
       "Generate an image from a prompt and upscale it to 1080p in one call " +
-      "(krea-2 or z-image generator, SeedVR2 upscale always on). One POST runs " +
+      "(krea-2 generator, FIXED by the row's make stage — no image_model " +
+      "seat exists and one stated anywhere is a dead letter (audit " +
+      "2026-11-14 FL-7); SeedVR2 upscale always on). One POST runs " +
       "the whole flow.",
     properties: {
-      image_model: {
-        ptype: "string",
-        description: "the generator family (no default: pick one)",
-        default: null,
-        hasDefault: false,
-        minimum: null,
-        maximum: null,
-        enum: ["krea-2", "z-image"],
-      },
+      // (audit 2026-11-14 FL-7) image_model RETIRED from the tool
+      // face: the runtime reads it nowhere — the make stage pins
+      // model "krea-2" and cardAdmission has no image-gen seat for
+      // the key, so a stated value refused or dead-lettered. Re-seat
+      // it only by wiring a real admission seat (an initial that
+      // overrides the make stage's model), never by re-publishing
+      // the knob.
       prompt: {
         ptype: "string",
         description: "what to generate (up to 4000 chars)",

@@ -1,6 +1,6 @@
 ---
 name: craft-loop
-description: The dream-loop discipline for the craft loop — target-first brief, the judge rubric, batches of 3, the time budget, and the exit criteria (distilled from github.com/achimala/dream-loop, MIT; minus its image-gen leg — the estate's engines own generation)
+description: The dream-loop discipline for the craft loop — target-first brief, the critic's verdict contract (no scores), batches of 3, the time budget, and the exit criteria (distilled from github.com/achimala/dream-loop, MIT; minus its image-gen leg — the estate's engines own generation)
 genre: image
 ---
 
@@ -17,33 +17,38 @@ Lock the target BEFORE iterating. In the estate: the
 `agent_prompt` brief is the contract every capture is held
 against — concrete and checkable (composition, palette, lighting,
 materials), never "make it nice". If the user supplied a
-reference image, it rides `inputs` and the brief names it.
-Prompt for the real thing, never "concept art": the capture must
-be matchable, not interpretable.
+reference image, land it as a staged asset and let the brief name
+its path — the flow takes THREE initials only (agent_prompt,
+command, max_iterations); `inputs` is not a door arg. Prompt for
+the real thing, never "concept art": the capture must be
+matchable, not interpretable.
 
-## The judge rubric (the critic's eye)
+## The judge contract (the critic's whole eye)
 
-Every critique scores the capture against the brief:
+The critic answers ONE JSON object — that IS its entire contract:
 
-- **Composition (0–3)** — camera, framing, layout; position and
-  scale of every major element.
-- **Lighting (0–3)** — palette, exposure, shadows, contrast,
-  atmosphere; reflections and glows; not too dark, not too light.
-- **Materials (0–3)** — textures, roughness, translucency;
-  nothing blocky, plasticky, or fake unless the brief asks.
-- **Details (0–1)** — the fine-toothed comb; every speck.
+```json
+{"verdict": "done", "note": "..."}
+```
 
-Fractional scores allowed. Nitpicky and precise: a comprehensive,
-actionable gap list another round could fix — never "this looks
-fake" (name WHAT gives that impression and how to fix it). No
-sugarcoating; regression scores worse. Total out of 10 rides the
-`note`.
+or
+
+```json
+{"verdict": "refine", "note": "...", "command": { "engine": "...", "params": { ... } }}
+```
+
+JSON only — no scores, no rubric numbers arrive from it. The
+`note` is a comprehensive, actionable gap list another round
+could fix — never "this looks fake" (name WHAT gives that
+impression and how to fix it). No sugarcoating; a capture that
+regressed reads worse in the note. Gate nothing on a score: it
+never comes.
 
 ## Batches of 3
 
-First run: `max_iterations: 3`. Then the user reviews the
-captures before more rounds. Never silently unroll into a long
-run.
+First run: `max_iterations: 3` (a JSON NUMBER — digit-strings
+refuse at the door). Then the user reviews the captures before
+more rounds. Never silently unroll into a long run.
 
 ## Time budget
 
@@ -55,13 +60,13 @@ the user — iterations consume tokens).
 
 ## Exit criteria
 
-- **Score ≥ 8**: done. Show the latest capture (melite_view);
-  offer more rounds.
-- **Stall approaching** — best score up less than a full point
-  across 2 iterations, or the same gap named twice: stop
-  tweaking. Rethink the act command itself (wrong engine graph,
-  wrong camera, wrong lighting architecture) — aim for a
-  dramatic improvement, not an incremental one.
-- **Stalled** — the architectural rethink didn't move the score:
+- **Verdict `done`**: show the latest capture (melite_view); offer
+  more rounds.
+- **Stall approaching** — the same named gap twice: stop tweaking.
+  Rethink the act command itself (wrong engine graph, wrong
+  camera, wrong lighting architecture) — aim for a dramatic
+  improvement, not an incremental one.
+- **Stalled** — the architectural rethink returned the same gap:
   stop and ask the user.
+- **`max_iterations` reached**: the hard stop (the cap lands loud).
 - **None of the above**: keep looping.

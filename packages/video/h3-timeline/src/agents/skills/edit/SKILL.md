@@ -30,9 +30,9 @@ THE EDIT BAG'S STARTING CELLS: the cells are
 DIAL VALUES an agent stages into the one bag — the UI face is the
 four-axes field grammar itself, no checkbox layer; a cell never
 renders. The six named cells over
-this one schema: `repair-region` (region × self × 0.32, sound held;
-the mask slot chooses the how — the SAM3 region track or one staged
-PNG, the static read is the MASK DIAL's value, never a second
+this one schema: `repair-region` (static-png × self × 0.32, sound
+held; the mask slot arrives as ONE staged PNG — the track run's
+pixel-max union is the recommended bridge, the static read is the MASK DIAL's value, never a second
 cell), `identity-swap` (region × still+mannequin × 1, the masked
 side re-rendered whole — ONE cell for both reads: clothing vs
 identity is PROMPT WORDS, never two; a still+mannequin swap of a
@@ -122,8 +122,9 @@ loop — a different mechanism than the refine switch).
      is photoreal; a stylized still transfers garments and colour,
      not identity.
 5. **Set the dials.** The entry fields (the card's served ranges):
-   - `denoise` (0.05–1, 0.32) — the edit pole: partial (the repair
-     window is 0.30–0.35) holds the unmasked region AND its sound; 1
+   - `denoise` (0.05–1, 0.32) — the edit pole: partial (0.05–0.5 is
+     the repair window; 0.30–0.35 is the refinement band) holds the
+     unmasked region AND its sound; 1
      re-renders the masked side whole. Whole-frame × self at 0.8 or
      more is the identity boil and REFUSES — anchor the identity or
      use the reshoot door.
@@ -161,7 +162,7 @@ loop — a different mechanism than the refine switch).
      362f the largest); beyond it N uniform windows join under the
      39f context overlap, exact delivery or a refusal naming the
      neighbors (ceiling 432.29s).
-   - `chain_run` (text, "") — THE UPSCALE POSTURE'S ARMING SEAT:
+   - `chain_run` (chain-run picker) — THE UPSCALE POSTURE'S ARMING SEAT:
      re-render a PRIOR run at 2x. Human voice: "pick a finished
      run; its saved scenes upscale." The picker serves the
      estate's run ids (a finished swap, repair, extend or refine

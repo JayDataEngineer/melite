@@ -56,8 +56,9 @@ Shapes (read `flowsData.ts` and `flowsRegistryRows.ts`, do not guess):
   builders — `plainStage(row)`, `linkedStage(flow, stage, id, inputs)`,
   `initial(key)`, `fromStage(stage, output)`. A stage row is JSON-shaped
   and every field is `readonly`.
-- `initialValidators` kinds: `photo` | `video` | `glb` | `bake_params` |
-  `text`. `requiredInitials` names the ones the flow cannot run without
+- `initialValidators` kinds (the served `RegistryInitialKind`, eight):
+  `photo` | `video` | `glb` | `bake_params` | `text` | `brief` | `number` |
+  `json` — craft-loop's `max_iterations` is a live `number` initial. `requiredInitials` names the ones the flow cannot run without
   (refused at the door, before a run registers).
 - `inputs: Record<string, RegistryEdge>` — initial edges or `fromFlow`
   stage outputs; `expected/outputs/cardIo: Record<string, string>`.
@@ -88,10 +89,12 @@ one flow reuses another's stage.
 Wire laws:
 
 - **validate vs start**: single-stage comfyui graphs serve at BOTH
-  validate and start; multi-stage serves at validate only (start
-  refuses multi-stage explicitly); `card=` stages serve at validate
-  (start refuses `card=` explicitly). Never widen start quietly —
-  the refusal text is the contract.
+  validate and start. Named flows compose `card=` stages and submit
+  ONE merged run at start (one runsStart — LAW 1's materializing
+  press, widened loudly 2026-11-14); the multi-stage and `card=`
+  refusals survive ONLY on the hand-authored `flow_inline` compile
+  lane (the curated-lane lift). Validate serves everything — the
+  refusal text is the contract on the lane that still refuses.
 - **initial_validators**: the compile-time door (`photo` =
   EstatePhotoRef: browser-local / bad-ext refuse paths) — declare
   one per initial input that can carry a file.
@@ -103,7 +106,7 @@ flows/<name>/
   tool.json      # name "<name>_flow" (underscores), kind "flow",
                  # model "<name>", stage_title, description (WHAT the
                  # flow produces + HOW agents drive it — see
-                 # flows/extend-video/tool.json, the richest live
+                 # flows/image-upscale/tool.json, the richest live
                  # leaf), params_schema
   AGENTS.md      # the operator-facing law of the leaf
   agents/AGENT.md             # the driving agent's brief

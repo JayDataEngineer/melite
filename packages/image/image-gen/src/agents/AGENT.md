@@ -71,7 +71,7 @@ signature default when the brief names a look:
   legible typography in-image.
 - **flux-klein** — the low-VRAM lane: a 4-step distilled checkpoint
   for modest cards (20-step base tier when quality outranks speed),
-  reference-guided.
+  prompt-only (the reference seat belongs to qwen-img-21 alone).
 - **moss-image** — the 50-step SFT photoreal lane: typography
   through quoted text, layout through native JSON bboxes in the
   prompt.

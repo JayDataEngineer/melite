@@ -48,9 +48,10 @@ one window composes N uniform windows in-chain too — the extend-flow
 skill owns that multi-window contract.
 
 The N-window law is "ONE card = N calls =
-ONE run = ONE film" — the lane runs **N** windows (any N, default
-templated 4), not strictly 4. Fewer calls hold the last on tail windows
-(an airlock hold), so three calls is legal. The card composes the entire
+ONE run = ONE film" — N windows, where N is the number of calls you
+author: the lane runs exactly the calls rows (windows DERIVE from
+calls), never a template default. Three calls authored is three
+windows, legal. The card composes the entire
 multi-window film in a SINGLE ComfyUI submission (ONE `native.execute`);
 windows save their own clips and the film is assembled in-graph, never by
 the harness (no ffmpeg, no disk stitch).
@@ -76,9 +77,9 @@ package's specs, `packages/models/h3/tests/decl.spec.ts` and
 - The distill adapter is a MOD, not a knob: the card's `loras` bag
   (max_stack 4) carries whole rows {id, strength, steps}. ABSENT the bag,
   the family's own catalog default resolves (the merge row —
-  `h3_lightx2v_turbo`, strength 0.6, 8 steps, `shift_video` 12 — from
-  `mods/loras.ts`); the standalone LightX2V turbos stay pick-only for
-  audio/dialogue routes. NEVER hand-write a lora filename or a legacy
+  `h3_silver_dareties`, strength 0.8, steps 8, `shift_video` 8 — from
+  `mods/loras.ts`); the LightX2V turbo row stays PICK-ONLY and never
+  merges (SILVEROXIDES IS THE MERGE, LIGHTX2V IS NOT). NEVER hand-write a lora filename or a legacy
   `lora` / `lora_strength` knob: an unknown id refuses at the door, and
   the old flat knobs are not in the schema at all.
 - Do not "improve" a render by sending sampler/steps/shift/resolution
@@ -109,9 +110,10 @@ contract.
 
 Write the film as a numbered shot list FIRST, one window per shot:
 
-1. `w1 (t2v)` — establish. Same opening line as the film's first shot.
-   Its span is `22 + 17k`.
-2. `w2..wN (fl2va)` — each continues motion from the previous last frame.
+1. `w1 (first window)` — establish. Same opening line as the film's
+   first shot. Its span is `22 + 17k`.
+2. `w2..wN (carried windows)` — each continues motion from the
+   previous last frame.
    Prompt the CHANGE, not the scene: the scene is already on screen. A
    carried window's span is `17k` (its 22 f head is the seam).
 3. Last window — land the ending beat; its final frame is the film's
@@ -144,8 +146,9 @@ Each window renders its own audio. Sound must EVOLVE, not restart:
   lanterns, market murmur). Repeat that bed VERBATIM in every window.
 - Add one NEW sound layer per window where the story needs it (bell
   enters w3, footsteps w4) — describe it in that window's soundscape.
-- Dialogue: one line per window max; keep speakers consistent with
-  `<d>[en] ...</d>` notation.
+- Dialogue: one line per window max; introduce the speaker as (S1),
+  then the line as `<d>[en] ...</d>` (the SPOKEN-FORM rule demands the
+  marker beside the tag); keep speakers consistent window to window.
 - Music: if you use `non_diegetic_music`, repeat the same music
   description in every window — it regenerates per window, so describe
   the TRACK (instrumentation, tempo), not the moment.
@@ -169,9 +172,9 @@ model="h3-timeline"` + your window plan (no curl):
 {
   "prompt": "film logline",
   "params": {"calls": [
-    {"start_frame": 0,   "end_frame": 90,  "text": "w1 shot"},
-    {"start_frame": 90,  "end_frame": 158, "text": "w2 shot"},
-    {"start_frame": 158, "end_frame": 209, "text": "w3 shot"}],
+    {"start_frame": 0,   "end_frame": 90,  "text": "Live-action cinematic night market in a mountain town after rain: wet cobblestones mirror strings of paper lanterns, and a young courier in a patched canvas coat pushes a laden cart between the stalls, steadying a rattling wheel with one hand while steam climbs from a noodle stand behind her; the camera pushes in with small amplitude at slow speed from the market mouth toward her face as she lifts her head at a distant bell, lantern light rippling across her rain-flecked shoulders while the crowd murmur thins under the bell's ring."},
+    {"start_frame": 90,  "end_frame": 158, "text": "The change: the courier releases the cart at the alley mouth and turns into the narrow lane where the lantern strings end and moonlight alone outlines the wet stone walls; she pulls her hood up mid-stride against the cold, and the courier (S1) says toward the shadowed arch ahead <d>[en] The bell is early tonight.</d> as the camera trucks left with small amplitude at slow speed to hold her profile against the moonlit wall, the market glow dying behind her, her damp footsteps growing into the loudest sound under one thin wind note."},
+    {"start_frame": 158, "end_frame": 209, "text": "The ending beat inside the arch: the courier stops at a small shrine niche where the runaway bell hangs, sets her satchel down on the wet step, and lays one palm flat on the bronze rim until the ringing settles into complete stillness; the frame holds in a static shot on her two hands and the stilled bell while the last rain drips from the arch lip in single taps, the far market now only a warm murmur under one high wind note, and she looks back once down the whole moonlit lane toward the lantern glow."}],
     "fps": 24, "seed": 42}
 }
 ```
@@ -180,13 +183,16 @@ model="h3-timeline"` + your window plan (no curl):
   starts exactly where the previous one ended (no gaps, no overlaps — a
   gap or overlap is refused, not absorbed).
 - The engine renders `22+17k` frames per window, so authored spans are
-  NOT interchangeable: the FIRST call (and any `"transition": "cut"`
-  call) must be `22+17k` — 90, 107, 124, 141 … — while a carried
-  (non-cut) later call is `17k` — 51, 68, 119, 153 … — because its 22 f
-  seam is the generation head, not the span. The gate names any violation
+  NOT interchangeable: the FIRST call must be `22+17k` — 90, 107,
+  124, 141 … — while a carried later call is `17k` — 51, 68, 119, 153 …
+  — because its 22 f seam is the generation head, not the span. The
+  agent never authors `"transition": "cut"` (banned vocabulary
+  under the seam law): a seam is omit (context carry, the default) or
+  `'carry+keyframe'`; `cut` belongs to legacy rows and the operator's
+  manual stock seat only. The gate names any violation
   with the nearest legal frame; nothing is silently re-framed.
-- The lane runs N windows (any N, default templated 4). Fewer calls hold
-  the last on tail windows (an airlock hold), so three calls is legal.
+- The lane runs exactly the calls you author — N windows, N calls
+  (windows derive from calls); never a template default.
 - **DEAD — do not use:** the old "audio-guided variant: top-level `audio`"
   advice named a param that exists NOWHERE in the h3 schema (the press
   refuses as unknown param). Audio guidance enters ONLY via `audio_clips`

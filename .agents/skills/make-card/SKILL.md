@@ -30,7 +30,8 @@ packages/<genre>/<card>/
                    # battery gates every package that owns the script,
                    # the day it declares it).
   tsconfig.json    # copy from a sibling card package (rig is the
-                   # reference: types:["node"], per-program ambient)
+                   # reference: per-program ambient; types:["node"]
+                   # lives in tsconfig.base.json, inherited)
   tsdown.config.ts # ONLY when a studio ships: the shared clientBundle
                    # preset (step 4)
   src/index.ts     # the HOST marker: export name/inject/apply, apply
@@ -83,10 +84,12 @@ Laws the walls check (do not learn these by failing them):
 - **identity**: the CardDefinition carries identity (the registration
   wall `tests/walls/ts/suites/cards-registration.spec.ts`: no card
   without it, never a generated title).
-- **tool face** (when the card also ships `src/tool.ts`): `execute`
-  returns the FLOW ENVELOPE inferred from its own `OUTPUT_SCHEMA`
-  (`as const` + `type OutputEnvelope = InferValue<typeof
-  OUTPUT_SCHEMA>`) — never a guessed `CardResult` annotation.
+- **tool face** (when the card also ships `src/tool.ts`): every face
+  rides `defineCardTool` from `@melite/estate-call/cardTool` — it owns
+  the flow-envelope schema and the two-door execute; the face supplies
+  only the card's own seams (params spec, boarded models, semantic
+  resolution). `packages/image/image-gen/src/tool.ts:23,31` is the
+  live reference shape — never a guessed `CardResult` annotation.
 
 ## 3. The SSOT row
 
@@ -199,7 +202,7 @@ The client spec (`tests/<card>-client.spec.tsx`) runs in the dom
 lane — the root vitest picks it up in both the battery's walls pass
 configuration and the coverage gate.
 
-## 6. Restart the lane, prove the card
+## 7. Restart the lane, prove the card
 
 The standalone gateway is retired (2026-09-10) — never restart it and
 never invent a second process; the estate serves from the one DSH

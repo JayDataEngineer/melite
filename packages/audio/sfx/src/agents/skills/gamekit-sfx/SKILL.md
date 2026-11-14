@@ -1,13 +1,13 @@
 ---
 name: gamekit-sfx
-description: Gameplay SFX wave via moss-sfx - five-event lane (combat, creature, foley, ambience); serial execution law.
+description: Gameplay SFX wave via moss-sfx - event lane (combat, creature, foley, ambience); serial execution law.
 ---
 
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port).
 Compose via `melite_construct` `add_stage` onto the shared bench — the
 run starts at the user's Run press, never the agent's.
-Five bricks run serially ON PURPOSE
+The event set runs serially ON PURPOSE
 (concurrent audio model loads contend and fail).
 
 ## Prompting law
@@ -21,4 +21,4 @@ contact table (name / seed / duration) to the operator.
 
 ## Deliver
 Copy FLACs to `data/delivery/unity/audio/sfx/` with descriptive names, then
-append rows to `data/delivery/unity/MANIFEST.json` (see unity-delivery/).
+append rows to `data/delivery/unity/MANIFEST.json`.

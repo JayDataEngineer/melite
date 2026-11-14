@@ -69,7 +69,7 @@ it is not free.
 | --- | --- | --- |
 | `sr_switch` | boolean, false | arms SeedVR2; needs the master |
 | `sr_resolution` | 768–2160, step 24, **1080** | the output HEIGHT in px |
-| `sr_model` | `seedvr2_ema_3b_fp16.safetensors` \| `seedvr2_ema_3b_fp8_e4m3fn.safetensors` | fp16 3B default; fp8 is the leaner 3B |
+| `sr_model` | `seedvr2_ema_3b_fp16.safetensors` \| `seedvr2_ema_3b_fp8_e4m3fn.safetensors` | fp8 3B default (the leaner row — a 24GB card cannot hold the fp16 3B model beside a 90-frame 1080p decode); fp16 for cards with more headroom |
 
 A closed file surface: an off-set value fails at the schema door, never as
 an engine 400.
