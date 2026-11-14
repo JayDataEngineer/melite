@@ -156,7 +156,7 @@ describe("the runs door through the lane's models seat", () => {
     const photo: string = join(TMP, "photo.png");
     writeFileSync(photo, "png");
     const ans = await svc.start(
-      { draft_id: "d1", test: false, flow: "anny-hmr-estimator", photo },
+      { draft_id: "d1", test: false, flow: "anny-hmr-estimator", photo, person_index: 0 },
       new AbortController().signal,
     );
     await settleRun(svc, ans.run_id);
@@ -168,8 +168,10 @@ describe("the runs door through the lane's models seat", () => {
     // reaches the engine merge as a request initial — the worker
     // used to submit {} here, refusing every $spell-carrying stage
     // ("$photo names neither a FromStage-wired input nor a request
-    // initial") after the door had already blessed the value.
-    assert.deepEqual(seen[0], { photo });
+    // initial") after the door had already blessed the value. The
+    // picker rides beside it (REQUIRED since the GPU lane's first
+    // live catch, 2026-11-14 — its $spell rides the graph too).
+    assert.deepEqual(seen[0], { photo, person_index: 0 });
 
     // THE REPLAY PIN (the same wall, one process death later): the
     // durable request body is the shimmed flow_inline doc (the flow
@@ -193,7 +195,7 @@ describe("the runs door through the lane's models seat", () => {
       core: { runs: Map<string, RunRecord> };
     }).core.runs.get(ans.run_id) as RunRecord;
     assert.equal(replayed.status, "completed", "the replay settled: " + replayed.error);
-    assert.deepEqual(seen[1], { photo }, "the rehydrated run's merge still links $photo");
+    assert.deepEqual(seen[1], { photo, person_index: 0 }, "the rehydrated run's merge still links $photo");
 
     // A doc whose id names NO registry flow owns no declared initials
     // (a hand-authored or bench-composed inline) — the recovery is

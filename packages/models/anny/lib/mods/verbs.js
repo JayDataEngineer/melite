@@ -18,6 +18,13 @@ export function apply(ctx) {
         // declared surface). The verb declares both sides because it owns
         // both: its flow's initial name and its card's param.
         initials: { photo: 'body_image' },
+        // THE DIALOG-INITIAL LANE (the GPU lane's first live catch,
+        // 2026-11-14): family flows take initials, never params (the
+        // overlay door's round-23 law), so the person picker rides the
+        // person_index initial from the verb's OWN dialog field — the
+        // bar routes its press-time value to the initials bag and never
+        // the params overlay.
+        fieldInitials: { person_index: 'person_index' },
         fields: z.object({
             person_index: z.number().min(0).step(1).default(0).description('Person')
                 .extra('extra', bag({ wtype: 'number', tooltip: 'Which detected person to fit (0 = the most confident detection).' })),

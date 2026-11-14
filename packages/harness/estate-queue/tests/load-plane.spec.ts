@@ -552,13 +552,16 @@ describe("loadFlow", () => {
       );
     }
     // THE F57 SPELLS, verbatim — the seats the natural keys missed
-    // (extended: the gloss rides beside the kind)
+    // (extended: the gloss rides beside the kind). The estimator's
+    // picker went REQUIRED beside the photo at the GPU lane's first
+    // live catch (2026-11-14): its $spell rides the composed graph
+    // on every press, so the door teaches an absent one
     const a = loadFlow(REPO, "anny-hmr-estimator");
     assert.deepEqual(a["initials"], {
-      validators: { photo: "photo" },
-      required: [],
-      keys: ["photo"],
-      glosses: { photo: initialKindGloss("photo") },
+      validators: { photo: "photo", person_index: "number" },
+      required: ["photo", "person_index"],
+      keys: ["photo", "person_index"],
+      glosses: { photo: initialKindGloss("photo"), person_index: initialKindGloss("number") },
     });
     const c = loadFlow(REPO, "craft-loop");
     assert.deepEqual(c["initials"], {

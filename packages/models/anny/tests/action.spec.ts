@@ -44,17 +44,30 @@ const classes = (g: GraphBuilder): string[] =>
   Object.values(g.toJSON() as Record<string, { class_type: string }>).map((n) => n.class_type);
 
 describe("the estimator chain — estimate_photo (models-hop56 wave-2 item 5: the flow e2e becomes a receipt, not the only judge)", () => {
-  it("the photo→body compose pins the estimator chain at its named nodes: LoadImage the stated photo, Sam3dBodyImageToAnny the fixed person index", () => {
+  it("the photo→body compose pins the estimator chain at its named nodes: LoadImage the stated photo, the person picker riding the $spell lane", () => {
     const action = new GraphBuilder({})
-    instantiateAction(estimate_photo, { photo: "/models/photos/subject.png" }, FACTS, action, "probe-estimate")
+    instantiateAction(estimate_photo, { photo: "/models/photos/subject.png", person_index: "$person_index" }, FACTS, action, "probe-estimate")
     const graph = action.toJSON() as Record<string, { class_type: string; inputs?: Record<string, unknown> }>
     const load = Object.values(graph).find((n) => n.class_type === "LoadImage")
     assert.ok(load, "LoadImage present (the stated photo's loader)")
     assert.strictEqual(load.inputs?.image, "/models/photos/subject.png", "the stated photo rides the loader verbatim")
     const sam = Object.values(graph).find((n) => n.class_type === "Sam3dBodyImageToAnny")
     assert.ok(sam, "Sam3dBodyImageToAnny present (the estimator engine)")
-    assert.strictEqual(sam.inputs?.person_index, 0, "person_index FIXED at the loudest detection (0) — the chip knob never a bench surface")
+    // THE $SPELL LANE (the GPU lane's first live catch, 2026-11-14):
+    // the flow routes person_index as an initial spell — the build
+    // rides it VERBATIM and the merge resolves it against the run's
+    // request initials (a family flow takes initials, never params)
+    assert.strictEqual(sam.inputs?.person_index, "$person_index", "person_index rides the $spell verbatim (the merge resolves the initial)")
     assert.ok(Array.isArray(sam.inputs?.image), "the estimator consumes the loader's OUTPUT handle (the graph edge), never a path literal")
+  })
+
+  it("a direct instantiation without the picker OMITS the input (the engine's own default law — never an invented 0)", () => {
+    const action = new GraphBuilder({})
+    instantiateAction(estimate_photo, { photo: "/models/photos/subject.png" }, FACTS, action, "probe-estimate-bare")
+    const graph = action.toJSON() as Record<string, { class_type: string; inputs?: Record<string, unknown> }>
+    const sam = Object.values(graph).find((n) => n.class_type === "Sam3dBodyImageToAnny")
+    assert.ok(sam, "Sam3dBodyImageToAnny present")
+    assert.strictEqual(sam.inputs?.person_index, undefined, "no person_index key — the node's own default owns the bare press")
   })
 })
 

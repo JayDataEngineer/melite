@@ -584,6 +584,17 @@ describe('live door arms', () => {
     assert.ok(est !== undefined && est.fields !== null, 'hmr-estimate serves a fields envelope')
     const root = est.fields.refs[est.fields.uid]
     assert.ok(root !== undefined && root.dict !== undefined && 'person_index' in root.dict, 'the estimate envelope carries the person picker')
+    // THE DIALOG-INITIAL LANE (the GPU lane's first live catch,
+    // 2026-11-14): the picker rides the person_index flow initial
+    // from the verb's own dialog field — the served map names the
+    // routing (family flows take initials, never params), and a
+    // verb declaring none serves the empty map
+    assert.deepEqual(est.initials, { photo: 'body_image' }, 'the intake mapping serves')
+    assert.deepEqual(est.fieldInitials, { person_index: 'person_index' }, 'the picker rides the dialog-initial lane')
+    for (const row of doc.verbs ?? []) {
+      if (row.id === 'hmr-estimate') continue
+      assert.deepEqual(row.fieldInitials, {}, `verb ${row.id} declares no dialog initials`)
+    }
     // THE VERB-LESS CARD (tts boards no verb family): no new key
     // rides the legacy wire — the wire grows only where verbs live.
     const tts = await formSpecSweep('tts') as FormSpecDoc | null

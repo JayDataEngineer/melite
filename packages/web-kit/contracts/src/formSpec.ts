@@ -515,6 +515,12 @@ export interface FormSpecDoc {
      *  sources each mapped initial from the stage's current param
      *  value. Empty when the verb declares none. */
     initials: Readonly<Record<string, string>>
+    /** The dialog-initial mapping (initial name → dialog field
+     *  name): the press sources each mapped initial from the verb's
+     *  own dialog value at press time — family flows take initials,
+     *  never params, so a mapped field never rides the params
+     *  overlay. Empty when the verb declares none. */
+    fieldInitials: Readonly<Record<string, string>>
   }>
   /** THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder, the
    *  operator 2026-11-08 ask — "no place for the ai agent or the

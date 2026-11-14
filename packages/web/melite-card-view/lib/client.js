@@ -18025,8 +18025,15 @@ window.__ModuleLoader__.load({
 					}
 					initials[init] = v;
 				}
+				const viaInitial = new Set(Object.values(verb.fieldInitials ?? {}));
+				for (const [init, field] of Object.entries(verb.fieldInitials ?? {})) {
+					const raw = values[field] ?? "";
+					if (raw === "") continue;
+					initials[init] = dialogFields(verb).find((f) => f.name === field)?.type === "number" ? Number(raw) : raw;
+				}
 				const overlay = {};
 				for (const f of dialogFields(verb)) {
+					if (viaInitial.has(f.name)) continue;
 					const raw = values[f.name] ?? "";
 					if (raw === "") continue;
 					overlay[f.name] = f.type === "number" ? Number(raw) : raw;

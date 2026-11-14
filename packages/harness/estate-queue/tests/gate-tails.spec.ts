@@ -495,7 +495,13 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
   ): Promise<RemoteError<"runs/invalid-request">> => {
     const ctx = ctxWith(Seat);
     try {
-      await validate({ flow: "anny-hmr-estimator" }, new AbortController().signal, ctx);
+      // the estimator's two initials ride REAL values (the picker is
+      // REQUIRED since the GPU lane's first live catch, 2026-11-14):
+      // the initial gate at loc "body" would otherwise answer before
+      // the seat-state voice these arms judge at loc "stages"
+      const pic = join(state, "pic.png");
+      writeFileSync(pic, "png");
+      await validate({ flow: "anny-hmr-estimator", photo: pic, person_index: 0 }, new AbortController().signal, ctx);
       expect.unreachable();
     } catch (e) {
       expect(e).toBeInstanceOf(RemoteError);

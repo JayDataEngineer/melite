@@ -1210,6 +1210,12 @@ export function specBody(
     writes: verb.writes,
     flow: verb.engines[0]?.flow ?? null,
     initials: verb.initials ?? {},
+    // THE DIALOG-INITIAL LANE (the GPU lane's first live catch,
+    // 2026-11-14): family flows take initials, never params (the
+    // overlay door's round-23 law), so a verb knob that tunes one
+    // rides this map — the bar routes its value to the initials bag
+    // and never the params overlay.
+    fieldInitials: verb.fieldInitials ?? {},
   }))
   // THE ESTATE-OWNED NAMING SEAT (queue 12's A2 remainder): the
   // label plane serves on every family that does not declare the

@@ -987,11 +987,16 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   //    inline arm — the wired registry's real pin carries this
   //    flow's classes, so the compile is ok (the cardGate wire,
   //    2026-09-13; the old wall pinned the null-registry gap —
-  //    0 pinned classes).
-  const annyEstimate = (await runs.validate({ flow: "anny-hmr-estimator" }, sig)) as {
-    ok?: boolean;
-  };
-  assert.equal(annyEstimate["ok"], true, "a family verb expands live through the same arm");
+  //    0 pinned classes). The estimator's two initials ride real
+  //    values (both REQUIRED since the GPU lane's first live catch,
+  //    2026-11-14 — each $spell rides the composed graph).
+  const estimatePhoto = join(tmpdir(), "runs-remote-estimate-" + Date.now() + ".png");
+  writeFileSync(estimatePhoto, "png");
+  try {
+    const annyEstimate = (await runs.validate(
+      { flow: "anny-hmr-estimator", photo: estimatePhoto, person_index: 0 }, sig,
+    )) as { ok?: boolean };
+    assert.equal(annyEstimate["ok"], true, "a family verb expands live through the same arm");
   // the fit verb composes when its bone rides (the seam is the
   // flow's required initial, not a kill switch in the action)
   const fitSeat = (await runs.validate({ flow: "fit-seat", bone: "hand_r" }, sig)) as {
@@ -1020,11 +1025,16 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   //    inline pipeline and the run REGISTERS (the pin sweep is the
   //    validate gate; start's engine seam is the pump) — the run
   //    exists, then settles FAILED loud on the missing engine seat
-  //    (this wall's own law).
+  //    (this wall's own law). Both required initials ride real
+  //    values (the door teaches an absent one before registration).
   const started = (await runs.start(
-    { flow: "anny-hmr-estimator", test: true, draft_id: "d_ok" }, sig,
+    { flow: "anny-hmr-estimator", test: true, draft_id: "d_ok",
+      photo: estimatePhoto, person_index: 0 }, sig,
   )) as Record<string, unknown>;
   assert.match(String(started["run_id"]), /^run-/);
+  } finally {
+    rmSync(estimatePhoto, { force: true });
+  }
   // 4. a MULTI-stage registry flow (image-upscale — two card stages)
   //    serves at validate AND starts (2026-10-04: the VALIDATE-ONLY
   //    stamp is GONE — the start door composes the row's card stages
@@ -1136,11 +1146,15 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     (e: unknown) => /"bone" is REQUIRED by the "fit-seat" flow/.test(remoteErrorOf(e)?.message ?? String(e)),
   );
   // 6. absent OPTIONAL initials ride PAST the initial gate (the $channel
-  //    arms own them) — anny-hmr-estimator then COMPILES through the
-  //    wired registry's real pin, which PROVES the gate did not fire
-  //    on absent initials (the ok, not a refusal, is the proof).
+  //    arms own them) — fit-seat's body/prop are the optional pair now
+  //    (the estimator's own seats went REQUIRED at the GPU lane's
+  //    first live catch, 2026-11-14: each $spell rides its composed
+  //    graph, so the door teaches an absent one), and the bone-only
+  //    press COMPILES through the wired registry's real pin, which
+  //    PROVES the gate did not fire on absent OPTIONAL initials (the
+  //    ok, not a refusal, is the proof).
   const pastGate = (await runs.validate(
-    { flow: "anny-hmr-estimator", test: true, draft_id: "d_ok" },
+    { flow: "fit-seat", test: true, draft_id: "d_ok", bone: "hand_r" },
     sig,
   )) as { ok?: boolean };
   assert.equal(pastGate["ok"], true);

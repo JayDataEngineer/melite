@@ -752,7 +752,13 @@ describe("validate", () => {
     // anny-hmr-estimator, which is a family verb with no card
     // stage, so the sweep is the only thing that can judge it
     // (image-upscale needs a card the structural fake does not serve).
-    const schemaOnly = await s.svc.validate({ flow: "anny-hmr-estimator" }, sig());
+    // The estimator's two initials ride real values (both REQUIRED
+    // since the GPU lane's first live catch, 2026-11-14) so the
+    // initial gate passes and the verdict is the sweep's own.
+    const staged = tmp();
+    const pic = join(staged, "pic.png");
+    writeFileSync(pic, "png");
+    const schemaOnly = await s.svc.validate({ flow: "anny-hmr-estimator", photo: pic, person_index: 0 }, sig());
     // The POSITIVE the commit means: a served verdict. Asserting the
     // absence of a `code` key would pass for any success, including
     // one that carried pin errors under another field.

@@ -150,8 +150,12 @@ describe("flowSummaryRows", () => {
       );
     }
     // THE F57 SPELLS, verbatim — the exact seats the operator's
-    // natural-key presses (image, mesh) missed
-    assert.deepEqual(byName.get("anny-hmr-estimator")?.initials, ["photo"]);
+    // natural-key presses (image, mesh) missed. The estimator's
+    // person_index is REQUIRED beside the photo (the GPU lane's
+    // first live catch, 2026-11-14: its $spell rides the composed
+    // graph on every press, so the door teaches an absent one
+    // BEFORE the run registers — the verb's picker chips the value)
+    assert.deepEqual(byName.get("anny-hmr-estimator")?.initials, ["photo", "person_index"]);
     assert.deepEqual(byName.get("anny-params")?.initials, ["params_json"]);
     // requireds lead: craft-loop's brief+command before the optional dial
     assert.deepEqual(byName.get("craft-loop")?.initials, ["agent_prompt", "command", "max_iterations"]);
@@ -207,7 +211,7 @@ describe("DiscloseDirectoryService", () => {
     // initial keys ride to the tool face (the "; initials:"
     // segment), never hand-stripped at the seam
     const anny = flows.flows?.find((f) => f.name === "anny-hmr-estimator");
-    assert.deepEqual(anny?.initials, ["photo"]);
+    assert.deepEqual(anny?.initials, ["photo", "person_index"]);
     const cards = seat().discover("cards", "one", "");
     assert.deepEqual(cards.cards?.map((r) => r.id), ["c1"]);
     assert.equal(cards.flows, undefined);

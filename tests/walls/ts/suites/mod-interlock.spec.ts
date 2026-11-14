@@ -233,6 +233,12 @@ test("the anny card mounts all five verbs; knobs never join the surface", () => 
   assert.equal(byId.get("preset-load")?.engines[0]?.flow, "anny-params");
   assert.equal(byId.get("preset-save")?.engines[0]?.local, "save-preset");
   assert.equal(byId.get("dress")?.engines[0]?.flow, "fit-seat");
+  // THE DIALOG-INITIAL LANE (the GPU lane's first live catch,
+  // 2026-11-14): the picker rides the flow's person_index initial
+  // from the verb's own dialog field — family flows take initials,
+  // never params (the overlay door's round-23 law)
+  assert.deepEqual(byId.get("hmr-estimate")?.initials, { photo: "body_image" });
+  assert.deepEqual(byId.get("hmr-estimate")?.fieldInitials, { person_index: "person_index" });
   // SubActionMod law: verb fields stay OFF the card surface
   const surface = svc.cardModFields("anny").flatMap(names);
   for (const knob of ["person_index", "preset_id", "fit_ratio"]) {

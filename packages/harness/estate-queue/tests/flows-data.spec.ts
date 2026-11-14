@@ -550,30 +550,56 @@ describe("registryFlowToInline", () => {
 });
 
 describe("registryInitialsError", () => {
-  it("absent initials ride; photo files stage from every root", () => {
+  it("the estimator's two seats refuse at the door when absent (the $spell law — never a mid-run merge throw)", () => {
     const r = roots();
     try {
       const anny = SEED.get("anny-hmr-estimator")!;
-      assert.equal(registryInitialsError(anny, {}, r), null);
-      assert.equal(registryInitialsError(anny, { photo: null }, r), null);
+      // THE GPU LANE'S FIRST LIVE CATCH (2026-11-14): the picker's
+      // $spell rides the composed graph on every press, so both
+      // initials are REQUIRED — the door teaches an absent one
+      // BEFORE the run registers (the merge would otherwise throw
+      // 'workflow carries $person_index' sixty seconds in)
+      assert.match(registryInitialsError(anny, {}, r)!, /"photo" is REQUIRED/);
+      assert.match(registryInitialsError(anny, { photo: null }, r)!, /"photo" is REQUIRED/);
+      writeFileSync(join(r.repoRoot, "pic.png"), "png");
+      assert.match(
+        registryInitialsError(anny, { photo: "pic.png" }, r)!,
+        /"person_index" is REQUIRED/,
+      );
+      assert.equal(registryInitialsError(anny, { photo: "pic.png", person_index: 0 }, r), null);
+      // THE NUMBER SEAT (F58, the estimator's own dial): a
+      // digit-string refuses — the caller sent JSON
+      assert.match(
+        registryInitialsError(anny, { photo: "pic.png", person_index: "2" }, r)!,
+        /"person_index" must be a finite number/,
+      );
+    } finally {
+      dropRoots();
+    }
+  });
+
+  it("photo files stage from every root", () => {
+    const r = roots();
+    try {
+      const anny = SEED.get("anny-hmr-estimator")!;
       // relative (repo-anchored) hit.
       writeFileSync(join(r.repoRoot, "pic.png"), "png");
-      assert.equal(registryInitialsError(anny, { photo: "pic.png" }, r), null);
+      assert.equal(registryInitialsError(anny, { photo: "pic.png", person_index: 0 }, r), null);
       // {path:} object hit.
-      assert.equal(registryInitialsError(anny, { photo: { path: "pic.png" } }, r), null);
+      assert.equal(registryInitialsError(anny, { photo: { path: "pic.png" }, person_index: 0 }, r), null);
       // absolute hit.
-      assert.equal(registryInitialsError(anny, { photo: join(r.repoRoot, "pic.png") }, r), null);
+      assert.equal(registryInitialsError(anny, { photo: join(r.repoRoot, "pic.png"), person_index: 0 }, r), null);
       // artifact-URL hit (state output root).
       mkdirSync(join(r.stateRoot, "output", "run1"), { recursive: true });
       writeFileSync(join(r.stateRoot, "output", "run1", "a.png"), "png");
       assert.equal(
-        registryInitialsError(anny, { photo: "/v1/assets/runs/run1/a.png" }, r),
+        registryInitialsError(anny, { photo: "/v1/assets/runs/run1/a.png", person_index: 0 }, r),
         null,
       );
       // the LIVE prefix answers too (the legacy spelling above kept
       // only its own twin; the live media door was never read here)
       assert.equal(
-        registryInitialsError(anny, { photo: "/melite-media/runs/run1/a.png" }, r),
+        registryInitialsError(anny, { photo: "/melite-media/runs/run1/a.png", person_index: 0 }, r),
         null,
       );
     } finally {
@@ -649,11 +675,18 @@ describe("registryInitialsError", () => {
       // the VIDEO side of the vocab ternary: no seed flow declares
       // one, so the arm rides a synthetic video validator — a staged
       // mp4 passes, a txt refuses as video (never image, never mesh)
+      // (the estimator's own requireds ride along: the gate walks
+      // declaration order, so the photo/person_index seats need real
+      // values before the clip's own shape is judged)
       const videoRow = { ...anny, initialValidators: { ...anny.initialValidators, clip: "video" as const } };
+      writeFileSync(join(r.repoRoot, "pic.png"), "png");
       writeFileSync(join(r.repoRoot, "clip.mp4"), "mp4");
-      assert.equal(registryInitialsError(videoRow, { clip: "clip.mp4" }, r), null);
+      assert.equal(
+        registryInitialsError(videoRow, { photo: "pic.png", person_index: 0, clip: "clip.mp4" }, r),
+        null,
+      );
       assert.match(
-        registryInitialsError(videoRow, { clip: "clip.txt" }, r)!,
+        registryInitialsError(videoRow, { photo: "pic.png", person_index: 0, clip: "clip.txt" }, r)!,
         /not a stageable video/,
       );
     } finally {
@@ -1410,7 +1443,7 @@ describe("initialFileCandidates (the F5 claim probe's trees)", () => {
       // the gate and the probe answer identically on the same raw:
       // a gate pass is a candidate hit, a gate miss is a candidate miss
       const anny = SEED.get("anny-hmr-estimator")!;
-      assert.equal(registryInitialsError(anny, { photo: "pic.png" }, r), null);
+      assert.equal(registryInitialsError(anny, { photo: "pic.png", person_index: 0 }, r), null);
       assert.ok(initialFileCandidates("pic.png", r).some((c) => c === join(r.repoRoot, "pic.png")));
     } finally {
       dropRoots();

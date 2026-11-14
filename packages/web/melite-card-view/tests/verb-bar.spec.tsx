@@ -34,7 +34,7 @@ import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resour
 
 /** The estimator's SERVED row (discovery.ts's emission shape for the
  *  anny hmr-estimate registration — id/label/fields envelope/writes/
- *  flow/initials, authored to mirror the wire bytes). */
+ *  flow/initials/fieldInitials, authored to mirror the wire bytes). */
 const ESTIMATOR_ROW = {
   id: "hmr-estimate",
   label: "Estimate body from photo",
@@ -50,6 +50,7 @@ const ESTIMATOR_ROW = {
   writes: ["body_glb"],
   flow: "anny-hmr-estimator",
   initials: { photo: "body_image" },
+  fieldInitials: { person_index: "person_index" },
 } as const;
 
 /** preset-save's served row: a LOCAL-ONLY verb (no flow route) —
@@ -63,6 +64,7 @@ const LOCAL_ROW = {
   writes: [] as readonly string[],
   flow: null,
   initials: {} as Record<string, string>,
+  fieldInitials: {} as Record<string, string>,
 } as const;
 
 /** A flow verb mixing a NUMBER knob (cleared at press — the empty
@@ -78,6 +80,7 @@ const MIXED_ROW = {
   writes: ["body_glb"],
   flow: "anny-dress",
   initials: {} as Record<string, string>,
+  fieldInitials: {} as Record<string, string>,
 } as const;
 
 let fakes: EstateFakes | null = null;
@@ -151,7 +154,7 @@ describe("the verb bar — served verbs, local-only voice", () => {
 });
 
 describe("the press — the {flow:} door's exact body", () => {
-  test("the press carries flow, mapped intake, dialog overlay, draft_id, test:false", async () => {
+  test("the press carries flow, mapped intake, the dialog-initial lane, draft_id, test:false", async () => {
     mountBar({
       runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
     });
@@ -162,17 +165,23 @@ describe("the press — the {flow:} door's exact body", () => {
     // press_key: startRun auto-mints one per press (the N-E1 law —
     // one mint per press, never a client-supplied key); its VALUE is
     // the mint's own, so the wall pins its shape, not its bytes.
+    // THE DIALOG-INITIAL LANE (the GPU lane's first live catch): a
+    // family flow takes initials, never params — the person picker
+    // rides the person_index INITIAL at its seeded default, and the
+    // params overlay carries NOTHING (the round-23 law refused the
+    // overlay spelling live: "takes initials, not params").
     expect(startDoc()).toEqual({
       flow: "anny-hmr-estimator",
       photo: "/photo.png",
-      params: { person_index: 0 },
+      person_index: 0,
+      params: {},
       draft_id: "d-verb",
       test: false,
       press_key: expect.any(String),
     });
   });
 
-  test("a typed field edit rides the overlay coerced (raw strings never wire)", async () => {
+  test("a typed picker edit rides the dialog-initial lane COERCED (raw strings never wire, params stay empty)", async () => {
     mountBar({
       runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
     });
@@ -183,7 +192,27 @@ describe("the press — the {flow:} door's exact body", () => {
     await user.type(num, "2");
     await user.click(screen.getByTestId("verb-run"));
     await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
-    expect(startDoc()?.["params"]).toEqual({ person_index: 2 });
+    expect(startDoc()?.["person_index"]).toBe(2);
+    expect(startDoc()?.["params"]).toEqual({});
+  });
+
+  test("a CLEARED mapped picker rides NEITHER bag (never an invented value — the door's required gate owns the gap voice)", async () => {
+    mountBar({
+      verbs: [{ ...ESTIMATOR_ROW, fieldInitials: {} as Record<string, string> }],
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Estimate body from photo"));
+    const num = (await screen.findByTestId("verb-dialog")).querySelector('[data-field="person_index"]') as HTMLInputElement;
+    await user.clear(num);
+    await user.click(screen.getByTestId("verb-run"));
+    await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
+    // with NO fieldInitials mapping the picker is a plain overlay
+    // knob again — cleared means skipped, and nothing rides initial
+    // or overlay; a real estate door would refuse the absent
+    // required initial with its own teaching voice
+    expect(startDoc()?.["person_index"]).toBeUndefined();
+    expect(startDoc()?.["params"]).toEqual({});
   });
 });
 

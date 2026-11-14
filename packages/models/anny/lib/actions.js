@@ -110,9 +110,10 @@ export function parseEstimatorFacts(_raw) {
  *  estimator engine — the flow 'anny-hmr-estimator'):
  *  SAM 3D Body → grounded anny GLB, every link license-cleared for
  *  sale (SOMA-X Apache-2.0; sam-3d-body SAM License §1(a)/§5(a)).
- *  The person_index stays FIXED at the loudest detection (0) — the
- *  verb's own person picker is a chip knob, never a bench surface
- *  (SubActionMod law). */
+ *  The person picker rides the person_index param as a $spell from
+ *  the flow's initial (the merge resolves it against the run's
+ *  request; the verb's own person picker is the chip knob that
+ *  sources it, never a bench surface — SubActionMod law). */
 export const estimate_photo = {
     id: "estimate_photo",
     inputs: [],
@@ -130,16 +131,21 @@ export const estimate_photo = {
     // (the engine's own management owns residency). Never a mid-run
     // OOM.
     vramBudgetMb: 15500,
-    // THE DECLARED SURFACE (the write plane, phase 2): the one photo
-    // the verb reads — no anny card schema row exists for it (the
-    // person index is FIXED at 0 in build below), so the type is the
-    // anny-hmr-estimator flow row's own initial kind: its `photo`
-    // validator admits an image path.
-    params: [{ name: "photo", type: "string" }],
+    // THE DECLARED SURFACE (the write plane, phase 2): the photo the
+    // verb reads plus the person picker — both ride the flow's own
+    // initial kinds (photo: an image path; person_index: a number,
+    // spelled "$person_index" through the flow lane and resolved
+    // against the run's initials at the merge). The anny card schema
+    // carries NEITHER as a bench surface (SubActionMod law — the
+    // verb's dialog owns the pick).
+    params: [
+        { name: "photo", type: "string" },
+        { name: "person_index", type: "number" },
+    ],
     facts: parseEstimatorFacts,
     build({ p, g }) {
         const load = g.node('LoadImage', { image: String(p.photo) });
-        return g.node('Sam3dBodyImageToAnny', { image: load.out(0), person_index: 0 }).out(0);
+        return g.node('Sam3dBodyImageToAnny', { image: load.out(0), person_index: p.person_index }).out(0);
     },
 };
 /** The verbatim bake (the preset-load verb's backend — the flow

@@ -18,17 +18,22 @@ export const ANNY_HMR_ESTIMATOR = {
             id: "estimate",
             engine: CARD_PLANE_ENGINE,
             // the estimator engine of the same verb — family DECL owns
-            // the nodes (SAM 3D Body → grounded anny), person_index FIXED
-            // at the loudest detection (the verb's chip owns the picker)
+            // the nodes (SAM 3D Body → grounded anny). The person picker
+            // rides the person_index INITIAL (required: its $spell rides
+            // the composed graph on every press, and the merge resolves
+            // it against the run's initials — the door teaches an absent
+            // one BEFORE the run registers; the verb's chip owns the
+            // pick, the flow owns the lane).
             family: "anny",
             action: "estimate_photo",
             description: "SAM 3D Body estimator → grounded anny GLB",
-            inputs: { photo: initial("photo") },
-            expected: { photo: "image" },
-            params: { photo: "$photo" },
+            inputs: { photo: initial("photo"), person_index: initial("person_index") },
+            expected: { photo: "image", person_index: "num" },
+            params: { photo: "$photo", person_index: "$person_index" },
         }),
     ],
-    initialValidators: { photo: "photo" },
+    initialValidators: { photo: "photo", person_index: "number" },
+    requiredInitials: ["photo", "person_index"],
     tool: null,
     skillRefs: [],
 };

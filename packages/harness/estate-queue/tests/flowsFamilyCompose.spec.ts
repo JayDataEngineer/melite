@@ -81,7 +81,10 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     // THE WIRE PARITY: the composed envelope is the exact graph the
     // hand literal authored (classes, calibration, edges), with the
     // $-ref riding verbatim — the merged worker resolves it exactly
-    // as it resolved the literal's.
+    // as it resolved the literal's. The probe row spells ONLY the
+    // photo, so the picker rides undefined (serialization drops the
+    // key — the engine's own default owns a bare press; the GPU
+    // lane's live catch, 2026-11-14, spelled the flow lane below).
     assert.deepEqual(wf.workflow, {
       "LoadImage.0": {
         class_type: "LoadImage",
@@ -89,7 +92,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       },
       "Sam3dBodyImageToAnny.0": {
         class_type: "Sam3dBodyImageToAnny",
-        inputs: { image: ["LoadImage.0", 0], person_index: 0 },
+        inputs: { image: ["LoadImage.0", 0], person_index: undefined },
       },
     });
     // outputs DERIVE from the action's declaration (the row omits
@@ -105,13 +108,18 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       decls,
       "seated",
     );
+    // THE REGISTRY ROW'S OWN WIRE (the GPU lane's first live catch,
+    // 2026-11-14): the person picker rides the $person_index spell
+    // VERBATIM — the flow's stage params route the initial, and the
+    // merged worker resolves it against the run's request (a family
+    // flow takes initials, never params — the overlay door's law)
     assert.deepEqual(
       (comm.stages[0].params as { workflow: unknown }).workflow,
       {
         "LoadImage.0": { class_type: "LoadImage", inputs: { image: "$photo" } },
         "Sam3dBodyImageToAnny.0": {
           class_type: "Sam3dBodyImageToAnny",
-          inputs: { image: ["LoadImage.0", 0], person_index: 0 },
+          inputs: { image: ["LoadImage.0", 0], person_index: "$person_index" },
         },
       },
     );

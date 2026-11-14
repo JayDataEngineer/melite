@@ -121,6 +121,14 @@ export interface VerbRegistration {
    *  declares no intake; the bar still presses and the door's
    *  initial gate voices the gap. */
   readonly initials?: Readonly<Record<string, string>>
+  /** THE DIALOG-INITIAL MAPPING (the GPU lane's first live catch,
+   *  2026-11-14): each flow initial sourced from the verb's OWN
+   *  dialog field, read at press time. A family flow's stages take
+   *  initials, never params (the overlay door's round-23 law), so a
+   *  verb knob that tunes a family flow rides THIS map — a mapped
+   *  field never joins the params overlay. Absent = no dialog field
+   *  rides an initial. */
+  readonly fieldInitials?: Readonly<Record<string, string>>
 }
 
 /** A mod's absorbed contract (the family scope attached — the

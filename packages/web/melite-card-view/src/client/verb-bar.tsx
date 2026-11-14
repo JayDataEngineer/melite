@@ -5,7 +5,8 @@
 // dialog (the SubActionMod law — the fields ride the verb, never
 // the card surface), and the press routes through the {flow:}
 // registry door with the verb's declared intake (initials mapped to
-// the card's own params). When the run settles, the verb's `writes`
+// the card's own params, plus any dialog-initial mappings — family
+// flows take initials, never params). When the run settles, the verb's `writes`
 // hydrate the stage: the estimator's body_glb lands as a param the
 // compose reads — the photo→body path drivable end to end from the
 // card, the MHR resurrection's client half.
@@ -88,8 +89,21 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
       }
       initials[init] = v
     }
+    // THE DIALOG-INITIAL READ (the GPU lane's first live catch,
+    // 2026-11-14): a family flow's stages take initials, never
+    // params (the overlay door's round-23 law), so a field the verb
+    // maps onto a flow initial rides the INITIALS bag at its typed
+    // value — and never the params overlay below.
+    const viaInitial = new Set(Object.values(verb.fieldInitials ?? {}))
+    for (const [init, field] of Object.entries(verb.fieldInitials ?? {})) {
+      const raw = values[field] ?? ''
+      if (raw === '') continue
+      const spec = dialogFields(verb).find((f) => f.name === field)
+      initials[init] = spec?.type === 'number' ? Number(raw) : raw
+    }
     const overlay: Record<string, unknown> = {}
     for (const f of dialogFields(verb)) {
+      if (viaInitial.has(f.name)) continue
       const raw = values[f.name] ?? ''
       if (raw === '') continue
       overlay[f.name] = f.type === 'number' ? Number(raw) : raw

@@ -29,11 +29,13 @@ export declare function parseEstimatorFacts(_raw: LaneInputsFacts): Record<strin
  *  estimator engine — the flow 'anny-hmr-estimator'):
  *  SAM 3D Body → grounded anny GLB, every link license-cleared for
  *  sale (SOMA-X Apache-2.0; sam-3d-body SAM License §1(a)/§5(a)).
- *  The person_index stays FIXED at the loudest detection (0) — the
- *  verb's own person picker is a chip knob, never a bench surface
- *  (SubActionMod law). */
+ *  The person picker rides the person_index param as a $spell from
+ *  the flow's initial (the merge resolves it against the run's
+ *  request; the verb's own person picker is the chip knob that
+ *  sources it, never a bench surface — SubActionMod law). */
 export declare const estimate_photo: ComfyActionSpec<{
     readonly photo: string;
+    readonly person_index: number;
 }, Record<string, never>>;
 /** The verbatim bake (the preset-load verb's backend — the flow
  *  'anny-params'): authored 11-dim rows and re-instantiated

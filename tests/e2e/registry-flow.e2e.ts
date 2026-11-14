@@ -102,11 +102,14 @@ describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
         }
         const svc = new RunsRuntimeService(ctx as unknown as Context)
 
-        // THE CENSUS BEAT'S EXACT SHAPE: the named flow plus its
-        // declared initial, nothing else. No hand-authored graph, no
-        // bench — the door composes.
+        // THE CENSUS BEAT'S EXACT SHAPE: the named flow plus its two
+        // declared initials (the photo AND the person picker — both
+        // REQUIRED since the GPU lane's first live catch, 2026-11-14:
+        // each $spell rides the composed graph, and the door teaches
+        // an absent one before the run registers). No hand-authored
+        // graph, no bench — the door composes.
         const ans = await svc.start(
-          { draft_id: 'd1', test: false, flow: 'anny-hmr-estimator', photo: PHOTO },
+          { draft_id: 'd1', test: false, flow: 'anny-hmr-estimator', photo: PHOTO, person_index: 0 },
           new AbortController().signal,
         )
         assert.equal(ans.status, 'queued')
