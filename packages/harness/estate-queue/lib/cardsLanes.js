@@ -106,7 +106,7 @@ function homeProbes(home, name) {
  *  once). One face per press: the operator learns of every missing
  *  weight in the refusal that names the first, never one wedged run
  *  later. */
-function laneMisses(decl, check, variantRow, cellRow) {
+export function laneMisses(decl, check, variantRow, cellRow) {
     // THE VARIANT-LANE PRESENCE LAW (h¹ remainder — the one-parameter
     // switch): the probe judges the RESOLVED lane inputs — the family's
     // rows under the STATED variant's per-key override (the same merge

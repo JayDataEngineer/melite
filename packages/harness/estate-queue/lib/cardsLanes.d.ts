@@ -37,6 +37,24 @@ export declare function lanePresenceRefusal(fam: string, body?: Record<string, u
  *  caller (the GPU receipt rows) decides what a miss means (a skip,
  *  never a cost signal). One loop, two seats, no divergence. */
 type LaneCheck = (folder: string, name: string) => string | null;
+type LaneMiss = {
+    readonly key: string;
+    readonly name: string;
+    readonly folders: readonly string[];
+};
+/** THE MISS COLLECTION (the sequential-missing-weight-reveal cure,
+ *  2026-11-09): the SAME walk firstLaneMiss always rode, collecting
+ *  EVERY missing declared weight instead of returning at the first —
+ *  the stock-map loop, then the declared-home loop, deduped by
+ *  slot+name (a key declared in both shapes is one miss, judged
+ *  once). One face per press: the operator learns of every missing
+ *  weight in the refusal that names the first, never one wedged run
+ *  later. */
+export declare function laneMisses(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">, check: LaneCheck, variantRow?: {
+    lane_inputs?: Record<string, unknown>;
+}, cellRow?: {
+    lane_inputs?: Record<string, unknown>;
+}): LaneMiss[];
 export declare function laneFilesStatus(decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">, check?: LaneCheck): boolean | null;
 /** THE STATED CELL'S ROW (the cell-fold cure, 2026-11-10): the ONE
  *  RESOLVER's quant coordinate over the stated variant — the same

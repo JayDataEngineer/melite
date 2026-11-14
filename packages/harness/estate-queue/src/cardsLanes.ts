@@ -123,7 +123,7 @@ function homeProbes(home: string, name: string): Array<[string, string]> {
  *  once). One face per press: the operator learns of every missing
  *  weight in the refusal that names the first, never one wedged run
  *  later. */
-function laneMisses(
+export function laneMisses(
   decl: Pick<ModelDecl, "lane_inputs" | "provisions" | "snapshot_provisions" | "lane_homes">,
   check: LaneCheck,
   variantRow?: { lane_inputs?: Record<string, unknown> },

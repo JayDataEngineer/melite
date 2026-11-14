@@ -139,10 +139,15 @@ export function installLaneStoreOverlay(): string {
       const target = join(modelsDir, folder, name);
       if (existsSync(target)) return;
       mkdirSync(dirname(target), { recursive: true });
-      // a directory for a tree row (the HF-dir spelling), an empty
-      // file for a file row — only existence is faked; no run ever
-      // loads these bytes in a compose spec
-      if (name.includes(".")) writeFileSync(target, "");
+      // a directory for a tree row (the HF-dir spelling), a
+      // ONE-BYTE sentinel for a file row — presentWeight (the gate's
+      // presence core, catalog.ts) counts a 0-byte file as ABSENT
+      // (partial-download semantics), so a seed written empty is
+      // invisible to the very gate it exists to satisfy: the
+      // 2026-11-14 CI split (green on the operator's full store,
+      // red on every cold runner) was exactly this. No run ever
+      // loads these bytes in a compose spec.
+      if (name.includes(".")) writeFileSync(target, "\0");
       else mkdirSync(target, { recursive: true });
     };
     const handOnly = (name: string): boolean =>
