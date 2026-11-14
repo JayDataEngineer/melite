@@ -116,7 +116,20 @@ const silent: string[] = []
  *  an unknown voiced error reds the visit (a new defect must never
  *  pass because it is loud). */
 const voiced: string[] = []
-const VOICED_KNOWN = /not in the catalog/
+/** KNOWN voiced classes — each anchor names the designed owner:
+ *  - 'not in the catalog' — the catalog-integrity voice (receipts
+ *    verbatim every ride until the product cures it).
+ *  - '[list-poll transient]' — the drafts-list 404 poll tick (the
+ *    armCollectors law, both ledger halves).
+ *  - the SOMAX empty-bench degradation — the motion card's DESIGNED
+ *    fallback (useMotionMedia.ts:207: catch → notice → toast →
+ *    neutral mannequin): on a fresh host with no bench draft for
+ *    the session, the compose door's bench/not-found 404 is the
+ *    estate's honest refusal and the mannequin is the empty-state
+ *    body. Four anchors — door name, 404, code, designed fallback
+ *    suffix — so a SOMAX conversion failure with ANY other detail
+ *    (a real rig-run defect) still reds the visit. */
+const VOICED_KNOWN = /not in the catalog|\[list-poll transient\]|^\[toast\] SOMAX conversion failed — card compose refused: HTTP 404: .+"code":"bench\/not-found".+ Showing the neutral mannequin\.$/
 
 /** Literal-escape a catalog label for RegExp matching (labels carry
  *  user-facing words — parens, dots — never regex syntax). */
@@ -291,6 +304,20 @@ function armCollectors(page: Page): void {
       // strict; a product-side validate failure still reds the wire
       // ledger below.
       if (/^Failed to load resource/.test(msg.text()) && at.includes('/v1/flows/validate')) return
+      // THE LIST-POLL TRANSIENT (the 2026-11-14 fresh-lane run): the
+      // drafts LIST is the seat door every walker tick and the UI's
+      // own bench reads poll — during an estate re-activation flap
+      // the route answers 404 for a beat (the same transient class
+      // the settle gate adjudicates for estate/pending; the list
+      // endpoint itself never refuses — the route was briefly
+      // unmounted). A poll tick's mirror is a double voice, not a
+      // silent product error: receipt it in the VOICED ledger, never
+      // the silent one. The door+status pair is exact — every other
+      // 404 still reds below.
+      if (/^Failed to load resource/.test(msg.text()) && at.includes('/v1/flows/drafts')) {
+        voiced.push(`[list-poll transient] ${msg.text()} @ ${at.replace(/\?token=[^&]*/, '')}`)
+        return
+      }
       silent.push(`console: ${msg.text()}${at !== '' ? ` @ ${at.replace(/\?token=[^&]*/, '')}` : ''}`)
     }
   })
@@ -307,6 +334,16 @@ function armCollectors(page: Page): void {
     // same law the console mirror above rides. Every other door
     // stays strict.
     if (url.includes('/v1/flows/validate')) return
+    // THE LIST-POLL TRANSIENT, WIRE HALF — the same law the console
+    // mirror above rides, narrowed to the exact door+status observed
+    // on the 2026-11-14 fresh lane: a 404 on the LIST read (no draft
+    // id in the path — the single-draft door stays strict, a real
+    // missing-draft voice is a product fact). Receipt in the voiced
+    // ledger; every other ≥400 on every other door still reds.
+    if (res.status() === 404 && url.replace(/\?.*$/, '').endsWith('/v1/flows/drafts')) {
+      voiced.push(`[list-poll transient] 404 ${url.replace(/\?token=[^&]*/, '')}`)
+      return
+    }
     if (res.status() >= 400) wireFailures.push(`${res.status()} ${url.replace(/\?token=[^&]*/, '')}`)
   })
 }
@@ -345,6 +382,15 @@ async function settleHost(page: Page): Promise<void> {
       await notice.click({ timeout: 10_000 })
       await page.waitForTimeout(1_000)
     } catch { /* round again — a cold host can re-mask mid-settle */ }
+  }
+  // THE ONBOARDING MASK (the fresh-host class): a throwaway lane's
+  // first load seats the shell's "Get started" sign-in modal, whose
+  // mask intercepts every pointer event until its Close rides —
+  // the written :3088 lane never showed it (dismissed history).
+  const onboard = page.getByRole('dialog', { name: 'Get started' }).getByRole('button', { name: 'Close' })
+  if ((await onboard.count()) > 0) {
+    await onboard.click({ timeout: 10_000 }).catch(() => { /* a racing auto-dismiss is not a failure */ })
+    await page.waitForTimeout(1_000)
   }
   const expandSeat = page.locator('[data-sidebar-right-expand]').first()
   if ((await expandSeat.count()) === 0) {
@@ -845,6 +891,88 @@ function expectVerdictLawful(verdict: { status: number, ok: boolean, error: stri
   }
 }
 
+/** THE BENCH WIRE (the UI's own envelope, verbatim from the
+ * card-view tour's callBench): the /api client-request frame the
+ * deck's own gestures ride — the sweep heals the bench through
+ * the SAME door a user's stage delete presses, never a disk or
+ * server-side shortcut. */
+async function benchWire<T>(page: Page, method: string, args: Record<string, unknown>): Promise<T> {
+  return await page.evaluate(async ({ method: m, args: a }) => {
+    const r = await fetch('/api/' + m, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'client-request', rpcId: 'sweep-' + Date.now(), method: m, payload: { args: a } }),
+      signal: AbortSignal.timeout(90_000),
+    })
+    const body = (await r.json().catch(() => null)) as { result?: { ok?: boolean, value?: unknown, error?: { message?: string } } } | null
+    const result = body?.result
+    if (result === undefined || result.ok === false) {
+      throw new Error(m + ' refused: ' + String(result && 'error' in result ? result.error?.message : 'no result'))
+    }
+    return result.value as T
+  }, { method, args })
+}
+
+/** THE ADD SEAT'S LAWFUL-REFUSAL TWIN (the 2026-11-14 fresh-lane
+ * find): the estate OFFERS boarded families whose weights are not
+ * downloaded (the no-silent-drop law — absence is a download
+ * prompt, never a block), so a lane whose store lacks a family's
+ * unet refuses the ADD at the lane-presence gate, loud, before
+ * the write. The compose door's classification (LAWFUL_VOICE)
+ * already pins that voice; this is the add seat's own twin. When
+ * the refusal names a stage OTHER than this combo's newcomer
+ * (the newcomer never landed), the named stage POISONS every
+ * later add — the user's own cure is deleting it, and so is the
+ * sweep's: remove the named stage through the bench wire, then
+ * retry the add once. */
+async function presenceRefusalOf(page: Page): Promise<{ text: string, stages: string[] } | null> {
+  const para = page.getByRole('dialog', { name: 'Add a card' }).locator('p').filter({ hasText: /lane presence:/ })
+  if ((await para.count()) === 0) return null
+  const text = (await para.first().textContent({ timeout: 5_000 }).catch(() => '')) ?? ''
+  if (!/lane presence: family .* declares .* but no store copy exists/.test(text)) return null
+  const stages = [...text.matchAll(/stage "([^"]+)"/g)].map((m) => m[1] ?? '').filter((s) => s !== '')
+  return { text, stages }
+}
+
+/** Remove the named poison stages through the bench wire: resolve
+ * each stage's OWNING bench draft (the walker's own 8-row head
+ * window), read its rev, then bench/remove-stage — the delete a
+ * user presses. Returns the ids actually removed. */
+async function removePoisonStages(page: Page, stageIds: string[]): Promise<string[]> {
+  const removed: string[] = []
+  for (const stageId of stageIds) {
+    const owner = await page.evaluate(async (sid: string) => {
+      const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
+      const benchRows = (list.drafts ?? []).filter((r) => typeof r.draft_id === 'string' && (r.draft_id as string).startsWith('bench-'))
+      for (const r of benchRows.slice(0, 8)) {
+        const draftId = String(r.draft_id)
+        const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId))
+        if (!res.ok) continue
+        const doc = await res.json() as { stages?: Array<{ id?: unknown }> }
+        if ((doc.stages ?? []).some((st) => st.id === sid)) return draftId
+      }
+      return null
+    }, stageId)
+    if (owner === null) continue
+    const sessionKey = owner.replace(/^bench-/, '')
+    const bench = await benchWire<{ rev?: number }>(page, 'bench/get', { sessionKey })
+    await benchWire(page, 'bench/remove-stage', { sessionKey, doc: { stage: stageId, expect_rev: bench?.rev ?? 0, author: 'user' } })
+    removed.push(stageId)
+  }
+  return removed
+}
+
+/** Dismiss the picker's error face and re-pick the card (the
+ * picker dialog STAYS OPEN through the refusal — the error rides
+ * above the card grid; the user's retry is one click). */
+async function retryPick(page: Page, label: string): Promise<void> {
+  const dismiss = page.getByRole('button', { name: 'Dismiss error' }).first()
+  if ((await dismiss.count()) > 0) await dismiss.click({ timeout: 5_000 }).catch(() => { /* already dismissed */ })
+  await page.waitForTimeout(500)
+  await page.getByRole('button', { name: new RegExp(`^${escapeRe(label)}$`, 'i') }).first().click({ timeout: 30_000 })
+  await page.waitForTimeout(2_000)
+}
+
 test('the real-usage combination sweep — derived roster, 1:1 gestures, zero silent errors', async ({ page }) => {
 
   test.setTimeout(1_800_000)
@@ -956,7 +1084,59 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
         }
         await page.waitForTimeout(500)
       }
-      expect(stagePin, `${tag}: this combo's own stage lands in the drafts domain (the add's write — a missing newcomer is a birth clobber, named as such)`).not.toBe('')
+      // THE ADD SEAT'S LAWFUL-REFUSAL ARM (the fresh-lane class,
+      // 2026-11-14): a newcomer that never landed is a birth clobber
+      // UNLESS the picker voices the lane-presence refusal — the
+      // estate's own offer-and-prompt law (a boarded family whose
+      // weights are absent). Then: log the receipt, heal the poison
+      // (the refusal's named stage blocks every later add), retry the
+      // pick ONCE, and skip the combo only when the refusal names no
+      // other stage (this combo's own family is un-runnable on this
+      // store). Any other missing-newcomer cause still reds.
+      if (stagePin === '') {
+        const refusal = await presenceRefusalOf(page)
+        expect(refusal, `${tag}: this combo's own stage lands in the drafts domain (the add's write — a missing newcomer is a birth clobber, named as such)`).not.toBeNull()
+        // eslint-disable-next-line no-console -- the lawful add-refusal receipt (the sweep's own find class: offered-but-absent weights)
+        console.log(`[sweep-addmission] ${tag}: lawful add refusal (offered family, absent weights) — ${refusal!.text}`)
+        if (refusal!.stages.length > 0) {
+          const healed = await removePoisonStages(page, refusal!.stages)
+          // eslint-disable-next-line no-console -- the heal receipt (which poison stages left the bench)
+          console.log(`[sweep-addmission] ${tag}: removed poison stage(s) ${JSON.stringify(healed)} — the user's own delete gesture`)
+          const retryPre = stagePairsPre
+          await retryPick(page, row.label)
+          for (let attempt = 0; attempt < 30 && stagePin === ''; attempt++) {
+            const found = await page.evaluate(async ({ cardId, pre }: { cardId: string, pre: string[] }) => {
+              const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
+              const benchRows = (list.drafts ?? []).filter((r) => typeof r.draft_id === 'string' && (r.draft_id as string).startsWith('bench-'))
+              for (const r of benchRows.slice(0, 8)) {
+                const draftId = String(r.draft_id)
+                const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId))
+                if (!res.ok) continue
+                const doc = await res.json() as { stages?: Array<{ id?: unknown, card?: unknown }> }
+                for (const s of doc.stages ?? []) {
+                  if (s.card !== cardId || typeof s.id !== 'string') continue
+                  if (!pre.includes(draftId + '#' + s.id)) return { draftId, stageId: s.id }
+                }
+              }
+              return null
+            }, { cardId: row.card, pre: retryPre })
+            if (found !== null) {
+              stagePin = found.stageId
+              stageDraft = found.draftId
+              break
+            }
+            await page.waitForTimeout(500)
+          }
+        }
+        if (stagePin === '') {
+          // the refusal names no other stage: this combo's own family
+          // is offered-but-absent on this store — the declared skip,
+          // never a silent one (close the picker, next combo)
+          const closePicker = page.getByRole('button', { name: 'Close picker' }).first()
+          if ((await closePicker.count()) > 0) await closePicker.click({ timeout: 5_000 }).catch(() => { /* already closed */ })
+          continue
+        }
+      }
       // THE PROMPT GESTURE (1:1: a user states what they want before
       // they touch the axes): fill the prompt knob when the card
       // renders one — the compose door's required-knob voice would
@@ -1289,14 +1469,25 @@ test('the real-usage combination sweep — derived roster, 1:1 gestures, zero si
       // drill's close control's ACCESSIBLE NAME is "Collapse card"
       // (its visible text is "Close" — match the name, never the
       // text; the 2026-11-08 run left the modal open on a /Close/
-      // text match and the next add never landed)
-      const close = page.getByRole('button', { name: /^Collapse card$|^Close$|^Back$/ }).first()
-      if ((await close.count()) > 0) await close.click({ timeout: 10_000 }).catch(() => { /* the drill may already be closed */ })
-      await page.waitForTimeout(500)
-      // Escape as the fallback close (a zoom-overlay drill answers
-      // it), then confirm the modal is gone before the next add
-      await page.keyboard.press('Escape').catch(() => { /* no modal — nothing to close */ })
-      await page.waitForTimeout(500)
+      // text match and the next add never landed). THE VERIFIED
+      // CLOSE (the 2026-11-14 fresh-lane run): a drill whose stage
+      // renders an empty-state overlay can intercept the plain
+      // click — the old catch swallowed the interception and the
+      // next combo's Add died on the still-open modal. The close is
+      // now FORCED and VERIFIED: poll until no zoom-overlay dialog
+      // remains, escalating through Escape, and fail LOUD naming
+      // the stuck modal — never carry a swallowed close into the
+      // next combination.
+      for (let round = 0; round < 6; round++) {
+        const overlay = page.locator('div[class*="zoomOverlay"][role="dialog"]')
+        if ((await overlay.count()) === 0) break
+        const close = page.getByRole('button', { name: /^Collapse card$|^Close$|^Back$/ }).first()
+        if ((await close.count()) > 0) await close.click({ timeout: 5_000, force: true }).catch(() => { /* Escape below */ })
+        await page.waitForTimeout(500)
+        if ((await overlay.count()) > 0) await page.keyboard.press('Escape').catch(() => { /* no modal — nothing to close */ })
+        await page.waitForTimeout(500)
+      }
+      expect((await page.locator('div[class*="zoomOverlay"][role="dialog"]').count()), `${tag}: the drill's modal closed before the next combination (a stuck zoom overlay blocks every later Add — the verified close, 2026-11-14)`).toBe(0)
     }
   }
 })
@@ -1415,8 +1606,11 @@ async function slotSeat(page: Page, slot: SlotFace, census: number): Promise<{ s
  *  the attach sweep's read of the same block): the pre-add (draft,
  *  stage) PAIR snapshot, the catalog-label pick, and the polled
  *  newcomer resolution — this visit's own stage, never a sibling's
- *  or an operator-history stage (the head-window burn, 2026-11-15). */
-async function addStagePinned(page: Page, card: string, label: string, tag: string): Promise<{ stageId: string, draftId: string }> {
+ *  or an operator-history stage (the head-window burn, 2026-11-15).
+ *  The lawful-refusal arm (the fresh-lane class): a presence
+ *  refusal returns skipped:true after healing the poison — the
+ *  caller records the declared skip, never a silent one. */
+async function addStagePinned(page: Page, card: string, label: string, tag: string): Promise<{ stageId: string, draftId: string, skipped?: boolean }> {
   const stagePairsPre = await page.evaluate(async (cardId: string) => {
     const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
     const benchRows = (list.drafts ?? []).filter((r) => typeof r.draft_id === 'string' && (r.draft_id as string).startsWith('bench-'))
@@ -1461,7 +1655,51 @@ async function addStagePinned(page: Page, card: string, label: string, tag: stri
     }
     await page.waitForTimeout(500)
   }
-  expect(stageId, `${tag}: this visit's own stage lands in the drafts domain (the add's write — a missing newcomer is a birth clobber, named as such)`).not.toBe('')
+  if (stageId === '') {
+    // the fresh-lane lawful arm (the main sweep's inline twin): a
+    // presence refusal is the estate's offer-and-prompt law, never
+    // a birth clobber — heal the poison, retry once, then declare
+    // the skip when this visit's own family is the absent one
+    const refusal = await presenceRefusalOf(page)
+    expect(refusal, `${tag}: this visit's own stage lands in the drafts domain (the add's write — a missing newcomer is a birth clobber, named as such)`).not.toBeNull()
+    // eslint-disable-next-line no-console -- the lawful add-refusal receipt
+    console.log(`[sweep-addmission] ${tag}: lawful add refusal (offered family, absent weights) — ${refusal!.text}`)
+    if (refusal!.stages.length > 0) {
+      const healed = await removePoisonStages(page, refusal!.stages)
+      // eslint-disable-next-line no-console -- the heal receipt
+      console.log(`[sweep-addmission] ${tag}: removed poison stage(s) ${JSON.stringify(healed)} — the user's own delete gesture`)
+      const retryPre = stagePairsPre
+      await retryPick(page, label)
+      for (let attempt = 0; attempt < 30 && stageId === ''; attempt++) {
+        const found = await page.evaluate(async ({ cardId, pre }: { cardId: string, pre: string[] }) => {
+          const list = await (await fetch('/v1/flows/drafts')).json() as { drafts?: Array<{ draft_id?: unknown }> }
+          const benchRows = (list.drafts ?? []).filter((r) => typeof r.draft_id === 'string' && (r.draft_id as string).startsWith('bench-'))
+          for (const r of benchRows.slice(0, 8)) {
+            const draftId = String(r.draft_id)
+            const res = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId))
+            if (!res.ok) continue
+            const doc = await res.json() as { stages?: Array<{ id?: unknown, card?: unknown }> }
+            for (const s of doc.stages ?? []) {
+              if (s.card !== cardId || typeof s.id !== 'string') continue
+              if (!pre.includes(draftId + '#' + s.id)) return { draftId, stageId: s.id }
+            }
+          }
+          return null
+        }, { cardId: card, pre: retryPre })
+        if (found !== null) {
+          stageId = found.stageId
+          draftId = found.draftId
+          break
+        }
+        await page.waitForTimeout(500)
+      }
+    }
+    if (stageId === '') {
+      const closePicker = page.getByRole('button', { name: 'Close picker' }).first()
+      if ((await closePicker.count()) > 0) await closePicker.click({ timeout: 5_000 }).catch(() => { /* already closed */ })
+      return { stageId: '', draftId: '', skipped: true }
+    }
+  }
   return { stageId, draftId }
 }
 
@@ -1678,7 +1916,13 @@ test('the attach/detach sweep — slot file inputs, re-switch after attach', asy
       const tag = `${row.card} :: ${famId} :: attach`
       const sweepPrompt = `attach sweep ${tag} #${RUN_TAG}`
 
-      const { stageId, draftId } = await addStagePinned(page, row.card, row.label, tag)
+      const pinned = await addStagePinned(page, row.card, row.label, tag)
+      if (pinned.skipped === true) {
+        // eslint-disable-next-line no-console -- the declared-skip receipt (never a silent skip — the sweep's own law)
+        console.log(`[sweep-attach] ${tag}: skipped — this visit's family is offered-but-absent on this store (the receipt above names the weight)`)
+        continue
+      }
+      const { stageId, draftId } = pinned
       const docPin: { marker?: string, draftPin: string, stagePin: string } = { draftPin: draftId, stagePin: stageId }
       // THE MARKER LINK (the main sweep's prompt law): fill the
       // prompt when the card renders one — the marker pins the doc

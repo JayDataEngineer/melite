@@ -50,6 +50,14 @@ async function settleHost(page: Page): Promise<void> {
       await page.waitForTimeout(1_000)
     } catch { /* a cold host can re-mask mid-settle */ }
   }
+  // THE ONBOARDING MASK (the fresh-host class): a throwaway lane's
+  // first load seats the shell's "Get started" sign-in modal, whose
+  // mask intercepts every pointer event until its Close rides.
+  const onboard = page.getByRole('dialog', { name: 'Get started' }).getByRole('button', { name: 'Close' })
+  if ((await onboard.count()) > 0) {
+    await onboard.click({ timeout: 10_000 }).catch(() => { /* a racing auto-dismiss is not a failure */ })
+    await page.waitForTimeout(1_000)
+  }
   const expandSeat = page.locator('[data-sidebar-right-expand]').first()
   if ((await expandSeat.count()) === 0) {
     const hero = page.getByRole('textbox', { name: /Describe what you want to build/ })
@@ -99,9 +107,15 @@ test('journey (k): the recipe blank round-trip on the live drill', async ({ page
   // THE RECIPE AXIS (k): the menu carries the blank + declared rows;
   // the pick lands in the face; the blank round-trip returns the
   // '-- recipe --' write (the active row's departure — never a
-  // persisted recipe key).
+  // persisted recipe key). THE DRILL MOUNT POLL (the 2026-11-14
+  // fresh-lane find): a shared bench accumulates stages across runs
+  // (the sweep's teardown law leaves them) and the drill's mount
+  // time grows with the list — a fixed wait races it at scale. Poll
+  // the drill's OWN marker; never a fixed sleep.
   const recipeSelect = page.locator('[data-recipe-select]').first()
-  expect(await recipeSelect.count(), 'the Generate Image drill seats the recipe axis (the (k) card)').toBeGreaterThan(0)
+  await expect
+    .poll(async () => await recipeSelect.count(), { timeout: 30_000 })
+    .toBeGreaterThan(0)
   const preFace = ((await recipeSelect.textContent()) ?? '').trim()
   await recipeSelect.click({ timeout: 15_000 })
   await page.waitForTimeout(500)
@@ -165,14 +179,21 @@ test('journey (j/l): the anny body seats own the preview face', async ({ page })
   await openBench(page)
   await addCard(page, 'Anny')
 
+  // THE DRILL MOUNT POLL (the shared-bench law — see journey (k)):
+  // poll the drill's own tab face, never a fixed sleep.
+  await expect
+    .poll(async () => await page.getByRole('tab', { name: 'Identity', exact: true }).count(), { timeout: 30_000 })
+    .toBeGreaterThan(0)
+
   // THE IDENTITY TAB (the anny drill's own anatomy — role tab, and
   // the arrival selection): the body seats ride the Identity tab
   // (Turnaround/Morph are the other faces).
   const identityTab = page.getByRole('tab', { name: 'Identity', exact: true }).first()
-  if ((await identityTab.count()) > 0) {
-    await identityTab.click({ timeout: 15_000 })
-    await page.waitForTimeout(1_500)
-  }
+  await identityTab.click({ timeout: 15_000 })
+  await page.waitForTimeout(1_500)
+  await expect
+    .poll(async () => /body\s*glb/i.test(await page.evaluate(() => document.body.innerText)), { timeout: 30_000 })
+    .toBe(true)
 
   // (l): the body seats render BESIDE each other — the served
   // envelope carries body_glb + body_image and the drill speaks both
@@ -223,6 +244,12 @@ test('journey (c/e): the lane-head parity shell + the dead refmods hint', async 
   await openBench(page)
   await addCard(page, 'Generate Video')
 
+  // THE STUDIO MOUNT POLL (the shared-bench law — see journey (k)):
+  // poll the gutter heads' own shell, never a fixed sleep.
+  await expect
+    .poll(async () => await page.locator('[data-lane-head]').count(), { timeout: 30_000 })
+    .toBeGreaterThan(0)
+
   // (c): EVERY gutter head renders through the ONE LaneHead shell —
   // the variants census reads the shell's own data hook; the burn's
   // pair (the keyframes bar vs the audio bar) must both be present.
@@ -252,18 +279,27 @@ test('journey (c/e): the lane-head parity shell + the dead refmods hint', async 
   console.log('[journey-c] mirror=' + JSON.stringify(mirror))
   await page.screenshot({ path: '/tmp/journey-c-laneheads.png', fullPage: false })
 
-  // THE CALL-BIRTH GESTURE (1:1: a user adds a dialogue clip — the
-  // call card is born and the Ref mods bucket renders inside it).
-  await page.getByRole('button', { name: 'Add Dialogue clip' }).first().click({ timeout: 15_000 })
-  await page.waitForTimeout(2_500)
+  // THE CALL-BIRTH GESTURE (the operator's own law, 2026-08-16: "We
+  // don't need the add-call button. We can use the timeline to do
+  // this."): double-click the RULER — the frame is always computable
+  // there — births call-0 on a fresh doc (the audio lanes' 'Add
+  // Dialogue clip' is the D-M-E source door, a DIFFERENT lane that
+  // opens the From flow/media/file menu; it never birthed a call —
+  // the 2026-11-14 fresh-lane run caught the stale gesture when the
+  // menu's overlay blocked the clip-select click that followed it).
+  const ruler = page.locator('[data-testid="motion-timeline-ruler"]').first()
+  expect(await ruler.count(), 'the studio seats the timeline ruler (the call-birth surface)').toBeGreaterThan(0)
+  const rulerBox = await ruler.boundingBox()
+  expect(rulerBox, 'the ruler has a box').not.toBeNull()
+  await page.mouse.dblclick(rulerBox!.x + rulerBox!.width * 0.5, rulerBox!.y + rulerBox!.height * 0.5)
+  await page.waitForTimeout(2_000)
   // THE SELECTION (the mode rail's law: the sidebar shows the global
-  // params until a call clip is selected in the bar — then it swaps
-  // to THAT call's editor): click the born prompt clip in the bar.
+  // params until a call is selected in the bar — then it swaps to
+  // THAT call's editor): click the born clip in the bar.
   const clip = page.locator('[data-prompt-clip]').first()
-  if ((await clip.count()) > 0) {
-    await clip.click({ timeout: 10_000 }).catch(() => { /* the clip may already be selected by birth */ })
-    await page.waitForTimeout(1_500)
-  }
+  expect(await clip.count(), 'the ruler double-click birthed a call clip').toBeGreaterThan(0)
+  await clip.click({ timeout: 10_000 })
+  await page.waitForTimeout(1_500)
   console.log('[journey-e] post-birth face=' + JSON.stringify(
     await page.evaluate(() => ({
       buttons: Array.from(document.querySelectorAll('[role="dialog"] button')).map((el) => (el.getAttribute('aria-label') ?? el.textContent ?? '').trim()).filter((s) => s !== '').slice(0, 40),

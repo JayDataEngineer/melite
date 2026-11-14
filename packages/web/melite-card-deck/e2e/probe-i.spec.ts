@@ -14,6 +14,15 @@ test('probe (i): input-prep renders the crop + model-choice seats', async ({ pag
     if ((await notice.count()) === 0) break
     try { await notice.click({ timeout: 10_000 }); await page.waitForTimeout(1_000) } catch { /* again */ }
   }
+  // THE ONBOARDING MASK (the 2026-11-14 fresh-lane find, the sweep's
+  // settleHost law): a throwaway home seats the "Get started" modal
+  // whose mask intercepts every pointer event — close it before any
+  // seat click, or the click times out against the mask.
+  for (let round = 0; round < 3; round++) {
+    const started = page.getByRole('dialog', { name: 'Get started' }).getByRole('button', { name: 'Close' })
+    if ((await started.count()) === 0) break
+    try { await started.click({ timeout: 10_000 }); await page.waitForTimeout(500) } catch { /* again */ }
+  }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
   await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })
@@ -27,10 +36,20 @@ test('probe (i): input-prep renders the crop + model-choice seats', async ({ pag
   })
   console.log('SERVED=' + JSON.stringify(served))
   expect(served.names.includes('crop_x') && served.names.includes('scale_model'), 'the serve carries crop_x + scale_model: ' + served.names.join(',')).toBe(true)
-  // the card tile → its drill
-  const tile = page.getByText('Input Prep', { exact: true }).first()
-  await tile.click({ timeout: 30_000 })
+  // the card tile → its drill. THE SELF-SEATED STAGE (the 2026-11-14
+  // bench-clear find): the probe once leaned on a leftover Input Prep
+  // tile from earlier runs — a cleared bench has none. The probe adds
+  // its own card first (the journeys' own addCard law).
+  await page.getByRole('button', { name: /^Add a card$/ }).first().click({ timeout: 30_000 })
+  await page.getByRole('button', { name: /^Input Prep$/i }).first().click({ timeout: 30_000 })
   await page.waitForTimeout(3_000)
+  // THE DRILL MOUNT POLL (the shared-bench law, the journeys' own):
+  // the add opens the drill directly (its zoomOverlay owns the
+  // pointer) — poll the drill's own face, never click the tile under
+  // the overlay, never a fixed sleep.
+  await expect
+    .poll(async () => /crop/i.test(await page.evaluate(() => document.body.innerText)), { timeout: 30_000 })
+    .toBe(true)
   // THE CURRENT ANATOMY (the 2026-10-22 ride): the crop + scale seats
   // render FLAT on the drill — the Transform tab is gone (the older
   // anatomy's hop; the flat form is the drill's own face now). The
