@@ -3,7 +3,6 @@
   "excluded": {
     "v0.1.5-pre-alpha": "draft release only — a draft 404s the tags endpoint for every consumer; not an install door",
     "v0.2.1-alpha": "tag cut without a mint — no GitHub release, no assets",
-    "v0.2.3-rc.1": "tag cut without a mint — no GitHub release, no assets",
     "v0.2.3-rc.2": "tag cut without a mint — no GitHub release, no assets"
   }
 }
