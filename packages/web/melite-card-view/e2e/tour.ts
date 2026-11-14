@@ -483,7 +483,13 @@ export async function seedBenchH3(page: Page, sessionKey: string): Promise<void>
     doc: {
       card: 'h3-timeline',
       engine: 'comfyui',
-      params: { variant: 'timeline', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }] },
+      params: { variant: 'timeline', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }],
+        // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): this seed
+        // text is scaffolding, not craft — a marker the gate's
+        // DENSITY-FLOOR + CAMERA-VERB refuse at press. The waiver is
+        // the designed door (recorded, never silent); real craft rides
+        // LAWFUL_TEXT in the unit sweep, never this marker.
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'] },
       inputs: {},
       outputs: { default: 'image' },
       expect_rev: rev,

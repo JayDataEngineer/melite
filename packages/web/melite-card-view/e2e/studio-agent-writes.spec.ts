@@ -130,6 +130,9 @@ test('an agent\'s bench writes redraw the open studio timeline', async ({ page }
         variant: 'timeline', quant: 'int8', model: 'h3',
         seed: WALL_SEED,
         calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
+        // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): WALL_TEXT
+        // is a cleanup marker, not craft — waived loud (see tour.ts).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       },
       inputs: {},
       outputs: { default: 'video' },
@@ -305,6 +308,9 @@ test("the agent's settled run lands on the open timeline — no conversation, no
         variant: 'timeline', quant: 'int8', model: 'h3',
         seed: WALL_SEED,
         calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
+        // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): WALL_TEXT
+        // is a cleanup marker, not craft — waived loud (see tour.ts).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       },
       inputs: {},
       outputs: { default: 'video' },

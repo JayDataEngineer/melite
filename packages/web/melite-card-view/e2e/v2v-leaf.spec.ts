@@ -60,7 +60,11 @@ async function resetScratchStage(page: Page): Promise<void> {
   if (!hit?.id) throw new Error('the scratch conversation carries no h3-timeline stage — seed it first (bench/add-stage)')
   await callBench(page, 'bench/patch', {
     sessionKey: SCRATCH_SESSION,
-    doc: { stage: hit.id, params: { ...(hit.params ?? {}), calls: SEED_CALLS }, expect_rev: rev, author: 'user' },
+    doc: { stage: hit.id, params: { ...(hit.params ?? {}), calls: SEED_CALLS,
+      // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): the scratch
+      // stage may predate the tour helper's waiver — state it here so
+      // every reset composes (recorded, never silent; see tour.ts).
+      prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'] }, expect_rev: rev, author: 'user' },
   })
 }
 
