@@ -77,13 +77,24 @@ const BUDGET = {
   //    178 -- the provisioning/src/types.ts barrel-shadow row is still
   //    owed. A number that falls is taken: the caps track the true
   //    census, both directions.
-  files: 57,
-  dependencies: 15,
-  devDependencies: 50,
-  unlisted: 1,
+  //  - THE 2026-11-14 CI-SPLIT RATCHET (same commit as the knip.jsonc
+  //    teaching pass): every seam-consumed class that was riding the
+  //    budgets as noise is now ARGUED in knip.jsonc (root toolchain
+  //    deps, the string-table seats, the harness/probe/mods/card.ts
+  //    file plane, the spawned binaries) -- the caps drop to the true
+  //    census: files 57->0, dependencies 15->1 (action_cards timeline,
+  //    the documented budgeted-debt row), devDependencies 50->0,
+  //    unlisted 1->0, exports 238->211. types 178->181 (RE-BASELINED
+  //    UP: three new dead-type rows from the estate's growth, the
+  //    same drift class the note above records -- none of the three
+  //    is this cure's code).
+  files: 0,
+  dependencies: 1,
+  devDependencies: 0,
+  unlisted: 0,
   unresolved: 0,
-  exports: 238,
-  types: 178,
+  exports: 211,
+  types: 181,
   // enumMembers / duplicates: "duplicates" excluded in knip.jsonc
 }
 

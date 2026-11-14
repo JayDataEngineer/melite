@@ -21,7 +21,42 @@
     "packages/engines/comfyui-cordis/src/generated/vocab.ts",
     "tests/walls/ts/suites/fixtures/reference-webserver-match.ts",
     "**/lib/**",
-    "**/dist/**"
+    "**/dist/**",
+    // ── THE SEAM-CONSUMED PLANE (2026-11-14 ratchet): files that are
+    // load-bearing through seams knip cannot trace -- string tables,
+    // glob loaders, spawned harnesses. In knip 6 the root "project"
+    // key scopes to the root workspace only, so the global file set
+    // is taught here; every pattern is one argued class:
+    // - packages/models/*/mods/*.ts: the packagedFlavors subpath
+    //   table (comfyui-cordis cardDefs.ts) imports each mod by name
+    //   at compose (the cards wall pins table-to-manifest parity).
+    // - packages/*/src/card.ts: the cardPackages string table rides
+    //   the same dynamic-import law (the cycle law).
+    // - scripts/*.mjs / *.d.mts, test/*.mjs, tools/*.d.mts, the
+    //   tests/helpers+fixtures rows: the spawned harness plane
+    //   (package.json script rows and drive probes execute them).
+    // - the per-package rows: probe/config/fixture/e2e/hot-example
+    //   files consumed by their lane scripts, vitest projects, or
+    //   the loader's glob (css-module type twins, the viewers face).
+    "packages/models/*/mods/*.ts",
+    "packages/*/src/card.ts",
+    "packages/*/*/src/card.ts",
+    "scripts/*.mjs",
+    "scripts/*.d.mts",
+    "test/*.mjs",
+    "tools/*.d.mts",
+    "tests/helpers/launch-probe.mjs",
+    "tests/walls/ts/fixtures/manager-stub.mjs",
+    "packages/harness/melite-tools/test/estate-drive.mjs",
+    "packages/web/melite-card-deck/prove-live.mjs",
+    "packages/web/melite-card-view/probe-*.mts",
+    "packages/web/melite-card-view/playwright.*.config.ts",
+    "packages/web/melite-card-view/tests/fixtures/gateway-client.ts",
+    "packages/web/melite-estate/hot/examples/*.plugin.ts",
+    "packages/web/melite-estate/tests/*.e2e.ts",
+    "packages/video/h3-timeline/tests/*.e2e.ts",
+    "packages/video/h3-timeline/src/ui/studio/*.css.d.ts",
+    "packages/engines/comfyui/src/action_cards/motion/ui/viewers/**"
   ],
   "ignoreWorkspaces": [
     "vendor/*",
@@ -29,7 +64,27 @@
   ],
   "ignoreBinaries": [
     "python3",
-    "comfy"
+    "comfy",
+    // Spawned via child_process/execFileSync, never imported — the
+    // harness seams knip cannot trace:
+    // - dsh: provisioner-boot.spec's boot + tools/cold-start-proof.mjs
+    //   (the profile CLI invocation itself).
+    // - ffmpeg: runs-registry-pump.spec's film fixture bake +
+    //   tests/e2e/sfx-waveform.ts's probe decode.
+    // - journalctl: h3-velocity-arena.e2e.ts reads the engine service
+    //   log tail on the host.
+    // - playwright: hook-full-battery.mjs probes the browser lane's
+    //   install before running test:web:browser.
+    // - tsc: action_cards lane scripts (lane-rebuild et al) spawn the
+    //   compiler per package.
+    // - uv: provision-instance-managed.ts provisions the managed
+    //   engine venv.
+    "dsh",
+    "ffmpeg",
+    "journalctl",
+    "playwright",
+    "tsc",
+    "uv"
   ],
   // ROOT-SCOPED entries. knip matches these by exact name and, for
   // non-root workspaces, falls back to the root list -- the breadth is
@@ -85,6 +140,36 @@
     "@melite/harness-provisioner",
     "@melite/image-input-prep",
     "@melite/estate-provisioning",
+    // The family carriers of the same dsh.bundle seat plane: every
+    // @melite/models-* row the root declares rides the identical
+    // argument (dsh plugin add installs them; reconcile() appends the
+    // patch; no root module imports them). The first seven landed with
+    // the row above; the rest arrived with their families and belong
+    // to the same seat contract.
+    "@melite/3d-img-to-mesh",
+    "@melite/models-anima",
+    "@melite/models-concat",
+    "@melite/models-fit",
+    "@melite/models-florence2",
+    "@melite/models-flux-klein",
+    "@melite/models-gem-soma",
+    "@melite/models-h3-image",
+    "@melite/models-h3-image-edit",
+    "@melite/models-input",
+    "@melite/models-joycaption",
+    "@melite/models-joytag",
+    "@melite/models-mask",
+    "@melite/models-moss-image",
+    "@melite/models-pixal3d",
+    "@melite/models-qwen-img-21",
+    "@melite/models-seedvr2-ema",
+    "@melite/models-skin",
+    "@melite/models-somax",
+    "@melite/models-transfer-rig",
+    "@melite/models-trellis2-native",
+    "@melite/models-wd14",
+    "@melite/models-yue2",
+    "@melite/models-z-image",
     "@melite/models-anny",
     "@melite/models-fibo2-edit",
     "@melite/models-h3",
@@ -100,8 +185,71 @@
     "@melite-plugin/dsh-gallery",
     "@melite-plugin/dsh-estate",
     "@testing-library/react",
+    // react-dom joins react under the ONE-REACT law above: the lanes
+    // alias it to card-view's copy (vitest.config.ts), the root hoists
+    // no react-dom, and media-share-door.spec resolves it through the
+    // alias — never a root manifest row.
+    "react-dom",
     "react",
-    "tsdown"
+    "tsdown",
+    // ── THE ROOT TOOLCHAIN CLASS (2026-11-14 ratchet): rows the root
+    // manifest declares for the TOOL seams — spawned, configured, or
+    // re-exported, never root-imported. The root fallback carries them
+    // for every workspace seat the same classes appear at.
+    // - lefthook: git spawns the hook runner; no module imports it.
+    // - clsx/anser/katex/simple-icons + the mdast/micromark/shiki
+    //   prose rows: the docs/prose toolchain (dsh-prose-standard,
+    //   project-docs) renders and verifies README/docs faces — tool
+    //   graph entries, not runtime imports.
+    // - @deepseek-ai/dsh-brand: the branded-id module re-exported
+    //   through the vendored platform graph.
+    // - @testing-library/{jest-dom,user-event}, @types/react,
+    //   @types/react-dom, @types/three: test/type toolchain declared
+    //   per lane (jsdomhappy paths, strict typecheck inputs).
+    // - tailwind/@tailwindcss/cli/tw-animate-css/lightningcss/
+    //   @tsdown/css/unrun: the css build + probe toolchain
+    //   (tsdown.config pipelines and probe scripts).
+    // - @deepseek-ai/cordis (frames/trim dev rows), dsh-client-ui-session,
+    //   dsh-host-frontend-static, @melite/formats: peer-face and
+    //   loader/bundle-external closures declared for resolution, the
+    //   same law as the card-view block below.
+    // - @melite/models-kimodo: the root family seat for the kimodo
+    //   family (the dsh.bundle row the estate patch resolves).
+    "anser",
+    "clsx",
+    "katex",
+    "lefthook",
+    "lightningcss",
+    "mdast-util-from-markdown",
+    "mdast-util-gfm",
+    "mdast-util-math",
+    "micromark-core-commonmark",
+    "micromark-extension-gfm",
+    "micromark-extension-math",
+    "micromark-factory-space",
+    "micromark-util-character",
+    "micromark-util-classify-character",
+    "micromark-util-sanitize-uri",
+    "micromark-util-symbol",
+    "@shikijs/langs",
+    "shiki",
+    "simple-icons",
+    "@deepseek-ai/cordis",
+    "@deepseek-ai/dsh-brand",
+    "@deepseek-ai/dsh-client-ui-session",
+    "@deepseek-ai/dsh-host-frontend-static",
+    "@testing-library/jest-dom",
+    "@testing-library/user-event",
+    "@types/react",
+    "@types/react-dom",
+    "@types/three",
+    "@tailwindcss/cli",
+    "tailwindcss",
+    "tw-animate-css",
+    "@tsdown/css",
+    "unrun",
+    "@melite/formats",
+    "@melite/models-kimodo"
   ],
   "workspaces": {
     ".": {
@@ -181,6 +329,8 @@
         "@melite/models-florence2",
         "@melite/models-flux-klein",
         "@melite/models-gem-soma",
+        "@melite/models-h3-image",
+        "@melite/models-h3-image-edit",
         "@melite/models-input",
         "@melite/models-joycaption",
         "@melite/models-joytag",
@@ -232,6 +382,8 @@
         "@melite/models-flux-klein",
         "@melite/models-gem-soma",
         "@melite/models-h3",
+        "@melite/models-h3-image",
+        "@melite/models-h3-image-edit",
         "@melite/models-input",
         "@melite/models-joycaption",
         "@melite/models-joytag",
@@ -293,6 +445,31 @@
       // loader's injected module table) -- the same loader law as card-view.
       "ignoreDependencies": [
         "@deepseek-ai/dsh-client-connection"
+      ]
+    },
+    "packages/models/qwen3-tts": {
+      // @melite/engine-contract: the family DECL's typing surface --
+      // the DECL shape imports the contract types, and the registry
+      // loads the family through the engine's FAMILY_PKGS string
+      // table (the cycle law), so no static import exists for knip.
+      "ignoreDependencies": [
+        "@melite/engine-contract"
+      ]
+    },
+    "packages/web/melite-card-deck": {
+      // @melite/formats: the deck's tenant rows resolve the formats
+      // barrel through the editor-registry glob (the same
+      // glob-tenant law as action_cards above).
+      "ignoreDependencies": [
+        "@melite/formats"
+      ]
+    },
+    "packages/3d/img-to-mesh": {
+      // @melite-plugin/melite-run-wire: the mesh card's run-wire
+      // mount row -- the cordis.patch.yml name-table law (resolved by
+      // the loader at composition, never statically imported).
+      "ignoreDependencies": [
+        "@melite-plugin/melite-run-wire"
       ]
     }
   }
