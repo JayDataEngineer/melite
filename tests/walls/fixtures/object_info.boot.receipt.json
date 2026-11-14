@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-11-11T19:43:52.714Z",
+ "derived_at": "2026-11-14T05:59:13.795Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
   "sha256": "13f5d1e7cbe0e571bdf4b2ac07d2ccb6b7169b7d69a999082d76f0e9fd0f81c6",
   "mtime_ms": 1794426232441.123,
   "class_count": 1880,
-  "origin": "live"
+  "origin": "capture"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -22,20 +22,9 @@
   "refused_rows": 0
  },
  "delta": {
-  "added": [
-   "GetImageSize",
-   "MiniMaxH3ImageConditioning",
-   "ResizeImageMaskNode"
-  ],
+  "added": [],
   "pruned": [],
-  "updated": [
-   "CreateVideo",
-   "MeliteFilmAudioMix",
-   "MiniMaxH3RefModsLoader",
-   "RemeshMesh",
-   "SaveVideo",
-   "TextEncodeFibo2"
-  ],
+  "updated": [],
   "reordered_keys": 0
  }
 }
