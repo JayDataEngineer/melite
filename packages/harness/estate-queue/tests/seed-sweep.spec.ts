@@ -149,6 +149,17 @@ class GatedEngine extends ComfyUIHostService {
     this.resolvers.delete(runId);
     r();
   }
+
+  /** Whether an execute is HELD for the run — the release-side probe
+   * (the settle-loop race's cure, the waitUntil fleet's sixth seat:
+   * after s0 settles, the pump's next tick can trail the loop under a
+   * loaded pool, so releasing s1 before its executeFlow arrives threw
+   * "no held execute" — twice live in the full pre-push run, green
+   * isolated every time. The arm waits for the HOLD, never racing the
+   * tick. */
+  holds(runId: string): boolean {
+    return this.resolvers.has(runId);
+  }
 }
 
 const engineOf = (s: Seat): GatedEngine => {
@@ -225,6 +236,10 @@ describe("THE SEED-SWEEP WALL (one press, N seeds — friction #9)", () => {
     // SETTLES: release the family, prefix order, every row completes once
     await waitUntil("the engine received s0", () => engine.received.length === 1);
     for (const id of answer.sweep_runs!) {
+      // (sixth seat): wait for the HELD execute before the gate —
+      // the pump submits the family serially, so s1's executeFlow
+      // trails s0's settle under load.
+      await waitUntil("the engine holds " + id, () => engine.holds(id));
       engine.release(id);
       await rowSettled(s, id);
     }
