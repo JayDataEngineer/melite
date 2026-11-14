@@ -204,11 +204,11 @@ export function meliteRead(ctx) {
     };
     const def = defineTool({
         name: 'melite_read',
-        description: 'Read a TEXT file from one finished run — the sidecars a run actually wrote (`_request.json`, `_flow.json`, '
-            + '`_graph.json` — the exact /prompt graph the engine received, the `_flow.json` sidecar\'s engine-side twin, '
-            + 'a handoff STATE.md). Omit `path` to list the run\'s text files. Run-scoped and text-only: media is '
+        description: 'Read a TEXT file from one estate run (running or finished) — the sidecars a run actually wrote (`_request.json`, `_flow.json`, '
+            + '`_graph.json` — the exact /prompt graph the engine received, the `_flow.json` sidecar\'s engine-side twin). '
+            + 'Omit `path` to list the run\'s text files. Run-scoped and text-only: media is '
             + '`melite_view`\'s door, and nothing outside the run directory is reachable. Use it to answer "what did this '
-            + 'run send?" without shelling out. Args: run_id (required), path (optional substring of the file name).',
+            + 'run send?" without shelling out. Args: run_id (required), path (optional substring of the file\'s path inside the run).',
         parameters: {
             run_id: {
                 type: 'string',

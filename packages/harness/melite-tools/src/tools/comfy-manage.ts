@@ -425,16 +425,17 @@ export function comfyManage(estate: Estate): ToolDefinition {
       + 'managed workspace only), snapshot_list / snapshot_save / '
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); endpoint_set (point at a different ComfyUI server '
-      + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
+      + 'url — validate-first: an unreachable url is refused, never written); logs (the engine log tail — line count via tail), search_models (Manager catalog search — external-catalog rows, not provision ids), list_extensions (the installed extension ids); install_extension (registry ids), '
        + 'install_extension_url (git url + optional ref pin; a URL the shipped extension manifest declares auto-provisions from its byte-verified pin — no operator_confirmed) and download_model (url) refuse without operator_confirmed=true — the human\'s explicit URL approval, never the agent\'s own; provision_model '
-       + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); acquire_weight '
+       + '(declared model id from melite_load); acquire_weight '
        + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
-       + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
+       + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); '
+       + 'acquire_retry / acquire_discard (the stuck-fetch rescue pair — re-arm a wedged acquire_weight or drop it, by operation_id); lora_list (the '
        + 'engine-accepted LoRA names plus the user rows file — and the self-healing read: it re-arms the lora flavors, so a file landed by ANY '
        + 'means serves the family\'s mods after the next lora verb) and lora_install (copy or upload a LoRA file the operator '
        + 'already has — never fetched; THE LORA RECIPE for an attached/local file: pass filename + path (or data) + families:["<family>"] and the '
        + 'door does BOTH halves — the file lands under the family\'s loras shelf AND the picker row is seated; the mod composes on the next '
-       + 'compose, NO restart, NO file edits, NO paste); lora_fetch — THE LORA RECIPE for a URL (the operator\'s 2026-11-09 order): '
+       + 'compose, NO restart, NO file edits, NO paste); lora_fetch — THE LORA RECIPE for a URL: '
        + 'add a lora to <family>: lora_fetch url → the file lands under the family\'s loras subfolder, the picker row is seated, and the mod '
        + 'composes (the human\'s operator_confirmed gates it like every external fetch; the answer carries the combo name and the seated row); '
        + 'refmods_list (the engine\'s own '
@@ -505,7 +506,7 @@ export function comfyManage(estate: Estate): ToolDefinition {
       target: {
         type: 'string',
         enum: ['comfy'],
-        description: 'update: what to update (comfy only — comfy-cli is retired; the built-in manager updates ComfyUI itself).',
+        description: 'update: what to update (comfy only — the built-in manager updates ComfyUI itself).',
       },
       force: {
         type: 'boolean',

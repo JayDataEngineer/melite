@@ -64,11 +64,11 @@ export function meliteLoad(
     description:
       'Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + '
       + 'inference_type (card | flow — a card or a flow tool call; nothing else executes). '
-      + 'THE EXPANSION LAW: the estate’s deeper doors (melite_view, comfy_manage, melite_skill_read, ledger_tail) seat themselves on this call — never missing, only deferred. '
+      + 'THE EXPANSION LAW: the estate’s deeper doors (melite_view, melite_read, comfy_manage, melite_skill_read, melite_skill_write, ledger_tail) seat themselves on this call — never missing, only deferred. '
       + 'Returns the bundle: '
-      + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
+      + 'agents md, the tool-call signature (params_schema for cards; a card-stage flow serves its bench_stages rows — land them in ONE melite_construct load; a flow with no card seats keeps the run-door face; every flow names its initial seats (initials)), '
       + 'tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from '
-      + 'the craft you read), model hints on cards (the boarded checkpoints — description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
+      + 'the craft you read), model hints on cards (the boarded checkpoints as an operational count — N/M present on this machine; provisioning is the estate’s business, the card composes regardless of weights) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
       + 'and a stable bundle digest — quote it and skip reload on a match. '
       + 'The default answer is the DIGEST (counts, required params, kinds, skills, digest); pass detail=true only when composing needs every param name, the bench grammar, or the lane field law.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root

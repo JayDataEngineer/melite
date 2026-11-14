@@ -1179,8 +1179,8 @@ export function meliteConstruct(estate, opts = {}) {
             + 'Verbs: read (the state — '
             + 'start here before patch/rewire/remove_stage (verbs that address an existing stage need its state); add_stage needs NO prior read — it mints its own id and grows the bench; a stage that has run carries last_run {run_id, status, artifacts} — null + runs '
             + '{checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, '
-            + 'chain it with {stage, output}) | load (replace stages wholesale — the prior bench is one undo away, and every run already taken keeps its outputs and its stage list, restorable from the media tab; '
-            + 'refused on a non-empty bench unless overwrite:true confirms the replacement; prefer add_stage to grow the bench) | patch {stage, params} | archive/unarchive {stage} (archive keeps the row with its result, every run face skips it; unarchive restores it) | add_stage {card, params?, '
+            + 'chain it with {stage, output}; a bench row carrying ref_flow is a retired press\u2019s marker — the answer names it (legacy_flow_marker) with its cure: undo first when a load entry is on the log, else remove_stage) | load (replace stages wholesale — the prior bench is one undo away, and every run already taken keeps its outputs and its stage list, restorable from the media tab; '
+            + 'refused on a non-empty bench unless overwrite:true confirms the replacement; a ref_flow row refuses at the door (bench/bad-body): stage the flow\u2019s cards instead; prefer add_stage to grow the bench) | patch {stage, params} | archive/unarchive {stage} (archive keeps the row with its result, every run face skips it; unarchive restores it) | add_stage {card, params?, '
             + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
             + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell is the CHANNEL REFERENCE ONLY: it resolves at run time to that wired stage output or a request initial the USER attaches at the Run press, nothing else; for a REAL FILE on disk use its asset path from melite_view, never a $spell; to chain '
             + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
@@ -1194,7 +1194,7 @@ export function meliteConstruct(estate, opts = {}) {
                 enum: [...CONSTRUCT_VERBS],
                 description: 'REQUIRED — the schema refuses a call without it, and no payload ever derives one (a WRITE is never guessed). ' + CONSTRUCT_VERBS.join(' | ') + '.',
             },
-            stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
+            stage: { type: 'string', description: 'patch/remove_stage/rewire/archive/unarchive: the stage id.' },
             card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
             engine: { type: 'string', description: 'add_stage: engine id (default comfyui).' },
             model: {
@@ -1217,7 +1217,8 @@ export function meliteConstruct(estate, opts = {}) {
                     + '(context carry is THE DEFAULT; stock is the operator\'s manual escape hatch, never authored). '
                     + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
                     + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
-                    + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone.',
+                    + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone. '
+                    + 'STAGE-POLICY KEYS (F41) are authored here, on the stage row (never the card surface): boundary_unload_models: true arms the pass-seam model unload, vram_budget_mb sets a stage\'s VRAM budget — the stored row keeps them verbatim and admission judges the rest of the bag.',
             },
             params_file: {
                 type: 'string',
@@ -1598,11 +1599,11 @@ export function meliteConstruct(estate, opts = {}) {
             // the body reads the fresh binding only, the caller's object
             // is never touched.
             const a = { ...unwrapItemArrays(args) };
-            // Absent verb normalizes to the documented default 'read'
-            // (T11's residual, 2026-10-12: the description says "read
-            // (default when absent)", so the echo says 'read' too — the
-            // old '' echo contradicted the declared contract; an explicit
-            // '' refuses at the wrapper gate's enum, never reaching here).
+            // A verb-less raw execute echoes 'read' (T11's residual,
+            // 2026-10-12): the schema declares verb REQUIRED (the enum
+            // gate refuses an explicit '' before this), so this arm only
+            // serves a direct execute call that bypassed the wrapper —
+            // the echo stays honest with the declared contract.
             const verb = typeof a.verb === 'string' ? a.verb : 'read';
             // The conversation wins (the one-flow law rides the agent's own
             // session); an explicit bench key applies only to unattributed
@@ -1860,13 +1861,12 @@ export function meliteConstruct(estate, opts = {}) {
                         if (windows.length !== rows.length) {
                             return out({ error: 'cuts: the stage\'s calls rows are malformed — a row without numeric start_frame/end_frame cannot split. The calls law: [{text, start_frame, end_frame}] tiling the delivered timeline, contiguous (end of i = start of i+1).' });
                         }
-                        // §0.5 verbatim: the halves GLUE WITHOUT CONTEXT CHAINING —
-                        // every seam the verb births states CUT.
                         // THE CARRY-DEFAULT LAW (operator 2026-11-17): a split
                         // seam DEFAULTS to context carry — Stock is never
                         // authored by the agent (H3 hard-cuts on its own when a
                         // shot must start fresh; stock is the operator's manual
-                        // escape hatch in the strip).
+                        // escape hatch in the strip). The 2026-11-17 seam law
+                        // superseded §0.5's every-seam-CUT teaching wholesale.
                         const expanded = expandCuts(windows, cutsRaw, 'extend');
                         if (!expanded.ok) {
                             return out({ error: `cuts: ${expanded.refusal}` });

@@ -1070,8 +1070,9 @@ export function meliteView(
     description:
       'View one image artifact from a finished (or running) estate run — the model receives the image itself, '
       + 'never a description of it. When the run holds no images but holds a film, the observe arm serves the film instead: '
-      + 'an ffprobe stream summary (duration, codecs, frame count) plus a contact-sheet image of frames across its span. '
-      + 'This is the observe arm of the act/observe/decide loop: after a run lands, '
+      + 'a byte-parsed stream summary (duration, codecs, frame count; read from the container bytes — no ffprobe, no host binary, no subprocess) '
+      + 'plus a contact-sheet image of frames across its span. An audio or 3D artifact name serves the audio/mesh arm '
+      + '(a waveform or poster sheet plus its summary). After a run lands, '
       + 'VIEW it before deciding the next step (never claim a match without viewing). '
       + 'Args: run_id (required, the run directory under the runs tree), artifact (optional substring — when a run '
       + 'produced several images, name the one to view; default is the newest). On a model that accepts image input the image rides the result; '
@@ -1104,7 +1105,7 @@ export function meliteView(
           film: {
             type: 'object',
             additionalProperties: true,
-            description: 'Present only on the film path: the ffprobe summary (file, duration_s, size_bytes, streams with codec/geometry/fps/frames) plus sheet_of (frames tiled).',
+            description: 'Present only on the film path: the probe summary (file, duration_s, size_bytes, streams with codec/geometry/fps/frames) plus sheet_of (frames tiled).',
           },
         },
       },

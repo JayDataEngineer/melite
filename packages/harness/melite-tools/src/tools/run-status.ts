@@ -116,19 +116,21 @@ export function runStatus(estate: Estate): ToolDefinition {
   const def = defineTool({
     name: 'run_status',
     description:
-      'Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage '
+      'Poll a queue run: status (the estate\u2019s run-status words — queued|running|completed|error|stopped|failed, '
+      + 'plus interrupted/succeeded/success/unknown on their legacy seats), per-stage '
       + 'progress, artifacts (landed bytes with paths) and the EXACT error string on failure. '
       + 'SWEPT RUNS (D3-01): a run lost to an engine/host restart answers failed with a '
       + '`sweep` note naming the truth (never executed — resubmit), or queued with a D-8 '
       + 'replay hold (`sweep_holds`, bounded boots then failed loud) — never a bare pending. '
-      + 'Args: runId (from melite_flow). Includes queue_position while waiting on '
+      + 'Args: runId — from melite_flow when the run doors are seated; otherwise from '
+      + 'melite_construct read\u2019s last_run or a ledger_tail run.* row. Includes queue_position while waiting on '
       + 'the serial GPU lane. Read-only — the stop door is operator-ordered.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.
     parameters: {
       runId: {
         type: 'string',
-        description: 'The run id returned by melite_flow.',
+        description: 'The run id — from melite_flow when the run doors are seated; otherwise from melite_construct read\u2019s last_run or a ledger_tail run.* row.',
         required: true,
       },
       wait_s: {
@@ -157,6 +159,7 @@ export function runStatus(estate: Estate): ToolDefinition {
           sweep: { type: 'string', description: 'D3-01: the sweep\'s own note when the run was swept (engine/host restart under the queue, or a stale sidecar at read) — names never-executed vs resubmit, or the D-8 replay hold. Absent on clean runs.' },
           sweep_holds: { type: 'number', description: 'The D-8 hold count when a swept-queued run is held for the next boot\'s replay (bounded; past the bound the row settles failed loud).' },
           queue_position: { type: 'number', description: '0 = active; >0 = waiting in the FIFO.' },
+          sweep_runs: { type: 'array', description: 'The seed-sweep family\u2019s run ids in seed order — present when this run was minted by a `seeds: [...]` card-press fan-out (shared run-id prefix, -s<k> seats); poll each id the same way.' },
           planned_stages: { type: 'array', description: 'The registered plan (id/engine per stage) — present when a live row has no stage rows yet.' },
           card: { type: 'string', description: 'The card (or pipeline) the run was born from.' },
           run_age_s: { type: 'number', description: 'Seconds since registration — the heartbeat for long renders.' },

@@ -1512,12 +1512,16 @@ export function meliteFlow(estate) {
     const def = defineTool({
         name: 'melite_flow',
         description: 'Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared '
-            + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id + model — single '
-            + 'generation) | flow (a NAMED template from melite_load) | stage (ONE bench stage id — runs that stage alone '
+            + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id — its boarded family is derived '
+            + 'when model is omitted) | flow (a NAMED flow from melite_load — its card stages land on the shared bench as ONE '
+            + 'write (the bench holds cards; a flow id never lands as a bench row; the answer says materialized N) and the run '
+            + 'presses the flow\'s own door carrying that draft; a flow with no card seats presses the door alone, no bench '
+            + 'write) | stage (ONE bench stage id — runs that stage alone '
             + 'through the bench pass, siblings + intent untouched; hand-built work presses ONE seated row, never a '
             + 'hand-authored graph). Compositions '
-            + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
-            + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '
+            + 'never mint state outside the ONE shared bench (one state, one log, one undo): a bench press rides the bench\'s '
+            + 'doc-backed draft_id (CARD BIRTH LAW), and a start without a materialized bench needs no draft_id — it rides the '
+            + 'value as the chat tile handle, never an '
             + 'agent arg. Returns {run_id, draft_id}; the synchronous window is bounded (~2 min, defect board D-7): a '
             + 'long render returns status pending WITH the run_id — the run is durable on the queue, poll with run_status '
             + '(never re-press). One active run machine-wide.',
@@ -1543,7 +1547,7 @@ export function meliteFlow(estate) {
             },
             card: {
                 type: 'string',
-                description: 'SINGLE mode: the card id (discovered). Requires model alongside.',
+                description: 'SINGLE mode: the card id (discovered) — its boarded family is derived when model is omitted.',
             },
             model: {
                 type: 'string',
@@ -1551,7 +1555,7 @@ export function meliteFlow(estate) {
             },
             flow: {
                 type: 'string',
-                description: 'TEMPLATE mode: the flow name exactly as loaded.',
+                description: 'TEMPLATE mode: the flow name exactly as loaded — a card-stage flow lands its cards on the shared bench as ONE write (the answer says materialized N) and presses the flow door; a card-less flow presses the door alone.',
             },
             prompt: {
                 type: 'string',
@@ -1565,11 +1569,11 @@ export function meliteFlow(estate) {
             params: {
                 type: 'object',
                 additionalProperties: true,
-                description: 'Overrides merged over the mode defaults (seed, knobs).',
+                description: 'Overrides merged over the mode defaults (seed, knobs). seeds: [n, …] on a card press fans ONE press out to one run per seed (max 16, shared run-id prefix, -s<k> seats) — the answer\u2019s sweep_runs lists every id in seed order; seed and seeds together refuse.',
             },
             test: {
                 type: 'boolean',
-                description: 'L4 barrier: true routes the run to test-output, hidden from production assets. Default false.',
+                description: 'true routes the run to test-output, hidden from production assets. Default false.',
             },
         },
         presentCall,
@@ -1579,7 +1583,7 @@ export function meliteFlow(estate) {
                 additionalProperties: true,
                 properties: {
                     run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on a pre-run refusal; PRESENT on a stopped-mid-flow refusal (a stage that ran and failed — render prints it after the error).' },
-                    draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal.' },
+                    draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal and absent on a card-less flow press.' },
                     status: { type: 'string', description: 'The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — re-wait with run_status(run_id)); absent on refusal.' },
                     mode: { type: 'string', description: 'Which composition ran (or was attempted): bench | card | flow. bench is the commonest success value — the shared-bench run returns mode:\'bench\' at every bench return site.', required: true },
                     target: { type: 'string', description: 'The card id, flow name, or bench draft id (echoed on refusal).', required: true },

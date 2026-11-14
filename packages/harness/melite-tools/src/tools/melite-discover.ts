@@ -67,9 +67,9 @@ export function meliteDiscover(estate: Estate, expandEstateDoors: () => void): T
     name: 'melite_discover',
     description:
       'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
-      + 'THE EXPANSION LAW: the estate\u2019s deeper doors (melite_view, comfy_manage, melite_skill_read, ledger_tail) '
+      + 'THE EXPANSION LAW: the estate\u2019s deeper doors (melite_view, melite_read, comfy_manage, melite_skill_read, melite_skill_write, ledger_tail) '
       + 'seat themselves the first time you touch the catalog \u2014 they are never missing, only deferred. '
-      + 'q is RANKED, never literal: every real word scores its best facet (exact tag, exact word, modality, trigram fuzzy) and each line says WHY it matched \u2014 a full user sentence works. tags= stays a hard facet. '
+      + 'q is judged per plane: CARDS are ranked \u2014 every real word scores its best facet (exact tag, exact word, modality, trigram fuzzy) and each line says WHY it matched \u2014 a full user sentence works; FLOWS are a literal word filter \u2014 every token must substring-match the flow\u2019s name/title/description (no fuzzy, no why-line) \u2014 name the flow or narrow with lookup=cards. tags= stays a hard facet on both planes. '
       + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '
       + '+ optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; '
       + 'fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first '
