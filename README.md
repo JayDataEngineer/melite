@@ -55,7 +55,7 @@ verbatim.
 Seat Melite into a DSH profile — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.2-alpha"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.3-rc.3"
 ```
 
 Installs are pinned to the release tag — they never move on their own.
@@ -77,7 +77,7 @@ are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
 1. Seat — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.2-alpha"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.3-rc.3"
 ```
 
 2. Boot:

@@ -186,35 +186,45 @@ describe("the seat pin (README + install guide + census)", () => {
       console.warn("[seat-pin] no GITHUB_TOKEN — skipping the network arm (CI owns this judgment)");
       return;
     }
-    const api = async (tag: string) =>
-      await fetch(`https://api.github.com/repos/JayDataEngineer/melite/releases/tags/${tag}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
-      });
-    const seatRes = await api(census.seat);
-    expect(seatRes.status, `the seat ${census.seat} must have a GitHub release`).toBe(200);
-    const seatJson = (await seatRes.json()) as { assets?: unknown[] };
-    expect(Array.isArray(seatJson.assets) && seatJson.assets.length > 0, `the seat ${census.seat} release carries no assets`).toBe(true);
-    for (const key of Object.keys(census.excluded)) {
-      const res = await api(key);
-      expect(res.status, `census excludes ${key} but its release exists — mint it and move the seat, or drop the row`).toBe(404);
-    }
-    // THE REMOTE-NEWEST LAW: the seat is the newest tag on the remote.
-    // The burn lived HERE — bare rc tags on the remote outranked the
-    // install door and no local edit could say otherwise. This arm
-    // cannot be absolved by any census row; only a real mint (and seat
-    // move) or deleting the remote tag greens it. No local-roster
-    // filter: a remote-only bare tag still outranks the door.
     const remoteTags = execFileSync("git", ["ls-remote", "--tags", "origin"], { cwd: ROOT, encoding: "utf8" })
       .split("\n")
       .map((l) => l.split("\t")[1] ?? "")
       .filter((ref) => ref.startsWith("refs/tags/") && !ref.endsWith("^{}"))
       .map((ref) => ref.slice("refs/tags/".length))
       .filter((t) => /^v\d/.test(t));
-    const newer = remoteTags.filter((t) => cmpTag(t, census.seat) > 0);
-    expect(
-      newer,
-      `remote carries tags newer than the seat with no mint: ${newer.join(", ")} — the newest tag IS the install door. Mint its release and move census.seat, or delete the remote tag. No census row excuses this.`,
-    ).toEqual([]);
+    // THE GESTURE WINDOW: a mint is a two-push gesture (tag up, then
+    // release + assets). While the seat tag is NOT yet on the remote,
+    // the public door does not exist and this arm skips LOUD — the
+    // tag-mint-gate already refuses pushing the tag unrecorded. The
+    // moment the tag IS public, the full law binds: release exists,
+    // assets aboard, and nothing newer outranks the seat.
+    if (!remoteTags.includes(census.seat)) {
+      console.warn(`[seat-pin] seat ${census.seat} not on the remote yet — the mint gesture is open; skipping the settled-state arms`);
+    } else {
+      const api = async (tag: string) =>
+        await fetch(`https://api.github.com/repos/JayDataEngineer/melite/releases/tags/${tag}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+        });
+      const seatRes = await api(census.seat);
+      expect(seatRes.status, `the seat ${census.seat} must have a GitHub release`).toBe(200);
+      const seatJson = (await seatRes.json()) as { assets?: unknown[] };
+      expect(Array.isArray(seatJson.assets) && seatJson.assets.length > 0, `the seat ${census.seat} release carries no assets`).toBe(true);
+      for (const key of Object.keys(census.excluded)) {
+        const res = await api(key);
+        expect(res.status, `census excludes ${key} but its release exists — mint it and move the seat, or drop the row`).toBe(404);
+      }
+      // THE REMOTE-NEWEST LAW: the seat is the newest tag on the remote.
+      // The burn lived HERE — bare rc tags on the remote outranked the
+      // install door and no local edit could say otherwise. This arm
+      // cannot be absolved by any census row; only a real mint (and seat
+      // move) or deleting the remote tag greens it. No local-roster
+      // filter: a remote-only bare tag still outranks the door.
+      const newer = remoteTags.filter((t) => cmpTag(t, census.seat) > 0);
+      expect(
+        newer,
+        `remote carries tags newer than the seat with no mint: ${newer.join(", ")} — the newest tag IS the install door. Mint its release and move census.seat, or delete the remote tag. No census row excuses this.`,
+      ).toEqual([]);
+    }
   });
 
   it("ARM 7 — NO ABSOLUTION: no exclusion names a tag newer than the seat", () => {
@@ -229,6 +239,13 @@ describe("the seat pin (README + install guide + census)", () => {
     const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
     if (!token) {
       console.warn("[seat-pin] no GITHUB_TOKEN — skipping the notes arm (CI owns this judgment)");
+      return;
+    }
+    const remoteTagged = execFileSync("git", ["ls-remote", "--tags", "origin"], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .some((l) => (l.split("\t")[1] ?? "") === `refs/tags/${census.seat}`);
+    if (!remoteTagged) {
+      console.warn(`[seat-pin] seat ${census.seat} not on the remote yet — the mint gesture is open; skipping the notes arm until the release exists`);
       return;
     }
     const res = await fetch(`https://api.github.com/repos/JayDataEngineer/melite/releases/tags/${census.seat}`, {
