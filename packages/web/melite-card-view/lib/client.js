@@ -17985,9 +17985,10 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/verb-bar.tsx
-		/** THE VERB BAR: one button per served verb; verbs with no flow
-		*  route (local-only engines) render disabled with their own voice
-		*  — never a dead button. */
+		/** THE VERB BAR: one button per served verb — every verb's dialog
+		*  is reachable (its knobs are viewable, local-only included); a
+		*  verb with no flow route voices its own refusal AT THE PRESS,
+		*  never a dead button. */
 		function VerbBar({ verbs, draftId, stageId, params, onWrite, pollIntervalMs = 1500 }) {
 			const [openVerb, setOpenVerb] = (0, react.useState)(null);
 			const [values, setValues] = (0, react.useState)({});
@@ -18006,7 +18007,11 @@ window.__ModuleLoader__.load({
 				setValues(seeded);
 			};
 			const press = (verb) => {
-				if (verb.flow === null) return;
+				if (verb.flow === null) {
+					setPhase("failed");
+					setNote(chromeCopy.verbLocalOnly);
+					return;
+				}
 				const initials = {};
 				for (const [init, param] of Object.entries(verb.initials)) {
 					const v = params[param];
@@ -18031,6 +18036,10 @@ window.__ModuleLoader__.load({
 				pollAbort.current?.abort();
 				pollAbort.current = new AbortController();
 				const signal = pollAbort.current.signal;
+				const voiceFailure = (e) => {
+					setPhase("failed");
+					setNote(e instanceof Error ? e.message : String(e));
+				};
 				(0, _melite_card_base_client.startVerbRun)({
 					flowId: verb.flow,
 					initials,
@@ -18044,7 +18053,6 @@ window.__ModuleLoader__.load({
 					}
 					const poll = async () => {
 						for (;;) {
-							if (signal.aborted) return;
 							await new Promise((r) => {
 								setTimeout(r, pollIntervalMs);
 							});
@@ -18075,11 +18083,8 @@ window.__ModuleLoader__.load({
 							return;
 						}
 					};
-					poll();
-				}).catch((e) => {
-					setPhase("failed");
-					setNote(e instanceof Error ? e.message : String(e));
-				});
+					poll().catch(voiceFailure);
+				}).catch(voiceFailure);
 			};
 			return (0, react.createElement)("div", {
 				"data-testid": "verb-bar",
@@ -18089,7 +18094,6 @@ window.__ModuleLoader__.load({
 				size: "sm",
 				variant: "ghost",
 				"data-verb": verb.id,
-				disabled: verb.flow === null || phase === "busy" && openVerb?.id === verb.id,
 				title: verb.flow === null ? chromeCopy.verbLocalOnly : void 0,
 				onClick: () => {
 					open(verb);
@@ -18127,7 +18131,10 @@ window.__ModuleLoader__.load({
 			}, Object.entries(openVerb.initials).map(([init, param]) => chromeCopy.verbIntakeNote({
 				init,
 				param
-			})).join("; ")) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			})).join("; ")) : null, openVerb.flow === null ? (0, react.createElement)("p", {
+				"data-testid": "verb-local",
+				className: card_module_css_default.enhanceNote
+			}, chromeCopy.verbLocalOnly) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				"data-testid": "verb-run",
 				disabled: phase === "busy",

@@ -40,9 +40,10 @@ export interface VerbBarProps {
   pollIntervalMs?: number
 }
 
-/** THE VERB BAR: one button per served verb; verbs with no flow
- *  route (local-only engines) render disabled with their own voice
- *  — never a dead button. */
+/** THE VERB BAR: one button per served verb — every verb's dialog
+ *  is reachable (its knobs are viewable, local-only included); a
+ *  verb with no flow route voices its own refusal AT THE PRESS,
+ *  never a dead button. */
 export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollIntervalMs = 1500 }: VerbBarProps): ReturnType<typeof h> {
   const [openVerb, setOpenVerb] = useState<VerbRow | null>(null)
   // raw strings while typing (decimal dots survive); coercion is
@@ -65,7 +66,15 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
   }
 
   const press = (verb: VerbRow): void => {
-    if (verb.flow === null) return // the disabled button's own guard
+    // A LOCAL-ONLY VERB voices at the gesture itself — the bar keeps
+    // the verb pressable to its own dialog (the knobs are the
+    // verb's, viewable without a route) and the press names why it
+    // cannot ride the wire.
+    if (verb.flow === null) {
+      setPhase('failed')
+      setNote(chromeCopy.verbLocalOnly)
+      return
+    }
     // THE INTAKE READ: every mapped initial sources from the stage's
     // current params; a missing source is named, never guessed — the
     // door's initial gate backstops the unmapped half.
@@ -90,6 +99,14 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
     pollAbort.current?.abort()
     pollAbort.current = new AbortController()
     const signal = pollAbort.current.signal
+    // THE SETTLE CHAIN'S ONE VOICE: any failure in the press — the
+    // wire's refusal, a transport throw, or the hydration write's
+    // own throw — faces the note (a detached void would drop the
+    // write's crash on the floor: an unhandled rejection).
+    const voiceFailure = (e: unknown): void => {
+      setPhase('failed')
+      setNote(e instanceof Error ? e.message : String(e))
+    }
     void startVerbRun({ flowId: verb.flow, initials, params: overlay, draftId }, signal)
       .then((outcome) => {
         if (!('runId' in outcome)) {
@@ -103,7 +120,9 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
         // the run's own failure, never silence.
         const poll = async (): Promise<void> => {
           for (;;) {
-            if (signal.aborted) return
+            // THE ONE ABORT GUARD (post-sleep): an unmounted seat's
+            // controller aborts during the wait, and the loop ends
+            // here — before the next read, never mid-flight.
             await new Promise((r) => { setTimeout(r, pollIntervalMs) })
             if (signal.aborted) return
             let row
@@ -126,12 +145,9 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
             return
           }
         }
-        void poll()
+        void poll().catch(voiceFailure)
       })
-      .catch((e: unknown) => {
-        setPhase('failed')
-        setNote(e instanceof Error ? e.message : String(e))
-      })
+      .catch(voiceFailure)
   }
 
   return h('div', { 'data-testid': 'verb-bar', className: css.verbBar },
@@ -140,7 +156,6 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
       size: 'sm',
       variant: 'ghost',
       ...{ 'data-verb': verb.id },
-      disabled: verb.flow === null || (phase === 'busy' && openVerb?.id === verb.id),
       title: verb.flow === null ? chromeCopy.verbLocalOnly : undefined,
       onClick: () => { open(verb) },
     }, verb.label)),
@@ -175,6 +190,11 @@ export function VerbBar({ verbs, draftId, stageId, params, onWrite, pollInterval
           ? h('p', { 'data-testid': 'verb-intake', className: css.enhanceNote },
               Object.entries(openVerb.initials).map(([init, param]) =>
                 chromeCopy.verbIntakeNote({ init, param })).join('; '))
+          : null,
+        // A LOCAL-ONLY VERB names its state in its own dialog — the
+        // knobs are viewable, the press voices why it cannot ride.
+        openVerb.flow === null
+          ? h('p', { 'data-testid': 'verb-local', className: css.enhanceNote }, chromeCopy.verbLocalOnly)
           : null,
         h(Button, {
           size: 'sm',
