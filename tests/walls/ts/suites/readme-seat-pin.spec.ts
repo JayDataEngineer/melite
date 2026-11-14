@@ -17,19 +17,26 @@
  *      names census.seat (README exactly two, install exactly one).
  *   2. SEAT REALITY — the seat is a real tag and its tree carries a
  *      root manifest package name (the pnpm github-ref refusal guard).
- *   3. STALE TRIPWIRE — every tag NEWER than the seat whose tree
- *      carries a root package name is recorded in the census as
- *      excluded, or the wall reds naming the unrecorded tag: cutting a
- *      tag without recording its mint state is the burn this wall
- *      exists for.
+ *   3. NO TAG OUTLIVES ITS MINT — no local tag newer than the seat
+ *      exists (root-named trees only: a nameless tree cannot be a
+ *      door). Cutting a tag before its mint is the burn; the only
+ *      green is mint-and-move-the-seat, or delete the tag.
  *   4. CENSUS COHERENCE — excluded keys are real tags, none is the
  *      seat, every exclusion carries a non-empty reason.
  *   5. LAW SENTENCE — both documents state the true selection law
  *      (minted assets, bare tags are not doors, the census ledger).
- *   6. NETWORK TRUTH (CI) — with GITHUB_TOKEN, the seat's release
- *      really carries assets and every excluded tag really 404s the
- *      tags endpoint; the census may not lie about GitHub. Skips loud
- *      where no token seats the probe.
+ *   6. NETWORK TRUTH (CI) — with GITHUB_TOKEN: the seat's release
+ *      really carries assets, every excluded tag really 404s the
+ *      tags endpoint, and THE SEAT IS THE NEWEST TAG ON THE REMOTE —
+ *      a bare newer tag on the remote reds the wall from every clone;
+ *      no local-only edit can green it. Skips loud where no token
+ *      seats the probe.
+ *   7. NO ABSOLUTION — no exclusion row may name a tag NEWER than
+ *      the seat: an exclusion covers history (tags the seat
+ *      superseded), never the future. A "reason" cannot excuse a
+ *      bare tag that outranks the install door — the absolution hole
+ *      (2026-11-14: rc.1/rc.2 excused while they were the newest
+ *      tags on the remote, wall green) is closed.
  *
  * Run: npx vitest run tests/walls/ts/suites/readme-seat-pin.spec.ts
  */
@@ -129,17 +136,17 @@ describe("the seat pin (README + install guide + census)", () => {
     expect(rootNameAt(census.seat), "the seat's root manifest carries no package name — pnpm refuses the github ref").not.toBeNull();
   });
 
-  it("ARM 3 — THE STALE TRIPWIRE: every newer root-named tag is census-recorded", () => {
-    const unrecorded = tagList().filter((t) => {
+  it("ARM 3 — NO TAG OUTLIVES ITS MINT: no local tag newer than the seat", () => {
+    const newer = tagList().filter((t) => {
       if (!/^v\d/.test(t)) return false;
       if (cmpTag(t, census.seat) <= 0) return false;
-      // Only tags that COULD seat (root manifest carries a package name)
-      // owe a census row; a nameless tree cannot be the install door.
-      return rootNameAt(t) !== null && !(t in census.excluded);
+      // Only tags that COULD seat (root manifest carries a package
+      // name) are doors; a nameless tree cannot be the install door.
+      return rootNameAt(t) !== null;
     });
     expect(
-      unrecorded,
-      "tags cut without a recorded mint decision — record each in tools/seat-census.json (or mint it and move the seat in the same change)",
+      newer,
+      "tags newer than the seat with no mint — the newest tag IS the install door: mint its release and move census.seat to it, or delete the tag. An exclusion row cannot excuse it (ARM 7).",
     ).toEqual([]);
   });
 
@@ -185,5 +192,30 @@ describe("the seat pin (README + install guide + census)", () => {
       const res = await api(key);
       expect(res.status, `census excludes ${key} but its release exists — mint it and move the seat, or drop the row`).toBe(404);
     }
+    // THE REMOTE-NEWEST LAW: the seat is the newest tag on the remote.
+    // The burn lived HERE — bare rc tags on the remote outranked the
+    // install door and no local edit could say otherwise. This arm
+    // cannot be absolved by any census row; only a real mint (and seat
+    // move) or deleting the remote tag greens it. No local-roster
+    // filter: a remote-only bare tag still outranks the door.
+    const remoteTags = execFileSync("git", ["ls-remote", "--tags", "origin"], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .map((l) => l.split("\t")[1] ?? "")
+      .filter((ref) => ref.startsWith("refs/tags/") && !ref.endsWith("^{}"))
+      .map((ref) => ref.slice("refs/tags/".length))
+      .filter((t) => /^v\d/.test(t));
+    const newer = remoteTags.filter((t) => cmpTag(t, census.seat) > 0);
+    expect(
+      newer,
+      `remote carries tags newer than the seat with no mint: ${newer.join(", ")} — the newest tag IS the install door. Mint its release and move census.seat, or delete the remote tag. No census row excuses this.`,
+    ).toEqual([]);
+  });
+
+  it("ARM 7 — NO ABSOLUTION: no exclusion names a tag newer than the seat", () => {
+    const absolved = Object.keys(census.excluded).filter((t) => cmpTag(t, census.seat) > 0);
+    expect(
+      absolved,
+      "exclusion rows outranking the seat — an exclusion covers history (tags the seat superseded), never the future: mint the release and move the seat, or delete the tag. A reason string is not a mint.",
+    ).toEqual([]);
   });
 });
