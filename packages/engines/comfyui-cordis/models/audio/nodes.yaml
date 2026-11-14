@@ -93,7 +93,10 @@ extensions:
     # 5/5; prior pin ff7568a contained. 2026-11-14 re-pin 2e89176: the
     # engine-core cure (load-scoped RoPE registry patch + codec-rope
     # assert at load, talker-codebook knob truth); runtime tree synced.
-    ref: 2e89176b36b5c7233a1ef2327a4925ca2336fe07
+    # 2026-11-14 re-pin 9041eac (D5): the cold-boot KeyError('default')
+    # at the patch's registry read — .get + absent-restores-to-absent;
+    # red-proofed on a seatless registry. Runtime tree synced.
+    ref: 9041eac48dfcdc438ca46256bad41716933833f4
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane
