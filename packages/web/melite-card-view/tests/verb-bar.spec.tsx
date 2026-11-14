@@ -345,23 +345,22 @@ describe("the failure arms — every refusal faces the human", () => {
     expect(fakes?.calls.filter((c) => c.method === "runs/status").length).toBe(readAtUnmount);
   });
 
-  test("an unmount BEFORE the start answers aborts at the loop's first guard (no poll read at all)", async () => {
-    // the verb gate parks runs/start mid-flight: the seat retires
-    // FIRST, the start answers into a departed component, and the
-    // poll's opening guard returns before any sleep or read
-    let release!: () => void;
-    const gate = new Promise<void>((r) => { release = r; });
+  test("an unmount right after the press never polls (the post-sleep guard retires the loop before its first read)", async () => {
+    // the harness parks no runs/start (it answers into the seat),
+    // so the abort-before-loop face rides the WIDE first sleep: the
+    // seat retires INSIDE it, and the single post-sleep guard
+    // returns before any runs/status read — a pre-sleep read would
+    // red this arm inside the wait window
     const { unmount } = mountBar({
       runDocs: [{ run_id: "run-1", status: "running", stages: [{ id: "est" }] }],
-      verbGates: { "runs/start": [gate] },
+      pollIntervalMs: 5000,
     });
     const user = userEvent.setup();
     await user.click(screen.getByText("Estimate body from photo"));
     await user.click(screen.getByTestId("verb-run"));
     await waitFor(() => { expect(fakes?.calls.some((c) => c.method === "runs/start")).toBe(true); }, { timeout: 4000 });
     unmount();
-    release();
-    await new Promise((r) => { setTimeout(r, 80); });
+    await new Promise((r) => { setTimeout(r, 250); });
     expect(fakes?.calls.some((c) => c.method === "runs/status")).toBe(false);
   });
 
