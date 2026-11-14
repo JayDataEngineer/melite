@@ -15,8 +15,12 @@
 // ARM 2 — THE VENV DOOR (operator-local; skips where the engine venv
 //   is absent): the REAL module imported in the REAL engine venv —
 //   _DEFAULTS["speaker"] is "", empty-speaker refuses loud naming the
-//   speaker, and the rope-registry patch points at the tolerant shim
-//   (toggle: delete _tolerant_default_rope_parameters → red).
+//   speaker, and the rope patch is LOAD-SCOPED (engine audit
+//   2026-11-14, D1): inside _rope_registry_patched the registry
+//   points at the tolerant shim; on exit the pre-patch entry is
+//   restored — the process-global registry never keeps melite's
+//   override (toggle: delete _tolerant_default_rope_parameters, or
+//   restore a bare _ensure_rope_registry global seat → red).
 // ARM 3 — THE SHIM DOOR (venv, no weights/GPU): the tolerant RoPE
 //   initializer returns qwen's EXACT math on a normal config and a
 //   finite inv_freq on a real MimiConfig (the config class that
@@ -100,6 +104,25 @@ describe("the faster-backend wall", () => {
     expect(s, "the silent vivian default is back").toMatch(
       /"speaker": ""/,
     );
+    // THE LOAD-SCOPED ROPE PATCH (engine audit 2026-11-14, D1): the
+    // load wraps from_pretrained in _rope_registry_patched() and
+    // follows it with the loud codec-rope assertion; a bare global
+    // _ensure_rope_registry seat must not exist (its process-global
+    // overwrite re-seated every other transformers family in the
+    // interpreter). Toggles: unwrap the load → red; delete the
+    // assert call → red; re-add a bare registry seat → red.
+    expect(
+      /with _rope_registry_patched\(\):\n\s+handle = FasterQwen3TTS\.from_pretrained\(/.test(s),
+      "the from_pretrained load is no longer wrapped in _rope_registry_patched()",
+    ).toBe(true);
+    expect(
+      /_assert_mimi_rope\(handle\)/.test(s),
+      "the load-time Mimi rope assertion is gone — silent rope divergence is back",
+    ).toBe(true);
+    expect(
+      s.includes("def _ensure_rope_registry"),
+      "a global rope-registry seat is back — the patch must be load-scoped",
+    ).toBe(false);
     expect(
       s.includes('"speaker": "vivian"'),
       'a "vivian" default string survives somewhere in the engine',
@@ -136,7 +159,7 @@ describe("the faster-backend wall", () => {
   });
 
   it.skipIf(!venvPresent)(
-    "ARM 2 — the real module refuses an unstated speaker loud and seats the tolerant rope patch (toggle either → red)",
+    "ARM 2 — the real module refuses an unstated speaker loud and the rope patch is load-scoped (toggle either → red)",
     () => {
       const out = py(`${LOADER}
 e = m.Qwen3TtsEngine()
@@ -146,13 +169,17 @@ try:
     print('refuse=MISSING')
 except RuntimeError as ex:
     print('refuse=' + str(ex)[:60])
-m._ensure_rope_registry()
+import qwen_tts  # production order: its import re-seats 'default'
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS
-print('registry-tolerant=' + str(ROPE_INIT_FUNCTIONS['default'] is m._tolerant_default_rope_parameters))
+before = ROPE_INIT_FUNCTIONS['default']
+inside = False
+with m._rope_registry_patched():
+    inside = ROPE_INIT_FUNCTIONS['default'] is m._tolerant_default_rope_parameters
+print('patch-scoped=' + str(inside and ROPE_INIT_FUNCTIONS['default'] is before))
 `);
       expect(out).toContain("speaker-default=''");
       expect(out).toMatch(/refuse=.*stated speaker preset/);
-      expect(out).toContain("registry-tolerant=True");
+      expect(out).toContain("patch-scoped=True");
     },
     240000, // the py() budget, declared at the it() (ARM 3's lesson)
   );
