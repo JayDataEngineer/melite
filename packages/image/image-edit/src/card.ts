@@ -113,29 +113,35 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   input_mask: z.string().role('path').description("Region Mask").extra('extra', bag({ hidden: true })),
   prompt: z.string().description("Prompt").extra('extra', bag(promptPairExtra().prompt)),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', bag(promptPairExtra().negative_prompt)),
-  // WIDTH/HEIGHT (the resize order, 2026-11-12 — superseding the
-  // 2026-11-08 blanket retirement): the edit lanes STILL run at the
-  // source's own frame (the latent law holds — a stated size wired
-  // into the latent shifted the edit); a stated size is now a
-  // DELIVERABLE resize (post-decode lanczos, one artifact). The
-  // match toggle owns the door: ON (default) keeps the source's
-  // frame and a stated axis refuses field-named with the flip in
-  // the voice; OFF gates these two rows into the form (the numbers
-  // appear exactly when the switch flips) and demands BOTH axes —
-  // integers, >= 16px (the input-prep laws).
-  width: z.number().step(1).description("Width").extra('extra', bag({ order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', visible_when: 'match_input_resolution=false', tooltip: 'The deliverable\u2019s width in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The edit itself runs at the source\u2019s own frame (the latent law \u2014 any other latent size shifts the edit); this resizes the finished edit (lanczos) so quality survives. State height too.' })),
-  height: z.number().step(1).description("Height").extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', visible_when: 'match_input_resolution=false', tooltip: 'The deliverable\u2019s height in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The edit itself runs at the source\u2019s own frame (the latent law \u2014 any other latent size shifts the edit); this resizes the finished edit (lanczos) so quality survives. State width too.' })),
-  // THE MATCH TOGGLE (the resize order's switch, 2026-11-12): ON
-  // (default) delivers at the source's own frame — byte-stable with
-  // every draft before the order; OFF exposes width/height (the
-  // deliverable's stated size). Either way the EDIT runs at the
-  // source's frame; only the deliverable resizes.
-  match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'ON (default): the deliverable keeps the source\u2019s own resolution. OFF: state Width/Height below \u2014 the edit still runs at the source\u2019s frame (quality first) and the finished edit resizes (lanczos) to your stated size.' })),
+  // WIDTH/HEIGHT (the ground-truth cure, 2026-11-12, retiring the
+  // resize order): a stated pair (match OFF) SIZES THE RENDER — the
+  // encoder processes references at a matched pixel budget
+  // (round32·sqrt(w·h), clamped to the node's working band) and the
+  // sampler renders an exact empty latent at w×h; the delivered
+  // frame IS the rendered frame, no post-decode ImageScale. With no
+  // stated pair (match ON, default) the lane samples the encoder's
+  // own anchor-sized latent (the 2026-11-08 law, intact on that
+  // arm). Never a default — no geometry prefills. The match toggle
+  // owns the door: ON (default) keeps the source's frame and a
+  // stated axis refuses field-named with the flip in the voice; OFF
+  // gates these two rows into the form (the numbers appear exactly
+  // when the switch flips) and demands BOTH axes — integers,
+  // >= 16px (the input-prep laws).
+  width: z.number().step(1).description("Width").extra('extra', bag({ order: 1, group: 'resolution', columns: 3, width: 1, zone: 'params', visible_when: 'match_input_resolution=false', tooltip: 'The deliverable\u2019s width in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The geometry sizes the render: the encoder conditions references at a matched pixel budget (round32\u00b7sqrt(w\u00b7h)) and the sampler renders the exact w\u00d7h latent — the delivered frame IS the rendered frame, never a post-decode resize. State height too.' })),
+  height: z.number().step(1).description("Height").extra('extra', bag({ order: 2, group: 'resolution', columns: 3, width: 1, zone: 'params', visible_when: 'match_input_resolution=false', tooltip: 'The deliverable\u2019s height in pixels (SET ONLY when Match Input Resolution is OFF — the form hides this until the switch flips; the agent face refuses it while match stays ON). The geometry sizes the render: the encoder conditions references at a matched pixel budget (round32\u00b7sqrt(w\u00b7h)) and the sampler renders the exact w\u00d7h latent — the delivered frame IS the rendered frame, never a post-decode resize. State width too.' })),
+  // THE MATCH TOGGLE: ON (default) delivers at the source's own
+  // anchor-sized latent — byte-stable with every draft before the
+  // cure; OFF exposes width/height (the stated pair sizes the
+  // render itself). No geometry prefills; the form states it or
+  // the run matches source.
+  match_input_resolution: z.boolean().description("Match Input Resolution").default(true).extra('extra', bag({ order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', tooltip: 'ON (default): the deliverable keeps the source\u2019s own resolution. OFF: state Width/Height below \u2014 the stated pair sizes the render itself (the sampler renders the exact w\u00d7h latent; the delivered frame IS the rendered frame, no post-decode resize).' })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   // RIDE-THE-MODEL (operator catch e, 2026-09-22): steps/cfg carry
   // NO schema default — a default here is one lane's recipe served
-  // as universal. The family DECL owns the default (2.1 25/1)
-  // through the service cascade, and the served tool face
+  // as universal. The family DECL owns them through the service
+  // cascade, variant-class (the 013 edit-steps-envelope cure: each
+  // variant row's resolver_defaults carries its own steps+cfg — no
+  // single 25/1 recipe over every lane), and the served tool face
   // advertises none.
   steps: z.number().description("Steps").min(1).max(50).step(1).extra('extra', samplingExtra('steps')),
   cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching); leave unset — the model's own recipe is the default." })),

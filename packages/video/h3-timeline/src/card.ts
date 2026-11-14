@@ -409,7 +409,7 @@ export function resolveLegacyEditAliases(p: Record<string, unknown>): Record<str
   if (bag.length > 1) {
     throw new Error(
       key === 'refine'
-        ? `h3-timeline: refine carries ${bag.length} entries — the bag N-entry tiling is not a dial cell (the carried join is dead at the engine (F3-14); the edit door composes ONE window at the 2x design window 2.5 s). State one window per doc`
+        ? `h3-timeline: refine carries ${bag.length} entries — the bag is ONE window per doc (the tiling and the join are the loop's: the context carry serves the seams (F3-14 cured, 2026-11-15), and the window is the ~2.33 s design cell). State one window per doc`
         : `h3-timeline: ${key} carries ${bag.length} entries — one entry per arm (the name resolves into ONE edit entry; every entry after the first would be silently dropped)`,
     )
   }

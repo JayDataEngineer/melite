@@ -55,11 +55,16 @@ describe.skipIf(!ENGINE_FREE)('the seedvr2 hop live press', () => {
       }
       const svc = new RunsRuntimeService(ctx as unknown as Context)
 
+      // (audit 2026-11-14 FL-7) NO top-level image_model here: the flow
+      // row pins the generator (make's model: "krea-2") and the runtime
+      // has no seat that reads a caller's image_model — it was a silent
+      // dead letter this press kept corroborating. prompt is the row's
+      // one request initial (initialValidators: {prompt}); the overlay
+      // bag carries the size channels.
       const ans = await svc.start({
         draft_id: 'd1',
         test: false,
         flow: 'image-upscale',
-        image_model: 'krea-2',
         prompt: 'a red lighthouse on a basalt cliff, storm light',
         params: {
           make: { width: 1344, height: 768 },

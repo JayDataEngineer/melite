@@ -110,11 +110,12 @@ export const schema = z.object({
     sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
     scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
     // THE REFERENCE SEAT (audit 004/C4, 2026-10-22): served LAST so
-    // the frozen form_spec field order holds. It fires on the lanes
-    // whose encoder reads references (qwen-img-21, h3-image); a
-    // stated list on another family refuses at compose — the
-    // phantom-port law below.
-    reference_images: z.array(z.string()).description('Reference Images').extra('extra', bag({ order: 9, group: 'reference', width: 1, zone: 'params', wtype: 'image_list', tooltip: 'Optional reference images — identity/subject anchors the encoder conditions on (qwen-img-21, h3-image). Ignored-loud on other families: a stated list refuses rather than dropping.' })),
+    // the frozen form_spec field order holds. It fires on the ONE
+    // family whose encoder reads references (qwen-img-21, the
+    // phantom-port law below — h3-image's vision path serves its edit
+    // sibling, never this card); a stated list on any other family
+    // refuses at compose.
+    reference_images: z.array(z.string()).description('Reference Images').extra('extra', bag({ order: 9, group: 'reference', width: 1, zone: 'params', wtype: 'image_list', tooltip: 'Optional reference images — identity/subject anchors the encoder conditions on (qwen-img-21 only). Ignored-loud on other families: a stated list refuses rather than dropping.' })),
 });
 export const identity = {
     label: 'Generate Image',

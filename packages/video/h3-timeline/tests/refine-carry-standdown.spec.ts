@@ -85,14 +85,14 @@ const body = (refine: Array<Record<string, unknown>>): Record<string, unknown> =
 });
 
 describe("the refine carry after the collapse (the card is one window; the engine keeps the carry)", () => {
-  it("ARM 1 — the CARD door refuses a multi-entry refine bag: one window per doc, the tiling names the edit bag", () => {
+  it("ARM 1 — the CARD door refuses a multi-entry refine bag: one window per doc, the voice names the loop's tiling", () => {
     assert.throws(
       () => def.compose(def.schema(body([
         REFINE_ENTRY(),
         { ...REFINE_ENTRY(), start_seconds: 34 / 24 },
       ])) as Record<string, unknown>, model, new GraphBuilder(), "run_carry_bag2"),
-      /refine carries 2 entries — the bag N-entry tiling is not a dial cell/,
-      "the retired tiling refuses loud and names the one-window law",
+      /refine carries 2 entries — the bag is ONE window per doc \(the tiling and the join are the loop's: the context carry serves the seams \(F3-14 cured, 2026-11-15\), and the window is the ~2\.33 s design cell\)/,
+      "the retired tiling refuses loud and names the one-window law (the 2026-11-14 voice cure: the carry is SERVED, never dead)",
     );
   });
 
