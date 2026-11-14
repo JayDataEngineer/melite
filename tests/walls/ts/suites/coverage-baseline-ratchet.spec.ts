@@ -2355,7 +2355,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/melite-card-view/src/client/card-mentions.ts',
     '**/packages/web/melite-card-view/src/client/card-tools.ts',
     '**/packages/web/melite-card-view/src/client/chat-preview.ts',
-    '**/packages/web/melite-card-view/src/client/cards-resource.ts',
+    // cards-resource left this list 2026-11-13 (the slice-2 mint):
+    // the K=1 re-seating lifted the row to 99.69/98.08/99.04/99.82 —
+    // past this entry's from face (98.33/97.39/93.87/98.85) — so the
+    // cleanup arm demanded its removal in the same landing.
     '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx',
     '**/packages/web/melite-card-view/src/client/construct-card.tsx',
     '**/packages/web/melite-card-view/src/client/dnd-payloads.ts',
@@ -2368,7 +2371,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/web/melite-card-view/src/client/preview-kinds.ts',
     '**/packages/web/melite-card-view/src/client/rejection-voice.ts',
     '**/packages/web/melite-card-view/src/client/run-rescue-core.ts',
-    '**/packages/web/melite-card-view/src/client/run-rescue.tsx',
+    // run-rescue.tsx left this list 2026-11-13 (the slice-2 mint):
+    // the K=1 re-seating lifted the row to 98.69/98.15/97.73/99.52 —
+    // past this entry's from face (98.68/95.27/97.72/99.51) — so the
+    // cleanup arm demanded its removal in the same landing.
     '**/packages/web/melite-card-view/src/client/sortable-tile.tsx',
     // stage-drill.tsx left this list 2026-11-09 (the seated regen):
     // its row climbed back above the argued from face
