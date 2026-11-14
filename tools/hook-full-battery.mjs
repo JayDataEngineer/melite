@@ -256,4 +256,40 @@ if (pytest.error !== undefined && pytest.error !== null) {
 } else {
   console.log("ok   pytest seat (vendored layer C)");
 }
-console.log(`battery green: tsc x${PACKAGES.length} + walls (every project) + lib-sync + acceptance arms`);
+// THE CI-PARITY ARMS (2026-11-14 burn: knip 33/15 and coverage red
+// on GitHub while every local gate was green — the hook never ran
+// what CI runs, so "all tests run locally on push" was a promise
+// about a subset). CI owns exactly these gate classes beyond the
+// battery above: the knip budget, the per-file coverage gate, the
+// keyless e2e self-skip tier, and the playwright browser tier. All
+// four run here now — the hook's set IS CI's set.
+const knip = spawnSync("node", ["tools/knip-budget.mjs"], { cwd: REPO, stdio: "inherit" });
+if (knip.status !== 0) {
+  console.error("BATTERY FAIL: knip budget (tools/knip-budget.mjs) — shrink the backlog or move the budget in the same commit as the cure");
+  process.exit(1);
+}
+console.log("ok   knip budget");
+const coverage = spawnSync("pnpm", ["run", "test:coverage"], { cwd: REPO, stdio: "inherit", shell: process.platform === "win32" });
+if (coverage.status !== 0) {
+  console.error("BATTERY FAIL: coverage gate (pnpm run test:coverage)");
+  process.exit(1);
+}
+console.log("ok   coverage gate");
+const e2e = spawnSync("pnpm", ["run", "test:e2e"], { cwd: REPO, stdio: "inherit", shell: process.platform === "win32" });
+if (e2e.status !== 0) {
+  console.error("BATTERY FAIL: e2e tier (pnpm run test:e2e)");
+  process.exit(1);
+}
+console.log("ok   e2e tier (keyless self-skip)");
+const playwrightProbe = spawnSync("pnpm", ["exec", "playwright", "--version"], { cwd: REPO, encoding: "utf8", shell: process.platform === "win32" });
+if (playwrightProbe.status !== 0) {
+  console.warn("SKIP-LOUD: playwright absent — the browser tier is unjudged here (pnpm exec playwright install; CI owns it)");
+} else {
+  const browser = spawnSync("pnpm", ["run", "test:web:browser"], { cwd: REPO, stdio: "inherit", shell: process.platform === "win32" });
+  if (browser.status !== 0) {
+    console.error("BATTERY FAIL: web browser tier (pnpm run test:web:browser)");
+    process.exit(1);
+  }
+  console.log("ok   web browser tier");
+}
+console.log(`battery green: tsc x${PACKAGES.length} + walls (every project) + lib-sync + acceptance arms + knip + coverage + e2e + browser`);

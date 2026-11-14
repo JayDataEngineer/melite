@@ -192,6 +192,20 @@ pre-push:
     - name: comfyui-nodes (committed + alive pins)
       run: node tools/comfyui-push-gate.mjs
 
+    # THE TAG-MINT GATE (the 2026-11-14 release burn: v0.2.3-rc.1 and
+    # rc.2 shipped as bare tags — no GitHub release, no assets, no
+    # record, no red; consumers following the newest tag hit a dead
+    # install door): a push carrying tags the remote does not have
+    # refuses unless every new tag is a recorded release decision in
+    # tools/seat-census.json — the seat (minted, installable) or an
+    # exclusion row with its reason. The seat-pin wall
+    # (readme-seat-pin.spec.ts) judges the census for coherence and,
+    # in CI, verifies it against GitHub itself. NO GLOB — a release
+    # burn is exactly a tag-only push, the shape whose empty file set
+    # skips every scoped job above.
+    - name: tag-mint (releases carry releases)
+      run: node tools/tag-mint-gate.mjs
+
     # THE PUSH-SET SENTRY (audit 018 C3b, lefthook 2.1.12 probation
     # 2026-10-27): the LAST job on every push. It derives the push set
     # from git itself and PRINTS it (count + basis + tip), so the

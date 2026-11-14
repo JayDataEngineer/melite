@@ -60,10 +60,12 @@ dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.2-alpha"
 
 Installs are pinned to the release tag — they never move on their own.
 To upgrade, run the same command with the newer tag, then restart the
-runner. (Releases are cut as `v*` tags with minted asset bundles;
-`#main` tracks the unreviewed tip and is not the install door.) The pin
-names the newest tag whose root manifest carries a package name: pnpm
-refuses a `github:` ref whose manifest has none
+runner. `#main` tracks the unreviewed tip and is not the install door.
+The pin names the newest tag with minted release assets: a release is
+the tag plus its asset bundle on the GitHub release, and a bare tag is
+not an install door — the ledger of tags cut without mints is
+`tools/seat-census.json`. The seat must also carry a root manifest
+package name — pnpm refuses a `github:` ref whose manifest has none
 (`ERR_PNPM_MISSING_PACKAGE_NAME`), which is why `v0.2.0-alpha` — cut
 before that field existed — is not the seat ref.
 
