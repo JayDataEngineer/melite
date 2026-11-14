@@ -96,7 +96,11 @@ extensions:
     # 2026-11-14 re-pin 9041eac (D5): the cold-boot KeyError('default')
     # at the patch's registry read — .get + absent-restores-to-absent;
     # red-proofed on a seatless registry. Runtime tree synced.
-    ref: 9041eac48dfcdc438ca46256bad41716933833f4
+    # 2026-11-14 re-pin 625db5e (D6): the assert walked the plain
+    # Qwen3TTSTokenizer wrapper instead of its .model torch tree —
+    # every load crashed at the codec-rope gate after D5 let it
+    # arrive. Wrapper seam walk + loud refusal on a missing codec.
+    ref: 625db5eccd54951e8f2b4e2e1a79acf9df0c29fc
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane
