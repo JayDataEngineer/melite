@@ -214,9 +214,26 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
       // (one row in flight at a time) an empty engine queue is the
       // proof OUR prompt settled; a stop that leaves the engine
       // grinding is a defect, never a pass.
+      //
+      // THE PENDING RACE (h3 final, 2026-11-17): /interrupt kills
+      // only the EXECUTING item; an item still PENDING (submitted,
+      // not yet picked up — the sidecar is written at queue time, so
+      // the stop can land first) survives it untouched and waits out
+      // any poll. 15s into a non-empty queue we clear the queue and
+      // re-interrupt — on the serial battery our row IS the queue's
+      // content, so a clear is the surgical cure, and what was
+      // cleared is logged for the receipt. The 60s assert keeps its
+      // teeth: a render that survives clear + interrupt still reds.
+      let cleared = 0
       for (let i = 0; i < 60; i++) {
         const queue = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`).then((r) => r.json() as Promise<{ queue_running?: unknown[], queue_pending?: unknown[] }>).catch(() => null)
         if (queue !== null && (queue.queue_running?.length ?? 0) + (queue.queue_pending?.length ?? 0) === 0) break
+        if (i === 15) {
+          cleared = (queue?.queue_pending?.length ?? 0) + (queue?.queue_running?.length ?? 0)
+          await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ clear: true }) }).catch(() => { /* the assert below owns the failure */ })
+          await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/interrupt`, { method: 'POST' }).catch(() => { /* same */ })
+          console.log(`[${tag}] drain: cleared ${cleared} queue item(s) the interrupt could not reach (the pending race) — serial battery, our row is the queue`)
+        }
         if (i === 59) throw new Error(tag + ': the stop left the engine queue non-empty after 60s — an orphaned render would eat the next rows\' VRAM budgets (the anny burn class)')
         await new Promise((r) => setTimeout(r, 1000))
       }
