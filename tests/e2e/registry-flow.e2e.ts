@@ -36,12 +36,20 @@ import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { mintSandbox } from '../harness.ts'
-import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, engineVramFits } from './engine-gate.ts'
 
 // fileURLToPath, never URL.pathname (the windows CI doubled-drive
 // class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]$/, '')
 const PHOTO = join(REPO_ROOT, 'data', 'input', '36039.jpg')
+
+// THE VRAM-DEFER (2026-11-15, the serial-tier burn): the estimator
+// stage carries vram_budget_mb 15500 (two OOM burns established it)
+// and the execute door REFUSES loud under it — while the serial
+// battery's earlier GPU suites leave the h3 film residency loaded
+// (the estate never evicts). Defer like the busy-defer does; the
+// lane keeps its live proof on any clean-card run.
+const VRAM_FITS_ESTIMATOR = await engineVramFits(15_500)
 
 
 const HAS_PHOTO = existsSync(PHOTO)
@@ -58,7 +66,7 @@ const ANNY_ESTIMATOR_ROOT = process.env['ANNY_ESTIMATOR_ROOT'] ??
   join(REPO_ROOT, 'data', 'runtime', 'anny-estimator')
 const HAS_ESTIMATOR = existsSync(join(ANNY_ESTIMATOR_ROOT, 'estimator_chain.py'))
 
-describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
+describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR || !VRAM_FITS_ESTIMATOR)(
   'registry flow through the {flow:} door (live ComfyUI)',
   () => {
     it("anny-hmr-estimator on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk", async () => {

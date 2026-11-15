@@ -27,6 +27,10 @@ describe.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('the bake varian
         refmod_save: true,
         ref_mods: [anchor],
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       }, 'bake variance probe B')
       const flow = JSON.parse(readFileSync(join(s.runDir, '_flow.json'), 'utf8')) as {
         graph_receipt?: { prompt_id?: string }

@@ -66,6 +66,29 @@ export async function engineBusy(): Promise<boolean> {
 const HAS_ENGINE = await engineAlive()
 const BUSY = HAS_ENGINE && !FORCE && (await engineBusy())
 
+/** Free VRAM on the engine's primary device, MiB (0 unknown). */
+export async function engineVramFreeMb(): Promise<number> {
+  try {
+    const res = await fetch(`${ENGINE_URL}/system_stats`, {
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) return 0
+    const stats = (await res.json()) as { devices?: Array<{ vram_free?: number }> }
+    return Math.floor(Number(stats.devices?.[0]?.vram_free ?? 0))
+  } catch {
+    return 0
+  }
+}
+
+/** The vram-defer verdict for a suite whose stage carries a
+ *  vram_budget_mb (the execute door proves headroom and refuses
+ *  loud under it; the serial tier's earlier suites leave residency
+ *  the estate never evicts — a skip is not a cost signal, the same
+ *  law as the busy-defer). Await at module top, gate the describe
+ *  on the verdict. */
+export const engineVramFits = async (budgetMb: number): Promise<boolean> =>
+  !HAS_ENGINE || (await engineVramFreeMb()) >= budgetMb
+
 /** The verdict suites gate on: describe.skipIf(!ENGINE_FREE). */
 export const ENGINE_FREE = HAS_ENGINE && !BUSY
 
