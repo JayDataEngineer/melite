@@ -103,11 +103,41 @@ def test_load_node_forwards_phase_callback_to_managed_model(monkeypatch, tmp_pat
     assert events == ["loading text encoder"]
 
 
-def test_torch_engine_forwards_callback_and_omits_it_when_absent(monkeypatch, tmp_path):
-    engine_module = _load_module(
-        "_moss_sfx_engine_test",
+def _load_engine_module(monkeypatch):
+    """Load engines/moss_sfx_v2.py INSIDE its package hierarchy so the
+    load path's sibling import (`from .qwen3_tts import
+    _rope_registry_patched` — the moss rope registry leak cure,
+    2026-11-15) resolves the way it does in the engine: a parent
+    package whose __path__ is the real engines dir, core loaded
+    under the folder_paths stub (the _load_core law), qwen3_tts
+    loaded as the sibling. A standalone spec_from_file_location load
+    has no package parent and the relative import's ImportError is
+    swallowed by the engine's own catch-all — the load would return
+    False and the wall would lie about why."""
+    package_name = "_moss_sfx_engine_pkg_test"
+    package = types.ModuleType(package_name)
+    package.__path__ = [str(PACKAGE_ROOT)]
+    monkeypatch.setitem(sys.modules, package_name, package)
+    engines_name = f"{package_name}.engines"
+    engines = types.ModuleType(engines_name)
+    engines.__path__ = [str(PACKAGE_ROOT / "engines")]
+    monkeypatch.setitem(sys.modules, engines_name, engines)
+    folder_paths = types.ModuleType("folder_paths")
+    folder_paths.folder_names_and_paths = {
+        "audiocpp": ([str(PACKAGE_ROOT)], {".gguf"}),
+    }
+    folder_paths.get_folder_paths = lambda key: [str(PACKAGE_ROOT)]
+    monkeypatch.setitem(sys.modules, "folder_paths", folder_paths)
+    _load_module(f"{package_name}.core", PACKAGE_ROOT / "core.py")
+    _load_module(f"{engines_name}.qwen3_tts", PACKAGE_ROOT / "engines" / "qwen3_tts.py")
+    return _load_module(
+        f"{engines_name}.moss_sfx_v2",
         PACKAGE_ROOT / "engines" / "moss_sfx_v2.py",
     )
+
+
+def test_torch_engine_forwards_callback_and_omits_it_when_absent(monkeypatch, tmp_path):
+    engine_module = _load_engine_module(monkeypatch)
     calls = []
 
     class FakePipeline:
