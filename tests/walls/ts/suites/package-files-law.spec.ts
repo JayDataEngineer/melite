@@ -8,6 +8,7 @@
 // manifest whose exports targets fall outside its files allowlist.
 import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join, dirname, relative } from 'node:path'
 
 const ROOT = join(__dirname, '..', '..', '..', '..')
@@ -138,20 +139,51 @@ describe('package-files law — every exports target ships', () => {
     expect(filesCover(['lib/*.js'], 'lib/deep/x.js')).toBe(false)
   })
 
-  it('no files row allows a member the release payload gate refuses (maps, src)', () => {
+  it('no files row allows a member the release payload gate refuses (the real gate, not a mirror)', () => {
     // mint23: three-client allowlisted lib/**/*.js.map — the mint's
-    // payload gate refused the packed tarball (source maps and src
-    // members never ship). This arm mirrors the gate's two refusals
-    // on the manifest half, so the battery catches the class before
-    // a mint run does.
+    // payload gate refused the packed tarball. This arm catches the
+    // class at the manifest half, before a mint run does. It judged
+    // via an INLINE COPY of the gate's refusals until the
+    // served-text carve-out (2026-11-17) split them: the real gate
+    // admits src/card.ts + the src/agents text tree for card
+    // packages; the copy refused them and the wall contradicted the
+    // gate it claimed to mirror. The arm now walks every on-disk
+    // file each files row covers and asks the REAL gate — a gate
+    // change and this wall can never drift apart again.
+    const req = createRequire(import.meta.url)
+    const gates = req('../../../../tools/release-artifacts.mjs') as {
+      validateTarballPayload: (inner: unknown, listing: string[], tarName: string) => void
+    }
     const offenders: string[] = []
     for (const pj of workspaceMembers()) {
       const pkg = JSON.parse(readFileSync(pj, 'utf8')) as Manifest
+      const dir = dirname(pj)
+      const onDisk: string[] = []
+      const walk = (d: string): void => {
+        for (const e of readdirSync(d)) {
+          if (e === 'node_modules' || e === '.DS_Store') continue
+          const p = join(d, e)
+          if (statSync(p).isDirectory()) walk(p)
+          else onDisk.push(relative(dir, p).split('\\').join('/'))
+        }
+      }
+      walk(dir)
+      // The listing the tarball would actually carry: package.json
+      // (always packed) plus every on-disk file the files rows
+      // cover — including a declared dsh.bundle.patch, whose row
+      // covers it. One gate call judges members, exports targets
+      // and patch promises together, exactly as the mint would.
+      const covered = new Set<string>()
       for (const row of pkg.files ?? []) {
         const rel = row.replace(/^\.\//u, '')
-        if (/\.(js|d\.ts)\.map$/u.test(rel) || /^src\//u.test(rel)) {
-          offenders.push(`${pkg.name}: files row "${row}" allows a payload-gate-refused member`)
-        }
+        for (const f of onDisk) if (filesCover([rel], f)) covered.add(f)
+      }
+      if (covered.size === 0) continue
+      const listing = ['package/package.json', ...[...covered].map((f) => `package/${f}`)]
+      try {
+        gates.validateTarballPayload(pkg, listing, pkg.name)
+      } catch (err) {
+        offenders.push(`${pkg.name}: files rows allow a payload-gate-refused tarball — ${(err as Error).message}`)
       }
     }
     expect(offenders, offenders.join('\n')).toEqual([])
