@@ -88,12 +88,17 @@ const BUDGET = {
   //    UP: three new dead-type rows from the estate's growth, the
   //    same drift class the note above records -- none of the three
   //    is this cure's code).
+  //    exports 211->213 (2026-11-15, same-commit law): the e2e
+  //    engine-gate's vram-defer cure — engineVramFreeMb (the raw
+  //    probe, used for logs) + engineVramFits (the defer verdict
+  //    the registry-flow suite gates on). Both are the ONE gate's
+  //    own surface; no dead rows moved.
   files: 0,
   dependencies: 1,
   devDependencies: 0,
   unlisted: 0,
   unresolved: 0,
-  exports: 211,
+  exports: 213,
   types: 181,
   // enumMembers / duplicates: "duplicates" excluded in knip.jsonc
 }
