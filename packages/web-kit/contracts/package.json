@@ -133,7 +133,9 @@
   "files": [
     "lib/index.js",
     "lib/**/*.js",
-    "lib/**/*.d.ts"
+    "lib/**/*.d.ts",
+    "src/card.ts",
+    "src/agents"
   ],
   "description": "Types and frozen vocabularies for the whole melite estate — the no-render, no-fetch floor every other package stands on.",
   "repository": {

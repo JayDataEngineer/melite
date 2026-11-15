@@ -43,7 +43,9 @@
     "lib/card.js",
     "lib/**/*.js",
     "lib/**/*.d.ts",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "src/card.ts",
+    "src/agents"
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",

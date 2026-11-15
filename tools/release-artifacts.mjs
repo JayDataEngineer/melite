@@ -95,11 +95,32 @@ export function exportsRows (inner, listing, tarName) {
  *  ships. Any src/** member, .ts/.tsx exports target or main, or
  *  source-map file refuses the mint. Declarations (.d.ts) are
  *  artifacts, not source; directory entries are not files. Pure:
- *  throws on violation. */
+ *  throws on violation.
+ *
+ *  THE SERVED-TEXT CARVE-OUT (estate handoff 2026-11-14,
+ *  melite-card-packaging-defect.md): the load door READS two text
+ *  surfaces from the install tree — src/card.ts (the card's
+ *  agent-facing contract) and src/agents/*.md (the inline craft
+ *  docs melite_load serves). For CARD packages these are DATA the
+ *  product ships, not source it compiles: the door hard-guards on
+ *  packages/<genre>/<card>/src/card.ts existing, so stripping them
+ *  killed melite_load on every clean install (rc.1 measured). The
+ *  carve-out admits EXACTLY these members — never any other src
+ *  file — and only for packages declaring a ./card export face.
+ *  The agents subtree is served whole (md craft docs, json prompt
+ *  dictionaries, yaml), but carries zero code kinds across every
+ *  card package today (35 md, 2 json, 1 yaml); the kind mask keeps
+ *  it that way — a .ts creeping into src/agents refuses the mint. */
+const SERVED_TEXT = /^package\/src\/card\.ts$/
+const SERVED_AGENTS = /^package\/src\/agents\/.+\.(md|json|ya?ml)$/
 export function validateTarballPayload (inner, listing, tarName) {
+  const isCardPackage = inner.exports !== undefined && './card' in inner.exports
   for (const member of listing) {
     if (member.endsWith('/')) continue
-    if (/^package\/src\//.test(member)) throw new Error(`payload gate: ${tarName} ships source member ${member}`)
+    if (/^package\/src\//.test(member)) {
+      if (isCardPackage && (SERVED_TEXT.test(member) || SERVED_AGENTS.test(member))) continue
+      throw new Error(`payload gate: ${tarName} ships source member ${member}`)
+    }
     if (/\.(js|d\.ts)\.map$/.test(member)) throw new Error(`payload gate: ${tarName} ships source map ${member}`)
   }
   const sourceTarget = (t) => /\.(ts|tsx)$/.test(t) && !/\.d\.ts$/.test(t)

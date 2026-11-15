@@ -76,7 +76,9 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.module.css",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "src/card.ts",
+    "src/agents"
   ],
   "repository": {
     "type": "git",

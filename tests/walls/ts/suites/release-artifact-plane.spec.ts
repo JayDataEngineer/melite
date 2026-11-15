@@ -128,6 +128,80 @@ describe('G2/G3 — fixture-backed plane rejection (audit case 1)', () => {
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
 
+  // ---- G2 served-text carve-out (estate handoff 2026-11-14,
+  // melite-card-packaging-defect.md) ----
+  // The load door READS src/card.ts + the src/agents text tree from
+  // the install tree; stripping them killed melite_load on every
+  // clean install (rc.1 measured). The carve admits exactly those
+  // members for packages declaring a ./card export face — every
+  // other src member still refuses. Each invariant its own arm.
+
+  const cardManifest = (): string => JSON.stringify({
+    name: 'fx-card', version: '0.0.0', type: 'module', license: 'AGPL-3.0-or-later',
+    exports: {
+      '.': { types: './lib/index.d.ts', default: './lib/index.js' },
+      './package.json': './package.json',
+      './card': { types: './lib/card.d.ts', default: './lib/card.js' },
+    },
+  }, null, 2)
+
+  it('admits the served text surfaces for a card package (card.ts + the agents tree)', () => {
+    const fx = fixture({
+      'package.json': cardManifest(),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+      'lib/card.js': 'export const c = 1\n',
+      'lib/card.d.ts': 'export declare const c: number\n',
+      'src/card.ts': '// the agent-facing card contract\n',
+      'src/agents/AGENT.md': '# craft\n',
+      'src/agents/dict.json': '{}\n',
+      'src/agents/table.yaml': 'k: v\n',
+      'src/agents/skills/directing/SKILL.md': '# skill\n',
+    })
+    try {
+      expect(() => gates.validateTarballPayload(fx.inner, fx.listing, 'fx.tgz')).not.toThrow()
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('still refuses real source members for a card package (the carve is not src-wide)', () => {
+    const fx = fixture({
+      'package.json': cardManifest(),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+      'src/index.ts': 'export const y = 2\n',
+    })
+    try {
+      expect(() => gates.validateTarballPayload(fx.inner, fx.listing, 'fx.tgz'))
+        .toThrow('payload gate: fx.tgz ships source member package/src/index.ts')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses a code kind creeping into the served agents subtree (the kind mask)', () => {
+    const fx = fixture({
+      'package.json': cardManifest(),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+      'src/agents/tool.ts': 'export const z = 3\n',
+    })
+    try {
+      expect(() => gates.validateTarballPayload(fx.inner, fx.listing, 'fx.tgz'))
+        .toThrow('payload gate: fx.tgz ships source member package/src/agents/tool.ts')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses the served names for a package with no ./card face (the carve rides the card export)', () => {
+    const fx = fixture({
+      'package.json': okManifest(),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+      'src/card.ts': '// not a card package\n',
+    })
+    try {
+      expect(() => gates.validateTarballPayload(fx.inner, fx.listing, 'fx.tgz'))
+        .toThrow('payload gate: fx.tgz ships source member package/src/card.ts')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
   it('refuses an exports promise the tarball does not carry (G3 promise law)', () => {
     const fx = fixture({
       'package.json': okManifest({ exports: { '.': './lib/index.js', './gone': './lib/gone.js' } }),
