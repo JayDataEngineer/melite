@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -150,6 +150,40 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
     for (const id of Object.keys(TIER_INPUTS)) {
       expect(battery.includes(`tier("${id}"`) || battery.includes(`"${id}"`) || battery.includes(`tier('${id}'`),
         `tier ${id} is declared in TIER_INPUTS but the battery never runs it — delete the row or run the tier`).toBe(true)
+    }
+  })
+
+  it('THE SHOW-ALL SHAPE (operator 2026-11-17: "A GOOD PIPELINE NEEDS TO BE RUN ONCE, THEN ALL ERRORS ARE SHOWING, ALL"): the report is the only exit door and every red tier lands in the ledger', () => {
+    const battery = readFileSync(join(process.cwd(), 'tools/hook-full-battery.mjs'), 'utf8')
+    // The exit seats: reportAndExit's own definition is the ONLY
+    // process.exit in the file. A bare process.exit anywhere else is
+    // the exit-ladder reborn.
+    const exits = [...battery.matchAll(/process\.exit\(/g)]
+    expect(exits.length, 'the battery must exit through exactly one door (reportAndExit) — found ' + exits.length).toBe(1)
+    // The ledger is recorded before the decision to continue: tier()
+    // pushes redTiers. A rework that drops the push shows all NO
+    // errors and exits 0 — the worst lie.
+    expect(battery.includes('redTiers.push'), 'tier() must record every red into the ledger before continuing').toBe(true)
+    // And the report prints the ledger it collected.
+    expect(/for \(const \{ id, tail \} of redTiers\)/.test(battery), 'the report must print every red tier with its tail').toBe(true)
+  })
+
+  it('THE NO-RETRY LAW (operator 2026-11-17: "RETRIES??? IN A TEST PIPELINE????"): no vitest config carries a retry key and every playwright config says retries: 0', () => {
+    const cfgDir = readdirSync(process.cwd()).filter((f) => /^vitest.*\.(ts|mts)$/.test(f))
+    expect(cfgDir.length).toBeGreaterThan(5)
+    for (const f of cfgDir) {
+      const src = readFileSync(join(process.cwd(), f), 'utf8')
+      // strip comments — the no-retry WALL COMMENT names the word it bans
+      const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '')
+      expect(code.includes('retry'), `${f} carries a retry key — a red is an ERROR, never a masked attempt`).toBe(false)
+    }
+    const pw = expandGlobs(process.cwd(), ['packages/web/**/playwright*.ts'])
+    expect(pw.length).toBeGreaterThan(3)
+    for (const p of pw) {
+      const src = readFileSync(join(process.cwd(), p), 'utf8')
+      const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '')
+      const m = code.match(/retries:\s*(\d+)/)
+      expect(m?.[1], `${p} must declare retries: 0 — found ${m?.[1] ?? 'no key'}`).toBe('0')
     }
   })
 })
