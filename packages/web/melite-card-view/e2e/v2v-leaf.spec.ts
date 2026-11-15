@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { callBench, collectPageErrors, settle } from './tour.ts'
+import { callBench, collectPageErrors, seedBenchH3, settle } from './tour.ts'
 
 /**
  * THE ADD-VIDEO-EDIT LEAF — the browser-plane proof of the
@@ -33,8 +33,24 @@ import { callBench, collectPageErrors, settle } from './tour.ts'
  * posture is driven: foreign content FAILS the arm loudly, it is
  * never shot, never split, never patched.
  */
-const SCRATCH_SESSION = process.env.MELITE_E2E_V2V_SESSION
-  ?? 'session-b102b9f3-5938-49c3-8867-3a911838e825'
+const PINNED_SESSION = process.env.MELITE_E2E_V2V_SESSION ?? ''
+
+/** The bench key this spec restates: the operator's PIN when one is
+ *  set, else the tab's OWN watched conversation (dsh.sessions.current
+ *  — the operator lane's reopened scratch conversation), else 'main'
+ *  (a fresh lane's headless fallback, whose bench the lane seeds at
+ *  boot — scripts/e2e-studio-lane.sh). The 11-09 pin hard-coded the
+ *  reopened key and passed on host history the tour law forbids: a
+ *  fresh lane carries no conversation, bench/get refuses not-found,
+ *  and all three arms red before their first pixel (2026-11-17). */
+async function scratchSessionKey(page: Page): Promise<string> {
+  if (PINNED_SESSION !== '') return PINNED_SESSION
+  const current = await page.evaluate(() => {
+    const raw = localStorage.getItem('dsh.sessions.current') ?? ''
+    try { return String((JSON.parse(raw) as { sessionId?: unknown }).sessionId ?? '') } catch { return '' }
+  })
+  return current !== '' ? current : 'main'
+}
 const SEED_CALLS = [
   { text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 },
 ]
@@ -46,9 +62,14 @@ test.use({ viewport: { width: 760, height: 900 } })
 
 /** Restate the scratch conversation's h3 stage to the canonical
  *  one-window seed (the open-state pixels judge the DEFAULT leaf —
- *  a previous run's splits persist through v2vCommit). */
-async function resetScratchStage(page: Page): Promise<void> {
-  const bench = (await callBench(page, 'bench/get', { sessionKey: SCRATCH_SESSION })) as {
+ *  a previous run's splits persist through v2vCommit). seedBenchH3
+ *  first (the tour law, idempotent): it births the bench through
+ *  bench/ensure and lands the h3 stage only when none is aboard —
+ *  a fresh lane's 'main' bench carries the lane's bare seed, an
+ *  operator lane's conversation may carry none. */
+async function resetScratchStage(page: Page, sessionKey: string): Promise<void> {
+  await seedBenchH3(page, sessionKey)
+  const bench = (await callBench(page, 'bench/get', { sessionKey })) as {
     doc?: { stages?: Array<{ id?: string; card?: string; params?: Record<string, unknown> }>; rev?: number }
     stages?: Array<{ id?: string; card?: string; params?: Record<string, unknown> }>
     rev?: number
@@ -59,7 +80,7 @@ async function resetScratchStage(page: Page): Promise<void> {
   const hit = stages.find((s) => s?.card === 'h3-timeline')
   if (!hit?.id) throw new Error('the scratch conversation carries no h3-timeline stage — seed it first (bench/add-stage)')
   await callBench(page, 'bench/patch', {
-    sessionKey: SCRATCH_SESSION,
+    sessionKey,
     doc: { stage: hit.id, params: { ...(hit.params ?? {}), calls: SEED_CALLS,
       // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): the scratch
       // stage may predate the tour helper's waiver — state it here so
@@ -81,9 +102,16 @@ async function openEditLeaf(page: Page): Promise<void> {
     await page.getByTestId('cards-tab-scroll').first().waitFor({ state: 'visible', timeout: 15_000 })
   }
   await page.waitForTimeout(3000)
-  const tiles = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])')
+  // THE H3 TILE BY ITS OWN SERVED NAME (2026-11-17): the seed
+  // profile's bench carries a TTS stage too (Qwen3, "The lanterns
+  // are lit…"), and its form owns the SAME generic mods square —
+  // drilling "the first tile with an add-modifier square" broke on
+  // that face and the picker menu offered Voice/Design, never
+  // Video edit. The h3 stage's tile renders the card's served
+  // title (Generate Video) — filter on the name, not the square.
+  const tiles = page.locator('[class*="tileInner"]:not([aria-label="Add a card"])').filter({ hasText: /Generate Video/ })
   const n = await tiles.count()
-  expect(n, 'the bench tab renders the scratch stage tile').toBeGreaterThan(0)
+  expect(n, 'the bench tab renders the scratch h3 stage tile').toBeGreaterThan(0)
   let opened = false
   for (let i = 0; i < n; i++) {
     await tiles.nth(i).click()
@@ -139,7 +167,8 @@ test.describe('THE ADD-VIDEO-EDIT LEAF · the 2026-11-09 cure, proved in pixels'
     // gate below fails LOUD in that case before any posture is
     // driven — foreign content is never judged, split, or patched.
     await settle(page)
-    await resetScratchStage(page)
+    const sessionKey = await scratchSessionKey(page)
+    await resetScratchStage(page, sessionKey)
     await openEditLeaf(page)
     await gateLeafOnSeed(page)
   })
