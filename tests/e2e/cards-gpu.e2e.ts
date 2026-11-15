@@ -355,9 +355,17 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
 
   it.skipIf(!weightsPresent('qwen3-tts'))('tts voicedesign export: the designer lane exports and RUNS', async () => {
     await withWorld('cards-gpu-tts-design', async (w) => {
+      // THE BOOLEAN IS THE SAVE (operator 2026-10-22; the unit walls
+      // own the law: lane-laws.spec "a plain design run persists
+      // nothing", action.spec "NO copy node — the embedding does not
+      // persist"). This row originally asserted MeliteQVoiceCopy on a
+      // plain design run — a pre-boolean-law payload that contradicts
+      // the compose door. The export proof rides the SAVE QVOICE
+      // boolean like every other seat.
       const s = await runCard(w, {
         model: 'qwen3-tts-voicedesign-design', text: 'A short sample line.',
         voice_name: 'E2EProbe', design_prompt: 'a warm middle-aged radio host, unhurried',
+        save_qvoice: true,
       }, 'tts voicedesign')
       const studio = byClass(s, 'AudiocoreVoiceStudio')
       assert.ok(studio.length >= 1, 'the voice studio runs')

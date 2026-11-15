@@ -100,7 +100,15 @@ extensions:
     # Qwen3TTSTokenizer wrapper instead of its .model torch tree —
     # every load crashed at the codec-rope gate after D5 let it
     # arrive. Wrapper seam walk + loud refusal on a missing codec.
-    ref: 625db5eccd54951e8f2b4e2e1a79acf9df0c29fc
+    # 2026-11-15 re-pin 744db0f (the moss rope registry leak): the
+    # moss ambience e2e arm reded deterministically AFTER the tts
+    # arms greened — qwen_tts's import re-seats
+    # ROPE_INIT_FUNCTIONS['default'] with a rope_theta-reading
+    # initializer, and moss's plain-Qwen3 text encoder (theta-less
+    # in transformers 5.20) died at from_pretrained. The torch
+    # pipeline now loads under the same tolerant registry patch the
+    # tts engines load under. Wall: tests/test_moss_rope_registry_leak.py.
+    ref: 744db0f586a6d68419a5d25a20da8020be8e9fd1
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane
