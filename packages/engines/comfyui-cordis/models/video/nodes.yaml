@@ -41,7 +41,7 @@ extensions:
     # /prompt-optimize + /project-assets/describe routes and the editor
     # Optimize lane). Prior pin 2680ee2 (2026-11-01 a53e1df, F35
     # _read_json file-naming) is fully contained.
-    ref: 1dd6cfb7e51b291708bed248f0c7d71aed776bbe
+    ref: b5c05776376bac9a58b929e4bd07f5cd3f07da6a
     required: true
     desc: Clip chaining, checkpoints, masked targets (ContexMaskedTarget), MaskGridPreview, final assembly — the edit-target + loop seats. Estate-maintained fork (GPL-3.0, upstream history preserved): ethanfel force-pushed past the estate h3-chain gap cures (e6d700d7), orphaning the pinned line — the fork carries those bytes. Upstream floor 0.7.3+. No requirements file.
   - name: ComfyUI-Fantastic-MiniMaxH3-PromptBuilder

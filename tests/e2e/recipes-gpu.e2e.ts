@@ -256,6 +256,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor, knobs: { width: 768, height: 448 } }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 draft')
       const ltx = nodesWith(s, /LTX_lora_loader/)
@@ -287,6 +291,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
       }, 'h3 standard')
       const ltx = nodesWith(s, /LTX_lora_loader/)
@@ -318,6 +326,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         second_pass_enabled: true,
         sr_switch: true,
@@ -347,6 +359,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
         // THE STUDIO'S WIRE SHAPE (serializeCalls): the one-call doc
         // lifts its text/image into the run (card.ts single-call lift).
         calls: [{ text: promptText, start_frame: 0, end_frame: 22, image: anchor }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         width: 768, height: 448,
         loras: [{ id: 'h3_turbo4_v1' }],
       }, 'h3 void receipt')
@@ -392,6 +408,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         width: 768, height: 448, steps: 8, second_pass_enabled: true,
         loras: [{ id: 'h3_turbo8_v1' }],
         refine_lora: 'h3_taomate_3step',
@@ -444,6 +464,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         reshoot: [{ source_clip: 'swap_film_v1.mp4', orbit: 12 }],
       }, 'h3 reshoot live')
@@ -498,6 +522,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'the scene continues smoothly', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         extend: [{ source_clip: 'swap_film_v1.mp4', extend_seconds: 3.75, extend_prompt: 'the scene continues smoothly' }],
       }, 'h3 extend live')
@@ -541,6 +569,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const s = await runCard(w, {
         model: 'h3',
         calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         refine: [{ source_clip: 'h3_t4_w2_00004__a1fa72843541.mp4', refine_prompt: 'the same scene, sharper fabric weave and cleaner edges' }],
       }, 'h3 refine live')
@@ -551,8 +583,15 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       assert.equal(hands[0]![1].inputs?.['model_name'], 'minimax_h3_latent_upscaler_3d_bf16.safetensors', 'the learned 3D-conv weights')
       assert.equal(hands[0]![1].inputs?.['scale'], 2.0, 'the 2x variant path')
       assert.equal(hands[0]![1].inputs?.['lock_audio'], true, 'the soundtrack is the source\u2019s own, fixed')
-      const saves = byClass(s, 'SaveVideo')
-      assert.ok(saves.some(([, n]) => String(n.inputs?.['filename_prefix']).endsWith('/refine')), 'the refine terminal saves under the run-scoped refine prefix')
+      // THE TERMINAL TRUTH (2026-11-15): the legacy refine doc rides the
+      // CHAIN-EDIT door (chainEdit.ts mounts the handoff on the chain's
+      // live latents, lock_audio fixed) — the terminal is the chain's own
+      // assemble at the run-scoped edit prefix, NOT a SaveVideo at
+      // /refine (that was the pre-chain F19 compose; this row's assertion
+      // pinned the retired shape and red every press after the routing
+      // landed).
+      const asms = byClass(s, 'MiniMaxH3ChainAssemble')
+      assert.ok(asms.some(([, n]) => String(n.inputs?.['filename']).endsWith('/edit')), 'the refine chain\u2019s terminal assembles under the run-scoped edit prefix')
       assert.equal(firstBytes(s).length > 1024, true, 'the refined video artifact is real bytes')
     } finally {
       w.stop()

@@ -108,7 +108,7 @@ extensions:
     # in transformers 5.20) died at from_pretrained. The torch
     # pipeline now loads under the same tolerant registry patch the
     # tts engines load under. Wall: tests/test_moss_rope_registry_leak.py.
-    ref: 744db0f586a6d68419a5d25a20da8020be8e9fd1
+    ref: 73f50ed5ba93c6ad877edba86c72a5831e4afe7c
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane

@@ -450,6 +450,10 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const s = await runCard(w, {
         model: 'h3', width: 768, height: 448, loras: [{ id: 'h3_lightx2v_dareties' }],
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       }, 'h3 dareties pick')
       // THE STACK RECEIPT (the established turbo pattern): the id
       // resolves to the catalog filename at compose — the workflow
@@ -471,6 +475,10 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const s = await runCard(w, {
         model: 'h3', width: 768, height: 448, steps: 8,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       }, 'h3 draft_02mp')
       assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2\.safetensors/).length >= 1, 'the absent-bag silver DARE-TIES default rides')
       const sched = byClass(s, 'BasicScheduler')
@@ -486,6 +494,10 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const s = await runCard(w, {
         model: 'h3', width: 1344, height: 768, steps: 30,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       }, 'h3 final_hd')
       assert.ok(nodesWith(s, /minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2\.safetensors/).length >= 1, 'the absent-bag silver DARE-TIES default rides')
       const sched = byClass(s, 'BasicScheduler')
@@ -513,6 +525,10 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
         // the extract bakes, not the t4r guide lane.
         ref_mods: [anchor],
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
+        // smoke text is scaffolding, not craft — waived loud, never silent
+        // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
+        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       }, 'h3 bake witness')
       // THE APPLY BIND (compose arm re-proven on silicon): the baked
       // mod passes through MiniMaxH3RefModApply into the guider.

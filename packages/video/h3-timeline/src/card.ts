@@ -970,7 +970,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // the two doors disagreed by name. cards-mirror-door-parity reds
     // on exactly that drift; the admission declares the truth — wire
     // vocabulary the door sanctions, never lane vocabulary.
-    admits: ['ctx_*', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
+    // `prompt_waivers` JOINED THIS LIST (2026-11-15, the same
+    // two-door parity cure as last_frame below): the prompt gate
+    // (the VID GEN handoff, 2026-11-12) READS the key at run
+    // resolve (gatedResolve's list) and the GPU e2e smoke rows ride
+    // it — but the DECL's admits row never declared it, so the
+    // compose door refused 'unknown param(s): prompt_waivers' on
+    // every press the gate itself was designed to waive. Wire
+    // vocabulary the door sanctions, never lane vocabulary.
+    admits: ['ctx_*', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'prompt_waivers', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
     // features.modifiers channel): the swap + repair + extend arms.
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
