@@ -33,7 +33,7 @@ import { QueueService } from '../../packages/harness/estate-queue/src/service.ts
 import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
-import { uploadAnchorPng } from './gpu-harness.ts'
+import { queueCard, uploadAnchorPng } from './gpu-harness.ts'
 import { H3_LORA_ROWS } from '../../packages/models/h3/mods/loras.ts'
 import { REFINE_DENOISE_DEFAULT } from '../../packages/models/h3/src/schema.ts'
 
@@ -157,8 +157,10 @@ function firstBytes(s: Settled): Buffer {
 }
 
 /** Find the composed node rows whose JSON carries the needle (the
- * lora wiring proof — resolved file + strength verbatim). */
-function nodesWith(s: Settled, needle: RegExp): Array<[string, unknown]> {
+ * lora wiring proof — resolved file + strength verbatim). Accepts
+ * either door's answer (Settled or the diet's Queued) — both carry
+ * the workflow the readers read. */
+function nodesWith(s: { workflow: Record<string, unknown> }, needle: RegExp): Array<[string, unknown]> {
   return Object.entries(s.workflow).filter(([, r]) => needle.test(JSON.stringify(r)))
 }
 
@@ -166,7 +168,7 @@ function nodesWith(s: Settled, needle: RegExp): Array<[string, unknown]> {
  * whole row JSON — reference edges match too; this counts REAL
  * nodes: the refine-rider receipt needs pass A + pass B, not their
  * referencing neighbors). */
-function byClass(s: Settled, cls: string): Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]> {
+function byClass(s: { workflow: Record<string, { class_type?: string, inputs?: Record<string, unknown> }> }, cls: string): Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]> {
   return Object.entries(s.workflow)
     .filter(([, r]) => (r as { class_type?: string }).class_type === cls) as Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]>
 }
@@ -276,7 +278,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 600_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the LightX2V Turbo 8-Step at the calibrated floor and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the LightX2V Turbo 8-Step at the calibrated floor and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-standard-')
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
@@ -288,7 +290,10 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // geometry stamps — the carrier schema's own 1344×768 floor
       // rides (the low-quality burn was the old birth stamp forcing
       // 768×448 on every fresh card).
-      const s = await runCard(w, {
+      // THE GPU DIET (2026-11-17): the standard tier's asserts are
+      // graph stamps (the lora stack); the h3 family's real-bytes
+      // proof rides the draft render row.
+      const s = await queueCard(w, {
         model: 'h3',
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
@@ -304,14 +309,13 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('minimax_h3_fl2v_turbo_8step_v1.0'))
       assert.ok(row !== undefined, 'the stack carries the resolved LightX2V Turbo 8-Step ON')
       assert.equal(row!['str'], 1, 'the strength is the catalog-declared 1')
-      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
   }, 600_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-final-')
     try {
       // NO ANCHOR (the final-cut emit law — card-compose-liveness
@@ -323,7 +327,9 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // same turbo bag plus the second-pass rail — the master switch
       // and the SeedVR2 super-res switch. sr_resolution stays
       // unstated (the knob's own 1080 floor owns it).
-      const s = await runCard(w, {
+      // THE GPU DIET (2026-11-17): graph stamps only — the family's
+      // real-bytes proof rides the draft render row.
+      const s = await queueCard(w, {
         model: 'h3',
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
@@ -341,12 +347,11 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('minimax_h3_fl2v_turbo_8step_v1.0'))
       assert.ok(row !== undefined, 'the stack carries the resolved LightX2V Turbo 8-Step ON')
       assert.ok(nodesWith(s, /SeedVR2/).length >= 1, 'the SeedVR2 super-res rail rides the finished film')
-      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 120_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
     const w = await bootWorld('recipes-h3-void-')
@@ -599,23 +604,29 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 600_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and RUN', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and QUEUE (the GPU diet)', async () => {
     const w = await bootWorld('recipes-motion-')
     try {
-      const s = await runCard(w, {
+      // THE GPU DIET (2026-11-17): the row's law is the Rule B
+      // WRITES — the keys the studio rail's SpecPanel stamps — which
+      // are graph truths at queue time. The kimodo family's
+      // real-bytes proof rides the draft render row (cards-gpu).
+      const s = await queueCard(w, {
         model: 'kimodo',
         prompt: 'a person walks forward slowly',
         // RULE B: exactly the keys the studio rail's SpecPanel
         // writes through onSave (the generic form's own vocabulary)
         diffusion_steps: 25, seed: 4242, duration_sec: 2,
       }, 'motion panel writes')
-      const bytes = firstBytes(s)
-      assert.ok(bytes.length > 256, 'the motion artifact is real bytes (' + bytes.length + ')')
+      const pose = byClass(s, 'KimodoTextToPose')
+      assert.equal(pose.length, 1, 'the pose diffusion composes')
+      assert.equal(pose[0]![1].inputs?.diffusion_steps, 25, 'the panel write stamps 25 steps')
+      assert.ok(byClass(s, 'KimodoLoader').length >= 1, 'the motion weights load')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 480_000)
+  }, 120_000)
 
   // ── the audio receipt (hour 15, the audio recipe rows landing:
   //    bound-anchored stamps proven on silicon — the schema's own

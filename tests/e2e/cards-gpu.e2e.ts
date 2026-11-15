@@ -34,6 +34,7 @@ import {
   byClass,
   firstBytes,
   nodesWith,
+  queueCard,
   runCard,
   stageAnchorPng,
   synthRefWav,
@@ -377,9 +378,14 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
     })
   }, 480_000)
 
-  it.skipIf(!weightsPresent('music3'))('music3 full-length: the duration pill composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('music3'))('music3 full-length: the duration pill composes and QUEUES (the GPU diet — the family render proof rides the short-sting row)', async () => {
     await withWorld('cards-gpu-music-full', async (w) => {
-      const s = await runCard(w, {
+      // THE GPU DIET (2026-11-17): duration 360 is a six-minute
+      // render whose assertions are all graph stamps (latent seconds
+      // link, encoder duration). The composed graph carries every one
+      // at queue time; the short-sting row (duration 5) already proves
+      // the family renders real bytes.
+      const s = await queueCard(w, {
         model: 'music3', prompt: 'funk, pop, soul, guitar, 105 BPM', duration: 360,
       }, 'music full-length')
       const latent = byClass(s, 'EmptyMiniMaxMusic3LatentAudio')
@@ -390,9 +396,8 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       // encoder's realized AR — cond slot 1 — never a literal
       assert.deepEqual(latent[0]![1].inputs?.seconds, [enc[0]![0], 1], 'the latent length rides the AR link')
       assert.equal(enc[0]![1].inputs?.max_duration, 360, 'the encoder rides the same duration')
-      assert.ok(firstBytes(s).length > 1024, 'the song artifact carries real bytes')
     })
-  }, 1_200_000)
+  }, 120_000)
 
   it.skipIf(!weightsPresent('yue2'))('yue2 short-sting: the second music lane composes and RUNS', async () => {
     await withWorld('cards-gpu-yue2', async (w) => {
@@ -488,10 +493,13 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('h3-timeline'))('h3 final_hd: the HD tier composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('h3-timeline'))('h3 final_hd: the HD tier composes and QUEUES (the GPU diet — the family render proof rides the draft row)', async () => {
     await withWorld('cards-gpu-h3-hd', async (w) => {
       const anchor = stageAnchorPng('cards-gpu-h3-hd')
-      const s = await runCard(w, {
+      // THE GPU DIET (2026-11-17): the HD tier's asserts are graph
+      // stamps (silver default, scheduler steps); the h3 family's
+      // real-bytes proof rides the draft render row.
+      const s = await queueCard(w, {
         model: 'h3', width: 1344, height: 768, steps: 30,
         calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
@@ -503,9 +511,8 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 30, 'the tier pill stamps 30 steps')
-      assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')
     })
-  }, 900_000)
+  }, 120_000)
 
   it.skipIf(!weightsPresent('h3-timeline'))('h3 THE HOP-[6] BAKE WITNESS: the stated refmod dials ride the REAL run — the engine\'s own history record carries mode/pool/identity/save verbatim (study §7 item 1, the f closer)', async () => {
     await withWorld('cards-gpu-h3-bake', async (w) => {
@@ -579,9 +586,13 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
     })
   }, 480_000)
 
-  it.skipIf(!weightsPresent('kimodo'))('motion polished: the ceiling pill composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('kimodo'))('motion polished: the ceiling pill composes and QUEUES (the GPU diet — the family render proof rides the draft row)', async () => {
     await withWorld('cards-gpu-kimodo-polish', async (w) => {
-      const s = await runCard(w, {
+      // THE GPU DIET (2026-11-17): 200 pose-diffusion steps at the
+      // ceiling pill is the family's heaviest render; its asserts are
+      // graph stamps. The kimodo family's real-bytes proof rides the
+      // draft row (10 steps).
+      const s = await queueCard(w, {
         model: 'kimodo', prompt: 'a person walks forward slowly',
         diffusion_steps: 200, seed: 4242, duration_sec: 2,
       }, 'motion polished')
@@ -589,7 +600,6 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.equal(pose.length, 1, 'the pose diffusion runs')
       assert.equal(pose[0]![1].inputs?.diffusion_steps, 200, 'the polished pill stamps 200 steps')
       assert.ok(byClass(s, 'KimodoLoader').length >= 1, 'the motion weights load')
-      assert.ok(firstBytes(s).length > 256, 'the motion artifact carries real bytes')
     })
-  }, 480_000)
+  }, 120_000)
 })

@@ -169,16 +169,67 @@ export function firstBytes(s: Settled): Buffer {
   return readFileSync(p)
 }
 
+export interface Queued {
+  runId: string
+  workflow: Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
+}
+
+/** THE GPU DIET (operator order 2026-11-17: FIX THE PIPELINE NOW):
+ * submit through the SAME start door, wait only for the composed
+ * workflow to land in the run's own sidecar (written at queue time —
+ * the graph receipts law, runsRegistry's registration), answer it,
+ * and STOP the run through the estate's own stop door. A row that
+ * asserts the SERIALIZED GRAPH (pill stamps, loader classes, wiring)
+ * proves everything it asserts the moment the graph composes; the
+ * render proves nothing further for those rows — and on one shared
+ * engine, each skipped render is real GPU-minutes back. Rows that
+ * read RENDERED TRUTHS (bytes served, durations, decode-time
+ * refusals like the audio-grid conform) stay on runCard: those are
+ * the per-family and per-frame-math renders the diet keeps.
+ *
+ * A run that settles (success OR refusal) before the stop lands is
+ * fine — the graph is what we asked for, never the render's exit. */
+export async function queueCard(w: World, body: Record<string, unknown>, tag: string): Promise<Queued> {
+  const ans = await w.svc.start(
+    { draft_id: 'd1', test: false, ...body } as never,
+    new AbortController().signal,
+  )
+  assert.equal(ans.status, 'queued', tag + ': the card run must queue')
+  const sidecar = join(w.stateRoot, 'output', ans.run_id, '_flow.json')
+  for (let i = 0; i < 120; i++) {
+    let wf: Record<string, unknown> | undefined
+    try {
+      const flow = JSON.parse(readFileSync(sidecar, 'utf8')) as {
+        graph?: Array<{ params?: { workflow?: Record<string, unknown> } }>
+      }
+      wf = flow.graph?.[0]?.params?.workflow
+    } catch { /* not yet written — the compose is still running */ }
+    if (wf !== undefined && Object.keys(wf).length > 0) {
+      await w.svc.stop(ans.run_id, new AbortController().signal).catch(() => { /* already settled — the graph is ours */ })
+      return { runId: ans.run_id, workflow: wf as Queued['workflow'] }
+    }
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  await w.svc.stop(ans.run_id, new AbortController().signal).catch(() => { /* nothing to stop */ })
+  throw new Error(tag + ': the composed workflow never landed in the sidecar (60s) — the compose door refused or hung')
+}
+
 /** Find the composed node rows whose JSON carries the needle (the
  * lora wiring proof — resolved file + strength VERBATIM). */
-export function nodesWith(s: Settled, needle: RegExp): Array<[string, unknown]> {
+/** The workflow-carrying answer of either door (runCard's Settled or
+ * queueCard's Queued — the graph readers only read the workflow). */
+export interface WorkflowBearer {
+  workflow: Record<string, { class_type?: string, inputs?: Record<string, unknown> }>
+}
+
+export function nodesWith(s: WorkflowBearer, needle: RegExp): Array<[string, unknown]> {
   return Object.entries(s.workflow).filter(([, r]) => needle.test(JSON.stringify(r)))
 }
 
 /** The composed node rows of EXACTLY one class (nodesWith greps the
  * whole row JSON — reference edges match too; this counts REAL
  * nodes). */
-export function byClass(s: Settled, cls: string): Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]> {
+export function byClass(s: WorkflowBearer, cls: string): Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]> {
   return Object.entries(s.workflow)
     .filter(([, r]) => (r as { class_type?: string }).class_type === cls) as Array<[string, { class_type?: string, inputs?: Record<string, unknown> }]>
 }
