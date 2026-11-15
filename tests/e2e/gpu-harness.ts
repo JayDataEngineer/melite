@@ -206,24 +206,34 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
     } catch { /* not yet written — the compose is still running */ }
     if (wf !== undefined && Object.keys(wf).length > 0) {
       await w.svc.stop(ans.run_id, new AbortController().signal).catch(() => { /* already settled — the graph is ours */ })
-      // THE DRAIN PROOF (the anny burn, 2026-11-17): the estate's
-      // stop rides /interrupt BEST-EFFORT — a missed interrupt leaves
-      // the engine rendering this row's prompt into the NEXT rows,
-      // and the VRAM-sensitive rows down-file probe green at entry
-      // then press into a collapsed budget. On the serial battery
-      // (one row in flight at a time) an empty engine queue is the
-      // proof OUR prompt settled; a stop that leaves the engine
-      // grinding is a defect, never a pass.
-      //
-      // THE PENDING RACE (h3 final, 2026-11-17): /interrupt kills
-      // only the EXECUTING item; an item still PENDING (submitted,
-      // not yet picked up — the sidecar is written at queue time, so
-      // the stop can land first) survives it untouched and waits out
-      // any poll. 15s into a non-empty queue we clear the queue and
-      // re-interrupt — on the serial battery our row IS the queue's
-      // content, so a clear is the surgical cure, and what was
-      // cleared is logged for the receipt. The 60s assert keeps its
-      // teeth: a render that survives clear + interrupt still reds.
+      // THE SETTLE GATE (run 6, 2026-11-17): the stop is flag +
+      // return — the WORKER is the authority, and it may hold one
+      // more segment submit past our stop (the h3 final row
+      // composes in segments; the clear raced the worker's next
+      // submit and the queue never emptied). A settled run row can
+      // submit nothing more; only then is the engine queue's
+      // content OURS to judge. Never clear a queue a worker still
+      // awaits — a deleted prompt never reports completion, the
+      // worker never reaches its flag check, the stop never
+      // converges (today's red, verbatim).
+      let settled = ''
+      for (let i = 0; i < 90; i++) {
+        const row = await w.svc.status(ans.run_id, new AbortController().signal).catch(() => undefined as Record<string, unknown> | undefined)
+        settled = typeof row?.['status'] === 'string' ? row['status'] : ''
+        if (settled !== '' && settled !== 'queued' && settled !== 'running' && settled !== 'stopping') break
+        if (i === 89) throw new Error(tag + ': the run never settled after the stop (status ' + JSON.stringify(settled) + ' after 90s) — the worker never reached its flag check')
+        await new Promise((r) => setTimeout(r, 1000))
+      }
+      console.log(`[${tag}] drain: run settled (${settled}) — judging the engine queue`)
+      // THE DRAIN PROOF (the anny burn, 2026-11-17): on the serial
+      // battery (one row in flight at a time) an empty engine queue
+      // is the proof OUR prompt settled; a stop that leaves the
+      // engine grinding is a defect, never a pass. /interrupt kills
+      // only the EXECUTING item and an estate-clear can starve a
+      // live worker — but a SETTLED run owns nothing pending, so a
+      // leftover item is a true orphan: clear it (serial battery —
+      // our row is the queue's content), re-interrupt, and keep the
+      // assert's teeth: anything surviving both still reds.
       let cleared = 0
       for (let i = 0; i < 60; i++) {
         const queue = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`).then((r) => r.json() as Promise<{ queue_running?: unknown[], queue_pending?: unknown[] }>).catch(() => null)
@@ -232,11 +242,12 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
           cleared = (queue?.queue_pending?.length ?? 0) + (queue?.queue_running?.length ?? 0)
           await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ clear: true }) }).catch(() => { /* the assert below owns the failure */ })
           await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/interrupt`, { method: 'POST' }).catch(() => { /* same */ })
-          console.log(`[${tag}] drain: cleared ${cleared} queue item(s) the interrupt could not reach (the pending race) — serial battery, our row is the queue`)
+          console.log(`[${tag}] drain: cleared ${cleared} queue item(s) left behind by the settled run — serial battery, our row is the queue`)
         }
         if (i === 59) throw new Error(tag + ': the stop left the engine queue non-empty after 60s — an orphaned render would eat the next rows\' VRAM budgets (the anny burn class)')
         await new Promise((r) => setTimeout(r, 1000))
       }
+      if (cleared > 0) console.log(`[${tag}] drain: queue empty after clearing ${cleared} orphan(s)`)
       return { runId: ans.run_id, workflow: wf as Queued['workflow'] }
     }
     await new Promise((r) => setTimeout(r, 500))
