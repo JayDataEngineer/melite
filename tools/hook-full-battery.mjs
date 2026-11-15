@@ -36,18 +36,19 @@ const leases = loadLeases(LEASE_PATH);
 
 const carriedTiers = [];
 
-// One leased tier. The body returns an exit status (0 = green); this
-// wrapper owns the carry/fire decision, the lease write (green OR red
-// — a red lease refuses any later carry of the same hash, so a flake
-// re-fires instead of riding a stale green), and the loud exit.
-function tier(id, body) {
+// One leased tier. The body returns an exit status (0 = green) or a
+// promise for one; this wrapper owns the carry/fire decision, the
+// lease write (green OR red — a red lease refuses any later carry of
+// the same hash, so a flake re-fires instead of riding a stale
+// green), and the loud exit.
+async function tier(id, body) {
   const gate = tierGate(REPO, leases, id);
   if (!FORCE && gate.decision === "carry") {
     carriedTiers.push(id);
     console.log(`carry ${id} — inputs unchanged since its last green (${gate.files} files hashed)`);
     return;
   }
-  const status = body();
+  const status = await body();
   leases[id] = { status: status === 0 ? "green" : "red", hash: gate.hash, at: new Date().toISOString(), files: gate.files };
   saveLeases(LEASE_PATH, leases);
   if (status !== 0) {
@@ -166,7 +167,7 @@ if (!existsSync(vitest)) {
 
 const shell = process.platform === "win32";
 
-tier("tsc", () => {
+await tier("tsc", () => {
   let next = 0;
   let failed = null;
   const lanes = Array.from(
@@ -219,7 +220,7 @@ if (build.status !== 0) {
   process.exit(1);
 }
 
-tier("walls", () => {
+await tier("walls", () => {
   // EVERY PROJECT, not just `node` (round-6 audit, 2026-10-13): the
   // hook and the pre-commit job both run `--project node`, so the dom
   // / dom18 / deck projects (~3,000 specs) had NO local owner while
@@ -277,12 +278,12 @@ for (const [tierId, config] of [
   ["snapshot", "vitest.snapshot.config.ts"],
   ["web", "vitest.web.config.ts"],
 ]) {
-  tier(tierId, () => {
+    await tier(tierId, () => {
     const arm = spawnSync(vitest, ["run", "--config", config], { cwd: REPO, stdio: "inherit" });
     return arm.status === 0 ? 0 : 1;
   });
 }
-tier("pytest", () => {
+await tier("pytest", () => {
   // (class B R11, 2026-10-31) windows' python3 is the Store alias stub
   // that opens the marketplace instead of the interpreter — probe
   // 'python' there; same seat, real binary.
@@ -310,11 +311,11 @@ tier("pytest", () => {
 // battery above: the knip budget, the per-file coverage gate, the
 // keyless e2e self-skip tier, and the playwright browser tier. All
 // four run here now — the hook's set IS CI's set.
-tier("knip", () => {
+await tier("knip", () => {
   const knip = spawnSync("node", ["tools/knip-budget.mjs"], { cwd: REPO, stdio: "inherit" });
   return knip.status === 0 ? 0 : 1;
 });
-tier("coverage", () => {
+await tier("coverage", () => {
   // THE COVERAGE RATCHET (2026-11-14, the release-deadlock burn): the
   // raw coverage exit reds on the estate's pre-existing per-file debt
   // (95 files, roadmapped, floors untouchable) and made every push
@@ -325,7 +326,7 @@ tier("coverage", () => {
   const coverage = spawnSync("node", ["tools/coverage-ratchet.mjs"], { cwd: REPO, stdio: "inherit" });
   return coverage.status === 0 ? 0 : 1;
 });
-tier("e2e", () => {
+await tier("e2e", () => {
   // THE SERIAL-E2E LAW (2026-11-15, three wedged batteries): the GPU
   // rows press ONE shared engine — at the config's default 4 workers,
   // four heavy suites storm it concurrently and the host (tmpfs /tmp +
@@ -338,7 +339,7 @@ tier("e2e", () => {
   const e2e = spawnSync("pnpm", ["run", "test:e2e"], { cwd: REPO, stdio: "inherit", shell, env: { ...process.env, DSH_E2E_MAX_WORKERS: "1" } });
   return e2e.status === 0 ? 0 : 1;
 });
-tier("browser", () => {
+await tier("browser", () => {
   const playwrightProbe = spawnSync("pnpm", ["exec", "playwright", "--version"], { cwd: REPO, encoding: "utf8", shell });
   if (playwrightProbe.status !== 0) {
     console.warn("SKIP-LOUD: playwright absent — the browser tier is unjudged here (pnpm exec playwright install; CI owns it)");
