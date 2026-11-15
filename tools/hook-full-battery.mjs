@@ -282,7 +282,16 @@ if (coverage.status !== 0) {
   process.exit(1);
 }
 console.log("ok   coverage ratchet (CI suite runs; debt is budgeted, growth is not)");
-const e2e = spawnSync("pnpm", ["run", "test:e2e"], { cwd: REPO, stdio: "inherit", shell: process.platform === "win32" });
+// THE SERIAL-E2E LAW (2026-11-15, three wedged batteries): the GPU
+// rows press ONE shared engine — at the config's default 4 workers,
+// four heavy suites storm it concurrently and the host (tmpfs /tmp +
+// one 24 GB card) swaps to death mid-tier: the same five heaviest
+// rows (final_hd, HOP-6, kimodo pair, h3-image) die fetch-failed
+// EVERY storm while every row passes scoped single-worker. The
+// config's own resource knob exists for exactly this — the engine is
+// the shared quota. Serial here; CI's keyless self-skip tier rides
+// the default where the GPU rows never run.
+const e2e = spawnSync("pnpm", ["run", "test:e2e"], { cwd: REPO, stdio: "inherit", shell: process.platform === "win32", env: { ...process.env, DSH_E2E_MAX_WORKERS: "1" } });
 if (e2e.status !== 0) {
   console.error("BATTERY FAIL: e2e tier (pnpm run test:e2e)");
   process.exit(1);
