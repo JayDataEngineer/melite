@@ -28,7 +28,6 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
-import { audioFileStats, isFlac, roarViolation } from './sfx-waveform.ts'
 import {
   type World,
   byClass,
@@ -282,17 +281,22 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
     return join(s.runDir, s.stageUrl)
   }
 
-  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig'))('rig copy: the transfer lane composes and RUNS', async () => {
+  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig'))('rig copy: the transfer lane composes and QUEUES (the GPU diet — the family render proof rides the rig-auto row; the JOINTS_0 live law rides the transfer row)', async () => {
     await withWorld('cards-gpu-rig-copy', async (w) => {
-      const donor = await autoRiggedGlb(w, 'rig copy donor')
-      const s = await runCard(w, {
-        model: 'rig', mesh_glb: RIG_FIXTURE, mode: 'copy', donor_glb: donor,
+      // THE NO-DUPES LAW (operator 2026-11-17, GPU-fleet audit finding
+      // 3): this row once minted its own rigged DONOR — the exact
+      // rig-auto shape rendered a second time. The copy lane's law is
+      // a GRAPH law (transfer weights + save node ride the donor
+      // input); the compose door wires the fixture path, the queued
+      // graph carries every stamp, and the JOINTS_0 live receipt
+      // rides the transfer row's real donor.
+      const s = await queueCard(w, {
+        model: 'rig', mesh_glb: RIG_FIXTURE, mode: 'copy', donor_glb: RIG_FIXTURE,
       }, 'rig copy')
       assert.ok(byClass(s, 'KimodoTransferWeights').length >= 1, 'the copy lane transfers')
       assert.ok(byClass(s, 'SaveRiggedModel').length >= 1, 'the rigged mesh saves')
-      assert.ok(firstBytes(s).length > 1024, 'the rigged artifact carries real bytes')
     })
-  }, 300_000)
+  }, 120_000)
 
   it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig'))('img-to-mesh transfer lane: the rig hop composes and RUNS', async () => {
     await withWorld('cards-gpu-transfer', async (w) => {
@@ -321,40 +325,43 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
     })
   }, 300_000)
 
-  it.skipIf(!weightsPresent('qwen3-tts'))('tts customvoice instruct: the 1.7B lane takes direction and RUNS', async () => {
+  it.skipIf(!weightsPresent('qwen3-tts'))('tts customvoice instruct: the 1.7B lane takes direction and QUEUES (the GPU diet — the family render proof rides the expressive-read row)', async () => {
     await withWorld('cards-gpu-tts-instruct', async (w) => {
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): the asserts are graph
+      // stamps (the instruct input rides the lane); the family's
+      // real-bytes proof renders once, on the expressive-read row.
+      const s = await queueCard(w, {
         model: 'qwen3-tts-voicedesign', text: 'A warm hello.', style_instruction: 'cheerful',
       }, 'tts instruct')
       const tts = byClass(s, 'AudiocoreTTS')
       assert.ok(tts.length >= 1, 'the TTS lane speaks')
       assert.equal(tts[0]![1].inputs?.instruct, 'cheerful', 'the direction rides the instruct input')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the line saves')
-      assert.ok(firstBytes(s).length > 512, 'the audio artifact carries real bytes')
     })
-  }, 300_000)
+  }, 120_000)
 
-  it.skipIf(!weightsPresent('qwen3-tts'))('tts base clone: the reference lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('qwen3-tts'))('tts base clone: the reference lane composes and QUEUES (the GPU diet — the family render proof rides the expressive-read row)', async () => {
     await withWorld('cards-gpu-tts-base', async (w) => {
       // THE BASE LAW (live receipt, 2026-10-31): the native node
       // REFUSES prompt-only base ("requires voice clone reference
       // audio") — the card composes mode 'tts' but the lane never
       // speaks it. The row stages a 3s synthesized reference, the
       // smallest lawful clone pair.
+      // THE NO-DUPES LAW (operator 2026-11-17): the mode is a graph
+      // stamp; the family bytes render once on expressive-read.
       const ref = synthRefWav('cards-gpu-tts-base')
-      const s = await runCard(w, {
+      const s = await queueCard(w, {
         model: 'qwen3-tts-base', text: 'A cloned line from the reference voice.',
         ref_audio: ref, ref_text: 'a reference line for the clone',
       }, 'tts base')
       const tts = byClass(s, 'AudiocoreTTS')
-      assert.ok(tts.length >= 1, 'the TTS lane speaks')
+      assert.ok(tts.length >= 1, 'the TTS lane composes')
       assert.equal(tts[0]![1].inputs?.mode, 'clone', 'the reference pair rides the clone lane')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the line saves')
-      assert.ok(firstBytes(s).length > 512, 'the audio artifact carries real bytes')
     })
-  }, 300_000)
+  }, 120_000)
 
-  it.skipIf(!weightsPresent('qwen3-tts'))('tts voicedesign export: the designer lane exports and RUNS', async () => {
+  it.skipIf(!weightsPresent('qwen3-tts'))('tts voicedesign export: the designer lane exports and QUEUES (the GPU diet — the family render proof rides the expressive-read row)', async () => {
     await withWorld('cards-gpu-tts-design', async (w) => {
       // THE BOOLEAN IS THE SAVE (operator 2026-10-22; the unit walls
       // own the law: lane-laws.spec "a plain design run persists
@@ -363,20 +370,21 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       // plain design run — a pre-boolean-law payload that contradicts
       // the compose door. The export proof rides the SAVE QVOICE
       // boolean like every other seat.
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): export_lite/name/the
+      // copy node are graph stamps; bytes render once per family.
+      const s = await queueCard(w, {
         model: 'qwen3-tts-voicedesign-design', text: 'A short sample line.',
         voice_name: 'E2EProbe', design_prompt: 'a warm middle-aged radio host, unhurried',
         save_qvoice: true,
       }, 'tts voicedesign')
       const studio = byClass(s, 'AudiocoreVoiceStudio')
-      assert.ok(studio.length >= 1, 'the voice studio runs')
+      assert.ok(studio.length >= 1, 'the voice studio composes')
       assert.equal(studio[0]![1].inputs?.mode, 'export_lite', 'the designer exports')
       assert.equal(studio[0]![1].inputs?.name, 'E2EProbe', 'the export carries its name')
       assert.ok(byClass(s, 'MeliteQVoiceCopy').length >= 1, 'the voice stages')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the sample saves')
-      assert.ok(firstBytes(s).length > 512, 'the audio artifact carries real bytes')
     })
-  }, 480_000)
+  }, 120_000)
 
   it.skipIf(!weightsPresent('music3'))('music3 full-length: the duration pill composes and QUEUES (the GPU diet — the family render proof rides the short-sting row)', async () => {
     await withWorld('cards-gpu-music-full', async (w) => {
@@ -421,30 +429,24 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
   // the lane cannot render; the row receipts the lane's ceiling and
   // the DECL↔lane gap is ledgered (the full bed owes a chunking
   // lane or a capped recipe).
-  it.skipIf(!weightsPresent('moss-sfx'))('moss-sfx ambience: the lane ceiling composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('moss-sfx'))('moss-sfx ambience: the lane ceiling composes and QUEUES (the GPU diet — the family render + roar judge ride the recipes-gpu one_shot row)', async () => {
     await withWorld('cards-gpu-sfx-bed', async (w) => {
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): every assert below is
+      // a graph stamp (TTS duration ceiling, the save node). The
+      // served FLAC + roar judge ride the one_shot render row.
+      const s = await queueCard(w, {
         model: 'moss-sfx', prompt: 'low cavern hum with dripping water', duration: 30,
       }, 'sfx ambience')
       const tts = byClass(s, 'AudiocoreTTS')
-      assert.ok(tts.length >= 1, 'the SFX lane renders')
+      assert.ok(tts.length >= 1, 'the SFX lane composes')
       assert.equal(tts[0]![1].inputs?.duration_seconds, 30, 'the lane ceiling rides')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the bed saves')
-      assert.ok(firstBytes(s).length > 1024, 'the audio artifact carries real bytes')
-      // THE SERVED-WAVEFORM JUDGE (the 2026-11-12 roar burn): bytes
-      // existing is not audio being sane — the Oct-29 roar shipped
-      // green. Decode the served FLAC and run the roar decision on
-      // its real waveform (offline arms: moss-sfx-served-waveform).
-      const art = join(s.runDir, s.stageUrl)
-      assert.ok(isFlac(art), 'the served artifact is a FLAC')
-      const roar = roarViolation(audioFileStats(art))
-      assert.equal(roar, null, roar ?? 'the served waveform is sane')
     })
-  }, 600_000)
+  }, 120_000)
 })
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + kimodo recipes)', () => {
-  it.skipIf(!weightsPresent('h3-timeline'))('h3 lightx2v dareties PICK: the catalog adapter composes and RUNS (the recipe row retired 2026-11-02; the lora stays pick-only)', async () => {
+  it.skipIf(!weightsPresent('h3-timeline'))('h3 lightx2v dareties PICK: the catalog adapter composes and QUEUES (the GPU diet — the family render proof rides the recipes-gpu draft row)', async () => {
     await withWorld('cards-gpu-h3-dare', async (w) => {
       // THE CALLS SPELLING (anchor-guide.spec.ts, the one-truth
       // laws 2026-10-26/27): the t4r lane derives from a CALL-level
@@ -452,9 +454,13 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       // (the established recipes-gpu h3 rows predate the law and
       // rot red on any engine now).
       const anchor = stageAnchorPng('cards-gpu-h3-dare')
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): the asserts below
+      // are graph stamps on the composed workflow; the h3 family's
+      // real-bytes proof renders ONCE, on the recipes-gpu draft
+      // row. This row queues.
+      const s = await queueCard(w, {
         model: 'h3', width: 768, height: 448, loras: [{ id: 'h3_lightx2v_dareties' }],
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22, image: anchor }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -470,16 +476,15 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const drow = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('dareties_v4_step600_comfy_fro'))
       assert.ok(drow !== undefined, 'the stack carries the resolved dareties adapter ON')
       assert.equal(drow!['str'], 0.8, 'the strength is the catalog-declared 0.8')
-      assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')
     })
-  }, 600_000)
+  }, 120_000)
 
-  it.skipIf(!weightsPresent('h3-timeline'))('h3 draft_02mp: the tier pill composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('h3-timeline'))('h3 draft_02mp: the tier pill composes and QUEUES (the GPU diet)', async () => {
     await withWorld('cards-gpu-h3-draft', async (w) => {
       const anchor = stageAnchorPng('cards-gpu-h3-draft')
-      const s = await runCard(w, {
+      const s = await queueCard(w, {
         model: 'h3', width: 768, height: 448, steps: 8,
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22, image: anchor }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -489,9 +494,8 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       const sched = byClass(s, 'BasicScheduler')
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 8, 'the tier pill stamps 8 steps')
-      assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')
     })
-  }, 600_000)
+  }, 120_000)
 
   it.skipIf(!weightsPresent('h3-timeline'))('h3 final_hd: the HD tier composes and QUEUES (the GPU diet — the family render proof rides the draft row)', async () => {
     await withWorld('cards-gpu-h3-hd', async (w) => {
@@ -501,7 +505,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       // real-bytes proof rides the draft render row.
       const s = await queueCard(w, {
         model: 'h3', width: 1344, height: 768, steps: 30,
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22, image: anchor }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -521,17 +525,21 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
         model: 'h3', width: 768, height: 448, steps: 8,
         // THE STATED BAKE AT NON-DEFAULT POLES: every dial moved off
         // its declared default (mode Full Reference, pool 32, identity
-        // 1000, save false) — engine defaults could never satisfy
+        // 50, save false) — engine defaults could never satisfy
         // these assertions; only the declared-param wire can.
+        // THE GPU DIET (operator 2026-11-17, audit finding 7):
+        // identity is "THE time dial" (schema.ts:162, default 500) —
+        // any NON-DEFAULT pole proves the wire; 1000 paid 2× the
+        // default for the same stamp.
         refmod_mode: 'Full Reference',
         refmod_pool: 32,
-        refmod_identity: 1000,
+        refmod_identity: 50,
         refmod_save: false,
         // THE REFMOD IMAGE (the (f) burn's own subject): the mod seat
         // takes the anchor as a run-level ref_mods entry — the media
         // the extract bakes, not the t4r guide lane.
         ref_mods: [anchor],
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22 }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -570,7 +578,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.ok(Object.keys(entry.outputs ?? {}).length >= 1, 'the engine produced outputs for the run')
       assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')
     })
-  }, 900_000)
+  }, 480_000)
 
   it.skipIf(!weightsPresent('kimodo'))('motion draft: the steps pill composes and RUNS', async () => {
     await withWorld('cards-gpu-kimodo-draft', async (w) => {

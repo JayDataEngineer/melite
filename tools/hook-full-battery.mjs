@@ -35,12 +35,69 @@ const LEASE_PATH = join(REPO, "data/tmp/battery-leases.json");
 const leases = loadLeases(LEASE_PATH);
 
 const carriedTiers = [];
+// THE RUN-ONCE-SHOW-ALL LEDGER (operator order 2026-11-17: "A GOOD
+// PIPELINE NEEDS TO BE RUN ONCE, THEN ALL ERRORS ARE SHOWING, ALL"):
+// the battery once exited at the FIRST red tier — a 20-run ladder
+// where every retry re-paid the tiers after the death. A red tier is
+// now RECORDED and the battery CONTINUES: every tier fires (or
+// carries), every failure lands in one report, one run shows all.
+// Install-class defects (missing tsc / vitest binaries, a failed
+// build) still STOP the run — later tiers would judge stale
+// artifacts and report noise, not errors — but they stop THROUGH the
+// ledger now: the red is recorded, the one-run report prints it with
+// its tail, and the exit carries the report, never a bare line.
+const redTiers = [];
 
-// One leased tier. The body returns an exit status (0 = green) or a
-// promise for one; this wrapper owns the carry/fire decision, the
+/** The one-run report: every red tier, each with its own captured
+ *  tail, in the order they were recorded — then the given exit
+ *  status. The ONLY exit door after pre-flight. */
+function reportAndExit(code) {
+  if (redTiers.length > 0) {
+    console.error(`\n${"=".repeat(72)}\nBATTERY RED — ${redTiers.length} tier(s) failed in THIS run:\n${"=".repeat(72)}`);
+    for (const { id, tail } of redTiers) {
+      console.error(`\n--- ${id} tier ---`);
+      const lines = tail.split("\n");
+      const failIdx = lines.findIndex((l) => l.includes("Failed Tests") || l.includes("FAIL"));
+      const from = failIdx > 10 ? failIdx - 10 : Math.max(0, lines.length - 60);
+      const excerpt = lines.slice(from, from + 120).join("\n");
+      console.error(excerpt !== "" ? excerpt : "(no captured output — see the live log above)");
+    }
+    console.error(`\nBATTERY RED tiers: ${redTiers.map((r) => r.id).join(", ")} — carried [${carriedTiers.join(", ")}]`);
+  } else {
+    console.log(`battery green (tier-leased): ${carriedTiers.length > 0 ? `carried [${carriedTiers.join(", ")}] + ` : ""}fired tiers above`);
+  }
+  process.exit(code);
+}
+
+/** Tee-spawn: streams the child's output live AND captures it, so a
+ * red tier's tail can land in the final ledger without going dark
+ * while it runs. Event-loop friendly (no spawnSync) so the e2e and
+ * browser tiers can run in PARALLEL — the battery's long tail is
+ // two lanes that share no engine, no port, no state root. */
+function spawnTee(cmd, args, opts = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(cmd, args, {
+      cwd: REPO,
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: opts.shell ?? false,
+      env: opts.env,
+    });
+    let out = "";
+    const tee = (chunk) => { out += chunk; process.stdout.write(chunk); };
+    child.stdout.on("data", tee);
+    child.stderr.on("data", tee);
+    child.on("error", (e) => resolve({ status: -1, out: out + String(e) }));
+    child.on("close", (status) => resolve({ status, out }));
+  });
+}
+
+// One leased tier. The body returns { status, tail? } (0 = green) or
+// a promise for one; this wrapper owns the carry/fire decision, the
 // lease write (green OR red — a red lease refuses any later carry of
-// the same hash, so a flake re-fires instead of riding a stale
-// green), and the loud exit.
+// the same hash, so an unresolved error re-fires instead of riding a
+// stale green), and the ledger. There is no such thing as a flake:
+// a red is an ERROR; it is recorded and the run CONTINUES so one run
+// shows every error.
 async function tier(id, body) {
   const gate = tierGate(REPO, leases, id);
   if (!FORCE && gate.decision === "carry") {
@@ -48,12 +105,15 @@ async function tier(id, body) {
     console.log(`carry ${id} — inputs unchanged since its last green (${gate.files} files hashed)`);
     return;
   }
-  const status = await body();
+  const r = await body();
+  const status = typeof r === "number" ? r : r.status;
   leases[id] = { status: status === 0 ? "green" : "red", hash: gate.hash, at: new Date().toISOString(), files: gate.files };
   saveLeases(LEASE_PATH, leases);
   if (status !== 0) {
-    console.error(`BATTERY FAIL: ${id} tier — lease recorded red; the retry carries every green above and re-fires from here`);
-    process.exit(1);
+    const tail = typeof r === "object" && r.tail ? r.tail : "";
+    redTiers.push({ id, tail });
+    console.error(`RED ${id} tier — lease recorded red; the battery CONTINUES (one run shows every error)`);
+    return;
   }
   console.log(`ok   ${id} (${gate.files} files hashed; lease green)`);
 }
@@ -151,18 +211,18 @@ function runTsc(dir) {
 // A declared package without its own tsc fails the battery before any
 // tier runs (an install defect, not a tier judgment — never leased):
 // a missing binary is one named line, louder than a pile of spawn
-// errors.
+// errors. The red lands in the LEDGER and the report carries it.
 for (const p of PACKAGES) {
   if (!existsSync(`${REPO}${p}/node_modules/.bin/tsc`)) {
-    console.error(`BATTERY FAIL: tsc missing for ${p} (run pnpm install)`);
-    process.exit(1);
+    redTiers.push({ id: "pre-flight", tail: `BATTERY FAIL: tsc missing for ${p} (run pnpm install)` });
+    reportAndExit(1);
   }
 }
 
 const vitest = `${REPO}node_modules/.bin/vitest`;
 if (!existsSync(vitest)) {
-  console.error("BATTERY FAIL: repo vitest missing (run pnpm install)");
-  process.exit(1);
+  redTiers.push({ id: "pre-flight", tail: "BATTERY FAIL: repo vitest missing (run pnpm install)" });
+  reportAndExit(1);
 }
 
 const shell = process.platform === "win32";
@@ -207,28 +267,37 @@ await tier("tsc", () => {
 // had minted the vendor lib by then): three pre-push failures at
 // ~117s against green hand-runs, deterministic per tree state.
 // Build-then-judge is already the acceptance arms' own law below;
-// the walls now inherit it. THE LEASE NOTE: the build is one tier
-// with the walls' drift arm — the drift check is git-state, not
-// file-content, so it stays UNLEASED below (a staged artifact drift
-// is invisible to a content hash).
-const build = spawnSync(process.execPath, ["tools/build-plane.mjs", "build"], {
-  cwd: REPO,
-  stdio: "inherit",
-});
-if (build.status !== 0) {
-  console.error("BATTERY FAIL: lib-sync build (tools/build-plane.mjs build)");
-  process.exit(1);
+// the walls now inherit it. THE SHOW-ALL LAW (2026-11-17): the build
+// is a LEASED TIER now (the once-dead "build" row in TIER_INPUTS is
+// live) — a red build still stops the run (every later tier judges
+// stale artifacts), but it stops through the ledger: recorded,
+// tailed, reported.
+{
+  const gate = tierGate(REPO, leases, "build");
+  if (!FORCE && gate.decision === "carry") {
+    carriedTiers.push("build");
+    console.log(`carry build — inputs unchanged since its last green (${gate.files} files hashed)`);
+  } else {
+    const build = await spawnTee(process.execPath, ["tools/build-plane.mjs", "build"]);
+    leases["build"] = { status: build.status === 0 ? "green" : "red", hash: gate.hash, at: new Date().toISOString(), files: gate.files };
+    saveLeases(LEASE_PATH, leases);
+    if (build.status !== 0) {
+      redTiers.push({ id: "build", tail: build.out + "\nBATTERY FAIL: lib-sync build (tools/build-plane.mjs build) — later tiers would judge stale artifacts" });
+      reportAndExit(1);
+    }
+    console.log(`ok   build (lib-sync build-plane; ${gate.files} files hashed; lease green)`);
+  }
 }
 
-await tier("walls", () => {
+await tier("walls", async () => {
   // EVERY PROJECT, not just `node` (round-6 audit, 2026-10-13): the
   // hook and the pre-commit job both run `--project node`, so the dom
   // / dom18 / deck projects (~3,000 specs) had NO local owner while
   // the CI unit job that runs them fires on main/master only. The
   // battery is the last local gate before a push, so it owns the full
   // fleet; the pre-commit job keeps the fast node-only seat.
-  const walls = spawnSync(vitest, ["run"], { cwd: REPO, stdio: "inherit" });
-  if (walls.status !== 0) return 1;
+  const walls = await spawnTee(vitest, ["run"], { cwd: REPO });
+  if (walls.status !== 0) return { status: 1, tail: walls.out };
   // THE LIB-SYNC ARM (R4-03): a fresh full build must reproduce the
   // committed lib/ byte-for-byte. The class recurred 149× in 90
   // commits — src landed without its artifact, invisible to every
@@ -243,7 +312,7 @@ await tier("walls", () => {
     cwd: REPO,
     encoding: "utf8",
   });
-  if (drift.status !== 0 || typeof drift.stdout !== "string") return 1;
+  if (drift.status !== 0 || typeof drift.stdout !== "string") return { status: 1, tail: "git status --porcelain -- '**/lib/**' failed" };
   // Drift is WORKTREE vs INDEX (second column / untracked), not
   // index vs HEAD: staged lib updates are the law's own end state —
   // the artifact sits staged for the same commit as its src. Only a
@@ -255,12 +324,14 @@ await tier("walls", () => {
     // index) or the file is untracked — a fresh build minted it.
     .filter((l) => (l[1] !== undefined && l[1] !== " ") || l.startsWith("??"));
   if (dirty.length > 0) {
-    console.error("lib/ drifted past the staged artifact — the build rewrote files beyond what is staged:");
-    for (const line of dirty) console.error("  " + line);
-    console.error("The artifact lands in the SAME commit as the src: pnpm run build, then stage the diff.");
-    return 1;
+    return {
+      status: 1,
+      tail: walls.out + "\nlib/ drifted past the staged artifact — the build rewrote files beyond what is staged:\n  "
+        + dirty.join("\n  ")
+        + "\nThe artifact lands in the SAME commit as the src: pnpm run build, then stage the diff.",
+    };
   }
-  return 0;
+  return { status: 0, tail: walls.out };
 });
 
 // THE ACCEPTANCE ARMS (round-6 audit, 2026-10-13): the tiers job
@@ -278,31 +349,26 @@ for (const [tierId, config] of [
   ["snapshot", "vitest.snapshot.config.ts"],
   ["web", "vitest.web.config.ts"],
 ]) {
-    await tier(tierId, () => {
-    const arm = spawnSync(vitest, ["run", "--config", config], { cwd: REPO, stdio: "inherit" });
-    return arm.status === 0 ? 0 : 1;
+  await tier(tierId, async () => {
+    const arm = await spawnTee(vitest, ["run", "--config", config], { cwd: REPO });
+    return { status: arm.status === 0 ? 0 : 1, tail: arm.out };
   });
 }
-await tier("pytest", () => {
+await tier("pytest", async () => {
   // (class B R11, 2026-10-31) windows' python3 is the Store alias stub
   // that opens the marketplace instead of the interpreter — probe
   // 'python' there; same seat, real binary.
   const pythonBin = process.platform === "win32" ? "python" : "python3";
-  const pytest = spawnSync(pythonBin, ["-m", "pytest", "tests/", "-q"], { cwd: REPO, encoding: "utf8" });
-  if (pytest.error !== undefined && pytest.error !== null) {
+  const pytest = await spawnTee(pythonBin, ["-m", "pytest", "tests/", "-q"], { cwd: REPO });
+  if (pytest.status === -1 || /ENOENT|not found|No such file/i.test(pytest.out.slice(0, 500))) {
     console.warn(`SKIP-LOUD: ${pythonBin} absent — the vendored layer C pytest seat is unjudged here (CI owns it; install ${pythonBin} + pytest to judge locally)`);
-    return 0;
+    return { status: 0 };
   }
-  if (pytest.status === 5 || /No module named pytest/u.test(pytest.stdout + pytest.stderr)) {
+  if (pytest.status === 5 || /No module named pytest/u.test(pytest.out)) {
     console.warn("SKIP-LOUD: pytest absent — the vendored layer C seat is unjudged here (pip install pytest; CI owns it)");
-    return 0;
+    return { status: 0 };
   }
-  if (pytest.status !== 0) {
-    console.error(pytest.stdout);
-    console.error(pytest.stderr);
-    return 1;
-  }
-  return 0;
+  return { status: pytest.status === 0 ? 0 : 1, tail: pytest.out };
 });
 // THE CI-PARITY ARMS (2026-11-14 burn: knip 33/15 and coverage red
 // on GitHub while every local gate was green — the hook never ran
@@ -311,11 +377,11 @@ await tier("pytest", () => {
 // battery above: the knip budget, the per-file coverage gate, the
 // keyless e2e self-skip tier, and the playwright browser tier. All
 // four run here now — the hook's set IS CI's set.
-await tier("knip", () => {
-  const knip = spawnSync("node", ["tools/knip-budget.mjs"], { cwd: REPO, stdio: "inherit" });
-  return knip.status === 0 ? 0 : 1;
+await tier("knip", async () => {
+  const knip = await spawnTee("node", ["tools/knip-budget.mjs"], { cwd: REPO });
+  return { status: knip.status === 0 ? 0 : 1, tail: knip.out };
 });
-await tier("coverage", () => {
+await tier("coverage", async () => {
   // THE COVERAGE RATCHET (2026-11-14, the release-deadlock burn): the
   // raw coverage exit reds on the estate's pre-existing per-file debt
   // (95 files, roadmapped, floors untouchable) and made every push
@@ -323,29 +389,40 @@ await tier("coverage", () => {
   // RUNS the full CI coverage suite inside the ratchet; the judgment
   // scopes to the delta: growth reds, shrink moves the row in the same
   // commit. When the debt hits zero the ratchet IS the raw gate.
-  const coverage = spawnSync("node", ["tools/coverage-ratchet.mjs"], { cwd: REPO, stdio: "inherit" });
-  return coverage.status === 0 ? 0 : 1;
+  const coverage = await spawnTee("node", ["tools/coverage-ratchet.mjs"], { cwd: REPO });
+  return { status: coverage.status === 0 ? 0 : 1, tail: coverage.out };
 });
-await tier("e2e", () => {
-  // THE SERIAL-E2E LAW (2026-11-15, three wedged batteries): the GPU
-  // rows press ONE shared engine — at the config's default 4 workers,
-  // four heavy suites storm it concurrently and the host (tmpfs /tmp +
-  // one 24 GB card) swaps to death mid-tier: the same five heaviest
-  // rows (final_hd, HOP-6, kimodo pair, h3-image) die fetch-failed
-  // EVERY storm while every row passes scoped single-worker. The
-  // config's own resource knob exists for exactly this — the engine is
-  // the shared quota. Serial here; CI's keyless self-skip tier rides
-  // the default where the GPU rows never run.
-  const e2e = spawnSync("pnpm", ["run", "test:e2e"], { cwd: REPO, stdio: "inherit", shell, env: { ...process.env, DSH_E2E_MAX_WORKERS: "1" } });
-  return e2e.status === 0 ? 0 : 1;
-});
-await tier("browser", () => {
-  const playwrightProbe = spawnSync("pnpm", ["exec", "playwright", "--version"], { cwd: REPO, encoding: "utf8", shell });
-  if (playwrightProbe.status !== 0) {
-    console.warn("SKIP-LOUD: playwright absent — the browser tier is unjudged here (pnpm exec playwright install; CI owns it)");
-    return 0;
-  }
-  const browser = spawnSync("pnpm", ["run", "test:web:browser"], { cwd: REPO, stdio: "inherit", shell });
-  return browser.status === 0 ? 0 : 1;
-});
-console.log(`battery green (tier-leased): ${carriedTiers.length > 0 ? `carried [${carriedTiers.join(", ")}] + ` : ""}fired tiers above`);
+// THE PARALLEL TAIL (2026-11-17): e2e (serial vitest against the
+// one shared engine) and browser (playwright on the studio lane's
+// throwaway home, port 3907) share no engine, no port, no state
+// root — two lanes that never touched each other's quota, run one
+// after the other for no reason for twenty runs. They run in
+// PARALLEL now; each tier's own lease + ledger row keeps the report
+// honest.
+await Promise.all([
+  tier("e2e", async () => {
+    // THE SERIAL-E2E LAW (2026-11-15, three wedged batteries): the GPU
+    // rows press ONE shared engine — at the config's default 4 workers,
+    // four heavy suites storm it concurrently and the host (tmpfs /tmp +
+    // one 24 GB card) swaps to death mid-tier: the same five heaviest
+    // rows (final_hd, HOP-6, kimodo pair, h3-image) die fetch-failed
+    // EVERY storm while every row passes scoped single-worker. Serial
+    // HERE (within the tier); the browser lane beside it owns no engine.
+    const e2e = await spawnTee("pnpm", ["run", "test:e2e"], { shell, env: { ...process.env, DSH_E2E_MAX_WORKERS: "1" } });
+    return { status: e2e.status === 0 ? 0 : 1, tail: e2e.out };
+  }),
+  tier("browser", async () => {
+    const probe = await spawnTee("pnpm", ["exec", "playwright", "--version"], { shell });
+    if (probe.status !== 0) {
+      console.warn("SKIP-LOUD: playwright absent — the browser tier is unjudged here (pnpm exec playwright install; CI owns it)");
+      return { status: 0 };
+    }
+    const browser = await spawnTee("pnpm", ["run", "test:web:browser"], { shell });
+    return { status: browser.status === 0 ? 0 : 1, tail: browser.out };
+  }),
+]);
+
+// THE ONE-RUN REPORT (the show-all law): every red tier, each with
+// its own captured tail, in the order they were recorded — the
+// complete error surface of this tree in one run, no ladder.
+reportAndExit(redTiers.length > 0 ? 1 : 0);

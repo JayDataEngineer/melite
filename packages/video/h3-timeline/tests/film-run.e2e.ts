@@ -21,12 +21,22 @@ import { existsSync } from "node:fs";
 import { readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { ENGINE_FREE } from "../../../../tests/e2e/engine-gate.ts";
+
+/** Mean loudness (dB) of one time band of the film's audio track
+ *  (the duck ladder's measuring stick, merged from film-stitch). */
+function bandDb(path: string, from: number, dur: number): number {
+  const res = spawnSync("ffmpeg", ["-ss", String(from), "-t", String(dur), "-i", path,
+    "-af", "volumedetect", "-f", "null", "-"], { encoding: "utf8" });
+  const m = /mean_volume:\s*(-?[\d.]+) dB/.exec(res.stderr);
+  assert.ok(m, `volumedetect parsed for ${from}s+${dur}s`);
+  return Number(m[1]);
+}
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -63,18 +73,23 @@ describe("the film tail, LIVE (engine run)", { timeout: 3_600_000 }, () => {
   it.skipIf(!RUN || !ENGINE_FREE)("3 windows + seam-crossing dialogue + music bed → one mp4", async () => {
     const def = (await loadCardDefs()).get("h3-timeline")!;
     const g = new GraphBuilder();
+    // THE GPU DIET (operator 2026-11-17, audit finding 9): the film
+    // laws (seam stitching, stream kinds, the window file form) are
+    // frame-count-agnostic — 3×22-frame windows at the 448×448 schema
+    // floor carry every one of them; the row once burned 362 frames
+    // at 960×576 (~5.5× the frames, ~2.9× the patch area).
     def.compose(
       def.schema({
         calls: [
-          { text: "A man in a worn leather jacket stands at a rain-streaked window in a dim apartment at night, city lights bokeh behind him, speaking directly to camera, steady medium shot.", start_frame: 0, end_frame: 124 },
-          { text: "Slow push in on the man at the window, he is still talking, his mouth clearly visible, rain light moving across his face.", start_frame: 124, end_frame: 243 },
-          { text: "He turns from the window and walks to the small table, sits down, the city humming beyond the glass, wide shot.", start_frame: 243, end_frame: 362 },
+          { text: "A man in a worn leather jacket stands at a rain-streaked window in a dim apartment at night, city lights bokeh behind him, speaking directly to camera, steady medium shot.", start_frame: 0, end_frame: 22 },
+          { text: "Slow push in on the man at the window, he is still talking, his mouth clearly visible, rain light moving across his face.", start_frame: 22, end_frame: 44 },
+          { text: "He turns from the window and walks to the small table, sits down, the city humming beyond the glass, wide shot.", start_frame: 44, end_frame: 66 },
         ],
         audio_clips: [
-          { id: "d1", name: "the line", src: "dialogue_line.flac", start_frame: 90, dur_frames: 90, class: "dialogue", text: "I told you I would finish it before dawn." },
-          { id: "m1", name: "night bed", src: "night_bed.mp3", start_frame: 0, dur_frames: 360, class: "music", text: "soft melancholic piano with rain atmosphere" },
+          { id: "d1", name: "the line", src: "dialogue_line.flac", start_frame: 16, dur_frames: 22, class: "dialogue", text: "I told you I would finish it before dawn." },
+          { id: "m1", name: "night bed", src: "night_bed.mp3", start_frame: 0, dur_frames: 66, class: "music", text: "soft melancholic piano with rain atmosphere" },
         ],
-        width: 960, height: 576, seed: 7,
+        width: 448, height: 448, seed: 7,
       }),
       model, g, "film_tail_proof",
     );
@@ -118,9 +133,10 @@ describe("the film tail, LIVE (engine run)", { timeout: 3_600_000 }, () => {
       const meta = JSON.parse(probe) as { format?: { duration?: string }; streams?: { codec_type: string; codec_name: string; sample_rate?: string; channels?: number }[] };
       console.log("[film-e2e] probe:", JSON.stringify(meta));
       const dur = Number(meta.format?.duration ?? 0);
-      // 362f/24 = 15.08s raw; the seam law trims overlap (measured
-      // 13.667s at 960×576, 2026-09-22) — the band covers both
-      assert.ok(dur > 12.5 && dur < 15.7, `duration in the stitched band: got ${dur}`);
+      // 66f/24 = 2.75s raw; the seam law trims overlap (the same law
+      // measured 13.667s of a 15.08s raw at 960×576, 2026-09-22 — a
+      // ~9% trim; the band covers raw and trimmed)
+      assert.ok(dur > 2.2 && dur < 2.95, `duration in the stitched band: got ${dur}`);
       const kinds = (meta.streams ?? []).map((s) => `${s.codec_name}:${s.codec_type}`).sort();
       assert.ok(kinds.some((k) => k.startsWith("h264:video")), `h264 video stream: ${kinds}`);
       assert.ok(kinds.some((k) => k.includes(":audio")), `audio stream present: ${kinds}`);
@@ -128,6 +144,39 @@ describe("the film tail, LIVE (engine run)", { timeout: 3_600_000 }, () => {
       const windows = files.filter((f) => /^h3_t4_w[123]_.*\.mp4$/.test(f) && fresh(f));
       console.log("[film-e2e] window files this run:", windows.length);
       assert.ok(windows.length >= 3, "the three window saves exist (the file form)");
+
+      // THE DUCK LADDER (merged from film-stitch.e2e.ts 2026-11-17 —
+      // the no-dupes law: the stitch row rendered the SAME film a
+      // second time for assert-only differences; every audio law now
+      // rides this one artifact). Bands re-keyed to the 66-frame
+      // film: dialogue d1 start_frame 16, dur 22 → 0.667..1.583s;
+      // the release arc (350ms) rides the span tail 1.233→1.583s.
+      //   (1) the bed RISES through the tail: the mean at the tail's
+      //       end clears the mean at its start by >2dB
+      //   (2) NO POP at the boundary: across a 50ms staircase
+      //       1.20→1.60, no single step jumps >5dB
+      const tailStart = bandDb(path, 1.233, 0.06)
+      const tailEnd = bandDb(path, 1.517, 0.06)
+      console.log(`[film-e2e] release tail: ${tailStart.toFixed(1)} → ${tailEnd.toFixed(1)} dB`)
+      assert.ok(tailEnd > tailStart + 2, `the bed rises through the release tail (${tailStart} → ${tailEnd})`)
+      let maxJump = 0
+      let prev: number | null = null
+      for (let i = 0; i < 9; i++) {
+        const v = bandDb(path, 1.20 + i * 0.05, 0.05)
+        if (prev !== null) maxJump = Math.max(maxJump, Math.abs(v - prev))
+        prev = v
+      }
+      console.log(`[film-e2e] max 50ms step across the boundary: ${maxJump.toFixed(1)} dB`)
+      assert.ok(maxJump < 5, `no gate-pop at the span close (max 50ms step ${maxJump}dB)`)
+      // the duck itself: dialogue band louder than pre-dialogue bed
+      const pre = bandDb(path, 0.08, 0.5);
+      const dlg = bandDb(path, 0.8, 0.6);
+      console.log(`[film-e2e] bed ${pre.toFixed(1)} vs dialogue band ${dlg.toFixed(1)} dB`);
+      assert.ok(dlg > pre, `dialogue rides above the bed (${dlg} > ${pre})`);
+      // the bed returns home after the release
+      const postRel = bandDb(path, 1.7, 0.5);
+      console.log(`[film-e2e] post-release bed ${postRel.toFixed(1)} dB (pre-dialogue ${pre.toFixed(1)})`);
+      assert.ok(Math.abs(postRel - pre) < 4, `bed returns to its pre-dialogue level (${postRel} vs ${pre})`)
       done = true;
     }
     assert.ok(done, "the film tail landed a fresh mp4");

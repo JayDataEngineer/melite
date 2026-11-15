@@ -55,7 +55,15 @@ it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline live fold
       // execution; the replay half is pinned headless in
       // runs-hero.spec.ts, not here (retry: 2 would replay attempt 1
       // on every attempt without it).
-      { draft_id: 'd1', test: false, model: 'h3', calls: [{ text: `a red cube slides slowly across a white table (fold-wall ${Date.now()})`, start_frame: 0, end_frame: 90 }], width: 768, height: 448,
+      // THE GPU DIET (operator 2026-11-17, audit finding 8): the fold
+      // is engine-generic but the run MUST outlive the 2s poll window
+      // (a sub-second render is a missed-sample race, and a flake is
+      // never allowed) and the operator's burn WAS an h3 film freeze —
+      // journey law: same lane, floored. 22 frames at the 448×448
+      // schema floor with the turbo8 lora is the cheapest h3 film that
+      // still voices a multi-poll execution.
+      { draft_id: 'd1', test: false, model: 'h3', calls: [{ text: `a red cube slides slowly across a white table (fold-wall ${Date.now()})`, start_frame: 0, end_frame: 22 }], width: 448, height: 448,
+        loras: [{ id: 'h3_turbo8_v1' }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).

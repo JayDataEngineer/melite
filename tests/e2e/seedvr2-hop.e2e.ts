@@ -67,8 +67,13 @@ describe.skipIf(!ENGINE_FREE)('the seedvr2 hop live press', () => {
         flow: 'image-upscale',
         prompt: 'a red lighthouse on a basalt cliff, storm light',
         params: {
-          make: { width: 1344, height: 768 },
-          polish: { resolution: 1536 },
+          // THE GPU DIET (operator 2026-11-17, audit finding 10): the
+          // 2× hop proof is size-agnostic — 512×256 make → 1024×512
+          // polish proves the same doubling at ~1/7 the patch area
+          // (the unstated default once burned 1344×768→2688×1536,
+          // re-rendering krea-2 at max geometry).
+          make: { width: 512, height: 256 },
+          polish: { resolution: 1024 },
         },
       } as never, new AbortController().signal)
       assert.equal(ans.status, 'queued')
@@ -106,8 +111,8 @@ describe.skipIf(!ENGINE_FREE)('the seedvr2 hop live press', () => {
       const polish = run.stages.find((s) => s.id === 'polish')
       assert.ok(polish && polish.url, 'the polish stage settled with an artifact url')
       const { w, h } = pngSize(join(runDir, polish!.url!))
-      assert.equal(w, 2688, 'the polish render is 2688 wide (2x the 1344 class)')
-      assert.equal(h, 1536, 'the polish render is 1536 tall (2x the 768 class)')
+      assert.equal(w, 1024, 'the polish render is 1024 wide (2x the 512 class)')
+      assert.equal(h, 512, 'the polish render is 512 tall (2x the 256 class)')
 
       const req = JSON.parse(readFileSync(join(runDir, '_request.json'), 'utf8')) as Record<string, { class_type: string; inputs: Record<string, unknown> }>
       const up = Object.values(req).find((n) => n.class_type === 'SeedVR2VideoUpscaler')

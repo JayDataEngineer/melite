@@ -34,6 +34,7 @@ import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 import { queueCard, uploadAnchorPng } from './gpu-harness.ts'
+import { audioFileStats, isFlac, roarViolation } from './sfx-waveform.ts'
 import { H3_LORA_ROWS } from '../../packages/models/h3/mods/loras.ts'
 import { REFINE_DENOISE_DEFAULT } from '../../packages/models/h3/src/schema.ts'
 
@@ -205,10 +206,13 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 240_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('krea-2'))('krea-2 realism: the strength-less pill rides the flavor default 0.7 on silicon', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('krea-2'))('krea-2 realism: the strength-less pill rides the flavor default 0.7 and QUEUES (the GPU diet — the family render proof rides the turbo_distill row)', async () => {
     const w = await bootWorld('recipes-krea-r-')
     try {
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): the asserts are graph
+      // stamps (resolved file + flavor default strength); the krea-2
+      // family's bytes ride the turbo_distill render row.
+      const s = await queueCard(w, {
         model: 'krea-2', prompt: 'a weathered wooden door, natural light',
         width: 512, height: 512,
         // THE STRENGTH-LESS IDIOM (the pre-existing realism row — one
@@ -220,12 +224,12 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       assert.ok(hit.length >= 1, 'the RUN workflow carries the resolved realism file')
       assert.ok(JSON.stringify(hit[0]![1]).includes('"strength_model":0.7'),
         'the strength is the flavor default 0.7 (no strength on the row)')
-      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the artifact is a real PNG')
+      // THE NO-DUPES LAW: bytes ride the turbo_distill row (queue-only).
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 240_000)
+  }, 120_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('z-image'))('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS', async () => {
     const w = await bootWorld('recipes-zimage-')
@@ -255,9 +259,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // THE PILL PAYLOAD VERBATIM (draft, operator 2026-11-02: "for
       // low resolution, that is good for the draft recipe"): the
       // same turbo SELECTION + the draft geometry stamps.
+      // THE FLOOR WINDOW (operator order 2026-11-17, the h3
+      // generations miss): video cost scales with frames × patches —
+      // a family-bytes proof owes the MINIMUM legal generation, and
+      // the grid's floor is GRID_BASE_FRAMES = 22 (the 17k+5 grid's
+      // k=0). 90 frames (k=5) was a 4× burn for the same proof.
       const s = await runCard(w, {
         model: 'h3',
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor, knobs: { width: 768, height: 448 } }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22, image: anchor, knobs: { width: 768, height: 448 } }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -276,7 +285,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 240_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline standard: the default composes the LightX2V Turbo 8-Step at the calibrated floor and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-standard-')
@@ -295,7 +304,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // proof rides the draft render row.
       const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90, image: anchor }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22, image: anchor }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -313,7 +322,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 120_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-final-')
@@ -331,7 +340,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // real-bytes proof rides the draft render row.
       const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22 }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -353,13 +362,16 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 120_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and RUN', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-void-')
     try {
       const anchor = await uploadAnchorPng('h3 void receipt')
 
       const promptText = 'a red cube slides slowly across a white table'
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): every assert below
+      // reads the REQUEST sidecar (written at submit) or the
+      // composed workflow; the h3 family's bytes ride the draft row.
+      const s = await queueCard(w, {
         model: 'h3',
         // THE STUDIO'S WIRE SHAPE (serializeCalls): the one-call doc
         // lifts its text/image into the run (card.ts single-call lift).
@@ -372,7 +384,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
         loras: [{ id: 'h3_turbo4_v1' }],
       }, 'h3 void receipt')
       // THE SMOKING GUN, now loaded: the request sidecar carries the calls.
-      const req = JSON.parse(readFileSync(join(s.runDir, '_request.json'), 'utf8')) as {
+      const req = JSON.parse(readFileSync(join(w.stateRoot, 'output', s.runId, '_request.json'), 'utf8')) as {
         calls?: Array<{ text?: string }>
       }
       assert.ok(Array.isArray(req.calls) && req.calls.length === 1, 'the request carries the one-call doc')
@@ -388,12 +400,11 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const stack = JSON.parse(String(inputs['stack_data'])) as Array<{ lora?: string, str?: number, on?: boolean }>
       const row = stack.find((r) => r['on'] === true && String(r['lora'] ?? '').includes('turbo_4step_v1'))
       assert.ok(row !== undefined, 'the stack carries the resolved official 4-step turbo ON')
-      assert.equal(firstBytes(s).length > 1024, true, 'the video artifact is real bytes')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 240_000)
 
   // ── THE T3 REFINE RIDER'S GPU RECEIPT (roadmap item 2 — the
   // crowd's third tier on real silicon): pass A rides the official
@@ -407,12 +418,12 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
   // has declared 0.35 since a527bf0e8, so the arm had never been
   // green on any box with the weights — a frozen literal is the
   // drift this arm must not have). ──
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader at the catalog row\'s own strength/steps) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline T3 refine rider: the taomate closing pass mounts (own loader at the catalog row\'s own strength/steps) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-refine-')
     try {
-      const s = await runCard(w, {
+      const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }],
+        calls: [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22 }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
@@ -446,14 +457,13 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
         scheds.some(([, n]) => n.inputs?.['steps'] === catalog.steps && n.inputs?.['denoise'] === REFINE_DENOISE_DEFAULT),
         "the closing schedule: the row's own steps at the DECLARED refinement window",
       )
-      assert.equal(firstBytes(s).length > 1024, true, 'the refined video artifact is real bytes')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 120_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline reshoot: the camera re-shoot RUNS live on the official port (no resize hack, metric geometry) and renders real bytes', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline reshoot: the camera re-shoot composes on the official port (no resize hack, metric geometry) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-reshoot-')
     try {
       // THE LIVE PROOF the friction report's §5 demanded: the reshoot
@@ -465,17 +475,19 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // MoGe-2 metric geometry (no VDA, no resize, no hole fill).
       // The RUN-door row judges the official seats, never the
       // retired hack (unit reshoot.spec.ts pins exact per-compose
-      // counts; this row judges the merged RUN shape + live bytes).
-      const s = await runCard(w, {
+      // counts; this row judges the merged shape).
+      // THE NO-DUPES LAW (operator 2026-11-17): the asserts below
+      // are graph stamps; the h3 family's bytes ride the draft row.
+      const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 22, knobs: { width: 768, height: 448 } }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
         prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         reshoot: [{ source_clip: 'swap_film_v1.mp4', orbit: 12 }],
-      }, 'h3 reshoot live')
+      }, 'h3 reshoot queued')
       // THE OFFICIAL CHAIN, judged on the RUN workflow (the
       // serialized graph the engine actually executed): the retired
       // first-cut seats stay dead, the official seats ride.
@@ -509,14 +521,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const r2v = byClass(s, 'MiniMaxH3ReferenceToVideo')
       assert.ok(r2v.some(([, n]) => String(n.inputs?.['prompt']).startsWith('crossview.')),
         'the trigger word leads the r2v prompt — the LoRA fires')
-      assert.equal(firstBytes(s).length > 1024, true, 'the re-shot video artifact is real bytes')
+      // THE NO-DUPES LAW: bytes ride the recipes draft row (queue-only).
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 120_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline extend: the single-window join RUNS live (F10 mask link + F12 resample standing) and renders real bytes', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline extend: the single-window join composes (F10 mask link + F12 resample standing) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-extend-')
     try {
       // THE LIVE PROOF for the extend chain's two cures: F10 (the
@@ -524,16 +536,18 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // (MeliteAudioResample on the join legs — the 32 kHz
       // soundtrack meets the 48 kHz film without bleeding). The
       // staged prior is the report's own swap film (17.9 s, 1312×736).
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): the asserts below
+      // are graph stamps; the h3 family's bytes ride the draft row.
+      const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'the scene continues smoothly', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        calls: [{ text: 'the scene continues smoothly', start_frame: 0, end_frame: 22, knobs: { width: 768, height: 448 } }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
         prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         extend: [{ source_clip: 'swap_film_v1.mp4', extend_seconds: 3.75, extend_prompt: 'the scene continues smoothly' }],
-      }, 'h3 extend live')
+      }, 'h3 extend queued')
       // F10: the mask seat carries a real link (["node", slot]), not
       // a bare node dict — the AttributeError's exact shape.
       const edit = byClass(s, 'MiniMaxH3FantasticVideoEditLatent')
@@ -548,14 +562,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       assert.ok(resample.length >= 1, 'the join resample mounts (F12)')
       const join = byClass(s, 'MeliteConcatVideos')
       assert.equal(join.length, 1, 'the join mounts once')
-      assert.equal(firstBytes(s).length > 1024, true, 'the joined film artifact is real bytes')
+      // THE NO-DUPES LAW: bytes ride the recipes draft row (queue-only).
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 120_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline refine: the second-pass RefineHandoff RUNS live at 2x (one variant path, locked audio) and renders real bytes', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline refine: the second-pass RefineHandoff composes at 2x (one variant path, locked audio) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-refine-arm-')
     try {
       // THE LIVE PROOF for the fifth mod bag: the standalone second
@@ -569,18 +583,19 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // 2x is the wall, not the frame count alone) — so the proof
       // rides the smallest staged joint-AV h3 clip (34 frames,
       // 768×448), the largest whole-clip second pass the card fits.
-      // Judged on the RUN workflow (the serialized graph the engine
-      // actually executed) + real bytes.
-      const s = await runCard(w, {
+      // Judged on the composed workflow.
+      // THE NO-DUPES LAW (operator 2026-11-17): the asserts below
+      // are graph stamps; the h3 family's bytes ride the draft row.
+      const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 56, knobs: { width: 768, height: 448 } }],
+        calls: [{ text: 'a slow push in', start_frame: 0, end_frame: 22, knobs: { width: 768, height: 448 } }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).
         prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
         loras: [{ id: 'h3_turbo8_v1' }],
         refine: [{ source_clip: 'h3_t4_w2_00004__a1fa72843541.mp4', refine_prompt: 'the same scene, sharper fabric weave and cleaner edges' }],
-      }, 'h3 refine live')
+      }, 'h3 refine queued')
       // THE ONE VARIANT PATH, judged on the run workflow: exactly one
       // handoff, the learned weights, 2x, locked audio.
       const hands = byClass(s, 'MinimaxH3LatentUpscaler3DRefineHandoff')
@@ -597,12 +612,12 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // landed).
       const asms = byClass(s, 'MiniMaxH3ChainAssemble')
       assert.ok(asms.some(([, n]) => String(n.inputs?.['filename']).endsWith('/edit')), 'the refine chain\u2019s terminal assembles under the run-scoped edit prefix')
-      assert.equal(firstBytes(s).length > 1024, true, 'the refined video artifact is real bytes')
+      // THE NO-DUPES LAW: bytes ride the recipes draft row (queue-only).
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 600_000)
+  }, 120_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and QUEUE (the GPU diet)', async () => {
     const w = await bootWorld('recipes-motion-')
@@ -662,9 +677,13 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 480_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('moss-sfx'))('moss-sfx one_shot: the pill payload composes duration 0.5 (the schema floor) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('moss-sfx'))('moss-sfx one_shot: duration 0.5 (the schema floor) RUNS — THE family render row (bytes + FLAC + the roar judge; the ambience bed queues in cards-gpu)', async () => {
     const w = await bootWorld('recipes-mosssfx-')
     try {
+      // THE NO-DUPES LAW (operator 2026-11-17): this 0.5s render is
+      // the moss-sfx family's ONE render — the cheapest artifact that
+      // can carry bytes AND the served-waveform judge. The 30s
+      // ambience bed's ceiling is a graph stamp (cards-gpu queues it).
       const s = await runCard(w, {
         model: 'moss-sfx',
         prompt: 'sharp metallic clang with long decay',
@@ -678,16 +697,28 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       assert.equal(inputs['duration_seconds'], 0.5, 'the synth duration is the recipe-stamped 0.5')
       const bytes = firstBytes(s)
       assert.ok(bytes.length > 1024, 'the sfx artifact is real bytes (' + bytes.length + ')')
+      // THE SERVED-WAVEFORM JUDGE (the 2026-11-12 roar burn, moved
+      // here from the ambience bed — the GPU diet): bytes existing is
+      // not audio being sane. Decode the served FLAC and run the roar
+      // decision on its real waveform (offline arms:
+      // moss-sfx-served-waveform).
+      const art = join(s.runDir, s.stageUrl)
+      assert.ok(isFlac(art), 'the served artifact is a FLAC')
+      const roar = roarViolation(audioFileStats(art))
+      assert.equal(roar, null, roar ?? 'the served waveform is sane')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
   }, 300_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen3-tts'))('qwen3-tts steady-read: the pill payload composes temperature 0.05 (the engine-true floor) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen3-tts'))('qwen3-tts steady-read: the pill payload composes temperature 0.05 (the engine-true floor) and QUEUES (the GPU diet — the family render proof rides the cards-gpu expressive-read row)', async () => {
     const w = await bootWorld('recipes-qwen3tts-')
     try {
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): the temperature stamp
+      // is a graph fact; the qwen3-tts family renders once
+      // (expressive-read, cards-gpu).
+      const s = await queueCard(w, {
         model: 'qwen3-tts',
         text: 'The steadiest read lands at the floor of the dial.',
         // THE PILL PAYLOAD VERBATIM (steady-read): temperature 0.05 —
@@ -701,13 +732,11 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       const inputs = (synth[0]![1] as { inputs: Record<string, unknown> }).inputs
       assert.equal(inputs['temperature'], 0.05, 'the synth temperature is the recipe-stamped 0.05')
       assert.ok(nodesWith(s, /SaveAudio/).length >= 1, 'the default SaveAudio seat saves the line')
-      const bytes = firstBytes(s)
-      assert.ok(bytes.length > 512, 'the tts artifact is real bytes (' + bytes.length + ')')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 300_000)
+  }, 120_000)
 })
 
 // ── THE QWEN 2.1 PAIR (2026-09-21, the Comfy-Org release; the naming
@@ -774,9 +803,13 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
         assert.equal(bgSampler.inputs?.cfg, 1, 'the official path rides cfg 1 (family default)')
         assert.equal(bgSampler.inputs?.sampler_name, 'euler')
         assert.equal(bgSampler.inputs?.scheduler, 'simple')
-        const s3 = await runCard(w2, bgPayload, 'qwen-img-edit-21 remove-background')
+        // THE NO-DUPES LAW (operator 2026-11-17, GPU-fleet audit finding
+        // 4): the one-click's wiring is fully asserted on the COMPOSE
+        // door above; the queued graph carries the cache-node stamp and
+        // the family's PNG bytes ride the edit render (:785). No third
+        // render for this row.
+        const s3 = await queueCard(w2, bgPayload, 'qwen-img-edit-21 remove-background')
         assert.ok(byClass(s3, 'QwenImage21Cache').length === 1, 'the one-click rides the same cached-reference lane')
-        assert.equal(firstBytes(s3).readUInt32BE(0), 0x89504e47, 'the background-removal artifact is a real PNG')
       } finally {
         w2.stop()
         await w2.ctx.fiber.dispose()
@@ -787,9 +820,13 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
     }
   }, 900_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-21 turbo-int8: the route address composes the distilled unet at 8 steps and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-21 turbo-int8: the route address composes the distilled unet at 8 steps (the GPU diet — compose-only, the family bytes ride upstream-solvers)', async () => {
     const w = await bootWorld('recipes-q21-turbo-')
     try {
+      // THE NO-DUPES LAW (operator 2026-11-17): phase1/phase2 are
+      // COMPOSE doors — the loader + steps asserts below are graph
+      // stamps on the composed graph; the qwen-img-21 family's bytes
+      // ride the upstream-solvers render row. No engine execution.
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
       // the variant+quant address selects the turbo route; the 8-step
       // marriage rides the route's resolver_defaults into the form
@@ -807,18 +844,12 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
       assert.ok(sampler !== undefined)
       assert.equal(sampler![1].inputs?.steps, 8, 'the composed KSampler rides 8 steps')
       assert.equal(sampler![1].inputs?.cfg, 1, 'cfg 1 inherits the family default')
-
-      const s = await runCard(w, {
-        model: 'qwen-img-21', variant: 'turbo', quant: 'int8_convrot', prompt: 'a small red cube on a white field',
-        width: 512, height: 512,
-      }, 'qwen-img-21 turbo-int8')
-      assert.ok(byClass(s, 'UNETLoader').length === 1, 'the RUN workflow loads the turbo weights')
-      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the turbo artifact is a real PNG')
+      assert.equal(Object.values(graph).filter((r) => r.class_type === 'UNETLoader').length, 1, 'exactly one unet loader — the turbo weights')
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 900_000)
+  }, 120_000)
 
   // ── THE GENERIC REGION DETAILER'S GPU RECEIPT (2026-09-22, the
   // operator's ask: "test the mods on the GPU" + "2.1 is the new
@@ -888,18 +919,18 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
     }
   }, 600_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-edit-21 crop_stitch face detector: the Impact chain proposes the region off a generated portrait and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-edit-21 crop_stitch face detector: the Impact chain composes the region proposal and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-q21-cropface-')
     try {
-      // A REAL FACE TO FIND: the 2.1 t2i lane generates the portrait
-      // (the chain precedent — one lane's artifact feeds the next).
-      const s0 = await runCard(w, {
-        model: 'qwen-img-21', prompt: 'a front-facing portrait of a woman, centered, plain studio background',
-        width: 512, height: 512,
-      }, 'q21 portrait for detection')
-      const portrait = join(s0.runDir, s0.stageUrl)
-
-      const s = await runCard(w, {
+      // THE NO-DUPES LAW (operator 2026-11-17): this row once
+      // GENERATED a portrait (a full qwen-img-21 render) just to
+      // have an input file, then rendered the edit — two renders of
+      // a family whose bytes ride the upstream-solvers row. The
+      // chain asserts below are graph stamps on the composed
+      // workflow; the staged anchor PNG is a lawful input file, and
+      // the row queues.
+      const portrait = await uploadAnchorPng('q21 cropface')
+      const s = await queueCard(w, {
         model: 'qwen-img-edit-21', prompt: 'studio regrade of the face, crisp detail',
         image1: portrait, mask_mode: 'crop_stitch', mask_detector: 'face',
         mask_denoise: 0.45, mask_detail_size: 768,
@@ -921,12 +952,12 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
       assert.equal(detail[0]![1].inputs?.denoise, 0.45, 'the region denoise rides verbatim')
       assert.equal((detail[0]![1].inputs?.model as string[])[0], Object.keys(s.workflow).find((id) => s.workflow[id]?.class_type === 'QwenImage21Cache'), 'the detailer samples the CACHE-WRAPPED model')
       assert.equal(byClass(s, 'KSampler').length, 0, 'no plain sampler beside the arm')
-      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the face-detail artifact is a real PNG')
+      // THE NO-DUPES LAW: bytes ride the upstream-solvers row (queue-only).
     } finally {
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 900_000)
+  }, 120_000)
 })
 
 // ── THE H3 IMAGE PAIR (2026-11-11, the Comfy-Org MiniMax-H3-Image
@@ -981,7 +1012,11 @@ describe.skipIf(!ENGINE_FREE)('the h3 image pair on the GPU (with live ComfyUI)'
       const chainInput = join(s.runDir, s.stageUrl)
       const w2 = await bootWorld('recipes-h3imge-')
       try {
-        const s2 = await runCard(w2, {
+        // THE NO-DUPES LAW (operator 2026-11-17, GPU-fleet audit
+        // finding 5): every edit-lane assert below is a graph stamp
+        // (vae wiring, the dotted slot, the 4MP chain, steps 6); the
+        // h3-image family's PNG bytes ride the t2i render above.
+        const s2 = await queueCard(w2, {
           model: 'h3-image-edit', prompt: 'make the cube blue', image1: chainInput,
         }, 'h3-image-edit edit')
         const enc2 = byClass(s2, 'MiniMaxH3ImageConditioning')
@@ -995,7 +1030,6 @@ describe.skipIf(!ENGINE_FREE)('the h3 image pair on the GPU (with live ComfyUI)'
         assert.equal(editSampler[1].inputs?.denoise, 1.0)
         assert.equal(editSampler[1].inputs?.steps, 6, 'the edit variant resolver stamps steps 6')
         assert.equal(editSampler[1].inputs?.cfg, 1)
-        assert.equal(firstBytes(s2).readUInt32BE(0), 0x89504e47, 'the edit artifact is a real PNG')
       } finally {
         w2.stop()
         await w2.ctx.fiber.dispose()

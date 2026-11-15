@@ -96,8 +96,15 @@ export const TIER_INPUTS = {
   pytest: ["tests/**/*.py", "vendor/**/*.py", "packages/**/*.py"],
   knip: ["knip.jsonc", "tools/knip-budget.mjs", "packages/**/src/**", "packages/**/package.json"],
   coverage: ["scripts/coverage-baseline.ts", "tools/coverage-ratchet.mjs", "packages/**/src/**", "packages/**/tests/**", "vitest*.ts"],
-  e2e: ["tests/e2e/**", "vitest.e2e.config.ts", "packages/**/src/**", "packages/engines/**/*.yaml"],
-  browser: ["packages/web/melite-card-view/e2e/**", "packages/web/**/src/**", "packages/web/melite-card-view/playwright*.ts", "scripts/e2e-studio-lane.sh", "packages/web/melite-card-view/package.json"],
+  // THE JUDGED-SURFACE LAW (audit 2026-11-17): the e2e tier's config
+  // also runs packages/*/*/tests/**/*.e2e.ts and tests/lane/** and
+  // imports vitest.shared.ts — a lease that hashes none of them lets
+  // an edit there ride a green carry. Wider never narrower.
+  e2e: ["tests/e2e/**", "tests/lane/**", "packages/**/tests/**", "vitest.e2e.config.ts", "vitest.shared.ts", "packages/**/src/**", "packages/engines/**/*.yaml"],
+  // The browser tier runs BOTH playwright legs (view + deck, root
+  // package.json test:web:browser) and the lane scripts source
+  // scripts/lib/*.sh — all four trees hash here now.
+  browser: ["packages/web/melite-card-view/e2e/**", "packages/web/melite-card-deck/e2e/**", "packages/web/**/src/**", "packages/web/melite-card-view/playwright*.ts", "packages/web/melite-card-deck/playwright*.ts", "scripts/e2e-studio-lane.sh", "scripts/lib/*.sh", "packages/web/melite-card-view/package.json", "packages/web/melite-card-deck/package.json"],
 };
 
 /** The self-input law: the battery's own logic + the lockfile key every

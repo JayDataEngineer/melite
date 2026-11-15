@@ -38,10 +38,12 @@ export default defineConfig({
     exclude: ['**/*.expected.e2e.ts', 'node_modules/**'],
     testTimeout: 120_000,
     hookTimeout: 30_000,
-    retry: 2,
-    // Run files in a bounded pool: enough lower-level parallelism to keep CI
-    // and local with-key runs moving, while leaving a resource knob for shared
-    // API quotas (`DSH_E2E_MAX_WORKERS=1` restores serial execution).
+    // NO RETRIES (operator law 2026-11-17): there is no such thing
+    // as a flake — a red that passes on reroll is an ERROR the
+    // reroll masked. Every row must prove first-attempt; the retry
+    // seat that lived here hid exactly that class (h3 final greened
+    // "retry x1" while its first attempt was red). vitest's default
+    // is no-retry; this comment is the wall.
     fileParallelism: e2eMaxWorkers > 1,
     maxWorkers: e2eMaxWorkers,
   },

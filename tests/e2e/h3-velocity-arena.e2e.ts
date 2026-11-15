@@ -10,8 +10,11 @@
  *
  * THE LAW THIS SESSION SERVES (the standing BENCH row): no new
  * attention arm and no default change lands without the arena
- * receipt. Arms, fixed seed, same prompt clip (90 frames at the
- * schema's own 1344×768 floor — NO geometry stamps):
+ * receipt. Arms, fixed seed, same prompt clip (22 frames — the
+ * GRID_BASE_FRAMES floor — at the schema's own 448×448 geometry
+ * floor, STAMPED on every arm: A/B timing is geometry-relative, and
+ * the unstated 1344×768 max-default priced the same ratios at ~7×
+ * the patch area — GPU-diet audit finding 6, operator 2026-11-17):
  *
  *   warmup    turbo8 (cache warm, timing discarded)
  *   turbo8    the served default      — SLA 0.85 / msl 12288 / dls 2
@@ -53,7 +56,7 @@ import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsL
 const ARENA = process.env['H3_ARENA'] === '1'
 /** Fixed across every arm — the A in A/B. */
 const SEED = 8675309
-const CLIP = [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 90 }]
+const CLIP = [{ text: 'a red cube slides slowly across a white table', start_frame: 0, end_frame: 22 }]
 
 interface Arm {
   tag: string
@@ -110,7 +113,7 @@ describe.skipIf(!ARENA || !ENGINE_FREE)('the h3 velocity arena', () => {
       for (const arm of ARMS) {
         const since = new Date().toISOString()
         const t0 = Date.now()
-        const s = await runCard(w, { model: 'h3', calls: CLIP, seed: SEED, ...arm.body }, `arena-${arm.tag}`)
+        const s = await runCard(w, { model: 'h3', calls: CLIP, seed: SEED, width: 448, height: 448, ...arm.body }, `arena-${arm.tag}`)
         const wall = (Date.now() - t0) / 1000
 
         // THE ARTIFACT IS REAL BYTES (every arm, before any verdict)

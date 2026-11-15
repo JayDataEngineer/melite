@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -115,6 +115,41 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
     for (const id of ['tsc', 'walls', 'e2e', 'browser', 'coverage', 'knip']) {
       const files = expandGlobs(process.cwd(), tierGlobs(id))
       expect(files.length, `tier ${id} matched zero files — its glob table drifted from the tree`).toBeGreaterThan(10)
+    }
+  })
+
+  it('THE JUDGED-SURFACE LAW (pipeline audit 2026-11-17): every spec the e2e tier RUNS is hashed by its lease — the config includes are the truth, the glob table may never be narrower', () => {
+    const cfg = readFileSync(join(process.cwd(), 'vitest.e2e.config.ts'), 'utf8')
+    const include = cfg.match(/include:\s*\[([^\]]*)\]/s)
+    expect(include, 'vitest.e2e.config.ts carries an include list').not.toBeNull()
+    const patterns = [...include![1]!.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]!)
+    expect(patterns.length).toBeGreaterThan(0)
+    const lease = tierGlobs('e2e')
+    const run = expandGlobs(process.cwd(), patterns)
+    expect(run.length, 'the e2e config matched zero specs on this tree').toBeGreaterThan(10)
+    const unhashed = run.filter((f) => !lease.some((g) => globMatch(g, f)))
+    expect(unhashed,
+      `the e2e tier RUNS but does not HASH (a green carry would ride an edit here):\n  ${unhashed.join('\n  ')}`).toEqual([])
+  })
+
+  it('THE JUDGED-SURFACE LAW, browser leg: both playwright legs\' spec trees are hashed by the browser lease', () => {
+    const lease = tierGlobs('browser')
+    const legs = [
+      'packages/web/melite-card-view/e2e/**',
+      'packages/web/melite-card-deck/e2e/**',
+    ]
+    const run = expandGlobs(process.cwd(), legs)
+    expect(run.length, 'the two playwright legs matched zero specs on this tree').toBeGreaterThan(5)
+    const unhashed = run.filter((f) => !lease.some((g) => globMatch(g, f)))
+    expect(unhashed,
+      `the browser tier RUNS but does not HASH (a green carry would ride an edit here):\n  ${unhashed.join('\n  ')}`).toEqual([])
+  })
+
+  it('THE DEAD-ROW LAW (pipeline audit 2026-11-17): every declared tier input is actually RUN by the battery — a declared-but-never-tiered row is a lease that never fires', () => {
+    const battery = readFileSync(join(process.cwd(), 'tools/hook-full-battery.mjs'), 'utf8')
+    for (const id of Object.keys(TIER_INPUTS)) {
+      expect(battery.includes(`tier("${id}"`) || battery.includes(`"${id}"`) || battery.includes(`tier('${id}'`),
+        `tier ${id} is declared in TIER_INPUTS but the battery never runs it — delete the row or run the tier`).toBe(true)
     }
   })
 })

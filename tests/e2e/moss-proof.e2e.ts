@@ -28,6 +28,11 @@ describe.skipIf(!ENGINE_FREE)('moss proof: the kitchen 0.2.41 VAEDecode fix', ()
     const s = await runCard(w, {
       model: 'moss-image',
       prompt: 'a single red cube on a white table, studio light',
+      // THE GPU DIET (operator 2026-11-17, audit finding 11): the
+      // row's whole subject is real bytes past VAEDecode — the
+      // unstated geometry once rode the 1024×1024 schema default, a
+      // free 4× versus the stated 512² floor.
+      width: 512, height: 512,
       steps: 25,
       seed: 8675309,
     }, 'moss kitchen041 proof')
