@@ -206,6 +206,20 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
     } catch { /* not yet written — the compose is still running */ }
     if (wf !== undefined && Object.keys(wf).length > 0) {
       await w.svc.stop(ans.run_id, new AbortController().signal).catch(() => { /* already settled — the graph is ours */ })
+      // THE DRAIN PROOF (the anny burn, 2026-11-17): the estate's
+      // stop rides /interrupt BEST-EFFORT — a missed interrupt leaves
+      // the engine rendering this row's prompt into the NEXT rows,
+      // and the VRAM-sensitive rows down-file probe green at entry
+      // then press into a collapsed budget. On the serial battery
+      // (one row in flight at a time) an empty engine queue is the
+      // proof OUR prompt settled; a stop that leaves the engine
+      // grinding is a defect, never a pass.
+      for (let i = 0; i < 60; i++) {
+        const queue = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`).then((r) => r.json() as Promise<{ queue_running?: unknown[], queue_pending?: unknown[] }>).catch(() => null)
+        if (queue !== null && (queue.queue_running?.length ?? 0) + (queue.queue_pending?.length ?? 0) === 0) break
+        if (i === 59) throw new Error(tag + ': the stop left the engine queue non-empty after 60s — an orphaned render would eat the next rows\' VRAM budgets (the anny burn class)')
+        await new Promise((r) => setTimeout(r, 1000))
+      }
       return { runId: ans.run_id, workflow: wf as Queued['workflow'] }
     }
     await new Promise((r) => setTimeout(r, 500))
