@@ -105,6 +105,29 @@ describe("the refine carry after the collapse (the card is one window; the engin
     );
   });
 
+  it("ARM 2b — the estate's compose-copy stamps ride the bag without author refusal (the D-5 __source_frames burn, 2026-11-16)", () => {
+    // The estate stamps __source_frames onto the COMPOSE COPY of every
+    // h3 bag row carrying a locally readable source_clip (defect board
+    // D-5, cardsRegistry). The sweep refused it as an unconsumed
+    // AUTHOR seat — the extend row burned live ("the translation
+    // consumed every seat the old kind served"). The estate namespace
+    // (double-underscore) is not an author statement: the stamp rides,
+    // and the AUTHOR refusal must keep its teeth beside it.
+    const g = new GraphBuilder();
+    def.compose(def.schema(body([{ ...REFINE_ENTRY(), __source_frames: 56 }])) as Record<string, unknown>,
+      model, g, "run_stamp_pass");
+    const out = graphOf(g);
+    assert.equal(ofClass(out, "MinimaxH3LatentUpscaler3DRefineHandoff").length, 1,
+      "the stamped row composes the same one-window handoff — the estate stamp changes no author surface");
+    // the teeth: an unconsumed AUTHOR key beside the stamp still refuses
+    assert.throws(
+      () => def.compose(def.schema(body([{ ...REFINE_ENTRY(), __source_frames: 56, windows: 2 }])) as Record<string, unknown>,
+        model, new GraphBuilder(), "run_stamp_author"),
+      /refine arm's 'windows' seat rides no edit dial/,
+      "the author-sweep refusal survives the estate-namespace exemption",
+    );
+  });
+
   it("ARM 3 — a ONE-window legacy refine doc composes through the one door: the learned handoff, no carry", () => {
     const g = new GraphBuilder();
     def.compose(def.schema(body([REFINE_ENTRY()])) as Record<string, unknown>, model, g, "run_carry_one");

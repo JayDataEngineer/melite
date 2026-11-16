@@ -400,6 +400,14 @@ function translateLegacyEntry(key, e) {
     };
     const out = translateLegacyCell(key, e, { pass, take, refuseSeat, seatStr });
     for (const k of Object.keys(e)) {
+        // THE ESTATE NAMESPACE (D-5, 2026-11-16): double-underscore keys
+        // on a bag row are the estate's own compose-copy stamps (the
+        // probed-length __source_frames), never author seats — the sweep
+        // refuses silent AUTHOR drops, and the estate's stamp is not an
+        // author statement (cardsRegistry stamps it onto the copy the
+        // compose judges; the saved doc never carries it).
+        if (k.startsWith('__'))
+            continue;
         if (!consumed.has(k)) {
             throw new Error(`h3-timeline: the ${key} arm's '${k}' seat rides no edit dial — the translation consumed every seat the old kind served. Restate the doc on the edit bag (its preset cell '${key}' is the same posture)`);
         }
