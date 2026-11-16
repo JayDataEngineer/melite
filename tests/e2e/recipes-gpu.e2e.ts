@@ -523,10 +523,14 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
         'the trigger word leads the r2v prompt — the LoRA fires')
       // THE NO-DUPES LAW: bytes ride the recipes draft row (queue-only).
     } finally {
+      // THE COLD-STOP BUDGET (round 10): the staged source clip's probe +
+      // compose + drain measures ~97s scoped and crossed 120s under the
+      // battery's loaded card — same headroom class as music3 (the
+      // timeout's teardown interrupt kills the NEXT row's run).
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline extend: the single-window join composes (F10 mask link + F12 resample standing) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-extend-')
