@@ -1,3 +1,4 @@
+import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec';
 import { ComposeRefusal } from "./errors.js";
 // The refusal type rides the admission door (the compose's callers
 // name the gate and its refusal from one spelling).
@@ -36,6 +37,7 @@ export function gatedResolve(cardId, schema, riders, params) {
         ? Object.keys(params)
         : [];
     const unknown = keys.filter((k) => (dict !== undefined && k in dict) === false
+        && k !== ESTATE_NAMING_ROW.name
         && !riders.some((r) => r === k || (r.endsWith('*') && k.startsWith(r.slice(0, -1)))));
     if (unknown.length > 0) {
         throw new ComposeRefusal('unknown-param', `card '${cardId}' got undeclared param(s): ${unknown.sort().join(', ')} — admission is the declared surface (schema knobs + the card's riders: mod bags, admits, studio writes); a typo'd key never composes`);

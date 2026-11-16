@@ -93,6 +93,7 @@ import type {
   SpecField,
   FormVariantRow,
 } from '@melite/contracts/formSpec'
+import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec'
 // THE SERVED CONTRACT (form-spec wire): the types live one plane down
 // in @melite/contracts/formSpec — the node door builds the body, the
 // browser reads it, and no package's src crosses the /client door to
@@ -1002,7 +1003,16 @@ export function laneViolations(
   // such DECL), fatal the day one lands.
   const relations = laneRelationsFor(spec, variantId)
   if (surface === null && relations.length === 0) return []
-  const names = fields.map((f) => f.name)
+  // THE NAMING ROW IS STAGE POLICY (the rc.3 burn, operator
+  // 2026-11-16: "field 'output_name' fires nothing on this lane" at
+  // the form face while every server door admits it): the spec
+  // SERVES the naming row as a field on every card declaring none of
+  // its own (the UI naming seat + the agent params_schema property,
+  // ONE spelling ESTATE_NAMING_ROW) — the lane-surface judge must
+  // not read it as a knob lane. Same law as the write door's
+  // stage-reserved lift (F41 ARM 7/7b), seated at this the write
+  // seat's inline face.
+  const names = fields.map((f) => f.name).filter((n) => n !== ESTATE_NAMING_ROW.name)
   const stated: Record<string, unknown> = {}
   for (const src of [base ?? {}, user]) {
     for (const [k, v] of Object.entries(src)) {

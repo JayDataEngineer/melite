@@ -80,6 +80,7 @@ import { extraOf } from '@melite/contracts/extraKeys';
 import { CATEGORIES } from '@melite/contracts/planes';
 import { deriveFamilyLane, familyKeyPresent } from '@melite/contracts/familyLane';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
+import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec';
 import { dropAuthoringIncomplete, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
@@ -919,7 +920,16 @@ export function laneViolations(spec, fields, user, base) {
     const relations = laneRelationsFor(spec, variantId);
     if (surface === null && relations.length === 0)
         return [];
-    const names = fields.map((f) => f.name);
+    // THE NAMING ROW IS STAGE POLICY (the rc.3 burn, operator
+    // 2026-11-16: "field 'output_name' fires nothing on this lane" at
+    // the form face while every server door admits it): the spec
+    // SERVES the naming row as a field on every card declaring none of
+    // its own (the UI naming seat + the agent params_schema property,
+    // ONE spelling ESTATE_NAMING_ROW) — the lane-surface judge must
+    // not read it as a knob lane. Same law as the write door's
+    // stage-reserved lift (F41 ARM 7/7b), seated at this the write
+    // seat's inline face.
+    const names = fields.map((f) => f.name).filter((n) => n !== ESTATE_NAMING_ROW.name);
     const stated = {};
     for (const src of [base ?? {}, user]) {
         for (const [k, v] of Object.entries(src)) {

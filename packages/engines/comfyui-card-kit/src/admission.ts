@@ -11,6 +11,7 @@
 // card's declared riders (mod bags like the loras bag, def.admits
 // names, studio writes), matching exactly or by trailing-* prefix.
 import Schema from '@deepseek-ai/schemastery'
+import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec'
 import { ComposeRefusal } from './errors.ts'
 
 // The refusal type rides the admission door (the compose's callers
@@ -58,6 +59,7 @@ export function gatedResolve(
     : []
   const unknown = keys.filter((k) =>
     (dict !== undefined && k in dict) === false
+    && k !== ESTATE_NAMING_ROW.name
     && !riders.some((r) => r === k || (r.endsWith('*') && k.startsWith(r.slice(0, -1)))))
   if (unknown.length > 0) {
     throw new ComposeRefusal('unknown-param',

@@ -8793,6 +8793,37 @@ window.__ModuleLoader__.load({
 			return law.lanes[law.lanes.length - 1]?.lane ?? "";
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/formSpec.ts
+		/** THE COMMIT-SHAPE SPELLING (the qvoice_save burn's twin-kill,
+		*  Journey Law §3.2): the params write ONE committed entry
+		*  produces — flat fields for a flat kind, the param_key bag for a
+		*  bag kind. The client leaf's commit and every wall that judges
+		*  the write call THIS, never a re-typed copy — a wall that
+		*  hand-builds the write shape certifies its own fiction while the
+		*  client burns (the fake-green class, 2026-10-22).
+		* @param kind the served modifier kind (flat law rides the serve)
+		* @param entry the committed entry (its own field values)
+		* @returns the params write the door must admit */
+		function modCommitWrite(kind, entry) {
+			return kind.flat === true ? { ...entry } : { [kind.param_key]: [entry] };
+		}
+		/** THE ESTATE NAMING ROW'S ONE SPELLING (queue 12's A2 remainder,
+		*  the ONE SEAT law): every fact both faces render rides here — the
+		*  UI face serves it as the spec's naming seat (specBody), the agent
+		*  face serves it as the params_schema property (emitParamsSchema)
+		*  — never two literals. A family declaring its own `output_name`
+		*  (h3's deliverable slug, the file plane) wins on BOTH faces and
+		*  the estate row never doubles it. The value rides the stage's
+		*  reserved `output_name` param (STAGE_RESERVED_PARAMS): the label
+		*  plane — the settle mints the gallery rows' display labels from
+		*  it, the machine file names never move. */
+		const ESTATE_NAMING_ROW = {
+			name: "output_name",
+			label: "Output name",
+			tooltip: "Labels this run's gallery rows — the stem rides the outputs' display labels while the delivered files keep their machine names.",
+			max: 64
+		};
+		//#endregion
 		//#region ../../web-kit/contracts/src/laneRelations.ts
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
@@ -10261,7 +10292,7 @@ window.__ModuleLoader__.load({
 			const surface = laneSurfaceFor(spec, variantId, typeof rawQuant === "string" && rawQuant !== "" ? rawQuant : null);
 			const relations = laneRelationsFor(spec, variantId);
 			if (surface === null && relations.length === 0) return [];
-			const names = fields.map((f) => f.name);
+			const names = fields.map((f) => f.name).filter((n) => n !== ESTATE_NAMING_ROW.name);
 			const stated = {};
 			for (const src of [base ?? {}, user]) for (const [k, v] of Object.entries(src)) {
 				if (v === null || v === void 0) continue;
@@ -15864,21 +15895,6 @@ window.__ModuleLoader__.load({
 				...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
 				...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 			}) : null, own.wireMenu);
-		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/formSpec.ts
-		/** THE COMMIT-SHAPE SPELLING (the qvoice_save burn's twin-kill,
-		*  Journey Law §3.2): the params write ONE committed entry
-		*  produces — flat fields for a flat kind, the param_key bag for a
-		*  bag kind. The client leaf's commit and every wall that judges
-		*  the write call THIS, never a re-typed copy — a wall that
-		*  hand-builds the write shape certifies its own fiction while the
-		*  client burns (the fake-green class, 2026-10-22).
-		* @param kind the served modifier kind (flat law rides the serve)
-		* @param entry the committed entry (its own field values)
-		* @returns the params write the door must admit */
-		function modCommitWrite(kind, entry) {
-			return kind.flat === true ? { ...entry } : { [kind.param_key]: [entry] };
 		}
 		//#endregion
 		//#region ../../web-kit/contracts/src/loraExtensions.ts
