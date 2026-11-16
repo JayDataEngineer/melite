@@ -69,6 +69,22 @@ function reportAndExit(code) {
   process.exit(code);
 }
 
+// THE SILENT-DEATH DOORS (2026-11-17): the battery once died with no
+// verdict — the log ended mid-tier, no BATTERY RED line, no stack.
+// Every non-exit path out of this process now walks the ledger out:
+// an unhandled rejection, an uncaught exception, or an external
+// TERM/INT all print the one-run report (every red recorded so far)
+// and exit 1 through the one door. Only SIGKILL stays silent —
+// nothing can catch it; the detached nohup ritual is its defense.
+const dieThroughReport = (origin, err) => {
+  redTiers.push({ id: `battery:${origin}`, tail: `${origin} killed the run:\n${err && err.stack ? err.stack : String(err)}` });
+  reportAndExit(1);
+};
+process.on("unhandledRejection", (err) => dieThroughReport("unhandledRejection", err));
+process.on("uncaughtException", (err) => dieThroughReport("uncaughtException", err));
+process.on("SIGTERM", () => dieThroughReport("SIGTERM", "external SIGTERM — the report below is everything recorded before the kill"));
+process.on("SIGINT", () => dieThroughReport("SIGINT", "external SIGINT — the report below is everything recorded before the kill"));
+
 /** Tee-spawn: streams the child's output live AND captures it, so a
  * red tier's tail can land in the final ledger without going dark
  * while it runs. Event-loop friendly (no spawnSync) so the e2e and
@@ -105,7 +121,21 @@ async function tier(id, body) {
     console.log(`carry ${id} — inputs unchanged since its last green (${gate.files} files hashed)`);
     return;
   }
-  const r = await body();
+  // THE SILENT-DEATH LAW (2026-11-17): a tier that THROWS must land
+  // in the ledger like any red — before this catch, a thrown body
+  // (spawn error, EPIPE, a crashed tier runner) unwound the battery
+  // past reportAndExit and the run died with NO verdict line, the
+  // log ending mid-tier. A throw is an ERROR; errors show.
+  let r;
+  try {
+    r = await body();
+  } catch (err) {
+    leases[id] = { status: "red", hash: gate.hash, at: new Date().toISOString(), files: gate.files };
+    saveLeases(LEASE_PATH, leases);
+    redTiers.push({ id, tail: `${id} tier THREW (the error below, not a test red):\n${err && err.stack ? err.stack : String(err)}` });
+    console.error(`RED ${id} tier — THREW; lease recorded red; the battery CONTINUES (one run shows every error)`);
+    return;
+  }
   const status = typeof r === "number" ? r : r.status;
   leases[id] = { status: status === 0 ? "green" : "red", hash: gate.hash, at: new Date().toISOString(), files: gate.files };
   saveLeases(LEASE_PATH, leases);

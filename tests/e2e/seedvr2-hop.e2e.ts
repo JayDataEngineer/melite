@@ -1,14 +1,17 @@
 // seedvr2-hop.e2e.ts — THE HOP DOUBLING PRESS, live (tier 3,
 // with-engine, the engine-gate law). The never-doubles burn's standing
 // world judge: the registry image-upscale flow pressed at the
-// operator's class — the make stage at 1344×768 (the size channels the
+// diet class — the make stage at 512×256 (the size channels the
 // flow row declares, stamped through the params overlay bag) and the
-// polish card's SeedVR2 at short side 1536 — must render the polish
-// PNG at 2688×1536, the exact 2x. The $image spell rides the FromStage
-// wire through planMerge (the card suite's spell-wire arms judge the
-// graph faces; this suite judges the world: real bytes, real sizes,
-// no NodeNotFoundError, no merge refusal). Receipt archive:
-// dev_docs/agents/receipts/seedvr2-hop-2026-11-01/.
+// polish card's SeedVR2 at short side 512 — must render the polish
+// PNG at 1024×512, the exact 2x. The resolution channel is the
+// TARGET SHORT SIDE (the 2026-11-17 battery burn: 512×256 +
+// resolution 1024 rendered 2048×1024 — the param aims the short
+// edge, it is not an upscale factor). The $image spell rides the
+// FromStage wire through planMerge (the card suite's spell-wire
+// arms judge the graph faces; this suite judges the world: real
+// bytes, real sizes, no NodeNotFoundError, no merge refusal).
+// Receipt archive: dev_docs/agents/receipts/seedvr2-hop-2026-11-01/.
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, copyFileSync, readFileSync } from 'node:fs'
@@ -31,7 +34,7 @@ const pngSize = (p: string): { w: number; h: number } => {
 }
 
 describe.skipIf(!ENGINE_FREE)('the seedvr2 hop live press', () => {
-  it('1344×768 make → seedvr2 polish renders 2688×1536', async () => {
+  it('512×256 make → seedvr2 polish renders 1024×512', async () => {
     const sandbox = mintSandbox('hop-press-')
     const ctx = new Context()
     try {
@@ -71,9 +74,10 @@ describe.skipIf(!ENGINE_FREE)('the seedvr2 hop live press', () => {
           // 2× hop proof is size-agnostic — 512×256 make → 1024×512
           // polish proves the same doubling at ~1/7 the patch area
           // (the unstated default once burned 1344×768→2688×1536,
-          // re-rendering krea-2 at max geometry).
+          // re-rendering krea-2 at max geometry). resolution aims the
+          // TARGET SHORT SIDE (256→512), never a multiplier.
           make: { width: 512, height: 256 },
-          polish: { resolution: 1024 },
+          polish: { resolution: 512 },
         },
       } as never, new AbortController().signal)
       assert.equal(ans.status, 'queued')

@@ -1,14 +1,11 @@
 import { expect, test } from '@playwright/test'
 const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
+
+// the shared three-pass settle law (the 2026-11-17 deck-leg mask burn)
+import { settleLane } from './settle.ts'
 test('probe (ruler-width): measure every ruler + content box', async ({ page }) => {
   expect(LANE_URL !== '', 'needs SWEEP_LANE_URL').toBe(true)
-  await page.goto(LANE_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-  await page.waitForTimeout(8_000)
-  for (let round = 0; round < 3; round++) {
-    const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
-    if ((await notice.count()) === 0) break
-    try { await notice.click({ timeout: 10_000 }); await page.waitForTimeout(1_000) } catch { /* again */ }
-  }
+  await settleLane(page, LANE_URL)
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
   await page.getByText('Melite Bench', { exact: true }).first().click({ timeout: 30_000 })

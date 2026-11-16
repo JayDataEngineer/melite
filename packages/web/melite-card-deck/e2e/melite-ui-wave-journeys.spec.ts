@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { settleLane } from './settle.ts'
 
 const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
 
@@ -38,32 +39,26 @@ const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
  *   @melite-plugin/dsh-card-deck exec playwright test e2e/melite-ui-wave-journeys.spec.ts
  */
 
-/** The deck shell's settle law (estate-lane-sidebar.spec.ts). */
+/** The deck shell's settle law — the shared three-pass helper (the
+ * 2026-11-17 deck-leg burn: this single-pass copy missed the LATE
+ * "Get started" re-mount, whose mask ate the sidebar click), plus
+ * the shell's expand seat: it WAITS (an instant count() races
+ * hydration — the verify-2 probe-d burn), the hero composer birth
+ * is best-effort, and the expand CLICK judges loudly. */
 async function settleHost(page: Page): Promise<void> {
-  await page.goto(LANE_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-  await page.waitForTimeout(8_000)
-  for (let round = 0; round < 3; round++) {
-    const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
-    if ((await notice.count()) === 0) break
-    try {
-      await notice.click({ timeout: 10_000 })
-      await page.waitForTimeout(1_000)
-    } catch { /* a cold host can re-mask mid-settle */ }
-  }
-  // THE ONBOARDING MASK (the fresh-host class): a throwaway lane's
-  // first load seats the shell's "Get started" sign-in modal, whose
-  // mask intercepts every pointer event until its Close rides.
-  const onboard = page.getByRole('dialog', { name: 'Get started' }).getByRole('button', { name: 'Close' })
-  if ((await onboard.count()) > 0) {
-    await onboard.click({ timeout: 10_000 }).catch(() => { /* a racing auto-dismiss is not a failure */ })
-    await page.waitForTimeout(1_000)
-  }
+  await settleLane(page, LANE_URL)
   const expandSeat = page.locator('[data-sidebar-right-expand]').first()
-  if ((await expandSeat.count()) === 0) {
+  try {
+    await expandSeat.waitFor({ state: 'visible', timeout: 10_000 })
+  } catch {
     const hero = page.getByRole('textbox', { name: /Describe what you want to build/ })
-    await hero.fill('ui-wave journeys: opening the shell for the cards bench', { timeout: 15_000 })
-    await hero.press('Enter')
-    await page.waitForTimeout(8_000)
+    const born = await hero.fill('ui-wave journeys: opening the shell for the cards bench', { timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false)
+    if (born) {
+      await hero.press('Enter')
+      await page.waitForTimeout(8_000)
+    }
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)

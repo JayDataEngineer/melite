@@ -2,18 +2,15 @@ import { expect, test } from '@playwright/test'
 
 const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
 
+// the shared three-pass settle law (the 2026-11-17 deck-leg mask burn)
+import { settleLane } from './settle.ts'
+
 // probe (i): the input-prep card's UI journey — the crop + model-choice
 // seats RENDER on :3088 (the disposition owed this hop: the card serves
 // crop_x/scale_model; the operator saw a stale serve). Read-only probe.
 test('probe (i): input-prep renders the crop + model-choice seats', async ({ page }) => {
   expect(LANE_URL !== '', 'needs SWEEP_LANE_URL').toBe(true)
-  await page.goto(LANE_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-  await page.waitForTimeout(8_000)
-  for (let round = 0; round < 3; round++) {
-    const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
-    if ((await notice.count()) === 0) break
-    try { await notice.click({ timeout: 10_000 }); await page.waitForTimeout(1_000) } catch { /* again */ }
-  }
+  await settleLane(page, LANE_URL)
   // THE ONBOARDING MASK (the 2026-11-14 fresh-lane find, the sweep's
   // settleHost law): a throwaway home seats the "Get started" modal
   // whose mask intercepts every pointer event — close it before any

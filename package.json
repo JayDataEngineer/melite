@@ -135,7 +135,7 @@
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
     "test:web": "vitest run --config vitest.web.config.ts",
     "test:combinations": "pnpm --filter @melite-plugin/dsh-card-deck exec playwright test e2e/combinations-sweep.spec.ts",
-    "test:web:browser": "bash scripts/e2e-studio-lane.sh && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
+    "test:web:browser": "E2E_STUDIO_DECK=1 bash scripts/e2e-studio-lane.sh",
     "test:web:mesh": "pnpm --filter @melite-plugin/dsh-gallery run build:mesh-door && pnpm --filter @melite-plugin/dsh-gallery exec playwright test",
     "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts"
   },

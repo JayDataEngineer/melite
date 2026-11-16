@@ -109,11 +109,25 @@ export const TIER_INPUTS = {
 
 /** The self-input law: the battery's own logic + the lockfile key every
  * tier. A rework of either invalidates every lease at once — a battery
- * bug must never ride a stale green. */
+ * bug must never ride a stale green. The root's own control files ride
+ * the same set (audit 2026-11-15 must-change: a root package.json
+ * script swap, a tsconfig flip, or a workflow edit silently carried
+ * stale greens for every tier — the battery's own wiring is now an
+ * input to the battery). */
 export function tierGlobs(tierId) {
   const base = TIER_INPUTS[tierId];
   if (base === undefined) throw new Error("battery-leases: unknown tier " + tierId);
-  return [...new Set([...base, "tools/hook-full-battery.mjs", "tools/battery-leases.mjs", "pnpm-lock.yaml"])];
+  return [
+    ...new Set([
+      ...base,
+      "tools/hook-full-battery.mjs",
+      "tools/battery-leases.mjs",
+      "pnpm-lock.yaml",
+      "package.json",
+      "tsconfig*.json",
+      ".github/workflows/**",
+    ]),
+  ];
 }
 
 /** The carry decision. 'carry' ONLY on a green lease whose recorded

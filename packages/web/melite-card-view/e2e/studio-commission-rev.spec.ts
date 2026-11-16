@@ -92,5 +92,17 @@ test('the drilled studio\'s commission rail swaps on an agent patch (F53: no re-
   await lane.waitFor({ state: 'visible', timeout: 15_000 })
   await expect(lane).toContainText('silver_v10.safetensors')
 
+  // THE POISONED-BENCH LAW (2026-11-17, the battery's deck-leg burn):
+  // the bench is SHARED — every later spec's add door composes the
+  // whole row, and card_compose phase 1 refused this row with the
+  // SILVER filename still armed ("unknown loras row
+  // silver_v10.safetensors" — a raw filename the tracked seed's mods
+  // bag does not seat), so no later spec could add ANY card: the
+  // deck journeys starved on a drill that never mounted. The rail is
+  // judged above; leaving the bag armed past the assertion is a
+  // write the journey never owed. Clear it — the bench leaves this
+  // spec as composable as it entered.
+  await patchLoras(page, sessionKey, { loras: null })
+
   await expectNoPageErrors(page, errors)
 })

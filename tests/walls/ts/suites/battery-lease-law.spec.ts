@@ -93,12 +93,21 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
     }
   })
 
-  it('the self-input law: the battery scripts + the lockfile key EVERY tier (a battery rework invalidates every lease)', () => {
-    const SELF = ['tools/hook-full-battery.mjs', 'tools/battery-leases.mjs', 'pnpm-lock.yaml']
+  it('the self-input law: the battery scripts, the lockfile, and the ROOT CONTROL FILES key EVERY tier (a battery or root-wiring rework invalidates every lease)', () => {
+    const SELF = ['tools/hook-full-battery.mjs', 'tools/battery-leases.mjs', 'pnpm-lock.yaml', 'package.json', 'tsconfig*.json', '.github/workflows/**']
     for (const id of Object.keys(TIER_INPUTS)) {
       for (const s of SELF) {
         expect(tierGlobs(id), `tier ${id} must self-key ${s}`).toContain(s)
       }
+    }
+    // The widened self-set expands on the real tree: every tier hashes
+    // the root package.json + at least one root tsconfig + at least one
+    // workflow file (a glob that matches nothing is a dead self-key).
+    for (const id of Object.keys(TIER_INPUTS)) {
+      const files = expandGlobs(process.cwd(), tierGlobs(id))
+      expect(files.some((f) => f === 'package.json'), `tier ${id} hashes the root package.json`).toBe(true)
+      expect(files.some((f) => /tsconfig[^/]*\.json$/.test(f) && !f.includes('/')), `tier ${id} hashes a root tsconfig`).toBe(true)
+      expect(files.some((f) => f.startsWith('.github/workflows/')), `tier ${id} hashes the workflow tree`).toBe(true)
     }
   })
 

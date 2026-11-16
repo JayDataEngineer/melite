@@ -239,7 +239,10 @@ describe("THE PRE-PUSH BATTERY'S FLEET (round-6, 2026-10-13)", () => {
     // that runs them fires on main/master only. The battery is the
     // last local gate before a push and must run the whole fleet.
     const battery = read("tools/hook-full-battery.mjs");
-    const spawn = battery.match(/spawnSync\(vitest,\s*\[([^\]]*)\]/);
+    // spawnTee is the battery's tier runner (the show-all rework,
+    // 2026-11-17: live tee + captured tail for the one-run report).
+    // The argv law is unchanged: full fleet, never a --project cut.
+    const spawn = battery.match(/spawnTee\((?:\w+,\s*)?["']?vitest["']?,\s*\[([^\]]*)\]/);
     expect(spawn, "the battery spawns vitest").not.toBeNull();
     expect(spawn![1], "the battery's vitest argv names no --project (a narrowed fleet hides the dom/deck seats)")
       .not.toContain("--project");

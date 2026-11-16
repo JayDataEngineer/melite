@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test'
 
 const LANE_URL = process.env.SWEEP_LANE_URL ?? ''
 
+// the shared three-pass settle law (the 2026-11-17 deck-leg mask burn)
+import { settleLane } from './settle.ts'
+
 test('probe (d): h3 Final Cut second-pass visibility + refmod steps', async ({ page }) => {
   expect(LANE_URL !== '', 'needs SWEEP_LANE_URL').toBe(true)
   // attach BEFORE navigation: the lane's socket opens on load
@@ -37,19 +40,25 @@ test('probe (d): h3 Final Cut second-pass visibility + refmod steps', async ({ p
     const url = r.url()
     if ((url.includes('/api/') || url.includes('/v1/')) && !seenUrls.has(url.split('?')[0])) { seenUrls.add(url.split('?')[0]); console.log('API_URL=' + url.split('?')[0]) }
   })
-  await page.goto(LANE_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-  await page.waitForTimeout(8_000)
-  for (let round = 0; round < 3; round++) {
-    const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
-    if ((await notice.count()) === 0) break
-    try { await notice.click({ timeout: 10_000 }); await page.waitForTimeout(1_000) } catch { /* again */ }
-  }
+  await settleLane(page, LANE_URL)
+  // THE EXPAND SEAT WAITS (2026-11-17, the verify-2 burn): count()
+  // is an instant snapshot — on a still-hydrating shell it reads 0
+  // and the old fallback died birthing a hero composer this page
+  // never owed (locator.fill timed out on a textbox that never
+  // mounts). Wait for the seat; the hero birth is best-effort; the
+  // expand CLICK below (30s) is the loud judge if neither seats.
   const expandSeat = page.locator('[data-sidebar-right-expand]').first()
-  if ((await expandSeat.count()) === 0) {
+  try {
+    await expandSeat.waitFor({ state: 'visible', timeout: 10_000 })
+  } catch {
     const hero = page.getByRole('textbox', { name: /Describe what you want to build/ })
-    await hero.fill('probe d: h3 second pass visibility', { timeout: 15_000 })
-    await hero.press('Enter')
-    await page.waitForTimeout(8_000)
+    const born = await hero.fill('probe d: h3 second pass visibility', { timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false)
+    if (born) {
+      await hero.press('Enter')
+      await page.waitForTimeout(8_000)
+    }
   }
   await page.locator('[data-sidebar-right-expand]').first().click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)

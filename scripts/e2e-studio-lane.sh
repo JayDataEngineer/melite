@@ -463,4 +463,27 @@ for SIG in "client bundle not found" "startup failed"; do
     exit 1
   fi
 done
+
+# ── the deck leg (E2E_STUDIO_DECK=1, the battery's browser tier,
+# 2026-11-17): the deck's own e2e suite rides the SAME lane host —
+# the tracked seed seats @melite-plugin/dsh-card-deck alongside
+# card-view, so the deck UI answers on this very port. Before this
+# leg existed, test:web:browser chained the deck suite AFTER this
+# script exited — cleanup() had already killed the host, the suite
+# starved on an unset SWEEP_LANE_URL (page.goto('') resolved
+# against the dead 127.0.0.1:3909 baseURL), and 14 specs red with
+# needs-SWEEP_LANE_URL / ERR_CONNECTION_REFUSED on every battery.
+# The leg runs INSIDE the lane's lifetime; SWEEP_LANE_URL is the
+# host's own token URL. Its exit code folds into the tier verdict —
+# a red deck leg reds the run (the show-all law; no swallowing).
+# The two E2E_DECK_URL specs (comfy-manager, estate-lane-sidebar)
+# self-skip lawfully: they tour the LIVE deck estate host
+# (dsh-deck.service — machine infrastructure, never booted here).
+if [ -n "$E2E_STUDIO_DECK" ]; then
+  DECK_EXIT=0
+  PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
+    SWEEP_LANE_URL="$E2E_STUDIO_URL" \
+    pnpm --filter @melite-plugin/dsh-card-deck exec playwright test || DECK_EXIT=$?
+  [ "$DECK_EXIT" -eq 0 ] || PLAYWRIGHT_EXIT=$DECK_EXIT
+fi
 exit $PLAYWRIGHT_EXIT
