@@ -216,12 +216,23 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
       // awaits — a deleted prompt never reports completion, the
       // worker never reaches its flag check, the stop never
       // converges (today's red, verbatim).
+      //
+      // THE COLD-STOP BUDGET (2026-11-16, the render-lane gate): the
+      // 90s ceiling was calibrated on render-warmed engines — the
+      // render rows preloaded the film weights before any stamp
+      // stopped. With the render lane manual-gated, a stamp's stop
+      // lands while the engine still COLD-LOADS tens of GB of
+      // weights; there is no node boundary for the flag check until
+      // the load completes, so the honest ceiling is the load, not
+      // the warm settle. 240s — both h3-timeline stamp rows held
+      // 'running' past 90s on the first cold battery with the
+      // compose itself green (verdict=complete, nodes=55).
       let settled = ''
-      for (let i = 0; i < 90; i++) {
+      for (let i = 0; i < 240; i++) {
         const row = await w.svc.status(ans.run_id, new AbortController().signal).catch(() => undefined as Record<string, unknown> | undefined)
         settled = typeof row?.['status'] === 'string' ? row['status'] : ''
         if (settled !== '' && settled !== 'queued' && settled !== 'running' && settled !== 'stopping') break
-        if (i === 89) throw new Error(tag + ': the run never settled after the stop (status ' + JSON.stringify(settled) + ' after 90s) — the worker never reached its flag check')
+        if (i === 239) throw new Error(tag + ': the run never settled after the stop (status ' + JSON.stringify(settled) + ' after 240s) — the worker never reached its flag check (a cold engine may hold the model load past this ceiling; MELITE_GPU_RENDER=1 re-warms the lane)')
         await new Promise((r) => setTimeout(r, 1000))
       }
       console.log(`[${tag}] drain: run settled (${settled}) — judging the engine queue`)
