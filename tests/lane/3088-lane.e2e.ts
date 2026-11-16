@@ -40,11 +40,15 @@ import {
   type PathVerdict,
 } from './analysis.ts'
 import { PATH_TABLE } from './commission.ts'
+// THE ONE ENGINE GATE (2026-11-17): the hand-carried alive probe
+// retired — the gate owns presence, and under the e2e project's
+// MELITE_E2E_SEAT env it seats this suite through the VRAM
+// admission seat, so the lane never storms the engine beside a
+// seated sibling at cap > 1.
+import { ENGINE_HOST, ENGINE_PORT, engineAlive } from '../e2e/engine-gate.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_LOCAL = resolve(HERE, '..', '..')
-const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
-const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
 /** THE RUN-SEAT LAW: a supervisor-launched maker mints its runs in
  *  `<state root>/output/` (the repo root by default) while the studio
  *  lane's estate serves `data/runs/output/`. The gate reads BOTH real
@@ -58,17 +62,6 @@ const ROOTS: string[] = [
     ...((process.env['SUPERVISOR_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
   ]),
 ]
-
-async function engineAlive(): Promise<boolean> {
-  try {
-    const res = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`, {
-      signal: AbortSignal.timeout(20_000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
 
 const VERDICT_PATH = join(REPO_LOCAL, 'data/lane-harness/verdict.json')
 

@@ -81,58 +81,12 @@ export interface World {
   stop(): void
 }
 
-/** THE ENGINE-OWNED FREE DOOR (the rc.3 render lane, 2026-11-16):
- * the serial render lane's deepest rows (film-run's full stack)
- * leave residency the estate never evicts — and the engine's OWN
- * eviction path crashes under that pressure (upstream
- * model_management.free_memory indexes current_loaded_models out of
- * range, verbatim in the engine log; Layer B is not ours to patch).
- * The user path is the manage plane's free door: native /free
- * CHAINED with the warmed-seat release, answering what it released.
- * A row that needs the card calls THIS before it presses — the
- * door the estate ships, never a raw engine HTTP poke. */
-export async function freeEngineResidency(w: { stateRoot: string }): Promise<void> {
-  const { dispatchManage } = await import('../../packages/harness/estate-queue/src/managePlane.ts')
-  const ctx = {
-    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
-    stateRoots: [w.stateRoot],
-    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
-    models: { allDecls: () => [] },
-    timeout: (cb: () => void) => { const t = setTimeout(cb, 0); return () => clearTimeout(t) },
-  } as never
-  const [, env] = await dispatchManage({ action: 'free' }, ctx)
-  console.log(`[free-door] ${String((env as { detail?: string }).detail ?? 'residency freed')}`)
-}
-
-/** THE ESTATE-OWNED COLD-CARD HANDOFF (round 8): native /free answers
- * "issued (next worker iteration)" — on an IDLE queue no worker turn
- * comes, and under deep residency the engine's OWN eviction crashes
- * (upstream model_management.free_memory IndexError, verbatim in the
- * engine log — Layer B is not ours to patch). A row whose budget
- * probe still refuses after free + settle is pressure-locked: the
- * lawful cure is the manage plane's restart door (/manager/reboot —
- * systemd re-spawns the engine), then the engine-up poll. Estate
- * doors only, never systemctl from a test. */
-export async function restartEngineResidency(w: { stateRoot: string }): Promise<void> {
-  const { dispatchManage } = await import('../../packages/harness/estate-queue/src/managePlane.ts')
-  const ctx = {
-    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
-    stateRoots: [w.stateRoot],
-    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
-    models: { allDecls: () => [] },
-    timeout: (cb: () => void) => { const t = setTimeout(cb, 0); return () => clearTimeout(t) },
-  } as never
-  const [, env] = await dispatchManage({ action: 'restart' }, ctx)
-  console.log(`[restart-door] ${String((env as { detail?: string }).detail ?? 'reboot issued')}`)
-  for (let i = 0; i < 60; i++) {
-    try {
-      const r = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`)
-      if (r.ok) { console.log(`[restart-door] engine up after ${i * 2}s`); return }
-    } catch { /* booting */ }
-    await new Promise((r) => setTimeout(r, 2000))
-  }
-  throw new Error('[restart-door] engine never came back after reboot (120s)')
-}
+/** THE ENGINE-OWNED FREE DOOR + THE ESTATE-OWNED RESTART DOOR moved
+ * to their own leaf (./engine-doors.ts) when the VRAM-admission
+ * seat needed them above this harness (engine-gate seats before
+ * the harness boots worlds; the doors re-export keeps every row
+ * caller's import unchanged). */
+export { freeEngineResidency, restartEngineResidency } from './engine-doors.ts'
 
 export async function bootWorld(tag: string): Promise<World> {
   const sandbox = mintSandbox(tag)

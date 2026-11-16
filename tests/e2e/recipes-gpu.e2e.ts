@@ -229,7 +229,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('z-image') || !GPU_RENDER)('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-zimage-')
@@ -322,7 +322,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !weightsPresent('seedvr2-ema'))('h3-timeline final: the finishing tier mounts the SeedVR2 rail behind the master switch and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-final-')
@@ -360,7 +360,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline void receipt: estate-held calls compose into the workflow and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-void-')
@@ -404,7 +404,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 240_000)
+  }, 300_000)
 
   // ── THE T3 REFINE RIDER'S GPU RECEIPT (roadmap item 2 — the
   // crowd's third tier on real silicon): pass A rides the official
@@ -461,7 +461,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline reshoot: the camera re-shoot composes on the official port (no resize hack, metric geometry) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-reshoot-')
@@ -571,7 +571,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline refine: the second-pass RefineHandoff composes at 2x (one variant path, locked audio) and QUEUES (the GPU diet)', async () => {
     const w = await bootWorld('recipes-h3-refine-arm-')
@@ -621,7 +621,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!ENGINE_FREE || !weightsPresent('kimodo'))('motion (kimodo): the Rule B panel-path writes (steps/seed/duration) compose and QUEUE (the GPU diet)', async () => {
     const w = await bootWorld('recipes-motion-')
@@ -645,7 +645,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 
   // ── the audio receipt (hour 15, the audio recipe rows landing:
   //    bound-anchored stamps proven on silicon — the schema's own
@@ -751,7 +751,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 })
 
 // ── THE QWEN 2.1 PAIR (2026-09-21, the Comfy-Org release; the naming
@@ -972,7 +972,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
       w.stop()
       await w.ctx.fiber.dispose()
     }
-  }, 120_000)
+  }, 300_000)
 })
 
 // ── THE H3 IMAGE PAIR (2026-11-11, the Comfy-Org MiniMax-H3-Image

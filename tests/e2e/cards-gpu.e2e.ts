@@ -301,7 +301,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
       assert.ok(byClass(s, 'KimodoTransferWeights').length >= 1, 'the copy lane transfers')
       assert.ok(byClass(s, 'SaveRiggedModel').length >= 1, 'the rigged mesh saves')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig') || !GPU_RENDER)('img-to-mesh transfer lane: the rig hop composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-transfer', async (w) => {
@@ -343,7 +343,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       assert.equal(tts[0]![1].inputs?.instruct, 'cheerful', 'the direction rides the instruct input')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the line saves')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!weightsPresent('qwen3-tts'))('tts base clone: the reference lane composes and QUEUES (the GPU diet — the family render proof rides the expressive-read row)', async () => {
     await withWorld('cards-gpu-tts-base', async (w) => {
@@ -364,7 +364,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       assert.equal(tts[0]![1].inputs?.mode, 'clone', 'the reference pair rides the clone lane')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the line saves')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!weightsPresent('qwen3-tts'))('tts voicedesign export: the designer lane exports and QUEUES (the GPU diet — the family render proof rides the expressive-read row)', async () => {
     await withWorld('cards-gpu-tts-design', async (w) => {
@@ -389,7 +389,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       assert.ok(byClass(s, 'MeliteQVoiceCopy').length >= 1, 'the voice stages')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the sample saves')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!weightsPresent('music3'))('music3 full-length: the duration pill composes and QUEUES (the GPU diet — the family render proof rides the short-sting row)', async () => {
     await withWorld('cards-gpu-music-full', async (w) => {
@@ -453,7 +453,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       assert.equal(tts[0]![1].inputs?.duration_seconds, 30, 'the lane ceiling rides')
       assert.ok(byClass(s, 'SaveAudio').length >= 1, 'the bed saves')
     })
-  }, 120_000)
+  }, 300_000)
 })
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + kimodo recipes)', () => {
@@ -488,7 +488,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.ok(drow !== undefined, 'the stack carries the resolved dareties adapter ON')
       assert.equal(drow!['str'], 0.8, 'the strength is the catalog-declared 0.8')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!weightsPresent('h3-timeline'))('h3 draft_02mp: the tier pill composes and QUEUES (the GPU diet)', async () => {
     await withWorld('cards-gpu-h3-draft', async (w) => {
@@ -506,7 +506,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 8, 'the tier pill stamps 8 steps')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!weightsPresent('h3-timeline'))('h3 final_hd: the HD tier composes and QUEUES (the GPU diet — the family render proof rides the draft row)', async () => {
     await withWorld('cards-gpu-h3-hd', async (w) => {
@@ -527,7 +527,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.ok(sched.length >= 1, 'the scheduler runs')
       assert.equal(sched[0]![1].inputs?.steps, 30, 'the tier pill stamps 30 steps')
     })
-  }, 120_000)
+  }, 300_000)
 
   it.skipIf(!weightsPresent('h3-timeline') || !GPU_RENDER)('h3 THE HOP-[6] BAKE WITNESS: the stated refmod dials ride the REAL run — the engine\'s own history record carries mode/pool/identity/save verbatim (study §7 item 1, the f closer) (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-h3-bake', async (w) => {
@@ -620,5 +620,5 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.equal(pose[0]![1].inputs?.diffusion_steps, 200, 'the polished pill stamps 200 steps')
       assert.ok(byClass(s, 'KimodoLoader').length >= 1, 'the motion weights load')
     })
-  }, 120_000)
+  }, 300_000)
 })

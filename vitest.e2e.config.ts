@@ -46,5 +46,11 @@ export default defineConfig({
     // is no-retry; this comment is the wall.
     fileParallelism: e2eMaxWorkers > 1,
     maxWorkers: e2eMaxWorkers,
+    // THE VRAM-ADMISSION SEAT (the successor to the battery's blunt
+    // 1-worker law): engine suites acquire the exclusive engine
+    // seat inside engine-gate.ts under this env — the e2e project's
+    // own activation door, so walls/production importers of the
+    // gate keep its plain probe behavior.
+    env: { MELITE_E2E_SEAT: '1' },
   },
 })

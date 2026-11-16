@@ -437,14 +437,20 @@ await tier("coverage", async () => {
 // lease + ledger row keeps the report honest.
 {
   const e2eRed = await tier("e2e", async () => {
-    // THE SERIAL-E2E LAW (2026-11-15, three wedged batteries): the GPU
-    // rows press ONE shared engine — at the config's default 4 workers,
-    // four heavy suites storm it concurrently and the host (tmpfs /tmp +
-    // one 24 GB card) swaps to death mid-tier: the same five heaviest
-    // rows (final_hd, HOP-6, kimodo pair, h3-image) die fetch-failed
-    // EVERY storm while every row passes scoped single-worker. Serial
-    // HERE (within the tier) for the same one-engine reason.
-    const e2e = await spawnTee("pnpm", ["run", "test:e2e"], { shell, env: { ...process.env, DSH_E2E_MAX_WORKERS: "1" } });
+    // THE VRAM-ADMISSION SEAT (2026-11-17, the successor to the
+    // SERIAL-E2E LAW): the engine suites acquire the exclusive
+    // engine seat inside tests/e2e/engine-gate.ts (activated by
+    // vitest.e2e.config.ts's MELITE_E2E_SEAT env) — admission
+    // judged on the card's ACTUAL free VRAM, with the estate's
+    // free/restart doors as the pressure ladder. One engine, one
+    // SEATED consumer: the storm that wedged three batteries (the
+    // five-heavy-rows fetch-failed class at 4 workers) is
+    // impossible while every engine suite rides the seat, and the
+    // engine-CLEAN suites (compose-smoke, estate-smoke,
+    // extension-upstream, lane-defaults, model-smoke) no longer
+    // pay the serialization tax the blunt cap charged them. Two
+    // workers: one seated engine lane + one engine-clean lane.
+    const e2e = await spawnTee("pnpm", ["run", "test:e2e"], { shell, env: { ...process.env, DSH_E2E_MAX_WORKERS: "2" } });
     return { status: e2e.status === 0 ? 0 : 1, tail: e2e.out };
   });
   if (e2eRed === 1) {
