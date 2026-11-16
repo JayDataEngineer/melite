@@ -114,7 +114,7 @@ if (SEATED) {
     floorMb: SEAT_FLOOR_MB,
     probeAlive: engineAlive,
     probeFreeMb: engineVramFreeMb,
-    probeBusy: () => !FORCE && engineBusy(),
+    probeBusy: async () => !FORCE && engineBusy(),
     freeDoor: () => freeEngineResidency({ stateRoot: SEAT_STATE_ROOT }),
     restartDoor: () => restartEngineResidency({ stateRoot: SEAT_STATE_ROOT }),
   })

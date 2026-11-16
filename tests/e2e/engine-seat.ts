@@ -32,7 +32,10 @@ import { join } from 'node:path'
 /** The holder record inside the lock file. */
 interface Holder { pid: number, heldSince: number }
 
-export type SeatVerdict = 'held' | 'no-engine' | 'busy' | 'vram-locked'
+/** The verdict vocabulary (not exported — the wall drives the
+ * door functions directly and knip's tracer does not follow the
+ * gate's dynamic type import). */
+type SeatVerdict = 'held' | 'no-engine' | 'busy' | 'vram-locked'
 
 export interface EngineSeatDeps {
   /** Lock home — one directory per engine (created if absent). */
@@ -61,7 +64,7 @@ export interface EngineSeatDeps {
   restartDoor(): Promise<void>
 }
 
-export interface EngineSeat {
+interface EngineSeat {
   acquire(): Promise<SeatVerdict>
   release(): Promise<void>
   isHeld(): boolean
