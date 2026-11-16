@@ -108,6 +108,25 @@ const THROWING_PROBE: Plugin = {
   },
 }
 
+/** The HELD startup-refusal probe (boot isolation, 2026-11-16): a
+ *  family-shaped fiber whose apply refuses ONLY when the arm
+ *  releases it. The census's snapshot counts it (LOADING, never
+ *  failed, so cordis's auto-unload cannot evict it first — the
+ *  sync-throwing probe's startup refusal ALWAYS auto-unloads before
+ *  the boot census counts it; the old arm's regex hid that behind
+ *  'no such model registered'), and fiber.await() holds it until
+ *  the release — the deterministic per-family retirement door. */
+let releaseHeldProbe: ((err: Error) => void) | null = null
+const HELD_THROWING_PROBE: Plugin = {
+  name: 'family-refuses-at-boot',
+  inject: ['models'],
+  apply(): Promise<void> {
+    return new Promise<void>((_resolve, reject) => {
+      releaseHeldProbe = (err: Error) => reject(err)
+    })
+  },
+}
+
 /** A family-shaped probe that REGISTERS cleanly but breaks a boot
  * contract: a routeless variants:[] row — the satisfaction gate
  * (§3.2.2) refuses it as unaddressable at the census, never at
@@ -425,6 +444,63 @@ describe('the models boot is a Loader composition (families as rows, the census 
     } finally {
       await Promise.allSettled(familyFibers.map((f) => f.dispose()))
       await providerFiber.dispose()
+    }
+  })
+
+  it('BOOT ISOLATION: a family refusing at boot retires alone — the seat arms with the survivors and the log names the dead (the plugin law)', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const familyFibers = await mountRoster(ctx)
+    const providerFiber = ctx.plugin(modelsProvider)
+    const errors: string[] = []
+    const errSpy = vi.spyOn(ctx.logger, 'error').mockImplementation(((...args: unknown[]) => {
+      errors.push(args.map(String).join(' '))
+    }) as never)
+    // the refusing family mounts UNRELEASED before the gate: the
+    // census snapshot counts it (LOADING), its await() holds the
+    // pass, and the release refuses it INSIDE the census's own walk
+    const probeFiber = ctx.plugin(HELD_THROWING_PROBE)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    try {
+      await waitFor('the held probe apply to enter', () => releaseHeldProbe !== null)
+      releaseHeldProbe!(new Error('probe: family refused at boot'))
+      await whenModelsArmed()
+      const rows = rosterRows()
+      const svc = ctx.models as ModelsService
+      assert.equal(svc.familyCount(), rows.length, 'the composition armed with the roster survivors')
+      await waitFor('the retirement log to speak', () => errors.some((e) => e.includes('retired alone')))
+      const voice = errors.find((e) => e.includes('retired alone'))
+      assert.ok(voice !== undefined, `the boot-isolation log names the retired family (saw ${JSON.stringify(errors)})`)
+      assert.ok(voice!.includes('family-refuses-at-boot'), 'the log names the dead family by its own fiber name')
+      assert.ok(voice!.includes('probe: family refused at boot'), 'the log carries the refusing family\'s own error voice')
+    } finally {
+      releaseHeldProbe = null
+      errSpy.mockRestore()
+      await gateFiber.dispose()
+      await Promise.allSettled([probeFiber.dispose(), ...familyFibers.map((f) => f.dispose())])
+      await providerFiber.dispose()
+    }
+  })
+
+  it('BOOT ISOLATION: a TOTAL family-plane outage still refuses the settle (zero families is an estate defect, not plugin absence)', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(modelsProvider)
+    const probeFiber = ctx.plugin(HELD_THROWING_PROBE)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    try {
+      // the held probe is the ONLY censused family: its refusal is a
+      // TOTAL outage — zero families is an estate defect, not plugin
+      // absence, and the settle must reject with exactly that voice
+      await waitFor('the held probe apply to enter', () => releaseHeldProbe !== null)
+      releaseHeldProbe!(new Error('probe: total outage'))
+      await assert.rejects(
+        () => whenModelsArmed(),
+        /total family-plane outage is an estate defect, not plugin absence/,
+        'a total family-plane outage must REJECT the settle — zero families is an estate defect',
+      )
+      await assert.rejects(() => gateFiber.await(), /total family-plane outage|probe: total outage/)
+    } finally {
+      releaseHeldProbe = null
+      await Promise.allSettled([gateFiber.dispose(), probeFiber.dispose(), providerFiber.dispose()])
     }
   })
 

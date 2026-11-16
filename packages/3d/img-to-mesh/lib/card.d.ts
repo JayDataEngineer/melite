@@ -1,5 +1,6 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition';
-import { type ActionBinding as Binding } from '@melite/comfyui-card-kit';
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 export declare const inject: string[];
 export declare const identity: {
     label: string;
@@ -7,6 +8,6 @@ export declare const identity: {
     genre: string;
     icon: string;
 };
-export declare const ACTION_BINDINGS: Record<string, Binding>;
+export declare function composeFamilyAction(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void;
 export declare function apply(ctx: Context): void;
 //# sourceMappingURL=card.d.ts.map

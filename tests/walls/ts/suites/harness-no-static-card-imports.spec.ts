@@ -86,7 +86,6 @@ test('the harness plane holds zero static card/family imports', () => {
 const GENRES = ['3d', 'audio', 'image', 'motion', 'video'] as const
 const FAMILY_SCOPE = /^@melite\/models-/
 const L3_DEBT_CARDS = [
-  '3d/anny', '3d/img-to-mesh', '3d/rig',
   'audio/music', 'audio/sfx', 'audio/tts',
   'image/image-edit', 'image/input-prep', 'image/mask', 'image/tagger', 'image/upscale-tools',
   'motion/motion', 'video/track',

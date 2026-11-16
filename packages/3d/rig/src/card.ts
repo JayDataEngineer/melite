@@ -29,8 +29,7 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { DECL as transferRigDecl } from '@melite/models-transfer-rig'
-import { DECL as gemSomaDecl } from '@melite/models-gem-soma'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
@@ -72,6 +71,10 @@ export const identity = {
 }
 
 export function apply(ctx: Context): void {
+  // THE PLUGIN LAW (L3): prime the family seats fire-and-forget —
+  // registration NEVER waits on a family package (a missing one
+  // costs its own seat; the compose lanes read what primed).
+  void primeFamilySeats()
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'rig',
     skeleton: 'rig',
@@ -80,11 +83,12 @@ export function apply(ctx: Context): void {
     // atoms consumed by lane, not pickable offers. gem-soma is
     // unoffered (weightless — the compose seat's routes map refuses
     // its id; boarding it fired arm 3's "no model unit" red, the
-    // proof that unoffered atoms never board); its binding is the
-    // import above — the wall's consumer grep finds the family id
-    // in this file's src. transfer-rig (copy lane) is boarded on
-    // its owning card, img-to-mesh (one family, one card —
-    // service.ts's family-taken refusal names the law).
+    // proof that unoffered atoms never board); its binding rides the
+    // family SEATS (family-seats.ts) — the wall's consumer grep
+    // finds the family ids in this file's src literals.
+    // transfer-rig (copy lane) is boarded on its owning card,
+    // img-to-mesh (one family, one card — service.ts's family-taken
+    // refusal names the law).
     boarded: [],
     tags: ['3d', 'rig', 'skinning'],
     identity,
@@ -132,15 +136,29 @@ export function apply(ctx: Context): void {
         // card's mode knob names the family; the family composes the
         // lane. Nothing below authors a node — the two arms moved to
         // the families that own them (transfer-rig, gem-soma), each
-        // pinned to a committed golden.
-        const action = declaredAction(transferRigDecl, 'transfer')
-        const row: ModelFacts = { id: transferRigDecl.id, family: transferRigDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
+        // pinned to a committed golden. THE PLUGIN LAW (L3): the
+        // DECL rides the family's SEAT — an absent family package
+        // refuses here, by name (never a silent fallback lane).
+        const seat = seatOf('transfer-rig')
+        if (seat === undefined) {
+          throw new Error(
+            `no declared action for family 'transfer-rig' on the rig card — the copy lane composes the donor family's own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+        }
+        const action = declaredAction(seat.decl, 'transfer')
+        const row: ModelFacts = { id: 'transfer-rig', family: 'transfer-rig', card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
         instantiateAction(action, { rigged_glb: donor, target_glb: mesh } as never, row, g, runId)
         return
       }
-      // auto — the SOMA-77 template's own weights
-      const action = declaredAction(gemSomaDecl, 'rig')
-      const row: ModelFacts = { id: gemSomaDecl.id, family: gemSomaDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
+      // auto — the SOMA-77 template's own weights. THE PLUGIN LAW
+      // (L3): the seat carries the gem-soma DECL; an absent package
+      // refuses here, by name.
+      const seat = seatOf('gem-soma')
+      if (seat === undefined) {
+        throw new Error(
+          `no declared action for family 'gem-soma' on the rig card — the auto lane composes the SOMA family's own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+      }
+      const action = declaredAction(seat.decl, 'rig')
+      const row: ModelFacts = { id: 'gem-soma', family: 'gem-soma', card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
       instantiateAction(action, { mesh_glb: mesh, preserve_texture: doc.preserve_texture } as never, row, g, runId)
     },
   }))

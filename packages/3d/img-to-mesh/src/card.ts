@@ -45,10 +45,10 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // demand the autorig pack).
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
-import { DECL as pixal3dDecl } from '@melite/models-pixal3d'
-import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
-import { DECL as transferRigDecl } from '@melite/models-transfer-rig'
+import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from '@melite/comfyui-card-kit'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
 import { ComposeRefusal } from '@melite/comfyui-card-kit/errors';
@@ -125,16 +125,38 @@ export const identity = {
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
 // boarded family's declared action, keyed by the row's family
-// address — the id-switch dispatch died with them. A family-less
-// row (the declared fallback) rides the legacy lane arms below —
-// never a silent second copy.
-export const ACTION_BINDINGS: Record<string, Binding> = {
-  [pixal3dDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(pixal3dDecl, 'mesh'), p, model, g, runId),
-  [trellis2NativeDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(trellis2NativeDecl, 'mesh'), p, model, g, runId),
-  [transferRigDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(transferRigDecl, 'transfer'), p, model, g, runId),
+// address — the id-switch dispatch died with them. THE PLUGIN LAW
+// (L3 cure): the DECL resolves from the family's SEAT
+// (family-seats.ts) at compose time — the verb map below is the
+// card's declared compose contract (which action each family
+// composes), keyed by the LITERAL family ids; a missing family
+// package refuses at the dispatch's own loud voice below, never at
+// this module's load. A family-less row (the declared fallback)
+// refuses here too — never a silent second copy.
+const FAMILY_ACTIONS: Record<string, 'mesh' | 'transfer'> = {
+  'pixal3d': 'mesh',
+  'trellis2-native': 'mesh',
+  'transfer-rig': 'transfer',
+}
+
+export function composeFamilyAction(
+  p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string,
+): void {
+  const family = String(model.family ?? model.id)
+  const verb = FAMILY_ACTIONS[family]
+  const seat = verb === undefined ? undefined : seatOf(family)
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${family}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer-rig) composes its own segment; this address owns none (a family package absent from the install refuses here, by name)`)
+  }
+  void instantiateAction(declaredAction(seat.decl, verb), p, model, g, runId)
 }
 
 export function apply(ctx: Context): void {
+  // THE PLUGIN LAW (L3): prime the family seats fire-and-forget —
+  // registration NEVER waits on a family package (a missing one
+  // costs its own seat; the compose seat reads what primed).
+  void primeFamilySeats()
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'img-to-mesh',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
@@ -142,8 +164,12 @@ export function apply(ctx: Context): void {
     // boarded order IS the default order (2026-09-15: Pixal3D
     // first — the operator's standing pick; the discovery arms
     // derive the default family/service from boarded[0], the picker
-    // lists in this order).
-    boarded: [pixal3dDecl.id, trellis2NativeDecl.id, transferRigDecl.id],
+    // lists in this order). THE PLUGIN LAW (L3): literal family ids
+    // — the packages resolve through ./family-seats.ts (guarded
+    // dynamic seats, primed at registration); a missing family
+    // package costs its OWN seat, never this card's load. The
+    // binding is judged by the family-coverage wall on the dev tree.
+    boarded: ['pixal3d', 'trellis2-native', 'transfer-rig'],
     tags: ['3d', 'image', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -218,18 +244,13 @@ export function apply(ctx: Context): void {
       }
       // The arm IS the family's declared action (runId rides the
       // signature; prefixes are family constants, not run-scoped,
-      // not knobs).
-      const bound = ACTION_BINDINGS[model.family ?? model.id]
-      if (bound) bound(doc, model, g, runId)
-      else {
-        // THE DECLARED REFUSAL (the multi-family law): every boarded
-        // family composes its OWN declared segment above; an address
-        // that owns none refuses HERE — a multi-family card never
-        // guesses a sibling's lane silently (the kit arms stay as
-        // the byte-oracles until the final interlock retires them).
-        throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer-rig) composes its own segment; this address owns none`)
-      }
+      // not knobs). THE PLUGIN LAW (L3): the DECL rides the family's
+      // seat; the refusal below is the dispatch's own loud voice —
+      // a multi-family card never guesses a sibling's lane silently,
+      // and a family package absent from the install refuses here,
+      // by name (the kit arms stay as the byte-oracles until the
+      // final interlock retires them).
+      composeFamilyAction(doc, model, g, runId)
     },
   }))
 }

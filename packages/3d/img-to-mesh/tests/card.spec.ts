@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
 import { resolveCardFlowOutputs } from '@melite/comfyui-cordis'
 import { fieldsOf, type FormSpecDoc, type SchemaEnvelope } from "@melite/card-base/client";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -39,6 +39,10 @@ let pixal: ModelFacts;
 let rig: ModelFacts;
 
 beforeAll(async () => {
+  // THE PLUGIN LAW (L3): the compose seats resolve from the families'
+  // SEATS — primed here before any compose arm (idempotent; the
+  // registration's own fire-and-forget priming races these arms).
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("img-to-mesh")!;
   assert.ok(def, "the composition root serves the img-to-mesh card");
   trellis = facts.models["trellis2-native"]!;
@@ -284,11 +288,11 @@ describe("the dual-face law: the root is the row-mount marker", () => {
 
 // ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
 // EVERY facts row the img-to-mesh card serves: (1) the row's OWNING
-// FAMILY holds an ACTION_BINDINGS row — no address silently rides
-// the legacy id-switch while its siblings compose the declared
+// FAMILY holds a family seat (family-seats.ts) — no address silently
+// rides the legacy id-switch while its siblings compose the declared
 // segment; (2) the row composes ITS OWN declared segment — the lift
 // saves the textured glb, the rig copy saves the rigged glb. The
-// declared fallback (a family-less row) rides the legacy arms.
+// declared fallback (a family-less row) refuses loud.
 describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
   const rows = Object.values(facts.models).filter((m) => m.card === "img-to-mesh");
 
@@ -305,8 +309,8 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     const saveClass = isRig ? "SaveRiggedModel" : "Save3DAdvanced";
     it(`address '${row.id}' (family '${fam}') is bound and composes its own truth`, () => {
       assert.ok(
-        fam in ACTION_BINDINGS,
-        `family '${fam}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy id-switch`,
+        seatOf(fam) !== undefined,
+        `family '${fam}' holds no family seat — address '${row.id}' would silently ride the legacy id-switch`,
       );
       const g = new GraphBuilder();
       def.compose(def.schema(params), row, g, `wall_${row.id}`);

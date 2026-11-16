@@ -27,8 +27,10 @@ import type {} from '@melite/comfyui-card-kit/service-faces'
 // preview.figure claim, rendered by the base form's mesh stage.
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, finalizeAnny, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
-import { DECL as annyDecl } from '@melite/models-anny'
+import { declaredAction, finalizeAnny, instantiateAction } from '@melite/comfyui-card-kit'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 import { bag } from '@melite/contracts/extraKeys'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
@@ -78,15 +80,32 @@ export const identity = {
   icon: 'person',
 }
 
-// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
-// boarded family's declared compose action, keyed by the row's
-// family address. A family-less row (the declared fallback) rides
-// the legacy lane arm below — never a silent second copy.
-export const ACTION_BINDINGS: Record<string, Binding> = {
-  [annyDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(annyDecl, 'compose'), p, model, g, runId),
+// THE FAMILY BINDING (the atom vocabulary, stroke 3): the boarded
+// family's declared compose action, keyed by the row's family
+// address. THE PLUGIN LAW (L3 cure): the binding resolves from the
+// family's SEAT (family-seats.ts) at compose time — one seat-driven
+// dispatch replaces the per-family closure table, and a missing
+// family package refuses at the dispatch's own loud voice below,
+// never at this module's load. Keyed by the OWNING FAMILY
+// (model.family, never model.id); the id is the LITERAL the
+// family-coverage wall judges on the dev tree.
+export function composeFamilyAction(
+  p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string,
+): void {
+  const family = String(model.family ?? model.id)
+  const seat = seatOf(family)
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${family}' on the anny card — every boarded family (anny) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+  }
+  void instantiateAction(declaredAction(seat.decl, 'compose'), p, model, g, runId)
 }
 
 export function apply(ctx: Context): void {
+  // THE PLUGIN LAW (L3): prime the family seat fire-and-forget —
+  // registration NEVER waits on the family package (a missing one
+  // costs its own seat; the compose seat reads what primed).
+  void primeFamilySeats()
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'anny',
     // no model families — a pure-tool card (requiresModel: false
@@ -95,7 +114,7 @@ export function apply(ctx: Context): void {
     requiresModel: false,
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'anny',
-    boarded: [annyDecl.id],
+    boarded: ['anny'],
     tags: ['3d', 'character', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -131,12 +150,7 @@ export function apply(ctx: Context): void {
       // draft carrying a retired turnaround knob dies here). The
       // composer's reads below are reads of the GATED doc.
       const doc = gatedResolve('anny', schemaFn, ['model'], p)
-      const bound = ACTION_BINDINGS[model.family ?? model.id]
-      if (bound) bound(doc, model, g, runId)
-      else {
-        throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the anny card — every boarded family (anny) composes its own declared segment; this address owns none`)
-      }
+      composeFamilyAction(doc, model, g, runId)
     },
     finalize: finalizeAnny,
     // THE NATIVE FIGURE (stroke 90): before any run lands, the mesh

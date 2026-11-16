@@ -9,12 +9,17 @@ import { loadCardDefs, theService } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { resolveCardFlowOutputs } from '@melite/comfyui-cordis'
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
+import { primeFamilySeats } from "../src/family-seats.ts";
 
 const DUMMY_MODEL = { id: "", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 
 let def: CardDefinition;
 
 beforeAll(async () => {
+  // THE PLUGIN LAW (L3): the compose lanes resolve the lane families'
+  // SEATS — primed here before any compose arm (idempotent; the
+  // registration's own fire-and-forget priming races these arms).
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("rig")!;
   assert.ok(def, "the composition root serves the rig card");
 });

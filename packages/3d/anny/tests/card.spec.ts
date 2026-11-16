@@ -19,7 +19,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
 import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -39,6 +39,10 @@ const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 let def: CardDefinition;
 
 beforeAll(async () => {
+  // THE PLUGIN LAW (L3): the compose seat resolves from the family's
+  // SEAT — primed here before any compose arm (idempotent; the
+  // registration's own fire-and-forget priming races these arms).
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("anny")!;
   assert.ok(def, "the composition root serves the anny card");
 });
@@ -267,12 +271,12 @@ describe("the anny compose gate", () => {
 
 // ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
 // EVERY facts row this card serves: (1) the row's OWNING FAMILY
-// holds an ACTION_BINDINGS row — no address silently rides the
-// legacy lane while its siblings compose the declared segment; (2)
-// the row composes ITS OWN declared segment — the composite bake is
-// the terminal (no SaveImage tail since the blender lane died).
-// The declared fallback (a family-less row) rides the legacy lane in
-// the open, never a silent second copy.
+// holds a family seat (family-seats.ts) — no address silently rides
+// the legacy lane while its siblings compose the declared segment;
+// (2) the row composes ITS OWN declared segment — the composite bake
+// is the terminal (no SaveImage tail since the blender lane died).
+// The declared fallback (a family-less row) refuses loud, never a
+// silent second copy.
 describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
   const rows = Object.values(facts.models).filter((m) => m.card === "anny");
 
@@ -283,8 +287,8 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
   for (const row of rows) {
     it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
       assert.ok(
-        (row.family ?? row.id) in ACTION_BINDINGS,
-        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+        seatOf(row.family ?? row.id) !== undefined,
+        `family '${row.family ?? row.id}' holds no family seat — address '${row.id}' would silently ride the legacy lane`,
       );
       const g = new GraphBuilder();
       def.compose(def.schema({}), row, g, `wall_${row.id}`);

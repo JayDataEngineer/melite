@@ -42,12 +42,34 @@ function familyFibers(ctx) {
  * @param svc — the composition's models service. */
 async function censusPass(ctx, svc) {
     const fibers = familyFibers(ctx);
+    // THE PER-FAMILY RETIREMENT (boot isolation, 2026-11-16 — the
+    // plugin law: a family is a plugin to the models plane, "the Card
+    // can exist without a Family" cuts the boot way too): a fiber that
+    // refuses startup RETIRES ALONE — logged loud by name, excluded
+    // from the census — and the composition arms with the survivors.
+    // A TOTAL outage (every censused family refused) still fails the
+    // settle: zero families is not plugin absence, it is an estate
+    // defect, and booting an empty table would hide the outage behind
+    // the plugin law's degrade voice.
+    const dead = [];
     for (const fiber of fibers) {
-        // rethrows the family's own startup refusal — the atomicity law
-        await fiber.await();
+        try {
+            await fiber.await();
+        }
+        catch (err) {
+            dead.push({ name: fiber.name ?? "(unnamed family)", err });
+        }
     }
-    if (svc.familyCount() !== fibers.length) {
-        throw new ModelError(`the composition registered ${svc.familyCount()} families but ${fibers.length} family fibers mounted — a family registered nothing (the transactional gate)`);
+    if (fibers.length > 0 && dead.length === fibers.length) {
+        throw new ModelError(`every family fiber refused at boot (${dead.map((d) => d.name).join(", ")}) — a total family-plane outage is an estate defect, not plugin absence: ` +
+            dead.map((d) => `${d.name}: ${d.err instanceof Error ? d.err.message : String(d.err)}`).join("; "));
+    }
+    for (const d of dead) {
+        ctx.logger.error(new ModelError(`family fiber ${d.name} refused at boot and retired alone — the composition arms with the survivors (${fibers.length - dead.length} of ${fibers.length}): ${d.err instanceof Error ? d.err.message : String(d.err)}`));
+    }
+    const settled = fibers.length - dead.length;
+    if (svc.familyCount() !== settled) {
+        throw new ModelError(`the composition registered ${svc.familyCount()} families but ${settled} family fibers mounted — a family registered nothing (the transactional gate)`);
     }
     await validateBootContracts(svc);
     armModelsSeat(svc, import.meta.url);
