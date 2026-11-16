@@ -43,3 +43,10 @@ across segments, skinnable onto SOMAX-rigged character GLBs.
   yet — they return server-side when the NPZ→JOINTS bridge exists.
 - The checkpoint rides the deployment's CHECKPOINT_DIR
   (Kimodo-SOMA-RP-v1.1); the loader is VRAM-heavy (~17 GB peak).
+
+## The Run press
+
+- Run: THE USER'S Run press on the card — never yours by default. THE LANE LAW: when both lanes feel true, the
+  LANE TEST decides — is the brief addressed to you as a DELIVERABLE? Then compose it fully and say it is ready to run.
+  A question or joint exploration is not a deliverable — answer it and shape the bench; either way your contract ends
+  at melite_construct and "ready to run".

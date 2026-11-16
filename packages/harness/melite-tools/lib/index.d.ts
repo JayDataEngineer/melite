@@ -31,6 +31,8 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
+import { type EstateCall } from './estate.js';
+import type { ToolDefinition } from './types.js';
 import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.js';
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
 export { makeEstate, makeEstateRequest } from './estate.js';
@@ -111,5 +113,22 @@ export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_loa
  *  members, `tools` is the dsh-tools Context augmentation, and the
  *  commands seam rides the dynamic child inject below with its
  *  structural callback parameter. */
+/** One card lane's guarded seat: present → the built tool; absent
+ * (package missing or a pruned transitive) → the named-absent
+ * callback answers and the lane is skipped, never thrown. */
+export interface CardLaneSeat {
+    lane: string;
+    seat: () => Promise<ToolDefinition>;
+}
+/** THE OPTIONAL-LANE LOADER (operator law 2026-11-16): every card
+ * tool package loads through a guarded door. A load failure of ANY
+ * shape — ERR_MODULE_NOT_FOUND for the package, or the module's own
+ * deep chain dying on a pruned dependency (the rc.3 burn) — costs
+ * exactly that lane; the harness, the estate and the other lanes
+ * boot. Absence is named through onAbsent, never silent. */
+/** The lane table (exported for its wall: the REAL seats, driven
+ * under a mocked-away package — the depth axis). */
+export declare function cardLaneSeats(call: EstateCall): CardLaneSeat[];
+export declare function loadCardLanes(seats: CardLaneSeat[], onAbsent: (lane: string, err: unknown) => void): Promise<ToolDefinition[]>;
 export declare function apply(ctx: Context, config?: Config): Promise<void>;
 //# sourceMappingURL=index.d.ts.map

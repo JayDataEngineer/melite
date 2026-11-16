@@ -37,13 +37,18 @@ import Schema from '@deepseek-ai/schemastery'
 // hosts compose packages, never fetch registries). The fetch
 // registrar (tools/card-tools.ts) died with its last row — every
 // card tool composes through its package now.
-import { buildMusicTool } from '@melite/audio-music/tool'
-import { buildTtsTool } from '@melite/audio-tts/tool'
-import { buildImageEditTool } from '@melite/image-image-edit/tool'
-import { buildImageGenTool } from '@melite/image-image-gen/tool'
-import { buildMotionTool } from '@melite/motion-motion/tool'
-import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
-import { makeEstate, makeEstateRequest, asEstateCall } from './estate.ts'
+//
+// THE OPTIONAL-LANE LAW (operator, 2026-11-16 — the rc.3 deployed
+// burn): a card package is an OPTIONAL lane seat. A deployed tree
+// installs a SUBSET (the carriers its lock declares), and an
+// absent lane — the package itself missing, or PRESENT with a
+// pruned dependency, the exact burn: image-image-edit sat installed
+// while its @melite/models-h3-image-edit dep did not, and the load
+// chain died from inside — must NEVER kill the harness. The
+// static imports are gone: each lane loads through a guarded door
+// in loadCardLanes(); an absent lane is unregistered + NAMED, the
+// estate and every present lane boot.
+import { makeEstate, makeEstateRequest, asEstateCall, type EstateCall } from './estate.ts'
 import { readRunsDelegation, writeRunsDelegation, resolveDelegationAtBoot } from './runsDelegation.ts'
 import { runStatus } from './tools/run-status.ts'
 import { meliteFlow } from './tools/melite-flow.ts'
@@ -177,6 +182,48 @@ export const MELITE_TOOL_NAMES = [
  *  members, `tools` is the dsh-tools Context augmentation, and the
  *  commands seam rides the dynamic child inject below with its
  *  structural callback parameter. */
+/** One card lane's guarded seat: present → the built tool; absent
+ * (package missing or a pruned transitive) → the named-absent
+ * callback answers and the lane is skipped, never thrown. */
+export interface CardLaneSeat {
+  lane: string
+  seat: () => Promise<ToolDefinition>
+}
+
+/** THE OPTIONAL-LANE LOADER (operator law 2026-11-16): every card
+ * tool package loads through a guarded door. A load failure of ANY
+ * shape — ERR_MODULE_NOT_FOUND for the package, or the module's own
+ * deep chain dying on a pruned dependency (the rc.3 burn) — costs
+ * exactly that lane; the harness, the estate and the other lanes
+ * boot. Absence is named through onAbsent, never silent. */
+/** The lane table (exported for its wall: the REAL seats, driven
+ * under a mocked-away package — the depth axis). */
+export function cardLaneSeats(call: EstateCall): CardLaneSeat[] {
+  return [
+    { lane: 'audio-music', seat: async () => (await import('@melite/audio-music/tool')).buildMusicTool(call) },
+    { lane: 'audio-tts', seat: async () => (await import('@melite/audio-tts/tool')).buildTtsTool(call) },
+    { lane: 'image-edit', seat: async () => (await import('@melite/image-image-edit/tool')).buildImageEditTool(call) },
+    { lane: 'image-gen', seat: async () => (await import('@melite/image-image-gen/tool')).buildImageGenTool(call) },
+    { lane: 'motion', seat: async () => (await import('@melite/motion-motion/tool')).buildMotionTool(call) },
+    { lane: 'h3-timeline', seat: async () => (await import('@melite/video-h3-timeline/tool')).buildH3TimelineTool(call) },
+  ]
+}
+
+export async function loadCardLanes(
+  seats: CardLaneSeat[],
+  onAbsent: (lane: string, err: unknown) => void,
+): Promise<ToolDefinition[]> {
+  const tools: ToolDefinition[] = []
+  for (const { lane, seat } of seats) {
+    try {
+      tools.push(await seat())
+    } catch (err) {
+      onAbsent(lane, err)
+    }
+  }
+  return tools
+}
+
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const c = ctx
   // THE TRANSPORT (R2b, the remotes migration): the tools call the
@@ -413,18 +460,22 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // runs start at the user's Run press; a direct engine call from
   // a chat agent bypasses the bench, the queue and every marriage.
   if (cardTools) {
+    // THE LANE TABLE (the optional-lane law): literal dynamic
+    // imports keep the resolution, the types and knip's tracer on
+    // the package seam; the guard is the ONLY behavioral change.
+    const lanes = await loadCardLanes(cardLaneSeats(call),
+      (lane, err) => {
+        const code = (err as NodeJS.ErrnoException).code
+        c.logger.warn(
+          `melite-tools: card lane ${lane} ABSENT${code ? ` (${code})` : ''} — the estate boots without it (a deployed tree installs a subset; an absent lane costs its own tool, never the harness): ${String((err as Error).message ?? err)}`,
+        )
+      },
+    )
     // Registrations are effects (primer: "keep the related work in
     // one effect so disposal unwinds in the intended sequence") —
     // the gate's disposers unwind as one block on unload.
     c.effect(() => {
-      const stop = [
-        c.tools.register(buildMusicTool(call)),
-        c.tools.register(buildTtsTool(call)),
-        c.tools.register(buildImageEditTool(call)),
-        c.tools.register(buildImageGenTool(call)),
-        c.tools.register(buildMotionTool(call)),
-        c.tools.register(buildH3TimelineTool(call)),
-      ]
+      const stop = lanes.map((tool) => c.tools.register(tool))
       return () => {
         for (const dispose of stop) dispose()
       }

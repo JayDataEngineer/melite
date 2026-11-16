@@ -39,6 +39,7 @@ import type {} from '@melite/estate-drafts'
 // unknown-run arm discriminates on them) — same merge idiom.
 import type {} from '@melite/estate-queue'
 import type { EstateCall } from '@melite/estate-call'
+export type { EstateCall }
 
 /**
  * DYING SHIM (HTTP-era refusal carrier). The seats never throw it;

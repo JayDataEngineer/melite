@@ -1,5 +1,6 @@
 import { type DraftId } from '@melite/contracts/benchStage';
 import type { EstateCall } from '@melite/estate-call';
+export type { EstateCall };
 /**
  * DYING SHIM (HTTP-era refusal carrier). The seats never throw it;
  * only lanes still awaiting their remotes keep instanceof arms for
