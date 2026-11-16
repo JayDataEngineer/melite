@@ -154,11 +154,17 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
       `the browser tier RUNS but does not HASH (a green carry would ride an edit here):\n  ${unhashed.join('\n  ')}`).toEqual([])
   })
 
-  it('THE DEAD-ROW LAW (pipeline audit 2026-11-17): every declared tier input is actually RUN by the battery — a declared-but-never-tiered row is a lease that never fires', () => {
+  it('THE DEAD-ROW LAW (pipeline audit 2026-11-17): every declared tier input is actually RUN — a declared-but-never-run row is a lease that never fires', () => {
     const battery = readFileSync(join(process.cwd(), 'tools/hook-full-battery.mjs'), 'utf8')
+    // THE PRE-PUSH SEATS (push-pipeline rework, 2026-11-17): the
+    // walls-node tier is the lefthook walls job's own lease — it
+    // fires from tools/hook-walls-leased.mjs, not the battery. A
+    // declared tier must be run by ONE named runner; a row no
+    // runner invokes is a dead lease.
+    const seats = readFileSync(join(process.cwd(), 'tools/hook-walls-leased.mjs'), 'utf8')
     for (const id of Object.keys(TIER_INPUTS)) {
-      expect(battery.includes(`tier("${id}"`) || battery.includes(`"${id}"`) || battery.includes(`tier('${id}'`),
-        `tier ${id} is declared in TIER_INPUTS but the battery never runs it — delete the row or run the tier`).toBe(true)
+      expect(battery.includes(`tier("${id}"`) || battery.includes(`"${id}"`) || battery.includes(`tier('${id}'`) || seats.includes(`"${id}"`),
+        `tier ${id} is declared in TIER_INPUTS but neither the battery nor a pre-push seat runs it — delete the row or run the tier`).toBe(true)
     }
   })
 

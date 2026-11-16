@@ -89,6 +89,11 @@ export const TIER_INPUTS = {
   tsc: ["packages/**/src/**", "packages/**/tsconfig*.json", "packages/**/package.json", "pnpm-workspace.yaml"],
   build: ["packages/**/src/**", "packages/**/package.json", "package.json", "tools/build-plane.mjs", "scripts/*.mjs"],
   walls: ["tests/walls/**", "packages/**/tests/**", "packages/**/src/**", "vitest*.ts", "vitest*.mts", "packages/**/vitest*.ts"],
+  // THE PRE-PUSH NODE SEAT (push-pipeline rework, 2026-11-17): the
+  // lefthook walls job once ran the node project un-leased on EVERY
+  // push — the same suite the battery's walls tier owns, paid twice.
+  // Its green now carries on its own lease, same inputs as walls.
+  "walls-node": ["tests/walls/**", "packages/**/tests/**", "packages/**/src/**", "vitest*.ts", "vitest*.mts", "packages/**/vitest*.ts"],
   expected: ["tests/expected/**", "packages/**/src/**", "packages/**/tests/**", "vitest.expected.config.ts"],
   bench: ["tests/bench/**", "packages/**/src/**", "packages/**/tests/**", "vitest.bench.config.ts"],
   snapshot: ["tests/snapshot/**", "packages/**/src/**", "packages/**/tests/**", "vitest.snapshot.config.ts"],

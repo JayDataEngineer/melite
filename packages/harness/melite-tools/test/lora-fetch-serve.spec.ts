@@ -19,7 +19,7 @@
 //      only the discover touch (the seat the lora recipe rides: a
 //      session that loads a card and then fetches a lora for it needs
 //      comfy_manage seated by the load, too).
-import { describe, test } from 'vitest'
+import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
 import { formSpecArm } from '../src/discovery.ts'
@@ -29,6 +29,18 @@ import { apply } from '../src/index.ts'
 import type { Estate } from '../src/estate.ts'
 import { fakeEstate } from './fake-estate.ts'
 import { cascadeInit } from '@melite/comfyui-cordis'
+
+// THE HERMETIC DELEGATION PIN (the red this cured: the apply arm
+// judged the HOST's persisted toggle). apply() reads the operator's
+// real ~/.dsh/melite-runs-state.json at boot — a machine with runs
+// delegation ON seats the estate doors EAGERLY and the arm's first
+// assert ("unseated at apply") fails on host state, not on code.
+// The arm judges the DEFAULT boot (no persisted record); the mock
+// pins the read to absent for this file's whole life.
+vi.mock('../src/runsDelegation.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/runsDelegation.ts')>()
+  return { ...actual, readRunsDelegation: () => null }
+})
 
 const FETCHED = 'krea-2/krea2_fetched.safetensors'
 const FOREIGN = 'z-image/z_other.safetensors'
