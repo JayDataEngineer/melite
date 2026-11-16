@@ -18,8 +18,9 @@
  * weightsPresent().
  */
 import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
 import { EnginesService } from '../../packages/engines/contract/src/engines.ts'
@@ -78,6 +79,59 @@ export interface World {
   svc: RunsRuntimeService
   stateRoot: string
   stop(): void
+}
+
+/** THE ENGINE-OWNED FREE DOOR (the rc.3 render lane, 2026-11-16):
+ * the serial render lane's deepest rows (film-run's full stack)
+ * leave residency the estate never evicts — and the engine's OWN
+ * eviction path crashes under that pressure (upstream
+ * model_management.free_memory indexes current_loaded_models out of
+ * range, verbatim in the engine log; Layer B is not ours to patch).
+ * The user path is the manage plane's free door: native /free
+ * CHAINED with the warmed-seat release, answering what it released.
+ * A row that needs the card calls THIS before it presses — the
+ * door the estate ships, never a raw engine HTTP poke. */
+export async function freeEngineResidency(w: { stateRoot: string }): Promise<void> {
+  const { dispatchManage } = await import('../../packages/harness/estate-queue/src/managePlane.ts')
+  const ctx = {
+    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
+    stateRoots: [w.stateRoot],
+    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
+    models: { allDecls: () => [] },
+    timeout: (cb: () => void) => { const t = setTimeout(cb, 0); return () => clearTimeout(t) },
+  } as never
+  const [, env] = await dispatchManage({ action: 'free' }, ctx)
+  console.log(`[free-door] ${String((env as { detail?: string }).detail ?? 'residency freed')}`)
+}
+
+/** THE ESTATE-OWNED COLD-CARD HANDOFF (round 8): native /free answers
+ * "issued (next worker iteration)" — on an IDLE queue no worker turn
+ * comes, and under deep residency the engine's OWN eviction crashes
+ * (upstream model_management.free_memory IndexError, verbatim in the
+ * engine log — Layer B is not ours to patch). A row whose budget
+ * probe still refuses after free + settle is pressure-locked: the
+ * lawful cure is the manage plane's restart door (/manager/reboot —
+ * systemd re-spawns the engine), then the engine-up poll. Estate
+ * doors only, never systemctl from a test. */
+export async function restartEngineResidency(w: { stateRoot: string }): Promise<void> {
+  const { dispatchManage } = await import('../../packages/harness/estate-queue/src/managePlane.ts')
+  const ctx = {
+    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
+    stateRoots: [w.stateRoot],
+    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
+    models: { allDecls: () => [] },
+    timeout: (cb: () => void) => { const t = setTimeout(cb, 0); return () => clearTimeout(t) },
+  } as never
+  const [, env] = await dispatchManage({ action: 'restart' }, ctx)
+  console.log(`[restart-door] ${String((env as { detail?: string }).detail ?? 'reboot issued')}`)
+  for (let i = 0; i < 60; i++) {
+    try {
+      const r = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/system_stats`)
+      if (r.ok) { console.log(`[restart-door] engine up after ${i * 2}s`); return }
+    } catch { /* booting */ }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  throw new Error('[restart-door] engine never came back after reboot (120s)')
 }
 
 export async function bootWorld(tag: string): Promise<World> {
@@ -145,11 +199,18 @@ export async function runCard(w: World, body: Record<string, unknown>, tag: stri
   assert.equal(row?.status, 'completed', tag + ': the live run must complete (error was: ' + (row?.error ?? '') + ')')
   assert.ok((row?.artifacts?.length ?? 0) >= 1, tag + ': at least one artifact harvested')
   const runDir = join(w.stateRoot, 'output', ans.run_id)
-  const flow = JSON.parse(readFileSync(join(runDir, '_flow.json'), 'utf8')) as {
-    status: string
-    graph: Array<{ params?: { workflow?: Record<string, unknown> } }>
+  // THE SIDECAR SETTLE (2026-11-16, full-lanes round 4): the queue row
+  // flips terminal FIRST; the _flow.json sidecar write lags it under a
+  // loaded engine (arena-warmup burned here: queue completed, sidecar
+  // still 'running' at the assert). Poll the sidecar to terminal on
+  // its OWN budget before judging it.
+  let flow: { status: string, graph: Array<{ params?: { workflow?: Record<string, unknown> } }> } | undefined
+  for (let i = 0; i < 240; i++) {
+    flow = JSON.parse(readFileSync(join(runDir, '_flow.json'), 'utf8')) as typeof flow
+    if (flow.status !== 'queued' && flow.status !== 'running') break
+    await new Promise((r) => setTimeout(r, 500))
   }
-  assert.equal(flow.status, 'completed', tag + ': the sidecar carries the terminal status')
+  assert.equal(flow?.status, 'completed', tag + ': the sidecar carries the terminal status')
   const stageUrl = row!.stages?.[0]?.url ?? ''
   return {
     status: row!.status!,
@@ -294,6 +355,29 @@ export function byClass(s: WorkflowBearer, cls: string): Array<[string, { class_
  * door. */
 export async function uploadAnchorPng(tag: string): Promise<string> {
   return uploadAnchorPngAt({ engineUrl: `http://${ENGINE_HOST}:${ENGINE_PORT}` }, tag)
+}
+
+/** Stage the h3 reshoot/extend rows' source clip (the swap film)
+ * as an ESTATE-SIDE absolute path — the estate stages local paths
+ * into the engine input dir itself (the q21-crop + synthRefWav
+ * precedents; the engine has NO /upload/video door, only image and
+ * mask — a video upload answers 405, the round-7 proof). THE
+ * ROUND-7 BURN: the rows named 'swap_film_v1.mp4' as a bare engine
+ * name without staging anything, leaning on some earlier session's
+ * leftover — on this box the extend row timed out at the compose
+ * gate (the source leaf never existed). The row now copies the
+ * repo's own 2s fixture (swap-film-2s.mp4 — H264 + an AAC track:
+ * the estate's admission gate REFUSES a silent source, "a silent
+ * source dies mid-render inside the video loader") into the
+ * WORLD's input dir under the name the rows address and hands the
+ * absolute path. */
+export function stageSwapFilm(w: World, tag: string): string {
+  const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+  const dir = join(w.stateRoot, 'input')
+  mkdirSync(dir, { recursive: true })
+  const dest = join(dir, `swap_film_${tag}.mp4`)
+  copyFileSync(join(repoRoot, 'tests', 'fixtures', 'swap-film-2s.mp4'), dest)
+  return dest
 }
 
 /** Run one row's world lifecycle (boot → body → dispose) — the

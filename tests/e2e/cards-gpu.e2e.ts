@@ -35,6 +35,7 @@ import {
   nodesWith,
   queueCard,
   runCard,
+  freeEngineResidency,
   stageAnchorPng,
   synthRefWav,
   uploadAnchorPng,
@@ -220,6 +221,10 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
 
   it.skipIf(!weightsPresent('trellis2-native') || !GPU_RENDER)('trellis2-native fast: the preview-tier pill payload lifts and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-trellis', async (w) => {
+      // THE ENGINE-OWNED FREE DOOR: the sidecar never reached terminal
+      // on the residency-loaded card; the lift needs headroom the
+      // engine's own eviction fails to make (upstream IndexError class).
+      await freeEngineResidency(w)
       const anchor = await uploadAnchorPng('trellis fast')
       const s = await runCard(w, {
         model: 'trellis2-native', variant: '1024', input_image: anchor, seed: 7,
@@ -405,7 +410,13 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
       assert.deepEqual(latent[0]![1].inputs?.seconds, [enc[0]![0], 1], 'the latent length rides the AR link')
       assert.equal(enc[0]![1].inputs?.max_duration, 360, 'the encoder rides the same duration')
     })
-  }, 120_000)
+    // THE COLD-STOP BUDGET (2026-11-16, the render lane): a QUEUES
+    // stamp still waits out the engine's cold model load + the
+    // 240s settle ceiling — the 120s default timed this row out on
+    // the residency-loaded card and its teardown interrupt killed
+    // the NEXT row's run in flight (the yue2 cascade). Same
+    // headroom as the film rows.
+  }, 300_000)
 
   it.skipIf(!weightsPresent('yue2') || !GPU_RENDER)('yue2 short-sting: the second music lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-yue2', async (w) => {

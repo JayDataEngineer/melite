@@ -36,6 +36,7 @@ import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { mintSandbox } from '../harness.ts'
+import { freeEngineResidency, restartEngineResidency } from './gpu-harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, engineVramFits, GPU_RENDER } from './engine-gate.ts'
 
 // fileURLToPath, never URL.pathname (the windows CI doubled-drive
@@ -76,8 +77,34 @@ describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
       // armed and the execute door refused at 955 MiB free hours
       // later. The defer belongs where the budget is judged: here,
       // immediately before the press.
+      // THE RENDER LANE'S FREE-FIRST LAW (2026-11-16): in the serial
+      // render lane the earlier rows load residency the estate never
+      // evicts, and the probe/press race burns (attempt: probed
+      // 15500+, pressed at 463 free). Free the card through the
+      // estate's own door FIRST, then probe — a still-under probe
+      // names the machine's true state.
+      await freeEngineResidency({ stateRoot: join(REPO_ROOT, 'data', 'runtime') })
+      // THE EVICTION SETTLE (round 8): native /free answers "issued
+      // (next worker iteration)" — the eviction LANDS on the worker's
+      // next turn, not at the HTTP response. Probing immediately
+      // after the free reads the still-loaded card (round 6: 844
+      // MiB, refusal). Settle the probe on its own budget before
+      // judging — a still-under probe after the settle names the
+      // machine's true state.
+      for (let i = 0; i < 24 && !(await engineVramFits(15_500)); i++) {
+        await new Promise((r) => setTimeout(r, 5_000))
+      }
+      // THE PRESSURE-LOCKED ESCAPE (round 8): free + settle cannot
+      // move a card whose eviction crashes upstream (the IndexError
+      // class — scoped: 474 → 1122 MiB, never near 15500). The row
+      // restarts through the estate's own door and re-probes on the
+      // cold card; a still-under probe names the machine, not the
+      // lane.
       if (!(await engineVramFits(15_500)) && process.env['MELITE_E2E_FORCE'] !== '1') {
-        t.skip('engine VRAM under the estimator stage\u2019s 15500 MiB budget (residency the estate never evicts) — deferring, a skip is not a cost signal')
+        await restartEngineResidency({ stateRoot: join(REPO_ROOT, 'data', 'runtime') })
+      }
+      if (!(await engineVramFits(15_500)) && process.env['MELITE_E2E_FORCE'] !== '1') {
+        t.skip('engine VRAM under the estimator stage\u2019s 15500 MiB budget even after the free door (the machine\u2019s true state) — deferring, a skip is not a cost signal')
       }
       const sandbox = mintSandbox('registry-flow-e2e-')
       const ctx = new Context()

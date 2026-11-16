@@ -48,7 +48,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bootWorld, stopWorld, runCard, nodesWith, firstBytes, type World, type Settled } from './gpu-harness.ts'
+import { bootWorld, stopWorld, runCard, freeEngineResidency, nodesWith, firstBytes, type World, type Settled } from './gpu-harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 import { bootModels } from '../../packages/engines/comfyui-cordis/src/models/models.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
@@ -113,7 +113,17 @@ describe.skipIf(!ARENA || !ENGINE_FREE)('the h3 velocity arena', () => {
       for (const arm of ARMS) {
         const since = new Date().toISOString()
         const t0 = Date.now()
-        const s = await runCard(w, { model: 'h3', calls: CLIP, seed: SEED, width: 448, height: 448, ...arm.body }, `arena-${arm.tag}`)
+        // THE MARKER WAIVER (the 4c2dc22a4 law, same as the reshoot
+        // row): the smoke text is scaffolding, not craft — waived
+        // loud, never silent; real craft rides LAWFUL_TEXT in the
+        // unit sweep.
+        // THE ARENA'S FREE-FIRST LAW (2026-11-16, round 4): the arms
+        // ride a card left loaded by the film tier's deep residency —
+        // free through the estate's own door before the first press so
+        // the warmup render is priced on an idle card, as the arena's
+        // SLA contract demands (sequential on an idle engine).
+        if (arm.tag === 'warmup') await freeEngineResidency(w)
+        const s = await runCard(w, { model: 'h3', calls: CLIP, seed: SEED, width: 448, height: 448, prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'], ...arm.body }, `arena-${arm.tag}`)
         const wall = (Date.now() - t0) / 1000
 
         // THE ARTIFACT IS REAL BYTES (every arm, before any verdict)
