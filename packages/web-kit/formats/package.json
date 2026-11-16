@@ -127,7 +127,7 @@
       "default": "./lib/index.js"
     }
   },
-  "version": "0.2.3-rc.5",
+  "version": "0.2.3-rc.4",
   "types": "./lib/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
