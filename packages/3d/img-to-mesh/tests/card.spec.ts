@@ -114,6 +114,31 @@ describe("the lift arms (one clear image → textured mesh)", () => {
     assert.ok(Object.keys(graph).length > 5, "the full official chain composes");
   });
 
+  it("THE OFFICIAL CALIBRATION IS THE DEFAULT (2026-11-17 holes burn): a no-pick run composes the template's RemeshMesh verbatim — drop_enclosed ON deleted TRELLIS's nested shells and punched the visible holes", () => {
+    const g = new GraphBuilder();
+    def.compose({ ...BASE, seed: 7 }, trellis, g, "r-hole");
+    const remesh = Object.values(g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>)
+      .find((n) => n.class_type === "RemeshMesh");
+    assert.ok(remesh, "the default run composes the remesh tail");
+    const inputs = remesh!.inputs!;
+    // the official template's RemeshMesh widgets: [768, "udf", false,
+    // false, false, 1, 0, false, 20, 0.01, 20000000] — qef,
+    // drop_inverted, drop_enclosed ALL false. The schema defaults
+    // carry no deviation: nothing in the default journey deletes
+    // mesh components.
+    assert.equal(inputs["sign_mode"], "udf", "the mode matches the template");
+    assert.equal(inputs["sign_mode.qef"], false, "qef defaults to the template's false");
+    assert.equal(inputs["sign_mode.drop_inverted_components"], false, "drop_inverted defaults to the template's false");
+    assert.equal(inputs["sign_mode.drop_enclosed_components"], false, "drop_enclosed defaults to the template's false — the holes burn's cause, dead as a default");
+    assert.equal(inputs["fix_poles"], false, "fix_poles defaults to the template's false");
+    assert.equal(inputs["resolution"], 768, "the template's 768 calibration");
+    assert.equal(inputs["band"], 1.0, "the template's band");
+    assert.equal(inputs["project_back"], 0.0, "the template's project_back");
+    assert.equal(inputs["smooth_iters"], 20, "the template's 20 smoothing iterations");
+    assert.equal(inputs["drop_small_components"], 0.01, "the template's small-component floor");
+    assert.equal(inputs["precluster_max_verts"], 20000000, "the template's precluster cap");
+  });
+
   it("the pixal arm composes on the pixel-aligned + MoGe lane", () => {
     const g = new GraphBuilder();
     def.compose({ ...BASE, camera_fov: "49.13", resolution: "1536" }, pixal, g, "r1");

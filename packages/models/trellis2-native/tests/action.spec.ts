@@ -104,7 +104,7 @@ describe("the trellis2-native mesh action — byte-stability (the compatibility 
     assert.equal(loudNode.inputs["fix_poles"], true, "fix_poles rides the param");
     assert.equal(loudNode.inputs["sign_mode"], "udf", "the mode itself stays the UDF lane");  });
 
-  it("the repaired recipe (qef + drop_enclosed ON — the melite repair default)", () => {
+  it("the repaired recipe (qef + drop_enclosed ON — an EXPLICIT operator pick, never a default: the 2026-11-17 holes burn killed the schema-default ON)", () => {
 
     const repaired = new GraphBuilder({});
     instantiateAction(mesh, { ...PARAMS, remesh_qef: true, remesh_drop_enclosed: true } as typeof PARAMS, FACTS, repaired, "probe-repaired");
