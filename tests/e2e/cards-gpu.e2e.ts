@@ -27,7 +27,7 @@ import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, GPU_RENDER } from './engine-gate.ts'
 import {
   type World,
   byClass,
@@ -45,7 +45,7 @@ import {
 const PROMPT_CUBE = 'a small red cube on a white field'
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: image-gen (the uncovered families)', () => {
-  it.skipIf(!weightsPresent('flux-klein'))('flux-klein default: the distilled lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('flux-klein') || !GPU_RENDER)('flux-klein default: the distilled lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-flux', async (w) => {
       const s = await runCard(w, {
         model: 'flux-klein', prompt: PROMPT_CUBE, width: 512, height: 512,
@@ -57,7 +57,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: image-gen (the uncovered families)', (
     })
   }, 240_000)
 
-  it.skipIf(!weightsPresent('anima'))('anima default: the parametric lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('anima') || !GPU_RENDER)('anima default: the parametric lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-anima', async (w) => {
       const s = await runCard(w, {
         model: 'anima', prompt: PROMPT_CUBE, width: 512, height: 512,
@@ -100,7 +100,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
   // rail), so weightsPresent is trivially true and the engine's own
   // weight gate refuses loud on a lean box. The gate stays as the
   // documented pattern seat, never a liveness proof.
-  it.skipIf(!weightsPresent('wd14'))('wd14 default: the tagger lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('wd14') || !GPU_RENDER)('wd14 default: the tagger lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-wd14', async (w) => {
       const anchor = await uploadAnchorPng('wd14 default')
       const s = await runCard(w, {
@@ -113,7 +113,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
     })
   }, 300_000)
 
-  it.skipIf(!weightsPresent('joytag'))('joytag default: the second tagger lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('joytag') || !GPU_RENDER)('joytag default: the second tagger lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-joytag', async (w) => {
       const anchor = await uploadAnchorPng('joytag default')
       const s = await runCard(w, {
@@ -129,7 +129,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
   // THE INTENT-MARKER GATE (audit 2026-10-31): florence2 declares
   // no lane_inputs — the loader node self-downloads; the gate is
   // the pattern seat, the engine judges the weights.
-  it.skipIf(!weightsPresent('florence2'))('florence2 default: the caption lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('florence2') || !GPU_RENDER)('florence2 default: the caption lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-florence2', async (w) => {
       const anchor = await uploadAnchorPng('florence2 default')
       const s = await runCard(w, {
@@ -143,7 +143,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('joycaption'))('joycaption default: the heavy caption lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('joycaption') || !GPU_RENDER)('joycaption default: the heavy caption lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-joycaption', async (w) => {
       const anchor = await uploadAnchorPng('joycaption default')
       const s = await runCard(w, {
@@ -157,7 +157,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('seedvr2-ema'))('seedvr2 preview-256: the pill payload composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('seedvr2-ema') || !GPU_RENDER)('seedvr2 preview-256: the pill payload composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-seedvr2', async (w) => {
       // THE ESTATE-FILE LAW: this card's input_image admission
       // refuses bare engine-side names — the anchor rides staged.
@@ -175,7 +175,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
   // THE INTENT-MARKER GATE (audit 2026-10-31): mask-select
   // declares provisions, not lane_inputs — the probe is trivially
   // true; absent weights refuse loud at the engine arm instead.
-  it.skipIf(!weightsPresent('mask-select'))('mask sam3-text: the detector lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('mask-select') || !GPU_RENDER)('mask sam3-text: the detector lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-mask', async (w) => {
       const anchor = await uploadAnchorPng('mask sam3')
       const s = await runCard(w, {
@@ -189,7 +189,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('input'))('input-prep passthrough: the stage lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('input') || !GPU_RENDER)('input-prep passthrough: the stage lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-input', async (w) => {
       const anchor = await uploadAnchorPng('input passthrough')
       const s = await runCard(w, {
@@ -205,7 +205,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: tagger, upscale, mask, input-prep (the
 })
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', () => {
-  it.skipIf(!weightsPresent('anny'))('anny default: the parametric bake composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('anny') || !GPU_RENDER)('anny default: the parametric bake composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-anny', async (w) => {
       const s = await runCard(w, {
         model: 'anny',
@@ -218,7 +218,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
     })
   }, 300_000)
 
-  it.skipIf(!weightsPresent('trellis2-native'))('trellis2-native fast: the preview-tier pill payload lifts and RUNS', async () => {
+  it.skipIf(!weightsPresent('trellis2-native') || !GPU_RENDER)('trellis2-native fast: the preview-tier pill payload lifts and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-trellis', async (w) => {
       const anchor = await uploadAnchorPng('trellis fast')
       const s = await runCard(w, {
@@ -238,7 +238,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
     })
   }, 600_000)
 
-  it.skipIf(!weightsPresent('pixal3d'))('pixal3d fast: the cheap lift tier composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('pixal3d') || !GPU_RENDER)('pixal3d fast: the cheap lift tier composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-pixal-fast', async (w) => {
       const anchor = await uploadAnchorPng('pixal fast')
       const s = await runCard(w, {
@@ -259,7 +259,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
   }, 600_000)
 
   const RIG_FIXTURE = join(process.cwd(), 'tests', 'fixtures', 'anny_estimator_body.glb')
-  it.skipIf(!existsSync(RIG_FIXTURE))('rig auto: the weightless lane composes and RUNS', async () => {
+  it.skipIf(!existsSync(RIG_FIXTURE) || !GPU_RENDER)('rig auto: the weightless lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-rig-auto', async (w) => {
       const s = await runCard(w, {
         model: 'rig', mesh_glb: RIG_FIXTURE,
@@ -298,7 +298,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
     })
   }, 120_000)
 
-  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig'))('img-to-mesh transfer lane: the rig hop composes and RUNS', async () => {
+  it.skipIf(!existsSync(RIG_FIXTURE) || !weightsPresent('transfer-rig') || !GPU_RENDER)('img-to-mesh transfer lane: the rig hop composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-transfer', async (w) => {
       const rigged = await autoRiggedGlb(w, 'transfer donor')
       const s = await runCard(w, {
@@ -312,7 +312,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: mesh (anny, the trellis lift, rig)', (
 })
 
 describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the sfx bed)', () => {
-  it.skipIf(!weightsPresent('qwen3-tts'))('tts expressive-read: the pill payload composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('qwen3-tts') || !GPU_RENDER)('tts expressive-read: the pill payload composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-tts-expr', async (w) => {
       const s = await runCard(w, {
         model: 'qwen3-tts-voicedesign', text: 'The express lane runs hot.', temperature: 2,
@@ -407,7 +407,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: audio (tts lanes, music lengths, the s
     })
   }, 120_000)
 
-  it.skipIf(!weightsPresent('yue2'))('yue2 short-sting: the second music lane composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('yue2') || !GPU_RENDER)('yue2 short-sting: the second music lane composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-yue2', async (w) => {
       const s = await runCard(w, {
         model: 'yue2', prompt: 'warm female vocal, indie pop, 96 BPM', lyrics: '', duration: 5, mode: 'full',
@@ -518,7 +518,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
     })
   }, 120_000)
 
-  it.skipIf(!weightsPresent('h3-timeline'))('h3 THE HOP-[6] BAKE WITNESS: the stated refmod dials ride the REAL run — the engine\'s own history record carries mode/pool/identity/save verbatim (study §7 item 1, the f closer)', async () => {
+  it.skipIf(!weightsPresent('h3-timeline') || !GPU_RENDER)('h3 THE HOP-[6] BAKE WITNESS: the stated refmod dials ride the REAL run — the engine\'s own history record carries mode/pool/identity/save verbatim (study §7 item 1, the f closer) (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-h3-bake', async (w) => {
       const anchor = stageAnchorPng('cards-gpu-h3-bake')
       const s = await runCard(w, {
@@ -580,7 +580,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
     })
   }, 480_000)
 
-  it.skipIf(!weightsPresent('kimodo'))('motion draft: the steps pill composes and RUNS', async () => {
+  it.skipIf(!weightsPresent('kimodo') || !GPU_RENDER)('motion draft: the steps pill composes and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     await withWorld('cards-gpu-kimodo-draft', async (w) => {
       const s = await runCard(w, {
         model: 'kimodo', prompt: 'a person walks forward slowly',

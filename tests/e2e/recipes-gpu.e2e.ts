@@ -32,7 +32,7 @@ import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runs
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 import { mintSandbox } from '../harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
-import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, GPU_RENDER } from './engine-gate.ts'
 import { queueCard, uploadAnchorPng } from './gpu-harness.ts'
 import { audioFileStats, isFlac, roarViolation } from './sfx-waveform.ts'
 import { H3_LORA_ROWS } from '../../packages/models/h3/mods/loras.ts'
@@ -175,7 +175,7 @@ function byClass(s: { workflow: Record<string, { class_type?: string, inputs?: R
 }
 
 describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', () => {
-  it.skipIf(!ENGINE_FREE || !weightsPresent('krea-2'))('krea-2 turbo_distill: the pill payload composes the rank-64 adapter at 1.0 and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('krea-2') || !GPU_RENDER)('krea-2 turbo_distill: the pill payload composes the rank-64 adapter at 1.0 and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-krea-')
     try {
       // compose FIRST (a refusal names its field before any GPU time)
@@ -231,7 +231,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 120_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('z-image'))('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('z-image') || !GPU_RENDER)('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-zimage-')
     try {
       const s = await runCard(w, {
@@ -249,7 +249,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 240_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline'))('h3-timeline draft: the low-res tier composes the ByteDance bag at draft geometry and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-timeline') || !GPU_RENDER)('h3-timeline draft: the low-res tier composes the ByteDance bag at draft geometry and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-h3-draft-')
     try {
       // THE ANCHOR: a real upload through ComfyUI's own upload door
@@ -647,7 +647,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
   //    bound-anchored stamps proven on silicon — the schema's own
   //    floors/ceilings, values 1:1 with the cards' declared keys) ──
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('music3'))('music3 short-sting: the pill payload composes duration 5 (the schema floor) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('music3') || !GPU_RENDER)('music3 short-sting: the pill payload composes duration 5 (the schema floor) and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-music3-')
     try {
       const s = await runCard(w, {
@@ -677,7 +677,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
     }
   }, 480_000)
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('moss-sfx'))('moss-sfx one_shot: duration 0.5 (the schema floor) RUNS — THE family render row (bytes + FLAC + the roar judge; the ambience bed queues in cards-gpu)', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('moss-sfx') || !GPU_RENDER)('moss-sfx one_shot: duration 0.5 (the schema floor) RUNS — THE family render row (bytes + FLAC + the roar judge; the ambience bed queues in cards-gpu) (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-mosssfx-')
     try {
       // THE NO-DUPES LAW (operator 2026-11-17): this 0.5s render is
@@ -743,7 +743,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
 // law: qwen-img-21 = the t2i lane, qwen-img-edit-21 = the cached-
 // reference edit lane over the SAME base weights) ──────────────────
 describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)', () => {
-  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21'))('qwen-img-21 upstream-solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-21') || !GPU_RENDER)('qwen-img-21 upstream-solvers: the pill payload composes the ONE TextEncodeQwenImage21 node (pos out 0, neg out 1) and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-q21-')
     try {
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry
@@ -859,7 +859,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
   // painted mask (synthetic alpha fixture, deterministic) and the
   // face detector (a real detection off a generated portrait). ──
 
-  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-edit-21'))('qwen-img-edit-21 crop_stitch painted mask: MaskToSEGS(combined) → DetailerForEach on the cache model RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('qwen-img-edit-21') || !GPU_RENDER)('qwen-img-edit-21 crop_stitch painted mask: MaskToSEGS(combined) → DetailerForEach on the cache model RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-q21-cropmask-')
     try {
       // THE ANCHOR + THE ALPHA MASK: two local fixture files (the
@@ -965,7 +965,7 @@ describe.skipIf(!ENGINE_FREE)('the qwen 2.1 pair on the GPU (with live ComfyUI)'
 // h3-image-edit = the reference-guided edit lane over the SAME base
 // weights) ────────────────────────────────────────────────────────
 describe.skipIf(!ENGINE_FREE)('the h3 image pair on the GPU (with live ComfyUI)', () => {
-  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-image'))('h3-image t2i: the pill payload composes ONE MiniMaxH3ImageConditioning (latent out 1, negative zeroed) and RUNS', async () => {
+  it.skipIf(!ENGINE_FREE || !weightsPresent('h3-image') || !GPU_RENDER)('h3-image t2i: the pill payload composes ONE MiniMaxH3ImageConditioning (latent out 1, negative zeroed) and RUNS (render lane: MELITE_GPU_RENDER=1)', async () => {
     const w = await bootWorld('recipes-h3img-')
     try {
       const cards = (w.ctx as unknown as { cardRegistry: { phase1Card: (b: Record<string, unknown>, m: string) => Promise<{ params: Record<string, unknown> }>, phase2Card: (p1: unknown, runId: string) => Promise<{ graph: Record<string, unknown> }> } }).cardRegistry

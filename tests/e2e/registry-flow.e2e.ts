@@ -36,7 +36,7 @@ import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { mintSandbox } from '../harness.ts'
-import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, engineVramFits } from './engine-gate.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, engineVramFits, GPU_RENDER } from './engine-gate.ts'
 
 // fileURLToPath, never URL.pathname (the windows CI doubled-drive
 // class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
@@ -69,7 +69,7 @@ const HAS_ESTIMATOR = existsSync(join(ANNY_ESTIMATOR_ROOT, 'estimator_chain.py')
 describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
   'registry flow through the {flow:} door (live ComfyUI)',
   () => {
-    it("anny-hmr-estimator on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk", async (t) => {
+    it.skipIf(!GPU_RENDER)("anny-hmr-estimator on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk (render lane: MELITE_GPU_RENDER=1)", async (t) => {
       // THE VRAM-DEFER AT TEST TIME (attempt 12's lesson): the probe
       // at MODULE load fired at vitest collection — before the
       // serial tier's GPU suites filled the card — so the describe

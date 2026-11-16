@@ -26,7 +26,7 @@ import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runs
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { CardRegistryService } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
 import { mintSandbox } from '../harness.ts'
-import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
+import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, GPU_RENDER } from './engine-gate.ts'
 
 const pngSize = (p: string): { w: number; h: number } => {
   const b = readFileSync(p)
@@ -34,7 +34,7 @@ const pngSize = (p: string): { w: number; h: number } => {
 }
 
 describe.skipIf(!ENGINE_FREE)('the seedvr2 hop live press', () => {
-  it('512×256 make → seedvr2 polish renders 1024×512', async () => {
+  it.skipIf(!GPU_RENDER)('512×256 make → seedvr2 polish renders 1024×512 (render lane: MELITE_GPU_RENDER=1)', async () => {
     const sandbox = mintSandbox('hop-press-')
     const ctx = new Context()
     try {

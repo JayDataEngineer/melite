@@ -30,6 +30,19 @@ const ENGINE_URL = `http://${ENGINE_HOST}:${ENGINE_PORT}`
 /** Queue behind a busy engine instead of deferring (default 0). */
 const FORCE = process.env['MELITE_E2E_FORCE'] === '1'
 
+/** THE RENDER LANE GATE (operator order 2026-11-16, verbatim intent,
+ * scrubbed voice): the GPU render rows leave the battery — its
+ * minimum-time law. The rows that
+ * await a REAL render (artifact bytes from the engine) are the
+ * battery's only slow surface — ~40 minutes of engine time against
+ * seconds for a compose stamp. They ride the manual render lane
+ * (MELITE_GPU_RENDER=1, the same law as FILM_E2E and H3_ARENA); the
+ * stamp rows (compose + queue + serialized-graph shape) stay in the
+ * battery and own the mint/compose law surface. The gate rides each
+ * render row's own skipIf — structural, never a title pattern (a
+ * renamed row must never silently leave the lane). */
+export const GPU_RENDER = process.env['MELITE_GPU_RENDER'] === '1'
+
 export async function engineAlive(): Promise<boolean> {
   try {
     const res = await fetch(`${ENGINE_URL}/system_stats`, {
