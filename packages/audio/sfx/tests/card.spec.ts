@@ -14,7 +14,8 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { ACTION_BINDINGS, composeFamilyAction } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -27,6 +28,11 @@ let def: CardDefinition;
 let moss: ModelFacts;
 
 beforeAll(async () => {
+  // THE SEATS, PRIMED EXPLICITLY (the plugin law's test shape): the
+  // card's compose dispatch resolves the family DECL through the
+  // guarded dynamic seat — this file composes with the family
+  // installed, so the seat is filled before the first arm runs.
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("sfx")!;
   assert.ok(def, "the composition root serves the sfx card");
   moss = facts.models["moss-sfx"]!;
@@ -115,6 +121,17 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     assert.throws(
       () => def.compose(def.schema({ prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
       /no declared action for family 'synthetic-sfx' on the sfx card — every boarded family \(moss-sfx\)/,
+    );
+  });
+
+  it("THE ABSENT-SEAT REFUSAL: the boarded family without its package refuses loud, by name (the plugin law)", () => {
+    // A boarded id whose seat never filled (the family package
+    // pruned from the install): the dispatch's own door throws the
+    // image-gen-shaped refusal naming the family — never a silent
+    // second copy, never a crash below the gate.
+    assert.throws(
+      () => composeFamilyAction("pruned-family", { prompt: "x" }, moss, new GraphBuilder(), "wall_absent_seat"),
+      /no declared action for family 'pruned-family' on the sfx card — every boarded family \(moss-sfx\).*a family package absent from the install refuses here, by name/,
     );
   });
 });

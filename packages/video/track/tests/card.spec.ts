@@ -7,6 +7,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
+import { PROVISIONS as MASK_PROVISIONS } from "@melite/models-mask";
 
 const DUMMY: ModelFacts = { id: "x", card: "x", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 
@@ -32,6 +33,15 @@ describe("the track card declaration", () => {
   it("requires VHS + the oneclick-swap pack at the compose door (the extension law)", () => {
     assert.ok((def.requires ?? []).includes("ComfyUI-VideoHelperSuite"));
     assert.ok((def.requires ?? []).includes("comfyui-h3-oneclick-swap"));
+  });
+
+  it("THE FAMILY OWNS THE DOWNLOADS THROUGH THE SEAT (L3, 2026-11-17: the card exists without its family): the card's provisions ARE the mask-select family's export served by the guarded seat — the same array, not a copy — and the rescue owner names the family id, so the SAM3 video checkpoint downloads through the ONE door (provision_model model=mask-select). A card-authored row cannot drift in: any literal here breaks the identity pin below", () => {
+    assert.equal(def.provisions, MASK_PROVISIONS, "the card serves the family's export verbatim (identity, not a copy) — through the seat, not a static import");
+    assert.equal(def.provisionOwner, "mask-select", "the rescue owner names the family id");
+    assert.ok(
+      (def.provisions ?? []).some((r) => r.name === "sam3.1_multiplex_fp16.safetensors"),
+      "the SAM3 video checkpoint row rides the family's export",
+    );
   });
 
   it("refuses a missing clip LOUD", () => {

@@ -4,36 +4,94 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+		//#region \0rolldown/runtime.js
+		var __defProp = Object.defineProperty;
+		var __esmMin = (fn, res, err) => () => {
+			if (err) throw err[0];
+			try {
+				return fn && (res = fn(fn = 0)), res;
+			} catch (e) {
+				throw err = [e], e;
+			}
+		};
+		var __exportAll = (all, no_symbols) => {
+			let target = {};
+			for (var name in all) __defProp(target, name, {
+				get: all[name],
+				enumerable: true
+			});
+			if (!no_symbols) __defProp(target, Symbol.toStringTag, { value: "Module" });
+			return target;
+		};
+		//#endregion
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let react = require("react");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region ../../models/input/src/scale-vocab.ts
-		/** The closed upscale-method set (the dropdown law, 2026-10-24):
-		*  ComfyUI core ImageScale's own combo values, grounded in the live
-		*  engine's object_info (not memory). The input-prep card's
-		*  scale_method vocabulary serves THIS export — one truth, two
-		*  consumers, so a card-authored copy cannot drift from what the
-		*  engine accepts. */
-		const SCALE_METHODS = [
-			"nearest-exact",
-			"bilinear",
-			"area",
-			"bicubic",
-			"lanczos"
-		];
-		/** The scale_model dropdown: the roster led by the "" unstated
-		*  sentinel. "" is a declared member because schemastery validates
-		*  a schema default against its closed union — the unstated face
-		*  must parse, not refuse. The card's vocabulary() and this
-		*  action's enum options cite THIS export — one truth, two
-		*  consumers (the SCALE_METHODS idiom). */
-		const SCALE_MODEL_OPTIONS = ["", ...[
-			"RealESRGAN_x4plus",
-			"RealESRGAN_x2plus",
-			"RealESRGANGeneral_x4v3",
-			"4x-UltraSharp",
-			"ESRGAN_x4"
-		]];
+		var scale_vocab_exports = /* @__PURE__ */ __exportAll({
+			MIN_DIM: () => 8,
+			SCALE_METHODS: () => SCALE_METHODS,
+			SCALE_MODEL_OPTIONS: () => SCALE_MODEL_OPTIONS,
+			UPSCALE_MODELS: () => UPSCALE_MODELS
+		}), SCALE_METHODS, UPSCALE_MODELS, SCALE_MODEL_OPTIONS;
+		var init_scale_vocab = __esmMin((() => {
+			SCALE_METHODS = [
+				"nearest-exact",
+				"bilinear",
+				"area",
+				"bicubic",
+				"lanczos"
+			];
+			UPSCALE_MODELS = [
+				"RealESRGAN_x4plus",
+				"RealESRGAN_x2plus",
+				"RealESRGANGeneral_x4v3",
+				"4x-UltraSharp",
+				"ESRGAN_x4"
+			];
+			SCALE_MODEL_OPTIONS = ["", ...UPSCALE_MODELS];
+		}));
+		//#endregion
+		//#region src/ui/studio/scaleVocabSeat.ts
+		let seat = null;
+		let loading = null;
+		/** Load the vocabulary seat (idempotent). Guarded: a module that
+		*  fails to resolve rejects and leaves the seat absent — the studio
+		*  renders empty menus and no floor, and the compose door owns the
+		*  loud family refusal (the per-family degrade law; the client
+		*  never dies for a family). */
+		const loadScaleVocab = () => {
+			loading ??= Promise.resolve().then(() => (init_scale_vocab(), scale_vocab_exports)).then((mod) => {
+				seat = {
+					SCALE_METHODS: [...mod.SCALE_METHODS],
+					SCALE_MODEL_OPTIONS: [...mod.SCALE_MODEL_OPTIONS],
+					MIN_DIM: mod.MIN_DIM
+				};
+				return seat;
+			});
+			return loading;
+		};
+		/** The seat's synchronous peek — null until primed (the render
+		*  paths read this; the hook seeds its state from it). */
+		const scaleVocab = () => seat;
+		/** The hook (the component seam): the seat's current face, filled
+		*  by the guarded load. The seat fills once and never changes
+		*  after, so a state seed + one effect read is the whole
+		*  subscription. */
+		const useScaleVocab = () => {
+			const [vocab, setVocab] = (0, react.useState)(() => seat);
+			(0, react.useEffect)(() => {
+				if (seat !== null) return;
+				let live = true;
+				loadScaleVocab().then((filled) => {
+					if (live) setVocab(filled);
+				});
+				return () => {
+					live = false;
+				};
+			}, []);
+			return vocab;
+		};
 		//#endregion
 		//#region \0dsh-css:packages/image/input-prep/src/ui/studio/prep.module.css.mjs
 		const css = ".o0BhZq_studioHost{flex-direction:column;width:100%;min-height:320px;display:flex}.o0BhZq_paramsCol{flex-direction:column;gap:10px;min-width:0;display:flex}.o0BhZq_previewPane{flex-direction:column;flex:auto;gap:6px;min-width:0;display:flex}.o0BhZq_paneNote{color:#ffffffa6;border:1px dashed #7f7f7f66;border-radius:8px;padding:18px 14px;font-size:12px;line-height:1.5}.o0BhZq_paneMeta{color:#ffffff80;font-size:11px}.o0BhZq_previewWrap{user-select:none;touch-action:none;align-self:flex-start;max-width:100%;display:inline-block;position:relative}.o0BhZq_previewImg{border-radius:8px;max-width:100%;max-height:52vh;display:block}.o0BhZq_previewOverlay{cursor:crosshair;border-radius:8px;position:absolute;inset:0}.o0BhZq_cropBox{cursor:move;border:1px solid #fff;position:absolute;box-shadow:0 0 0 100000px #00000080}.o0BhZq_cropBadge{color:#fff;white-space:nowrap;background:#0009;border-radius:4px;padding:1px 5px;font-size:10px;position:absolute;top:-20px;left:4px}.o0BhZq_previewHint{color:#ffffffbf;pointer-events:none;white-space:nowrap;background:#00000080;border-radius:4px;padding:2px 8px;font-size:11px;position:absolute;bottom:10px;left:50%;transform:translate(-50%)}.o0BhZq_handle,.o0BhZq_handle_nw,.o0BhZq_handle_ne,.o0BhZq_handle_se,.o0BhZq_handle_sw,.o0BhZq_handle_n,.o0BhZq_handle_e,.o0BhZq_handle_s,.o0BhZq_handle_w{background:#fff;border:1px solid #0006;border-radius:2px;width:12px;height:12px;position:absolute}.o0BhZq_handle_nw{cursor:nwse-resize;top:-7px;left:-7px}.o0BhZq_handle_ne{cursor:nesw-resize;top:-7px;right:-7px}.o0BhZq_handle_se{cursor:nwse-resize;bottom:-7px;right:-7px}.o0BhZq_handle_sw{cursor:nesw-resize;bottom:-7px;left:-7px}.o0BhZq_handle_n{cursor:ns-resize;margin-left:-6px;top:-7px;left:50%}.o0BhZq_handle_s{cursor:ns-resize;margin-left:-6px;bottom:-7px;left:50%}.o0BhZq_handle_w{cursor:ew-resize;margin-top:-6px;top:50%;left:-7px}.o0BhZq_handle_e{cursor:ew-resize;margin-top:-6px;top:50%;right:-7px}.o0BhZq_rail{background:#7f7f7f14;border:1px solid #7f7f7f40;border-radius:8px;flex-direction:column;gap:8px;padding:10px;display:flex}.o0BhZq_railTitle{letter-spacing:.04em;text-transform:uppercase;color:#fff9;font-size:11px;font-weight:600}.o0BhZq_railRow{flex-wrap:wrap;align-items:flex-end;gap:8px;display:flex}.o0BhZq_railHint{color:#ffffff80;font-size:11px;line-height:1.4}.o0BhZq_field{color:#ffffffb3;flex-direction:column;flex:1;gap:3px;min-width:0;font-size:11px;display:flex}.o0BhZq_field input,.o0BhZq_field select{color-scheme:light;box-sizing:border-box;color:#fff;background:#00000059;border:1px solid #7f7f7f66;border-radius:6px;width:100%;padding:5px 7px;font-size:12px}.o0BhZq_chip{color:#ffffffd9;cursor:pointer;background:#00000040;border:1px solid #7f7f7f66;border-radius:6px;padding:5px 10px;font-size:11px}.o0BhZq_chip:disabled{opacity:.45;cursor:default}";
@@ -146,8 +204,14 @@ window.__ModuleLoader__.load({
 			};
 		};
 		/** Whether a committed rect is honorable (every side at least the
-		* engine's own floor — the blank-image law's threshold). */
-		const cropIsHonorable = (r) => r.width >= 8 && r.height >= 8;
+		* engine's own floor — the blank-image law's threshold). The floor
+		* is the FAMILY's own (the seat; a pruned family package carries no
+		* floor — an unseated peek judges nothing, the compose gate speaks
+		* for it: the per-family degrade, never a card-authored number). */
+		const cropIsHonorable = (r) => {
+			const floor = scaleVocab()?.MIN_DIM;
+			return floor === void 0 || r.width >= floor && r.height >= floor;
+		};
 		const HANDLES = [
 			"nw",
 			"ne",
@@ -456,6 +520,9 @@ window.__ModuleLoader__.load({
 		}
 		function InputPrepStudio(props) {
 			const { row } = props;
+			const vocab = useScaleVocab();
+			const scaleMethods = vocab?.SCALE_METHODS ?? [];
+			const scaleModelOptions = vocab?.SCALE_MODEL_OPTIONS ?? [];
 			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : EMPTY_PARAMS;
 			const [user, setUser] = (0, react.useState)(params);
 			const settledRef = (0, react.useRef)(props.hasUnsettledWrites ?? null);
@@ -474,8 +541,8 @@ window.__ModuleLoader__.load({
 			const crop = cropOf(user);
 			const scaleW = num(user["scale_width"]);
 			const scaleH = num(user["scale_height"]);
-			const method = typeof user["scale_method"] === "string" && SCALE_METHODS.includes(user["scale_method"]) ? user["scale_method"] : "lanczos";
-			const scaleModel = typeof user["scale_model"] === "string" && SCALE_MODEL_OPTIONS.includes(user["scale_model"]) ? user["scale_model"] : "";
+			const method = typeof user["scale_method"] === "string" && scaleMethods.includes(user["scale_method"]) ? user["scale_method"] : "lanczos";
+			const scaleModel = typeof user["scale_model"] === "string" && scaleModelOptions.includes(user["scale_model"]) ? user["scale_model"] : "";
 			const patchRef = (0, react.useRef)(props.onPatch);
 			patchRef.current = props.onPatch;
 			const edit = (patch) => {
@@ -641,7 +708,7 @@ window.__ModuleLoader__.load({
 										"data-testid": "prep-scale-floor-hint",
 										children: [
 											"targets under ",
-											8,
+											vocab?.MIN_DIM,
 											"px refuse at Run (smaller targets upscale to a blank — the crop leaf's drag-time floor, named here)"
 										]
 									})
@@ -693,7 +760,7 @@ window.__ModuleLoader__.load({
 										onChange: (e) => {
 											edit({ scale_method: e.target.value });
 										},
-										children: SCALE_METHODS.map((m) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+										children: scaleMethods.map((m) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 											value: m,
 											children: m
 										}, m))
@@ -708,7 +775,7 @@ window.__ModuleLoader__.load({
 										onChange: (e) => {
 											edit({ scale_model: e.target.value });
 										},
-										children: SCALE_MODEL_OPTIONS.map((m) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
+										children: scaleModelOptions.map((m) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 											value: m,
 											children: m === "" ? "(none — plain resample only)" : m
 										}, m))
@@ -776,6 +843,7 @@ window.__ModuleLoader__.load({
 		* src/ui/studio/component.tsx (the ANNY-style crop card, operator
 		* defect 3).
 		*/
+		loadScaleVocab();
 		/** The built-in registration (the ui-tool law, verbatim — the
 		* module namespace IS the plugin: the loader consumes
 		* name/inject/apply). */

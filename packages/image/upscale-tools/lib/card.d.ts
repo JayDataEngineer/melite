@@ -1,7 +1,5 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition';
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
-export declare const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void>;
+export declare const BOARDED: readonly ["seedvr2-ema"];
 export declare const inject: string[];
 export declare const identity: {
     label: string;

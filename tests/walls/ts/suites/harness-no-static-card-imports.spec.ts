@@ -33,8 +33,22 @@ const CARD_SCOPE = /^@melite\/(3d|audio|image|motion|video|models)-/
 const walk = (dir: string): string[] => {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
+    // node_modules is never source — and a symlinked one (the studio
+    // trees' @melite aliases) may dangle; descending would throw and
+    // the surrounding catch would skip the WHOLE CARD (the h3 depth
+    // bug, found mid-conversion 2026-11-16: video/h3-timeline
+    // silently escaped both arms for a stale catalog link)
+    if (entry === 'node_modules') continue
     const full = join(dir, entry)
-    if (statSync(full).isDirectory()) out.push(...walk(full))
+    let isDir: boolean
+    try {
+      isDir = statSync(full).isDirectory()
+    } catch {
+      // a broken symlink is an entry, not a verdict: skip the link,
+      // never the card (DEPTH: one dead link must not disarm a census)
+      continue
+    }
+    if (isDir) out.push(...walk(full))
     else if (entry.endsWith('.ts')) out.push(full)
   }
   return out
@@ -86,12 +100,17 @@ test('the harness plane holds zero static card/family imports', () => {
 const GENRES = ['3d', 'audio', 'image', 'motion', 'video'] as const
 const FAMILY_SCOPE = /^@melite\/models-/
 const L3_DEBT_CARDS = [
-  'audio/music', 'audio/sfx', 'audio/tts',
-  'image/image-edit', 'image/input-prep', 'image/mask', 'image/tagger', 'image/upscale-tools',
-  'motion/motion', 'video/track',
+  // video/h3-timeline: the compose plane is cured (card.ts/tool.ts
+  // seat @melite/models-h3); the STUDIO tree's contract imports
+  // (ui/studio, timelineContract + filmMix — pure contract utilities
+  // that live in the family package) are named debt: dropping them
+  // needs an async-seated contract access layer across the studio's
+  // module-scope re-export hubs (a product rewrite, not a
+  // conversion; rides the L3 debt row's next stroke)
+  'video/h3-timeline',
 ] as const
 
-test('the card plane holds zero static family imports (image-gen cured; the rest are named debt)', () => {
+test('the card plane holds zero static family imports (every card seated; h3 studio tree is named debt)', () => {
   const byCard = new Map<string, string[]>()
   for (const genre of GENRES) {
     const genreDir = join(import.meta.dirname, '..', '..', '..', '..', 'packages', genre)

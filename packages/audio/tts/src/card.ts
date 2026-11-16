@@ -4,7 +4,7 @@ import { laneBlank, judgeLaneRelations, laneSurfaceOf } from '@melite/contracts/
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, qvoiceUse, instantiateAction, finalizeTts, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
-import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, cellRoute, laneTopologyOf as ttsLaneTopologyOf, type TtsLaneTopology } from '@melite/models-qwen3-tts'
+import type { TtsLaneTopology } from '@melite/models-qwen3-tts'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { voicePresetStated } from '@melite/comfyui-card-kit/facts'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
@@ -14,6 +14,7 @@ import { seedExtra } from '@melite/comfyui-card-kit/fields';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 import { QVOICE_RIDERS } from '@melite/comfyui-card-kit/pack-fields';
 import { QVOICE_SAVE_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
+import { primeFamilySeats, seatOf, type FamilySeat } from './family-seats.ts'
 
 export const schema = z.object({
   text: z.string().description("Text to Speak").extra('extra', bag({ order: null, placeholder: "The words to speak (the script the voice performs)", tooltip: "The script the voice performs — the output's own words. NOT the reference transcript (a different input: what your reference clip says); on the VoiceDesign model this is the design sample", required: true, wtype: 'textarea', })),
@@ -42,7 +43,15 @@ export const schema = z.object({
   // The wire half already landed (the B7 stamp skip); this is the
   // panel half. An explicit both-stated write still refuses loud at
   // compose (the B2 arm below) — the hide is a face, never the law.
-  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").extra('extra', bag({ order: null, visible_when: 'qvoice=null', tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice has no non-speaker option: the picker rests on Ryan until you choose another — 'none' fired nothing and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+  // THE PRESET SPEAKER ROSTER IS A LITERAL (the plugin law, L3
+  // cure, 2026-11-16): the schema is a module-level declaration and
+  // this card loads WITHOUT the family package, so the nine
+  // CustomVoice personas are stated here — ONE owner of the
+  // declared roster stays in the family (the speak action's voice
+  // param options, PRESET_SPEAKERS); the vocab-rails wall judges
+  // this rail against that live export on the dev tree, and a
+  // renamed preset reds there instead of serving a dead name.
+  voice: vocabulary(["ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Preset Speaker").extra('extra', bag({ order: null, visible_when: 'qvoice=null', tooltip: "One of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). CustomVoice has no non-speaker option: the picker rests on Ryan until you choose another — 'none' fired nothing and its run refused at the engine. A loaded .qvoice owns the timbre and never reads this row. The other models take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream
@@ -101,38 +110,67 @@ const schemaFn = callableSchema(schema)
 // default). The retained 'qwen3-tts' address is the
 // small CustomVoice cell's route — old 0.6B drafts resolve as 0.6B
 // runs, never as silent neighbors.
-// THE FAMILY ID COMES FROM ITS DECL (the card audit's M1: a retyped
-// id breaks the card at RUNTIME — not-boarded — with every wall
-// green; image-gen has been doing it this way all along)
-export const BOARDED: string[] = [qwen3TtsDecl.id]
+// THE FAMILY ID IS A LITERAL (the plugin law, L3 cure, 2026-11-16:
+// "The Card can exist without a Family"): the family package
+// resolves through ./family-seats.ts (a guarded dynamic seat,
+// primed at registration) — a missing family package costs its OWN
+// seat, never this card's load. A retyped id breaks the binding on
+// the dev tree (the family-coverage wall judges every boarded
+// entry against the live registry; the seat table skips a module
+// whose DECL id names nothing), never silently at the not-boarded
+// refusal. The retained 'qwen3-tts' address is the
+// small CustomVoice cell's route — old 0.6B drafts resolve as 0.6B
+// runs, never as silent neighbors.
+export const BOARDED: string[] = ['qwen3-tts']
 
 // THE TOOL DEFAULT (the large-default law, operator 2026-10-26:
 // "ALWAYS the big model: the 1.7B is the default on every door"):
 // the agent tool's unstated model must compose the 1.7B CustomVoice
 // — the head id doubles as the SMALL cell's retained route, so
 // defaulting to it would serve the 0.6B fallback unprompted (the
-// address claim wins unstated quant). The large rung's own route,
-// read from the DECL (M5 — never retyped).
-export const DEFAULT_MODEL: string = cellRoute(qwen3TtsDecl, 'customvoice', '1_7b')
+// address claim wins unstated quant). THE PLUGIN LAW: the route is
+// stated here as the card's own registration-time literal; the
+// LIVE derivation the tool face serves reads the same cell's route
+// off the seat's DECL (family-seats.ts largeRoute) — the
+// family-coverage wall judges a route literal naming nothing on
+// the dev tree.
+export const DEFAULT_MODEL: string = 'qwen3-tts-voicedesign'
+
+/** THE SEAT GATE (the plugin law's loud refusal): every
+ *  family-dependent compose path takes the family's seat FIRST —
+ *  the lane-topology pick is the first one — so a family package
+ *  absent from the install refuses loud HERE, by name, at the
+ *  image-gen composeFamilyAction shape; the card itself still
+ *  loads and registers. */
+function familySeat(family: string): FamilySeat {
+  const seat = seatOf(family)
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${family}' on the tts card — the boarded Qwen family (qwen3-tts) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name). State params.model (one of the boarded families) on the stage to compose it`)
+  }
+  return seat
+}
 
 /** THE ACTION BINDING (the atom vocabulary, stroke 3): the owning
- * family's declared speak + export actions — the card owns only
- * dispatch; the segment factories live in the family package.
+ * family's declared speak + export actions, resolved through the
+ * family's SEAT (family-seats.ts) at call time — the card owns
+ * only dispatch; the segment factories live in the family package.
  * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
  * a route id keys nothing, the derived-row law); an unbound family
- * refuses loud at the dispatch. */
+ * refuses loud at the seat gate above. */
 export const ACTION_BINDINGS: Record<string, { save: Binding; speak: Binding }> = {
-  [qwen3TtsDecl.id]: {
-    save: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'export'), p, model, g, runId) },
-    speak: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'speak'), p, model, g, runId) },
+  ['qwen3-tts']: {
+    save: (p, model, g, runId) => { instantiateAction(declaredAction(familySeat(String(model.family ?? model.id)).decl, 'export'), p, model, g, runId) },
+    speak: (p, model, g, runId) => { instantiateAction(declaredAction(familySeat(String(model.family ?? model.id)).decl, 'speak'), p, model, g, runId) },
   },
 }
 
 /** The resolved lane topology (the compose-side twin of the actions'
  *  dispatch): the family field owns the pick (the ACTION_BINDINGS
- *  law), the variant id owns the lane. */
+ *  law), the variant id owns the lane. The reader is the family's
+ *  OWN craft face, carried on the seat. */
 const laneTopology = (model: ModelFacts): TtsLaneTopology =>
-  ttsLaneTopologyOf(model)
+  familySeat(String(model.family ?? model.id)).laneTopologyOf(model)
 
 /** Whether the RESOLVED (variant × quant) cell takes the delivery
  * style: the variant topology owns the lane's graph capability, and
@@ -156,17 +194,23 @@ function laneTakesStyleInstruction(model: ModelFacts): boolean {
 // closed model enum additionally offers the flavor/size compose
 // addresses; the drafts door resolves route mids through the facts
 // rows, krea-2-raw precedent).
-// THE ROUTE ADDRESSES ARE THE DECL'S OWN VARIANT/CELL ROUTES (the
-// card audit's M5: this list restated route strings by hand, so a
-// rename left the card boarding an address that resolves to nothing).
-// The retained small-CustomVoice route is BOARDED[0] itself, so it is
-// not repeated here; deduplicate defensively, never board empties.
+// THE PLUGIN LAW (L3 cure, 2026-11-16): these addresses are the
+// card's registration-time literals — the card boards without the
+// family package, so it cannot read the routes off the DECL at
+// load. Two homes, one law each: the LIVE derivation (the tool
+// face's knob, family-seats.ts offeredRoutes) reads the same
+// variant/cell routes off the seat's DECL at serve time, and the
+// family-coverage wall judges every boarded literal against the
+// live registry (a board naming nothing reds there, the M5 drift
+// class). The retained small-CustomVoice route is BOARDED[0]
+// itself, so it is not repeated here; deduplicate defensively,
+// never board empties.
 export const VARIANT_ADDRESSES: string[] = [
-  variantRoute(qwen3TtsDecl, 'customvoice'),
-  variantRoute(qwen3TtsDecl, 'voicedesign'),
-  variantRoute(qwen3TtsDecl, 'base'),
-  cellRoute(qwen3TtsDecl, 'base', '0_6b'),
-].filter((r, i, rows): r is string => r !== '' && rows.indexOf(r) === i && r !== qwen3TtsDecl.id)
+  'qwen3-tts-voicedesign',
+  'qwen3-tts-voicedesign-design',
+  'qwen3-tts-voicedesign-base',
+  'qwen3-tts-base',
+].filter((r, i, rows) => r !== '' && rows.indexOf(r) === i && r !== 'qwen3-tts')
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
@@ -187,6 +231,11 @@ export const identity = {
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
+  // THE PLUGIN LAW'S PRIMING (fire-and-forget, image-gen shape): the
+  // guarded dynamic import of the boarded family package starts
+  // here; registration NEVER waits on the family — a pruned family
+  // costs its own seat, never the estate boot.
+  void primeFamilySeats()
   ctx.effect(() => comfy.registerCard({
     id: 'tts',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).

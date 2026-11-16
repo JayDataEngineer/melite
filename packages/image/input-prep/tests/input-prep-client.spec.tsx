@@ -29,6 +29,15 @@ import { CropPreview, cropIsHonorable } from '../src/ui/studio/CropPreview.tsx'
 import { apply, inject, name } from '../src/client/index.ts'
 import { ASSET_DRAG_MIME, fetchMediaLibrary } from '@melite/card-base/client'
 import { SCALE_METHODS, SCALE_MODEL_OPTIONS, UPSCALE_MODELS, MIN_DIM } from '@melite/models-input'
+import { loadScaleVocab } from '../src/ui/studio/scaleVocabSeat.ts'
+
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the studio reads the
+// vocabulary through its guarded seat — the spec primes it before
+// any render (a test-level await of the same loader the bundle
+// fires at client/index.ts). The module-scope seat fills once and
+// the hook seeds from it synchronously, so every existing
+// sync-render assertion holds without act-wrapped re-renders.
+await loadScaleVocab()
 
 // THE MEDIA LIBRARY MOCK (the 2026-10-22 media burn): the studio now
 // injects fetchMediaLibrary into the source square's wire — the

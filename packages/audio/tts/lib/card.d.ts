@@ -32,11 +32,12 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
 export declare const BOARDED: string[];
 export declare const DEFAULT_MODEL: string;
 /** THE ACTION BINDING (the atom vocabulary, stroke 3): the owning
- * family's declared speak + export actions — the card owns only
- * dispatch; the segment factories live in the family package.
+ * family's declared speak + export actions, resolved through the
+ * family's SEAT (family-seats.ts) at call time — the card owns
+ * only dispatch; the segment factories live in the family package.
  * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
  * a route id keys nothing, the derived-row law); an unbound family
- * refuses loud at the dispatch. */
+ * refuses loud at the seat gate above. */
 export declare const ACTION_BINDINGS: Record<string, {
     save: Binding;
     speak: Binding;

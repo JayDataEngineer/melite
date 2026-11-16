@@ -12,7 +12,13 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS, MAX_DIM } from "../src/card.ts";
+import { MAX_DIM } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
+
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the seats prime before
+// the walls read them (a pruned family package degrades to its own
+// absent seat; the dev tree seats input).
+await primeFamilySeats();
 import { SCALE_METHODS, MIN_DIM } from "@melite/models-input";
 
 const FACTS_PATH = join(
@@ -450,7 +456,7 @@ describe("the input-prep compose gate", () => {
 
 // ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
 // EVERY facts row the input-prep card serves: (1) the row's OWNING
-// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// FAMILY holds a live seat — no address silently rides
 // the legacy lane while its siblings compose the declared segment;
 // (2) the row composes ITS OWN declared segment — the staged source
 // saves under the run-scoped prefix. The weightless lane's graph is
@@ -464,11 +470,11 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
 
   for (const row of prepRows) {
     it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
-      // (1) THE BINDING: the owning family holds a row — a route id
-      // keying nothing was the silent miss this wall exists to kill.
+      // (1) THE SEAT: the owning family holds a live seat — a route
+      // id keying nothing was the silent miss this wall exists to kill.
       assert.ok(
-        (row.family ?? row.id) in ACTION_BINDINGS,
-        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+        seatOf(String(row.family ?? row.id)) !== undefined,
+        `family '${row.family ?? row.id}' holds no seat — address '${row.id}' would silently ride the legacy lane`,
       );
       // (2) THE COMPOSE: the row's own declared segment.
       const g = new GraphBuilder();

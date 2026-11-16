@@ -8,21 +8,37 @@ import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-card-kit/linked'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
-import { DECL as seedvr2Decl } from '@melite/models-seedvr2-ema'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { inputImageExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 
-// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
-// action composes; the legacy kit lane stays the declared fallback
-// (byte-oracle + unbound-row safety). Keyed by OWNING FAMILY
-// (`model.family ?? model.id` at dispatch — a route id keys
-// nothing, the derived-row law).
-export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
-  [seedvr2Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(seedvr2Decl, 'upscale'), p, model, g, runId)
-  },
+// THE FAMILY SEATS (the plugin law — the L3 cure, 2026-11-16): the
+// boarded family lives as an id literal; its DECL arrives through
+// the guarded seat loader (src/family-seats.ts — the card's only
+// family bridge, zero static imports). A family package absent from
+// the install costs its own seat: the card still registers and the
+// compose door below refuses loud, by name.
+export const BOARDED = ['seedvr2-ema'] as const
+
+// THE COMPOSE DOOR (the family dispatch): the declared action
+// composes — the card delegates, never authors nodes. Keyed by
+// OWNING FAMILY (`model.family ?? model.id` at dispatch — a route
+// id keys nothing, the derived-row law); an unseated family refuses
+// loud at the door.
+const composeFamilyAction = (
+  p: Record<string, unknown>,
+  model: ModelFacts,
+  g: GraphBuilder,
+  runId: string,
+): void => {
+  const seat = seatOf(String(model.family ?? model.id))
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${String(model.family ?? model.id)}' on the upscale-tools card — every boarded family (${BOARDED.join(', ')}) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+  }
+  instantiateAction(declaredAction(seat.decl, 'upscale'), p, model, g, runId)
 }
 
 const schema = z.object({
@@ -79,11 +95,15 @@ function estateRoot(estate: { stateRoots: readonly string[] } | undefined): stri
 }
 
 export function apply(ctx: Context): void {
+  // THE PLUGIN LAW'S FIRE (the L3 cure, 2026-11-16): prime the
+  // family seat before the card boards — fire-and-forget (the
+  // guard absorbs an absent family; the registration never waits).
+  void primeFamilySeats()
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'upscale-tools',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'generate',
-    boarded: [seedvr2Decl.id],
+    boarded: [...BOARDED],
     tags: ['image', 'upscale', 'enhance'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -143,12 +163,7 @@ export function apply(ctx: Context): void {
           throw new Error(`input_image '${ref}' is not a file on this estate (absolute mount path expected)`)
         }
       }
-      const bound = ACTION_BINDINGS[model.family ?? model.id]
-      if (bound) bound(doc, model, g, runId)
-      else {
-        throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the upscale-tools card — every boarded family (seedvr2-ema) composes its own declared segment; this address owns none`)
-      }
+      composeFamilyAction(doc, model, g, runId)
     },
   }))
 }

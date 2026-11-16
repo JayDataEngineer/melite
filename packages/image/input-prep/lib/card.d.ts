@@ -1,8 +1,6 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition';
 import z from '@deepseek-ai/schemastery';
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
-export declare const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void>;
+export declare const BOARDED: readonly ["input"];
 export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     source: z<string, string, "plain">;
     media_type: z<string, string, "defined">;

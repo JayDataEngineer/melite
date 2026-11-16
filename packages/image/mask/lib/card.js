@@ -1,6 +1,6 @@
 import z from '@deepseek-ai/schemastery';
 import { declaredAction, finalizeMask, IMPACT_DETECTOR_IDS, IMPACT_PACKS, impactArmNames, instantiateAction, } from '@melite/comfyui-card-kit';
-import { DECL as maskDecl, PROVISIONS as MASK_PROVISIONS } from '@melite/models-mask';
+import { maskProvisions, primeFamilySeats, seatOf } from "./family-seats.js";
 import { bag } from '@melite/contracts/extraKeys';
 import { inputImageExtra } from '@melite/comfyui-card-kit/fields';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
@@ -340,6 +340,11 @@ const scalarOf = (where, entry, f) => {
 // dies with "cannot get property comfyui without inject".
 export const inject = ['comfyui'];
 export function apply(ctx) {
+    // THE PLUGIN LAW'S FIRE (the L3 cure, 2026-11-16): prime the
+    // family seat before the card boards — fire-and-forget on top of
+    // the module-load prime (the loader is idempotent; the guard
+    // absorbs an absent family; the registration never waits).
+    void primeFamilySeats();
     ctx.effect(() => ctx.comfyui.registerCard({
         id: 'mask',
         skeleton: 'mask',
@@ -355,9 +360,12 @@ export function apply(ctx) {
         // like every other family's weights. The card SERVES the
         // family's export to its arm-weight gate; it authors no row of
         // its own (card.spec pins the identity, so a card-side row
-        // cannot drift in unseen).
-        provisions: MASK_PROVISIONS,
-        provisionOwner: maskDecl.id,
+        // cannot drift in unseen). The rows arrive through the seat
+        // loader (src/family-seats.ts — the plugin law: a pruned mask
+        // package serves no rows and costs only its own seat; the
+        // family id below is the literal — the one spelling, RULE 5).
+        provisions: maskProvisions(),
+        provisionOwner: 'mask-select',
         sidebar: { key: 'image', order: 9 },
         // no surface row — a FORM card (layout serves null)
         flowKinds: {
@@ -626,22 +634,30 @@ export function apply(ctx) {
             if (paintMasks.length > 1 || (!paintOnly && paintMasks.length > 0)) {
                 lane['paint_masks'] = paintOnly ? paintMasks.slice(1) : paintMasks;
             }
-            // THE FAMILY BINDING (the atom vocabulary's F1 mint, operator
-            // order 2026-10-12): the lane is the mask family's declared
-            // select action (models/mask), and this card composes it through
-            // the same interpreter every family's lane rides — resolved off
-            // the DECL, never a hand-imported action list (the interlock:
-            // the family drops the action and this binding refuses at
-            // boarding, loud, never a legacy fallback). The row's
-            // lane_inputs are empty — the family's facts door closes over
-            // its own weight constants (MASK_WEIGHTS, the LANE_FILES
-            // pattern); the card keeps the provisions (the downloads) and
-            // card.spec.ts pins the agreement.
+            // THE FAMILY SEAT (the atom vocabulary's F1 mint, operator
+            // order 2026-10-12; the plugin law — the L3 cure,
+            // 2026-11-16): the lane is the mask family's declared select
+            // action (models/mask), and this card composes it through the
+            // same interpreter every family's lane rides — resolved off
+            // the SEAT (src/family-seats.ts, the guarded loader — the
+            // card holds no static family import), never a hand-imported
+            // action list (the interlock: the family drops the action and
+            // declaredAction refuses at the door, loud, never a legacy
+            // fallback; the PACKAGE absent and the seat read refuses
+            // loud, by name — a pruned mask package costs only its own
+            // seat). The row's lane_inputs are empty — the family's facts
+            // door closes over its own weight constants (MASK_WEIGHTS,
+            // the LANE_FILES pattern); the card keeps the provisions (the
+            // downloads) and card.spec.ts pins the agreement.
+            const seat = seatOf('mask-select');
+            if (seat === undefined) {
+                throw new Error(`no declared action for family 'mask-select' on the mask card — every boarded family (mask-select) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`);
+            }
             const row = {
                 id: 'mask', family: 'mask-select', card: 'mask', defaults: {},
                 lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [],
             };
-            instantiateAction(declaredAction(maskDecl, 'select'), lane, row, g, runId);
+            instantiateAction(declaredAction(seat.decl, 'select'), lane, row, g, runId);
         },
         // THE 512-HINT STRIP (the red-box hunt): kills the autofilled
         // {0,0,512,512} bboxes default on unscoped SAM3 detects (an

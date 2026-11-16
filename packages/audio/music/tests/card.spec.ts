@@ -15,7 +15,8 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { ACTION_BINDINGS, composeFamilyAction } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -28,6 +29,11 @@ let def: CardDefinition;
 let music3: ModelFacts;
 
 beforeAll(async () => {
+  // THE SEATS, PRIMED EXPLICITLY (the plugin law's test shape): the
+  // card's compose dispatch resolves the family DECLs through the
+  // guarded dynamic seats — this file composes with families
+  // installed, so the table is filled before the first arm runs.
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("music")!;
   assert.ok(def, "the composition root serves the music card");
   music3 = facts.models.music3!;
@@ -231,6 +237,17 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     assert.throws(
       () => def.compose(def.schema({ prompt: "fallback probe" }), fallen as never, new GraphBuilder(), "wall_fallback_yue2"),
       /no declared action for family 'synthetic-music-yue2' on the music card — every boarded family \(music3, yue2\)/,
+    );
+  });
+
+  it("THE ABSENT-SEAT REFUSAL: a boarded family whose package is missing refuses loud, by name (the plugin law)", () => {
+    // A boarded id whose seat never filled (the family package
+    // pruned from the install): the dispatch's own door throws the
+    // image-gen-shaped refusal naming the family — never a silent
+    // second copy, never a crash below the gate.
+    assert.throws(
+      () => composeFamilyAction("pruned-family", { prompt: "x" }, music3, new GraphBuilder(), "wall_absent_seat"),
+      /no declared action for family 'pruned-family' on the music card — every boarded family \(music3, yue2\).*a family package absent from the install refuses here, by name/,
     );
   });
 });

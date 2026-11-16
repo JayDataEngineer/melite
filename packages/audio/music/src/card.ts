@@ -6,9 +6,6 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { DECL as music3Decl } from '@melite/models-music3'
-import { MUSIC3_FULL_STEPS } from '@melite/models-music3'
-import { DECL as yue2Decl } from '@melite/models-yue2'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
@@ -16,6 +13,7 @@ import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
 import { seedExtra } from '@melite/comfyui-card-kit/fields'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 
 export const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption, three sections: Global Metadata (genre, mood, BPM) + Vocal Details (gender, timbre, range) + Arrangement (instruments, structure). Weak one-word captions end the song early — the tail turns to noise. E.g. 'A funk-pop soul track at 105 BPM; male baritone, warm rasp; clean guitar riff, brass stabs, tight pocket drums'.", required: true, wtype: 'textarea', })),
@@ -23,7 +21,17 @@ export const schema = z.object({
   duration: z.number().description("Duration (s)").min(5).max(360).step(1).default(30).extra('extra', bag({ order: 0, group: "generation", width: 1, tooltip: "Audio length CEILING in seconds (5-360) — never a floor: the model ends the song when its plan ends, not when this number arrives. The plan lives in the LYRICS field — sung words for a song, sequential section tags ([intro] / [instrumental] / [solo] blocks, one per line, ~20-40s each) for an instrumental. An empty or single-tag lyrics box plans ONE phrase and wraps ~35s no matter how high this sits. Long track (>2min) + CUDA OOM: state tiled_decode.", wtype: 'slider' })),
   mode: vocabulary(["full", "melody", "off"]).description("ABC Planning").default("full").extra('extra', bag({ order: 1, group: "generation", width: 1, tooltip: "YuE2 only: plan a symbolic score before generating. full = melody + chords; melody = melody only (cover-recommended); off = direct generation.", wtype: 'select', visible_when: 'model=yue2' })),
   guidance_scale: z.number().description("CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 2, group: "generation", width: 1, tooltip: "Classifier-free guidance (KSampler cfg). 1.7 = the default.", visible_when: 'model=music3' })),
-  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(MUSIC3_FULL_STEPS.default).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = the default (the full-schedule checkpoint tier's own default — the step↔checkpoint pairing). A distilled checkpoint states its own tier's window. Never 0.", wtype: 'number' })),
+  // THE SERVED DEFAULT (the full-schedule checkpoint tier's own
+  // default — the step↔checkpoint pairing; the tooltip carries the
+  // number). THE PLUGIN LAW (L3 cure, 2026-11-16): the tier
+  // constant lives in the family package (music3's tier.ts,
+  // MUSIC3_FULL_STEPS.default) and this card loads WITHOUT it, so
+  // the number is a literal here — one home of the DERIVATION stays
+  // tier.ts (the DECL's resolver_defaults spread from it, and the
+  // step-tier wall judges the marriage on the dev tree); the
+  // compose action refuses a stated steps outside the resolved
+  // checkpoint's tier window at run time, never a silent drift.
+  n_diffusion_steps: z.number().description("Diffusion Steps").min(1).max(200).step(1).default(30).extra('extra', bag({ order: 3, group: "generation", width: 1, tooltip: "Denoising steps. 30 = the default (the full-schedule checkpoint tier's own default — the step↔checkpoint pairing). A distilled checkpoint states its own tier's window. Never 0.", wtype: 'number' })),
   lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = the default.", visible_when: 'model=music3' })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 0, group: 'seed', width: 1 }))),
   // THE DECODE TIER KNOB (audit 014 C3): NO .default() — absence is
@@ -35,23 +43,52 @@ export const schema = z.object({
 
 const schemaFn = callableSchema(schema)
 
-// THE FAMILY IDS COME FROM THEIR DECLS (the closure gate's RULE 5):
-// a retyped id breaks the card at RUNTIME — not-boarded — with every
-// wall green. image-gen has done it this way all along.
-export const BOARDED: string[] = [music3Decl.id, yue2Decl.id]
+// THE FAMILY IDS ARE LITERALS (the plugin law, L3 cure, 2026-11-16:
+// "The Card can exist without a Family"): the family packages
+// resolve through ./family-seats.ts (guarded dynamic seats, primed
+// at registration) — a missing family package costs its OWN seat,
+// never this card's load. A retyped id breaks the binding on the
+// dev tree (the family-coverage wall judges every boarded entry
+// against the live registry; the seat table skips a module whose
+// DECL id names nothing), never silently at the not-boarded
+// refusal.
+export const BOARDED: string[] = ['music3', 'yue2']
 
-/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
- * family's declared compose action per boarded family — the card
- * owns only dispatch; the segment factories live in the family
- * packages (the legacy lanes stay the declared fallback +
- * byte-oracle). Keyed by OWNING FAMILY (`model.family ?? model.id`
- * at dispatch — a route id keys nothing, the derived-row law). */
+/** THE SEAT-DRIVEN DISPATCH (the atom vocabulary, stroke 3): the
+ *  owning family's declared compose action, resolved through the
+ *  family's SEAT (family-seats.ts) at call time — the card owns
+ *  only dispatch; the segment factories live in the family
+ *  packages (the legacy lanes stay the declared fallback +
+ *  byte-oracle). A family package absent from the install refuses
+ *  loud HERE, by name; the card itself still loads and registers. */
+export function composeFamilyAction(
+  family: string,
+  p: Record<string, unknown>,
+  model: ModelFacts,
+  g: GraphBuilder,
+  runId: string,
+): void {
+  const seat = seatOf(family)
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${family}' on the music card — every boarded family (music3, yue2) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+  }
+  instantiateAction(declaredAction(seat.decl, 'compose'), p, model, g, runId)
+}
+
+/** THE ACTION BINDINGS: the dispatch table compose reads at call
+ *  time, keyed by OWNING FAMILY (`model.family ?? model.id` — a
+ *  route id keys nothing, the derived-row law). Each row closes
+ *  over its literal family id and resolves the DECL through the
+ *  seat, so a pruned family package costs its row's reach, never
+ *  the table (the value-roundtrip corruption seats swap rows
+ *  here). */
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
-  [music3Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(music3Decl, 'compose'), p, model, g, runId)
+  ['music3']: (p, model, g, runId) => {
+    composeFamilyAction('music3', p, model, g, runId)
   },
-  [yue2Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(yue2Decl, 'compose'), p, model, g, runId)
+  ['yue2']: (p, model, g, runId) => {
+    composeFamilyAction('yue2', p, model, g, runId)
   },
 }
 
@@ -65,13 +102,19 @@ export const identity = {
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
+  // THE PLUGIN LAW'S PRIMING (fire-and-forget, image-gen shape): the
+  // guarded dynamic imports of the boarded family packages start
+  // here; registration NEVER waits on a family package — a pruned
+  // family costs its own seat, never the estate boot.
+  void primeFamilySeats()
   ctx.effect(() => comfy.registerCard({
     id: 'music',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'music',
-    // (A-C3, 2026-09-28: the literals were the drift class — a DECL
-    // rename silently diverged from this hand list. The spread is
-    // the derivation; closure-gate RULE 5 pins it.)
+    // THE BOARDING LITERALS (the plugin law): ids stated once, judged
+    // on the dev tree by the family-coverage wall (a board naming
+    // nothing reds there), never derived at load from a package this
+    // card must load without.
     boarded: [...BOARDED],
     tags: ['audio', 'music', 'generate'],
     identity,

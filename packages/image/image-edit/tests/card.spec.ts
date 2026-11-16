@@ -30,7 +30,13 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { declCap, ACTION_BINDINGS } from "../src/card.ts";
+import { declCap } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
+
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the seats prime before
+// the walls read them (a pruned family package degrades to its own
+// absent seat; the dev tree seats all four).
+await primeFamilySeats();
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -893,7 +899,7 @@ describe("declCap (the max_images law — the card face rides the DECLs, missing
 
 // ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
 // EVERY facts row the image-edit card serves: (1) the row's OWNING
-// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// FAMILY holds a live seat — no address silently rides
 // the legacy lane while its siblings compose the declared segment;
 // (2) the row composes ITS OWN declared truth — the unet the row
 // spells is the unet the graph loads (the wrong-weights half), and
@@ -909,11 +915,11 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
 
   for (const row of editRows) {
     it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
-      // (1) THE BINDING: the owning family holds a row — a route id
+      // (1) THE SEAT: the owning family holds a live seat — a route id
       // keying nothing was the silent miss this wall exists to kill.
       assert.ok(
-        (row.family ?? row.id) in ACTION_BINDINGS,
-        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+        seatOf(String(row.family ?? row.id)) !== undefined,
+        `family '${row.family ?? row.id}' holds no seat — address '${row.id}' would silently ride the legacy lane`,
       );
       // (2) THE COMPOSE: the row's own declared weights + classes.
       const g = new GraphBuilder();

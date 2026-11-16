@@ -16,6 +16,7 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -32,6 +33,11 @@ let def: CardDefinition;
 let model: ModelFacts;
 
 beforeAll(async () => {
+  // THE FAMILY SEAT FIRST (the plugin law): the compose door's faces
+  // (wire law, carrier walk, renderers) ride the primed seat —
+  // loadCardDefs's own plugin application primes too; this is the
+  // module-importer's defensive prime (idempotent).
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("h3-timeline")!;
   assert.ok(def, "the composition root serves the h3-timeline card");
   model = facts.models["h3"]!;

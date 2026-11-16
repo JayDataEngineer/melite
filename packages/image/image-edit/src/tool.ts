@@ -20,11 +20,20 @@ import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-card-kit/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
+import { primeFamilySeats } from './family-seats.ts'
 
 export const TOOL_NAME = 'image_edit'
 
-export const buildImageEditTool = (call: EstateCall): ToolDefinition =>
-  defineCardTool(call, {
+/** The builder awaits the family-seat prime (the plugin law's tool
+ *  face — the L3 cure, 2026-11-16): the model knob's closed enum
+ *  rides BOARDED (the literal), but the compose door behind the
+ *  execute hop reads the seats — an absent family package costs its
+ *  own seat and refuses loud at the door, never here. Async is the
+ *  executor battery's accepted makeTool shape (the harness awaits
+ *  it). */
+export const buildImageEditTool = async (call: EstateCall): Promise<ToolDefinition> => {
+  await primeFamilySeats()
+  return defineCardTool(call, {
     name: TOOL_NAME,
     flow: 'image-edit',
     label: identity.label,
@@ -37,3 +46,4 @@ export const buildImageEditTool = (call: EstateCall): ToolDefinition =>
     defaultModel: BOARDED[0],
     previewField: 'prompt',
   })
+}

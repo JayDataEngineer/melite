@@ -12,7 +12,12 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
+
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the seats prime before
+// the walls read them (a pruned family package degrades to its own
+// absent seat; the dev tree seats all four).
+await primeFamilySeats();
 import { fieldsOfEnvelope, resolveValue } from "../../../web/card-base/src/spec.ts";
 
 const FACTS_PATH = join(
@@ -209,8 +214,8 @@ describe("the tagger weights law (the variant rail owns the checkpoint)", () => 
 
 // ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
 // EVERY facts row the tagger card serves: (1) the row's OWNING
-// FAMILY holds an ACTION_BINDINGS row — no address silently rides
-// the legacy lane while its siblings compose the declared segment;
+// FAMILY holds a live seat — no address silently rides the legacy
+// lane while its siblings compose the declared segment;
 // (2) the row composes ITS OWN declared segment — the family's own
 // interrogator class builds under the run-scoped prefix. The
 // family's class spelling is the oracle; the graph is the accused.
@@ -229,23 +234,23 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
     assert.ok(taggerRows.length >= 4, `expected the four tagger family rows, found ${String(taggerRows.length)}`);
   });
 
-  it("THE BINDING COMPLETENESS: the bindings cover every legacy arm key (dispatch is total, never partial)", () => {
-    // The bindings dispatch by family; every family that could ever
-    // compose must be bound, or an address refuses loud at the
-    // dispatch while its siblings compose the declared segment.
+  it("THE BINDING COMPLETENESS: the seats cover every legacy arm key (dispatch is total, never partial)", () => {
+    // The compose door dispatches by family; every family that could
+    // ever compose must be seated, or an address refuses loud at the
+    // door while its siblings compose the declared segment.
     const armKeys = Object.keys(OWN_CLASS);
     for (const key of armKeys) {
-      assert.ok(key in ACTION_BINDINGS, `family '${key}' holds no ACTION_BINDINGS row`);
+      assert.ok(seatOf(key) !== undefined, `family '${key}' holds no seat`);
     }
   });
 
   for (const row of taggerRows) {
     it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
       const family = (row.family ?? row.id) as string;
-      // (1) THE BINDING: the owning family holds a row.
+      // (1) THE SEAT: the owning family holds a live seat.
       assert.ok(
-        family in ACTION_BINDINGS,
-        `family '${family}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+        seatOf(family) !== undefined,
+        `family '${family}' holds no seat — address '${row.id}' would silently ride the legacy lane`,
       );
       // (2) THE COMPOSE: the family's own interrogator class builds.
       const g = new GraphBuilder();

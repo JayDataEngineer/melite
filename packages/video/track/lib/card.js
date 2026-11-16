@@ -1,7 +1,11 @@
 import z from '@deepseek-ai/schemastery';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
 import { bag } from '@melite/contracts/extraKeys';
-import { DECL as maskDecl, PROVISIONS as MASK_PROVISIONS } from '@melite/models-mask';
+// THE FAMILY SEAT (L3, 2026-11-17): the mask family resolves
+// through a guarded dynamic import — the card exists without it
+// (zero static family value imports; the seats module serves the
+// family's own rows by identity).
+import { maskProvisions, primeFamilySeats } from "./family-seats.js";
 export const FPS = 24;
 export const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors';
 /** THE ARM WEIGHTS (the silent-truncation law): the video track
@@ -46,6 +50,7 @@ export const identity = {
 };
 export const inject = ['comfyui'];
 export function apply(ctx) {
+    void primeFamilySeats();
     ctx.effect(() => ctx.comfyui.registerCard({
         id: 'track',
         skeleton: 'track',
@@ -55,10 +60,11 @@ export function apply(ctx) {
         identity,
         // THE FAMILY OWNS THE DOWNLOADS: the SAM3 video checkpoint rows
         // live in the mask-select family's DECL (sam3.1_multiplex is the
-        // video-track weight) — the card serves the export, authors no
-        // row of its own.
-        provisions: MASK_PROVISIONS,
-        provisionOwner: maskDecl.id,
+        // video-track weight) — the card serves the export through its
+        // seat, authors no row of its own; an absent family package
+        // serves no rows and the arm-weight check refuses loud.
+        provisions: maskProvisions(),
+        provisionOwner: 'mask-select',
         sidebar: { key: 'video', order: 10 },
         flowKinds: {
             inputs: { clip: 'video' },

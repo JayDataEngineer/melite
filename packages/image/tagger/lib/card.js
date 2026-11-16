@@ -2,30 +2,27 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, instantiateAction } from '@melite/comfyui-card-kit';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
-import { DECL as wd14Decl } from '@melite/models-wd14';
-import { DECL as joytagDecl } from '@melite/models-joytag';
-import { DECL as florence2Decl } from '@melite/models-florence2';
-import { DECL as joycaptionDecl } from '@melite/models-joycaption';
 import { inputImageExtra } from '@melite/comfyui-card-kit/fields';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
-// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): each boarded
-// family's declared action composes — the card delegates, never
-// authors nodes. Keyed by OWNING FAMILY (`model.family ?? model.id`
-// at dispatch — a route id keys nothing, the derived-row law); an
-// unbound family refuses loud at the dispatch.
-export const ACTION_BINDINGS = {
-    [wd14Decl.id]: (p, model, g, runId) => {
-        instantiateAction(declaredAction(wd14Decl, 'tag'), p, model, g, runId);
-    },
-    [joytagDecl.id]: (p, model, g, runId) => {
-        instantiateAction(declaredAction(joytagDecl, 'tag'), p, model, g, runId);
-    },
-    [florence2Decl.id]: (p, model, g, runId) => {
-        instantiateAction(declaredAction(florence2Decl, 'tag'), p, model, g, runId);
-    },
-    [joycaptionDecl.id]: (p, model, g, runId) => {
-        instantiateAction(declaredAction(joycaptionDecl, 'tag'), p, model, g, runId);
-    },
+import { primeFamilySeats, seatOf } from "./family-seats.js";
+// THE FAMILY SEATS (the plugin law — the L3 cure, 2026-11-16): the
+// four boarded families live as id literals; their DECLs arrive
+// through the guarded seat loader (src/family-seats.ts — the card's
+// only family bridge, zero static imports). A family package absent
+// from the install costs its own seat: the card still registers and
+// the compose door below refuses loud, by name.
+export const BOARDED = ['wd14', 'joytag', 'florence2', 'joycaption'];
+// THE COMPOSE DOOR (the family dispatch): each boarded family's
+// declared action composes — the card delegates, never authors
+// nodes. Keyed by OWNING FAMILY (`model.family ?? model.id` at
+// dispatch — a route id keys nothing, the derived-row law); an
+// unseated family refuses loud at the door.
+const composeFamilyAction = (p, model, g, runId) => {
+    const seat = seatOf(String(model.family ?? model.id));
+    if (seat === undefined) {
+        throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tagger card — every boarded family (${BOARDED.join(', ')}) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`);
+    }
+    instantiateAction(declaredAction(seat.decl, 'tag'), p, model, g, runId);
 };
 // requiresByFamily: declared on the seam owner
 // (card-definition.ts:64, moved there 2026-11-05 per the card-UI
@@ -109,14 +106,19 @@ export const identity = {
     ],
 };
 export function apply(ctx) {
+    // THE PLUGIN LAW'S FIRE (the L3 cure, 2026-11-16): prime the
+    // family seats before the card boards — fire-and-forget (the
+    // guards absorb an absent family; the registration never waits).
+    void primeFamilySeats();
     ctx.effect(() => ctx.comfyui.registerCard({
         id: 'tagger',
         // stage-row id the compose emits (purge S-decls verdict: the
         // retired row carried "" — engine truth wins).
         skeleton: 'tagger',
-        // the four boarded families (derived — the DECL ids are the
-        // one spelling; RULE 5).
-        boarded: [wd14Decl.id, joytagDecl.id, florence2Decl.id, joycaptionDecl.id],
+        // the four boarded families (the BOARDED literal above — the
+        // one spelling; RULE 5). The DECLs ride the seat loader, so a
+        // pruned family package removes only its own boarding here.
+        boarded: [...BOARDED],
         tags: ['image', 'tag', 'analyze'],
         identity,
         // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -167,12 +169,7 @@ export function apply(ctx) {
             if (!img.trim()) {
                 throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
             }
-            const bound = ACTION_BINDINGS[model.family ?? model.id];
-            if (bound)
-                bound(doc, model, g, runId);
-            else {
-                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the tagger card — every boarded family (wd14, joytag, florence2, joycaption) composes its own declared segment; this address owns none`);
-            }
+            composeFamilyAction(doc, model, g, runId);
         },
         finalize: finalizeTagger,
     }));

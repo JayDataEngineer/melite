@@ -3,8 +3,6 @@ import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces';
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
-export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract';
-export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema';
 /** The card's boarding roster: ONE family. The folded-lane variant
  *  routes (h3-fl2va, h3-ref2va, h3-keyframe, h3-timeline-ref)
  *  RETIRED with the operator's 2026-11-02 recipe rework ("1 model,
@@ -112,6 +110,6 @@ export declare const identity: {
     principles: string[];
 };
 export declare const inject: string[];
-export declare function apply(ctx: Context): void;
+export declare function apply(ctx: Context): Promise<void>;
 export declare function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void;
 //# sourceMappingURL=card.d.ts.map

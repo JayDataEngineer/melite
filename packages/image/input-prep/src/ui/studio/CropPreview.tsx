@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { MIN_DIM } from '@melite/models-input/scale-vocab'
+import { scaleVocab } from './scaleVocabSeat.ts'
 import css from './prep.module.css'
 
 /** A crop box in image pixels — the card's four crop params as one
@@ -85,9 +85,14 @@ const resizeRect = (n: NaturalSize, base: CropRect, handle: Handle, x: number, y
 }
 
 /** Whether a committed rect is honorable (every side at least the
- * engine's own floor — the blank-image law's threshold). */
-export const cropIsHonorable = (r: CropRect): boolean =>
-  r.width >= MIN_DIM && r.height >= MIN_DIM
+ * engine's own floor — the blank-image law's threshold). The floor
+ * is the FAMILY's own (the seat; a pruned family package carries no
+ * floor — an unseated peek judges nothing, the compose gate speaks
+ * for it: the per-family degrade, never a card-authored number). */
+export const cropIsHonorable = (r: CropRect): boolean => {
+  const floor = scaleVocab()?.MIN_DIM
+  return floor === undefined || (r.width >= floor && r.height >= floor)
+}
 
 const HANDLES: readonly Handle[] = ['nw', 'ne', 'se', 'sw', 'n', 'e', 's', 'w']
 

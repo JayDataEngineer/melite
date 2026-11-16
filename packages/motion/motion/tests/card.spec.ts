@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -28,6 +29,11 @@ let def: CardDefinition;
 let kimodo: ModelFacts;
 
 beforeAll(async () => {
+  // THE PLUGIN LAW'S SEAT PRIMING (the L3 cure): the compose
+  // dispatch resolves the kimodo DECL through the guarded dynamic
+  // seat — the arms below read it, so the battery primes before the
+  // first compose.
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("motion")!;
   assert.ok(def, "the composition root serves the motion card");
   kimodo = facts.models.kimodo!;

@@ -8,7 +8,10 @@ import { buildImageEditTool, TOOL_NAME } from "../src/tool.ts";
 
 const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
 
-const tool = buildImageEditTool(REFUSING_CALL);
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the builder is async —
+// it awaits the family-seat prime before reading the boarded
+// roster's doors; the module-scope tool awaits it too.
+const tool = await buildImageEditTool(REFUSING_CALL);
 
 describe("the image-edit tool face", () => {
   it("names itself on the tool plane (plain id, no _card suffix)", () => {

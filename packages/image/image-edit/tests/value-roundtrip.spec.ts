@@ -13,8 +13,9 @@
 // every law re-seats on the two living lanes — the pole pair (the
 // render-sizing lane vs the resize-tail lane) keeps both halves.
 //
-// THE TOGGLE (E5) corrupts THROUGH the compose door (ACTION_BINDINGS
-// row swap, in-file, restored in finally): the wall must red while
+// THE TOGGLE (E5) corrupts THROUGH the compose door (the seated
+// DECL's declared edit action build swap, in-file, restored in
+// finally): the wall must red while
 // the corruption rides and green after the restore. A green that
 // survives the swap is a wall judging a copy, not the graph.
 import "../../../../tests/helpers/boot-models.ts";
@@ -30,7 +31,11 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
+
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the seats prime before
+// the walls read them.
+await primeFamilySeats();
 // The data pin rides the family's OWN table (family-owned rows —
 // the 2026-10-15 cure): the row is imported verbatim, never re-typed.
 import { LORA_ROWS } from "../../../models/qwen-img-edit-21/mods/loras.ts";
@@ -126,10 +131,15 @@ describe("P2 VALUE law at the image-edit consumer", () => {
 
   it("E5 THE TOGGLE: corruption through the compose door reds E1, restore greens it", () => {
     const KEY = "qwen-img-edit-21";
-    const bound = ACTION_BINDINGS[KEY];
-    assert.ok(bound, "the 21 binding the toggle corrupts exists");
-    ACTION_BINDINGS[KEY] = ((p, model, g, runId) =>
-      bound({ ...p, prompt: "" }, model, g, runId));
+    const seat = seatOf(KEY);
+    assert.ok(seat, "the 21 seat the toggle corrupts exists");
+    const action = seat.decl.actions?.find((a) => a.id === "edit");
+    assert.ok(action, "the 21 declared edit action the toggle corrupts exists");
+    const mutable = action as {
+      build: (ctx: { p: Record<string, unknown> }) => unknown;
+    };
+    const bound = mutable.build;
+    mutable.build = (ctx) => bound({ ...ctx, p: { ...ctx.p, prompt: "" } });
     let red: unknown;
     try {
       const g = new GraphBuilder();
@@ -139,7 +149,7 @@ describe("P2 VALUE law at the image-edit consumer", () => {
     } catch (e) {
       red = e;
     } finally {
-      ACTION_BINDINGS[KEY] = bound;
+      mutable.build = bound;
     }
     assert.ok(red, "the corrupted door reds: the smuggled empty prompt never reaches the graph as stated");
     const graph = composeLane(m21, "r_e5_restored");

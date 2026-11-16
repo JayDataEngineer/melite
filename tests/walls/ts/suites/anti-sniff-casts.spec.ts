@@ -219,6 +219,12 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/models/yue2/src/actions.ts': 1,
   'packages/motion/motion/src/ui/studio/motionDoc.ts': 2,
   'packages/video/h3-timeline/src/tool.ts': 1,
+  // adjudicated 2026-11-17 (the L3 family-seat wave): the
+  // allSettled-results tuple cast (PromiseSettledResult.value →
+  // the [main, loras, schema, actions] module tuple) — the one
+  // structural narrowing a seat needs; no face traffic passes
+  // through it untyped.
+  'packages/video/h3-timeline/src/family-seats.ts': 1,
   'packages/video/h3-timeline/src/ui/studio/CallCard.tsx': 1,
   // stepped 8 -> 6 (2026-11-15, the post-chain hoist + the lane
   // dead-letter retirement: the reseat/flip-writer casts died with

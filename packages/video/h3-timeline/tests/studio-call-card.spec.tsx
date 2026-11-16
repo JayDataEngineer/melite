@@ -15,7 +15,7 @@ import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { DOC_FPS_DEFAULT, deliveredFrames } from "@melite/models-h3/timelineContract"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField, ASSET_DRAG_MIME } from "@melite/card-base/client"
-import { carrier } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
 
 // THE SERVED WALK (hour 22): the fold's schema truth — the carrier's
 // own serialization, the same bytes the lane serves.

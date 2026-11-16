@@ -18,7 +18,7 @@ import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
 import { ASSET_DRAG_MIME } from '@melite/card-base/client'
-import { carrier } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
 
 const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()
 const REAL_KNOB_FIELDS: Record<string, SpecField> = {}

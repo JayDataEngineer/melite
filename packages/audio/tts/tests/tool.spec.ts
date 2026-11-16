@@ -8,7 +8,11 @@ import { buildTtsTool, TOOL_NAME } from "../src/tool.ts";
 
 const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
 
-const tool = buildTtsTool(REFUSING_CALL);
+// THE BUILDER IS ASYNC (the L3 cure): it awaits primeFamilySeats
+// (the guarded dynamic family seat) before deriving the knob and
+// the large default — top-level await here, the image-gen
+// executor spec's shape.
+const tool = await buildTtsTool(REFUSING_CALL);
 
 describe("the tts tool face", () => {
   it("names itself on the tool plane (plain id, no _card suffix)", () => {

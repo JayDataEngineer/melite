@@ -35,11 +35,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { StageViewOwnerProps } from '@melite/contracts/stageView'
 import { StudioShell, SourceRow, readAsDataURL, fetchMediaLibrary } from '@melite/card-base/client'
-// THE CLIENT-SAFE LEAF (2026-11-10): the family root drags the kit
-// root (saveAudio) whose closure carries schemastery past the client
-// bundle purity gate — the words live in ./scale-vocab (zero
-// imports), one truth, both consumers.
-import { SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input/scale-vocab'
+// THE FAMILY SEAT (the plugin law's client seam, 2026-11-16): the
+// scale vocabulary rides the guarded loader in ./scaleVocabSeat.ts
+// (the studio tree holds zero static family imports — a pruned
+// family package costs only the seat; the menus render empty and
+// the compose door owns the loud refusal). The seat primes at
+// bundle load (src/client/index.ts) and the hook below reads it.
+import { useScaleVocab } from './scaleVocabSeat.ts'
 import { CropPreview } from './CropPreview.tsx'
 import type { CropRect, NaturalSize } from './CropPreview.tsx'
 import css from './prep.module.css'
@@ -99,6 +101,13 @@ export function sniffMediaType(source: string): 'audio' | 'image' | null {
 
 export function InputPrepStudio(props: StageViewOwnerProps) {
   const { row } = props
+  // THE FAMILY SEAT (the plugin law's client seam, 2026-11-16): the
+  // scale vocabulary + the drag floor, the family's one truth, read
+  // through the guarded seat (absent → empty menus, no floor — the
+  // per-family degrade; the compose door refuses loud, by name).
+  const vocab = useScaleVocab()
+  const scaleMethods = vocab?.SCALE_METHODS ?? []
+  const scaleModelOptions = vocab?.SCALE_MODEL_OPTIONS ?? []
   // THE ABSENT-PARAMS ROW (audit input-prep F4): a row without a
   // params object must yield ONE stable identity, never a fresh {}
   // per render — the re-seat effect keys on object identity, and a
@@ -144,12 +153,12 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
   const scaleW = num(user['scale_width'])
   const scaleH = num(user['scale_height'])
   const method = typeof user['scale_method'] === 'string'
-    && (SCALE_METHODS as readonly string[]).includes(user['scale_method'])
+    && scaleMethods.includes(user['scale_method'])
     ? user['scale_method'] : 'lanczos'
   // THE MODEL CHOICE: the stated roster member verbatim; anything
   // else (absent, non-string) is the "" unstated face.
   const scaleModel = typeof user['scale_model'] === 'string'
-    && (SCALE_MODEL_OPTIONS as readonly string[]).includes(user['scale_model'])
+    && scaleModelOptions.includes(user['scale_model'])
     ? user['scale_model'] : ''
 
   // THE EDIT SCHEDULES (audit input-prep F1, the run-carry burn: the
@@ -312,7 +321,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
         </div>
         <div className={css.railRow}>
           <span className={css.railHint} data-testid="prep-scale-floor-hint">
-            targets under {MIN_DIM}px refuse at Run (smaller targets upscale to a blank — the crop leaf's drag-time floor, named here)
+            targets under {vocab?.MIN_DIM}px refuse at Run (smaller targets upscale to a blank — the crop leaf's drag-time floor, named here)
           </span>
         </div>
         <div className={css.railRow}>
@@ -333,7 +342,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
             value={method}
             onChange={(e) => { edit({ scale_method: e.target.value }) }}
           >
-            {SCALE_METHODS.map((m) => (
+            {scaleMethods.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
@@ -345,7 +354,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
             value={scaleModel}
             onChange={(e) => { edit({ scale_model: e.target.value }) }}
           >
-            {SCALE_MODEL_OPTIONS.map((m) => (
+            {scaleModelOptions.map((m) => (
               <option key={m} value={m}>{m === '' ? '(none — plain resample only)' : m}</option>
             ))}
           </select>

@@ -1,8 +1,6 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition';
 import z from '@deepseek-ai/schemastery';
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces';
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 export declare const declCap: (d: {
     id: string;
     lane_inputs?: Record<string, unknown>;
@@ -42,17 +40,7 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     sampler: z<string, string, "plain">;
     scheduler: z<string, string, "plain">;
 }>>, "plain">;
-export declare const BOARDED: string[];
-/** The action bindings (the atom vocabulary, stroke 3): a boarded
- *  family with a bound action composes through the atom's own
- *  declared segment — the card delegates, never authors nodes.
- *  Keyed by the OWNING FAMILY (model.family, never model.id: route
- *  addresses must land on their family's row, never a silent miss
- *  onto nothing). Every boarded family holds a bound action.
- *  Exported for the every-address wall: each served facts row's
- *  OWNING family must hold a row here — an unbound family refuses
- *  loud at the dispatch. */
-export declare const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void>;
+export declare const BOARDED: readonly ["qwen-img-edit-21", "fibo2-edit", "h3-image-edit"];
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export declare const identity: {

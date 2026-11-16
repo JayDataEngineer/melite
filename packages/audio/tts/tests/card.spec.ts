@@ -21,6 +21,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -33,6 +34,12 @@ let def: CardDefinition;
 let ttsModel: ModelFacts;
 
 beforeAll(async () => {
+  // THE SEAT, PRIMED EXPLICITLY (the plugin law's test shape): the
+  // card's lane pick and the save/speak dispatches resolve the
+  // family DECL through the guarded dynamic seat — this file
+  // composes with the family installed, so the seat is filled
+  // before the first arm runs.
+  await primeFamilySeats();
   def = (await loadCardDefs()).get("tts")!;
   assert.ok(def, "the composition root serves the tts card");
   ttsModel = facts.models["qwen3-tts"]!;

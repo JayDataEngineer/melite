@@ -12,7 +12,7 @@ import assert from "node:assert/strict"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { VideoTimelineStudio } from "../src/ui/studio/component.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
-import { carrier } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
 
 // THE SERVED BYTES — schemastery's own serialization of the card's
 // carrier (the same walk the lane serves; fieldsOfEnvelope reads it

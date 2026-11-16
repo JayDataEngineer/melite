@@ -18,7 +18,7 @@ import { useBeatMutations } from "../src/ui/studio/useBeatMutations.ts"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
-import { carrier } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
 
 // THE SERVED WALK (hour 22): the fold's schema truth, keyed by wire name.
 const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()

@@ -3,12 +3,12 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { buildH3TimelineTool, TOOL_NAME } from "../src/tool.ts";
-import { carrier, schema } from "../src/card.ts";
+import { carrier, schema } from "@melite/models-h3/schema";
 
 // Face pins only — this spec never executes, so the transport is a
 // stub that refuses if ever invoked (the old URL-string arg predates
 // the EstateCall transport and never ran).
-const tool = buildH3TimelineTool(async () => {
+const tool = await buildH3TimelineTool(async () => {
   throw new Error("tool.spec: no execute arm — the transport must stay cold")
 });
 // (defineTool validates args before presenters run — prompt AND
@@ -84,7 +84,7 @@ describe("the h3-timeline tool face", () => {
 
   it("JSON-STRING calls and audio_clips unwrap before either estate door", async () => {
     const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
-    const transport = buildH3TimelineTool(async (_m, path, body) => {
+    const transport = await buildH3TimelineTool(async (_m, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
       if (path === "/v1/flows/drafts") return { draftId: "d-str" };
       return { run_id: "r-str", status: "queued" };
@@ -115,7 +115,7 @@ describe("the h3-timeline tool face", () => {
     // list, so this face does not invent one — the string rides to
     // the estate and the card gate refuses with its own text.
     const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
-    const transport = buildH3TimelineTool(async (_m, path, body) => {
+    const transport = await buildH3TimelineTool(async (_m, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
       if (path === "/v1/flows/drafts") return { draftId: "d-obj" };
       const start = (body ?? {}) as Record<string, unknown>;
@@ -139,7 +139,7 @@ describe("the h3-timeline tool face", () => {
     // not unwrapped, not dropped — it rides to the estate, whose
     // gate reads it as "no calls to compose".
     const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
-    const transport = buildH3TimelineTool(async (_m, path, body) => {
+    const transport = await buildH3TimelineTool(async (_m, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
       if (path === "/v1/flows/drafts") return { draftId: "d-bad" };
       const start = (body ?? {}) as Record<string, unknown>;
@@ -160,7 +160,7 @@ describe("the h3-timeline tool face", () => {
 
   it("a native ARRAY calls passes through untouched", async () => {
     const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
-    const transport = buildH3TimelineTool(async (_m, path, body) => {
+    const transport = await buildH3TimelineTool(async (_m, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
       if (path === "/v1/flows/drafts") return { draftId: "d-arr" };
       return { run_id: "r-arr", status: "queued" };

@@ -30,7 +30,12 @@ beforeAll(async () => {
 // existence check — tmpdir files, chdir-free absolute paths).
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
+
+// THE PLUGIN LAW (the L3 cure, 2026-11-16): the seats prime before
+// the walls read them (a pruned family package degrades to its own
+// absent seat; the dev tree seats seedvr2-ema).
+await primeFamilySeats();
 
 const model = facts.models["seedvr2-ema"]!;
 
@@ -185,7 +190,7 @@ describe("the upscale-tools compose gate", () => {
 
 // ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
 // EVERY facts row the upscale-tools card serves: (1) the row's
-// OWNING FAMILY holds an ACTION_BINDINGS row — no address silently
+// OWNING FAMILY holds a live seat — no address silently
 // rides the legacy lane while its siblings compose the declared
 // segment; (2) the row composes ITS OWN declared truth — the unet
 // and vae the row spells are the weights the graph loads. The
@@ -199,11 +204,11 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
 
   for (const row of upscaleRows) {
     it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
-      // (1) THE BINDING: the owning family holds a row — a route id
-      // keying nothing was the silent miss this wall exists to kill.
+      // (1) THE SEAT: the owning family holds a live seat — a route
+      // id keying nothing was the silent miss this wall exists to kill.
       assert.ok(
-        (row.family ?? row.id) in ACTION_BINDINGS,
-        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+        seatOf(String(row.family ?? row.id)) !== undefined,
+        `family '${row.family ?? row.id}' holds no seat — address '${row.id}' would silently ride the legacy lane`,
       );
       // (2) THE COMPOSE: the row's own declared weights.
       const g = new GraphBuilder();

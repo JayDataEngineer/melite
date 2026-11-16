@@ -38,32 +38,35 @@
 // admission is the surface, firing is compose's call).
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
-import { finalizeImageEdit, impactArmNames, instantiateAction, orderedInputImages, refuseImageEditFiring, declaredAction } from '@melite/comfyui-card-kit'
-import { DECL as maskSelectDecl, DETECTOR_PROVISIONS } from '@melite/models-mask'
+import { finalizeImageEdit, impactArmNames, orderedInputImages, refuseImageEditFiring } from '@melite/comfyui-card-kit'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { promptPairExtra, samplingExtra, seedExtra } from '@melite/comfyui-card-kit/fields'
-import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
-import { DECL as fibo2EditDecl } from '@melite/models-fibo2-edit'
-import { DECL as h3ImageEditDecl } from '@melite/models-h3-image-edit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { bag } from '@melite/contracts/extraKeys'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
+import { detectorProvisions, editSeats, primeFamilySeats, seatOf } from './family-seats.ts'
 
 // THE STACK CAP (the max_images law — the card RIDES the models'
 // DECLs, never a hardcoded count): the roomiest boarded lane's
-// total image inputs, anchor included. A boarded family WITHOUT
-// max_images breaks card registration LOUD (fail-loud over the
-// degenerate 1 — a missing cap is a DECL bug, and the degenerate
-// floor would silently disagree with the lane's narrow end).
+// total image inputs, anchor included. A PRESENT boarded family
+// WITHOUT max_images breaks card registration LOUD (fail-loud over
+// the degenerate 1 — a missing cap is a DECL bug, and the
+// degenerate floor would silently disagree with the lane's narrow
+// end). The DECLs arrive through the seat loader
+// (src/family-seats.ts — the plugin law: a pruned lane package
+// costs only its own seat and its own contribution to the cap; ALL
+// lanes pruned leaves the degenerate floor 1 and the compose door
+// refuses everything, loud, by name).
 export const declCap = (d: { id: string; lane_inputs?: Record<string, unknown> }): number => {
   const v = d.lane_inputs?.max_images
   if (typeof v === 'number' && Number.isFinite(v) && v >= 1) return Math.floor(v)
   throw new Error(`image-edit card: boarded family '${d.id}' declares no lane_inputs.max_images (the max_images law — the node's own image-input count)`)
 }
-const EDIT_LIST_CAP = Math.max(declCap(qwenImgEdit21Decl), declCap(fibo2EditDecl), declCap(h3ImageEditDecl))
+const EDIT_LIST_CAP = Math.max(1, ...editSeats().map((seat) => declCap(seat.decl)))
 
 export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): declaration
   // order = the field order. image1 IS THE PLAIN ANCHOR (2026-09-21,
@@ -160,30 +163,37 @@ const schemaFn = callableSchema(schema)
 // (2026-11-09: the backup edit-checkpoint lane was removed at the
 // operator's order — the model was too old; the boarded roster is
 // the two living lanes.)
-// BOTH IDS COME FROM THEIR DECLS (the card audit's M1): a boarded
-// id is the DECL's own, so a rename breaks the card at runtime
-// (not-boarded) with every wall green.
-export const BOARDED: string[] = [qwenImgEdit21Decl.id, fibo2EditDecl.id, h3ImageEditDecl.id]
+// THE IDS ARE THE LITERAL SPELLING (the card audit's M1, seated):
+// a boarded id is the family DECL's own (the seat loader keys the
+// table by DECL id), so a rename breaks the family-coverage wall
+// on the dev tree with every runtime green. The DECLs arrive
+// through the guarded seat loader (src/family-seats.ts — the
+// plugin law: a pruned lane package costs only its own seat and
+// the compose door refuses it, loud, by name).
+export const BOARDED = ['qwen-img-edit-21', 'fibo2-edit', 'h3-image-edit'] as const
 
-/** The action bindings (the atom vocabulary, stroke 3): a boarded
- *  family with a bound action composes through the atom's own
- *  declared segment — the card delegates, never authors nodes.
- *  Keyed by the OWNING FAMILY (model.family, never model.id: route
- *  addresses must land on their family's row, never a silent miss
- *  onto nothing). Every boarded family holds a bound action.
- *  Exported for the every-address wall: each served facts row's
- *  OWNING family must hold a row here — an unbound family refuses
- *  loud at the dispatch. */
-export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
-  [qwenImgEdit21Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(qwenImgEdit21Decl, 'edit'), p, model, g, runId)
-  },
-  [fibo2EditDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(fibo2EditDecl, 'edit'), p, model, g, runId)
-  },
-  [h3ImageEditDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(h3ImageEditDecl, 'edit'), p, model, g, runId)
-  },
+/** The compose door (the atom vocabulary, stroke 3, seated — the
+ *  L3 cure, 2026-11-16): a seated family composes through the
+ *  atom's own declared segment — the card delegates, never authors
+ *  nodes. Keyed by the OWNING FAMILY (model.family, never
+ *  model.id: route addresses must land on their family's row,
+ *  never a silent miss onto nothing). All three edit families
+ *  declare the action id 'edit', so one seat read serves the
+ *  dispatch. The every-address wall reads the seats directly: each
+ *  served facts row's OWNING family must hold a live seat — an
+ *  absent family refuses loud at this door. */
+const composeFamilyAction = (
+  p: Record<string, unknown>,
+  model: ModelFacts,
+  g: GraphBuilder,
+  runId: string,
+): void => {
+  const seat = seatOf(String(model.family ?? model.id))
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (${BOARDED.join(', ')}) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name). State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`)
+  }
+  instantiateAction(declaredAction(seat.decl, 'edit'), p, model, g, runId)
 }
 
 /** The identity rung (label/description — the authored prose the
@@ -209,6 +219,11 @@ export const identity = {
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
+  // THE PLUGIN LAW'S FIRE (the L3 cure, 2026-11-16): prime the
+  // family seats before the card boards — fire-and-forget on top of
+  // the module-load prime (the loader is idempotent; the guards
+  // absorb an absent family; the registration never waits).
+  void primeFamilySeats()
   ctx.effect(() => comfy.registerCard({
     id: 'image-edit',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
@@ -235,14 +250,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // 2026-10-12): the three detector rows are the mask-select
     // family DECL's rows — the card SERVES the family's
     // DETECTOR_PROVISIONS export by IDENTITY (whole array, the same
-    // row objects the family's PROVISIONS spreads) and stamps the
+    // row objects the family's PROVISIONS spreads; the seat loader
+    // hands the module's own export through) and stamps the
     // owner, so the missing-weight rescue names provision_model
     // model=mask-select — the ONE download door, by family id,
     // hashed and present-marked like every other family's weights.
     // The card authors no row of its own (card.spec pins the
     // identity, so a card-authored copy cannot drift in unseen).
-    provisions: DETECTOR_PROVISIONS,
-    provisionOwner: maskSelectDecl.id,
+    // The rows arrive through the seat loader (src/family-seats.ts
+    // — the plugin law: a pruned mask package serves no rows and
+    // costs only its own seat; the owner id below is the literal —
+    // the one spelling, RULE 5).
+    provisions: detectorProvisions(),
+    provisionOwner: 'mask-select',
     // THE ARM WEIGHTS (the silent-truncation law): a crop_stitch run
     // with a detector stated names that detector's row — auto mode
     // names nothing even when a detector is stated (the firing gate
@@ -340,13 +360,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // A stated size is a DELIVERABLE resize (degrees-freed from
       // the latent): decode → lanczos ImageScale → save, one
       // artifact.
-      const bound = ACTION_BINDINGS[model.family ?? model.id]
-      if (bound) {
-        bound(doc, model, g, runId)
-        return
-      }
-      throw new Error(
-        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, fibo2-edit, h3-image-edit) composes its own declared segment; this address owns none. State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`)
+      // THE SEATED DISPATCH (the compose door above): the seat read
+      // refuses loud, by name, for a familyless or pruned-family
+      // address (session 7a82's refusal lives in the door's voice).
+      composeFamilyAction(doc, model, g, runId)
     },
     finalize: finalizeImageEdit,
   }))

@@ -4,13 +4,13 @@
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (kimodoLane).
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
-import { DECL as kimodoDecl } from '@melite/models-kimodo'
 import { declaredAction, finalizeMotion, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
 import { seedExtra } from '@melite/comfyui-card-kit/fields'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 
 export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', })),
@@ -33,15 +33,31 @@ export const schema = z.object({
 
 const schemaFn = callableSchema(schema)
 
-// THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5)
-export const BOARDED: string[] = [kimodoDecl.id]
+// THE CARD'S BOARDING (the plugin law, L3 cure 2026-11-16): the id
+// is a LITERAL and the family package resolves through
+// ./family-seats.ts (a guarded dynamic seat, primed at
+// registration) — a missing family package costs its OWN seat,
+// never this card's load. The binding is judged by the
+// family-coverage wall on the dev tree: a family that changes its
+// id reds there, never silently at the not-boarded refusal.
+export const BOARDED: string[] = ['kimodo']
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
 // boarded family's declared compose action, keyed by the row's
-// family address. A family-less row (the declared fallback) rides
-// the legacy lane arm below — never a silent second copy.
+// family address. THE PLUGIN LAW (L3): the binding resolves the
+// family's SEAT (family-seats.ts) at compose time — a missing
+// family package refuses at the dispatch's own loud voice, never at
+// this module's load. A family-less row (the declared fallback)
+// rides the legacy lane arm below — never a silent second copy.
 export const ACTION_BINDINGS: Record<string, Binding> = {
-  [kimodoDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(kimodoDecl, 'compose'), p, model, g, runId),
+  kimodo: (p, model, g, runId) => {
+    const seat = seatOf('kimodo')
+    if (seat === undefined) {
+      throw new Error(
+        `no declared action for family 'kimodo' on the motion card — every boarded family (kimodo) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+    }
+    void instantiateAction(declaredAction(seat.decl, 'compose'), p, model, g, runId)
+  },
 }
 
 /** The identity rung (label/description — the authored prose the
@@ -65,13 +81,22 @@ export function apply(ctx: Context): void {
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
+  // THE PLUGIN LAW'S PRIMING (the image-gen template shape):
+  // fire-and-forget — registration NEVER waits on a family package;
+  // a missing one costs its OWN seat and the compose dispatch
+  // refuses loud naming it.
+  void primeFamilySeats()
   ctx.effect(() => comfy.registerCard({
     id: 'motion',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'motion',
     // (A-C3, 2026-09-28: the literal was the drift class — a DECL
     // rename silently diverged from the hand list. The spread is
-    // the derivation; closure-gate RULE 5 pins it.)
+    // the derivation; closure-gate RULE 5 pins it. L3 UPDATE
+    // 2026-11-16: BOARDED is now the LITERAL id — the DECL rename
+    // drift is judged by the family-coverage wall on the dev tree,
+    // because the card can no longer read the DECL at module load
+    // (the plugin law: the card exists without its families).)
     boarded: [...BOARDED],
     tags: ['motion', 'animate', 'generate'],
     identity,
@@ -134,7 +159,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       if (bound) bound(doc, model, g, runId)
       else {
         throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the motion card — every boarded family (kimodo) composes its own declared segment; this address owns none`)
+          `no declared action for family '${String(model.family ?? model.id)}' on the motion card — every boarded family (kimodo) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
       }
     },
     finalize: finalizeMotion,

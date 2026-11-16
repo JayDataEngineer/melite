@@ -9,6 +9,14 @@
  */
 import { defineStageViewRegistration } from '@melite/card-base/client'
 import { InputPrepStudio } from '../ui/studio/component.tsx'
+import { loadScaleVocab } from '../ui/studio/scaleVocabSeat.ts'
+
+// THE PLUGIN LAW'S FIRE — CLIENT HALF (2026-11-16): prime the
+// family vocabulary seat at bundle load (fire-and-forget before
+// the first render reads it — the guarded loader resolves the
+// inlined leaf on the first microtask; a pruned family costs only
+// the seat, and the menus render empty).
+void loadScaleVocab()
 
 /** The built-in registration (the ui-tool law, verbatim — the
  * module namespace IS the plugin: the loader consumes

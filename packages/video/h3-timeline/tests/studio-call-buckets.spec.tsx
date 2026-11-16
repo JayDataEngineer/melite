@@ -19,7 +19,7 @@ import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
-import { carrier } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
 
 const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()
 const REAL_KNOB_FIELDS: Record<string, SpecField> = {}

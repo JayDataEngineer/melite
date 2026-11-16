@@ -13,7 +13,7 @@ import assert from "node:assert/strict"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { createElement as h } from "react"
 import { OverlayKnob, fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
-import { carrier } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
 import { KNOB_ORDER } from "../src/ui/studio/docModel.ts"
 
 // THE SERVED WALK — schemastery's own serialization, the same bytes

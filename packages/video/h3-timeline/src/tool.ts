@@ -22,8 +22,8 @@ import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-card-kit/params-emit'
-import { carrier, identity, BOARDED, VARIANT_ADDRESSES, JSON_ARRAY_PARAMS } from './card.ts'
-import { SEAM_OVERLAP_FRAMES } from '@melite/models-h3/timelineContract'
+import { identity, BOARDED, VARIANT_ADDRESSES } from './card.ts'
+import { primeFamilySeats, requireSeat } from './family-seats.ts'
 
 export const TOOL_NAME = 'h3_timeline'
 
@@ -31,10 +31,20 @@ export const TOOL_NAME = 'h3_timeline'
  *  carrier's declared params plus this plane's calls/audio_clips JSON
  *  nodes, wrapped by the shared card-tool builder (the drafts door,
  *  the {model:} lift, and the presentation projections it owns).
+ *  THE PARAM SURFACE IS FAMILY VOCABULARY (the plugin law,
+ *  2026-11-16): the carrier, the JSON-array list, and the seam-law
+ *  prose ride the family seat — the builder primes and requires it,
+ *  so an absent @melite/models-h3 refuses loud naming the package
+ *  (the tool has no param surface of its own to degrade to).
  * @param call the estate call seat the tool's doors ride
  * @returns the tool definition a tools service registers */
-export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
-  defineCardTool(call, {
+export const buildH3TimelineTool = async (call: EstateCall): Promise<ToolDefinition> => {
+  await primeFamilySeats()
+  // `carrier` IS the family paramSchema (one object, two names on
+  // the family's schema face) — the seat serves it once.
+  const seat = requireSeat('h3-timeline', 'agent tool param surface')
+  const seam = seat.seamOverlapFrames
+  return defineCardTool(call, {
     name: TOOL_NAME,
     flow: 'h3-timeline',
     label: identity.label,
@@ -49,11 +59,11 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
     // keyframe routes retired 2026-11-02 with the recipe rework
     // (one lane, three recipes: draft / standard / final).
     parameters: {
-      ...emitParamsSpec(carrier as never, [...BOARDED, ...VARIANT_ADDRESSES]),
+      ...emitParamsSpec(seat.paramSchema as never, [...BOARDED, ...VARIANT_ADDRESSES]),
       calls: {
         type: 'json',
         required: true,
-        description: `Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs?, knobs? }] and nothing else (an undeclared per-call key is refused by name). CALLS TILE: every call's start_frame must equal the previous call's end_frame — no gaps, no overlaps. A window renders 22+17k frames, so spans are NOT interchangeable: the FIRST call authors a 22+17f span (56, 73, 90, 107, 124 ...), while a carried later call authors a 17f span (17, 34, 51, 68, 119 ...) because its ${SEAM_OVERLAP_FRAMES}-frame seam comes from the generation head rather than the span. An off-grid span is refused with the nearest legal frame, never silently re-framed. Spans are ints (end > start). THE SEAM LAW: context carry is THE DEFAULT (omit transition) — the latent tail continues across the seam at ${SEAM_OVERLAP_FRAMES} frames; transition 'carry+keyframe' = the carry PLUS the previous window's final frame pinned as this window's first frame (a gen-side image anchor for more consistent shots). NEVER author transition 'cut' — H3 hard-cuts on its own when a shot must start fresh; stock is the operator's manual escape hatch in the strip, never a parameter. There is NO per-call audio — spoken lines ride audio_clips.`,
+        description: `Shots — one per film shot: [{ text, start_frame, end_frame, image?, transition?, refs?, knobs? }] and nothing else (an undeclared per-call key is refused by name). CALLS TILE: every call's start_frame must equal the previous call's end_frame — no gaps, no overlaps. A window renders 22+17k frames, so spans are NOT interchangeable: the FIRST call authors a 22+17f span (56, 73, 90, 107, 124 ...), while a carried later call authors a 17f span (17, 34, 51, 68, 119 ...) because its ${seam}-frame seam comes from the generation head rather than the span. An off-grid span is refused with the nearest legal frame, never silently re-framed. Spans are ints (end > start). THE SEAM LAW: context carry is THE DEFAULT (omit transition) — the latent tail continues across the seam at ${seam} frames; transition 'carry+keyframe' = the carry PLUS the previous window's final frame pinned as this window's first frame (a gen-side image anchor for more consistent shots). NEVER author transition 'cut' — H3 hard-cuts on its own when a shot must start fresh; stock is the operator's manual escape hatch in the strip, never a parameter. There is NO per-call audio — spoken lines ride audio_clips.`,
       },
       audio_clips: {
         type: 'json',
@@ -65,6 +75,7 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition =>
       },
     } as ParameterSchemaSpec,
     defaultModel: BOARDED[0],
-    jsonArrayParams: JSON_ARRAY_PARAMS,
+    jsonArrayParams: seat.jsonArrayParams,
     previewValue: (a) => `shots=${Array.isArray(a.calls) ? (a.calls as unknown[]).length : 0}`,
   })
+}

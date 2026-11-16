@@ -26,7 +26,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { gridSnap } from "../src/card.ts";
+import { gridSnap } from "@melite/models-h3/timelineContract";
 import {
   axisPickPatch, type FormSpecDoc, type FormVariantRow,
 } from "@melite/card-base/client";

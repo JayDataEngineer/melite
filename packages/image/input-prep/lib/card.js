@@ -2,16 +2,25 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
-import { DECL as inputDecl, SCALE_METHODS, SCALE_MODEL_OPTIONS, MIN_DIM } from '@melite/models-input';
+import { minDim, primeFamilySeats, scaleMethods, scaleModelOptions, seatOf } from "./family-seats.js";
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
-// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
-// action composes the whole segment; an unbound family refuses loud
-// at the dispatch. Keyed by OWNING FAMILY (`model.family ??
-// model.id` — a route id keys nothing, the derived-row law).
-export const ACTION_BINDINGS = {
-    [inputDecl.id]: (p, model, g, runId) => {
-        instantiateAction(declaredAction(inputDecl, 'prep'), p, model, g, runId);
-    },
+// THE FAMILY SEATS (the plugin law — the L3 cure, 2026-11-16): the
+// boarded family lives as an id literal; its DECL arrives through
+// the guarded seat loader (src/family-seats.ts — the card's only
+// family bridge, zero static imports). A family package absent from
+// the install costs its own seat: the card still registers and the
+// compose door below refuses loud, by name.
+export const BOARDED = ['input'];
+// THE COMPOSE DOOR (the family dispatch): the declared action
+// composes the whole segment; an unseated family refuses loud at
+// the door. Keyed by OWNING FAMILY (`model.family ?? model.id` — a
+// route id keys nothing, the derived-row law).
+const composeFamilyAction = (p, model, g, runId) => {
+    const seat = seatOf(String(model.family ?? model.id));
+    if (seat === undefined) {
+        throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the input-prep card — every boarded family (${BOARDED.join(', ')}) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`);
+    }
+    instantiateAction(declaredAction(seat.decl, 'prep'), p, model, g, runId);
 };
 // Exported for the estate parity wall (param-bounds-parity judges
 // the card's schema against the input family's prep ParamSpec, the
@@ -35,7 +44,7 @@ export const schema = z.object({
     crop_height: z.number().description("Crop Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 3, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_width: z.number().description("Scale Width").min(-1).step(1).default(-1).extra('extra', bag({ order: 4, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
     scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
-    scale_method: vocabulary([...SCALE_METHODS]).description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
+    scale_method: vocabulary([...scaleMethods()]).description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
     // THE MODEL CHOICE (operator directive, 2026-11-08 — the studio
     // card: "parameters to upscale / downscale optionally, letting
     // you choose the model"): the standard ComfyUI upscale-model
@@ -49,8 +58,10 @@ export const schema = z.object({
     // a silent drop. The family's SCALE_MODEL_OPTIONS export is the
     // one truth (this vocabulary and the prep action's enum options
     // cite it; the vocab-rails-subset wall seats the site LOCAL for
-    // the same empty-combo reason).
-    scale_model: vocabulary([...SCALE_MODEL_OPTIONS]).description("Upscale Model").default("").extra('extra', bag({ order: 7, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
+    // the same empty-combo reason) — served through the seat loader
+    // (src/family-seats.ts; a pruned family package serves an empty
+    // rail and costs only its own seat).
+    scale_model: vocabulary([...scaleModelOptions()]).description("Upscale Model").default("").extra('extra', bag({ order: 7, group: "transform", wtype: 'select', visible_when: 'media_type=image' })),
 });
 const schemaFn = callableSchema(schema);
 // THE OVERSIZE CEILING (audit input-prep-total F3, 2026-11-10): the
@@ -79,6 +90,11 @@ export const identity = {
     ],
 };
 export function apply(ctx) {
+    // THE PLUGIN LAW'S FIRE (the L3 cure, 2026-11-16): prime the
+    // family seat before the card boards — fire-and-forget on top of
+    // the module-load prime (the loader is idempotent; the guard
+    // absorbs an absent family; the registration never waits).
+    void primeFamilySeats();
     ctx.effect(() => ctx.comfyui.registerCard({
         id: 'input-prep',
         // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
@@ -86,7 +102,10 @@ export function apply(ctx) {
         // stock-only card (requires = ()): LoadImage/ImageCrop/
         // ImageScale/SaveImage + LoadAudio/SaveAudio are ComfyUI core
         // no requires to declare.
-        boarded: [inputDecl.id],
+        // the boarded family — the BOARDED literal above (the one
+        // spelling; RULE 5). The DECL rides the seat loader, so a
+        // pruned family package removes only its own boarding here.
+        boarded: [...BOARDED],
         tags: ['image', 'input', 'prepare'],
         identity,
         // THE DISCOVERY ROWS (authored 2026-09-10 — the card postdates
@@ -189,8 +208,13 @@ export function apply(ctx) {
             // THE BLANK-IMAGE LAW (2026-10-24, volley item f): a crop side
             // below MIN_DIM upscales to a blank (the 1x1-crop receipt) —
             // refused here in the card's voice, before any GPU is spent.
-            if (hasCrop && (cropValues[2] < MIN_DIM || cropValues[3] < MIN_DIM)) {
-                throw new Error(`input-prep crop needs width and height of at least ${MIN_DIM}px (got ${cropValues[2]}x${cropValues[3]}) — smaller crops upscale to a blank`);
+            // The floor is the FAMILY's own (the seat; a pruned family
+            // package carries no floor — the gates pass through and the
+            // dispatch's loud family refusal speaks, never a
+            // card-authored substitute for the family's law).
+            const minSide = minDim();
+            if (hasCrop && (cropValues[2] < minSide || cropValues[3] < minSide)) {
+                throw new Error(`input-prep crop needs width and height of at least ${minSide}px (got ${cropValues[2]}x${cropValues[3]}) — smaller crops upscale to a blank`);
             }
             if (hasScale && (scaleWidth <= 0 || scaleHeight <= 0)) {
                 throw new Error('input-prep scale needs positive width and height; -1 unsets both');
@@ -199,8 +223,8 @@ export function apply(ctx) {
             // target below MIN_DIM on a side IS the reported blank
             // (run-c5eb3f2ec512: scale 2x1 → a 2x1 beige strip the lane
             // served as the run's image) — refused here, never composed.
-            if (hasScale && (scaleWidth < MIN_DIM || scaleHeight < MIN_DIM)) {
-                throw new Error(`input-prep scale needs width and height of at least ${MIN_DIM}px (got ${scaleWidth}x${scaleHeight}) — smaller targets upscale to a blank`);
+            if (hasScale && (scaleWidth < minSide || scaleHeight < minSide)) {
+                throw new Error(`input-prep scale needs width and height of at least ${minSide}px (got ${scaleWidth}x${scaleHeight}) — smaller targets upscale to a blank`);
             }
             // THE OVERSIZE CEILING (audit input-prep-total F3, 2026-11-10):
             // refused here on BOTH paths — the flat keys the schema walk
@@ -250,12 +274,7 @@ export function apply(ctx) {
                 method: doc['scale_method'],
             } : legacyScale;
             const gated = { ...doc, crop, scale };
-            const bound = ACTION_BINDINGS[model.family ?? model.id];
-            if (bound)
-                bound(gated, model, g, runId);
-            else {
-                throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the input-prep card — every boarded family (input) composes its own declared segment; this address owns none`);
-            }
+            composeFamilyAction(gated, model, g, runId);
         },
     }));
 }

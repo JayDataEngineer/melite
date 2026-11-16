@@ -24,7 +24,8 @@ import { schemaEnvelope } from "@melite/card-base/client"
 import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"
 import { loadCardDefs } from "@melite/comfyui-cordis"
 import "../../../../tests/helpers/boot-models.ts"
-import { carrier, BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
+import { carrier } from "@melite/models-h3/schema"
+import { BOARDED, VARIANT_ADDRESSES } from "../src/card.ts"
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
 // the upload leaf's faces (the dictionary owns the words — never a
 // hand-spelled copy in the arms; the deep source import follows the

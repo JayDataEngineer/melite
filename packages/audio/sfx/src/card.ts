@@ -3,23 +3,55 @@
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { DECL as mossSfxDecl } from '@melite/models-moss-sfx'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { bag } from '@melite/contracts/extraKeys'
 import { seedExtra } from '@melite/comfyui-card-kit/fields'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 
-/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
- * family's declared sfx action — the card owns only dispatch; the
- * segment factory lives in the family package (the legacy lane
- * stays the declared fallback + byte-oracle). Keyed by OWNING
- * FAMILY (`model.family ?? model.id` at dispatch — a route id keys
- * nothing, the derived-row law). */
+/** THE FAMILY ID IS A LITERAL (the plugin law, L3 cure, 2026-11-16:
+ * "The Card can exist without a Family"): the family package
+ * resolves through ./family-seats.ts (a guarded dynamic seat,
+ * primed at registration) — a missing family package costs its OWN
+ * seat, never this card's load. A retyped id breaks the binding on
+ * the dev tree (the family-coverage wall judges every boarded
+ * entry against the live registry; the seat table skips a module
+ * whose DECL id names nothing), never silently at the not-boarded
+ * refusal. */
+export const BOARDED: string[] = ['moss-sfx']
+
+/** THE SEAT-DRIVEN DISPATCH (the atom vocabulary, stroke 3): the
+ * owning family's declared sfx action, resolved through the
+ * family's SEAT (family-seats.ts) at call time — the card owns
+ * only dispatch; the segment factory lives in the family package
+ * (the legacy lane stays the declared fallback + byte-oracle). A
+ * family package absent from the install refuses loud HERE, by
+ * name; the card itself still loads and registers. */
+export function composeFamilyAction(
+  family: string,
+  p: Record<string, unknown>,
+  model: ModelFacts,
+  g: GraphBuilder,
+  runId: string,
+): void {
+  const seat = seatOf(family)
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${family}' on the sfx card — every boarded family (moss-sfx) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+  }
+  instantiateAction(declaredAction(seat.decl, 'sfx'), p, model, g, runId)
+}
+
+/** THE ACTION BINDINGS: the dispatch table compose reads at call
+ * time, keyed by OWNING FAMILY (`model.family ?? model.id` — a
+ * route id keys nothing, the derived-row law). The row closes over
+ * its literal family id and resolves the DECL through the seat, so
+ * a pruned family package costs the row's reach, never the table. */
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
-  [mossSfxDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(mossSfxDecl, 'sfx'), p, model, g, runId)
+  ['moss-sfx']: (p, model, g, runId) => {
+    composeFamilyAction('moss-sfx', p, model, g, runId)
   },
 }
 
@@ -60,11 +92,20 @@ export const identity = {
 }
 
 export function apply(ctx: Context): void {
+  // THE PLUGIN LAW'S PRIMING (fire-and-forget, image-gen shape): the
+  // guarded dynamic import of the boarded family package starts
+  // here; registration NEVER waits on the family — a pruned family
+  // costs its own seat, never the estate boot.
+  void primeFamilySeats()
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'sfx',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'sfx',
-    boarded: [mossSfxDecl.id],
+    // THE BOARDING LITERAL (the plugin law): the id stated once,
+    // judged on the dev tree by the family-coverage wall (a board
+    // naming nothing reds there), never derived at load from a
+    // package this card must load without.
+    boarded: [...BOARDED],
     tags: ['audio', 'sfx', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen

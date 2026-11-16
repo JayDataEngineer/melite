@@ -298,11 +298,17 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
         continue;
       }
       judged += 1;
-      // the file's own DECL keys (the derivations it holds): a file
-      // that imports a DECL and still spells a boarded id as a
+      // the file's own DECL bindings (the derivations it holds): a
+      // file that imports a DECL and still spells a boarded id as a
       // LITERAL is the exact retyping this rule kills — the DECL
-      // renames and the literal silently diverges.
-      const hasDeclKeys = /\b[A-Za-z0-9]+Decl\b/.test(code);
+      // renames and the literal silently diverges. THE 2026-11-17
+      // NARROWING: match DECL VALUE BINDINGS (an import alias or a
+      // const), not the WORD "Decl" — a card-local leaf named
+      // editDecl.ts is a module path, not a family derivation (the
+      // static family import itself is the L3 wall's law).
+      const hasDeclKeys =
+        /import\s*\{[^}]*\b\w*Decl\b[^}]*\}\s*from\s*'@melite\/models-/.test(code) ||
+        /\bconst\s+\w*Decl\s*=/.test(code);
       for (const arr of arrays) {
         const members = [...arr.matchAll(/["']([a-z0-9-_]+)["']/g)].map((x) => x[1]!);
         // PER MEMBER, NOT PER ARRAY (the walls audit's M5: the old
@@ -325,22 +331,39 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
-  it("RULE 5b · card compose bindings derive from the family DECLs: declaredAction at every seat", async () => {
-    // The interlock the atom vocabulary owes (stroke 3's close):
-    // an ACTION_BINDINGS row resolves its action off the family's
-    // OWN DECL through declaredAction — the hand-imported action
-    // list (one static import per family, retyped per card) is the
-    // drift bug this kills: the family drops an action from its
-    // DECL and the card's import silently keeps composing a dead
-    // segment. Judged per seat, two laws:
-    //   1. every instantiateAction seat inside the bindings literal
-    //      takes declaredAction(<decl>, '<id>') — nothing else;
-    //   2. the id is one the imported DECL actually declares (a
-    //      card binding an unoffered action refuses at boarding —
-    //      the wall refuses first, at CI).
+  it("RULE 5b · card compose bindings derive from the family DECLs: every seated action is one the family offers", async () => {
+    // The interlock the atom vocabulary owes (stroke 3's close),
+    // RE-DERIVED for the seated world (2026-11-17): an
+    // ACTION_BINDINGS entry composes off the family's OWN DECL —
+    // through the seat (declaredAction(<seat-expr>.decl, '<id>'))
+    // or by wholesale delegation (composeFamilyAction('<family>'))
+    // — never a hand-imported action list (the static-import era's
+    // drift bug: the family drops an action and the card's import
+    // silently keeps composing a dead segment). The decl's
+    // PROVENANCE is the L3 wall's law (no static family imports);
+    // THIS wall judges the OFFER: the entry's key is a family the
+    // models tree declares, and every action id the entry binds is
+    // one that family's DECL actually declares (a card binding an
+    // unoffered action refuses at boarding — the wall refuses
+    // first, at CI).
     const offenders: string[] = [];
     let judged = 0;
-    const checked = new Map<string, Set<string>>();
+    // family name (dir OR DECL.id) → the action ids its DECL offers
+    const offeredByFamily = new Map<string, Set<string>>();
+    const modelsRoot = new URL("../../../../packages/models/", import.meta.url);
+    for (const dir of readdirSync(modelsRoot)) {
+      const offered = new Set<string>();
+      try {
+        const mod = (await import(`../../../../packages/models/${dir}/src/index.ts`)) as {
+          DECL?: { id?: string; actions?: Array<{ id: string }> };
+        };
+        for (const a of mod.DECL?.actions ?? []) offered.add(a.id);
+        if (mod.DECL?.id !== undefined) offeredByFamily.set(mod.DECL.id, offered);
+      } catch {
+        /* a non-family dir under models/ offers nothing; the offender line below reports the empty offer */
+      }
+      offeredByFamily.set(dir, offered);
+    }
     for (const f of SOURCES) {
       if (!/\/card\.ts$/.test(f)) continue;
       if (f === "packages/web-kit/contracts/src/card.ts") continue;
@@ -354,48 +377,57 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       if (open === -1) continue;
       const close = code.indexOf("\n}", open);
       if (close === -1) continue;
-      judged += 1;
       const body = code.slice(open, close);
-      const seats = [...body.matchAll(/instantiateAction\((.+?), p, model, g, runId\)/g)].map((x) => x[1]!.trim());
-      if (seats.length === 0) {
-        offenders.push(`${f} — ACTION_BINDINGS with no instantiateAction seats — the card shape changed`);
+      // per-ENTRY: a key line at exactly two spaces (`['music3']:` or
+      // `kimodo:`) opens a binding; tts's inner slot keys (save/speak)
+      // sit at four and are body, not entries.
+      const keyLines = [...body.matchAll(/^ {2}(?:\['?([a-z0-9_-]+)'?\]|([a-z0-9_-]+))\s*:/gm)];
+      if (keyLines.length === 0) {
+        offenders.push(`${f} — ACTION_BINDINGS with no keyed entries — the card shape changed`);
         continue;
       }
-      for (const seat of seats) {
-        const dm = seat.match(/^declaredAction\((\w+Decl),\s*'([a-z0-9_-]+)'\)$/);
-        if (!dm) {
-          offenders.push(`${f} — binding seat '${seat}' does not derive via declaredAction(<decl>, '<id>')`);
+      for (let i = 0; i < keyLines.length; i += 1) {
+        const key = keyLines[i]![1] ?? keyLines[i]![2]!;
+        const start = (keyLines[i]!.index ?? 0) + keyLines[i]![0]!.length;
+        const end = i + 1 < keyLines.length ? (keyLines[i + 1]!.index ?? body.length) : body.length;
+        const entry = body.slice(start, end);
+        judged += 1;
+        // LAW 1 — the seat shape: derive via declaredAction (any decl
+        // expression; the L3 wall owns its provenance) or delegate
+        // wholesale to the family's compose door.
+        const derivations = [...entry.matchAll(/declaredAction\(([^,]+),\s*'([a-z0-9_-]+)'\s*\)/g)];
+        const delegations = [...entry.matchAll(/composeFamilyAction\(\s*'([a-z0-9_-]+)'/g)];
+        if (derivations.length === 0 && delegations.length === 0) {
+          offenders.push(`${f} — entry '${key}' composes through neither declaredAction(<decl>, '<id>') nor composeFamilyAction('<family>') — the card shape changed`);
           continue;
         }
-        const [, declName, actionId] = dm as unknown as [string, string, string];
-        const im = code.match(new RegExp(`import \\{[^}]*DECL as ${declName}[^}]*\\} from '([^']+)'`));
-        if (!im) {
-          offenders.push(`${f} — seat names ${declName} but the file never imports it`);
-          continue;
-        }
-        const spec = im[1]!;
-        // walls resolve by path, not workspace name — every family
-        // package is '@melite/models-<dir>' with the DECL at root
-        const dir = spec.replace(/^@melite\/models-/, "");
-        if (!checked.has(dir)) {
-          const offered = new Set<string>();
-          try {
-            const mod = (await import(`../../../../packages/models/${dir}/src/index.ts`)) as {
-              DECL?: { actions?: Array<{ id: string }> };
-            };
-            for (const a of mod.DECL?.actions ?? []) offered.add(a.id);
-          } catch {
-            /* the offender line below reports the empty offer */
+        for (const d of delegations) {
+          if (d[1] !== key) {
+            offenders.push(`${f} — entry '${key}' delegates through composeFamilyAction('${d[1]}') — a foreign family's door`);
           }
-          checked.set(dir, offered);
         }
-        const offered = checked.get(dir)!;
-        if (!offered.has(actionId)) {
-          offenders.push(`${f} — binds '${actionId}' off ${spec}, which declares [${[...offered].join(", ") || "none"}]`);
+        // LAW 2 — the offer: the key names a family the models tree
+        // declares, and every bound action id is one it offers.
+        const offered = offeredByFamily.get(key);
+        if (offered === undefined) {
+          offenders.push(`${f} — entry '${key}' keys a family no models package declares (dead or typo'd id)`);
+          continue;
+        }
+        for (const d of derivations) {
+          const actionId = d[2]!;
+          if (!offered.has(actionId)) {
+            offenders.push(`${f} — binds '${actionId}' off '${key}', which declares [${[...offered].join(", ") || "none"}]`);
+          }
         }
       }
     }
-    expect(judged, "no card.ts was judged — the census rotted").toBeGreaterThan(10);
+    // THE 2026-11-17 FLOOR RE-SEAT: the family-seat conversion (L3)
+    // retired ACTION_BINDINGS from the 3d + image cards and track —
+    // their bindings compose through the seat's declaredAction door
+    // instead. Five holders remain (audio ×3, motion, h3-timeline),
+    // every one seated. Dropping below five means a card lost its
+    // bindings census — rot, not conversion.
+    expect(judged, "no binding entry was judged — the census rotted").toBeGreaterThan(4);
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 

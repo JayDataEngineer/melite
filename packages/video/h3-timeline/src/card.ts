@@ -22,42 +22,27 @@
 // dead-branch node marks the t4r family in the serialized graph).
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import type { DeclaredModifierKind } from '@melite/comfyui-card-kit/params-emit'
-import { DECL as h3Decl, h3DefaultLoraEntry, MAX_COMPOSED_WINDOWS, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES, REFINE_WORKAROUND_WIDE_FRAMES } from '@melite/models-h3'
-import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras'
-import type { Family } from '@melite/models-h3/schema'
-import {
-  FAMILIES,
-  JSON_ARRAY_PARAMS,
-  coerceWireBoolean,
-  paramSchema,
-  schema,
-} from '@melite/models-h3/schema'
+// THE PLUGIN LAW (the card-without-family audit, 2026-11-16): every
+// family value below rides the family seat (family-seats.ts — guarded
+// dynamic imports primed once at application); a pruned
+// @melite/models-h3 package costs its own seat, never the card.
+// Type-only family imports stay lawful (they compile away).
+import type { EditMaskDial, EditReferenceDial } from '@melite/models-h3'
+import { primeFamilySeats, seatOf, requireSeat, type H3FamilySeat } from './family-seats.ts'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
-import { finalizeH3 } from '@melite/models-h3'
-import { renderH3Edit } from '@melite/models-h3'
-import type { EditMaskDial, EditReferenceDial } from '@melite/models-h3'
-import { reshootArmed } from '@melite/models-h3'
-import { parseH3Facts } from '@melite/models-h3/actions'
-import { assertOverlayGated } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { EDIT_FIELDS } from './editDecl.ts'
 import { checkPressParams, refusePress, promptAdmissionWarns } from './promptGate.ts'
 
-export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
-export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
-
-// THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
-// resolve's judge: schemastery schemas are callable (Schema.resolve)
-// but carry a typed data parameter, while the card seam takes
-// unknown. The full `schema()` normalizer CANNOT run here (its t4r
-// admission judges stated-and-valued keys as explicit injects, and
-// the merged carrier doc's walked defaults would read as injects),
-// so the strict resolve walks the carrier `paramSchema` — same
-// carrier the schemaCarrier registration hands the door.
-const schemaFn = callableSchema(paramSchema)
+// THE CARRIER'S CALLABLE FACE rides the family seat now (family-seats.ts):
+// the compose strict resolve walks `callableSchema(seat.paramSchema)` — same
+// carrier the schemaCarrier registration hands the door. The full
+// `schema()` normalizer CANNOT run there (its t4r admission judges
+// stated-and-valued keys as explicit injects, and the merged carrier
+// doc's walked defaults would read as injects).
 
 // inputs the t4 family templates OMIT whose pin defaults the engine
 // would auto-fill at serialization — the strip set lives with the lane, in the
@@ -78,7 +63,12 @@ const schemaFn = callableSchema(paramSchema)
  *  id `h3` — never a lane name; the card id `h3-timeline` (the
  *  usecase surface) keeps its own name. The id comes from the
  *  family's own DECL, and with it the lane's files. */
-export const BOARDED: string[] = [h3Decl.id]
+// THE LITERAL (the plugin law, 2026-11-16): the boarded id is the
+// card's own declaration now — the family seat is keyed by it
+// (family-seats.ts seatOf), and the family-coverage wall judges the
+// id against the dev tree's family DECLs (drift reds there, not
+// here).
+export const BOARDED: string[] = ['h3']
 
 // THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
 // agents pick no matrix variant — the tool's closed model enum
@@ -121,7 +111,13 @@ export const VARIANT_ADDRESSES: string[] = ['h3-timeline', 'h3-singularity']
  *  strength) still owns the values an entry leaves unstated. A
  *  multi-row arm is the stacked lane (distill + camera), which is
  *  what the official re-shoot chain rides. */
-const LORAS_MOD: DeclaredModifierKind = {
+// THE FAMILY-OWNED KIND (the plugin law, 2026-11-16): the loras kind
+// is FAMILY DATA — its catalog rows and ghost default live in
+// @melite/models-h3 — so the kind builds FROM THE SEAT and costs its
+// own seat: a pruned family package serves the card-local kinds
+// (edit/reshoot) only, and the served face shows no LoRA seat at
+// all (never a defaulting catalog, never a broken chip).
+const lorasMod = (seat: H3FamilySeat): DeclaredModifierKind => ({
   kind: 'loras',
   label: 'LoRAs',
   param_key: 'loras',
@@ -134,14 +130,14 @@ const LORAS_MOD: DeclaredModifierKind = {
   // rides exactly this row when the bag is absent, so the face shows
   // ONE chip for it. An explicit empty bag ([]) is the operator's
   // "off" and renders nothing.
-  default_entry: h3DefaultLoraEntry(),
+  default_entry: seat.defaultLoraEntry(),
   section: 'LoRAs — the family adapters this film stacks on its model seat (the acceleration/distill row and the CrossView camera row). Every entry states the catalog id and the strength; unstated steps and sigma shift marry from the catalog row. Film runs leave this arm empty (the card default row still applies).',
   fields: [
-    { name: 'id', label: 'LoRA', type: 'select', default: 'h3_silver_dareties', options: H3_LORA_ROWS.map((row) => ({ value: row.id, label: row.label })), tooltip: 'The adapter, by its catalog id — the family file the provisioner downloads; the render loads this id verbatim.' },
+    { name: 'id', label: 'LoRA', type: 'select', default: 'h3_silver_dareties', options: seat.loraRows.map((row) => ({ value: row.id, label: row.label })), tooltip: 'The adapter, by its catalog id — the family file the provisioner downloads; the render loads this id verbatim.' },
     { name: 'strength', label: 'Strength', type: 'number', default: 0.8, min: 0, max: 2, step: 0.05, tooltip: 'Adapter weight. Each row has a designed point (the default merge row 0.8, the distill rows 0.6–1, the refiner 0.35); the render only reads the number you state.' },
     { name: 'steps', label: 'Steps', type: 'number', max: 50, step: 1, tooltip: 'The step count to marry — OMIT the key and the catalog row\'s own count rides (the row domain owns the floor and the default; the door refuses any stated count outside the row\'s declared domain). State a number only inside the row\'s domain, when the schedule must bend.' },
   ],
-}
+})
 
 
 /** THE RESHOOT KIND (the fourth mod bag — the §8 unification,
@@ -285,11 +281,24 @@ export const EDIT_MOD: DeclaredModifierKind = {
   ],
 }
 
-/** THE CARD-DECLARED KINDS (one roster, two readers: the served
- *  mods row below and the declared-band judge's walk). */
-const DECLARED_MOD_KINDS: readonly DeclaredModifierKind[] = [
-  RESHOOT_MOD, EDIT_MOD, LORAS_MOD,
+/** THE CARD-LOCAL KINDS (the plugin law, 2026-11-16): the kinds this
+ *  card owns outright — their data lives HERE, never in the family
+ *  package, so they serve even when the family package is absent
+ *  (the roster reader never dies for a family). */
+const CARD_LOCAL_MOD_KINDS: readonly DeclaredModifierKind[] = [
+  RESHOOT_MOD, EDIT_MOD,
 ]
+
+/** THE SERVED ROSTER, seat-derived (one roster, two readers: the
+ *  served mods row and the declared-band judge's walk): the
+ *  card-local kinds always, the family-owned loras kind when the
+ *  @melite/models-h3 seat boarded (absent family = no LoRA seat on
+ *  the served face — the seat is the family's own cost). Callers run
+ *  post-priming (registration, the band judge at compose). */
+const declaredModKinds = (): readonly DeclaredModifierKind[] => {
+  const seat = seatOf('h3')
+  return seat === undefined ? CARD_LOCAL_MOD_KINDS : [...CARD_LOCAL_MOD_KINDS, lorasMod(seat)]
+}
 
 /** THE LEGACY EDIT ALIASES (slice 4 of the FRICTION_3 collapse —
  * THE DELETION): the five peer bags left the DECLARED roster (the
@@ -311,11 +320,15 @@ export const LEGACY_EDIT_KEYS = ['replace', 'repair', 'extend', 'refine', 'upsca
  *  The pass-side admission scans THIS list — never a hand copy of
  *  retired names (the pre-collapse list judged replace/repair/
  *  extend while the served edit spelling rode unjudged). */
-// Every DECLARED_MOD_KINDS row carries fields at this HEAD; the
+// Every CARD_LOCAL_MOD_KINDS row carries fields at this HEAD; the
 // interface keeps fields optional (a fields-less kind must still
 // admit no resolution seat, never crash the roster derivation).
+// THE ROSTER STAYS A MODULE VALUE (the harness lane-seat reads the
+// property synchronously) derived over the card-local kinds: the
+// family-owned loras kind carries no resolution field (its served
+// columns are id/strength/steps), so its seat costs nothing here.
 const resolutionParamKeys: string[] = []
-for (const kind of DECLARED_MOD_KINDS) {
+for (const kind of CARD_LOCAL_MOD_KINDS) {
   /* v8 ignore next 1 */
   const fields = kind.fields ?? []
   if (fields.some((f) => f['name'] === 'resolution')) resolutionParamKeys.push(kind.param_key)
@@ -545,9 +558,11 @@ function translateLegacyCell(
         // The arm's WINDOW is seconds on the old seat and frames on
         // the edit bag (window_length); the edit bag's clip_seconds
         // is the engine PLAN budget (band 2.5–15), never this
-        // window. Absence rides the arm's declared design default.
+        // window. Absence rides the arm's declared design default —
+        // a family-declared limit, so it rides the SEAT: an absent
+        // family refuses loud (never a silently defaulted limit).
         window_length: Math.round(
-          (take('clip_seconds'), typeof e.clip_seconds === 'number' ? e.clip_seconds : REFINE_DEFAULT_CLIP_SECONDS) * 24,
+          (take('clip_seconds'), typeof e.clip_seconds === 'number' ? e.clip_seconds : requireSeat('h3-timeline', "legacy refine arm's declared window default").refineDefaultClipSeconds) * 24,
         ),
         // the arm's own declared denoise default (see the repair cell)
         denoise: typeof e.denoise === 'number' ? e.denoise : 0.32,
@@ -598,7 +613,9 @@ function translateLegacyCell(
  * @param p the walked doc params (the mod bags ride their kinds'
  * param_key) */
 export function judgeDeclaredBands(p: Record<string, unknown>): void {
-  for (const kind of DECLARED_MOD_KINDS) {
+  // THE SERVED ROSTER (seat-derived): the family-owned loras kind's
+  // bands judge with the card-local ones when the seat boarded.
+  for (const kind of declaredModKinds()) {
     // THE RESHOOT CARVE-OUT (h3-reshoot-chain ARM 3): the reshoot
     // bag's dials already meet a judge — the emission's own camera
     // door (bandedAll), which refuses naming every offender, its
@@ -612,7 +629,7 @@ export function judgeDeclaredBands(p: Record<string, unknown>): void {
     for (const [i, e] of bag.entries()) {
       if (e === null || typeof e !== 'object' || Array.isArray(e)) continue
       const entry = e as Record<string, unknown>
-      /* v8 ignore next 1 -- every DECLARED_MOD_KINDS row carries fields at this
+      /* v8 ignore next 1 -- every served-roster kind carries fields at this
          HEAD; the interface keeps fields optional (a fields-less kind walks zero
          fields, never crashes the judge) */
       for (const f of kind.fields ?? []) {
@@ -671,7 +688,14 @@ export function judgeDeclaredBands(p: Record<string, unknown>): void {
  *  is byte-identical with the arm empty (the suite pins it — a swap
  *  seat must never reshape a film graph). */
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
-  [h3Decl.id]: (p, model, g, runId) => {
+  // THE LITERAL KEY (the plugin law, 2026-11-16): the binding is
+  // keyed by the boarded id the card declares; the segment's every
+  // family face (the film DECL, the edit matrix renderer, the
+  // reshoot arm, the facts parser) rides the family seat — the head
+  // read refuses loud naming the package when @melite/models-h3 is
+  // absent (this address composes nothing without its family).
+  h3: (p, model, g, runId) => {
+    const seat = requireSeat('h3-timeline', 'compose dispatch')
     // An ABSENT or EMPTY bag is the unused arm — the film below, byte-stable.
     // A PRESENT bag must be exactly one entry (max_stack 1) — an
     // absent bag is the unused arm, an EMPTY bag is the explicit
@@ -734,7 +758,7 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
       // CHAIN, not a dial cell): the edit branch returns before the
       // film action, so an armed reshoot under it would be silently
       // dropped. One door per doc.
-      if (reshootArmed(p)) {
+      if (seat.reshootArmed(p)) {
         throw new Error('h3-timeline: Video edit and Reshoot are both armed — the edit branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the edit arm for a reshoot, or empty the Reshoot arm for a video edit.')
       }
       const entry = editBagRef[0] as Record<string, unknown>
@@ -776,7 +800,7 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
             mannequin: typeof entry.mannequin === 'string' ? entry.mannequin : '',
           }
         : { mode: 'self' }
-      renderH3Edit(entry, mask, reference, p, parseH3Facts(model.lane_inputs), g, runId)
+      seat.renderEdit(entry, mask, reference, p, seat.parseFacts(model.lane_inputs), g, runId)
       return
     }
     // THE PROMPT GATE (the VID GEN handoff, operator 2026-11-12):
@@ -792,7 +816,7 @@ export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model:
     // above and skip this gate: they re-film an existing
     // contract's windows, never author fresh call text.
     refusePress(checkPressParams(p as Record<string, unknown>))
-    instantiateAction(declaredAction(h3Decl, 'film'), p, model, g, runId)
+    instantiateAction(declaredAction(seat.decl, 'film'), p, model, g, runId)
   },
 }
 
@@ -813,11 +837,25 @@ export const identity = {
 
 export const inject = ['comfyui']
 
-export function apply(ctx: Context): void {
+// THE PLUGIN LAW (card-without-family audit, 2026-11-16): the card
+// face primes its family seat ONCE before registering — cordis
+// awaits an async apply, so the priming rides every def-driving
+// load (loadCardDefs's ctx.plugin) for free. The family absent from
+// the install degrades to its own seat: registration proceeds, the
+// family doors refuse loud by name.
+export async function apply(ctx: Context): Promise<void> {
+  await primeFamilySeats()
   registerCard(ctx, ctx.comfyui)
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
+  // Idempotent re-prime (the direct-callers' door — priming is
+  // memoized); the registration reads below (mods roster, carrier,
+  // JSON-array params) resolve the seat AFTER it, so a primed call
+  // serves the family faces and an unprimed direct call degrades to
+  // the card-local ones.
+  void primeFamilySeats()
+  const seat = seatOf('h3')
   ctx.effect(() => comfy.registerCard({
     id: 'h3-timeline',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
@@ -991,8 +1029,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // The mask card's sam3/sam2/draw precedent — one kind per arm,
     // entry fields as the popup's tiles, requires as the
     // presence-gated arm packs.
-    mods: DECLARED_MOD_KINDS,
-    jsonArrayParams: JSON_ARRAY_PARAMS,
+    // THE SERVED ROSTER (seat-derived): card-local kinds always, the
+    // family-owned loras kind when the seat boarded (an absent
+    // family package costs its own seat — no LoRA seat is served).
+    mods: declaredModKinds(),
+    // THE FAMILY JSON LIST (the tool-plane unwrap roster — the
+    // calls/audio_clips/keyframes trio is family vocabulary): rides
+    // the seat; absent family serves none (the tool face refuses
+    // loud before any doc with those keys could reach a run).
+    ...(seat ? { jsonArrayParams: seat.jsonArrayParams } : {}),
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
     // MeliteConcatVideos) + the film audio (melite-audio-nodes: the
@@ -1012,10 +1057,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       'ComfyUI-SeedVR2_VideoUpscaler',
       'melite-utility-nodes', 'melite-audio-nodes',
     ],
-    schema,
+    // THE FAMILY FACES (the plugin law, 2026-11-16): the schema
+    // normalizer, the emitter carrier, and the finalize pass are
+    // family vocabulary — every one rides the seat. The wrapper keeps
+    // registration LAZY (no seat read at def construction): a
+    // missing family omits the schemaCarrier (the envelope laws
+    // fail-open without a carrier) and the doors that need a face
+    // refuse loud by name at call time.
+    schema: (v) => requireSeat('h3-timeline', 'schema normalizer').schema(v),
     // the emitter carrier (this card's schema is the hand-written
     // normalizer — params_schema walks the declared object's .dict)
-    schemaCarrier: paramSchema,
+    ...(seat ? { schemaCarrier: seat.paramSchema } : {}),
     // THE FAMILY ADMISSION FACE IS GONE (2026-11-15, the lane-law
     // retirement — the operator's gate-11 burn: the compose gate
     // refused a lawful Final-Cut doc with four unactionable lines).
@@ -1047,6 +1099,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // serialized).
     admissionWarns: promptAdmissionWarns,
     compose(p, model, g, runId) {
+      // THE FAMILY GATE (the plugin law, 2026-11-16): the compose
+      // door's every judge face — the wire law, the carrier walk,
+      // the overlay assert, the dispatch's renderers — rides the
+      // family seat; absent @melite/models-h3 refuses HERE, by name,
+      // before any doc read.
+      const seat = requireSeat('h3-timeline', 'compose gate')
       // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
       // schemaCarrier equivalent: this card is WRAPPED, so the served
       // carrier paramSchema owns the declared knob bounds; the full
@@ -1070,7 +1128,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // — the default fills only when the key is OMITTED. The card's
       // own gate voices the same refusal: send a number or omit the
       // key, never null.
-      const gateInput = coerceWireBoolean(p as Record<string, unknown>)
+      const gateInput = seat.coerceWireBoolean(p as Record<string, unknown>)
       if (gateInput.length === null) {
         throw new Error('length is null — send a real frame count or omit the key; the 17k+5 grid default fills natively (never null)')
       }
@@ -1093,7 +1151,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       // `prompt_waivers` rides for the prompt gate (the VID GEN
       // handoff, 2026-11-12): the named rule ids a press waives —
       // recorded on the run record, never silent.
-      p = gatedResolve('h3-timeline', schemaFn, [
+      p = gatedResolve('h3-timeline', callableSchema(seat.paramSchema), [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
         'refs', 'replace', 'repair', 'extend', 'edit', 'reshoot', 'variant', 'quant', 'refine', 'upscale', 'model', '__steps_pinned', '__shift_pinned', 'ctx_*',
         'prompt_waivers',
@@ -1114,15 +1172,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
           if (typeof single.text === 'string' && single.text.trim() !== '') p.prompt = single.text.trim()
         }
       }
-      assertOverlayGated(p, 'h3-timeline single-call lift')
+      seat.assertOverlayGated(p, 'h3-timeline single-call lift')
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) bound(p, model, g, runId)
       else {
         throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the h3-timeline card — every boarded family (h3) composes its own declared segment; this address owns none`)
+          `no declared action for family '${String(model.family ?? model.id)}' on the h3-timeline card — every boarded family (h3) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
       }
     },
-    // the t4-family strip pass rides the kit (python: `if not is_t4r`).
-    finalize: finalizeH3,
+    // the t4-family strip pass rides the kit (python: `if not is_t4r`)
+    // through the family seat (the wrapper keeps the def lazy —
+    // absent family refuses loud by name at the pass's only caller,
+    // the composed run).
+    finalize: (graph) => requireSeat('h3-timeline', 'finalize pass').finalize(graph),
   }))
 }
