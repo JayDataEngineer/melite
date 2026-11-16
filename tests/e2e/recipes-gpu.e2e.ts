@@ -480,7 +480,7 @@ describe.skipIf(!ENGINE_FREE)('the recipe law on the GPU (with live ComfyUI)', (
       // are graph stamps; the h3 family's bytes ride the draft row.
       const s = await queueCard(w, {
         model: 'h3',
-        calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 22, knobs: { width: 768, height: 448 } }],
+        calls: [{ text: 'the camera orbits slowly around the subject', start_frame: 0, end_frame: 39, knobs: { width: 768, height: 448 } }],
         // THE MARKER WAIVER (2026-11-15, the prompt-gate GPU sweep): the
         // smoke text is scaffolding, not craft — waived loud, never silent
         // (the 4c2dc22a4 law; real craft rides LAWFUL_TEXT in the unit sweep).

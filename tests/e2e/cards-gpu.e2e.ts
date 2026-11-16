@@ -573,7 +573,7 @@ describe.skipIf(!ENGINE_FREE)('cards-gpu: film and motion (the remaining h3 + ki
       assert.equal(inputs['mode'], 'Full Reference', 'the engine accepted the stated mode')
       assert.equal(inputs['pool_h'], 32, 'the engine accepted the stated pool_h')
       assert.equal(inputs['pool_w'], 32, 'the engine accepted the stated pool_w')
-      assert.equal(inputs['identity'], 1000, 'the engine accepted the stated identity (refinement steps)')
+      assert.equal(inputs['identity'], 50, 'the engine accepted the stated identity (refinement steps — the GPU diet states 50; the row judges verbatim carry, never a frozen literal)')
       assert.equal(inputs['save'], false, 'the engine accepted the stated save pole')
       assert.ok(Object.keys(entry.outputs ?? {}).length >= 1, 'the engine produced outputs for the run')
       assert.ok(firstBytes(s).length > 1024, 'the film artifact carries real bytes')

@@ -422,26 +422,57 @@ await tier("coverage", async () => {
   const coverage = await spawnTee("node", ["tools/coverage-ratchet.mjs"], { cwd: REPO });
   return { status: coverage.status === 0 ? 0 : 1, tail: coverage.out };
 });
-// THE PARALLEL TAIL (2026-11-17): e2e (serial vitest against the
-// one shared engine) and browser (playwright on the studio lane's
-// throwaway home, port 3907) share no engine, no port, no state
-// root — two lanes that never touched each other's quota, run one
-// after the other for no reason for twenty runs. They run in
-// PARALLEL now; each tier's own lease + ledger row keeps the report
-// honest.
-await Promise.all([
-  tier("e2e", async () => {
+// THE ONE-ENGINE LAW (2026-11-18, attempt-14's burn): the GPU rows
+// press ONE shared engine — and so does the browser lane: the
+// journeys specs press REAL runs through the lane's estate on the
+// same 8188 card. The parallel tail cross-fired BOTH ways in one
+// run: the lane's runs stole the card between the anny row's VRAM
+// probe and its press (9543 MiB free against a 15500 budget — the
+// admission door refused CORRECTLY), the h3-image t2i row died
+// mid-run on an engine IndexError with the lane queued beside it
+// (cold rerun: green in 73s), and two journey rows red on the busy
+// engine from the other side. One GPU, one consumer at a time: e2e
+// (the heavy resident loads) drains FIRST, then a cold-card handoff
+// restarts the engine, then the browser lane runs; each tier's own
+// lease + ledger row keeps the report honest.
+{
+  const e2eRed = await tier("e2e", async () => {
     // THE SERIAL-E2E LAW (2026-11-15, three wedged batteries): the GPU
     // rows press ONE shared engine — at the config's default 4 workers,
     // four heavy suites storm it concurrently and the host (tmpfs /tmp +
     // one 24 GB card) swaps to death mid-tier: the same five heaviest
     // rows (final_hd, HOP-6, kimodo pair, h3-image) die fetch-failed
     // EVERY storm while every row passes scoped single-worker. Serial
-    // HERE (within the tier); the browser lane beside it owns no engine.
+    // HERE (within the tier) for the same one-engine reason.
     const e2e = await spawnTee("pnpm", ["run", "test:e2e"], { shell, env: { ...process.env, DSH_E2E_MAX_WORKERS: "1" } });
     return { status: e2e.status === 0 ? 0 : 1, tail: e2e.out };
-  }),
-  tier("browser", async () => {
+  });
+  if (e2eRed === 1) {
+    console.warn("NOTE: e2e tier red — the browser tier still runs (one run shows every error); the shared engine carries the e2e tier's residency into it.");
+  }
+  // THE COLD-CARD HANDOFF (2026-11-18): the e2e tier leaves the h3
+  // film residency loaded (~15 GB — the estate never evicts), and
+  // the browser lane's journeys press REAL runs on the same card:
+  // the j/l poser preview and the c/e clip birth both red against a
+  // 9.5 GB-free card the door refuses. One GPU, one consumer, each
+  // consumer starting COLD — the same restart ritual the battery's
+  // own pre-run performs by hand. Machine-local and guarded: only
+  // when the engine answers at the dev host AND the user service
+  // exists (keyless CI owns neither — its engine tiers self-skip).
+  {
+    const engineUp = await fetch("http://127.0.0.1:8188/system_stats", { signal: AbortSignal.timeout(4_000) }).then((r) => r.ok).catch(() => false);
+    if (engineUp) {
+      const restart = await spawnTee("systemctl", ["--user", "restart", "melite-comfyui.service"], { shell });
+      if (restart.status === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 12_000));
+        const cold = await fetch("http://127.0.0.1:8188/system_stats", { signal: AbortSignal.timeout(20_000) }).then((r) => r.ok).catch(() => false);
+        console.warn(`HANDOFF: engine restarted cold for the browser tier (boot probe ${cold ? "ok" : "still settling — the lane's own boot grace covers it"})`);
+      } else {
+        console.warn("SKIP-LOUD: melite-comfyui.service absent — the browser tier runs on the WARM card the e2e tier left (journeys may refuse at the VRAM door)");
+      }
+    }
+  }
+  await tier("browser", async () => {
     const probe = await spawnTee("pnpm", ["exec", "playwright", "--version"], { shell });
     if (probe.status !== 0) {
       console.warn("SKIP-LOUD: playwright absent — the browser tier is unjudged here (pnpm exec playwright install; CI owns it)");
@@ -449,8 +480,8 @@ await Promise.all([
     }
     const browser = await spawnTee("pnpm", ["run", "test:web:browser"], { shell });
     return { status: browser.status === 0 ? 0 : 1, tail: browser.out };
-  }),
-]);
+  });
+}
 
 // THE ONE-RUN REPORT (the show-all law): every red tier, each with
 // its own captured tail, in the order they were recorded — the
