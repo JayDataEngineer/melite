@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/melite-run-wire",
-  "version": "0.2.3-rc.3",
+  "version": "0.2.3-rc.4",
   "type": "module",
   "private": true,
   "exports": {

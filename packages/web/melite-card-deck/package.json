@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/dsh-card-deck",
-  "version": "0.2.3-rc.3",
+  "version": "0.2.3-rc.4",
   "type": "module",
   "private": true,
   "license": "AGPL-3.0-or-later",
