@@ -58,12 +58,16 @@ knobs.
 
 ## THE LOOK PICKS THE FAMILY
 
-Seven looks are boarded, and they are NOT interchangeable — the
+Six looks are boarded, and they are NOT interchangeable — the
 brief's words pick one, or you ask. Never silently take the
 signature default when the brief names a look:
 
-- **z-image** — photoreal: photography, product shots, lifelike
-  faces, natural light.
+- **moss-image** — photoreal: photography, product shots, lifelike
+  faces, natural light; typography through quoted text, layout
+  through native JSON bboxes in the prompt (50-step SFT lane).
+  THE HOUSE PHOTOREAL (operator 2026-11-16: the retired photoreal
+  family is OUT of the docs and text — moss is its replacement in
+  every routing seat).
 - **anima** — anime/illustration: 2D styles, manga, cel shading.
 - **krea-2** — painterly/illustrative render, the signature
   default when the brief names NO look.
@@ -72,9 +76,6 @@ signature default when the brief names a look:
 - **flux-klein** — the low-VRAM lane: a 4-step distilled checkpoint
   for modest cards (20-step base tier when quality outranks speed),
   prompt-only (the reference seat belongs to qwen-img-21 alone).
-- **moss-image** — the 50-step SFT photoreal lane: typography
-  through quoted text, layout through native JSON bboxes in the
-  prompt.
 - **h3-image** — the newest heavy lane: dense multi-element scenes
   held together (many objects, stated spatial relations, long
   prompts followed verbatim). 6-step lane, INT8 weights.
@@ -93,14 +94,14 @@ One per look — the family rides `params.model`, everything else stays semantic
 ```
 
 ```json
-{ "card": "image-gen", "params": { "model": "z-image", "seed": 4, "prompt": "A macaque cradling a mango on a mossy stone, morning light through rainforest canopy, shallow depth of field, product photography, ultra realistic, natural skin texture" } }
+{ "card": "image-gen", "params": { "model": "moss-image", "seed": 4, "prompt": "A macaque cradling a mango on a mossy stone, morning light through rainforest canopy, shallow depth of field, product photography, ultra realistic, natural skin texture" } }
 ```
 
 ```json
 { "card": "image-gen", "params": { "model": "qwen-img-21", "seed": 4, "prompt": "A vintage travel poster of a monkey riding a scooter, bold headline text reading 'WILD RIDE', sunset palette, mid-century modern illustration" } }
 ```
 
-What these SHOW beyond the schema: style words live INSIDE the prompt as a suffix (last clause), the look's vocabulary pairs with its family (cel shading → anima; natural skin texture → z-image; legible headline text → qwen-img-21), and `seed` is the ONLY number besides the family — a set that must share world texture repeats the same seed + same suffix verbatim. A look the brief didn't name gets asked about, never guessed.
+What these SHOW beyond the schema: style words live INSIDE the prompt as a suffix (last clause), the look's vocabulary pairs with its family (cel shading → anima; natural skin texture → moss-image; legible headline text → qwen-img-21), and `seed` is the ONLY number besides the family — a set that must share world texture repeats the same seed + same suffix verbatim. A look the brief didn't name gets asked about, never guessed.
 
 ## Doors
 

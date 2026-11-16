@@ -64,7 +64,7 @@ import type { Estate, BenchVerb } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
 import { coerceWireArrays, foldLegacyAliases, unwrapItemArrays } from '@melite/comfyui-card-kit'
-import { expandCuts } from '@melite/models-h3/timelineContract'
+import { h3TimelineContractSeat } from './h3-lane-seats.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { emitKnob } from '@melite/comfyui-card-kit/params-emit'
 import { extraOf } from '@melite/contracts/extraKeys'
@@ -1940,7 +1940,17 @@ export function meliteConstruct(
             // shot must start fresh; stock is the operator's manual
             // escape hatch in the strip). The 2026-11-17 seam law
             // superseded §0.5's every-seam-CUT teaching wholesale.
-            const expanded = expandCuts(windows, cutsRaw, 'extend')
+            // THE PLUGIN LAW (S4 cure): the one split law lives in
+            // the h3 family package — a lazy seat, because the
+            // tools plane must load without it. An absent seat
+            // refuses loud at THIS door (the cut cannot be
+            // validated by a law that is not installed) instead of
+            // crashing the plane's module load.
+            const contractLane = await h3TimelineContractSeat()
+            if (contractLane === null) {
+              return out({ error: 'cuts: the h3 timeline contract (@melite/models-h3) is not installed — the one split law lives in the missing lane. Install the family package or drop the cuts param.' })
+            }
+            const expanded = contractLane.expandCuts(windows, cutsRaw, 'extend')
             if (!expanded.ok) {
               return out({ error: `cuts: ${expanded.refusal}` })
             }

@@ -52,8 +52,7 @@ import { benchKeyOfExec } from "./melite-construct.js";
 import { loadCardDefs } from '@melite/comfyui-cordis';
 import { boardedMap, resolveSpecKeyForTool } from "../discovery.js";
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView';
-import { admitCrossRegimeJoin } from '@melite/models-h3';
-import { CROSS_REGIME_BAG_KEYS } from '@melite/video-h3-timeline/card';
+import { h3CardSeat, h3ModelSeat } from "./h3-lane-seats.js";
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
  *  resolves through form-spec's OWN alias law (boarded[0] — the
@@ -90,10 +89,17 @@ async function modelForCard(card, params) {
  * family). The roster is DERIVED from the card's own declaration
  * (CROSS_REGIME_BAG_KEYS — the back-end evasion audit B-1): the
  * pre-collapse hand list retired with the names it scanned. */
-function crossRegimeAdmissionOf(card, params) {
+async function crossRegimeAdmissionOf(card, params) {
     if (card !== 'h3-timeline')
         return null;
-    const bag = CROSS_REGIME_BAG_KEYS
+    // THE PLUGIN LAW (S4 cure): both h3 seats resolve lazily — an
+    // absent package is quiet here (the admission never speaks
+    // outside its family; with the lane absent there is no stage to
+    // warn about), and the tools plane keeps loading without them.
+    const [modelLane, cardLane] = await Promise.all([h3ModelSeat(), h3CardSeat()]);
+    if (modelLane === null || cardLane === null)
+        return null;
+    const bag = cardLane.CROSS_REGIME_BAG_KEYS
         .map((k) => params[k])
         .find((v) => Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null);
     if (bag === undefined)
@@ -105,7 +111,7 @@ function crossRegimeAdmissionOf(card, params) {
         return null;
     const width = typeof params['width'] === 'number' ? params['width'] : 1344;
     const height = typeof params['height'] === 'number' ? params['height'] : 768;
-    return admitCrossRegimeJoin(width, height, tier);
+    return modelLane.admitCrossRegimeJoin(width, height, tier);
 }
 const TIMEOUT_MS = 30_000;
 const DRAFT_TIMEOUT_MS = 15_000;
@@ -649,7 +655,7 @@ async function runBench(estate, a, signal, only) {
         // in the family (models/h3 chainEdit.ts — the engine's own tier
         // math, cited); this is the pass voice, the one face the
         // operator reads during a bench press.
-        const regimeWarning = crossRegimeAdmissionOf(card, resolved);
+        const regimeWarning = await crossRegimeAdmissionOf(card, resolved);
         // R-4 + D3-04 (c): one warning seat per row — the row's own
         // admission (F18) first, the landing race (rev-confirm) second,
         // the persisted stamp's fresh-landing voice third; joined so no

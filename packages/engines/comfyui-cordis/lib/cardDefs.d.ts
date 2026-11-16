@@ -34,6 +34,16 @@ export declare const cardPackages: string[];
 export declare const pluginPackage: (ctx: Context, specifier: string, kind: "card package" | "packaged flavor", label?: string) => Promise<void>;
 /** Compose the card set into a Context (the shared auto-load loop —
  * every card rides pluginPackage above). */
+/** The absence ledger (the plugin law's naming seat — S2 cure,
+ *  2026-11-16): cardPackages rows whose package is not installed.
+ *  An absent card costs ITS OWN registration — never the estate
+ *  boot, never the compose of every card after it. A package that
+ *  EXISTS but fails to load (a real defect, a missing host face)
+ *  still refuses loud through pluginPackage; only ERR_MODULE_NOT_FOUND
+ *  rides this ledger. A missing FAMILY dependency surfaces here
+ *  too (the card's own import rejects with the same code) — the
+ *  blast radius shrinks from the estate to the one card. */
+export declare const cardPackageAbsences: string[];
 export declare const composeCards: (ctx: Context) => Promise<void>;
 /** Compose the mod plane into a Context (packs first, flavors
  *  after — the flavor↔DECL.mods interlock is unchanged on the
