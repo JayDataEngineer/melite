@@ -15,9 +15,9 @@ import type { EstateCall } from "@melite/estate-call";
 import { BOARDED } from "../src/card.ts";
 import { buildImageGenTool } from "../src/tool.ts";
 
-vi.mock("../src/card.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/card.ts")>();
-  return { ...actual, SEMANTIC_MODELS: [] };
+vi.mock("../src/family-seats.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/family-seats.ts")>();
+  return { ...actual, primeFamilySeats: async () => {}, semanticModels: () => [] };
 });
 
 const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
@@ -42,7 +42,7 @@ const exec = {
 describe("the empty-derivation fallback (no served style survives the DECLs)", () => {
   it("an unstated model falls back to the boarded head (the tool builds with no served default)", async () => {
     calls.length = 0;
-    const value = (await buildImageGenTool(seam).execute({ prompt: "a cat in neon rain" }, exec)) as Record<string, string>;
+    const value = (await (await buildImageGenTool(seam)).execute({ prompt: "a cat in neon rain" }, exec)) as Record<string, string>;
     assert.equal(value.model, BOARDED[0], "the envelope echoes the boarded head, never undefined");
     assert.equal(
       (calls[0].body.stages as Array<Record<string, unknown>>)[0]!.service,
@@ -54,7 +54,7 @@ describe("the empty-derivation fallback (no served style survives the DECLs)", (
 
   it("a boarded-family model the derivation never served crosses the wire raw (no mangling)", async () => {
     calls.length = 0;
-    const value = (await buildImageGenTool(seam).execute(
+    const value = (await (await buildImageGenTool(seam)).execute(
       { prompt: "a cat in neon rain", model: BOARDED[0] },
       exec,
     )) as Record<string, string>;

@@ -25,11 +25,15 @@ import { ComposeRefusal } from '@melite/comfyui-card-kit/errors'
 import type { FactsFile } from "@melite/comfyui-card-kit/facts";
 import { DECL as krea2Decl } from "@melite/models-krea-2";
 import { registerCard } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 
 const boot = async (mods: string[] = []) => {
   const ctx = new Context();
   const svc = new ComfyUIService(ctx);
   registerCard(ctx, svc);
+  // Family seats are dynamic imports now: compose reads them, so the
+  // boot primes them before any compose door opens.
+  await primeFamilySeats();
   // Facts stub: the compose door requires a facts row for the model
   // id (card gate + defaults). The lane truth comes from the DECL
   // itself (one truth — the stub rides the card's ACTION ROUTE

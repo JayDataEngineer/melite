@@ -23,26 +23,22 @@ import { MASK_RIDERS } from '@melite/comfyui-card-kit/pack-fields'
 import { IMPACT_PACKS } from '@melite/comfyui-card-kit'
 import { statedRegion, regionSourceKind } from '@melite/comfyui-card-kit'
 import { collapsePromptSpace, type CraftFix } from '@melite/comfyui-card-kit'
-import { DECL as krea2Decl } from '@melite/models-krea-2'
-import { DECL as zImageDecl } from '@melite/models-z-image'
-import { DECL as animaDecl } from '@melite/models-anima'
-import { normalizeAnimaPromptTags } from '@melite/models-anima'
-import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
-import { DECL as fluxKleinDecl } from '@melite/models-flux-klein'
-import { DECL as mossImageDecl } from '@melite/models-moss-image'
-import { DECL as h3ImageDecl } from '@melite/models-h3-image'
-import { semanticModelEntries } from '@melite/comfyui-card-kit/semanticModelKnob'
-import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelKnob'
+import { primeFamilySeats, seatOf } from './family-seats.ts'
 import { bag } from '@melite/contracts/extraKeys'
 
 /** The card's boarding — where the card gets its models: THE AI
  *  MODELS' own plugin declarations (packages/models/*), each
  *  carrying its whole truth — variants, quant cells, HF artifact
- *  links, mods, lane inputs. The id is spelled once, in the model
- *  plugin; a rename breaks at tsc, never silently at the
- *  not-boarded refusal. The model-knob enum, the tool default, and
- *  the registry row all derive from this array. */
-export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id, fluxKleinDecl.id, mossImageDecl.id, h3ImageDecl.id] as const
+ *  links, mods, lane inputs. THE PLUGIN LAW (L3 cure, 2026-11-16):
+ *  the ids are LITERALS and the family packages resolve through
+ *  ./family-seats.ts (guarded dynamic seats, primed at
+ *  registration) — a missing family package costs its OWN seat,
+ *  never this card's load. The binding is judged by the
+ *  family-coverage wall on the dev tree: a family that changes its
+ *  id reds there, never silently at the not-boarded refusal. The
+ *  model-knob enum, the tool default, and the registry row all
+ *  derive from these ids. */
+export const BOARDED = ['krea-2', 'z-image', 'anima', 'qwen-img-21', 'flux-klein', 'moss-image', 'h3-image'] as const
 
 /** THE GEN REGION ROSTER IS DEAD (operator 2026-11-09, the
  *  face-rail burn: "ANY model can inpaint, not just krea-2" — the
@@ -54,14 +50,13 @@ export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl
  *  (base without region half, region without source, mode law)
  *  still fire for every family. */
 
-/** The served style enum (the semantic model knob): entries derived
- *  from the same five DECLs — labels are their own copy, values
- *  are stable family:variant:cell addresses, routes resolve
- *  estate-side. One source: the tool face serves THIS, never a
- *  second hand-written list. */
-export const SEMANTIC_MODELS: readonly SemanticModelEntry[] = semanticModelEntries([
-  krea2Decl, zImageDecl, animaDecl, qwenImg21Decl, fluxKleinDecl, mossImageDecl, h3ImageDecl,
-])
+/** The served style enum (the semantic model knob): entries derive
+ *  from the PRESENT family seats at serve time (family-seats.ts —
+ *  a missing family package costs its own entries, never this
+ *  card's load); labels are the families' own copy, values are
+ *  stable family:variant:cell addresses, routes resolve
+ *  estate-side. One source: the tool face serves the seats'
+ *  derivation, never a second hand-written list. */
 
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
  *  boarded family with a bound action composes through the atom's
@@ -91,28 +86,28 @@ export function finalizeImageGen(graph: PromptGraph): PromptGraph {
   return stripAutofill(graph, IMAGE_GEN_STRIP)
 }
 
-export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
-  [krea2Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(krea2Decl, 't2i'), p, model, g, runId)
-  },
-  [zImageDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(zImageDecl, 't2i'), p, model, g, runId)
-  },
-  [animaDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(animaDecl, 't2i'), p, model, g, runId)
-  },
-  [qwenImg21Decl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(qwenImg21Decl, 't2i'), p, model, g, runId)
-  },
-  [fluxKleinDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(fluxKleinDecl, 't2i'), p, model, g, runId)
-  },
-  [mossImageDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(mossImageDecl, 't2i'), p, model, g, runId)
-  },
-  [h3ImageDecl.id]: (p, model, g, runId) => {
-    instantiateAction(declaredAction(h3ImageDecl, 't2i'), p, model, g, runId)
-  },
+/** The action bindings (the atom vocabulary, stroke-1 pilot): a
+ *  boarded family with a bound action composes through the atom's
+ *  own declared segment — the card delegates, never authors nodes.
+ *  THE PLUGIN LAW (L3 cure): the binding resolves from the
+ *  family's SEAT (family-seats.ts) at compose time — every
+ *  boarded family holds the same declared t2i action, so one
+ *  seat-driven dispatch replaces the per-family closure table,
+ *  and a missing family package refuses at the dispatch's own
+ *  loud voice below, never at this module's load. Keyed by the
+ *  OWNING FAMILY (model.family, never model.id: six of ten served
+ *  addresses are route ids — a route-keyed lookup misses and
+ *  silently composes nothing). */
+export function composeFamilyAction(
+  p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string,
+): void {
+  const family = String(model.family ?? model.id)
+  const seat = seatOf(family)
+  if (seat === undefined) {
+    throw new Error(
+      `no declared action for family '${family}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image, h3-image) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name)`)
+  }
+  instantiateAction(declaredAction(seat.decl, 't2i'), p, model, g, runId)
 }
 
 export const schema = z.object({
@@ -166,6 +161,10 @@ const schemaFn = callableSchema(schema)
 // the card-UI audit's A15 — boundary types live with their owner).
 
 export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
+  // THE PLUGIN LAW (L3): prime the family seats fire-and-forget —
+  // registration NEVER waits on a family package (a missing one
+  // costs its own seat; the post-boot seats read what primed).
+  void primeFamilySeats()
   ctx.effect(() => comfy.registerCard({
     id: 'image-gen',
     skeleton: 'generate',
@@ -188,13 +187,21 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         for (const field of ['prompt', 'negative_prompt']) {
           const raw = out[field]
           if (typeof raw !== 'string' || raw.trim() === '') continue
-          if (family === animaDecl.id) {
-            const restored = normalizeAnimaPromptTags(raw)
-            if (restored.text !== raw) {
-              out[field] = restored.text
-              for (const rule of restored.fixed) fixed.push({ param: field, rule })
+          // THE PLUGIN LAW (L3): the anima grammar restores through
+          // the family's SEAT (primed at registration) — a missing
+          // anima package degrades to the prose collapse here (its
+          // stages refuse at the model seat long before this
+          // branch matters), never at this module's load.
+          if (family === 'anima') {
+            const restore = seatOf('anima')?.restorePromptTags
+            if (restore !== undefined) {
+              const restored = restore(raw)
+              if (restored.text !== raw) {
+                out[field] = restored.text
+                for (const rule of restored.fixed) fixed.push({ param: field, rule })
+              }
+              continue
             }
-            continue
           }
           const collapsed = collapsePromptSpace(raw)
           if (collapsed !== raw) {
@@ -221,7 +228,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // consumers (the H4 law).
     requires: [...IMPACT_PACKS],
     requiresByFamily: {
-      [qwenImg21Decl.id]: [...IMPACT_PACKS],
+      ['qwen-img-21']: [...IMPACT_PACKS],
     },
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
     // discovery export — the card owns its sidebar, surface, and
@@ -316,15 +323,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
       if (Array.isArray(statedRefs) && statedRefs.length > 0 && String(model.family ?? model.id) !== 'qwen-img-21') {
         throw new Error(`reference_images stated on family '${String(model.family ?? model.id)}' — the reference seat fires only on qwen-img-21 (the phantom-port law, c5f03df9); this family has no reference port`)
       }
-      const bound = ACTION_BINDINGS[model.family ?? model.id]
-      if (bound) {
-        bound(doc, model, g, runId)
-        return
-      }
-      else {
-        throw new Error(
-          `no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image, h3-image) composes its own declared segment; this address owns none`)
-      }
+      composeFamilyAction(doc, model, g, runId)
     },
     finalize: finalizeImageGen,
   }))

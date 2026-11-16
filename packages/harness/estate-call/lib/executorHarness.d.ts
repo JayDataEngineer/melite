@@ -22,7 +22,7 @@ export interface ExecutorHarness {
     calls: Array<RecordedCall>;
     controls: SeamControls;
     exec: Parameters<ToolDefinition["execute"]>[1];
-    tool: () => ToolDefinition;
+    tool: () => Promise<ToolDefinition>;
     goodArgs: Record<string, unknown>;
     defaultModel: string;
 }
@@ -35,7 +35,7 @@ export interface ExecutorHarness {
  * @param goodArgs the card's minimal valid arguments
  * @param defaultModel the boarded default the unstated model resolves to
  * @returns the harness: seam, calls ledger, controls, exec, tool */
-export declare function executorHarness(makeTool: (call: EstateCall) => ToolDefinition, goodArgs: Record<string, unknown>, defaultModel: string): ExecutorHarness;
+export declare function executorHarness(makeTool: (call: EstateCall) => ToolDefinition | Promise<ToolDefinition>, goodArgs: Record<string, unknown>, defaultModel: string): ExecutorHarness;
 /** The battery's per-card configuration.
  * @param makeTool the card's tool builder
  * @param goodArgs the card's minimal valid arguments
@@ -50,7 +50,7 @@ export declare function executorHarness(makeTool: (call: EstateCall) => ToolDefi
  * @param explicitAnchor the explicit-model prose anchor (gen/edit/h3
  *  pin a trailing word boundary "\\s"; the rest match unanchored) */
 export interface BatteryConfig {
-    makeTool: (call: EstateCall) => ToolDefinition;
+    makeTool: (call: EstateCall) => ToolDefinition | Promise<ToolDefinition>;
     goodArgs: Record<string, unknown>;
     /** the boarded default (the unstated resolution — the envelope's spelling) */
     defaultModel: string;

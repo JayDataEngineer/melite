@@ -43,7 +43,7 @@ export interface ExecutorHarness {
   calls: Array<RecordedCall>;
   controls: SeamControls;
   exec: Parameters<ToolDefinition["execute"]>[1];
-  tool: () => ToolDefinition;
+  tool: () => Promise<ToolDefinition>;
   goodArgs: Record<string, unknown>;
   defaultModel: string;
 }
@@ -58,7 +58,7 @@ export interface ExecutorHarness {
  * @param defaultModel the boarded default the unstated model resolves to
  * @returns the harness: seam, calls ledger, controls, exec, tool */
 export function executorHarness(
-  makeTool: (call: EstateCall) => ToolDefinition,
+  makeTool: (call: EstateCall) => ToolDefinition | Promise<ToolDefinition>,
   goodArgs: Record<string, unknown>,
   defaultModel: string,
 ): ExecutorHarness {
@@ -84,7 +84,7 @@ export function executorHarness(
     callId: "t", name: "t", arguments: {}, signal: new AbortController().signal,
     rootCallId: "t", token: "t",
   } as unknown as Parameters<ToolDefinition["execute"]>[1];
-  return { seam, calls, controls, exec, tool: () => makeTool(seam), goodArgs, defaultModel };
+  return { seam, calls, controls, exec, tool: () => Promise.resolve(makeTool(seam)), goodArgs, defaultModel };
 }
 
 /** The battery's per-card configuration.
@@ -101,7 +101,7 @@ export function executorHarness(
  * @param explicitAnchor the explicit-model prose anchor (gen/edit/h3
  *  pin a trailing word boundary "\\s"; the rest match unanchored) */
 export interface BatteryConfig {
-  makeTool: (call: EstateCall) => ToolDefinition;
+  makeTool: (call: EstateCall) => ToolDefinition | Promise<ToolDefinition>;
   goodArgs: Record<string, unknown>;
   /** the boarded default (the unstated resolution — the envelope's spelling) */
   defaultModel: string;
@@ -132,7 +132,7 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
     it("drafts carry the stage doc naming the model; start lifts params + model + draft_id", async () => {
       controls.draftsBody = { draftId: "d_9" };
       controls.startBody = { run_id: "r_9", status: "queued" };
-      const value = (await tool().execute(goodArgs, exec)) as Record<string, string>;
+      const value = (await (await tool()).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(calls[1]!.path, "/v1/flows/drafts");
       const draft = calls[1]!.body;
       assert.equal(draft.intent, cfg.draftIntent);
@@ -150,7 +150,7 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
     it("an EXPLICIT model rides both doors and the canonical value", async () => {
       controls.draftsBody = { draftId: "d_1" };
       controls.startBody = { run_id: "r_1", status: "queued" };
-      const value = (await tool().execute({ ...goodArgs, model: cfg.explicitModel }, exec)) as Record<string, string>;
+      const value = (await (await tool()).execute({ ...goodArgs, model: cfg.explicitModel }, exec)) as Record<string, string>;
       const stage = (calls[3]!.body.stages as Array<Record<string, unknown>>)[0]!;
       assert.equal(stage.service, cfg.explicitModelRoute ?? cfg.explicitModel);
       assert.equal((calls[4]!.body as Record<string, unknown>).model, cfg.explicitModelRoute ?? cfg.explicitModel);
@@ -159,39 +159,39 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
 
     it("a mint without draftId is a refusal value", async () => {
       controls.draftsBody = { ok: true };
-      const value = (await tool().execute(goodArgs, exec)) as Record<string, string>;
+      const value = (await (await tool()).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(value.error, "gateway draft POST returned no draftId");
     });
 
     it("a start-door named refusal resolves canonically", async () => {
       controls.draftsBody = { draftId: "d_ok" };
       controls.startBody = { error: "queue draining" };
-      const value = (await tool().execute(goodArgs, exec)) as Record<string, string>;
+      const value = (await (await tool()).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(value.error, "queue draining");
     });
 
     it("a start without run_id is a refusal value", async () => {
       controls.startBody = { status: "queued" };
-      const value = (await tool().execute(goodArgs, exec)) as Record<string, string>;
+      const value = (await (await tool()).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(value.error, "gateway start returned no run_id");
     });
 
     it("a start without status folds to queued", async () => {
       controls.startBody = { run_id: "r_s" };
-      const value = (await tool().execute(goodArgs, exec)) as Record<string, string>;
+      const value = (await (await tool()).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(value.status, "queued");
     });
 
     it("GatewayError fallbacks: named, then body, then the status voice", async () => {
       controls.draftsBody = { draftId: "d_g" };
       const named: EstateCall = async () => { throw new GatewayError(422, "raw-body", "named-refusal"); };
-      const v1 = (await cfg.makeTool(named).execute(goodArgs, exec)) as Record<string, string>;
+      const v1 = (await (await cfg.makeTool(named)).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(v1.error, "named-refusal");
       const bodyOnly: EstateCall = async () => { throw new GatewayError(500, "exploded", ""); };
-      const v2 = (await cfg.makeTool(bodyOnly).execute(goodArgs, exec)) as Record<string, string>;
+      const v2 = (await (await cfg.makeTool(bodyOnly)).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(v2.error, "exploded");
       const neither: EstateCall = async () => { throw new GatewayError(503, "", ""); };
-      const v3 = (await cfg.makeTool(neither).execute(goodArgs, exec)) as Record<string, string>;
+      const v3 = (await (await cfg.makeTool(neither)).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(v3.error, "estate 503");
     });
 
@@ -200,7 +200,7 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
       ac.abort();
       const dialed = calls.length;
       await assert.rejects(
-        cfg.makeTool(h.seam).execute(goodArgs, { ...exec, signal: ac.signal } as never),
+        (await cfg.makeTool(h.seam)).execute(goodArgs, { ...exec, signal: ac.signal } as never),
         /aborted/i,
       );
       assert.equal(calls.length, dialed, "the seam was never dialed");
@@ -211,22 +211,22 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
       // GatewayError(0, message, "") — one canonical arm, message as
       // the refusal body.
       const dead: EstateCall = async () => { throw new Error("socket hang up"); };
-      const value = (await cfg.makeTool(dead).execute(goodArgs, exec)) as Record<string, string>;
+      const value = (await (await cfg.makeTool(dead)).execute(goodArgs, exec)) as Record<string, string>;
       assert.equal(value.error, "socket hang up");
     });
   });
 
   describe("the render channel (one line, both voices)", () => {
-    it("refused names the refusal; ran names the model and run id", () => {
-      const t = tool();
+    it("refused names the refusal; ran names the model and run id", async () => {
+      const t = await tool();
       const refused = t.output.render({}, { error: "nope" });
       assert.match(String((refused[0] as { text?: string }).text), new RegExp((cfg.renderLabel ?? cfg.flow) + " REFUSED: nope"));
       const ran = t.output.render({}, { model: "m1", run_id: "r9" });
       assert.match(String((ran[0] as { text?: string }).text), new RegExp((cfg.renderLabel ?? cfg.flow) + " \\[m1\\] → r9 — poll with run_status"));
     });
 
-    it("the empty arms: no model, no run id, no value at all", () => {
-      const t = tool();
+    it("the empty arms: no model, no run id, no value at all", async () => {
+      const t = await tool();
       const gaps = t.output.render({}, {});
       assert.match(String((gaps[0] as { text?: string }).text), new RegExp((cfg.renderLabel ?? cfg.flow) + " \\[\\?\\] → \\?"));
       // the source tolerates undefined though the lib's render signature
@@ -240,56 +240,57 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
   });
 
   describe("the tile channel (presentationMeta truth table)", () => {
-    const meta = (): NonNullable<ToolDefinition["output"]["presentationMeta"]> =>
-      tool().output.presentationMeta!;
+    const meta = async (): Promise<NonNullable<ToolDefinition["output"]["presentationMeta"]>> =>
+      (await tool()).output.presentationMeta!;
 
-    it("nothing rides but the flow default and the ? model", () => {
-      assert.deepEqual(meta()({}, {}), { flow: cfg.flow, model: "?" });
+    it("nothing rides but the flow default and the ? model", async () => {
+      assert.deepEqual((await meta())({}, {}), { flow: cfg.flow, model: "?" });
     });
 
-    it("empty strings and non-strings are NOT truth", () => {
-      assert.deepEqual(meta()({}, { run_id: "", draft_id: "", status: "", error: "" }), { flow: cfg.flow, model: "?" });
-      assert.deepEqual(meta()({}, { run_id: 5, draft_id: 7, model: 9 }), { flow: cfg.flow, model: "9" }, "the model channel stringifies (unguarded) — the ids are the guarded ones");
+    it("empty strings and non-strings are NOT truth", async () => {
+      assert.deepEqual((await meta())({}, { run_id: "", draft_id: "", status: "", error: "" }), { flow: cfg.flow, model: "?" });
+      assert.deepEqual((await meta())({}, { run_id: 5, draft_id: 7, model: 9 }), { flow: cfg.flow, model: "9" }, "the model channel stringifies (unguarded) — the ids are the guarded ones");
     });
 
-    it("an undefined value is the empty tile (the replay arm)", () => {
-      assert.deepEqual(tool().output.presentationMeta!({}, undefined as never), { flow: cfg.flow, model: "?" });
+    it("an undefined value is the empty tile (the replay arm)", async () => {
+      assert.deepEqual((await tool()).output.presentationMeta!({}, undefined as never), { flow: cfg.flow, model: "?" });
     });
 
-    it("the full canonical value rides verbatim", () => {
+    it("the full canonical value rides verbatim", async () => {
       assert.deepEqual(
-        meta()({}, { flow: "f", model: "m", run_id: "r", draft_id: "d", status: "queued", error: "e" }),
+        (await meta())({}, { flow: "f", model: "m", run_id: "r", draft_id: "d", status: "queued", error: "e" }),
         { flow: "f", model: "m", run_id: "r", draft_id: "d", status: "queued", error: "e" },
       );
     });
   });
 
   describe("the completed-card presenter (presentResult reads meta)", () => {
-    const t = (): ToolDefinition => tool();
+    const t = (): Promise<ToolDefinition> => tool();
 
-    it("meta-less result → undefined (the raw arm)", () => {
-      assert.equal(t().presentResult?.(goodArgs, {} as never), undefined);
-      assert.equal(t().presentResult?.(goodArgs, { meta: null } as never), undefined);
+    it("meta-less result → undefined (the raw arm)", async () => {
+      assert.equal((await t()).presentResult?.(goodArgs, {} as never), undefined);
+      assert.equal((await t()).presentResult?.(goodArgs, { meta: null } as never), undefined);
     });
 
-    it("the refusal arm titles REFUSED with the model", () => {
-      const view = t().presentResult?.(goodArgs, { meta: { model: "m1", error: "x" } } as never);
+    it("the refusal arm titles REFUSED with the model", async () => {
+      const view = (await t()).presentResult?.(goodArgs, { meta: { model: "m1", error: "x" } } as never);
       assert.match(String(view?.title), /REFUSED/);
       assert.match(String(view?.title), /\[m1\]/);
     });
 
-    it("the run arm carries the label, model, and run id (?-gaps pin)", () => {
-      const view = t().presentResult?.(goodArgs, { meta: { model: "m1", run_id: "r9" } } as never);
+    it("the run arm carries the label, model, and run id (?-gaps pin)", async () => {
+      const t0 = await t();
+      const view = t0.presentResult?.(goodArgs, { meta: { model: "m1", run_id: "r9" } } as never);
       assert.match(String(view?.title), /→ r9/);
-      const gaps = t().presentResult?.(goodArgs, { meta: {} } as never);
+      const gaps = t0.presentResult?.(goodArgs, { meta: {} } as never);
       assert.match(String(gaps?.title), /\[\?\] → \?/);
       // non-string meta fields are not truth either.
-      const nums = t().presentResult?.(goodArgs, { meta: { model: 5, run_id: 9 } } as never);
+      const nums = t0.presentResult?.(goodArgs, { meta: { model: 5, run_id: 9 } } as never);
       assert.match(String(nums?.title), /\[\?\] → \?/);
     });
 
-    it("empty-string meta fields are not truth at the presenter", () => {
-      const t2 = tool();
+    it("empty-string meta fields are not truth at the presenter", async () => {
+      const t2 = await tool();
       const refused = t2.presentResult?.(goodArgs, { meta: { model: "", error: "x" } } as never);
       assert.match(String(refused?.title), /\[\?\] — REFUSED/);
       const ran = t2.presentResult?.(goodArgs, { meta: { model: "", run_id: "" } } as never);
@@ -298,28 +299,28 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
   });
 
   describe("presentCall prose (validated args only)", () => {
-    it("invalid args never present (the defineTool wrapper law)", () => {
-      assert.equal(tool().presentCall?.({}), undefined);
+    it("invalid args never present (the defineTool wrapper law)", async () => {
+      assert.equal((await tool()).presentCall?.({}), undefined);
     });
 
-    it("validated args name the resolved model (default when unstated)", () => {
+    it("validated args name the resolved model (default when unstated)", async () => {
       // rawInput rides the source's own presentCall return — the lib's
       // ToolCallView does not declare it. The spellings are escaped:
       // semantic style values carry regex metachars (':'-separated
       // addresses, dotted family ids).
       const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const card = tool().presentCall?.(goodArgs) as unknown as { rawInput?: unknown };
+      const card = (await tool()).presentCall?.(goodArgs) as unknown as { rawInput?: unknown };
       assert.ok(card);
       assert.match(String(card.rawInput), new RegExp("model=" + esc(defaultModel) + (cfg.defaultAnchor ?? "")));
-      const explicit = tool().presentCall?.({ ...goodArgs, model: cfg.explicitModel }) as unknown as { rawInput?: unknown };
+      const explicit = (await tool()).presentCall?.({ ...goodArgs, model: cfg.explicitModel }) as unknown as { rawInput?: unknown };
       assert.match(String(explicit?.rawInput), new RegExp("model=" + esc(cfg.explicitModel) + (cfg.explicitAnchor ?? "")));
     });
 
-    it("the prose names the driving field (the card's own input)", () => {
+    it("the prose names the driving field (the card's own input)", async () => {
       // rawInput rides the source's own presentCall return — the lib's
       // ToolCallView does not declare it (never asserted absent: the
       // prose IS the pin).
-      const card = tool().presentCall?.(goodArgs) as unknown as { rawInput?: unknown };
+      const card = (await tool()).presentCall?.(goodArgs) as unknown as { rawInput?: unknown };
       assert.match(String(card?.rawInput), cfg.drivingField);
     });
   });

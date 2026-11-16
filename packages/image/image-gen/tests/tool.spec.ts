@@ -26,7 +26,8 @@ import { buildImageGenTool } from "../src/tool.ts";
 import { TOOL_NAME } from "../src/wire.ts";
 import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
-import { identity, schema, BOARDED, SEMANTIC_MODELS } from "../src/card.ts";
+import { identity, schema, BOARDED } from "../src/card.ts";
+import { primeFamilySeats, semanticModels } from "../src/family-seats.ts";
 
 const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
 
@@ -60,8 +61,17 @@ const seam: EstateCall = async (method, path, body) => {
 // The semantic style spelling: the first served entry is the
 // default pick (value = the wire enum's default, route = the atom
 // that crosses to the estate) — derived, never re-spelled here.
-const STYLE0 = SEMANTIC_MODELS[0]!;
-const FULL_ARGS = { prompt: "a cat in neon rain", model: STYLE0.value };
+// The semantic spellings arrive with the seats (family packages are
+// dynamic imports now): primed once, before every arm below.
+let SEMANTIC_MODELS: ReturnType<typeof semanticModels>;
+let STYLE0: ReturnType<typeof semanticModels>[number];
+let FULL_ARGS: { prompt: string; model: string };
+beforeAll(async () => {
+  await primeFamilySeats();
+  SEMANTIC_MODELS = semanticModels();
+  STYLE0 = SEMANTIC_MODELS[0]!;
+  FULL_ARGS = { prompt: "a cat in neon rain", model: STYLE0.value };
+});
 
 const exec = {
   callId: "test-call",
@@ -75,7 +85,10 @@ const exec = {
 } as unknown as Parameters<ToolDefinition["execute"]>[1];
 
 describe("single spelling (the emission derives from the card)", () => {
-  const tool = buildImageGenTool(REFUSING_CALL);
+  let tool: Awaited<ReturnType<typeof buildImageGenTool>>;
+  beforeAll(async () => {
+    tool = await buildImageGenTool(REFUSING_CALL);
+  });
 
   it("name is the TOOL-plane law: id, hyphens→underscores, no suffix", () => {
     assert.equal(tool.name, "image_gen");
@@ -115,7 +128,10 @@ describe("single spelling (the emission derives from the card)", () => {
 });
 
 describe("the completed card (P0: presentationMeta + presentResult)", () => {
-  const tool = buildImageGenTool(REFUSING_CALL);
+  let tool: Awaited<ReturnType<typeof buildImageGenTool>>;
+  beforeAll(async () => {
+    tool = await buildImageGenTool(REFUSING_CALL);
+  });
 
   it("presentationMeta projects the settled facts (run arm), omitting empty keys", () => {
     const meta = tool.output.presentationMeta?.(FULL_ARGS, {
@@ -170,7 +186,7 @@ describe("the executor path (two doors, the model-card law)", () => {
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_77" };
     startBody = { run_id: "r_9", status: "queued" };
-    const value = (await buildImageGenTool(seam).execute(
+    const value = (await (await buildImageGenTool(seam)).execute(
       FULL_ARGS, exec,
     )) as Record<string, string>;
     assert.equal(calls.length, 2, "exactly two doors");
@@ -191,7 +207,7 @@ describe("the executor path (two doors, the model-card law)", () => {
   it("an unstated model resolves the semantic default (the same law as the row)", async () => {
     calls.length = 0;
     draftsBody = { draftId: "d_1" };
-    const value = (await buildImageGenTool(seam).execute({ prompt: "x" }, exec)) as Record<string, string>;
+    const value = (await (await buildImageGenTool(seam)).execute({ prompt: "x" }, exec)) as Record<string, string>;
     assert.equal((calls[0].body.stages as Array<Record<string, unknown>>)[0]!.service, STYLE0.route);
     assert.equal(value.model, STYLE0.value);
   });
@@ -200,21 +216,21 @@ describe("the executor path (two doors, the model-card law)", () => {
     // The door's model-arm refusal (illegal model): admission owns
     // it server-side; the face resolves it as a domain outcome.
     startBody = { error: "model 'bogus' is not boarded on the image-gen card" };
-    const value = (await buildImageGenTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await (await buildImageGenTool(seam)).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "model 'bogus' is not boarded on the image-gen card");
     startBody = { run_id: "r_9", status: "queued" };
   });
 
   it("a drafts-door refusal is canonical too", async () => {
     draftsStatus = 422; draftsBody = { error: "drafts: stage service missing" };
-    const value = (await buildImageGenTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await (await buildImageGenTool(seam)).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "drafts: stage service missing");
     draftsStatus = 200; draftsBody = { draftId: "d_1" };
   });
 
   it("a mint without draftId is a refusal value", async () => {
     draftsBody = { ok: true };
-    const value = (await buildImageGenTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await (await buildImageGenTool(seam)).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "gateway draft POST returned no draftId");
   });
 
@@ -223,20 +239,20 @@ describe("the executor path (two doors, the model-card law)", () => {
     const ctl = new AbortController();
     ctl.abort();
     await assert.rejects(
-      buildImageGenTool(seam).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
+      (await buildImageGenTool(seam)).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
     );
     assert.equal(calls.length, 0, "no door was touched");
   });
 
   it("schema-incomplete args are refused by the contract's own validation", async () => {
     await assert.rejects(
-      buildImageGenTool(seam).execute({ model: STYLE0.value }, exec),
+      (await buildImageGenTool(seam)).execute({ model: STYLE0.value }, exec),
       /prompt/,
     );
   });
 
-  it("the renderer explains refusals and run ids", () => {
-    const tool = buildImageGenTool(seam);
+  it("the renderer explains refusals and run ids", async () => {
+    const tool = await buildImageGenTool(seam);
     const refused = tool.output.render({}, { error: "nope" });
     assert.match(String((refused[0] as { text?: string }).text), /REFUSED: nope/);
     const ran = tool.output.render({}, { model: STYLE0.value, run_id: "r_9" });

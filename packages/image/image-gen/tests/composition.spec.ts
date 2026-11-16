@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, loadCardDefs } from "@melite/comfyui-cordis";
 import * as pkg from "../src/index.ts";
-import { SEMANTIC_MODELS } from "../src/card.ts";
+import { primeFamilySeats, semanticModels } from "../src/family-seats.ts";
 import { DECL as krea2Decl } from "@melite/models-krea-2";
 import { DECL as zImageDecl } from "@melite/models-z-image";
 import { DECL as animaDecl } from "@melite/models-anima";
@@ -59,7 +59,8 @@ describe("real composition (the production path)", () => {
     assert.equal(row.name, "image_gen_card");
     // The MODEL input, one spelling: the first served style value.
     // The tool face defaults and resolves through the same entries.
-    assert.equal(row.model, SEMANTIC_MODELS[0]!.value);
+    await primeFamilySeats();
+    assert.equal(row.model, semanticModels()[0]!.value);
     assert.equal(row.kind, "card-compose");
     assert.ok(row.description.length > 0);
   });

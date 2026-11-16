@@ -14,7 +14,8 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { ACTION_BINDINGS } from "../src/card.ts";
+import { composeFamilyAction } from "../src/card.ts";
+import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -399,8 +400,8 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
       // (1) THE BINDING: the owning family holds a row — a route id
       // keying nothing was the silent miss this wall exists to kill.
       assert.ok(
-        (row.family ?? row.id) in ACTION_BINDINGS,
-        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+        seatOf(row.family ?? row.id) !== undefined,
+        `family '${row.family ?? row.id}' holds no family seat — address '${row.id}' would silently ride the legacy lane`,
       );
       // (2) THE COMPOSE: the row's own declared weights + classes.
       const g = new GraphBuilder();
@@ -472,7 +473,7 @@ describe("THE DECLARED FALLBACK — an unbound family refuses loud", () => {
       variant_groups: [],
       outputs: [],
     };
-    assert.ok(!("moss-shape" in ACTION_BINDINGS), "the synthetic row is genuinely unbound");
+    assert.ok(seatOf("moss-shape") === undefined, "the synthetic row is genuinely unbound");
     assert.throws(
       () => def.compose(def.schema({ prompt: "a cat", seed: 5 }), synth, new GraphBuilder(), "r_fallback"),
       /no declared action for family 'moss-shape' on the image-gen card — every boarded family \(krea-2, z-image, anima, qwen-img-21, flux-klein, moss-image, h3-image\)/,

@@ -33,10 +33,10 @@ const harness = registerExecutorBattery({
 });
 
 describe("the h3 prose rows (calls is annotation-only json)", () => {
-  it("a serialized calls string counts zero shots (the prose reads the parsed array)", () => {
+  it("a serialized calls string counts zero shots (the prose reads the parsed array)", async () => {
     // calls may arrive as its serialized JSON string (the
     // annotation-only json param) — the prose counts 0 then.
-    const asString = harness.tool().presentCall?.({ ...harness.goodArgs, calls: JSON.stringify(GOOD_ARGS.calls) }) as unknown as { rawInput?: unknown };
+    const asString = (await harness.tool()).presentCall?.({ ...harness.goodArgs, calls: JSON.stringify(GOOD_ARGS.calls) }) as unknown as { rawInput?: unknown };
     assert.match(String(asString?.rawInput), /shots=0/);
   });
 });

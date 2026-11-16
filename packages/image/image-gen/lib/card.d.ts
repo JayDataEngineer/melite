@@ -4,15 +4,19 @@ import type { PromptGraph, StripTable } from '@melite/comfyui-card-kit/graph';
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import { ComfyUIServiceFace } from '@melite/comfyui-card-kit/service-faces';
-import type { SemanticModelEntry } from '@melite/comfyui-card-kit/semanticModelKnob';
 /** The card's boarding — where the card gets its models: THE AI
  *  MODELS' own plugin declarations (packages/models/*), each
  *  carrying its whole truth — variants, quant cells, HF artifact
- *  links, mods, lane inputs. The id is spelled once, in the model
- *  plugin; a rename breaks at tsc, never silently at the
- *  not-boarded refusal. The model-knob enum, the tool default, and
- *  the registry row all derive from this array. */
-export declare const BOARDED: readonly [string, string, string, string, string, string, string];
+ *  links, mods, lane inputs. THE PLUGIN LAW (L3 cure, 2026-11-16):
+ *  the ids are LITERALS and the family packages resolve through
+ *  ./family-seats.ts (guarded dynamic seats, primed at
+ *  registration) — a missing family package costs its OWN seat,
+ *  never this card's load. The binding is judged by the
+ *  family-coverage wall on the dev tree: a family that changes its
+ *  id reds there, never silently at the not-boarded refusal. The
+ *  model-knob enum, the tool default, and the registry row all
+ *  derive from these ids. */
+export declare const BOARDED: readonly ["krea-2", "z-image", "anima", "qwen-img-21", "flux-klein", "moss-image", "h3-image"];
 /** THE GEN REGION ROSTER IS DEAD (operator 2026-11-09, the
  *  face-rail burn: "ANY model can inpaint, not just krea-2" — the
  *  two-family roster was artificial, the DetailerForEach tail is
@@ -22,12 +26,13 @@ export declare const BOARDED: readonly [string, string, string, string, string, 
  *  serves wherever the card boards. The pair-law refusals below
  *  (base without region half, region without source, mode law)
  *  still fire for every family. */
-/** The served style enum (the semantic model knob): entries derived
- *  from the same five DECLs — labels are their own copy, values
- *  are stable family:variant:cell addresses, routes resolve
- *  estate-side. One source: the tool face serves THIS, never a
- *  second hand-written list. */
-export declare const SEMANTIC_MODELS: readonly SemanticModelEntry[];
+/** The served style enum (the semantic model knob): entries derive
+ *  from the PRESENT family seats at serve time (family-seats.ts —
+ *  a missing family package costs its own entries, never this
+ *  card's load); labels are the families' own copy, values are
+ *  stable family:variant:cell addresses, routes resolve
+ *  estate-side. One source: the tool face serves the seats'
+ *  derivation, never a second hand-written list. */
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
  *  boarded family with a bound action composes through the atom's
  *  own declared segment — the card delegates, never authors nodes.
@@ -42,7 +47,19 @@ export declare const SEMANTIC_MODELS: readonly SemanticModelEntry[];
 export declare const IMAGE_GEN_STRIP: StripTable;
 /** The card's autofill strip (the t2i family's pin defaults never ride). */
 export declare function finalizeImageGen(graph: PromptGraph): PromptGraph;
-export declare const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void>;
+/** The action bindings (the atom vocabulary, stroke-1 pilot): a
+ *  boarded family with a bound action composes through the atom's
+ *  own declared segment — the card delegates, never authors nodes.
+ *  THE PLUGIN LAW (L3 cure): the binding resolves from the
+ *  family's SEAT (family-seats.ts) at compose time — every
+ *  boarded family holds the same declared t2i action, so one
+ *  seat-driven dispatch replaces the per-family closure table,
+ *  and a missing family package refuses at the dispatch's own
+ *  loud voice below, never at this module's load. Keyed by the
+ *  OWNING FAMILY (model.family, never model.id: six of ten served
+ *  addresses are route ids — a route-keyed lookup misses and
+ *  silently composes nothing). */
+export declare function composeFamilyAction(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void;
 export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     prompt: z<string, string, "plain">;
     negative_prompt: z<string, string, "plain">;

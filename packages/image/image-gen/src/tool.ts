@@ -23,31 +23,42 @@ import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools
 import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-card-kit/params-emit'
-import { schema, identity, BOARDED, SEMANTIC_MODELS } from './card.ts'
+import { schema, identity, BOARDED } from './card.ts'
+import { primeFamilySeats, semanticModels } from './family-seats.ts'
 import { resolveSemanticModel } from '@melite/comfyui-card-kit/semanticModelKnob'
 import { TOOL_NAME } from './wire.ts'
 
-export const buildImageGenTool = (call: EstateCall): ToolDefinition =>
-  defineCardTool(call, {
+/** Async since the L3 cure: the knob derives from the PRESENT
+ *  family seats (primeFamilySeats awaits the guarded dynamic
+ *  imports; a missing family package costs its own entries, never
+ *  the tool face). The harness seat that builds this tool is
+ *  already async (melite-tools index.ts's lane seat). */
+export const buildImageGenTool = async (call: EstateCall): Promise<ToolDefinition> => {
+  await primeFamilySeats()
+  const models = semanticModels()
+  return defineCardTool(call, {
     name: TOOL_NAME,
     flow: 'image-gen',
     label: identity.label,
     description: identity.description,
     // THE MODEL INPUT: the params walk synthesizes the model knob
-    // from the served style enum (entries derived from the boarded
-    // DECLs' variant rows — a CLOSED enum the wrapper rejects
+    // from the served style enum (entries derived from the PRESENT
+    // families' variant rows — a CLOSED enum the wrapper rejects
     // ''/unknown values against at the seam); execute resolves the
-    // unstated default itself (SEMANTIC_MODELS[0].value — the same
+    // unstated default itself (models[0].value — the same
     // spelling the walk's synthesized default rides; one source).
     parameters: emitParamsSpec(
-      schema as never, BOARDED, SEMANTIC_MODELS,
+      schema as never, BOARDED, models,
     ) as ParameterSchemaSpec,
     // the unstated default is the SAME pick the served enum defaults
     // to — the style value itself, folded to its route by the same
-    // resolver sent values ride; the envelope echoes the style.
-    defaultModel: SEMANTIC_MODELS[0] === undefined
+    // resolver sent values ride; the envelope echoes the style. An
+    // estate with NO family package installed falls to BOARDED[0]
+    // (the knob serves the id; the run refuses at the model seat).
+    defaultModel: models[0] === undefined
       ? BOARDED[0]
-      : SEMANTIC_MODELS[0].value,
-    resolveModel: (v) => resolveSemanticModel(SEMANTIC_MODELS, v)?.route ?? v,
+      : models[0].value,
+    resolveModel: (v: string): string => resolveSemanticModel([...models], v)?.route ?? v,
     previewField: 'prompt',
   })
+}

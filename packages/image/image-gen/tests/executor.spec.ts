@@ -4,6 +4,7 @@
 // (cruft row 10, 2026-10-12); this file owns what is IMAGE-GEN'S —
 // the builder, the args, the recipe-absence pin, and the index face.
 import { describe, it } from "vitest";
+import type { SemanticModelEntry } from "@melite/comfyui-card-kit/semanticModelKnob";
 import assert from "node:assert/strict";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@melite/comfyui-cordis/service";
@@ -11,13 +12,17 @@ import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
 import { buildImageGenTool as FACE } from "../src/tool.ts";
 import { TOOL_NAME } from "../src/wire.ts";
-import { SEMANTIC_MODELS } from "../src/card.ts";
+import { primeFamilySeats, semanticModels } from "../src/family-seats.ts";
 import { registerExecutorBattery } from "@melite/estate-call/executorHarness";
 
 // The semantic spellings, derived from the card (never re-spelled):
 // the envelope carries the style value; the wire carries its route.
-const FIRST = SEMANTIC_MODELS[0]!;
-const SECOND = SEMANTIC_MODELS[1]!;
+// Top-level await: the seats are dynamic imports, and this module's
+// battery config reads FIRST at module scope — primed here, once.
+await primeFamilySeats();
+const models = semanticModels();
+const FIRST: SemanticModelEntry = models[0]!;
+const SECOND: SemanticModelEntry = models[1]!;
 
 const harness = registerExecutorBattery({
   makeTool: FACE,
@@ -34,8 +39,8 @@ const harness = registerExecutorBattery({
 });
 
 describe("the gen prose rows", () => {
-  it("the driving fields are prompt + model; recipe is gone (stroke 34)", () => {
-    const card = harness.tool().presentCall?.(harness.goodArgs) as unknown as { rawInput?: unknown };
+  it("the driving fields are prompt + model; recipe is gone (stroke 34)", async () => {
+    const card = (await harness.tool()).presentCall?.(harness.goodArgs) as unknown as { rawInput?: unknown };
     assert.match(String(card?.rawInput), /prompt=a koi pond at dusk/);
     // the card-recipe layer is dead — the summary never names a key
     // the card can no longer declare

@@ -67,3 +67,63 @@ test('the harness plane holds zero static card/family imports', () => {
   }
   expect(violations, 'a static card/family import kills the whole tools plane when the plugin is absent — use a guarded lazy seat (h3-lane-seats.ts is the pattern)').toEqual([])
 })
+
+/** THE CARD PLANE ARM (2026-11-16, image-gen L3 exemplar — "The
+ *  Card can exist without a Family"): model families are plugins to
+ *  the cards that board them. A static family import in a card's
+ *  src dies at module scope when the family package is pruned —
+ *  the whole card disappears with it (the L3 violation the
+ *  optional-lane-law family arm proves dead). Cards reference
+ *  families ONLY through guarded dynamic seats (image-gen
+ *  src/family-seats.ts is the pattern).
+ *
+ *  THE NAMED DEBT: the lazy surgery has landed on the image-gen
+ *  exemplar alone; the remaining cards ride the L3 debt row
+ *  (plugin-family-isolation, §4). Each debt card below MUST still
+ *  hold a live violation (a cured card that forgets to leave the
+ *  ledger reds this wall — the debt cannot rot), and a violation
+ *  outside the ledger reds immediately. */
+const GENRES = ['3d', 'audio', 'image', 'motion', 'video'] as const
+const FAMILY_SCOPE = /^@melite\/models-/
+const L3_DEBT_CARDS = [
+  '3d/anny', '3d/img-to-mesh', '3d/rig',
+  'audio/music', 'audio/sfx', 'audio/tts',
+  'image/image-edit', 'image/input-prep', 'image/mask', 'image/tagger', 'image/upscale-tools',
+  'motion/motion', 'video/track',
+] as const
+
+test('the card plane holds zero static family imports (image-gen cured; the rest are named debt)', () => {
+  const byCard = new Map<string, string[]>()
+  for (const genre of GENRES) {
+    const genreDir = join(import.meta.dirname, '..', '..', '..', '..', 'packages', genre)
+    let cards: string[]
+    try {
+      cards = readdirSync(genreDir)
+    } catch {
+      continue
+    }
+    for (const card of cards) {
+      const src = join(genreDir, card, 'src')
+      let files: string[]
+      try {
+        files = walk(src)
+      } catch {
+        continue
+      }
+      for (const file of files) {
+        for (const hit of staticPluginImports(file)) {
+          if (FAMILY_SCOPE.test((hit.match(/['"](@melite\/[^'"]+)['"]/) ?? [])[1] ?? '')) {
+            const key = `${genre}/${card}`
+            byCard.set(key, [...(byCard.get(key) ?? []), hit])
+          }
+        }
+      }
+    }
+  }
+  // (1) zero violations OUTSIDE the named debt
+  const outside = [...byCard.keys()].filter((c) => !(L3_DEBT_CARDS as readonly string[]).includes(c))
+  expect(outside, 'a static family import outside the L3 debt ledger kills the card when the family package is pruned — cure it the family-seats.ts way').toEqual([])
+  // (2) every debt row is still LIVE debt (a cured card must leave the ledger)
+  const stale = (L3_DEBT_CARDS as readonly string[]).filter((c) => !byCard.has(c))
+  expect(stale, 'these cards hold no static family imports anymore — drop them from the L3 debt ledger (plugin-family-isolation)').toEqual([])
+})

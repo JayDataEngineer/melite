@@ -33,6 +33,7 @@ import { fileURLToPath } from "node:url";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import { registerCard } from "../src/card.ts";
+import { primeFamilySeats } from "../src/family-seats.ts";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { FactsFile } from "@melite/comfyui-card-kit/facts";
 import {
@@ -82,6 +83,9 @@ describe("the third live break is dead (krea-2-raw serves)", () => {
     const ctx = new Context();
     const svc = new ComfyUIService(ctx);
     registerCard(ctx, svc);
+  // Family seats are dynamic imports now: compose reads them, so the
+  // boot primes them before any compose door opens.
+  await primeFamilySeats();
     svc.setFacts(facts as FactsFile);
     const graph = svc.compose("image-gen", "krea-2-raw", { prompt: "a cat" }, "run-raw-1");
     const text = graphText(graph);

@@ -203,7 +203,7 @@ export function cardLaneSeats(call: EstateCall): CardLaneSeat[] {
     { lane: 'audio-music', seat: async () => (await import('@melite/audio-music/tool')).buildMusicTool(call) },
     { lane: 'audio-tts', seat: async () => (await import('@melite/audio-tts/tool')).buildTtsTool(call) },
     { lane: 'image-edit', seat: async () => (await import('@melite/image-image-edit/tool')).buildImageEditTool(call) },
-    { lane: 'image-gen', seat: async () => (await import('@melite/image-image-gen/tool')).buildImageGenTool(call) },
+    { lane: 'image-gen', seat: async () => (await (await import('@melite/image-image-gen/tool')).buildImageGenTool(call)) },
     { lane: 'motion', seat: async () => (await import('@melite/motion-motion/tool')).buildMotionTool(call) },
     { lane: 'h3-timeline', seat: async () => (await import('@melite/video-h3-timeline/tool')).buildH3TimelineTool(call) },
   ]
