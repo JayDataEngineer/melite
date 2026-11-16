@@ -204,10 +204,12 @@ export async function runCard(w: World, body: Record<string, unknown>, tag: stri
   // loaded engine (arena-warmup burned here: queue completed, sidecar
   // still 'running' at the assert). Poll the sidecar to terminal on
   // its OWN budget before judging it.
-  let flow: { status: string, graph: Array<{ params?: { workflow?: Record<string, unknown> } }> } | undefined
+  type FlowSidecar = { status: string, graph: Array<{ params?: { workflow?: Record<string, unknown> } }> }
+  let flow: FlowSidecar | undefined
   for (let i = 0; i < 240; i++) {
-    flow = JSON.parse(readFileSync(join(runDir, '_flow.json'), 'utf8')) as typeof flow
-    if (flow.status !== 'queued' && flow.status !== 'running') break
+    const read = JSON.parse(readFileSync(join(runDir, '_flow.json'), 'utf8')) as FlowSidecar
+    flow = read
+    if (read.status !== 'queued' && read.status !== 'running') break
     await new Promise((r) => setTimeout(r, 500))
   }
   assert.equal(flow?.status, 'completed', tag + ': the sidecar carries the terminal status')

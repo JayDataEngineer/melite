@@ -210,6 +210,7 @@ function rowsOf(file: string, src: string): GpuRow[] {
       h3Window: window !== null ? Number(window[1]) : null,
       proofClass,
       family,
+      spanRaw: b.span,
     })
   }
   return out
@@ -238,14 +239,27 @@ describe('gpu diet law — minimum time taken, no dupes', () => {
   it('every h3 RENDER row presses the grid-floor window — read from timelineContract, not a literal', () => {
     const contract = readFileSync(join(ROOT, 'packages', 'models', 'h3', 'src', 'timelineContract.ts'), 'utf8')
     const floor = Number(contract.match(/export const GRID_BASE_FRAMES = (\d+)/)?.[1])
+    const step = Number(contract.match(/export const GRID_STEP_FRAMES = (\d+)/)?.[1])
     expect(Number.isFinite(floor)).toBe(true)
+    expect(Number.isFinite(step)).toBe(true)
     // ANY h3 render — estate seat (weights gate) or raw-press seat
-    // (card def) — bills the floor window.
+    // (card def) — bills a LEGAL lattice window: the single-window
+    // rows press the floor itself; the film row's multi-window
+    // lattice (the 73-field diet, 2026-11-16) rides lattice POINTS
+    // (end = 22 + 17k, the same contract's rung spacing) — an
+    // off-grid end is a diet violation whatever the count.
     const offenders = renderRows
       .filter((r) => r.family.split('+').includes('h3-timeline'))
-      .filter((r) => r.h3Window !== floor)
-      .map((r) => `${r.file}: "${r.title}" renders window ${r.h3Window} — the floor is ${floor}`)
+      .filter((r) => r.h3Window === null ? false : (r.h3Window - floor) % step !== 0)
+      .map((r) => `${r.file}: "${r.title}" renders window ${r.h3Window} — off the ${floor}+${step}k grid`)
     expect(offenders, offenders.join('\n')).toEqual([])
+    const singles = renderRows
+      .filter((r) => r.family.split('+').includes('h3-timeline'))
+      // multi-window rows declare more than one end_frame in the span
+      .filter((r) => (r.spanRaw?.match(/end_frame:/g) ?? []).length <= 1)
+      .filter((r) => r.h3Window !== floor)
+      .map((r) => `${r.file}: "${r.title}" renders window ${r.h3Window} — the single-window floor is ${floor}`)
+    expect(singles, singles.join('\n')).toEqual([])
   })
 
   it('no two RENDER rows pay the same family for the same proof class — every render is billed once', () => {
