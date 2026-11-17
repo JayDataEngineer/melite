@@ -67,6 +67,16 @@ signature default when the brief names a look:
   through native JSON bboxes in the prompt (50-step SFT lane).
   THE HOUSE PHOTOREAL: the retired photoreal family is OUT of the
   docs and text — moss is its replacement in every routing seat.
+- THE OPERATOR RANKING (2026-11-16, carry the date with every
+  routing claim): photoreal → **moss-image** or **krea-2 raw**;
+  anime → **anima turbo**; dense multi-element scenes + realism →
+  **h3-image** (at its 2048-class canvas); edits → **h3-image-edit**
+  / **qwen-img-edit-21**. The RETIRED PHOTOREAL FAMILY is struck
+  from the ranking entirely (the photoreal-ban law, same date:
+  the operator's comparison ruling retired it from every routing
+  seat; its flavor packs stay boarded, no brief routes to it).
+  A look table elsewhere still naming the retired family as a
+  seat is stale — moss-image replaced it in every routing seat.
 - **anima** — anime/illustration: 2D styles, manga, cel shading.
 - **krea-2** — painterly/illustrative render, the signature
   default when the brief names NO look.
@@ -77,7 +87,18 @@ signature default when the brief names a look:
   prompt-only (the reference seat belongs to qwen-img-21 alone).
 - **h3-image** — the newest heavy lane: dense multi-element scenes
   held together (many objects, stated spatial relations, long
-  prompts followed verbatim). 6-step lane, INT8 weights.
+  prompts followed verbatim). INT8 weights. THE STEPS MARRIAGE,
+  STATED (C5, 2026-11-16 — "the 6-step lane" told half the law):
+  the default composes at **6 steps / cfg 1** (the official
+  template's own counts) inside the envelope **steps [4, 20] /
+  cfg [1, 2]** — state nothing and the 6/1 marriage lands (law 3
+  stands); a quality-push may pin steps inside the envelope, and
+  cfg above 1 leans on a zeroed negative (a bounded experiment,
+  never a recipe). THE CANVAS LAW (C6/A4): h3 is tuned for
+  **~2048×2048 working area** — leave width/height unstated and
+  the 2048² family default lands; an 832×1216-class canvas composes
+  POORLY on this family (the 2026-11-16 burn: seven renders before
+  anyone saw the size).
 
 Ambiguous ("make it cool")? ASK the user which look — one line,
 the options. The family rides `params.model` on the stage
@@ -107,11 +128,37 @@ What these SHOW beyond the schema: style words live INSIDE the prompt as a suffi
 - Compose: `melite_construct` — `add_stage` this card onto the shared
   bench (`patch` / `rewire` to refine). The flow is live in the user's
   cards tab; keep editing it as the user asks.
-- Run: THE USER'S Run press on the card — never yours by default.
-  THE LANE LAW: when both lanes feel true,
-  THE LANE TEST decides — is the brief addressed to you as a DELIVERABLE?
-  Then compose it fully and say it is ready to run.
-  A question or joint exploration is not a deliverable — answer
-  it and shape the bench; either way your contract ends
-  at melite_construct and "ready to run".
+- Run: TWO MODES, stated plainly (C2, 2026-11-16 — the old line
+  said "never yours" while the operator's standing orders were
+  "Press it now at seeds …", "test it out"; the doc contradicted
+  the working contract):
+  - CHAT-COMPOSE MODE (the default): your contract ends at
+    melite_construct and "ready to run" — the USER'S Run press on
+    the card, never yours. A question or joint exploration is not
+    a deliverable; answer it and shape the bench.
+  - OPERATOR-AUTHORIZED MODE: when the operator authorizes the
+    press ("press it", "test it out", "leave you to open
+    experiment", seeds named), you press through the run doors
+    (melite_flow) — the authorization is the interface, and the
+    card press and your press are the same queue either way.
+    Authorization is per-brief, never a standing lane: a new brief
+    returns to chat-compose until authorized again.
 - Progress: on the card itself (the user watches it run).
+- THE OBSERVABILITY PATH (C7, 2026-11-16 — the fallback nobody
+  wrote down; a multi-hour session ran on it blind): poll
+  `run_status` (the designated door — long-poll `wait_s` returns
+  one row per settled run; `running — 0/1 stage(s)` before the
+  first artifact is a legitimate transient, not a wedge); read
+  `ledger_tail(event="run.")` for HISTORY (the run journal —
+  queued/failed/completed rows, timestamps); when a door's answer
+  and the disk disagree, the run dir is ground truth: `_request.json`
+  + `_flow.json` at the run root state what was pressed and what
+  composed, and the artifact tree (`generate/…png`) states what
+  landed — check the filesystem before believing a refusal
+  (melite_view false negatives happened; the file was there).
+- DIGESTS ARE PER-ESTATE-REV (C1, 2026-11-16): a quoted bundle
+  digest is stable only within one estate revision — an estate
+  update can add lanes between your loads (image-gen's digest
+  drifted `ce90e01a…` → `8118593b…` across an update that added
+  h3-image-edit). After ANY estate update, re-load; never trust a
+  quoted digest across one.

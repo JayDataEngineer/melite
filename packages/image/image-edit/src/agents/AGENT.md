@@ -72,19 +72,21 @@ KSampler.steps) before blaming the prompt.
    seat (masked detailing of a photo composes THERE).
 6. Qwen-Image-Edit uses low CFG (flow-matching) — guidance tops at 10;
    the 21 lane rides cfg 1 (leave the default).
-8. OUTPAINT: on qwen-img-edit-2.1 the native path is SIZE READJUST —
+   (C3, 2026-11-16: the list once skipped 7 — a law was retired and
+   the numbering never closed; 7–9 below are contiguous now.)
+7. OUTPAINT: on qwen-img-edit-2.1 the native path is SIZE READJUST —
    flip Match OFF, state the wider width/height, prompt the newly
    visible space ("outpaint the newly visible …"); the anchor renders
    1:1 inside the stated canvas. Pad-and-instruct (stage the padded
    frame yourself, then edit) remains the path on fibo2 and wherever
    an exact pixel frame must exist upstream — it is a fallback there,
    never "the only outpaint path".
-9. IMAGE-EDIT NEVER *NEEDS* A MASK: the INSTRUCTION is the regioning.
+8. IMAGE-EDIT NEVER *NEEDS* A MASK: the INSTRUCTION is the regioning.
    The region detailer is for surgical work you can name in pixels
    (recolour, replace a masked shape) — and it re-imagines crops, so
    judge its output by the BRIEF, not by pixel diff: a small diff can
    be semantic damage and a big diff can be the faithful edit.
-10. WHAT THE MODEL WILL NOT DO BY INSTRUCTION: worn items (clothing,
+9. WHAT THE MODEL WILL NOT DO BY INSTRUCTION: worn items (clothing,
     straps, packs) remove cleanly on request; ATTACHED devices the
     model files as anatomy and no negative prompt, denoise, or crop
     setting removes them — recolour or replace them in place instead,

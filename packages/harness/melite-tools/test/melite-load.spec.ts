@@ -62,6 +62,21 @@ describe('melite_load presentCall — the Load card', () => {
   })
 })
 
+describe('C1 — the digest law is bounded at the door (the promgen drift burn, 2026-11-16)', () => {
+  test('the DESCRIPTION teaches the per-estate-rev bound, never the unbounded quote-skip habit', () => {
+    // image-gen's digest drifted across an estate update that ADDED
+    // the h3-image-edit lane; the quoted-digest-skip-reload habit
+    // skipped seeing it. The door's own description taught that
+    // habit unbounded — the cure bounds it where the habit forms.
+    const described = (meliteLoad(fakeEstate({ loadCard: () => ({}) }).estate as never) as unknown as {
+      description: string,
+    }).description
+    assert.ok(described.includes('WITHIN ONE ESTATE REVISION'), 'the description bounds the digest to one estate revision')
+    assert.ok(described.includes('after ANY estate update, re-load'), 'the reload law is stated')
+    assert.ok(!described.includes('skip reload on a match. '), 'the unbounded habit sentence is gone')
+  })
+})
+
 describe('melite_load execute — the arg gates', () => {
   test('an empty name refuses as a value (discover it first)', async () => {
     const { seen, estate } = mockEstate(() => ({ bundle: {} }))
@@ -188,7 +203,7 @@ describe('melite_load render — the loaded line', () => {
       + 'weights: 0/1 boarded checkpoints present on this machine (provisioning is the estate\'s business — compose the card)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'skills: 1 — read one with melite_skill_read: s1\n'
-      + 'digest: abc123 (quote it to skip a reload)\n'
+      + 'digest: abc123 (quote it to skip a reload WITHIN one estate revision — an estate update adds lanes; after one, re-load)\n'
       + 'agents md:\n'
       + 'craft doc',
     )
@@ -401,7 +416,7 @@ describe('melite_load render — the loaded line', () => {
       + 'signature model: fam-x\n'
       + 'stages: s1:c1\n'
       + 'skills: 9 — read one with melite_skill_read: a, r-only, b, c, d, e, f, g …\n'
-      + 'digest: abc123 (quote it to skip a reload)\n'
+      + 'digest: abc123 (quote it to skip a reload WITHIN one estate revision — an estate update adds lanes; after one, re-load)\n'
       + 'agents md:\n'
       + 'craft doc',
     )

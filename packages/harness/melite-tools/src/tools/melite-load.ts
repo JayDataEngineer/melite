@@ -69,7 +69,9 @@ export function meliteLoad(
       + 'agents md, the tool-call signature (params_schema for cards; a card-stage flow serves its bench_stages rows — land them in ONE melite_construct load; a flow with no card seats keeps the run-door face; every flow names its initial seats (initials)), '
       + 'tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from '
       + 'the craft you read), model hints on cards (the boarded checkpoints as an operational count — N/M present on this machine; provisioning is the estate’s business, the card composes regardless of weights) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
-      + 'and a stable bundle digest — quote it and skip reload on a match. '
+      + 'and a stable bundle digest — quote it and skip reload on a match WITHIN ONE ESTATE REVISION '
+      + '(C1, the promgen drift burn 2026-11-16: image-gen\'s digest drifted across an estate update that ADDED the h3-image-edit lane — '
+      + 'a quoted digest trusted across an update skips seeing new lanes; after ANY estate update, re-load, never trust the quote). '
       + 'The default answer is the DIGEST (counts, required params, kinds, skills, digest); pass detail=true only when composing needs every param name, the bench grammar, or the lane field law.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.
@@ -537,7 +539,9 @@ export function meliteLoad(
           }
         }
         const digest = str(b.digest)
-        if (digest !== '') out.push('digest: ' + digest + ' (quote it to skip a reload)')
+        // C1 (promgen 2026-11-16): the digest line itself taught the
+        // unbounded habit — the bound rides the line the model reads.
+        if (digest !== '') out.push('digest: ' + digest + ' (quote it to skip a reload WITHIN one estate revision — an estate update adds lanes; after one, re-load)')
         const docs = Array.isArray(b.agents) ? b.agents : []
         if (docs.length > 0) {
           out.push('agents md:')

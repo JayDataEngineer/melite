@@ -120,8 +120,8 @@ export const schema = z.object({
   // stamped it).
   prompt: z.string().description('Prompt').extra('extra', bag(promptPairExtra().prompt)),
   negative_prompt: z.string().description('Negative Prompt').extra('extra', bag(promptPairExtra().negative_prompt)),
-  width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number' })),
-  height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', bag({ order: 1, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number' })),
+  width: z.number().description('Width').min(256).max(2048).step(16).extra('extra', bag({ order: 0, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: 'Canvas width, 16-step. THE CANVAS LAW (per family): h3-image is tuned for ~2048×2048 working area — leave it unstated and the 2048² family default lands; a small stated canvas composes poorly on h3 (the 2026-11-16 under-size burn). Other families default 1024-class; state a size only when the brief names one.' })),
+  height: z.number().description('Height').min(256).max(2048).step(16).extra('extra', bag({ order: 1, group: 'resolution', columns: 2, width: 1, zone: 'params', wtype: 'number', tooltip: 'Canvas height, 16-step. THE CANVAS LAW (per family): h3-image is tuned for ~2048×2048 working area — leave it unstated and the 2048² family default lands; a small stated canvas composes poorly on h3 (the 2026-11-16 under-size burn). Other families default 1024-class; state a size only when the brief names one.' })),
   seed: z.number().description('Seed').step(1).default(-1).extra('extra', bag(seedExtra({ order: 4, group: 'sampling', width: 1, zone: 'params' }))),
   steps: z.number().description('Steps').min(1).max(100).step(1).extra('extra', samplingExtra('steps')),
   cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
