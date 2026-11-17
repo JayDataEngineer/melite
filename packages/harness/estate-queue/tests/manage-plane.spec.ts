@@ -829,6 +829,57 @@ describe("hLogs", () => {
       rmRoot();
     }
   });
+
+  // A2 (promgen handoff, 2026-11-17): the lane's hand-seated unit
+  // writes its application log where ITS OWN StandardOutput says
+  // (append:/tmp/estate-comfyui-8188.log — 41MB live) — a path the
+  // canonical derivation never produced, so the door called a live
+  // log absent. Discovery rides the unit's own wiring now.
+  it.skipIf(process.platform === "win32")("A2 · the unit's StandardOutput directive is the app-log seat (a hand-seated deployment serves its real log)", async () => {
+    mkRoot();
+    try {
+      const logDir = mkdtempSync(join(tmpdir(), "a2-applog-"));
+      const appLog = join(logDir, "estate-comfyui-8188.log");
+      writeFileSync(appLog, "[INFO] Model MiniMaxH3TEModel_ prepared.\n[IndexError trace]\n", "utf8");
+      fakeBin({
+        journalctl: { out: "wrapper line\n", code: 0 },
+        // the unit cat carries the deployment's own wiring — the
+        // directive names the app-log seat (no single quotes: the
+        // fake bin shells through printf)
+        systemctl: {
+          out: "[Unit]\nDescription=estate image engine\n[Service]\nExecStart=/venv/python main.py --port 8188\nStandardOutput=append:" + appLog + "\nStandardError=append:" + appLog + "\n",
+          code: 0,
+        },
+      });
+      const [code, env] = await manage({ action: "logs", tail: 5 });
+      assert.equal(code, 200);
+      const app = (env.data as { app_log: Record<string, unknown> }).app_log;
+      assert.equal(app["verdict"], "fresh", "the unit-named file is the live application log");
+      assert.equal(app["path"], appLog);
+      assert.deepEqual(app["lines"], ["[INFO] Model MiniMaxH3TEModel_ prepared.", "[IndexError trace]"]);
+      assert.match(env.detail, /its tail is attached below/);
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it.skipIf(process.platform === "win32")("A2 · no directive and no canonical file is an HONEST absent (both seats named, never invented lines)", async () => {
+    mkRoot();
+    try {
+      fakeBin({
+        journalctl: { out: "wrapper line\n", code: 0 },
+        systemctl: { out: "[Unit]\nDescription=estate image engine\n[Service]\nExecStart=/venv/python main.py\n", code: 0 },
+      });
+      const [code, env] = await manage({ action: "logs" });
+      assert.equal(code, 200);
+      const app = (env.data as { app_log: Record<string, unknown> }).app_log;
+      assert.equal(app["verdict"], "absent");
+      assert.match(String(app["note"]), /neither the unit's StandardOutput directive nor the canonical runtime path/);
+      assert.match(env.detail, /no engine application log at/, "the detail line carries the absent note, never invented lines");
+    } finally {
+      rmRoot();
+    }
+  });
 });
 
 describe("hStatus operations", () => {

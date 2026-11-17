@@ -460,7 +460,7 @@ describe.skipIf(WIN_NO_SYSTEMD)("the logs truth — the source stamp (D3-02 / R-
     fakeBin({ journalctl: { out: "l1\n", code: 0 } });
     const [code, env] = await manage({ action: "logs" });
     assert.equal(code, 200);
-    assert.match(env.detail, /engine application log: no engine application log on disk/);
+    assert.match(env.detail, /engine application log: no engine application log at/);
     const data = env.data as unknown as LogsData;
     assert.equal(data.app_log.verdict, "absent");
     assert.match(String(data.app_log.path), /comfyui_8289\.log$/);
@@ -476,7 +476,7 @@ describe.skipIf(WIN_NO_SYSTEMD)("the logs truth — the source stamp (D3-02 / R-
     const data = env.data as unknown as LogsData;
     assert.equal(data.app_log.known, false);
     assert.equal(data.app_log.verdict, "unknown");
-    assert.match(String(data.app_log.note), /byo endpoint's engine tree is user-owned/);
+    assert.match(String(data.app_log.note), /byo endpoint's user-owned engine tree named one/);
     assert.deepEqual(data.lines, ["l1"]);
   });
 });
