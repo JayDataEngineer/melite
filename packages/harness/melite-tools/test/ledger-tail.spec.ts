@@ -263,6 +263,36 @@ describe('ledger_tail render — the human line', () => {
     assert.equal(((lines[2] as string).match(/w+/) as RegExpMatchArray)[0].length <= 80, true)
   })
 
+  // A3 (promgen handoff, 2026-11-17): the 60-char member cap
+  // amputated run.failed's error at the class name while the node
+  // trace lived past the cut — the operator's evidence arrived
+  // beheaded. The diagnostic family rides a 400-char bound; compact
+  // members stay compact.
+  test('A3 · the diagnostic family rides its own bound — the why arrives whole, compact members stay compact', () => {
+    const laneError =
+      'ComfyError: ComfyUI run failed: IndexError: list index out of range\n' +
+      ' @ generate::MiniMaxH3ImageConditioning.0 (MiniMaxH3ImageConditioning, 2 nodes executed before the failure)'
+    assert.ok(laneError.length > 60 && laneError.length < 400, 'the lane shape straddles the old cap and the new bound')
+    const out = text({
+      shown: 2,
+      matched: 2,
+      entries: [
+        { ts: 1_757_000_001, event: 'run.failed', data: { run_id: 'run-598c', error: laneError } },
+        { ts: 1_757_000_002, event: 'run.retry', data: { run_id: 'run-cold', retry_count: 1, why: 'y'.repeat(500) } },
+      ],
+    })
+    const lines = out.split('\n')
+    // the error rides WHOLE — the node trace, the nodes-executed count
+    assert.match(lines[1] as string, /2 nodes executed before the failure\)/)
+    assert.equal((lines[1] as string).includes('IndexError: list index…'), false, 'no amputation at the class name')
+    // past the 400 bound the ellipsis still lands (never unbounded)
+    assert.match(lines[2] as string, /why=y+…/)
+    assert.equal((lines[2] as string).includes('y'.repeat(500)), false)
+    assert.equal(((lines[2] as string).match(/y+/) as RegExpMatchArray)[0].length <= 400, true)
+    // a compact diagnostic sibling rides whole too
+    assert.match(lines[2] as string, /retry_count=1/)
+  })
+
   test('an object member rides its JSON spelling; an all-null bag and a dataless row ride bare', () => {
     // Three render rows the durable file boundary can really deliver
     // (the re-audit, 2026-10-16):

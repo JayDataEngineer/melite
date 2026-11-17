@@ -117,6 +117,18 @@ export function ledgerTail(estate: Estate): ToolDefinition {
         const rows = Array.isArray(v.entries) ? v.entries : []
         const ROWS_SHOWN = 20
         const CHAR_CAP = 6000
+        // THE DIAGNOSTIC FAMILY (promgen A3, 2026-11-17): the 60-char
+        // member cap amputated run.failed's error at the class name —
+        // "error=ComfyError: ComfyUI run failed: IndexError: list
+        // index…" — while the operator's evidence (the node trace,
+        // "N nodes executed before the failure") lived past the cut.
+        // The ledger PERSISTS whole (verified: _ledger.jsonl and
+        // _flow.json carry both lines verbatim); this render's text
+        // face is what agents read. The diagnostic keys ride a
+        // 400-char bound — compact members stay compact, the why
+        // arrives with them.
+        const DIAGNOSTIC_KEYS = ['error', 'why', 'note', 'reason']
+        const memberCap = (k: string): number => (DIAGNOSTIC_KEYS.includes(k) ? 400 : 60)
         let used = lines[0]!.length
         for (const row of rows.slice(0, ROWS_SHOWN)) {
           const ts = typeof row['ts'] === 'string' || typeof row['ts'] === 'number' ? String(row['ts']) : '?'
@@ -127,8 +139,13 @@ export function ledgerTail(estate: Estate): ToolDefinition {
             const parts: string[] = []
             for (const [k, val] of Object.entries(data as Record<string, JsonValue>).slice(0, 6)) {
               if (val === null || val === undefined) continue
-              const text = typeof val === 'object' ? JSON.stringify(val) : String(val)
-              parts.push(k + '=' + (text.length > 60 ? text.slice(0, 57) + '…' : text))
+              // ONE ROW, ONE LINE: an embedded newline in a member
+              // value (the engine's two-line verdicts) would split
+              // the render's row — flattened to a visible ⏎, the
+              // text rides WHOLE on one line (the hostile-row law).
+              const text = (typeof val === 'object' ? JSON.stringify(val) : String(val)).replace(/\s*\n\s*/g, ' ⏎ ')
+              const cap = memberCap(k)
+              parts.push(k + '=' + (text.length > cap ? text.slice(0, cap - 3) + '…' : text))
             }
             detail = parts.length > 0 ? ' — ' + parts.join(', ') : ''
           } else if (data !== undefined) {
