@@ -9,6 +9,25 @@ description: The official MiniMax H3-Image text-to-image guide — brief develop
 > `model:h3-image:h3-prompt-writing.md` owns the workflow and final
 > check.
 
+## The canvas law (this lane's own — read before stating width/height)
+
+The H3-Image checkpoint is tuned for a **2048-class working area** (the
+node's own law: ~2048×2048 pixels, 32-multiple canvas). The family
+default on this card is `width: 2048, height: 2048`. The lane composes
+low-resolution work poorly — the official template's own line is
+"MiniMax H3 Image doesn't work well in low resolution", and the edit
+sibling pre-scales every reference to 4 MP for exactly this reason.
+
+When you state width/height yourself, stay in the big band (≥ ~2 MP;
+2048×2048 is the tuned center). A small canvas (832×1216, 1024×1024)
+does not render faster-and-fine here — it renders worse.
+
+**The inheritance hazard (a real burn, 2026-11-17):** the bench keeps
+stated params across a model flip. If a previous family's canvas (a
+1024-native lane's 832×1216) is still riding the draft when you compose
+on h3-image, the run renders at that canvas silently. Restate
+width/height when switching onto this family.
+
 # Text-to-image prompt writing guide
 
 ## Develop the brief into an image
