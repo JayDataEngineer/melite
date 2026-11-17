@@ -70,7 +70,14 @@ routeViews?: ReadonlyMap<string, ModelDecl>,
  *  overlays it, the field need not exist on the surface. Without
  *  this the wd14 default 'checkpoint' refuses the boot against a
  *  card whose whole weights law is "no second picker". */
-cardAdmits?: ReadonlyMap<string, readonly string[]>): Array<[string, string]>;
+cardAdmits?: ReadonlyMap<string, readonly string[]>, 
+/** THE LAWFUL-ABSENCE ROSTER (the plugin law, 2026-11-17): ids
+ *  of family packages that retired alone at load (absent from
+ *  the install). A card boarding one of these is SERVING-DEGRADED,
+ *  not drift — it passes here; compose's requireSeat refuses the
+ *  family's seats by name at run time. An id neither registered,
+ *  served, nor dead still REFUSES (typo drift stays caught). */
+deadFamilies?: ReadonlySet<string>): Array<[string, string]>;
 /** Reserved row coordinates — the write-plane keys that name ROW
  *  state, never action params: the route re-point (`model`), the
  *  variant pick (`variant`), the tts form selector (`voice`, the

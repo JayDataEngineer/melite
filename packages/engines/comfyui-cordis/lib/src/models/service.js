@@ -954,7 +954,14 @@ export const modelsFamiliesProvider = {
     name: "engine-model-catalog-families",
     async apply(ctx) {
         await ctx.plugin(modelsProvider);
-        const families = await loadFamilies();
+        const { families, dead } = await loadFamilies();
+        for (const gone of dead) {
+            // THE RETIRED-ALONE VOICE (the plugin law, 2026-11-17): the
+            // absence is named once at boot, never swallowed — the dead
+            // roster threads into validate as lawful absence and compose
+            // still refuses the family's seats BY NAME.
+            console.warn(`[models] family '${gone.id}' retired alone — package ${gone.pkg} absent from the install (${gone.error})`);
+        }
         for (const family of families) {
             // await settles registration (registry.ts's fiber.await runs
             // the apply to completion): after this loop every family's
@@ -982,7 +989,7 @@ export const modelsFamiliesProvider = {
         if (svc.familyCount() !== families.length) {
             throw new ModelError(`the families provider registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`);
         }
-        await validateBootContracts(svc);
+        await validateBootContracts(svc, new Set(dead.map((g) => g.id)));
     },
 };
 /** Resolve the service for request-path helpers that take it as an
@@ -1210,7 +1217,7 @@ export function assertFactsCallers(decls, factsModels, boardings) {
         }
     }
 }
-export async function validateBootContracts(svc) {
+export async function validateBootContracts(svc, deadIds = new Set()) {
     const decls = svc.allDecls();
     let domains = null;
     const cardAdmits = new Map();
@@ -1298,7 +1305,7 @@ export async function validateBootContracts(svc) {
         // boarding a route address (qvoice across ALL qwen3-tts,
         // operator 2026-09-23) walks that view's defaults and the
         // token must skip like "variant" does.
-        validateRegistryAgainstCards(decls, domains, ENGINE_TRUTH, boardings, new Set(svc.modelIds()), new Map(svc.modelIds().map((id) => [id, svc.getModel(id)])), cardAdmits);
+        validateRegistryAgainstCards(decls, domains, ENGINE_TRUTH, boardings, new Set(svc.modelIds()), new Map(svc.modelIds().map((id) => [id, svc.getModel(id)])), cardAdmits, deadIds);
     }
     // ── THE MOD INTERLOCK + THE FACTS-CALLER CHECK (pure halves
     //  above, unit-pinned): the boot feeds the live sets, never a
@@ -1341,7 +1348,10 @@ export async function bootModels() {
         const ctx = new Context();
         try {
             await ctx.plugin(modelsProvider);
-            const families = await loadFamilies();
+            const { families, dead } = await loadFamilies();
+            for (const gone of dead) {
+                console.warn(`[models] family '${gone.id}' retired alone — package ${gone.pkg} absent from the install (${gone.error})`);
+            }
             for (const family of families) {
                 await ctx.plugin(family);
             }
@@ -1367,7 +1377,7 @@ export async function bootModels() {
             if (svc.familyCount() !== families.length) {
                 throw new ModelError(`boot registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`);
             }
-            await validateBootContracts(svc);
+            await validateBootContracts(svc, new Set(dead.map((g) => g.id)));
             cell.booted = svc;
             cell.bootedFrom = import.meta.url;
             return cell.booted;

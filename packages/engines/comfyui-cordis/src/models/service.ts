@@ -1060,7 +1060,16 @@ export const modelsFamiliesProvider: Plugin = {
   name: "engine-model-catalog-families",
   async apply(ctx: Context): Promise<void> {
     await ctx.plugin(modelsProvider);
-    const families = await loadFamilies();
+    const { families, dead } = await loadFamilies();
+    for (const gone of dead) {
+      // THE RETIRED-ALONE VOICE (the plugin law, 2026-11-17): the
+      // absence is named once at boot, never swallowed — the dead
+      // roster threads into validate as lawful absence and compose
+      // still refuses the family's seats BY NAME.
+      console.warn(
+        `[models] family '${gone.id}' retired alone — package ${gone.pkg} absent from the install (${gone.error})`,
+      );
+    }
     for (const family of families) {
       // await settles registration (registry.ts's fiber.await runs
       // the apply to completion): after this loop every family's
@@ -1092,7 +1101,7 @@ export const modelsFamiliesProvider: Plugin = {
         `the families provider registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`,
       );
     }
-    await validateBootContracts(svc);
+    await validateBootContracts(svc, new Set(dead.map((g) => g.id)));
   },
 };
 
@@ -1388,7 +1397,12 @@ export function assertFactsCallers(
     }
   }
 }
-export async function validateBootContracts(svc: ModelsService): Promise<void> {
+/** The dead roster a boot threads into cross-validation: boarded ids
+ *  in this set are LAWFUL ABSENCE (their family package retired
+ *  alone at load — the plugin law), never boarding drift. */
+export type DeadFamilyIds = ReadonlySet<string>
+
+export async function validateBootContracts(svc: ModelsService, deadIds: DeadFamilyIds = new Set()): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
   const cardAdmits = new Map<string, readonly string[]>()
@@ -1479,6 +1493,7 @@ export async function validateBootContracts(svc: ModelsService): Promise<void> {
       new Set(svc.modelIds()),
       new Map(svc.modelIds().map((id): [string, ModelDecl] => [id, svc.getModel(id)])),
       cardAdmits,
+      deadIds,
     );
   }
   // ── THE MOD INTERLOCK + THE FACTS-CALLER CHECK (pure halves
@@ -1528,7 +1543,12 @@ export async function bootModels(): Promise<ModelsService> {
   const ctx = new Context();
   try {
     await ctx.plugin(modelsProvider);
-    const families = await loadFamilies();
+    const { families, dead } = await loadFamilies();
+    for (const gone of dead) {
+      console.warn(
+        `[models] family '${gone.id}' retired alone — package ${gone.pkg} absent from the install (${gone.error})`,
+      );
+    }
     for (const family of families) {
       await ctx.plugin(family);
     }
@@ -1556,7 +1576,7 @@ export async function bootModels(): Promise<ModelsService> {
         `boot registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`,
       );
     }
-    await validateBootContracts(svc);
+    await validateBootContracts(svc, new Set(dead.map((g) => g.id)));
     cell.booted = svc;
     cell.bootedFrom = import.meta.url;
     return cell.booted;

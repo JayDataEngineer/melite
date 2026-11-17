@@ -20,9 +20,9 @@ describe("the make-model skill teaches the live tree (F4)", () => {
   const skill = readFileSync(SKILL, "utf8");
   const table = readFileSync(FAMILY_TABLE, "utf8");
 
-  it("Face 1 is the FAMILY_PKGS string table with dynamic import — and the retired barrel spelling is gone", () => {
+  it("Face 1 is the FAMILY_ROWS row table with dynamic import — and the retired barrel spelling is gone", () => {
     // the live mechanism, named
-    expect(skill).toContain("FAMILY_PKGS");
+    expect(skill).toContain("FAMILY_ROWS");
     expect(skill).toMatch(/dynamic\s+`?import/u,
       "the skill must teach the dynamic-import load (the cycle cure), not a static barrel");
     // the retired mechanism, absent — a comment may not even name
@@ -30,10 +30,10 @@ describe("the make-model skill teaches the live tree (F4)", () => {
     // closure-gate idiom; here the DOC is the artifact, so the
     // retired NAME must not appear at all)
     expect(skill).not.toContain("FAMILY_PLUGINS");
-    expect(skill, "the static barrel import is the retired Face 1 — the string table replaced it").not.toMatch(/import \{ family as/u);
+    expect(skill, "the static barrel import is the retired Face 1 — the row table replaced it").not.toMatch(/import \{ family as/u);
     // and the teaching target is REAL (the wall rides the live door)
-    expect(table).toMatch(/export const FAMILY_PKGS: readonly string\[\]/u);
-    expect(table).toMatch(/await import\(pkg\)/u,
+    expect(table).toMatch(/export const FAMILY_ROWS: readonly FamilyRow\[\]/u);
+    expect(table).toMatch(/await import\(row\.pkg\)/u,
       "families/index.ts must load through dynamic import — the skill's claim must stay true");
     expect(table).not.toMatch(/FAMILY_PLUGINS/u);
   });

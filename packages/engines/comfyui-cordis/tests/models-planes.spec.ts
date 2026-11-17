@@ -41,6 +41,33 @@ describe("validateRegistryAgainstCards (the boardings edge)", () => {
     );
   });
 
+  it("THE LAWFUL-ABSENCE ROSTER (the plugin law, 2026-11-17): a boarded id in the dead roster passes, a typo still refuses", () => {
+    // only ids a real dead package backed pass — the same boarding,
+    // with and without the roster the boot threads from loadFamilies
+    const boardings = new Map([["music", ["music3"]]]);
+    const dead = new Set(["music3"]);
+    const out = validateRegistryAgainstCards(
+      [decl()], cards, [], boardings,
+      undefined, undefined, undefined, dead,
+    );
+    assert.deepEqual(out, [], "boarding a lawfully-absent family is serving-degraded, not drift");
+    // without the roster the same boarding refuses (nothing backs it)
+    assert.throws(
+      () => validateRegistryAgainstCards([decl()], cards, [], boardings),
+      /card 'music' boards 'music3' — no such model registered/,
+    );
+    // and a typo refuses EVEN WITH the roster present (lawful
+    // absence is not a hole)
+    assert.throws(
+      () => validateRegistryAgainstCards(
+        [decl()], cards, [],
+        new Map([["music", ["musicX"]]]),
+        undefined, undefined, undefined, dead,
+      ),
+      /card 'music' boards 'musicX' — no such model registered/,
+    );
+  });
+
   it("AN ADMITTED DEFAULT KEY IS LEGAL TRUTH (2026-09-22, the tagger weights rail: the variant rail stamps, the surface never renders)", () => {
     const d = decl();
     const withCheckpoint = { ...d, defaults: { ...(d.defaults ?? {}), checkpoint: "wd-v1-4-moat-tagger-v2" } } as typeof d;

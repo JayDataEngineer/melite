@@ -223,7 +223,11 @@ export declare function assertAddressesServe(modelIds: readonly string[], regist
 export declare function assertFactsCallers(decls: readonly ModelDecl[], factsModels: Record<string, {
     card?: string;
 }>, boardings: ReadonlyMap<string, readonly string[]>): void;
-export declare function validateBootContracts(svc: ModelsService): Promise<void>;
+/** The dead roster a boot threads into cross-validation: boarded ids
+ *  in this set are LAWFUL ABSENCE (their family package retired
+ *  alone at load — the plugin law), never boarding drift. */
+export type DeadFamilyIds = ReadonlySet<string>;
+export declare function validateBootContracts(svc: ModelsService, deadIds?: DeadFamilyIds): Promise<void>;
 export declare function bootModels(): Promise<ModelsService>;
 /** The booted service (throws if neither a composition armed the
  * seat nor bootModels settled). The composed seat wins over a

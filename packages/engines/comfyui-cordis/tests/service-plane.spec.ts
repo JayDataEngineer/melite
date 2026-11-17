@@ -237,11 +237,19 @@ describe("registerCard (one card, one plugin)", () => {
     assert.equal(svc.getCardDef("card1"), undefined);
   });
 
-  it("flow input ports must exist in the card schema", async () => {
+  it("flow input ports must exist in the card schema (an EMPTY carrier is the absent-family spelling — 2026-11-17, the plugin law: the compose door owns that refusal by name)", async () => {
     const svc = await boot();
+    // the absent-family spelling itself now registers (the card
+    // serves; compose refuses by name) — pinned by the L2 wall
+    svc.registerCard(card({
+      flowKinds: { inputs: { missing: "text" }, outputs: { default: "image" }, requiresModel: true },
+    }))();
+    // and a NON-empty carrier with a missing port still refuses —
+    // the drift law keeps its firing arm on the reachable side
     assert.throws(
       () => svc.registerCard(card({
         flowKinds: { inputs: { missing: "text" }, outputs: { default: "image" }, requiresModel: true },
+        schemaCarrier: { dict: { prompt: {} } } as never,
       })),
       (error: unknown) => error instanceof ComposeRefusal && error.code === "flow-port" && /missing/.test(error.message),
     );
@@ -1788,11 +1796,12 @@ describe("resolveCardFlowOutputs (a card with no output bindings)", () => {
 });
 
 describe("the flow-port legacy alias gate", () => {
-  it("a legacy alias absent from the card's schema refuses at registration", async () => {
+  it("a legacy alias absent from the card's schema refuses at registration (on a NON-empty carrier — the empty carrier is the absent-family spelling, 2026-11-17)", async () => {
     const svc = await boot();
     assert.throws(
       () => svc.registerCard(card({
         flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: true, legacyAliases: { ghost_alias: "prompt" } },
+        schemaCarrier: { dict: { prompt: {} } } as never,
       })),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "flow-port" && /legacy aliases ghost_alias/.test(e.message),
     );

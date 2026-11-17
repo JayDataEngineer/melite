@@ -264,7 +264,29 @@ export const composeModPlane = async (ctx) => {
         ['@melite/models-z-image/mods/mask', 'z-image mask'],
     ];
     for (const [specifier, label] of packagedFlavors) {
-        await pluginPackage(ctx, specifier, 'packaged flavor', label);
+        // THE RETIRED-ALONE FLAVOR (the plugin law, 2026-11-17): a
+        // flavor module ships INSIDE its family package — when that
+        // package is absent from the install the flavor retires ALONE
+        // (the same idiom the cardPackages loop above owns), never
+        // takes the mod plane down. Its family's seats already refuse
+        // by name at compose; the mod plane keeps serving every
+        // present family's rows.
+        try {
+            await pluginPackage(ctx, specifier, 'packaged flavor', label);
+        }
+        catch (err) {
+            /* v8 ignore next 3 -- the skip half fires only for a real
+             * absent package (a coded ERR_MODULE_NOT_FOUND at import);
+             * vitest cannot synthesize that code (mock-factory errors
+             * wrap in vitest's own text), so the pool never reaches it.
+             * The L2 wall's krea-2 arm judges this catch on the real
+             * door (tests/walls/ts/suites/card-without-family-journey
+             * .spec.ts); the loud rethrow half is pinned in-pool by
+             * tests/modplane-retire-alone.spec.ts. */
+            if (err.code !== 'ERR_MODULE_NOT_FOUND')
+                throw err;
+            console.warn(`packaged flavor absent (its family package retired alone, the mod plane continues): ${label} — ${specifier}`);
+        }
     }
     // THE USER ROWS FILE (2026-10-15): the opt-in flavor at
     // userLorasPath() composes like every family flavor — rows serve

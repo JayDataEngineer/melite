@@ -2515,6 +2515,49 @@ const ARGUED_FLOOR_DROPS: Record<string, {
   // (74.05) and seated the row exactly at this entry's from face, so
   // the cleanup arm demanded its removal in the same landing (the
   // documented load-jitter class keeps its watch in the roadmap).
+  // (2026-11-17, the L2 wall's faces) THE MARGIN-EPSILON PAIR — the
+  // first cuts under the floor-rounding law: the K=1 margin mint
+  // used Math.round, so a margin of 209/215 (97.2093) minted a floor
+  // of 97.21 — 0.0007 ABOVE the margin's own green face. Faces I/J/K
+  // sat exactly at the margin (one load-jitter branch arm of the
+  // estate pool flapping between 209 and 210 of 215) and reds the
+  // gate on pure epsilon. The mint now floors (a margin floor sits
+  // below its margin, never above); these two rows re-seat at the
+  // floored margin. No behavior changed: both pools measured the
+  // margin face the mint itself defined as green. THE ENTRIES SIT AT
+  // THE TABLE'S TAIL: a regen spread earlier in this table overwrote
+  // a head-placed key once before (the 2026-11-06 dead-entry class) —
+  // tail entries win.
+  '**/packages/estate/provisioning/src/artifact-writer.ts': {
+    from: { statements: 97.69, branches: 97.21, functions: 92.31, lines: 99.04 },
+    to: { statements: 97.69, branches: 97.2, functions: 92.31, lines: 99.04 },
+    roadmapHeading: "### LANDED 2026-11-17 — THE L2 COMPOSITE WALL (the plugin law's (b) seam, registry `plugin-family-isolation` wall seated)",
+    reviewBy: "2026-12-17",
+    reason: "margin-epsilon: the K=1 margin 209/215 = 97.2093 minted 97.21 under Math.round — a floor above the margin face itself; the mint floors now, the row re-seats at 97.2 (faces I/J/K all measured 209/215, the mint's own green face)",
+  },
+  '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx': {
+    from: { statements: 98.05, branches: 96.18, functions: 96.36, lines: 98.82 },
+    to: { statements: 98.04, branches: 96.18, functions: 96.36, lines: 98.82 },
+    roadmapHeading: "### LANDED 2026-11-17 — THE L2 COMPOSITE WALL (the plugin law's (b) seam, registry `plugin-family-isolation` wall seated)",
+    reviewBy: "2026-12-17",
+    reason: "margin-epsilon: 201/205 = 98.0488 minted 98.05 under Math.round — 0.0012 above the margin face; the mint floors now, the row re-seats at 98.04 (face K measured the margin face green)",
+  },
+  // (2026-11-17, the L2 wall's faces L+M) THE TWO-FACE JITTER SEAT —
+  // provisioning/service.ts is untouched by the L2 diff, and two FULL
+  // faces on the IDENTICAL tree split on it: face L green at the
+  // committed floor (96.03/92.2), face M red at 95.95 statements /
+  // 92.19 branches — the provisioning pool's named load-jitter class
+  // (round 29's watch family) flapping at a floor the G+H regen
+  // minted from its calm faces. Re-seated at the K=1 mint BELOW THE
+  // WORST OBSERVED FACE (95.94 statements, 92.18 branches) with the
+  // round-29 standing duty: lift-or-remeasure at the review date.
+  '**/packages/estate/provisioning/src/service.ts': {
+    from: { statements: 96.03, branches: 92.2, functions: 94.95, lines: 97.42 },
+    to: { statements: 95.94, branches: 92.18, functions: 94.95, lines: 97.42 },
+    roadmapHeading: "### LANDED 2026-11-17 — THE L2 COMPOSITE WALL (the plugin law's (b) seam, registry `plugin-family-isolation` wall seated)",
+    reviewBy: "2026-12-17",
+    reason: "load-jitter at the committed floor: face L green (96.03/92.2 met), face M red (95.95/92.19) on the identical tree — the provisioning pool's named jitter class; re-seated one below the worst observed face per the round-29 K=1 mint discipline",
+  },
 };
 
 /** The pre-regeneration floors (the poisoned-era faces the 2026-10-22

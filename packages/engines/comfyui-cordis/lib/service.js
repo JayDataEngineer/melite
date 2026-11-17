@@ -165,13 +165,22 @@ function assertFlowContract(def) {
     }
     const carrier = carrierOf(def);
     const names = new Set(Object.keys(carrier.dict ?? {}));
-    const missingInputs = Object.keys(def.flowKinds.inputs).filter((name) => !names.has(name));
-    if (missingInputs.length > 0) {
-        throw new ComposeRefusal('flow-port', `card '${def.id}' flow inputs ${missingInputs.join(', ')} are absent from its schema`);
-    }
-    const missingAliases = Object.keys(def.flowKinds.legacyAliases ?? {}).filter((name) => !names.has(name));
-    if (missingAliases.length > 0) {
-        throw new ComposeRefusal('flow-port', `card '${def.id}' legacy aliases ${missingAliases.join(', ')} are absent from its schema`);
+    // THE EMPTY-CARRIER GUARD (the plugin law, 2026-11-17 — the
+    // card-without-family audit UPDATE 3): a carrier with no dict is
+    // the family-ABSENT spelling (the schema wrapper serves nothing);
+    // walking inputs against it would refuse the CARD at the estate
+    // census one hop before its own door. The compose door's
+    // requireSeat owns the loud refusal for every family-bound
+    // input; a non-empty carrier with missing ports is still drift.
+    if (names.size > 0) {
+        const missingInputs = Object.keys(def.flowKinds.inputs).filter((name) => !names.has(name));
+        if (missingInputs.length > 0) {
+            throw new ComposeRefusal('flow-port', `card '${def.id}' flow inputs ${missingInputs.join(', ')} are absent from its schema`);
+        }
+        const missingAliases = Object.keys(def.flowKinds.legacyAliases ?? {}).filter((name) => !names.has(name));
+        if (missingAliases.length > 0) {
+            throw new ComposeRefusal('flow-port', `card '${def.id}' legacy aliases ${missingAliases.join(', ')} are absent from its schema`);
+        }
     }
     const unconditional = new Set();
     for (const binding of def.flowOutputBindings ?? []) {

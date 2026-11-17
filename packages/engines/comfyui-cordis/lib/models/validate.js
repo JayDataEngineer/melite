@@ -78,7 +78,14 @@ routeViews,
  *  overlays it, the field need not exist on the surface. Without
  *  this the wd14 default 'checkpoint' refuses the boot against a
  *  card whose whole weights law is "no second picker". */
-cardAdmits) {
+cardAdmits, 
+/** THE LAWFUL-ABSENCE ROSTER (the plugin law, 2026-11-17): ids
+ *  of family packages that retired alone at load (absent from
+ *  the install). A card boarding one of these is SERVING-DEGRADED,
+ *  not drift — it passes here; compose's requireSeat refuses the
+ *  family's seats by name at run time. An id neither registered,
+ *  served, nor dead still REFUSES (typo drift stays caught). */
+deadFamilies) {
     const truth = new Set(engineTruth);
     const checked = [];
     const byId = new Map(decls.map((d) => [d.id, d]));
@@ -94,7 +101,9 @@ cardAdmits) {
     if (boardings !== undefined) {
         for (const [cardId, boarded] of boardings) {
             for (const mid of boarded) {
-                const known = byId.has(mid) || (servedIds !== undefined && servedIds.has(mid));
+                const known = byId.has(mid) ||
+                    (servedIds !== undefined && servedIds.has(mid)) ||
+                    (deadFamilies !== undefined && deadFamilies.has(mid));
                 if (!known) {
                     throw new ModelError(`card '${cardId}' boards '${mid}' — no such model registered (the card selects atoms; a selection naming nothing is drift, not a skip)`);
                 }

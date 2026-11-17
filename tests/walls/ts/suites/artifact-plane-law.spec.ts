@@ -509,26 +509,47 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
   // manifest-closure arm (estate side; this file keeps the engine
   // side — one edge, one home each). Its first firing caught
   // @melite/models-anima riding the patch yml undeclared.
-  it('every FAMILY_PKGS row names a models member, exactly once, and none is missing', () => {    const barrel = readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/src/models/families/index.ts'), 'utf8')
-    const rows = [...barrel.matchAll(/^\s+"(@melite\/models-[a-zA-Z0-9_-]+)",$/gm)].map((m) => m[1])
-    expect(rows.length, 'the string table is the load order — it cannot be empty').toBeGreaterThan(0)
-    const dupes = rows.filter((r, i) => rows.indexOf(r) !== i)
+  it('every FAMILY_ROWS row names a models member with its id pinned, exactly once, and none is missing', () => {
+    const barrel = readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/src/models/families/index.ts'), 'utf8')
+    // BOTH COLUMNS (the plugin-law seam, 2026-11-17): the row table
+    // pairs each package with the DECL id it must load as. The pkg
+    // column keeps every census judgment below; the id column is
+    // pinned textually (unique, unqualified, suffix-matched except
+    // the frozen exceptions) — loadFamilies asserts the LIVE pairing
+    // (DECL.id === row id) at every boot, so a lying id column is a
+    // boot refusal, never a silent mount.
+    const rows = [...barrel.matchAll(/^\s+\{ pkg: "(@melite\/models-[a-zA-Z0-9_-]+)", id: "([a-zA-Z0-9_-]+)" \},$/gm)].map((m) => ({ pkg: m[1], id: m[2] }))
+    expect(rows.length, 'the row table is the load order — it cannot be empty').toBeGreaterThan(0)
+    const pkgs = rows.map((r) => r.pkg)
+    const dupes = pkgs.filter((r, i) => pkgs.indexOf(r) !== i)
     expect(dupes, `duplicate table rows: ${dupes.join(', ')}`).toEqual([])
+    const idDupes = rows.map((r) => r.id).filter((v, i, a) => a.indexOf(v) !== i)
+    expect(idDupes, `duplicate family ids: ${idDupes.join(', ')}`).toEqual([])
+    // a DECL id never carries its package qualifier — copy-paste row
+    // drift (id spelled as the pkg suffix or the full specifier)
+    const qualified = rows.filter((r) => r.id.includes('@') || r.id.startsWith('models-'))
+    expect(qualified, `ids carrying package qualifiers: ${qualified.map((r) => r.id).join(', ')}`).toEqual([])
+    // pkg↔id pairing: the suffix law with its frozen exceptions (a
+    // family whose DECL id is not its package suffix — the pairing
+    // is authored, and loadFamilies enforces it against the DECL)
+    const SUFFIX_EXCEPTIONS: Record<string, string> = { '@melite/models-mask': 'mask-select' }
+    const mispaired = rows.filter((r) => r.id !== (SUFFIX_EXCEPTIONS[r.pkg] ?? r.pkg.replace(/^@melite\/models-/, '')))
+    expect(mispaired, `rows whose id is not the package suffix (add an exception ONLY with the DECL's own id): ${mispaired.map((r) => `${r.pkg} -> ${r.id}`).join(', ')}`).toEqual([])
     // the census: every models-domain member with a family export
     const modelNames = members()
       .filter(({ dir }) => /\/models\//.test(dir))
       .map(({ pkg }) => pkg.name)
       .filter(Boolean) as string[]
-    const missing = modelNames.filter((n) => !rows.includes(n))
+    const missing = modelNames.filter((n) => !pkgs.includes(n))
     expect(missing, `families with no table row (they will never boot): ${missing.join(', ')}`).toEqual([])
-    const stale = rows.filter((n) => !modelNames.includes(n))
+    const stale = pkgs.filter((n) => !modelNames.includes(n))
     expect(stale, `table rows naming no manifest (boot-time ENOENT): ${stale.join(', ')}`).toEqual([])
     // the engine never statically imports its plugins (the cycle law)
     const statics = barrel.match(/import\s+[^"']*from\s+"@melite\/models-/g) ?? []
     expect(statics, `static plugin imports re-introduce the engine↔families cycle: ${statics.join(', ')}`).toEqual([])
     // and the engine manifest declares the closure the table rides
     const engine = JSON.parse(readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/package.json'), 'utf8')) as { dependencies?: Record<string, string> }
-    const undeclared = rows.filter((n) => !engine.dependencies?.[n])
+    const undeclared = pkgs.filter((n) => !engine.dependencies?.[n])
     expect(undeclared, `table rows with no dependency declaration (unresolvable at runtime): ${undeclared.join(', ')}`).toEqual([])
   })
 

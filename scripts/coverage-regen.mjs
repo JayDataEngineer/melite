@@ -94,6 +94,13 @@ function faceOf(path) {
  *  losing ONE covered path reds with no signal separating
  *  regression from jitter; the margin makes the loss of one path
  *  the floor's own green face.
+ *  THE FLOOR-ROUNDING LAW (2026-11-17, the L2 wall's faces): the
+ *  mint rounds DOWN, always — Math.round on a margin like 209/215
+ *  (97.2093) minted 97.21, a floor 0.0007 ABOVE the margin's own
+ *  green face, and a pool sitting exactly at the margin reds the
+ *  gate on pure rounding epsilon (artifact-writer branches,
+ *  cards-tab-body statements — faces I/J/K). A margin floor may
+ *  sit below its margin, never above it.
  *  @param {Array<Record<string, number>>} rowsWithPaths
  *  @param {string} k
  *  @returns {number} */
@@ -104,7 +111,7 @@ function marginFloor(rowsWithPaths, k) {
     const pct = c.total === 0 ? 100 : (100 * Math.max(0, c.covered - 1)) / c.total
     min = min === null ? pct : Math.min(min, pct)
   }
-  return Math.round(min * 100) / 100
+  return Math.floor(min * 100) / 100
 }
 
 const faces = summaryPaths.map(faceOf)

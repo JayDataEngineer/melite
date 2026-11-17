@@ -179,30 +179,37 @@ A family lands on TWO faces (the Loader-composition stroke,
 2026-10-13; the string-table cure sealed the family↔engine import
 cycle) — a new family owes BOTH rows:
 
-**Face 1 — the string-table row** (the in-process boot):
+**Face 1 — the family row** (the in-process boot):
 `packages/engines/comfyui-cordis/src/models/families/index.ts` — the
-`FAMILY_PKGS` table, ONE BARE-SPECIFIER STRING row per family; the
+`FAMILY_ROWS` table, ONE `{ pkg, id }` row per family (the package
+specifier BESIDE the family id its DECL must carry); the
 engine never statically imports its plugins (a static edge would
 cycle — every family imports the kit's contract types), `loadFamilies()`
-resolves each through dynamic `import()`:
+resolves each row through dynamic `import()`:
 
 ```ts
-// append to FAMILY_PKGS (genre-sorted, id-sorted within genre):
-"@melite/models-<family>",
+// append to FAMILY_ROWS (genre-sorted, id-sorted within genre):
+{ pkg: "@melite/models-<family>", id: "<decl-id>" },
 ```
 
 AND the family owes its OWN manifest row in
 `packages/engines/comfyui-cordis/package.json` dependencies —
 `"@melite/models-<family>": "workspace:*"` (32 such rows today). The
-`FAMILY_PKGS` string is resolved by dynamic `import()` INSIDE the
+`FAMILY_ROWS` pkg string is resolved by dynamic `import()` INSIDE the
 engine package, so the engine's manifest is what makes the specifier
 resolvable; a table row without the dep fails at boot. The same wall
-(W9) pins table↔manifests, so neither row can land alone.
+(W9) pins BOTH columns table↔manifests (the id must be the package
+suffix unless the wall's frozen exception list names it), so neither
+row can land alone — and `loadFamilies()` itself REFUSES the boot when
+a loaded family's `DECL.id` differs from its row id.
 
 bootModels loads each through `ctx.plugin` — one fiber per family,
 transactional (the boot REFUSES if familyCount() ≠ the mounted
 family fibers: a family that registered nothing is a failed boot,
-not a warning). The census wall
+not a warning). The plugin law (2026-11-17): a family package that
+fails to LOAD retires ALONE into a dead roster — its card serves,
+its compose door refuses by name; zero survivors refuses the whole
+boot (total outage is an install defect, not lawful absence). The census wall
 (`tests/walls/ts/suites/artifact-plane-law.spec.ts` W9) pins the
 table to the manifests and the packages/models roster — a renamed
 family cannot rot a stale row silently; a family added to

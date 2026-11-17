@@ -81,9 +81,12 @@ describe('models registry HMR safety (every family)', () => {
   // for families the table actually carries.
   it('the family roster is a two-way census (packages/models == the frozen table)', async () => {
     // the table, not the mounted set, is the roster's truth — the lazy
-    // load mounts exactly the table (loadFamilies walks FAMILY_PKGS),
+    // load mounts exactly the table (loadFamilies walks FAMILY_ROWS;
+    // the dead roster is empty in-tree — every package present),
     // and the census must catch a forgotten row without mounting.
-    const mounted = (await loadFamilies()).map((p: Plugin) => (p.name ?? '').replace(/^family-/, '')).sort()
+    const load = await loadFamilies()
+    assert.equal(load.dead.length, 0, 'every family package is present in-tree — a dead row here is a broken install')
+    const mounted = load.families.map((p: Plugin) => (p.name ?? '').replace(/^family-/, '')).sort()
     const table = FAMILY_PKGS.map((pkg: string) => pkg.replace(/^@melite\/models-/, '')).sort()
     assert.deepEqual(
       table,
