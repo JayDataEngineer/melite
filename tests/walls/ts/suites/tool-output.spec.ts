@@ -208,13 +208,13 @@ describe("the melite tool faces answer over the live composition", () => {
     // boots delegated (the run doors + card faces), so the five sit
     // at apply; the compose-side deferral stays pinned in
     // melite-tools' index.spec.
-    const makerDoors = ["melite_view", "comfy_manage", "melite_skill_read", "ledger_tail"];
+    const makerDoors = ["melite_view", "melite_contact_sheet", "comfy_manage", "melite_skill_read", "ledger_tail"];
     for (const name of makerDoors) {
       assert.ok(tools.registered.some((d) => d.name === name), `${name} seated at apply (the maker law)`);
     }
     const names = tools.registered.map((d) => d.name).sort();
     for (const want of [
-      "melite_discover", "melite_construct", "melite_load", "comfy_manage",
+      "melite_discover", "melite_construct", "melite_load", "comfy_manage", "melite_contact_sheet",
       "melite_skill_read", "ledger_tail",
       "melite_flow", "run_status",
       "music", "tts", // voice_lock died 2026-09-21 (design moved into the tts card's mods)

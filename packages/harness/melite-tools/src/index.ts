@@ -57,6 +57,7 @@ import { meliteDiscover } from './tools/melite-discover.ts'
 import { meliteConstruct } from './tools/melite-construct.ts'
 import { meliteLoad } from './tools/melite-load.ts'
 import { meliteView } from './tools/melite-view.ts'
+import { meliteContactSheet } from './tools/contact-sheet.ts'
 import { meliteRead } from './tools/melite-read.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { skillWrite } from './tools/skill-write.ts'
@@ -84,6 +85,7 @@ export { meliteFlow } from './tools/melite-flow.ts'
 export { comfyManage } from './tools/comfy-manage.ts'
 export { meliteLoad } from './tools/melite-load.ts'
 export { meliteView } from './tools/melite-view.ts'
+export { meliteContactSheet } from './tools/contact-sheet.ts'
 export { meliteRead, readRunText } from './tools/melite-read.ts'
 export { skillRead } from './tools/skill-read.ts'
 export { skillWrite } from './tools/skill-write.ts'
@@ -148,7 +150,7 @@ export const EAGER_TOOL_NAMES = [
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
 export const DEFERRED_TOOL_NAMES = [
-  'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
+  'melite_view', 'melite_contact_sheet', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
 ] as const
 
 /** BASE tool names (discovery, compose, view, management, audit).
@@ -282,6 +284,7 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const expandEstateDoors = (): void => {
     const doors: Array<[string, () => () => void]> = [
       ['melite_view', () => c.tools.register(meliteView(ctx))],
+      ['melite_contact_sheet', () => c.tools.register(meliteContactSheet(ctx))],
       ['melite_read', () => c.tools.register(meliteRead(ctx))],
       ['comfy_manage', () => c.tools.register(comfyManage(estate))],
       ['melite_skill_read', () => c.tools.register(skillRead(estate))],

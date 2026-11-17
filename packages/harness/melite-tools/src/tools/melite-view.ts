@@ -55,8 +55,13 @@ import type { JsonValue, ToolDefinition } from '../types.ts'
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
  *  manifest in order — own root first, then the extras (the queue
  *  seat's stateRoots config). First root holding the run serves (own
- *  writes win); a miss names every searched root. */
-const firstRootWithRun = async (
+ *  writes win); a miss names every searched root. Exported for the
+ *  contact-sheet door (B9 — the same walk over N runs, one spelling).
+ *  @param seat the queue seat (stateRoot owner + optional extras).
+ *  @param kind the media kind the walk lists.
+ *  @param runId the run tree to find.
+ *  @returns that root's rows for the run plus the root, or null on miss. */
+export const firstRootWithRun = async (
   seat: { stateRoot: string, stateRoots?: readonly string[] },
   kind: 'image' | 'video' | 'audio' | 'model',
   runId: string,
@@ -95,7 +100,12 @@ const artifactStem = (spelling: string): string => {
   stem = stem.replace(COLLISION_HASH, "").replace(/_+$/, "");
   return stem === "" ? leaf : stem + ext;
 };
-const artifactRowMatches = (rowName: string, token: string): boolean => {
+/** Exported for the contact-sheet door (B9): the caller's artifact
+ *  filter rides the SAME spelling-normalized containment the view
+ *  door judges by — one matcher, both observe doors.
+ *  @param rowName a row name the walk produced.
+ *  @param token the caller's artifact filter ("" = newest row). */
+export const artifactRowMatches = (rowName: string, token: string): boolean => {
   if (token === "") return true;
   if (rowName.includes(token)) return true;
   const want = artifactStem(token);
@@ -593,8 +603,9 @@ export async function viewAudioArtifact(
 /** The structural exec view the route gate reads (the types.ts
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
- * ToolRunContext). */
-interface ViewExec {
+ * ToolRunContext). Exported for the contact-sheet door (B9 — the
+ * same route gate, one spelling). */
+export interface ViewExec {
   signal: AbortSignal
   agent?: {
     session?: { requestHeader?: () => { config?: { provider?: string, model?: string } } | undefined }

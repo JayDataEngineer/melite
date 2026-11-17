@@ -54,7 +54,8 @@
     "@melite/image-image-gen": "workspace:*",
     "@melite/models-h3": "workspace:*",
     "@melite/motion-motion": "workspace:*",
-    "@melite/video-h3-timeline": "workspace:*"
+    "@melite/video-h3-timeline": "workspace:*",
+    "sharp": "0.35.5"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",

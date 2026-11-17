@@ -39,6 +39,7 @@ import { runStatus } from "../../../../packages/harness/melite-tools/src/tools/r
 import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
 import { skillWrite } from "../../../../packages/harness/melite-tools/src/tools/skill-write.ts";
 import { meliteView } from "../../../../packages/harness/melite-tools/src/tools/melite-view.ts";
+import { meliteContactSheet } from "../../../../packages/harness/melite-tools/src/tools/contact-sheet.ts";
 import { meliteRead } from "../../../../packages/harness/melite-tools/src/tools/melite-read.ts";
 import { MELITE_TOOL_NAMES } from "../../../../packages/harness/melite-tools/src/index.ts";
 
@@ -80,6 +81,7 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["melite_skill_read", skillRead(LANES)],
   ["melite_skill_write", skillWrite(LANES)],
   ["melite_view", meliteView(STUB_CTX)],
+  ["melite_contact_sheet", meliteContactSheet(STUB_CTX)],
   ["melite_read", meliteRead(STUB_CTX)],
 ];
 

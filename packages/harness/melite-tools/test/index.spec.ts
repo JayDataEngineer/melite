@@ -112,12 +112,14 @@ describe('plugin surface', () => {
     assert.deepEqual(inject, ['tools'])
     assert.deepEqual(BASE, [...EAGER_TOOL_NAMES, ...DEFERRED_TOOL_NAMES])
     // THE EXPANSION LAW (operator 2026-10-08): eager trio first — the
-    // deferred five seat on the first catalog touch, never at apply.
+    // deferred doors seat on the first catalog touch, never at apply.
+    // melite_contact_sheet joined 2026-11-17 (B9, the sweep judge's
+    // one call — an observe door beside melite_view, never a run door).
     assert.deepEqual([...EAGER_TOOL_NAMES], [
       'melite_discover', 'melite_load', 'melite_construct',
     ])
     assert.deepEqual([...DEFERRED_TOOL_NAMES], [
-      'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
+      'melite_view', 'melite_contact_sheet', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
     ])
     assert.deepEqual(RUN_DOORS, ['melite_flow', 'run_status'])
     assert.deepEqual([...ADHOC_TOOL_NAMES], [])
@@ -140,7 +142,7 @@ describe('apply compose law (no record)', () => {
     for (const c of CARD_TOOLS) assert.ok(!names.includes(c), 'card tool leaked: ' + c)
     for (const h of RUN_DOORS) assert.ok(!names.includes(h), 'run door leaked: ' + h)
     assert.equal(names.length, EAGER_TOOL_NAMES.length)
-    // THE CATALOG TOUCH (twice) seats the deferred five — idempotently
+    // THE CATALOG TOUCH (twice) seats the deferred doors — idempotently
     await touchCatalog(f)
     await touchCatalog(f)
     const seated = f.registered.map((r) => r.name)
