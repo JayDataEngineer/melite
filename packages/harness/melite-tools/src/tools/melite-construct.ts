@@ -1365,6 +1365,14 @@ export function meliteConstruct(
         },
         description: 'load: the full replacement [{id?, engine?, card?, params?, inputs?, expected?, outputs?}].',
       },
+      stages_file: {
+        type: 'string',
+        description: 'load: read the stage array from a FILE on disk (the B8 bulk door — a 12-48 stage wall seats in ONE call, byte-exact from the plan artifact, never retyped through the output budget). '
+          + '.json roots in an array of stage objects (same schema as inline stages); .jsonl carries one stage object per line (what plan writers emit). '
+          + 'Exclusive with stages — one source of truth per load; neither present refuses (an empty-handed load is a silent bench wipe). '
+          + 'Refuses loud naming the path, the jsonl LINE number, or the stage index; any refusal leaves the bench untouched. '
+          + 'The answer echoes stages_file_seated {path, sha, bytes} for audit.',
+      },
       intent: { type: 'string', description: 'load: what this bench produces.' },
       overwrite: {
         type: 'boolean',
@@ -1725,7 +1733,7 @@ export function meliteConstruct(
         return jsonClean<ConstructResult>({
           verb, bench, ok: false, face_stamp: faceStamp(),
           error: 'verb is required — the call was refused before anything was read or written (a payload never derives a verb; a WRITE is never guessed). '
-            + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params | params_file, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
+            + "State one: 'read' | 'load' {stages | stages_file} | 'patch' {stage, params} | 'add_stage' {card, params | params_file, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
           error_kind: 'verb-required',
         })
       }
@@ -1806,7 +1814,84 @@ export function meliteConstruct(
           })
         }
         if (verb === 'load') {
-          const rawStages = Array.isArray(a.stages) ? a.stages : []
+          // B8 (the promgen request, filed 2026-11-11 — bulk-load): a
+          // character wall is 12-48 stages; seating it cost one huge
+          // inline paste (7-20k tokens of agent output, one mistyped
+          // character silently not-the-wall) or N add_stage round
+          // trips (24 calls, revs 285-296). The file door seats the
+          // SAME stage array from disk — promgen's --out plan lines
+          // seat byte-exact, one call. Exactly one source per load:
+          // stages or stages_file, never both, never neither (the
+          // empty-replace arm died with this door — an accidental
+          // load{} used to WIPE the bench to [] silently).
+          const fileStated = typeof a.stages_file === 'string' && a.stages_file !== ''
+          if (fileStated && a.stages !== undefined) {
+            return out({ error: 'stages and stages_file are exclusive — one source of truth per load (state the file, or the array, never both)' })
+          }
+          if (!fileStated && a.stages === undefined) {
+            return out({ error: 'load seats stages from exactly one source — state stages (the inline array) or stages_file (a .json array or .jsonl plan file), never neither: an empty-handed load is a silent bench wipe' })
+          }
+          let rawStages: unknown[]
+          // the file receipt (params_file's own shape, D-37): path +
+          // sha + bytes ride the answer so the seating is auditable
+          // against the artifact that produced it.
+          let fileSeated: { path: string, sha: string, bytes: number } | undefined
+          if (fileStated) {
+            const fs = await import('node:fs/promises')
+            let text: string
+            try {
+              text = await fs.readFile(a.stages_file as string, 'utf8')
+            } catch (e) {
+              return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the plan file must exist where this tool runs' })
+            }
+            const seats: unknown[] = []
+            if ((a.stages_file as string).endsWith('.jsonl')) {
+              // one stage object per line (what promgen's --out
+              // writes); blank lines are separators, never stages.
+              const lines = text.split('\n')
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]!.trim()
+                if (line === '') continue
+                let parsed: unknown
+                try {
+                  parsed = JSON.parse(line)
+                } catch (e) {
+                  return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' line ' + (i + 1) + ' is not parseable JSON (' + (e instanceof Error ? e.message : String(e)) + ') — the line names its own fix' })
+                }
+                if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+                  return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' line ' + (i + 1) + ' is not a stage object — one stage per jsonl line, never a bare value or an array' })
+                }
+                seats.push(parsed)
+              }
+            } else {
+              let parsed: unknown
+              try {
+                parsed = JSON.parse(text)
+              } catch (e) {
+                return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' is not parseable JSON (' + (e instanceof Error ? e.message : String(e)) + ') — a truncated paste and a short plan differ here, the file does not' })
+              }
+              if (!Array.isArray(parsed)) {
+                return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' must root in a JSON array of stage objects — got ' + (parsed === null ? 'null' : Array.isArray(parsed) ? 'an array' : typeof parsed) })
+              }
+              seats.push(...parsed)
+            }
+            if (seats.length === 0) {
+              return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' seats zero stages — an empty plan is a silent bench wipe; seat at least one stage or clear the bench on purpose' })
+            }
+            for (let i = 0; i < seats.length; i++) {
+              if (typeof seats[i] !== 'object' || seats[i] === null || Array.isArray(seats[i])) {
+                return out({ error: 'stages_file[' + i + '] is not a stage object — every array member is a stage row, never a bare value' })
+              }
+            }
+            rawStages = seats
+            fileSeated = {
+              path: a.stages_file as string,
+              sha: createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 12),
+              bytes: Buffer.byteLength(text, 'utf8'),
+            }
+          } else {
+            rawStages = Array.isArray(a.stages) ? a.stages : []
+          }
           // SLICE 5 — the wholesale replace walks the SAME first-door
           // grammar add_stage speaks: every stage's inputs are judged
           // against its card's declared lanes (unknown lanes REFUSE,
@@ -1885,7 +1970,7 @@ export function meliteConstruct(
           // a landed replace IS that projection (the write is
           // CAS-strict — load never rebases), so the pre verdict rides
           // as the landed verdict; no second compose of the same rows.
-          return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile) })
+          return out({ rev: r.rev, stages: r.stages, ...(fileSeated !== undefined ? { stages_file_seated: fileSeated } : {}), ...(spells.length > 0 ? { spells } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile) })
         }
         if (verb === 'patch') {
           // THE SPELL VOICE needs the stage's wired inputs, which a

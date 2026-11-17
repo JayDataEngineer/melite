@@ -15,7 +15,7 @@
 //      refuses loud or names verb → rev.
 
 import { describe, test } from 'vitest'
-import { writeFileSync, rmSync } from 'node:fs'
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import assert from 'node:assert/strict'
@@ -428,14 +428,103 @@ describe('melite_construct mutations — every verb', () => {
     assert.deepEqual(ensure!.args[0], { session: 'session-chat7', stages, intent: 'make art', expect_rev: 4 })
   })
 
-  test('load defaults to empty stages and drops a blank intent', async () => {
-    const { seen, estate } = mockEstate((lane, args) => {
-      if (lane === 'benchEnsure') return { rev: 1, stages: [] }
+  // B8 (the filed bulk-load request, 2026-11-11): the load verb
+  // seats from exactly ONE source — the empty-handed load that used
+  // to default to `stages: []` was a SILENT BENCH WIPE (one
+  // mistyped call, bench gone). The refusal names both sources; a
+  // deliberate wipe rides the clear verb.
+  test('load with NEITHER stages nor stages_file refuses naming both — the silent empty wipe is dead', async () => {
+    const { seen, estate } = mockEstate((lane) => {
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
-    await tool.execute({ verb: 'load', intent: '', expect_rev: 0 }, exec())
-    assert.deepEqual(seen[0]!.args[0], { session: 'session-chat7', stages: [], expect_rev: 0 })
+    const out = await tool.execute({ verb: 'load', intent: '', expect_rev: 0 }, exec()) as Record<string, unknown>
+    assert.match(String(out.error), /state stages \(the inline array\) or stages_file/)
+    assert.equal(seen.length, 0, 'nothing was written — the refusal fired before any door')
+  })
+
+  // B8 (THE WALL): the file door seats the whole wall in one call —
+  // .jsonl plan lines (what plan writers emit), same validation the
+  // inline path runs, the receipt echoing path + sha + bytes.
+  test('B8 arm 1 (THE WALL): load {stages_file} seats a .jsonl plan in ONE call — same validation, file receipt echoed', async () => {
+    const dir = join(tmpdir(), 'melite-b8-' + Date.now())
+    mkdirSync(dir, { recursive: true })
+    const plan = join(dir, 'wall.jsonl')
+    writeFileSync(plan, [
+      JSON.stringify({ id: 's_0', card: 'image-gen', params: { prompt: 'a knight', model: 'krea-2' } }),
+      '',
+      JSON.stringify({ id: 's_1', card: 'image-gen', params: { prompt: 'a bishop', model: 'krea-2' } }),
+    ].join('\n'))
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchEnsure') return { rev: 5, stages: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'load', stages_file: plan, overwrite: true, expect_rev: 4 }, exec()) as Record<string, unknown>
+    assert.equal(out.error, undefined, JSON.stringify(out))
+    const ensure = seen.find((r) => r.lane === 'benchEnsure')!
+    const seated = (ensure.args[0] as { stages: Array<{ id?: string }> }).stages
+    assert.equal(seated.length, 2, 'the blank line was a separator, never a stage')
+    assert.equal(seated[0]!.id, 's_0')
+    assert.equal(seated[1]!.id, 's_1')
+    const receipt = out.stages_file_seated as { path: string, sha: string, bytes: number }
+    assert.equal(receipt.path, plan)
+    assert.match(receipt.sha, /^[0-9a-f]{12}$/)
+    assert.ok(receipt.bytes > 0)
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  test('B8 arm 2 (.json root): a .json array seats identically — the inline stages twin', async () => {
+    const dir = join(tmpdir(), 'melite-b8j-' + Date.now())
+    mkdirSync(dir, { recursive: true })
+    const plan = join(dir, 'wall.json')
+    writeFileSync(plan, JSON.stringify([
+      { id: 's_0', card: 'image-gen', params: { prompt: 'a knight', model: 'krea-2' } },
+      { id: 's_1', card: 'image-gen', params: { prompt: 'a bishop', model: 'krea-2' } },
+    ]))
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchEnsure') return { rev: 5, stages: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'load', stages_file: plan, overwrite: true, expect_rev: 4 }, exec()) as Record<string, unknown>
+    assert.equal(out.error, undefined, JSON.stringify(out))
+    const seated = (seen.find((r) => r.lane === 'benchEnsure')!.args[0] as { stages: unknown[] }).stages
+    assert.equal(seated.length, 2)
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  test('B8 arm 3 (exclusivity): stages AND stages_file together refuse — one source of truth', async () => {
+    const { estate } = mockEstate((lane) => {
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'load', stages: [], stages_file: '/tmp/x.jsonl', expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(out.error), /stages and stages_file are exclusive/)
+  })
+
+  test('B8 arm 4 (loud refusals, atomic): missing file names the path; a bad jsonl line names file + LINE; an empty plan refuses; nothing is written', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const missing = await tool.execute({ verb: 'load', stages_file: '/tmp/melite-b8-nope.jsonl', expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(missing.error), /stages_file "\/tmp\/melite-b8-nope\.jsonl" cannot be read/)
+    const dir = join(tmpdir(), 'melite-b8r-' + Date.now())
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'bad.jsonl'), '{"id":"s_0"}\nnot json\n')
+    const badLine = await tool.execute({ verb: 'load', stages_file: join(dir, 'bad.jsonl'), expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(badLine.error), /line 2 is not parseable JSON/, String(badLine.error))
+    writeFileSync(join(dir, 'empty.json'), '[]')
+    const empty = await tool.execute({ verb: 'load', stages_file: join(dir, 'empty.json'), expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(empty.error), /seats zero stages/)
+    writeFileSync(join(dir, 'root.json'), '{"stages":[]}')
+    const badRoot = await tool.execute({ verb: 'load', stages_file: join(dir, 'root.json'), expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(badRoot.error), /must root in a JSON array/)
+    assert.equal(seen.length, 0, 'every refusal fired before any write — the bench is untouched')
+    rmSync(dir, { recursive: true, force: true })
   })
 
   test('load with overwrite:true confirms wholesale replacement (the overwrite law)', async () => {
