@@ -247,6 +247,41 @@ describe('run_status execute — the run monitor', () => {
     const tool = runStatus(estate)
     await assert.rejects(tool.execute({ runId: 'r' }, exec), /socket hangup/)
   })
+
+  // B1 (promgen handoff, 2026-11-17): the consumer lane's every
+  // run_status call died as the harness-rendered "Error: [object
+  // Object]" — a seat rejecting with a plain object rode the
+  // rethrow arm, and the wrapper's String() folded it to the
+  // vacuous literal. The door answers its own contract instead: the
+  // thrown value folds by its own words (the ledger tier's
+  // foldThrownValue law, qa8 F38 — the client face of the same
+  // disease).
+  test('B1 · a seat rejecting with a PLAIN OBJECT folds to words — never [object Object]', async () => {
+    const { estate } = mockEstate(() => {
+      // the shape a misbehaving seat actually rejects with: a
+      // refusal-shaped record that is not an Error
+      throw { code: 418, payload: { error: 'the queue seat exploded mid-read' } }
+    })
+    const tool = runStatus(estate)
+    const out = await tool.execute({ runId: 'r-b1' }, exec) as Record<string, unknown>
+    assert.equal(out['run_id'], 'r-b1')
+    assert.equal(typeof out['error'], 'string')
+    assert.match(out['error'] as string, /runs\/status: /)
+    assert.match(out['error'] as string, /the queue seat exploded mid-read/)
+    assert.equal(String(out['error']).includes('[object Object]'), false)
+  })
+
+  test('B1 · a thrown string and a thrown object-without-words still fold honestly (never vacuous)', async () => {
+    // a bare string rejected verbatim
+    const strEstate = mockEstate(() => { throw 'lane refused the read' })
+    const strOut = await runStatus(strEstate.estate).execute({ runId: 'r-s' }, exec) as Record<string, unknown>
+    assert.match(strOut['error'] as string, /lane refused the read/)
+    // an object with NOTHING readable: the JSON spelling names it
+    const muteEstate = mockEstate(() => { throw { a: 1, b: 2 } })
+    const muteOut = await runStatus(muteEstate.estate).execute({ runId: 'r-m' }, exec) as Record<string, unknown>
+    assert.match(muteOut['error'] as string, /"a":1,"b":2/)
+    assert.equal(String(muteOut['error']).includes('[object Object]'), false)
+  })
 })
 
 describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
