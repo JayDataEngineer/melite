@@ -214,6 +214,93 @@ describe("the press — the {flow:} door's exact body", () => {
     expect(startDoc()?.["person_index"]).toBeUndefined();
     expect(startDoc()?.["params"]).toEqual({});
   });
+
+  // ── the dialog-initial lane's remaining arms (2026-11-17, the L3
+  // wave's coverage repair: the four branch faces the wave's card
+  // seam change left undriven — each arm its own firing face) ──
+  test("a cleared field with the mapping INTACT skips the initial (the continue arm — never an invented value)", async () => {
+    mountBar({
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Estimate body from photo"));
+    const num = (await screen.findByTestId("verb-dialog")).querySelector('[data-field="person_index"]') as HTMLInputElement;
+    await user.clear(num);
+    await user.click(screen.getByTestId("verb-run"));
+    await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
+    expect(startDoc()?.["person_index"]).toBeUndefined();
+    expect(startDoc()?.["params"]).toEqual({});
+  });
+
+  test("a mapped STRING field rides the initial RAW (never coerced — the non-number arm)", async () => {
+    mountBar({
+      verbs: [{
+        ...ESTIMATOR_ROW,
+        fields: schemaEnvelope({
+          style: { type: "string", meta: { description: "Style", extra: { wtype: "text" } } },
+        }),
+        initials: {} as Record<string, string>,
+        fieldInitials: { style: "style" } as Record<string, string>,
+      }],
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Estimate body from photo"));
+    const text = (await screen.findByTestId("verb-dialog")).querySelector('[data-field="style"]') as HTMLInputElement;
+    await user.type(text, "neon");
+    await user.click(screen.getByTestId("verb-run"));
+    await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
+    expect(startDoc()?.["style"]).toBe("neon");
+    expect(startDoc()?.["params"]).toEqual({});
+  });
+
+  test("an UNMAPPED number field coerces in the overlay (params carries the number, never the raw string)", async () => {
+    mountBar({
+      verbs: [{ ...ESTIMATOR_ROW, fieldInitials: {} as Record<string, string> }],
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Estimate body from photo"));
+    const num = (await screen.findByTestId("verb-dialog")).querySelector('[data-field="person_index"]') as HTMLInputElement;
+    await user.clear(num);
+    await user.type(num, "2");
+    await user.click(screen.getByTestId("verb-run"));
+    await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
+    expect(startDoc()?.["params"]).toEqual({ person_index: 2 });
+  });
+
+  test("a mapping onto a field the dialog does not render is a skip (the absent-value arm — never a crash, never an invention)", async () => {
+    mountBar({
+      verbs: [{ ...ESTIMATOR_ROW, fieldInitials: { ghost: "ghost" } as Record<string, string> }],
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Estimate body from photo"));
+    await user.click(screen.getByTestId("verb-run"));
+    await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
+    expect(startDoc()?.["ghost"]).toBeUndefined();
+    // the ghost mapping itself skips (no crash, no invention) — but
+    // the DEFAULTED person_index still rides the overlay at its
+    // rendered default (a default is a value, never an absence)
+    expect(startDoc()?.["params"]).toEqual({ person_index: 0 });
+  });
+
+  test("a served row with NO fieldInitials key presses through the fallback (every field rides the overlay)", async () => {
+    mountBar({
+      verbs: [{ ...ESTIMATOR_ROW, fieldInitials: undefined }],
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [{ id: "est", url: "/body-r0.glb" }] }],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Estimate body from photo"));
+    const num = (await screen.findByTestId("verb-dialog")).querySelector('[data-field="person_index"]') as HTMLInputElement;
+    await user.clear(num);
+    await user.type(num, "1");
+    await user.click(screen.getByTestId("verb-run"));
+    await waitFor(() => { expect(startDoc()).toBeDefined(); }, { timeout: 4000 });
+    // no mapping at all: the typed number coerces through the
+    // overlay (the ?? {} fallbacks on both reads stay honest)
+    expect(startDoc()?.["params"]).toEqual({ person_index: 1 });
+  });
 });
 
 describe("the hydration — a settled run writes the stage", () => {

@@ -187,11 +187,14 @@ const CARD = join(ROOT, "packages/video/h3-timeline/src/card.ts");
 const recipeDoc = readFileSync(RECIPE, "utf8");
 const cardSrc = readFileSync(CARD, "utf8");
 
-/** The EDIT_MOD block of card.ts (the edit card's own declaration). */
+/** The EDIT_MOD block of card.ts (the edit card's own declaration).
+ *  (2026-11-17 re-seat) the kinds list renamed with the plugin-law
+ *  wave: DECLARED_MOD_KINDS became CARD_LOCAL_MOD_KINDS — the
+ *  card-local table the seat-derived roster reads at runtime. */
 function editModBlock(): string {
   const start = cardSrc.indexOf("const EDIT_MOD");
   assert.ok(start !== -1, "card.ts declares EDIT_MOD");
-  const end = cardSrc.indexOf("const DECLARED_MOD_KINDS", start);
+  const end = cardSrc.indexOf("const CARD_LOCAL_MOD_KINDS", start);
   assert.ok(end !== -1, "card.ts closes EDIT_MOD before the kinds list");
   return cardSrc.slice(start, end);
 }

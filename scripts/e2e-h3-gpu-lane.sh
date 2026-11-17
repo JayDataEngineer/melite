@@ -26,16 +26,26 @@
 #     bug shape). A miss prints the estate's OWN provision door —
 #     the acquire_weight call, model h3 + the missing file — the
 #     script never curls a weights URL itself: the DECL owns the
-#     source, the gateway owns the fetch. MELITE_H3_PROVISION=1
-#     refuses LOUD with the door command (the REQUIRE-mode shape)
-#     instead of skipping, for the provision workflow.
+#     source, the gateway owns the fetch. --provision refuses LOUD
+#     with the door command (the REQUIRE-mode shape) instead of
+#     skipping, for the provision workflow.
 #
 # The specs own their own benches (the tour's history law,
 # verbatim); this launcher seeds nothing.
 #
-# Skip laws (never a fake red — unless E2E_H3_REQUIRE=1): port
-# busy, no dsh, engine down, no cuda, h3 packs absent, h3 weights
-# missing (or, with MELITE_H3_PROVISION=1, LOUD with the door).
+# Skip laws (never a fake red — unless --require): port busy, no
+# dsh, engine down, no cuda, h3 packs absent, h3 weights missing
+# (or, with --provision, LOUD with the door).
+#
+# FLAGS (the operator no-env law, 2026-11-16 — the promote-prod
+# shape): --weights-root PATH (the engine's weights tree, default
+# $HOME/tools/comfyui/models) · --provision (a weights miss prints
+# the provision door and refuses) · --require (every skip law
+# fails loud instead of exit 0) · --dsh-bin BIN (default: dsh on
+# PATH); every other argument passes through to playwright
+# verbatim. The tier's own gates (E2E_H3_PORT, E2E_H3_ENGINE,
+# E2E_H3_KEEP) stay env — the specs'/CI's test-lane switches
+# (audit step (c)), not this launcher's knobs.
 set -euo pipefail
 
 # ── the skip laws (never a fake red — unless REQUIRED) ───────────
@@ -47,15 +57,29 @@ RUNS_ROOT=/tmp/e2e-h3-runs
 COOKIES=/tmp/e2e-h3-cookies.txt
 LOG=/tmp/e2e-h3-lane.log
 ENGINE_URL="${E2E_H3_ENGINE:-${E2E_GPU_ENGINE:-http://127.0.0.1:8188}}"
-# The engine's weights tree — the operator's real tree. The lane
-# READS it (the weights gate); it never provisions or mutates it.
 # deployment env (.env is gitignored; .env.example documents every knob)
 [ -f ./.env ] && . ./.env   # env-file loaded
-WEIGHTS_ROOT="${MELITE_H3_WEIGHTS_ROOT:-$HOME/tools/comfyui/models}"
 REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
-DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
+# ── flags (the no-env law) ────────────────────────────────────────
+# The engine's weights tree — the operator's real tree
+# (--weights-root, default $HOME/tools/comfyui/models). The lane
+# READS it (the weights gate); it never provisions or mutates it.
+DSH_BIN="dsh"
+WEIGHTS_ROOT="$HOME/tools/comfyui/models"
+PROVISION=0
+REQUIRE=0
+LANE_ARGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --weights-root) WEIGHTS_ROOT="${2:?--weights-root needs the engine weights tree}"; shift 2 ;;
+    --provision)    PROVISION=1; shift ;;
+    --require)      REQUIRE=1; shift ;;
+    --dsh-bin)      DSH_BIN="${2:?--dsh-bin needs the dsh binary (a path or a PATH name)}"; shift 2 ;;
+    *) LANE_ARGS+=("$1"); shift ;;
+  esac
+done
 
 # THE TRACKED SEED IS THE SEAT'S ONLY SEED (the moss-404 law, the
 # gpu seat's own): the seed serves the h3 card
@@ -65,8 +89,8 @@ TRACKED_SEED="packages/web/melite-card-view/e2e/profile-seed"
 SEED_DIR="$TRACKED_SEED"
 
 skip_or_fail() {
-  if [ -n "${E2E_H3_REQUIRE:-}" ] || [ -n "${MELITE_H3_PROVISION:-}" ]; then
-    echo "[e2e-h3-gpu-lane] REQUIRED prerequisite missing: $1 (E2E_H3_REQUIRE=1 refuses the skip)" >&2
+  if [ "$REQUIRE" = "1" ] || [ "$PROVISION" = "1" ]; then
+    echo "[e2e-h3-gpu-lane] REQUIRED prerequisite missing: $1 (--require refuses the skip)" >&2
     exit 1
   fi
   echo "[e2e-h3-gpu-lane] $1; SKIP (exit 0)"
@@ -77,7 +101,7 @@ skip_or_fail() {
 if curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/"; then
   skip_or_fail "port $PORT busy — another host owns the lane"
 fi
-command -v "$DSH_BIN" >/dev/null 2>&1 || skip_or_fail "no dsh binary on PATH (set DSH_BIN)"
+command -v "$DSH_BIN" >/dev/null 2>&1 || skip_or_fail "no dsh binary on PATH (use --dsh-bin BIN)"
 
 # LANE LAW (li-bu class): the binary must be the provisioned
 # runtime — >=0.2.0-rc.1, the repo's own pin.
@@ -129,13 +153,13 @@ fi
 # EMITTED lib truth (the built module the estate itself boards),
 # never a re-parse of src. Each row's folder is used VERBATIM (the
 # every-folder law above). A miss names the file and the estate's
-# own acquire door; MELITE_H3_PROVISION=1 turns the miss LOUD.
+# own acquire door; --provision turns the miss LOUD.
 H3_DECL_LIB="$REPO_ROOT/packages/models/h3/lib/index.js"
 if [ ! -f "$H3_DECL_LIB" ]; then
   skip_or_fail "no emitted h3 DECL at $H3_DECL_LIB (build @melite/models-h3 first)"
 fi
 if [ ! -d "$WEIGHTS_ROOT" ]; then
-  skip_or_fail "no engine weights tree at $WEIGHTS_ROOT (set MELITE_H3_WEIGHTS_ROOT)"
+  skip_or_fail "no engine weights tree at $WEIGHTS_ROOT (use --weights-root PATH)"
 fi
 PROVISION_REPORT="$(mktemp)"
 # THE GATE ITSELF (exit 1 + the report names every miss) — a
@@ -180,12 +204,12 @@ WGATE
 # death this block's first cut carried).
 h3_provision_refuse() {
   cat "$PROVISION_REPORT" >&2
-  if [ -n "${MELITE_H3_PROVISION:-}" ]; then
-    echo "[e2e-h3-gpu-lane] MELITE_H3_PROVISION=1 — the estate's own door for the missing weights:" >&2
+  if [ "$PROVISION" = "1" ]; then
+    echo "[e2e-h3-gpu-lane] --provision — the estate's own door for the missing weights:" >&2
     echo "  comfy_manage acquire_weight  model h3  file <each missing name above>" >&2
     echo "  (the DECL owns the fetch source; the gateway owns the fetch — this script never curls a weights URL)" >&2
   else
-    echo "[e2e-h3-gpu-lane] h3 weights missing under $WEIGHTS_ROOT (the report above names each file + GB); MELITE_H3_PROVISION=1 prints the provision door, E2E_H3_REQUIRE=1 refuses the skip" >&2
+    echo "[e2e-h3-gpu-lane] h3 weights missing under $WEIGHTS_ROOT (the report above names each file + GB); --provision prints the provision door, --require refuses the skip" >&2
   fi
   skip_or_fail "h3 family weights incomplete under $WEIGHTS_ROOT"
 }
@@ -320,7 +344,7 @@ PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" 
   E2E_RUNS_ROOT="$RUNS_ROOT" \
   E2E_GPU=1 \
   E2E_H3=1 \
-  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test -c playwright.h3.config.ts "$@" || PLAYWRIGHT_EXIT=$?
+  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test -c playwright.h3.config.ts "${LANE_ARGS[@]+"${LANE_ARGS[@]}"}" || PLAYWRIGHT_EXIT=$?
 
 # ── the host's own word (the gpu seat's post-verdicts) ────────────
 if grep -q "Cannot find module" "$LOG" 2>/dev/null; then

@@ -10,10 +10,13 @@
 # Idempotent: if the mirrored rows are unchanged the render still runs but
 # the mirror step prints "unchanged".
 #
-# Env overrides: LANE_PROFILE (default melite-test), LANE_DSH_HOME
-# (default /home/user/.dsh-dev), LANE_ROUTE (default
-# opencode-go/muse-spark-1.3-contributor), LANE_WEB_PROFILE (default
-# ~/.dsh/profiles/web/cordis.patch.yml), LANE_SKIP_GATE=1 to skip the GUI gate.
+# Flags (the operator no-env law, 2026-11-16 — the promote-prod
+# shape): --profile P (default melite-test), --dsh-home HOME
+# (default ~/.dsh-dev), --route ROUTE (default
+# zai/glm-5.3-flash), --web-profile PATCH (default
+# ~/.dsh/profiles/web/cordis.patch.yml), --skip-gate to skip the
+# GUI gate. Defaults are the historical single lane, byte-identical
+# when no flags are passed.
 #
 # CWD LAW: every child spawn below resolves relative paths from the repo
 # root (the cold-start drive resolves tools/ from process.cwd() — firing it
@@ -21,18 +24,28 @@
 set -euo pipefail
 REPO="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)"
 cd "$REPO"
-# deployment env (.env is gitignored; .env.example documents every knob)
-[ -f ./.env ] && . ./.env   # env-file loaded
 
-PROFILE="${LANE_PROFILE:-melite-test}"
-DSH_HOME="${LANE_DSH_HOME:-$HOME/.dsh-dev}"
+# ── flags (the no-env law) ────────────────────────────────────────
+PROFILE="melite-test"
+DSH_HOME="$HOME/.dsh-dev"
 # The seat is the PRIMARY brain (zai/glm-5.3-flash, same as :3080's
-# MELITE_AGENT_ROUTE). It sat on the muse FALLBACK until 2026-10-20 —
+# agent route). It sat on the muse FALLBACK until 2026-10-20 —
 # every lane-sync re-pin stuck the lane on muse and the rate-limit
-# "switch back" never reached it (owner report 2026-10-20). LANE_ROUTE
+# "switch back" never reached it (owner report 2026-10-20). --route
 # still overrides for a deliberate muse seat.
-ROUTE="${LANE_ROUTE:-zai/glm-5.3-flash}"
-WEB_PROFILE="${LANE_WEB_PROFILE:-$HOME/.dsh/profiles/web/cordis.patch.yml}"
+ROUTE="zai/glm-5.3-flash"
+WEB_PROFILE="$HOME/.dsh/profiles/web/cordis.patch.yml"
+SKIP_GATE=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --profile)     PROFILE="${2:?--profile needs a profile name}"; shift 2 ;;
+    --dsh-home)    DSH_HOME="${2:?--dsh-home needs the dsh home}"; shift 2 ;;
+    --route)       ROUTE="${2:?--route needs provider/model}"; shift 2 ;;
+    --web-profile) WEB_PROFILE="${2:?--web-profile needs a patch file}"; shift 2 ;;
+    --skip-gate)   SKIP_GATE=1; shift ;;
+    *) echo "lane-sync: unknown argument $1 (lawful: --profile P | --dsh-home HOME | --route ROUTE | --web-profile PATCH | --skip-gate)" >&2; exit 2 ;;
+  esac
+done
 ROWS="dev_docs/deployment/studio-lane-rows.yml"
 BOOT_LOG="$DSH_HOME/$PROFILE-3088.log"
 URL="http://127.0.0.1:3088"
@@ -135,7 +148,7 @@ echo "lane-sync: estate warm (bench probe: $wcode)"
   || { echo "lane-sync: WARN — estate bench door still cold ($wcode); gates may race" >&2; }
 
 # 5) GATE — the operator's law: if it shows in the GUI, it gets tested.
-if [ "${LANE_SKIP_GATE:-0}" != "1" ]; then
+if [ "$SKIP_GATE" != "1" ]; then
   GUI_TOKEN="$fresh" node test/gui-model-picker.mjs
   GUI_TOKEN="$fresh" node test/gui-media-restore.mjs
 fi

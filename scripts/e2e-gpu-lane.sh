@@ -18,6 +18,14 @@
 # Skip laws (never a fake red — unless E2E_GPU_REQUIRE=1, the
 # studio seat's own REQUIRED-prerequisite law): port busy, no dsh,
 # engine down, no cuda device.
+#
+# FLAGS (the operator no-env law, 2026-11-16 — the promote-prod
+# shape): --dsh-bin BIN boots the lane through that dsh binary
+# (default: dsh on PATH); every other argument passes through to
+# playwright verbatim. The tier's own gates (E2E_GPU_PORT,
+# E2E_GPU_ENGINE, E2E_GPU_REQUIRE, E2E_GPU_KEEP) stay env — they
+# are the specs'/CI's test-lane switches (audit step (c)), not
+# this launcher's knobs.
 set -euo pipefail
 
 # ── the skip laws (never a fake red — unless REQUIRED) ───────────
@@ -34,8 +42,16 @@ REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
 # deployment env (.env is gitignored; .env.example documents every knob)
 [ -f ./.env ] && . ./.env   # env-file loaded
-DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
+# ── flags (the no-env law): --dsh-bin BIN; the rest passes to playwright ──
+DSH_BIN="dsh"
+LANE_ARGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dsh-bin) DSH_BIN="${2:?--dsh-bin needs the dsh binary (a path or a PATH name)}"; shift 2 ;;
+    *) LANE_ARGS+=("$1"); shift ;;
+  esac
+done
 
 # THE TRACKED SEED IS THE SEAT'S ONLY SEED (the moss-404 law, the
 # studio seat's own): a live dev profile's patch watcher can
@@ -59,7 +75,7 @@ skip_or_fail() {
 if curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/"; then
   skip_or_fail "port $PORT busy — another host owns the lane"
 fi
-command -v "$DSH_BIN" >/dev/null 2>&1 || skip_or_fail "no dsh binary on PATH (set DSH_BIN)"
+command -v "$DSH_BIN" >/dev/null 2>&1 || skip_or_fail "no dsh binary on PATH (use --dsh-bin BIN)"
 
 # LANE LAW (li-bu class): the binary must be the provisioned
 # runtime — >=0.2.0-rc.1, the repo's own pin.
@@ -242,7 +258,7 @@ PLAYWRIGHT_EXIT=0
 PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
   E2E_RUNS_ROOT="$RUNS_ROOT" \
   E2E_GPU=1 \
-  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test -c playwright.gpu.config.ts "$@" || PLAYWRIGHT_EXIT=$?
+  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test -c playwright.gpu.config.ts "${LANE_ARGS[@]+"${LANE_ARGS[@]}"}" || PLAYWRIGHT_EXIT=$?
 
 # ── the host's own word (the studio seat's post-verdicts) ─────────
 if grep -q "Cannot find module" "$LOG" 2>/dev/null; then

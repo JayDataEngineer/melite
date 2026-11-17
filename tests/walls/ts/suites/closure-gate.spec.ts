@@ -339,8 +339,8 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // or by wholesale delegation (composeFamilyAction('<family>'))
     // — never a hand-imported action list (the static-import era's
     // drift bug: the family drops an action and the card's import
-    // silently keeps composing a dead segment). The decl's
-    // PROVENANCE is the L3 wall's law (no static family imports);
+    // silently keeps composing a dead segment). The decl's SEAT is
+    // the L3 wall's law (no static family imports);
     // THIS wall judges the OFFER: the entry's key is a family the
     // models tree declares, and every action id the entry binds is
     // one that family's DECL actually declares (a card binding an
@@ -393,7 +393,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
         const entry = body.slice(start, end);
         judged += 1;
         // LAW 1 — the seat shape: derive via declaredAction (any decl
-        // expression; the L3 wall owns its provenance) or delegate
+        // expression; the L3 wall owns the seat) or delegate
         // wholesale to the family's compose door.
         const derivations = [...entry.matchAll(/declaredAction\(([^,]+),\s*'([a-z0-9_-]+)'\s*\)/g)];
         const delegations = [...entry.matchAll(/composeFamilyAction\(\s*'([a-z0-9_-]+)'/g)];

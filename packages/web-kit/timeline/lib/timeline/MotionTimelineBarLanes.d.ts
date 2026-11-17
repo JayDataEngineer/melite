@@ -1,7 +1,7 @@
 import type * as React from "react";
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
 import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
-import type { Drag } from "./MotionTimelineBarDrag.js";
+import type { GrabDrag } from "./MotionTimelineBarDrag.js";
 export interface TimelinePromptsLaneProps {
     prompts: TimelinePrompt[];
     fps: number;
@@ -15,7 +15,7 @@ export interface TimelinePromptsLaneProps {
     previews?: Record<string, string>;
     frameToPx: (f: number) => number;
     frameAt: (clientX: number) => number | null;
-    startDrag: (e: React.PointerEvent, d: Drag) => void;
+    startDrag: (e: React.PointerEvent, d: GrabDrag) => void;
     playhead: string;
     onPromptUpdate: (id: string, text: string) => void;
     onPromptDelete: (id: string) => void;
@@ -57,7 +57,7 @@ export interface TimelineAudioLanesProps {
     audioClipCards?: boolean;
     frameToPx: (f: number) => number;
     xToFrame: (clientX: number) => number | null;
-    startDrag: (e: React.PointerEvent, d: Drag) => void;
+    startDrag: (e: React.PointerEvent, d: GrabDrag) => void;
     onAudioDrop?: (layerId: string, url: string) => void;
     onAudioDropAt?: (layerId: string, url: string, frame: number) => void;
     onAudioFileDrop?: (layerId: string, file: File, frame: number) => void;
@@ -82,7 +82,7 @@ export interface TimelineKeyframeLanesProps {
     kfLaneCards?: boolean;
     frameToPx: (f: number) => number;
     xToFrame: (clientX: number) => number | null;
-    startDrag: (e: React.PointerEvent, d: Drag) => void;
+    startDrag: (e: React.PointerEvent, d: GrabDrag) => void;
     /** Lane-click add. Optional (2026-10-22): a pane may refuse the
      *  gesture entirely (h3's keyframes lane did — its click authored an
      *  imageless pin no door could fill); absent → the lane seats

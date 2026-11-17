@@ -127,15 +127,29 @@ export const COVERAGE_BASELINE: Record<string, {
   functions: CoverageFloor
   lines: CoverageFloor
 }> = {
+  '**/packages/3d/anny/src/family-seats.ts': { statements: 83.33, branches: 50, functions: 80, lines: 92.31 },
+  '**/packages/3d/img-to-mesh/src/family-seats.ts': { statements: 88.89, branches: 66.67, functions: 80, lines: 92.31 },
+  '**/packages/3d/rig/src/family-seats.ts': { statements: 88.89, branches: 66.67, functions: 80, lines: 92.31 },
+  '**/packages/audio/music/src/family-seats.ts': { statements: 85.71, branches: 50, functions: 85.71, lines: 93.33 },
+  '**/packages/audio/sfx/src/family-seats.ts': { statements: 83.33, branches: 50, functions: 80, lines: 92.31 },
+  '**/packages/audio/tts/src/family-seats.ts': { statements: 84.85, branches: 57.14, functions: 80, lines: 92 },
   '**/packages/engines/comfyui-card-kit/src/alias-fold.ts': { statements: 97.61, branches: 85, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 95.83, branches: 89.29, functions: 80, lines: 95.24 },
   '**/packages/engines/comfyui-cordis/src/lorasPathSeat.ts': { statements: 80, branches: 75, functions: 50, lines: 80 },
+  '**/packages/harness/melite-tools/src/tools/h3-lane-seats.ts': { statements: 76.47, branches: null, functions: 50, lines: 91.67 },
+  '**/packages/image/image-edit/src/family-seats.ts': { statements: 92, branches: 75, functions: 88.89, lines: 95 },
+  '**/packages/image/image-gen/src/family-seats.ts': { statements: 90.48, branches: 75, functions: 85.71, lines: 93.33 },
+  '**/packages/image/input-prep/src/family-seats.ts': { statements: 92, branches: 75, functions: 87.5, lines: 94.12 },
+  '**/packages/image/input-prep/src/ui/studio/scaleVocabSeat.ts': { statements: 90.91, branches: 50, functions: 87.5, lines: 94.12 },
   '**/packages/image/mask-studio/src/ui/paintCopy.ts': { statements: null, branches: null, functions: null, lines: null },
   // the extend emission seat (the h3-timeline card's extend arm;
   // the extend-video wrapper flow is retired, 2026-11-14):
   // 100x4 measured over extend-mod.spec.ts — the card-door harness
   // drives every branch (both refusal seats, the grid door, all three
   // pairwise one-door edges, the empty-bag guard, the emission)
+  '**/packages/image/mask/src/family-seats.ts': { statements: 90.48, branches: 62.5, functions: 83.33, lines: 93.75 },
+  '**/packages/image/tagger/src/family-seats.ts': { statements: 83.33, branches: 50, functions: 80, lines: 92.31 },
+  '**/packages/image/upscale-tools/src/family-seats.ts': { statements: 83.33, branches: 50, functions: 80, lines: 92.31 },
   '**/packages/models/h3-image-edit/src/actions.ts': { statements: 96.08, branches: 86.49, functions: 83.33, lines: 97.92 },
   '**/packages/models/h3-image-edit/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/h3-image/src/actions.ts': { statements: 95.83, branches: 90, functions: 50, lines: 95.83 },
@@ -151,10 +165,13 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/h3/src/refmodBake.ts': { statements: 100, branches: 94.23, functions: 100, lines: 100 },
   '**/packages/models/h3/src/swap.ts': { statements: 95.83, branches: 92.86, functions: 80, lines: 95.83 },
   '**/packages/models/input/src/scale-vocab.ts': { statements: 75, branches: null, functions: null, lines: 75 },
+  '**/packages/motion/motion/src/family-seats.ts': { statements: 83.33, branches: 50, functions: 80, lines: 92.31 },
   '**/packages/motion/motion/src/ui/studio/motionCopy.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/video/frames/src/card.ts': { statements: 91.67, branches: 75, functions: 66.67, lines: 90.91 },
   '**/packages/video/frames/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
-  '**/packages/video/track/src/card.ts': { statements: 92.86, branches: 75, functions: 60, lines: 96 },
+  '**/packages/video/h3-timeline/src/family-seats.ts': { statements: 88.89, branches: 86.96, functions: 87.5, lines: 90.48 },
+  '**/packages/video/track/src/card.ts': { statements: 93.1, branches: 75, functions: 60, lines: 96.15 },
+  '**/packages/video/track/src/family-seats.ts': { statements: 90.48, branches: 62.5, functions: 83.33, lines: 93.75 },
   '**/packages/video/track/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
   '**/packages/video/trim/src/card.ts': { statements: 93.75, branches: 90, functions: 66.67, lines: 93.33 },
   '**/packages/video/trim/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
@@ -172,21 +189,21 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timelineCopy.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/engines/comfyui/src/action_cards/src/actionCopy.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/engines/comfyui/src/action_cards/motion/ui/actionCopy.ts': { statements: null, branches: null, functions: null, lines: null },
-  '**/packages/3d/anny/src/card.ts': { statements: 93.75, branches: 83.33, functions: 83.33, lines: 92.86 },
+  '**/packages/3d/anny/src/card.ts': { statements: 94.12, branches: 83.33, functions: 83.33, lines: 93.75 },
   '**/packages/3d/anny/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
-  '**/packages/3d/img-to-mesh/src/card.ts': { statements: 95.24, branches: 96.15, functions: 87.5, lines: 94.74 },
+  '**/packages/3d/img-to-mesh/src/card.ts': { statements: 95.45, branches: 96.15, functions: 87.5, lines: 95.24 },
   '**/packages/3d/img-to-mesh/src/client/index.ts': { statements: 80, branches: null, functions: 0, lines: 80 },
   '**/packages/3d/img-to-mesh/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
   '**/packages/3d/rig/src/card.ts': { statements: 96.97, branches: 95, functions: 80, lines: 96.88 },
   '**/packages/3d/rig/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
   '**/packages/3d/rig/src/validateRigReport.ts': { statements: 98.92, branches: 98.53, functions: 96.3, lines: 98.59 },
-  '**/packages/audio/music/src/card.ts': { statements: 93.75, branches: 87.5, functions: 80, lines: 93.33 },
+  '**/packages/audio/music/src/card.ts': { statements: 95.24, branches: 90, functions: 83.33, lines: 95 },
   '**/packages/audio/music/src/index.ts': { statements: 85.71, branches: 50, functions: 0, lines: 83.33 },
-  '**/packages/audio/music/src/tool.ts': { statements: 66.67, branches: null, functions: 0, lines: 66.67 },
-  '**/packages/audio/sfx/src/card.ts': { statements: 93.33, branches: 87.5, functions: 75, lines: 92.31 },
-  '**/packages/audio/tts/src/card.ts': { statements: 94.74, branches: 86.73, functions: 93.33, lines: 96.43 },
+  '**/packages/audio/music/src/tool.ts': { statements: 80, branches: 100, functions: 0, lines: 80 },
+  '**/packages/audio/sfx/src/card.ts': { statements: 95.24, branches: 90, functions: 80, lines: 94.74 },
+  '**/packages/audio/tts/src/card.ts': { statements: 96, branches: 92.56, functions: 93.75, lines: 96.63 },
   '**/packages/audio/tts/src/index.ts': { statements: 85.71, branches: 50, functions: 0, lines: 83.33 },
-  '**/packages/audio/tts/src/tool.ts': { statements: 66.67, branches: null, functions: 0, lines: 66.67 },
+  '**/packages/audio/tts/src/tool.ts': { statements: 80, branches: 100, functions: 0, lines: 80 },
   '**/packages/engines/agent/src/agent-engine.ts': { statements: 99.29, branches: 99.16, functions: 93.75, lines: 99.25 },
   '**/packages/engines/agent/src/formDoc.ts': { statements: 50, branches: null, functions: 50, lines: 50 },
   '**/packages/engines/agent/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
@@ -230,7 +247,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-card-kit/src/vocab.ts': { statements: 90, branches: 50, functions: 75, lines: 88.89 },
   '**/packages/engines/comfyui-cordis/src/_z.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/engines/comfyui-cordis/src/card-definition-schema.ts': { statements: 90, branches: 50, functions: 50, lines: 88.89 },
-  '**/packages/engines/comfyui-cordis/src/cardDefs.ts': { statements: 99.3, branches: 94.83, functions: 95, lines: 99.23 },
+  '**/packages/engines/comfyui-cordis/src/cardDefs.ts': { statements: 99.33, branches: 94.83, functions: 95, lines: 99.26 },
   '**/packages/engines/comfyui-cordis/src/catalog.ts': { statements: 99.29, branches: 99.34, functions: 95.83, lines: 99.16 },
   '**/packages/engines/comfyui-cordis/src/configOverlay.ts': { statements: 93.75, branches: 94.74, functions: 50, lines: 92.31 },
   '**/packages/engines/comfyui-cordis/src/comfyui-config.ts': { statements: 97.87, branches: 97.06, functions: 85.71, lines: 97.5 },
@@ -251,7 +268,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/generated/vocab.ts': { statements: 93.75, branches: null, functions: null, lines: 93.75 },
   '**/packages/engines/comfyui-cordis/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/engines/comfyui-cordis/src/models/catalogEmission.ts': { statements: 95.24, branches: 97.44, functions: 66.67, lines: 95 },
-  '**/packages/engines/comfyui-cordis/src/models/census.ts': { statements: 97.5, branches: 87.5, functions: 90, lines: 97.3 },
+  '**/packages/engines/comfyui-cordis/src/models/census.ts': { statements: 98, branches: 94.44, functions: 91.67, lines: 97.87 },
   '**/packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts': { statements: 99.38, branches: 98.88, functions: 87.5, lines: 99.28 },
   '**/packages/engines/comfyui-cordis/src/models/families/index.ts': { statements: 83.33, branches: null, functions: 0, lines: 83.33 },
   '**/packages/engines/comfyui-cordis/src/models/models.ts': { statements: 95, branches: 50, functions: 92.31, lines: 93.75 },
@@ -314,7 +331,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/estate/manage/src/index.ts': { statements: 88.89, branches: null, functions: 75, lines: 85.71 },
   '**/packages/estate/media/src/index.ts': { statements: 98.57, branches: 96.77, functions: 95.24, lines: 98.89 },
   '**/packages/estate/models/src/index.ts': { statements: 94.7, branches: 94.77, functions: 83.72, lines: 95.42 },
-  '**/packages/estate/provisioning/src/artifact-writer.ts': { statements: 97.41, branches: 96.74, functions: 92.31, lines: 99.04 },
+  '**/packages/estate/provisioning/src/artifact-writer.ts': { statements: 97.69, branches: 97.21, functions: 92.31, lines: 99.04 },
   '**/packages/estate/provisioning/src/contracts.ts': { statements: 90.32, branches: 84.21, functions: 85.71, lines: 96.3 },
   '**/packages/estate/provisioning/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/estate/provisioning/src/manager-client.ts': { statements: 99.4, branches: 99.17, functions: 95.65, lines: 99.38 },
@@ -333,7 +350,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // round-29 watch row, reviewBy 2026-12-15 — one branch path flips
   // under parallel load); the floor rides the flap's own minimum so
   // the gate stops red-ing on a load artifact while the watch lives.
-  '**/packages/estate/provisioning/src/service.ts': { statements: 95.86, branches: 92.19, functions: 94.92, lines: 97.23 },
+  '**/packages/estate/provisioning/src/service.ts': { statements: 96.03, branches: 92.2, functions: 94.95, lines: 97.42 },
   // the snapshot channel's pure helpers (2026-10-21): measured with
   // the wall seated — the uncovered branches are the external-JSON
   // defensive arms (null body, non-array siblings, non-string
@@ -349,12 +366,12 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/cardsCompose.ts': { statements: 98.8, branches: 98.46, functions: 93.75, lines: 98.7 },
   '**/packages/harness/estate-queue/src/cardsDangling.ts': { statements: 97.59, branches: 98.51, functions: 83.33, lines: 97.44 },
   '**/packages/harness/estate-queue/src/cardsDroppable.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/harness/estate-queue/src/cardsFacts.ts': { statements: 97.06, branches: 96.88, functions: 83.33, lines: 96.15 },
+  '**/packages/harness/estate-queue/src/cardsFacts.ts': { statements: 97.5, branches: 97.22, functions: 87.5, lines: 96.77 },
   '**/packages/harness/estate-queue/src/cardsLanes.ts': { statements: 98.8, branches: 90.63, functions: 96.97, lines: 99.26 },
   // measured over the full coverage gate (2026-11-10, the cell-fold
   // cure's extracted helper)
   '**/packages/harness/estate-queue/src/cardsLanesCopy.ts': { statements: 75, branches: 85.71, functions: 50, lines: 75 },
-  '**/packages/harness/estate-queue/src/cardsRegistry.ts': { statements: 99.27, branches: 96.5, functions: 98.91, lines: 99.65 },
+  '**/packages/harness/estate-queue/src/cardsRegistry.ts': { statements: 99.27, branches: 96.68, functions: 98.91, lines: 99.65 },
   '**/packages/harness/estate-queue/src/cardsVariant.ts': { statements: 99.27, branches: 97.3, functions: 92.86, lines: 99.1 },
   '**/packages/harness/estate-queue/src/discloseRegistry.ts': { statements: 98.5, branches: 92.78, functions: 96, lines: 99.05 },
   '**/packages/harness/estate-queue/src/filmLead.ts': { statements: 66.67, branches: 50, functions: 50, lines: 50 },
@@ -453,7 +470,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // dev_docs/audits/contracts/cures-2026-11-05-harness-seam.md.
   '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.96, branches: 98.39, functions: 98.53, lines: 98.83 },
   '**/packages/harness/melite-tools/src/faceStamp.ts': { statements: 93.33, branches: 87.5, functions: 75, lines: 92.31 },
-  '**/packages/harness/melite-tools/src/index.ts': { statements: 87.78, branches: 89.36, functions: 88.89, lines: 89.87 },
+  '**/packages/harness/melite-tools/src/index.ts': { statements: 99.05, branches: 97.96, functions: 96.43, lines: 98.94 },
   '**/packages/harness/melite-tools/src/json-clean.ts': { statements: 93.33, branches: 95, functions: 50, lines: 88.89 },
   '**/packages/harness/melite-tools/src/llm-complete.ts': { statements: 98.94, branches: 98.72, functions: 92.86, lines: 98.78 },
   // runsDelegation (3370c9b64, the delegation outlives the mount):
@@ -467,7 +484,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/tools/ledger-tail.ts': { statements: 97.67, branches: 96.55, functions: 75, lines: 97.62 },
   '**/packages/harness/melite-tools/src/tools/melite-construct.ts': { statements: 92.17, branches: 87.22, functions: 98.82, lines: 95.17 },
   '**/packages/harness/melite-tools/src/tools/melite-discover.ts': { statements: 97.87, branches: 96.3, functions: 83.33, lines: 98.65 },
-  '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 99.81, branches: 99.86, functions: 100, lines: 99.78 },
+  '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 99.81, branches: 99.87, functions: 100, lines: 99.78 },
   // 2026-10-21: same driver-seat correction; the landing deleted the
   // `?? ''` on split(':')[0] (ECMA-262 always returns at least one
   // element). The remaining gap is the fam === '' guard in
@@ -484,19 +501,19 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/tools/vision-route.ts': { statements: 98.51, branches: 98.21, functions: 83.33, lines: 98.25 },
   '**/packages/image/image-edit/src/card.ts': { statements: 97.3, branches: 96.77, functions: 87.5, lines: 96.97 },
   '**/packages/image/image-edit/src/index.ts': { statements: 85.71, branches: 50, functions: 0, lines: 83.33 },
-  '**/packages/image/image-edit/src/tool.ts': { statements: 66.67, branches: null, functions: 0, lines: 66.67 },
+  '**/packages/image/image-edit/src/tool.ts': { statements: 75, branches: null, functions: 0, lines: 75 },
   '**/packages/image/image-gen/src/card.ts': { statements: 98.18, branches: 90.24, functions: 91.67, lines: 98.08 },
   '**/packages/image/image-gen/src/index.ts': { statements: 85.71, branches: 50, functions: 0, lines: 83.33 },
-  '**/packages/image/image-gen/src/tool.ts': { statements: 66.67, branches: 75, functions: 50, lines: 66.67 },
+  '**/packages/image/image-gen/src/tool.ts': { statements: 80, branches: 75, functions: 50, lines: 80 },
   '**/packages/image/image-gen/src/wire.ts': { statements: 0, branches: null, functions: null, lines: 0 },
   // (2026-11-06) the ANNY-style crop studio's src faces — floors
   // pinned at the studio suite's measured coverage (the crop
   // preview's branch floor is the pointer-gesture matrix; the
   // component's the restage lane).
-  '**/packages/image/input-prep/src/client/index.ts': { statements: 66.67, branches: null, functions: null, lines: 66.67 },
-  '**/packages/image/input-prep/src/ui/studio/CropPreview.tsx': { statements: 95.58, branches: 81.33, functions: 94.44, lines: 98.92 },
-  '**/packages/image/input-prep/src/ui/studio/component.tsx': { statements: 91.01, branches: 94.26, functions: 80, lines: 94.52 },
-  '**/packages/image/input-prep/src/card.ts': { statements: 98.59, branches: 98.9, functions: 91.67, lines: 98.36 },
+  '**/packages/image/input-prep/src/client/index.ts': { statements: 75, branches: null, functions: null, lines: 75 },
+  '**/packages/image/input-prep/src/ui/studio/CropPreview.tsx': { statements: 95.61, branches: 81.58, functions: 94.44, lines: 98.94 },
+  '**/packages/image/input-prep/src/ui/studio/component.tsx': { statements: 91.3, branches: 94.44, functions: 80, lines: 94.74 },
+  '**/packages/image/input-prep/src/card.ts': { statements: 98.65, branches: 98.9, functions: 91.67, lines: 98.46 },
   '**/packages/image/input-prep/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
   '**/packages/image/mask-studio/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/image/mask-studio/src/paintInk.ts': { statements: 0, branches: null, functions: null, lines: 0 },
@@ -508,10 +525,10 @@ export const COVERAGE_BASELINE: Record<string, {
   // keeps orbCopy at 100x4 the same shape as paintCopy above
   '**/packages/image/mask-studio/src/ui/OrbitLeafCanvas.tsx': { statements: 97.17, branches: 81.42, functions: 100, lines: 99.6 },
   '**/packages/image/mask-studio/src/ui/orbCopy.ts': { statements: null, branches: null, functions: null, lines: null },
-  '**/packages/image/mask/src/card.ts': { statements: 99.57, branches: 99.41, functions: 97.5, lines: 99.5 },
+  '**/packages/image/mask/src/card.ts': { statements: 99.58, branches: 99.42, functions: 97.5, lines: 99.51 },
   '**/packages/image/mask/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
   '**/packages/image/tagger/src/card.ts': { statements: 94.74, branches: 90, functions: 85.71, lines: 94.12 },
-  '**/packages/image/upscale-tools/src/card.ts': { statements: 96.55, branches: 96.3, functions: 80, lines: 96.15 },
+  '**/packages/image/upscale-tools/src/card.ts': { statements: 96.77, branches: 96.3, functions: 80, lines: 96.55 },
   '**/packages/models/anima/src/actions.ts': { statements: 96.43, branches: 91.67, functions: 50, lines: 96.43 },
   '**/packages/models/anima/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/anima/src/promptTags.ts': { statements: 97.62, branches: 97.44, functions: 75, lines: 97.14 },
@@ -657,7 +674,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/usePoseEditing.ts': { statements: 98.59, branches: 98.04, functions: 87.5, lines: 98.39 },
   '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts': { statements: 98.25, branches: 92.86, functions: 96, lines: 97.83 },
   '**/packages/motion/motion/src/ui/studio/useTimelineEnvelope.ts': { statements: 94.74, branches: 87.5, functions: 75, lines: 94.12 },
-  '**/packages/video/h3-timeline/src/card.ts': { statements: 99.41, branches: 99.44, functions: 95.83, lines: 99.32 },
+  '**/packages/video/h3-timeline/src/card.ts': { statements: 99.45, branches: 99.47, functions: 96.43, lines: 99.36 },
   '**/packages/video/h3-timeline/src/editDecl.ts': { statements: 90.9, branches: 78.26, functions: 100, lines: 88.88 },
   // (row 2026-11-12: promptGate — the VID GEN handoff's oracle port;
   // branches 95.49 is the dictionary's waiver-shortcut and the
@@ -665,7 +682,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/h3-timeline/src/promptGate.ts': { statements: 100, branches: 95.49, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/client/index.ts': { statements: 87.5, branches: null, functions: 66.67, lines: 85.71 },
   '**/packages/video/h3-timeline/src/index.ts': { statements: 50, branches: null, functions: 0, lines: 50 },
-  '**/packages/video/h3-timeline/src/tool.ts': { statements: 75, branches: 50, functions: 50, lines: 75 },
+  '**/packages/video/h3-timeline/src/tool.ts': { statements: 85.71, branches: 50, functions: 50, lines: 85.71 },
   // (row 2026-11-06: RailBackButton — the submenu law's ONE exit
   // door (Sahar R2, order b); scoped probe over the component +
   // call-cards suites measures 100×4)
@@ -864,7 +881,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/CommissionsRail.tsx': { statements: 88.89, branches: 90, functions: 66.67, lines: 88.89 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx': { statements: 90, branches: 94.44, functions: 50, lines: 90 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx': { statements: 83.33, branches: 88.64, functions: 78.95, lines: 83.72 },
-  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 97.87, branches: 90.08, functions: 95.24, lines: 97.44 },
+  '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts': { statements: 99.29, branches: 94.57, functions: 95.24, lines: 99.15 },
   '**/packages/web-kit/timeline/src/timeline/motionTimelineState.ts': { statements: 85.71, branches: 83.33, functions: 50, lines: 83.33 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx': { statements: 71.09, branches: 80.71, functions: 68.75, lines: 75 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts': { statements: 61.54, branches: null, functions: 25, lines: 60.87 },
@@ -931,7 +948,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/shell.tsx': { statements: 95, branches: 88.89, functions: 90.91, lines: 92.86 },
   '**/packages/web/card-base/src/slots.ts': { statements: 83.33, branches: 50, functions: 75, lines: 80 },
   '**/packages/web/card-base/src/spec-panel.tsx': { statements: 96.3, branches: 96.15, functions: 90, lines: 95.24 },
-  '**/packages/web/card-base/src/spec.ts': { statements: 99.78, branches: 98.91, functions: 99.14, lines: 99.85 },
+  '**/packages/web/card-base/src/spec.ts': { statements: 99.78, branches: 98.91, functions: 99.15, lines: 99.85 },
   '**/packages/web/card-base/src/square-provider.tsx': { statements: 99.49, branches: 99.22, functions: 97.78, lines: 99.24 },
   '**/packages/web/card-base/src/square.tsx': { statements: 97.59, branches: 98.66, functions: 89.47, lines: 96.97 },
   '**/packages/web/card-base/src/studio.tsx': { statements: 93.33, branches: 95.06, functions: 88.89, lines: 92 },
@@ -998,7 +1015,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/stage-drill.tsx': { statements: 99.85, branches: 99.82, functions: 99.35, lines: 99.81 },
   '**/packages/web/melite-card-view/src/client/stage-run.ts': { statements: 99.25, branches: 99.17, functions: 91.67, lines: 99.15 },
   '**/packages/web/melite-card-view/src/client/types.ts': { statements: null, branches: null, functions: null, lines: null },
-  '**/packages/web/melite-card-view/src/client/verb-bar.tsx': { statements: 98.77, branches: 98.15, functions: 94.12, lines: 98.63 },
+  '**/packages/web/melite-card-view/src/client/verb-bar.tsx': { statements: 98.9, branches: 98.48, functions: 94.44, lines: 98.75 },
   '**/packages/web/melite-card-view/src/client/zoomPromotion.ts': { statements: 99.47, branches: 98.92, functions: 95.24, lines: 99.35 },
   '**/packages/web/melite-card-view/src/index.ts': { statements: 66.67, branches: null, functions: 0, lines: 66.67 },
   '**/packages/web/melite-estate/src/bundle-gate.ts': { statements: 97.83, branches: 94.44, functions: 87.5, lines: 97.5 },

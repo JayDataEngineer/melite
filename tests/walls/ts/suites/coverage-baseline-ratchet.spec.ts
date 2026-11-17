@@ -361,7 +361,11 @@ const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches
   // landing — the spread no longer re-seats it.
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.84, branches: 98.2, functions: 100, lines: 98.66 },
-  '**/packages/harness/melite-tools/src/index.ts': { statements: 88.37, branches: 97.43, functions: 94.44, lines: 90.78 },
+  // melite-tools/src/index.ts left this table 2026-11-17 (the
+  // coverage-honesty pass): the plugin-lifecycle spec re-seated the
+  // row at 100×4 — above the entry's from face — so the cleanup arm
+  // demanded the key's removal from this KEYS side in the same
+  // landing (the NEW table's row stays as a harmless orphan).
   '**/packages/harness/melite-tools/src/tools/comfy-manage.ts': { statements: 99.57, branches: 98.11, functions: 100, lines: 99.4 },
   '**/packages/harness/melite-tools/src/tools/ledger-tail.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/melite-construct.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -431,6 +435,10 @@ const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: number, branches
   // the spread re-seats it).
   '**/packages/harness/melite-tools/src/doors.ts': { statements: 100, branches: 99.3, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/estate.ts': { statements: 98.2, branches: 97.65, functions: 100, lines: 97.93 },
+  // melite-tools/src/index.ts's row stays (2026-11-17, the
+  // coverage-honesty pass): the key left the OLD table — the
+  // spread's KEYS side — so this row is an orphan that breaks no
+  // to-lookup; only OLD's keys spread.
   '**/packages/harness/melite-tools/src/index.ts': { statements: 88.37, branches: 91.48, functions: 94.11, lines: 90.78 },
   '**/packages/harness/melite-tools/src/tools/comfy-manage.ts': { statements: 99.57, branches: 97.23, functions: 100, lines: 99.4 },
   '**/packages/harness/melite-tools/src/tools/ledger-tail.ts': { statements: 100, branches: 98.27, functions: 100, lines: 100 },
@@ -1608,7 +1616,12 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/estate/models/src/index.ts',
     '**/packages/harness/estate-queue/src/queueSubmit.ts',
     '**/packages/harness/melite-tools/src/estate.ts',
-    '**/packages/harness/melite-tools/src/index.ts',
+    // melite-tools/src/index.ts left this list 2026-11-17 (the
+    // coverage-honesty pass): the plugin-lifecycle spec (unload
+    // disposer flush, commands-registry refusal, write-failure
+    // voice, lane absence, card-gate disposer drain) re-seated the
+    // row at 100×4 — its argued from face — so the cleanup arm
+    // demanded the entry's removal in the same landing.
     '**/packages/harness/melite-tools/src/tools/melite-flow.ts',
     '**/packages/harness/melite-tools/src/tools/melite-view.ts',
     '**/packages/image/image-gen/src/card.ts',
@@ -1703,7 +1716,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     // cure (28edf55c9) retired the one dead statement/branch pair —
     // the row climbed back to its argued from face (100x4), so the
     // cleanup arm demanded its removal in the same landing.
-    '**/packages/harness/melite-tools/src/index.ts',
+    // melite-tools/src/index.ts left this list 2026-11-17 (the
+    // coverage-honesty pass): the plugin-lifecycle spec re-seated the
+    // row at 100×4 — above this entry's from face — so the cleanup
+    // arm demanded its removal in the same landing.
     '**/packages/models/h3/src/actions.ts',
     // both motion studio hooks left this list 2026-11-06 (wave
     // 32): motion-undo-stack.spec.tsx (the drag guard, ctrl+y + the
@@ -2032,7 +2048,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     '**/packages/harness/melite-tools/src/enhance-agent.ts',
     '**/packages/harness/melite-tools/src/estate.ts',
     '**/packages/harness/melite-tools/src/faceStamp.ts',
-    '**/packages/harness/melite-tools/src/index.ts',
+    // melite-tools/src/index.ts left this list 2026-11-17 (the
+    // coverage-honesty pass): the plugin-lifecycle spec re-seated the
+    // row at 100×4 — above this entry's from face — so the cleanup
+    // arm demanded its removal in the same landing.
     '**/packages/harness/melite-tools/src/json-clean.ts',
     '**/packages/harness/melite-tools/src/llm-complete.ts',
     '**/packages/harness/melite-tools/src/runsDelegation.ts',

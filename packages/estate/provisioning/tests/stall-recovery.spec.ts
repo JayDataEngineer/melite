@@ -17,7 +17,7 @@
 // prefix); exhaustion alone settles failed — the stuck face's
 // Retry/Delete is the exhausted backstop, never the first stall's
 // landing. acquireStallRetries: 0 restores the single-flight law.
-import { afterEach, describe, test } from "vitest";
+import { afterEach, describe, test, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import {
@@ -311,5 +311,83 @@ describe("the stall auto-recovery loop (the \"will never finish\" burn, 2026-11-
     assert.equal(result.resumedFrom, kept, "the writer must report the adopted offset");
     assert.deepEqual(readFileSync(join(store, "moss.bin")), FULL, "prefix + suffix assemble byte-exact under one id");
     assert.deepEqual(partFiles(store), [], "the adopted part is renamed away on landing");
+  });
+
+  test("ARM 6 — THE PAUSE ABORT (deterministic, 2026-11-17): a dispose during the recovery pause resolves the pause EARLY via the abort listener; the re-open dies on its pre-aborted attempt", async () => {
+    // THE FACE-DRIFT CURE (the coverage-honesty pass): the pause's
+    // abort listener (stallRetryDelay's onAbort) and the re-open's
+    // already-aborted guard previously ran only when a restart arm's
+    // context dispose RACED the 500ms recovery pause under load —
+    // a full-pool face lost both arms to that race. This arm drives
+    // the exact crossing deterministically: the stall watchdog is
+    // interval+Date.now based, so fake timers (time + Date faked,
+    // setImmediate REAL so the writer's i/o still flows) hold the
+    // clock inside the armed pause — the dispose's abort is then the
+    // ONLY thing that can resolve the pause (its 500ms timer sits at
+    // fake t=1000, never reached): if the listener were broken, the
+    // dispose's allSettled would park forever and this arm would
+    // timeout, not pass. The structural proof is the arm completing.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    try {
+      const root = tempRoot();
+      mkdirSync(checkpointsDir(root), { recursive: true });
+      let calls = 0;
+      const context = new Context();
+      contexts.push(context);
+      const config: ProvisioningConfig = {
+        declaration: { resolve: async (): Promise<ProvisionPlan> => plan() },
+        storeRoot: root,
+        acquireStallTimeoutMs: 250,
+        acquireStallRetries: 1,
+        fetcher: async (_url: string, signal?: AbortSignal) => {
+          calls += 1;
+          return { status: 200, body: wedgedBody(FULL.subarray(0, PART), signal) } as never;
+        },
+      };
+      const service = new ProvisioningService(context, config);
+      const id = await service.startWeightAcquire(ref());
+      // the wire opens via the declaration resolve + lock handoff —
+      // advance fake time in small steps while flushing the real-i/o
+      // hops between steps (the watchdog tickles safely: its stall
+      // arm needs a LATE byte count, far past the open rounds)
+      for (let round = 0; calls === 0 && round < 100; round += 1) {
+        await vi.advanceTimersByTimeAsync(10);
+        for (let hop = 0; hop < 10; hop += 1) {
+          await new Promise((resolve) => { setImmediate(resolve); });
+        }
+      }
+      assert.equal(calls, 1, "the first flight opened");
+      // fake t=250: the watchdog's first tick baselines the bytes;
+      // fake t=500: the second tick fires the stall, the catch voices
+      // the re-open, and the recovery pause arms its 500ms timer
+      // (pending at t=1000 — the advance stops at 600, INSIDE the
+      // pause)
+      await vi.advanceTimersByTimeAsync(600);
+      // the stall's catch chain crosses the writer's real i/o hops —
+      // flush in bounded setImmediate rounds (fake time stays frozen
+      // at 600, so the pause's t=1000 timer CANNOT fire here)
+      for (let round = 0; round < 100; round += 1) {
+        await new Promise((resolve) => { setImmediate(resolve); });
+      }
+      const midPause = service.progressOf(id);
+      assert.match(String(midPause?.detail ?? ""), /re-opening the fetch at the kept offset/,
+        "the stall voice landed before the pause parked the loop");
+      // the dispose lands MID-PAUSE with fake time frozen: the
+      // lifecycle effect aborts the operation signal — the pause's
+      // abort listener clears the pending timer and resolves the
+      // pause EARLY, and the loop's next attempt sees signal.aborted
+      // and aborts its own attempt controller BEFORE the wire opens
+      await context.fiber.dispose();
+      for (let round = 0; calls === 1 && round < 100; round += 1) {
+        await new Promise((resolve) => { setImmediate(resolve); });
+      }
+      assert.equal(calls, 2, "the re-open ran and died instantly on its pre-aborted attempt (the already-aborted guard)");
+      const settled = service.progressOf(id);
+      assert.equal(settled?.state, "failed", "the cancelled flight settles failed through the catch chain");
+      assert.match(String(settled?.detail ?? ""), /re-opening the fetch at the kept offset/,
+        "the settle keeps the stall's re-open voice — the cancel never rewrites history");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

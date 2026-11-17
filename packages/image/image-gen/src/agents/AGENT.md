@@ -65,9 +65,8 @@ signature default when the brief names a look:
 - **moss-image** — photoreal: photography, product shots, lifelike
   faces, natural light; typography through quoted text, layout
   through native JSON bboxes in the prompt (50-step SFT lane).
-  THE HOUSE PHOTOREAL (operator 2026-11-16: the retired photoreal
-  family is OUT of the docs and text — moss is its replacement in
-  every routing seat).
+  THE HOUSE PHOTOREAL: the retired photoreal family is OUT of the
+  docs and text — moss is its replacement in every routing seat.
 - **anima** — anime/illustration: 2D styles, manga, cel shading.
 - **krea-2** — painterly/illustrative render, the signature
   default when the brief names NO look.

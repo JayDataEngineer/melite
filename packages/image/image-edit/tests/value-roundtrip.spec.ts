@@ -135,7 +135,7 @@ describe("P2 VALUE law at the image-edit consumer", () => {
     assert.ok(seat, "the 21 seat the toggle corrupts exists");
     const action = seat.decl.actions?.find((a) => a.id === "edit");
     assert.ok(action, "the 21 declared edit action the toggle corrupts exists");
-    const mutable = action as {
+    const mutable = action as typeof action & {
       build: (ctx: { p: Record<string, unknown> }) => unknown;
     };
     const bound = mutable.build;

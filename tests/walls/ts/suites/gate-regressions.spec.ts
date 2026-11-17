@@ -44,27 +44,42 @@ describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
     // key stayed behind on "staged anything", splitting an empty
     // string — every arm below greened on a hook that had moved.
     const walls = yml.split("- name: walls (pushed anything)")[1]?.split("- name:")[0] ?? "";
+    // (2026-11-17) the mechanics this arm guards MOVED HOME: the
+    // walls job runs the walls-node lease wrapper
+    // (tools/hook-walls-leased.mjs, commit e27716429) — an unchanged
+    // tree carries the prior green instead of paying the node suite
+    // twice per push. The SIGPIPE cure is no longer inline shell to
+    // pin; it is the wrapper's own run shape, judged here directly.
     expect(walls, "the walls job still exists in lefthook.yml").toContain(
-      "node node_modules/vitest/vitest.mjs run --project node",
+      "node tools/hook-walls-leased.mjs",
     );
-    expect(walls, "the fleet must write to a file, never a closing pipe").toMatch(
+    const hook = read("tools/hook-walls-leased.mjs");
+    // the wrapper must still fire the suite itself — a lease carry
+    // that forgot the run is a walls seat that judges nothing on a
+    // changed tree
+    expect(hook, "the leased run is the node project").toContain(
+      '"--project", "node"',
+    );
+    expect(hook, "the fleet must write to a file, never a closing pipe").toMatch(
       // /var/tmp, not /tmp: this box's /tmp janitor killed the log
       // between redirect and tail twice (2026-10-12); the repo-local
       // .scratch is the one tree the janitor provably never touches.
       // PER-RUN (2026-10-13): the path carries the PID because two
       // hook runs used to share one file — the loser's `>` truncate
       // made it tail the winner's verdict.
-      /> \.scratch\/hook-walls\.\$\$\.log 2>&1/,
+      /\.scratch\/hook-walls-node\.\$\{process\.pid\}\.log/,
     );
-    expect(walls, "the hook's temp tree rides the janitor-free /var/tmp, PER RUN").toMatch(
-      /mktemp -d \/var\/tmp\/melite-hook-XXXXXX/,
+    expect(hook, "the hook's temp tree rides the janitor-free /var/tmp, PER RUN").toMatch(
+      /mkdtempSync\(join\(tmpdir\(\) === "\/tmp" \? "\/var\/tmp" : tmpdir\(\), "melite-walls-XXXXXX"\)\)/,
     );
     // and the run's own tree goes with the run — a fixed dir let two
     // hook runs sweep each other's LIVE trees through the tmp
     // sweeper's 1s mtime fence
-    expect(walls, "the run's temp tree is removed when the hook ends").toMatch(/rm -rf "\$d"/);
-    expect(walls, "vitest's exit code must reach lefthook verbatim").toContain(
-      "exit $code",
+    expect(hook, "the run's temp tree is removed when the hook ends").toMatch(
+      /rmSync\(tmp, \{ recursive: true, force: true \}\)/,
+    );
+    expect(hook, "vitest's exit code must reach lefthook verbatim").toContain(
+      "process.exit(status)",
     );
   });
 });
@@ -79,14 +94,19 @@ describe("THE FRESH-CLONE HOOK (GT-01/GT-02, the round-5 gate audit)", () => {
   // `glob:` narrowing (a glob on the staged set lets the walls skip
   // most commits) and the log-keep branch (a red run keeps its log
   // for the name).
+  // (2026-11-17) GT-01/GT-02 moved home with the walls-node lease:
+  // the mkdir/redirect/order and the log-keep branch are the
+  // wrapper's (tools/hook-walls-leased.mjs) run shape now; the
+  // no-glob law stays a lefthook.yml judgement — a `glob:` key
+  // narrows lefthook's file set regardless of what the job runs.
   const yml = read("lefthook.yml");
   const walls = yml.split("- name: walls (pushed anything)")[1]?.split("- name:")[0] ?? "";
-  const runLine = walls.split("run: ")[1] ?? "";
+  const hook = read("tools/hook-walls-leased.mjs");
 
   it("the .scratch dir is created before the walls log redirects into it", () => {
-    expect(runLine, "the walls run line exists").toContain("vitest.mjs run");
-    const mkdirAt = runLine.indexOf("mkdir -p .scratch");
-    const redirectAt = runLine.indexOf("> .scratch/");
+    expect(hook, "the leased wrapper exists").toContain("hook-walls-leased.mjs");
+    const mkdirAt = hook.indexOf('mkdirSync(join(REPO, ".scratch")');
+    const redirectAt = hook.indexOf("hook-walls-node.${process.pid}.log");
     expect(mkdirAt, "the run creates .scratch").toBeGreaterThan(-1);
     expect(redirectAt, "the run redirects into .scratch").toBeGreaterThan(-1);
     expect(mkdirAt, "mkdir precedes the redirect (after it, the hook judges nothing on a fresh clone)")
@@ -98,9 +118,14 @@ describe("THE FRESH-CLONE HOOK (GT-01/GT-02, the round-5 gate audit)", () => {
     // most commits would skip the walls entirely while the job name
     // still reads green in the hook's summary.
     expect(walls, "no glob: may narrow the walls job's staged set").not.toMatch(/^\s*glob:/m);
-    // the log-keep branch: a red run's evidence survives
-    expect(runLine, "a red run keeps its log").toContain("if [ $code -ne 0 ]");
-    expect(runLine, "the kept log is renamed for the name").toContain("mv .scratch/hook-walls.$$.log");
+    // the log-keep branch: a red run's evidence survives — the
+    // failure exit fires BEFORE the green-path rm of the log file
+    const exitAt = hook.indexOf("process.exit(status)");
+    const rmLogAt = hook.indexOf("rmSync(logPath, { force: true })");
+    expect(exitAt, "a red run exits on vitest's own status").toBeGreaterThan(-1);
+    expect(rmLogAt, "the log rm exists (the green path cleans up)").toBeGreaterThan(-1);
+    expect(exitAt, "the red exit precedes the log rm — a red run keeps its log")
+      .toBeLessThan(rmLogAt);
   });
 });
 
@@ -747,7 +772,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // bundle (lib/client.js) + the client face's index/mediaDocument
   // emits, four tracked seats. 658 repinned 2026-11-12: the h3-timeline
   // prompt-gate handoff seats promptGate.js (cards-h3-prompt-gate).
-  const LIB_CENSUS_PIN = 658;
+  // (2026-11-17) 658 → 674: +16 tracked lib .js since e415605a2 —
+  // 11 family-seats.js (the L3 wave, eda297f44) and the five seat
+  // outputs between the prompt-gate repin and that wave. Zero
+  // deletions; verified add-minus-del against the pin-setting commit.
+  const LIB_CENSUS_PIN = 674;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

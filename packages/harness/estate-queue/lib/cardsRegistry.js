@@ -271,6 +271,10 @@ function bagSourceBytes(leaf) {
     if (leaf.startsWith("/"))
         candidates.push(leaf);
     candidates.push(resolveRepoRoot() + "/" + leaf.replace(/^\/+/, ""));
+    /* v8 ignore next -- the ?? "" fallback is unreachable: split().pop()
+       on a string always answers a string ("" for a trailing slash,
+       pinned in cards-coverage-corners.spec); the fallback holds only
+       against a non-string leaf the type forbids. */
     const base = leaf.split("/").pop() ?? "";
     if (base !== "")
         candidates.push(resolveRepoRoot() + "/data/input/" + base);

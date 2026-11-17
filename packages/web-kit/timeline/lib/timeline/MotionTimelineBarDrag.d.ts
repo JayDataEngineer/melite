@@ -35,6 +35,13 @@ export type Drag = ({
      * extend-release pin test (audit F4b) can see doc growth. */
     t1AtStart?: number;
 };
+/** A drag armed through startDrag (every grip kind except the scrub —
+ * grabPlayhead arms that one itself, and no startDrag caller can pass
+ * it). Every member carries `id`, so the ghost highlight needs no
+ * per-kind narrowing. */
+export type GrabDrag = Exclude<Drag, {
+    kind: "scrub";
+}>;
 export interface TimelineDragSessionOpts {
     T1: number;
     effPpf: number;
@@ -66,7 +73,7 @@ export declare function useTimelineDragSession(opts: TimelineDragSessionOpts): {
     lastPromptRef: React.RefObject<string | null>;
     firstPromptRef: React.RefObject<string | null>;
     promptsRef: React.RefObject<TimelinePrompt[]>;
-    startDrag: (e: React.PointerEvent, d: Drag) => void;
+    startDrag: (e: React.PointerEvent, d: GrabDrag) => void;
     grabPlayhead: (e: React.PointerEvent) => void;
 };
 //# sourceMappingURL=MotionTimelineBarDrag.d.ts.map

@@ -31,6 +31,19 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
   }
 })
 
+// The h3 lane seats, spied for the absent-lane arm below: every
+// other test rides the REAL seats (the spy's original IS the
+// module's own export, memoization and all); the absent-lane arm
+// overrides both to resolve null for exactly its own press.
+vi.mock('../src/tools/h3-lane-seats.ts', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../src/tools/h3-lane-seats.ts')>()
+  return {
+    ...orig,
+    h3ModelSeat: vi.fn(orig.h3ModelSeat),
+    h3CardSeat: vi.fn(orig.h3CardSeat),
+  }
+})
+
 const noLanes = () => fakeEstateStatus([])
 
 /** One bench draft with the given stage rows (the benchGet face). */
@@ -173,6 +186,36 @@ describe('melite_flow bench — the cross-regime admission\'s quiet edges (F18)'
     assert.ok(warning.startsWith('h3-timeline: CROSS-REGIME JOIN'), warning)
     assert.ok(warning.includes("tier '736p' renders 1280×736"), 'the tier math reads the film defaults 1344×768')
     assert.ok(warning.includes("pin the bag's resolution 768p"), 'the pin names the shape-true tier for the default height')
+  })
+
+  test('an absent h3 lane quiets the admission — the plugin law, tools side: a null seat is quiet, never a refusal', async () => {
+    // The seats resolve null when @melite/models-h3 or the
+    // h3-timeline card package is absent from the install. The
+    // admission NEVER speaks without its lanes (with the lane
+    // absent there is no stage to warn about) — and the press
+    // itself proceeds: the flow's own door owns any real refusal.
+    const { h3ModelSeat, h3CardSeat } = await import('../src/tools/h3-lane-seats.ts')
+    vi.mocked(h3ModelSeat).mockResolvedValue(null)
+    vi.mocked(h3CardSeat).mockResolvedValue(null)
+    try {
+      const out = await run([
+        (lane: string) => {
+          if (lane === 'benchGet') {
+            return { status: 200, body: benchWith(h3Stage({
+              extend: [{ source_clip: 'film_a', resolution: '736p' }],
+            })) }
+          }
+          return undefined
+        },
+        ...settledLanes('r_lane_gone', '/runs/lane-gone.mp4'),
+      ])
+      assert.equal(out.status, 'done', 'the absent lane never refuses the press')
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass[0]!['warning'], undefined, 'a null seat admits nothing — the same armed bag that fires with the lane seated stays quiet without it')
+    } finally {
+      vi.mocked(h3ModelSeat).mockRestore()
+      vi.mocked(h3CardSeat).mockRestore()
+    }
   })
 })
 
@@ -827,6 +870,49 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       const noIntent = await press(undefined)
       assert.equal(noIntent.status, 'pending')
       assert.equal(noIntent.intent, undefined, 'a bench with no intent rides no intent key — the word is the bench\u2019s')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('a single-stage only-press that starts past the deadline rides the budget receipt with its stage named', async () => {
+    // The budget receipt's `only` arm: the prior test spends the
+    // budget through s_0's observation and receipts at s_1 with no
+    // stage key; here the caller names the stage themselves
+    // (execute {stage}), the bench holds one row, and the start's
+    // own handler jumps the clock past the 110 s deadline — so the
+    // pre-observe check receipts with `stage` riding the caller's
+    // word, the same note, and the minted run durable.
+    vi.useFakeTimers()
+    try {
+      const fake = fakeEstateStatus([
+        (lane: string) => {
+          if (lane === 'benchGet') {
+            return { status: 200, body: { draft_id: 'd_budget_only', rev: 3, stages: [
+              { id: 's_0', card: 'h3-timeline', params: {} },
+            ] } }
+          }
+          if (lane === 'runsStart') {
+            // the start itself eats the whole window — the pre-observe
+            // check lands with the budget already spent (a slow queue
+            // take; the run is durable either way)
+            vi.advanceTimersByTime(111_000)
+            return { status: 202, body: { run_id: 'r_budget_only', status: 'queued' } }
+          }
+          return undefined
+        },
+      ])
+      const tool = meliteFlow(fake.estate)
+      const runP = tool.execute({ stage: 's_0' }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Promise<Record<string, unknown>>
+      const out = await runP
+      assert.equal(out.status, 'pending', 'the spent budget receipts pending, never stopped')
+      assert.equal(out.stoppedAt, 's_0')
+      assert.equal(out.run_id, 'r_budget_only', 'the durable run rides the receipt')
+      assert.equal(out.stage, 's_0', 'the only-press names its stage on the budget receipt too')
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass.length, 1)
+      assert.equal(pass[0]!['status'], 'queued')
+      assert.equal(pass[0]!['note'], 'the press budget spent — the run is durable on the queue, poll with run_status')
     } finally {
       vi.useRealTimers()
     }

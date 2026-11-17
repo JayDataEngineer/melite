@@ -41,19 +41,22 @@ function tempRoot(): string {
 
 const WEIGHTS = Buffer.from("durable-weights-bytes", "utf8");
 
-function famRef(): Extract<ResourceRef, { kind: "model" }> {
-  return { kind: "model", owner: "family", id: "durable-fam" };
+/** One family per refId: two live refs in one test need two rows,
+ * and the store's operation id derives from the resource key — a
+ * shared ref would collapse both wants onto one row. */
+function famRef(id = "durable-fam"): Extract<ResourceRef, { kind: "model" }> {
+  return { kind: "model", owner: "family", id };
 }
 
-function famItem(): Extract<ProvisionPlanItem, { kind: "model" }> {
+function famItem(id = "durable-fam"): Extract<ProvisionPlanItem, { kind: "model" }> {
   return {
     kind: "model",
-    key: "model:family:durable-fam::weight.bin",
+    key: `model:family:${id}::weight-${id}.bin`,
     owner: "family",
-    id: "durable-fam",
-    name: "weight.bin",
+    id,
+    name: `weight-${id}.bin`,
     folder: "checkpoints",
-    url: "https://example.invalid/weight.bin",
+    url: `https://example.invalid/weight-${id}.bin`,
     sha256: createHash("sha256").update(WEIGHTS).digest("hex"),
     sizeBytes: WEIGHTS.byteLength,
     required: true,
@@ -73,10 +76,11 @@ interface Seat {
  *  root per TEST (shared across that test's seats). */
 function seat(
   opRoot: string,
-  opts: { durable?: boolean; claimMs?: number; store?: boolean } = {},
+  opts: { durable?: boolean; claimMs?: number; store?: boolean; refId?: string } = {},
 ): Seat {
   const fetched: string[] = [];
-  const plan: ProvisionPlan = { ref: famRef(), items: [famItem()] };
+  const refId = opts.refId ?? "durable-fam";
+  const plan: ProvisionPlan = { ref: famRef(refId), items: [famItem(refId)] };
   const config: ProvisioningConfig = {
     declaration: { resolve: async (): Promise<ProvisionPlan> => plan },
     storeRoot: tempRoot(),
@@ -202,6 +206,57 @@ describe("THE DURABLE DOWNLOAD SEAT (transient requests, durable claims, 2026-10
     }
     assert.ok(foreign !== undefined, "the foreign poll never settled");
     assert.equal(foreign.bytes, foreign.total);
+  });
+
+  test("THE MIXED SWEEP — the claim tick over settled rows claims ONLY the requested one (the skip arm, 2026-11-17)", async () => {
+    const opRoot = tempRoot();
+    // Seed TWO rows through the shared store: one flipped to a
+    // settled word ('active' — a prior seat's finished fetch), one
+    // freshly 'requested'. The durable seat's FIRST tick fires
+    // synchronously at effect time over that MIXED list — the sweep
+    // must skip the settled row untouched and claim the wanted one.
+    // (The arm seats the skip deterministically: interval timing
+    // never decides whether the continue side of the state guard
+    // runs — the immediate tick always sees both rows.)
+    const settledMinter = seat(opRoot, { refId: "settled-fam" });
+    const settledId = await settledMinter.service.requestWeightAcquire(famRef("settled-fam"));
+    const store = new FileOperationStore(opRoot);
+    const settledRow = await store.load(settledId);
+    assert.ok(settledRow !== null, "the settled row mints");
+    const flipped = await store.saveIfState(
+      { ...settledRow, state: "active", detail: "settled by a prior seat" },
+      "requested",
+    );
+    assert.equal(flipped, true, "the row flips to a settled word");
+    const settledBytes = readFileSync(join(opRoot, readdirSync(opRoot).find((n) => n.endsWith(".json"))!), "utf8");
+
+    const wantedMinter = seat(opRoot, { refId: "wanted-fam" });
+    const wantedId = await wantedMinter.service.requestWeightAcquire(famRef("wanted-fam"));
+    assert.equal(wantedMinter.service.progressOf(wantedId)?.state, "requested");
+
+    // claimMs past the test's life: ONLY the effect's immediate tick
+    // sweeps — one deterministic pass over the mixed list.
+    const durable = seat(opRoot, { durable: true, claimMs: 60_000, refId: "wanted-fam" });
+    await untilLedger(
+      () => durable.service.progressOf(wantedId),
+      (r) => r.state === "active",
+      "the mixed sweep claimed the requested row",
+    );
+    assert.equal(durable.fetched.length, 1);
+    assert.equal(durable.fetched[0], "https://example.invalid/weight-wanted-fam.bin");
+    assert.deepEqual(wantedMinter.fetched, []);
+
+    // the settled row: same state, same detail, same BYTES — the
+    // sweep read it, skipped it, and wrote nothing
+    const settledAfter = await store.load(settledId);
+    assert.equal(settledAfter?.state, "active");
+    assert.equal(settledAfter?.detail, "settled by a prior seat");
+    const settledFiles = readdirSync(opRoot).filter((n) => n.endsWith(".json"));
+    assert.equal(settledFiles.length, 2, "two rows, no third");
+    const settledFileNow = settledFiles.map((n) => readFileSync(join(opRoot, n), "utf8"))
+      .find((bytes) => bytes.includes("settled-fam"));
+    assert.ok(settledFileNow !== undefined, "the settled row file survives");
+    assert.equal(settledFileNow, settledBytes, "the sweep never rewrote the settled row");
   });
 
   test("THE RACE — two durable seats over one store: exactly ONE fetch (the loser yields by the claim re-read)", async () => {

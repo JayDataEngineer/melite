@@ -10,6 +10,18 @@
 # Law (the spec's own keyless gate): self-skips when it cannot own
 # the lane — port busy or E2E_STUDIO_URL already exported (a host
 # is up; the caller reuses it) — exit 0, never a fake red.
+#
+# FLAGS (the operator no-env law, 2026-11-16 — the promote-prod
+# shape): --agent-route provider/model seats a real brain in the
+# minted patch (the AI KEY/ROUTE seats below; unset = keyless, the
+# CI law) · --credentials PATH is the refs file the brain's keys
+# merge from (default ~/.dsh/.credentials.yaml) · --llm-rows PATH
+# is the rows file the provider table splices from (default
+# dev_docs/deployment/studio-lane-rows.yml); every other argument
+# passes through to playwright verbatim. The lane-identity knobs
+# (E2E_STUDIO_PORT/HOME/RUNS_ROOT/REQUIRE/URL/DECK) stay env —
+# the CI/specs' test-lane switches (audit step (c)), not this
+# launcher's knobs.
 set -euo pipefail
 
 # THE LANE IDENTITY KNOBS (GOAL-2, 2026-10-24): a second lane can
@@ -44,6 +56,19 @@ check_lane_freshness "$REPO_ROOT" || {
 [ -f ./.env ] && . ./.env   # env-file loaded
 DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
+# ── flags (the no-env law) ────────────────────────────────────────
+AGENT_ROUTE=""
+CRED_SRC="$HOME/.dsh/.credentials.yaml"
+LLM_ROWS="$REPO_ROOT/dev_docs/deployment/studio-lane-rows.yml"
+LANE_ARGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --agent-route) AGENT_ROUTE="${2:?--agent-route needs provider/model}"; shift 2 ;;
+    --credentials) CRED_SRC="${2:?--credentials needs a refs file}"; shift 2 ;;
+    --llm-rows)    LLM_ROWS="${2:?--llm-rows needs a rows file}"; shift 2 ;;
+    *) LANE_ARGS+=("$1"); shift ;;
+  esac
+done
 
 # THE TRACKED SEED IS THE SEAT'S ONLY SEED (2026-10-12, the moss-404
 # lesson): a live dev profile arms the G2 hot door through
@@ -74,7 +99,7 @@ skip_or_fail() {
 if [ -n "${E2E_STUDIO_URL:-}" ]; then
   echo "[e2e-studio-lane] E2E_STUDIO_URL set — reusing the standing host"
   exec env PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
-    pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "$@"
+    pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "${LANE_ARGS[@]+"${LANE_ARGS[@]}"}"
 fi
 if curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/"; then
   skip_or_fail "port $PORT busy — another host owns the lane"
@@ -198,15 +223,14 @@ PY
 fi
 
 # THE AI KEY SEAT (GOAL-2, 2026-10-24): the keyless law above holds
-# UNLESS the operator names a brain (MELITE_E2E_AGENT_ROUTE=provider/
-# model — the route shape the melite-test lane's estate row seats).
+# UNLESS the operator names a brain (--agent-route provider/model
+# — the route shape the melite-test lane's estate row seats).
 # Then the machine's credential refs — the same store ~/.dsh-dev
 # symlinks at $HOME/.dsh/.credentials.yaml — merge into the
 # throwaway home so the brain's apiKeyEnv resolves. Machine-local
 # only: values never enter the repo, any log, or CI (the gate is
-# the operator's own env; unset = the keyless default untouched).
-if [ -n "${MELITE_E2E_AGENT_ROUTE:-}" ]; then
-  CRED_SRC="${MELITE_E2E_CREDENTIALS:-$HOME/.dsh/.credentials.yaml}"
+# the operator's own flag; unset = the keyless default untouched).
+if [ -n "$AGENT_ROUTE" ]; then
   CRED_DST="$HOME_DIR/.credentials.yaml"
   python3 - "$CRED_SRC" "$CRED_DST" <<'PYCRED' || exit 1
 import os, re, sys
@@ -292,11 +316,9 @@ EPATCH
 # operator's rows file (one copy, !!js tags untouched — the same
 # splice law as infer-provision --profile-rows; never re-serialize).
 # Unset = the minted patch stays keyless and brainless: CI law.
-AGENT_ROUTE="${MELITE_E2E_AGENT_ROUTE:-}"
 if [ -n "$AGENT_ROUTE" ]; then
   printf '    agentRoute: "%s"\n' "$AGENT_ROUTE" >>"$ESTATE_PATCH"
-  LLM_ROWS="${MELITE_E2E_LLM_ROWS:-$REPO_ROOT/dev_docs/deployment/studio-lane-rows.yml}"
-  [ -f "$LLM_ROWS" ] || { echo "[e2e-studio-lane] MELITE_E2E_AGENT_ROUTE set but llm rows file missing: $LLM_ROWS"; exit 1; }
+  [ -f "$LLM_ROWS" ] || { echo "[e2e-studio-lane] --agent-route set but llm rows file missing: $LLM_ROWS"; exit 1; }
   # TWO rows: the provider table (llm-pi-ai) AND the shell's default
   # chat route (agent-default-model → zai/glm-5.3-flash). Without the
   # default-route row the mint's own model turn falls back to
@@ -424,7 +446,7 @@ printf '{"pipeline":"image-gen","status":"success","created_at":%s,"prompt":"the
 PLAYWRIGHT_EXIT=0
 PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
   E2E_RUNS_ROOT="$RUNS_ROOT" \
-  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "$@" || PLAYWRIGHT_EXIT=$?
+  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "${LANE_ARGS[@]+"${LANE_ARGS[@]}"}" || PLAYWRIGHT_EXIT=$?
 
 # ── the host's own word (2026-10-13, the stale-lib wedge): a green
 # playwright run can ride a host that silently skipped a capability

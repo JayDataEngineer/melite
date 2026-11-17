@@ -18,6 +18,12 @@
 #
 # Usage:  ./scripts/lane-rebuild.sh          (from anywhere — the :3088 lane)
 #         ./scripts/lane-rebuild.sh <port>   (a BRANCH lane — never 3089)
+#         Flags (the operator no-env law, 2026-11-16 — the promote-prod
+#         shape): --main-home PATH  the main dsh home a branch lane links its
+#             shared stores onto (default ~/.dsh-dev) · --public-host HOST  the
+#             host spliced into the printed URL hint (default 127.0.0.1). The
+#             port is the positional <port>; the LANE_* pins stay env for now
+#             (the audit's later lane-config cure).
 # NEVER 3089 (operator 2026-11-10: "YOU NEVER TOUCH 3089. THE WHOLE
 # POINT WAS THAT *YOU NEVER TOUCH 3089*. NEVER. EVER."): :3089 is the
 # operator's LIVING lane — a rebuild restarts its unit, which kills
@@ -40,7 +46,24 @@ cd "$(dirname "$0")/.."
 # sidebar, like the demo), own unit, own log. A :3088 rebuild renders
 # ~/.dsh-dev and restarts dsh-melite-test + the browser sidecar only —
 # the branch lane's home and unit are never in its blast radius.
-PORT="${1:-${LANE_PORT:-3088}}"
+# ── flags + the positional port (the no-env law) ──────────────────
+PORT=""
+MAIN_HOME="$HOME/.dsh-dev"
+PUBLIC_HOST="127.0.0.1"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --main-home)   MAIN_HOME="${2:?--main-home needs the main dsh home}"; shift 2 ;;
+    --public-host) PUBLIC_HOST="${2:?--public-host needs a hostname}"; shift 2 ;;
+    *)
+      if [ -z "$PORT" ]; then
+        PORT="$1"; shift
+      else
+        echo "lane-rebuild: unknown argument $1 (lawful: <port> | --main-home PATH | --public-host HOST)" >&2
+        exit 2
+      fi ;;
+  esac
+done
+PORT="${PORT:-${LANE_PORT:-3088}}"
 # THE 3089 REFUSAL (ABSOLUTE — the law above): the operator's living
 # lane dies on every restart; no session may ever restart it through
 # this script, whatever the reason, however urgent the change is.
@@ -232,7 +255,7 @@ if [ "$PORT" != "3088" ]; then
   # continue, and read the SAME chats. One live writer per chat is the
   # user's own discipline (the same chat open twice writes twice);
   # read/resume across lanes is the requested behavior.
-  MAIN_HOME="${MELITE_MAIN_DSH_HOME:-$HOME/.dsh-dev}"
+  # (MAIN_HOME: --main-home, default ~/.dsh-dev — seated in the flag parse)
   for SHARED_STORE in sessions attachments; do
     if [ -d "$MAIN_HOME/$SHARED_STORE" ]; then
       if [ -L "$DSH_HOME/$SHARED_STORE" ] || [ -e "$DSH_HOME/$SHARED_STORE" ]; then
@@ -422,6 +445,6 @@ if [ "$PORT" != "3088" ]; then
   echo "  https://cloud.tailb1e597.ts.net:$PORT$TAIL_QUERY"
   echo "  (local fallback: $TOKEN_URL)"
 else
-  echo "  ${TOKEN_URL/127.0.0.1/${MELITE_PUBLIC_HOST:-127.0.0.1}}"
+  echo "  ${TOKEN_URL/127.0.0.1/$PUBLIC_HOST}"
   echo "  (local fallback: $TOKEN_URL)"
 fi

@@ -42,6 +42,12 @@ export type Drag =
     t1AtStart?: number
   }
 
+/** A drag armed through startDrag (every grip kind except the scrub —
+ * grabPlayhead arms that one itself, and no startDrag caller can pass
+ * it). Every member carries `id`, so the ghost highlight needs no
+ * per-kind narrowing. */
+export type GrabDrag = Exclude<Drag, { kind: "scrub" }>
+
 export interface TimelineDragSessionOpts {
   T1: number
   effPpf: number
@@ -101,7 +107,7 @@ export function useTimelineDragSession(opts: TimelineDragSessionOpts) {
   // mutate them mid-gesture; the pointerdown snapshot goes stale instantly).
   const promptsRef = useRef(prompts)
   promptsRef.current = prompts
-  const startDrag = (e: React.PointerEvent, d: Drag) => {
+  const startDrag = (e: React.PointerEvent, d: GrabDrag) => {
     if (e.button !== 0) return
     e.stopPropagation()
     e.preventDefault()
@@ -109,7 +115,9 @@ export function useTimelineDragSession(opts: TimelineDragSessionOpts) {
     // (audit F4b) compares it against T1 on pointerup.
     dragRef.current = { ...d, t1AtStart: T1 }
     setDragScale(effPpf)
-    if (d.kind !== "scrub") setDragId(d.id)
+    // GrabDrag carries id on every member (the scrub — the one kind
+    // without it — arms through grabPlayhead, never here).
+    setDragId(d.id)
   }
   // ── One global pointer session: scrub + clip drag/resize + keyframe drag.
   // The pose-studio pattern (window listeners + live-ref drag state) — the

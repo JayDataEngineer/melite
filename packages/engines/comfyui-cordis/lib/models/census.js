@@ -57,14 +57,30 @@ async function censusPass(ctx, svc) {
             await fiber.await();
         }
         catch (err) {
+            /* v8 ignore next -- the ?? fallback is unreachable through
+               familyFibers(): the collector at the top of this file drops
+               nameless runtimes before a fiber can reach this walk, so
+               fiber.name is always the runtime's own family- name; the
+               fallback holds the line only if cordis ever changes fiber
+               naming. */
             dead.push({ name: fiber.name ?? "(unnamed family)", err });
         }
     }
     if (fibers.length > 0 && dead.length === fibers.length) {
+        /* v8 ignore next 2 -- the String() alternate is unreachable
+           through cordis: the fiber machinery delivers every death as
+           an Error (a non-Error rejection is wrapped with the
+           rejection as its message — pinned in models-composition.spec,
+           "a TOTAL outage of string deaths"); the fallback holds the
+           line only if cordis ever delivers raw non-Errors. */
         throw new ModelError(`every family fiber refused at boot (${dead.map((d) => d.name).join(", ")}) — a total family-plane outage is an estate defect, not plugin absence: ` +
             dead.map((d) => `${d.name}: ${d.err instanceof Error ? d.err.message : String(d.err)}`).join("; "));
     }
     for (const d of dead) {
+        /* v8 ignore next 3 -- same cordis wrap as the outage voice above
+           (pinned: "a string-rejecting family retires alone"); the
+           String() alternate fires only if cordis delivers raw
+           non-Errors. */
         ctx.logger.error(new ModelError(`family fiber ${d.name} refused at boot and retired alone — the composition arms with the survivors (${fibers.length - dead.length} of ${fibers.length}): ${d.err instanceof Error ? d.err.message : String(d.err)}`));
     }
     const settled = fibers.length - dead.length;
@@ -124,6 +140,12 @@ export const modelsCensusGate = {
                 // the post-dispose no-op (models-composition.spec, audit #5).
                 inFlight = censusPass(ctx, svc)
                     .catch((err) => {
+                    /* v8 ignore next 4 -- the String() alternate is
+                       unreachable: every refusal the census walk can throw
+                       is a ModelError, and a fiber death arrives wrapped as
+                       an Error (the cordis delivery law, pinned in
+                       models-composition.spec); the fallback holds the line
+                       only against a raw non-Error escape from the walk. */
                     ctx.logger.error(new ModelError("models census re-check refused after a family-fiber change — the table stands at its last-good arm: " +
                         String(err instanceof Error ? err.message : err)));
                 })

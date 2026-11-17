@@ -1794,7 +1794,7 @@ window.__ModuleLoader__.load({
 					t1AtStart: T1
 				};
 				setDragScale(effPpf);
-				if (d.kind !== "scrub") setDragId(d.id);
+				setDragId(d.id);
 			};
 			(0, react.useEffect)(() => {
 				const endDrag = () => {

@@ -45,8 +45,9 @@ export function useTimelineDragSession(opts) {
         // (audit F4b) compares it against T1 on pointerup.
         dragRef.current = { ...d, t1AtStart: T1 };
         setDragScale(effPpf);
-        if (d.kind !== "scrub")
-            setDragId(d.id);
+        // GrabDrag carries id on every member (the scrub — the one kind
+        // without it — arms through grabPlayhead, never here).
+        setDragId(d.id);
     };
     // ── One global pointer session: scrub + clip drag/resize + keyframe drag.
     // The pose-studio pattern (window listeners + live-ref drag state) — the

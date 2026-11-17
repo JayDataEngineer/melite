@@ -29,6 +29,10 @@
 #                                       # the restart serves.)
 #   scripts/ship-lane.sh --unit dsh-web  # a different systemd unit
 #   scripts/ship-lane.sh --check         # verify only, change nothing
+#   THE LANE PAIR IS FLAGS, NEVER ENV (no-env law, 2026-11-16):
+#   --unit and --origin must name the sanctioned lane TOGETHER —
+#   one alone (or a non-sanctioned pair) is refused; to move the
+#   sanctioned lane itself, edit the two defaults in this file.
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,10 +41,13 @@ _ENV_FILE="${REPO}/.env"
 [ -f "$_ENV_FILE" ] && . "$_ENV_FILE"   # env-file loaded
 # THE SANCTIONED PAIR (unit + origin bind as one lane — the check
 # below refuses an override of either alone). Deployment-specific:
-# override BOTH via env (MELITE_SHIP_UNIT + MELITE_LANE_ORIGIN) or
-# edit these defaults — never bake a private host into the tree.
-SANCTIONED_UNIT="${MELITE_SHIP_UNIT:-dsh-melite-test.service}"
-SANCTIONED_ORIGIN="${MELITE_LANE_ORIGIN:-http://127.0.0.1:3088}"
+# edit these two defaults — never bake a private host into the
+# tree. THE NO-ENV LAW (operator 2026-11-16, the promote-prod
+# shape): the lane moves by FLAGS, never env — --unit/--origin
+# name the sanctioned lane (the pair check refuses one alone, or a
+# pair that is not the sanctioned one).
+SANCTIONED_UNIT="dsh-melite-test.service"
+SANCTIONED_ORIGIN="http://127.0.0.1:3088"
 UNIT="$SANCTIONED_UNIT"
 ORIGIN="$SANCTIONED_ORIGIN"
 DO_BUILD=1
@@ -61,7 +68,7 @@ while [ $# -gt 0 ]; do
     --check)    CHECK_ONLY=1; DO_BUILD=0; shift ;;
     --unit)     UNIT="$2"; UNIT_OVERRIDE=1; shift 2 ;;
     --origin)   ORIGIN="$2"; ORIGIN_OVERRIDE=1; shift 2 ;;
-    -h|--help)  sed -n '2,25p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help)  sed -n '2,36p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 2 ;;
   esac
 done

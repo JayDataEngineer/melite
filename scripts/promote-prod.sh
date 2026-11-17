@@ -22,21 +22,32 @@
 #
 # ROLLBACK: `promote-prod.sh --rollback` restarts prod onto the
 # recorded prior HEAD (the service runs from this repo tree).
+#
+# NO-ENV LAW (operator 2026-11-16): lane URLs are FLAGS, never env
+# vars — `--prod-url URL` / `--dev-url URL`. The only env this
+# script reads is DSH_PROD_TOKEN (a secret; env-or-file policy).
 set -euo pipefail
-# deployment env (.env is gitignored; .env.example documents every knob)
-[ -f ./.env ] && . ./.env   # env-file loaded
-
-PROD_UNIT="dsh-web.service"
-PROD_URL="${MELITE_PROD_URL:-http://127.0.0.1:3080}"
-DEV_URL="${MELITE_DEV_URL:-http://127.0.0.1:3088}"
-STATE_FILE="/tmp/promote-prod.last"
-TOKEN="${DSH_PROD_TOKEN:?DSH_PROD_TOKEN must name the prod bearer (never committed)}"
 
 say()  { printf '\033[1m== %s\033[0m\n' "$*"; }
 ok()   { printf '   \033[32mok\033[0m   %s\n' "$*"; }
 bad()  { printf '   \033[31mBAD\033[0m  %s\n' "$*"; exit 1; }
 
-if [[ "${1:-}" == "--rollback" ]]; then
+PROD_UNIT="dsh-web.service"
+PROD_URL="http://127.0.0.1:3080"
+DEV_URL="http://127.0.0.1:3088"
+ROLLBACK=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --prod-url) PROD_URL="${2:?--prod-url needs a URL}"; shift 2 ;;
+    --dev-url)  DEV_URL="${2:?--dev-url needs a URL}";   shift 2 ;;
+    --rollback) ROLLBACK=1; shift ;;
+    *) bad "unknown flag $1 (lawful: --prod-url URL | --dev-url URL | --rollback)" ;;
+  esac
+done
+STATE_FILE="/tmp/promote-prod.last"
+TOKEN="${DSH_PROD_TOKEN:?DSH_PROD_TOKEN must name the prod bearer (never committed)}"
+
+if [[ "$ROLLBACK" == "1" ]]; then
   say "ROLLBACK the prod lane onto the recorded prior HEAD"
   [[ -f "$STATE_FILE" ]] || bad "no recorded promote to roll back ($STATE_FILE absent)"
   source "$STATE_FILE"

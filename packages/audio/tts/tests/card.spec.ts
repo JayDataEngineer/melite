@@ -896,6 +896,100 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
   });
 });
 
+// ── THE ROW-SHAPE LAWS (the plugin law's derived rows + the lane
+//    surface's degenerate data): every compose read is a read of the
+//    ROW's own data — the dispatch keys `family ?? id`, the one
+//    judge reads the row's relations, and the instruction-control
+//    pick walks the row's variant matrix with a documented fallback
+//    at every absent layer ("a row without matrix data falls back to
+//    the variant topology"). These arms drive each read with the row
+//    shape that names it — the served facts rows all carry the full
+//    matrix, so only these derived shapes reach the fallbacks. ──
+describe("the row-shape laws (family-less dispatch keys, the relations judge, the lane-surface fallbacks)", () => {
+  // THE DERIVED ROW (the ACTION_BINDINGS law: "keyed by OWNING
+  // FAMILY (`model.family ?? model.id` at dispatch — a route id keys
+  // nothing, the derived-row law)"): the retained atom address with
+  // no family field keys the binding off the id, and the relations
+  // strip takes the judge's vacuous arm. Built per test — the facts
+  // row lands in beforeAll.
+  const familyless = (): ModelFacts =>
+    ({ ...ttsModel, family: undefined, relations: undefined }) as unknown as ModelFacts;
+
+  it("a family-less row keys the dispatch off its id and composes the speak segment (the derived-row law)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the words to speak" }), familyless(), g, "rowless_speak");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(graph["AudiocoreTTS.0"], "the Audiocore synth rides — the id-keyed binding found the speak segment");
+    assert.equal(graph["AudiocoreTTS.0"]?.inputs.prompt, "the words to speak", "the words ride");
+    const save = Object.values(graph).find((n) => n.class_type === "SaveAudio")!;
+    assert.equal(save.inputs.filename_prefix, "rowless_speak/tts", "the run prefix stamps the speak lane");
+  });
+
+  it("a family-less row keys the SAVE dispatch off its id too (the save is the boolean, never the family field)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "sample", save_qvoice: true, voice: "vivian" }), familyless(), g, "rowless_save");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio")!;
+    assert.ok(studio, "the export fires from the id-keyed save binding");
+    assert.equal(studio.inputs.speaker, "vivian", "the preset rides the serialized graph");
+    assert.ok(Object.values(graph).some((n) => n.class_type === "MeliteQVoiceCopy"), "the save persists (the copy node rides)");
+  });
+
+  it("THE ONE JUDGE, FAMIFIED: a row whose family relations carry a conflict refuses at compose, before any lane gate", () => {
+    // The judge reads the row's OWN relations (the frozen facts path
+    // is unvalidated by design — any well-formed row judges). A
+    // conflicts row fires on the stated pair ahead of the lane
+    // gates: the row's family-level word is compose's FIRST judge.
+    const famified = {
+      ...ttsModel,
+      relations: { conflicts: [{ a: "voice", b: "design_prompt", cure: "ONE voice performs" }] },
+    } as unknown as ModelFacts;
+    assert.throws(
+      () => def.compose(
+        def.schema({ text: "sample", voice: "vivian", design_prompt: "a warm voice" }),
+        famified, new GraphBuilder(), "row_conflict",
+      ),
+      /fields 'voice' \+ 'design_prompt' conflict on this lane — ONE voice performs/,
+    );
+  });
+
+  it("A ROW WITHOUT MATRIX DATA falls back to the variant topology — style composes where no surface forbids it", () => {
+    // the three degenerate matrix rows (the served rows all carry
+    // the full variant/cell/params cascade, so the fallbacks only
+    // fire on derived shapes — each arm names the layer it strips):
+    // (1) no variants at all → the variant topology holds
+    const noMatrix = { ...ttsModel, variants: undefined } as unknown as ModelFacts;
+    const g1 = new GraphBuilder();
+    def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), noMatrix, g1, "row_nomatrix");
+    assert.equal(g1.toJSON()["AudiocoreTTS.0"]?.inputs.instruct, "warmly",
+      "the variant topology answers (instruction_control true on the customvoice lane) — the style rides");
+
+    // (2) the variant row without size cells → no cell pick, the
+    // variant's own answer holds
+    const noCells = {
+      ...ttsModel,
+      variants: ttsModel.variants.map((v) => (v.id === "customvoice" ? { ...v, cells: undefined } : v)),
+    } as unknown as ModelFacts;
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), noCells, g2, "row_nocells");
+    assert.equal(g2.toJSON()["AudiocoreTTS.0"]?.inputs.instruct, "warmly",
+      "the cell-less ladder answers from the variant — the style rides");
+
+    // (3) family + variant declare NO surface (the legacy row) →
+    // laneSurfaceOf serves null, the fallback allows — the surface
+    // cascade adds, never subtracts, and null is the legacy truth
+    const noSurface = {
+      ...ttsModel,
+      params: undefined,
+      variants: ttsModel.variants.map((v) => (v.id === "customvoice" ? { ...v, params: undefined } : v)),
+    } as unknown as ModelFacts;
+    const g3 = new GraphBuilder();
+    def.compose(def.schema({ text: "hello", style_instruction: "warmly" }), noSurface, g3, "row_nosurface");
+    assert.equal(g3.toJSON()["AudiocoreTTS.0"]?.inputs.instruct, "warmly",
+      "a row that declares no surface forbids nothing — the style rides");
+  });
+});
+
 // ── THE EMPTY-STRING STRIP (the tts dossier's B1 cure, 2026-11-12)
 //    The engine nodes declare their unset optionals with default ""
 //    (vendored nodes.py INPUT_DECLARATIONS); the lane tables spread

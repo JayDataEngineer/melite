@@ -529,3 +529,64 @@ describe('the models boot is a Loader composition (families as rows, the census 
   })
 
 })
+
+// THE NON-ERROR DEATHS (2026-11-17, the coverage-honesty pass): a
+// family fiber that rejects with a BARE STRING — a hand-rolled
+// apply, a broken dependency throwing a non-Error — must still be
+// named legibly in every census voice. Empirically (pinned here):
+// cordis delivers every fiber death to the census as an Error whose
+// message carries the rejection verbatim, so the voices stay
+// legible through the Error arm; the String() fallbacks in
+// census.ts's three death ternaries are v8-ignored there as
+// unreachable-through-cordis defense.
+describe('the census voices a non-Error death legibly (the String() fallbacks)', () => {
+  it('a string-rejecting family retires alone with the string legible in the log', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const familyFibers = await mountRoster(ctx)
+    const providerFiber = ctx.plugin(modelsProvider)
+    const errors: string[] = []
+    const errSpy = vi.spyOn(ctx.logger, 'error').mockImplementation(((...args: unknown[]) => {
+      errors.push(args.map(String).join(' '))
+    }) as never)
+    const probeFiber = ctx.plugin(HELD_THROWING_PROBE)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    try {
+      await waitFor('the held probe apply to enter', () => releaseHeldProbe !== null)
+      releaseHeldProbe!('probe: a bare string death' as unknown as Error)
+      await whenModelsArmed()
+      await waitFor('the retirement log to speak', () => errors.some((e) => e.includes('retired alone')))
+      const voice = errors.find((e) => e.includes('retired alone'))
+      assert.ok(voice !== undefined, `the retirement log spoke (${JSON.stringify(errors)})`)
+      assert.ok(voice!.includes('probe: a bare string death'),
+        'the bare string rejection reaches the retirement log verbatim (cordis delivers it as an Error carrying the string)')
+      // the survivors still arm the seat
+      assert.equal((ctx.models as ModelsService).familyCount(), rosterRows().length)
+    } finally {
+      releaseHeldProbe = null
+      errSpy.mockRestore()
+      await gateFiber.dispose()
+      await Promise.allSettled([probeFiber.dispose(), ...familyFibers.map((f) => f.dispose())])
+      await providerFiber.dispose()
+    }
+  })
+
+  it('a TOTAL outage of string deaths still refuses with the string legible', { timeout: 30000 }, async () => {
+    const ctx = new Context()
+    const providerFiber = ctx.plugin(modelsProvider)
+    const probeFiber = ctx.plugin(HELD_THROWING_PROBE)
+    const gateFiber = ctx.plugin(modelsCensusGate)
+    try {
+      await waitFor('the held probe apply to enter', () => releaseHeldProbe !== null)
+      releaseHeldProbe!('probe: a bare string outage' as unknown as Error)
+      await assert.rejects(
+        () => whenModelsArmed(),
+        (err: unknown) => String(err).includes('total family-plane outage')
+          && String(err).includes('probe: a bare string outage'),
+        'the total-outage refusal must carry the bare string death verbatim',
+      )
+    } finally {
+      releaseHeldProbe = null
+      await Promise.allSettled([gateFiber.dispose(), probeFiber.dispose(), providerFiber.dispose()])
+    }
+  })
+})
