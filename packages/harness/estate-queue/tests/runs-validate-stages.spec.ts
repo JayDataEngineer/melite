@@ -175,6 +175,42 @@ describe("cardGate (the model+registration+schema verdicts)", () => {
       .toThrow(/requires params\.model/);
     expect(() => cardGate("f1", cstage("pure-tool", {}), fakeCards() as never)).not.toThrow();
   });
+  // B6 (promgen handoff 2026-11-17 — the familyless-stage trap): a
+  // multi-family card through requiresModel: false is the image-edit
+  // shape — the engine's model-less arm infers only a SINGLE-board
+  // card's family, so a familyless row composed all the way to the
+  // card's dispatch and died at PRESS time citing a session the
+  // caller never touched ("no declared action for family ''",
+  // session 7a82). The gate demands the seat HERE — naming the
+  // CURRENT bench + stage, the compose-time refusal the handoff
+  // ordered. Single-family boards keep their engine-side inference;
+  // boards-empty cards keep their card-id compose.
+  it("B6 arm 1 (THE WALL): a multi-family card (boarded > 1, requiresModel false) with NO params.model refuses at the gate naming bench + stage", () => {
+    const multi = fakeCards({
+      "image-edit-like": { requiresModel: false, boarded: ["qwen-img-edit-21", "fibo2-edit", "h3-image-edit"], schema: (): void => undefined },
+    });
+    let msg = "";
+    try {
+      cardGate("bench-main", cstage("image-edit-like", { prompt: "edit this" }), multi as never);
+      expect.unreachable();
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toMatch(/flow "bench-main" stage "s1": card "image-edit-like" requires params\.model/);
+    expect(msg).not.toMatch(/session 7a82/);
+  });
+  it("B6 arm 2 (inference preserved): a SINGLE-family board (requiresModel false) with no model passes — the engine infers boarded[0]", () => {
+    const single = fakeCards({
+      "sfx-like": { requiresModel: false, boarded: ["moss-sfx"], schema: (): void => undefined },
+    });
+    expect(() => cardGate("f1", cstage("sfx-like", { prompt: "boom" }), single as never)).not.toThrow();
+  });
+  it("B6 arm 3 (familyless cards stay free): a boards-empty card composes by card id — no demand", () => {
+    const bare = fakeCards({
+      "trim-like": { requiresModel: false, boarded: [], schema: (): void => undefined },
+    });
+    expect(() => cardGate("f1", cstage("trim-like", { clip: "x" }), bare as never)).not.toThrow();
+  });
   it("a schema refusal maps through the flow voice", () => {
     expect(() => cardGate("f1", cstage("refusing", { model: "fam", boom: true }), fakeCards() as never))
       .toThrow(/schema refused body — bad knob/);

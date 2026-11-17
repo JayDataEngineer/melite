@@ -250,7 +250,24 @@ export function cardGate(
         "src/cards — see GET /v1/tools for the served surface)",
     );
   }
-  if (def.requiresModel !== false) {
+  // THE FAMILYLESS-STAGE GATE (B6, promgen handoff 2026-11-17 — the
+  // same requiresModel-keyed exemption B5 burned on at the tool's
+  // stamp): a card boarding MORE THAN ONE family cannot infer its
+  // lane at the engine (the model-less arm infers only a single-board
+  // card's boarded[0]), so a row with no params.model composes
+  // familyless and dies at the card's dispatch — historically at
+  // PRESS time, in a voice citing a session the caller never touched
+  // (image-edit's "no declared action for family ''", session 7a82).
+  // The gate demands the seat HERE, at every compile seat, naming the
+  // CURRENT bench and stage — the compose-time refusal the handoff
+  // ordered. A single-family board keeps its inference (sfx, motion,
+  // input-prep infer boarded[0] engine-side) and a boards-empty card
+  // composes by its own card id (F56's law: the trim+krea-2 hijack
+  // must stay dead). h3-timeline's variant-address board
+  // (['h3', 'h3-timeline', 'h3-singularity']) counts multi: its
+  // dispatch is family-keyed too, and F27's mint folds 'h3' for it.
+  const boardsManyFamilies: boolean = (def.boarded ?? []).length > 1;
+  if (def.requiresModel !== false || boardsManyFamilies) {
     const model: unknown = st.params["model"];
     if (!model || !String(model).trim()) {
       throw new FlowError(
