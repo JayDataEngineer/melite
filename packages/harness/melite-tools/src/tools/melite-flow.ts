@@ -188,11 +188,46 @@ function assetUrlsOf(row: Record<string, unknown>): string[] {
   return Array.isArray(urls) ? urls.filter((u): u is string => typeof u === 'string' && u !== '') : []
 }
 
+/** B2's recovery read (promgen handoff, 2026-11-17): the newest run
+ *  minted at/after the press. The list door serves newest-first rows
+ *  with created_at stamps — a run minted inside the press window is
+ *  the landed candidate; the first row UNDER the press ends the hunt
+ *  (newest-first: nothing later exists). Best-effort by design — a
+ *  dead list read degrades to the door-naming fallback voice, never
+ *  masks the timeout. */
+async function newestRunSince(
+  estate: Estate,
+  pressedAtMs: number,
+  signal: AbortSignal,
+): Promise<{ id: string; ageS: number } | null> {
+  try {
+    const res = await estate.runsList('10', signal, 10_000) as { runs?: unknown[] }
+    const rows = Array.isArray(res?.runs) ? res.runs : []
+    for (const row of rows) {
+      if (typeof row !== 'object' || row === null) continue
+      const r = row as Record<string, unknown>
+      const id = typeof r['run_id'] === 'string' ? r['run_id'] : ''
+      const created = typeof r['created_at'] === 'number' ? r['created_at'] : 0
+      if (id === '' || created <= 0) continue
+      // the sidecar stamps epoch seconds; a ms-shaped stamp reads as-is
+      const createdMs = created > 1e12 ? created : created * 1000
+      if (createdMs >= pressedAtMs - 2000) {
+        return { id, ageS: Math.max(0, Math.round((createdMs - pressedAtMs) / 1000)) }
+      }
+      return null
+    }
+  } catch {
+    // the recovery read is best-effort — the fallback voice names the door
+  }
+  return null
+}
+
 async function startRun(
   estate: Estate,
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
+  const pressedAt = Date.now()
   let res: StartResult
   try {
     res = await estate.runsStart(body, signal, TIMEOUT_MS) as StartResult
@@ -202,6 +237,23 @@ async function startRun(
     const re = remoteErrorOf(e)
     if (re !== null && re !== undefined) {
       return { error: re.message || 'queue refused the start' }
+    }
+    // B2 (promgen handoff, 2026-11-17): the start's 30 s bound dying
+    // said nothing about landed-or-not — the consumer re-pressed
+    // blind while run-598c had QUEUED, RUN, and FAILED inside the
+    // bound. A timeout is D-7's class exactly (existence UNKNOWN),
+    // and the estate already owns the recovery read: the list door
+    // serves newest-first rows with created stamps. Recover the
+    // candidate instead of throwing — the voice names the run, the
+    // poll door, and the double-press hazard; when no candidate
+    // answers, the list-door fallback is named the same way.
+    const why = e instanceof Error ? e.message : String(e)
+    if (/outlived its \d+ms bound/.test(why)) {
+      const minted = await newestRunSince(estate, pressedAt, signal)
+      if (minted !== null) {
+        return { error: `start outlived its 30 s bound — but the run LANDED: ${minted.id} was minted ${minted.ageS}s after the press. Poll run_status(runId="${minted.id}") for its truth; do NOT press again — a second press duplicates the render and burns the seed` }
+      }
+      return { error: `start outlived its 30 s bound and no run minted within it — the press died before the queue took it (safe to press again). If in doubt, read the runs list (estate GET /v1/flows/runs) before re-pressing` }
     }
     throw e
   }

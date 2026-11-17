@@ -3753,3 +3753,104 @@ describe('melite_flow — THE STAMP-BACK CONFIRMATION (D3-07: bounded retry + th
     assert.ok(!clean.includes('STAMP MISSED'), 'the unmarked twin stays bare: ' + clean)
   })
 })
+
+// B2 (promgen handoff, 2026-11-17): the start's 30 s bound dying said
+// nothing about landed-or-not — the consumer re-pressed blind while
+// run-598c had queued, run, and failed INSIDE the bound. A timeout is
+// D-7's class (existence unknown) and the estate owns the recovery
+// read: the list door serves newest-first rows with created stamps.
+// The start arm recovers the candidate and names the double-press
+// hazard; no candidate answers the safe-to-re-press voice.
+describe('B2 — the start timeout recovers the landed run (never a blind re-press)', () => {
+  const timeoutStart = (lane: string): { status: number; body: unknown } | undefined => {
+    if (lane === 'runsStart') {
+      throw new Error('estate request POST /v1/flows/start outlived its 30000ms bound')
+    }
+    return undefined
+  }
+
+  test('a run minted after the press is RECOVERED — the voice names it, the poll door, the hazard', async () => {
+    const nowS = Math.floor(Date.now() / 1000)
+    const seen = mockEstate([
+      flowLoad(undefined),
+      timeoutStart,
+      (lane: string) => {
+        if (lane === 'runsList') {
+          return {
+            status: 200,
+            body: { count: 2, runs: [
+              { run_id: 'run-recovered-e1', status: 'queued', created_at: nowS + 1 },
+              { run_id: 'run-old-e2', status: 'completed', created_at: nowS - 500 },
+            ] },
+          }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(3000))) as Record<string, unknown>
+    assert.equal(typeof out['error'], 'string')
+    const err = out['error'] as string
+    assert.ok(err.includes('run-recovered-e1'), 'the landed run is named: ' + err)
+    assert.ok(err.includes('run_status'), 'the poll door is named: ' + err)
+    assert.ok(err.includes('do NOT press again'), 'the double-press hazard is named: ' + err)
+    // the recovery read rode the list door
+    assert.ok(seen.calls.some((c) => c.lane === 'runsList'), 'the list door answered the recovery')
+  })
+
+  test('NO run minted in the window — the safe-to-re-press voice, the list door named for doubt', async () => {
+    const nowS = Math.floor(Date.now() / 1000)
+    const seen = mockEstate([
+      flowLoad(undefined),
+      timeoutStart,
+      (lane: string) => {
+        if (lane === 'runsList') {
+          return {
+            status: 200,
+            body: { count: 1, runs: [ { run_id: 'run-old-e3', status: 'completed', created_at: nowS - 900 } ] },
+          }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(3000))) as Record<string, unknown>
+    const err = out['error'] as string
+    assert.ok(err.includes('no run minted'), 'the honest absence: ' + err)
+    assert.ok(err.includes('safe to press again'), 'the re-press verdict: ' + err)
+    assert.ok(err.includes('/v1/flows/runs'), 'the doubt door is named: ' + err)
+    assert.ok(!err.includes('run-old-e3'), 'an old run is never claimed as the candidate: ' + err)
+  })
+
+  test('a dead list read degrades to the door-naming fallback — never masks the timeout', async () => {
+    const seen = mockEstate([
+      flowLoad(undefined),
+      timeoutStart,
+      (lane: string) => {
+        if (lane === 'runsList') throw new Error('list seat down')
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(3000))) as Record<string, unknown>
+    const err = out['error'] as string
+    assert.ok(err.includes('outlived its 30 s bound'), 'the timeout stays the story: ' + err)
+    assert.ok(err.includes('/v1/flows/runs'), 'the fallback names the door: ' + err)
+  })
+
+  test('a NON-timeout transport failure still propagates (the recovery reads only the bound class)', async () => {
+    const seen = mockEstate([
+      flowLoad(undefined),
+      (lane: string) => {
+        if (lane === 'runsStart') throw new Error('socket hang up')
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    await assert.rejects(
+      tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(3000))),
+      /socket hang up/,
+    )
+    assert.equal(seen.calls.some((c) => c.lane === 'runsList'), false, 'no recovery read on a plain transport death')
+  })
+})
