@@ -76,9 +76,9 @@ describe("fetchOutputs (the harvest matrix)", () => {
       },
     }, 10);
     expect(arts.length).toBe(2);
-    expect(fileOf(arts[0] ?? "")).toBe("n1_a.png");
+    expect(fileOf(arts[0] ?? "")).toBe("sub_n1_a.png");
     expect(fileOf(arts[1] ?? "")).toBe("b.json");
-    expect(readFileSync(join(runDir, "n1_a.png"), "utf8")).toBe("b:a.png");
+    expect(readFileSync(join(runDir, "sub_n1_a.png"), "utf8")).toBe("b:a.png");
   });
   it("A CONSUMABLE IS NEVER A PRODUCT — the LoadVideo input row does not harvest (the 2026-11-15 re-shoot burn)", async () => {
     // The engine publishes a UI row for what a run CONSUMED: LoadVideo
@@ -116,7 +116,7 @@ describe("fetchOutputs (the harvest matrix)", () => {
     }, 10);
     // the product and the temp row land; the consumable does not
     expect(records.map((r) => fileOf(r.path))).toEqual([
-      "SaveVideo.0_h3_t4_w1_00001_.mp4",
+      "run-3fe3c8c968c7-a37034e6_SaveVideo.0_h3_t4_w1_00001_.mp4",
       "side.flac",
     ]);
     // nothing wrote a file under the consumable's staged name
@@ -185,7 +185,7 @@ describe("fetchOutputs (the harvest matrix)", () => {
     expect(records.length).toBe(1);
     expect(records[0]!.nodeId).toBe("SaveText.0");
     expect(records[0]!.kind).toBe("files");
-    expect(fileOf(records[0]!.path)).toBe("SaveText.0_tags_00001_.txt");
+    expect(fileOf(records[0]!.path)).toBe("run-abc_tagger_SaveText.0_tags_00001_.txt");
     expect(readFileSync(records[0]!.path, "utf8")).toBe("1girl, solo");
   });
   it("semantic records retain producer node provenance", async () => {
@@ -198,8 +198,8 @@ describe("fetchOutputs (the harvest matrix)", () => {
       },
     });
     expect(records).toEqual([
-      { nodeId: "pose", path: join(runDir, "pose_motion.npz"), kind: "three_model" },
-      { nodeId: "glb", path: join(runDir, "glb_rigged.glb"), kind: "3d" },
+      { nodeId: "pose", path: join(runDir, "run_pose_motion.npz"), kind: "three_model" },
+      { nodeId: "glb", path: join(runDir, "run_glb_rigged.glb"), kind: "3d" },
     ]);
   });
 
@@ -230,7 +230,47 @@ describe("fetchOutputs (the harvest matrix)", () => {
     const short = await fetchOutputArtifacts(client, join(DIR, "fd-short"), {
       outputs: { pose: { three_model: [{ filename: "m.npz", subfolder: "run", type: "output" }] } },
     });
-    expect(fileOf(short[0]!.path)).toBe("pose_m.npz");
+    expect(fileOf(short[0]!.path)).toBe("run_pose_m.npz");
+  });
+  it("B11 THE SUBFOLDER RIDES THE FLATTENED NAME — artifact identity lives in the FILENAME, not just the directory (the promgen sweep burn)", async () => {
+    // The burn: every run's hero PNG landed as
+    // `SaveImage.0_gen_00001_.png` — identity only in the directory
+    // name, so contact-sheet scripts that copied files out of the
+    // runs tree met N files with ONE name and re-derived run ids
+    // from paths. The engine's subfolder is the run-media prefix
+    // law's own spelling (<runId>/<kind>), so prefixing its slug
+    // restores identity IN the name: `run-x_generate_SaveImage.0_gen_00001_.png`.
+    const runDir = join(DIR, "b11-identity");
+    const client = clientWith(() => ({ body: "x", ct: "application/octet-stream" }));
+    const arts = await fetchOutputs(client, runDir, {
+      outputs: {
+        "SaveImage.0": {
+          images: [{ filename: "gen_00001_.png", subfolder: "run-8f31c0ffee42/generate", type: "output" }],
+        },
+      },
+    }, 10);
+    expect(fileOf(arts[0] ?? "")).toBe("run-8f31c0ffee42_generate_SaveImage.0_gen_00001_.png");
+    // A SUB-LESS ROW KEEPS ITS OWN NAME VERBATIM (the stem is the
+    // subfoldered arm's — the law above never touches it)
+    const plain = await fetchOutputs(client, join(DIR, "b11-plain"), {
+      outputs: { n: { images: [{ filename: "own.png", subfolder: "", type: "output" }] } },
+    }, 10);
+    expect(fileOf(plain[0] ?? "")).toBe("own.png");
+    // THE LATENT COLLISION IS CURED: the same node saving the same
+    // leaf under two subfolders used to flatten to ONE name — the
+    // second write overwrote the first. The slug keeps them two.
+    const both = await fetchOutputs(client, join(DIR, "b11-collision"), {
+      outputs: {
+        "SaveImage.0": {
+          images: [
+            { filename: "gen_00001_.png", subfolder: "run-a/generate", type: "output" },
+            { filename: "gen_00001_.png", subfolder: "run-b/generate", type: "output" },
+          ],
+        },
+      },
+    }, 10);
+    expect(fileOf(both[0] ?? "")).not.toBe(fileOf(both[1] ?? ""));
+    expect(both.length).toBe(2);
   });
   it("tuple rows harvest (filename, subfolder, type) with tolls", async () => {
     const runDir = join(DIR, "tuple");
@@ -244,7 +284,7 @@ describe("fetchOutputs (the harvest matrix)", () => {
       },
     });
     expect(arts.length).toBe(4);
-    expect(fileOf(arts[0] ?? "")).toBe("n1_t1.png");
+    expect(fileOf(arts[0] ?? "")).toBe("s_n1_t1.png");
     expect(fileOf(arts[1] ?? "")).toBe("t2.png");
     expect(fileOf(arts[2] ?? "")).toBe("t3.png");
     expect(fileOf(arts[3] ?? "")).toBe("t4.wav");
