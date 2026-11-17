@@ -316,6 +316,43 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(seen.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the run minted once')
   })
 
+  // B7 (promgen handoff 2026-11-17 — bench attribution): card-mode
+  // presses minted bench rows whose runs the bench could not name —
+  // 18 of 19 stages read `last_run null (no run in the window names
+  // this stage)` while 16+ runs landed (bench-session-c11f9743, rev
+  // 20). Root: the start body carried no bench_stage_id, so the
+  // {model:} arm's identity seam answered undefined on a multi-stage
+  // bench and the sidecar's stage digest named the CARD SKELETON — a
+  // namespace the draft never heard of; withLastRun's join bound
+  // nothing. The claim threads the MINTED row's id; the server
+  // judges membership and the sidecar names the row.
+  test('B7 arm 1 (THE WALL): a card-mode MERGE press threads the appended stage id as bench_stage_id — the run names the row it minted', async () => {
+    const seen = mockEstate(twinHandlers())
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21', params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
+    assert.equal(startBody.bench_stage_id, 's_1', 'the claim names the APPENDED row — never the skeleton namespace')
+    assert.equal(startBody.draft_id, 'd-held')
+  })
+
+  test('B7 arm 2 (birth): a card-mode BIRTH press threads s_0 — the one-row bench names its row too', async () => {
+    const seen = mockEstate([
+      okBenchWith('d-b7'),
+      okDraftThenStart('d-b7', 'r-b7'),
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-gen', model: 'image-gen-1',
+      params: { prompt: 'a still' },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
+    assert.equal(startBody.bench_stage_id, 's_0', 'the birth claim names the minted s_0 row')
+  })
+
   test('W-5 arm 4 (params-mismatch — the strict form judged): the SAME card with DIFFERENT params is not a twin — it appends + runs per the F15 law, never refuses-and-silences', async () => {
     const seen = mockEstate(twinHandlers())
     const tool = meliteFlow(seen.request)

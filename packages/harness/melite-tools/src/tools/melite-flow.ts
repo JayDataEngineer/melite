@@ -1415,7 +1415,19 @@ async function runSingle(
       return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
     }
   }
-  const started = await startRun(estate, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal)
+  // B7 (promgen handoff 2026-11-17 — bench attribution): the start
+  // body now carries bench_stage_id — the MINTED row's id (s_0 at
+  // birth, the appended stage on merge). Without the claim, the
+  // {model:} arm's identity seam (benchStageIdOf) answers undefined
+  // on a multi-stage bench — the sidecar's stage digest names the
+  // card SKELETON, a namespace the draft never heard of, and the
+  // bench read's join binds NOTHING: 18 of 19 rows read
+  // `last_run null (no run in the window names this stage)` while
+  // 16+ runs landed (the handoff's bench-session-c11f9743 evidence).
+  // The claim is JUDGED server-side (membership on the bench doc),
+  // the sidecar names the row, and withLastRun's draft_id +
+  // stage_ids join paints last_run — the bench answers "what ran?".
+  const started = await startRun(estate, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }, signal)
   if (typeof started["error"] === "string") return { mode: 'card', target: card, ...(rode !== undefined ? { rode } : {}), ...started }
   const runId = started['run_id']
   if (typeof runId === 'string' && runId !== '') {
