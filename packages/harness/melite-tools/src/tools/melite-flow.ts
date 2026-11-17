@@ -1295,14 +1295,26 @@ async function runSingle(
    * id and family alias is far under 80 chars, so the truncation arm
    * is defensive only (2026-10-13, the coverage-cure pass). */
   const intent = card.length > 80 ? card.slice(0, 77) + '…' : card
-  // F16 (2026-11-12): the stage the press writes must carry the
-  // model the start rides — the bench the press LEAVES BEHIND has to
-  // compile standalone (runsValidateStages' own voice was the burn:
-  // "card 'tts' requires params.model" on the tts stage a press
-  // minted without it). Pure-tool cards (requiresModel false) take
-  // no stamp — a phantom model seat pollutes nothing.
+  // F16 (2026-11-12) + B5 (promgen handoff, 2026-11-17): the stage
+  // the press writes must carry the model the start rides — the bench
+  // the press LEAVES BEHIND has to compile standalone
+  // (runsValidateStages' own voice was the burn: "card 'tts' requires
+  // params.model" on the tts stage a press minted without it). B5's
+  // burn: the same press on image-edit minted a FAMILYLESS bench row
+  // — image-edit boards three families through requiresModel: false,
+  // so the old requiresModel-keyed stamp skipped it, and the row only
+  // refused at PRESS time ("no declared action for family ''",
+  // session 7a82) while image-gen's stamped row ran. ONE LAW: the
+  // stamp keys on BOARDED-NESS, never requiresModel — every
+  // family-boarding card's row carries params.model (the seat its
+  // compose door reads), so birth and merge arms both leave a
+  // standalone bench. A card boarding NOTHING (trim — the F56
+  // trim+krea-2 hijack burn) keeps the bare bag: stamping a stated
+  // model would route the row into a stranger's lane at the next
+  // bench press instead of composing the card by its own id.
+  const boardsFamilies: boolean = cardDef !== undefined && (cardDef.boarded ?? []).length > 0
   const stageParams: Record<string, unknown> =
-    cardDef?.requiresModel !== false ? { ...normalizedBag, model } : normalizedBag
+    cardDef === undefined || boardsFamilies ? { ...normalizedBag, model } : normalizedBag
   // F15 — THE MERGE LAW (2026-11-12, the friction report's burn: a
   // `card: tts` press WIPED a composed film/swap/track bench —
   // stages dropped, intent flipped). A single-card press on a bench

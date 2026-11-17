@@ -1315,7 +1315,7 @@ export function meliteConstruct(
           + 'repaired 90 of 243 frames): split with the VERB {cuts: "2.5, 5"} — seconds, expanded '
           + 'through the same split law the strip\'s Add cut rides, into the calls rows, the new seams carried '
           + '(context carry is THE DEFAULT; stock is the operator\'s manual escape hatch, never authored). '
-          + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
+          + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s params.model — ONE seat for every family-boarding card (B5, 2026-11-17): image-gen, image-edit and music all read it there; no stage row carries a top-level `model`, and the add_stage `model` arg folds into params.model at the mint) without '
           + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
           + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone. '
           + 'STAGE-POLICY KEYS (F41) are authored here, on the stage row (never the card surface): boundary_unload_models: true arms the pass-seam model unload, vram_budget_mb sets a stage\'s VRAM budget — the stored row keeps them verbatim and admission judges the rest of the bag.',

@@ -605,18 +605,78 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal((stage['params'] as Record<string, unknown>)['model'], 'image-gen-1')
   })
 
-  test('F16 negative: a pure-tool card (requiresModel false) takes NO model stamp on the stage', async () => {
-    // a phantom model seat pollutes nothing: image-edit composes
-    // without one (its def says requiresModel false), so neither the
-    // birth stage nor a merged append carries a model key.
+  // B5 (promgen handoff, 2026-11-17): the F16-negative premise above
+  // was the BURN — image-edit boards three families through
+  // requiresModel: false, so the requiresModel-keyed stamp skipped it
+  // and the press minted a FAMILYLESS bench row (the next press met
+  // "no declared action for family ''", session 7a82). One law now:
+  // every family-boarding card stamps. The negative survives on a
+  // TRUE familyless card (trim boards nothing — the F56 boundary).
+  test('B5 arm 1 (THE WALL): an image-edit press stamps params.model onto the birth stage — the left-behind bench compiles standalone', async () => {
+    // the handoff's B5 pair: image-gen's {"model", params} press ran
+    // while the same shape on image-edit minted a row owning no
+    // family. The stage the press writes must carry the seat the
+    // start rode — requiresModel: false no longer exempts a card
+    // that boards families.
     const seen = mockEstate([
-      okBenchWith('d-f16n'),
-      okDraftThenStart('d-f16n', 'r-f16n'),
+      okBenchWith('d-b5'),
+      okDraftThenStart('d-b5', 'r-b5'),
     ])
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({
-      card: 'image-edit', model: 'image-edit-21',
+      card: 'image-edit', model: 'qwen-img-edit-21',
       params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const ensureDoc = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
+    const stage = (ensureDoc['stages'] as Array<Record<string, unknown>>)[0]!
+    assert.equal((stage['params'] as Record<string, unknown>)['model'], 'qwen-img-edit-21')
+    // the START body is unchanged — the door's {model:} shape rides
+    // as ever; the cure is the stage row alone
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
+    assert.equal(startBody.model, 'qwen-img-edit-21')
+  })
+
+  test('B5 arm 2 (merge seat): an image-edit press on a HELD bench appends a seated row — the merge arm rides the same stamp', async () => {
+    // the operator's burn landed through THIS arm (a held bench +
+    // append): both bench-write seats share the one stageParams
+    // const, and this arm pins the merge half.
+    const heldBench = {
+      session: 'main', rev: 3, draft_id: 'd-held-b5', log: [],
+      stages: [{ id: 's_0', card: 'image-gen', params: { prompt: 'a cat', model: 'image-gen-1' } }],
+    }
+    const seen = mockEstate([
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: heldBench }
+        if (lane === 'benchVerb') return { status: 200, body: { rev: 4, stage: 's_1' } }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r-b5m', status: 'queued' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'qwen-img-edit-21',
+      params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    const verb = seen.calls.find((c) => c.lane === 'benchVerb')!
+    const doc = verb.args[2] as Record<string, unknown>
+    assert.equal((doc['params'] as Record<string, unknown>)['model'], 'qwen-img-edit-21')
+  })
+
+  test('B5 arm 3 (F56 boundary): a TRUE familyless card (trim boards nothing) takes NO stamp — the row still composes by card id', async () => {
+    // the stamp keys on boarded-ness, never requiresModel: stamping
+    // trim's explicitly-stated model would hijack the row into a
+    // stranger's lane at the next bench press (the F56 trim+krea-2
+    // burn) instead of composing trim by its own id.
+    const seen = mockEstate([
+      okBenchWith('d-b5n'),
+      okDraftThenStart('d-b5n', 'r-b5n'),
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'trim', model: 'krea-2',
+      params: { clip: 'a clip' },
     }, fakeExec(AbortSignal.timeout(2000), { agent: { id: 'session-chat7' } })) as Record<string, unknown>
     assert.equal(out.error, undefined)
     const ensureDoc = decodeJsonBody(seen.calls.find((c) => c.lane === 'benchEnsure')!.args)
@@ -625,7 +685,7 @@ describe('melite_flow card — the live allowlist', () => {
     // the START body still carries the model key — the door's {model:}
     // shape is unchanged; only the stage row is stamp-free
     const startBody = decodeJsonBody(seen.calls.find((c) => c.lane === 'runsStart')!.args)
-    assert.equal(startBody.model, 'image-edit-21')
+    assert.equal(startBody.model, 'krea-2')
   })
 
   test('a bench read whose row carries no stages array falls to the single-card arm (the advisory read never lies)', async () => {
