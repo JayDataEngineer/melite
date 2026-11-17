@@ -177,6 +177,7 @@ function failedLandingOf(verb: string, estateAnswered: boolean): Record<string, 
 async function refusalOf(
   e: unknown, verb: string, bench: string,
   estate: Estate, signal: AbortSignal,
+  pressedStage?: string,
 ): Promise<ConstructResult> {
   const refusal = remoteErrorOf(e)
   if (refusal !== undefined) {
@@ -195,11 +196,28 @@ async function refusalOf(
   }
   const error = e instanceof Error ? e.message : String(e)
   const readBack: Record<string, JsonValue> = {}
+  let landing: string | undefined
   if (MUTATION_VERBS.has(verb)) {
     try {
       const fresh = await estate.benchGet(bench, signal, 15000) as Record<string, unknown>
       if (typeof fresh['rev'] === 'number') readBack['read_back_rev'] = fresh['rev'] as number
       else readBack['read_back'] = 'no_rev'
+      // B3 (promgen handoff, 2026-11-17): the read-back USED to stop
+      // at the rev — the answer said 'ambiguous_no_write' while its
+      // own evidence (rev 594→595, the pressed stage sitting in the
+      // roster) PROVED the write landed, and the timeout's cost was
+      // a second blind mutation. The read-back now judges what it
+      // holds: a pressed stage id present in the bench's live roster
+      // is a PROVEN landing — 'landed_read_back' — and the voice
+      // means what it says (the stage is on the bench; only the
+      // ANSWER died). Absence keeps the honest ambiguity.
+      if (pressedStage !== undefined && pressedStage !== '' && Array.isArray(fresh['stages'])) {
+        const present = (fresh['stages'] as unknown[]).some((s) =>
+          typeof s === 'object' && s !== null &&
+          (s as Record<string, unknown>)['id'] === pressedStage &&
+          (s as Record<string, unknown>)['archived'] !== true)
+        if (present) landing = 'landed_read_back'
+      }
     } catch {
       readBack['read_back'] = 'unreachable'
     }
@@ -207,7 +225,8 @@ async function refusalOf(
   return jsonClean<ConstructResult>({
     verb, bench, face_stamp: faceStamp(),
     error, error_kind: 'remote', ok: false,
-    ...failedLandingOf(verb, false), ...readBack,
+    ...(landing !== undefined ? { landing: landing as JsonValue } : failedLandingOf(verb, false)),
+    ...readBack,
   })
 }
 
@@ -1367,7 +1386,7 @@ export function meliteConstruct(
           error: { type: 'string', description: 'Refusal text (ok: false).' },
           landing: {
             type: 'string',
-            description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | refused_no_write (the estate answered — the write never applied) | ambiguous_no_write (no structured answer — the write is UNPROVEN; read_back_rev is the bench\'s own rev when the read-back reached it, read_back names unreachable otherwise). Absent when the verb wrote no stage.',
+            description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | landed_read_back (the verb\'s ANSWER died — timeout/transport — but the read-back found the pressed stage on the bench: the write LANDED, never re-press it) | refused_no_write (the estate answered — the write never applied) | ambiguous_no_write (no structured answer and the read-back could not prove the stage — the write is UNPROVEN; read_back_rev is the bench\'s own rev when the read-back reached it, read_back names unreachable otherwise). Absent when the verb wrote no stage.',
           },
           applied_derivations: {
             type: 'array',
@@ -1390,7 +1409,9 @@ export function meliteConstruct(
             ? '\nlanding: refused_no_write — the estate answered the refusal; nothing landed, retry is safe'
             : v.landing === 'ambiguous_no_write'
               ? `\nlanding: ambiguous_no_write — the write is UNPROVEN (the seat failed without answering); ${rb}`
-              : ''
+              : v.landing === 'landed_read_back'
+                ? '\nlanding: landed_read_back — the pressed stage is ON the bench (the read-back proved it); only the answer died, never re-press'
+                : ''
           return [{ type: 'text', text: 'melite_construct REFUSED: ' + v.error + landing }]
         }
         // STROKE 85 (the operator's report — the blind read that
@@ -2422,7 +2443,10 @@ export function meliteConstruct(
           return out({ rev: r.rev, undone: r.undone, stages: r.stages })
         }
       } catch (e) {
-        return await refusalOf(e, verb, bench, estate, signal)
+        // B3: the pressed stage id rides the read-back judge — when
+        // the args carry one (add_stage/patch/remove/rewire/archive)
+        const stageOf = typeof a['stage'] === 'string' ? a['stage'] as string : undefined
+        return await refusalOf(e, verb, bench, estate, signal, stageOf)
       }
     },
   })

@@ -2975,6 +2975,11 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
   })
 
   test('D3-05: a transport-ambiguous mutation READS THE BENCH BACK — the answer carries the bench\'s own rev', async () => {
+    // B3 re-voice (promgen handoff, 2026-11-17): the read-back no
+    // longer stops at the rev — the pressed stage sitting in the
+    // roster is PROVEN landing ('landed_read_back'; the fixture's
+    // bench carries s1, the patch's own stage). The ambiguous twin
+    // (stage absent) is the B3 suite's own arm below.
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') throw new Error('socket closed after send')
       if (lane === 'benchGet') return { session: 'session-chat7', rev: 9, stages: [{ id: 's1' }] }
@@ -2982,14 +2987,15 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     })
     const tool = meliteConstruct(estate)
     const out = await tool.execute({ verb: 'patch', stage: 's1', params: { p: 2 }, expect_rev: 6 }, exec()) as Record<string, unknown>
-    assert.equal(out['landing'], 'ambiguous_no_write')
+    assert.equal(out['landing'], 'landed_read_back',
+      'the pressed stage is on the read-back bench — the write is PROVEN (B3), never a blind retry')
     assert.equal(out['read_back_rev'], 9, 'the bench\'s fresh rev rides the answer — fresh eyes, no blind retry')
     assert.equal(out['read_back'], undefined)
     assert.equal(seen.filter((r) => r.lane === 'benchGet').length, 1,
       'exactly ONE read-back, a raw get (no birth, no re-write)')
     const blocks = tool.output!.render!({} as never, out as never) as Array<{ type?: string, text?: string }>
     const text = blocks.map((b) => b.text ?? '').join('\n')
-    assert.match(text, /the bench read back at rev 9 — compare before retrying/)
+    assert.match(text, /landed_read_back — the pressed stage is ON the bench/, 'the render voices the PROOF (no retry — the rev ride already named it): ' + JSON.stringify(text))
   })
 
   test('D3-05 edge: a read-back that answers a doc with no rev names no_rev — the ambiguity stays ambiguous, never a guessed rev', async () => {
@@ -2999,7 +3005,7 @@ describe('melite_construct — slice 5 (first-door wire grammar + landing states
     // agent would treat as fresh eyes.
     const { seen, estate } = mockEstate((lane, args) => {
       if (lane === 'benchVerb' && args[1] === 'patch') throw new Error('socket closed after send')
-      if (lane === 'benchGet') return { session: 'session-chat7', stages: [{ id: 's1' }] }
+      if (lane === 'benchGet') return { session: 'session-chat7', stages: [{ id: 's2' }] }
       throw new Error('unmocked lane ' + lane)
     })
     const tool = meliteConstruct(estate)
@@ -3417,5 +3423,86 @@ describe('melite_construct — THE ONE-SPELLING WRITE (operator 2026-11-14: "I t
     assert.equal(params['image1'], null)
     const spells = out['spells'] as Array<Record<string, unknown>>
     assert.ok(Array.isArray(spells) && spells.length > 0, 'the spell voice still names the token')
+  })
+})
+
+// B3 (promgen handoff, 2026-11-17): the add_stage timeout's answer said
+// 'ambiguous_no_write' while its OWN read-back (rev 594→595, the pressed
+// stage sitting in the roster) proved the write landed — the timeout's
+// cost was a second blind mutation. The read-back now judges what it
+// holds: a pressed stage id present in the live roster is PROVEN
+// landing ('landed_read_back'); absence keeps the honest ambiguity.
+describe('B3 — the mutation read-back PROVES the landing it holds', () => {
+  test('a stage-carrying verb whose stage IS on the read-back bench lands PROVEN — never re-press', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') {
+        throw new Error('estate request bench verb outlived its 15000ms bound')
+      }
+      if (lane === 'benchGet') {
+        return { session: 'session-chat7', rev: 595, intent: '', log: [], stages: [
+          { id: 's_0', card: 'image-gen', params: { prompt: 'x' } },
+          { id: 's_1', card: 'image-gen', params: { prompt: 'y', steps: 8 } },
+        ] }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'patch', stage: 's_1', params: { steps: 8 }, expect_rev: 594,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['ok'], false, 'the verb still refuses (the answer died)')
+    assert.equal(out['landing'], 'landed_read_back',
+      'the pressed stage s_1 sits in the roster — the write is PROVEN: ' + JSON.stringify(out))
+    assert.equal(out['read_back_rev'], 595, 'the rev movement rides beside it')
+    assert.match(String(out['error']), /outlived its 15000ms bound/, 'the timeout stays the story')
+  })
+
+  test('the stage ABSENT from the read-back keeps the honest ambiguity', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') {
+        throw new Error('estate request bench verb outlived its 15000ms bound')
+      }
+      if (lane === 'benchGet') {
+        return { session: 'session-chat7', rev: 595, intent: '', log: [], stages: [
+          { id: 's_0', card: 'image-gen', params: { prompt: 'x' } },
+        ] }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'patch', stage: 's_9', params: { steps: 8 }, expect_rev: 594,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['landing'], 'ambiguous_no_write',
+      's_9 is on no roster the read-back reached — no proof, no claim: ' + JSON.stringify(out))
+  })
+
+  test('an ARCHIVED stage never proves a live landing (the live-roster law)', async () => {
+    const { estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'patch') {
+        throw new Error('estate request bench verb outlived its 15000ms bound')
+      }
+      if (lane === 'benchGet') {
+        return { session: 'session-chat7', rev: 595, intent: '', log: [], stages: [
+          { id: 's_1', archived: true, card: 'image-gen', params: {} },
+        ] }
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'patch', stage: 's_1', params: { steps: 8 }, expect_rev: 594,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['landing'], 'ambiguous_no_write',
+      'an archived row is not a live stage — the proof reads the LIVE roster: ' + JSON.stringify(out))
+  })
+
+  test('an unreachable read-back stays ambiguous (the proof never fabricates)', async () => {
+    const { estate } = mockEstate((lane) => {
+      if (lane === 'benchVerb') throw new Error('estate request bench verb outlived its 15000ms bound')
+      throw new Error('unmocked lane ' + lane)
+    })
+    const out = await meliteConstruct(estate).execute({
+      verb: 'patch', stage: 's_1', params: { steps: 8 }, expect_rev: 594,
+    }, exec()) as Record<string, unknown>
+    assert.equal(out['landing'], 'ambiguous_no_write')
+    assert.equal(out['read_back'], 'unreachable')
   })
 })
