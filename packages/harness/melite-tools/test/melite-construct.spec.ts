@@ -874,6 +874,59 @@ describe('melite_construct mutations — every verb', () => {
     }
   })
 
+  // B10 (promgen handoff, 2026-11-17, [WEAK] finding): the promgen
+  // burn passed a PLAN-RELATIVE params_file, met ENOENT, and the
+  // same file by absolute path seated — "the tool's cwd is not the
+  // session cwd", undocumented anywhere. The cure is the PATH LAW
+  // spoken where the caller reads it: the schema text names the
+  // resolution base, the read-failure refusal names it too (a bare
+  // ENOENT reads as "file missing" when it was "wrong base"), and
+  // the wall PINS the actual resolution behavior — a relative path
+  // resolves against the HARNESS process cwd, proven by seating one.
+  test('params_file PATH LAW: a relative path resolves against the HARNESS cwd (proven by seating); the refusal + schema NAME the base', async () => {
+    // the behavior itself: a file dropped at the harness process's
+    // cwd seats by RELATIVE name — the resolution base is real, not
+    // narrated
+    const relName = 'melite-b10-' + Date.now() + '.json'
+    const relHost = join(process.cwd(), relName)
+    const relBag = { model: 'h3', note: 'relative seat' }
+    writeFileSync(relHost, JSON.stringify(relBag), 'utf8')
+    const { seen, estate } = mockEstate((lane, args) => {
+      if (lane === 'benchVerb' && args[1] === 'add_stage') return { rev: 9, stage: 's3' }
+      if (lane === 'benchGet') return { session: 'session-chat7', rev: 9, intent: '', stages: [{ id: 's3' }], log: [] }
+      if (lane === 'runsValidate') return { ok: true }
+      throw new Error('unmocked lane ' + lane)
+    })
+    try {
+      const tool = meliteConstruct(estate)
+      const out = await tool.execute(
+        { verb: 'add_stage', card: 'h3-timeline', params_file: relName, expect_rev: 8 },
+        exec(),
+      ) as Record<string, unknown>
+      const add = seen.find((r) => r.lane === 'benchVerb' && r.args[1] === 'add_stage')
+      assert.ok(add, 'the add_stage write fired for the RELATIVE name')
+      assert.deepEqual((add!.args[2] as Record<string, unknown>)['params'], relBag,
+        'the relative path seated — it resolved against the HARNESS process cwd, the law the schema now speaks')
+      const seated = out['params_file_seated'] as { path: string }
+      assert.equal(seated.path, relName, 'the receipt echoes the path as stated')
+    } finally {
+      rmSync(relHost, { force: true })
+    }
+    // the refusal NAMES the resolution base (the burn's cure: a bare
+    // ENOENT read as "file missing" when it was "wrong base")
+    const missing = await meliteConstruct(stubEstate()).execute(
+      { verb: 'add_stage', card: 'c', params_file: 'plans/no-such-bag.json' },
+      exec(),
+    ) as Record<string, unknown>
+    assert.match(String(missing['error']), /cannot be read[\s\S]*RELATIVE path resolves against the HARNESS process's working directory, not your session cwd \(state an absolute path\)/)
+    // the schema text carries the PATH LAW where the caller reads it
+    const described = ((meliteConstruct(stubEstate()) as unknown as {
+      parameters: { properties: { params_file: { description?: string } } },
+    }).parameters.properties.params_file.description) ?? ''
+    assert.ok(described.includes('NOT your session cwd') && described.includes('ABSOLUTE path'),
+      'the params_file schema names the resolution base and the absolute-path law')
+  })
+
   test('read echoes every stage\'s params digest (sha + bytes) — the pre-press diff is one compare, never drafts archaeology', async () => {
     const { estate } = mockEstate((lane) => {
       if (lane === 'benchGet') {

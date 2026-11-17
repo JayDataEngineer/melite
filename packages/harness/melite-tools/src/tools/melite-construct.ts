@@ -1322,7 +1322,7 @@ export function meliteConstruct(
       },
       params_file: {
         type: 'string',
-        description: 'add_stage: read the params bag from a FILE on disk (a validated artifact — the bytes are read, never re-typed through the output budget; D-37). JSON object root; refuses loud on a missing file, unparseable JSON or a non-object root. Exclusive with params — one source of truth per mint.',
+        description: 'add_stage: read the params bag from a FILE on disk (a validated artifact — the bytes are read, never re-typed through the output budget; D-37). JSON object root; refuses loud on a missing file, unparseable JSON or a non-object root. PATH LAW (B10): a RELATIVE path resolves against the HARNESS process\'s working directory — NOT your session cwd (the promgen burn: a plan-relative path met ENOENT while the absolute path seated) — so state an ABSOLUTE path. Exclusive with params — one source of truth per mint.',
       },
       inputs: {
         type: 'object', additionalProperties: true,
@@ -2146,7 +2146,14 @@ export function meliteConstruct(
             try {
               text = await fs.readFile(a.params_file, 'utf8')
             } catch (e) {
-              return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the validated artifact must exist where this tool runs' })
+              // B10 (promgen handoff, 2026-11-17): a relative path
+              // resolves against the HARNESS process's cwd, never the
+              // caller's session cwd — the promgen burn passed a
+              // plan-relative path and met ENOENT while the absolute
+              // path seated. The refusal NAMES the resolution base
+              // (a bare ENOENT read as "file missing" when it was
+              // "wrong base").
+              return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the validated artifact must exist where this tool runs: a RELATIVE path resolves against the HARNESS process\'s working directory, not your session cwd (state an absolute path)' })
             }
             let parsed: unknown
             try {
