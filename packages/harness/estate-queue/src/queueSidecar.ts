@@ -5,7 +5,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 import type { DraftId } from "@melite/contracts/benchStage";
-import { CARD_ENVELOPE_KEYS } from "./vocab.ts";
+import { CARD_ENVELOPE_KEYS, SELECTOR_KEYS } from "./vocab.ts";
 
 // ── sidecar document (sidecar 2124-2169) ──────────────────────────
 
@@ -154,6 +154,17 @@ export interface GraphReceiptPair {
   readonly carried: readonly string[];
   /** The judged keys NOT found in the graph, sorted — the honesty face. */
   readonly dropped: readonly string[];
+  /** THE RESOLVED ROSTER (promgen B4, 2026-11-17): selector
+   *  coordinates (SELECTOR_KEYS — variant/quant) the run body
+   *  stated. They are not knobs and never drop: the variant door
+   *  consumed them server-side into the loader's weight filename
+   *  (`variant: "raw"` → `krea2_raw_int8_convrot.safetensors` at
+   *  the variant's own steps/cfg), so literal-matching cannot see
+   *  the marriage. Named here so the agent reads `resolved:
+   *  ["variant"]` — the door took it — instead of the hour-long lie
+   *  that read `dropped: ["variant"]` as "your variant was
+   *  ignored". Absent when none rode. */
+  readonly resolved?: readonly string[];
   readonly verdict: "complete" | "params_unbound";
   /** THE BAKE'S RECORD (study §7 item 2, the run voice): present
    *  iff the composed graph bakes or loads a refmod mod — read off
@@ -285,8 +296,16 @@ export function graphReceiptOf(
   const populated: string[] = [];
   const found: string[] = [];
   const missed: string[] = [];
+  const resolved: string[] = [];
   for (const [key, value] of Object.entries(params)) {
     if (CARD_ENVELOPE_KEYS.includes(key)) continue;
+    // B4 (promgen handoff): selector coordinates name their own
+    // roster — never judged as knobs (the variant door consumed
+    // them; see SELECTOR_KEYS' doc for the burn's shape)
+    if (SELECTOR_KEYS.includes(key)) {
+      resolved.push(key);
+      continue;
+    }
     const scalar = receiptScalarOf(value);
     if (scalar === undefined) continue;
     populated.push(key);
@@ -295,11 +314,13 @@ export function graphReceiptOf(
   populated.sort();
   found.sort();
   missed.sort();
+  resolved.sort();
   return {
     nodes,
     populated,
     carried: found,
     dropped: missed,
+    ...(resolved.length > 0 ? { resolved } : {}),
     // the verdict names its plane (D-11): not integration
     // vocabulary — populated params whose literal never rode
     verdict: missed.length === 0 ? "complete" : "params_unbound",
@@ -316,14 +337,15 @@ export function graphReceiptStageOf(stage: string, pair: GraphReceiptPair): Grap
     populated: [...pair.populated],
     carried: [...pair.carried],
     dropped: [...pair.dropped],
+    ...(pair.resolved !== undefined ? { resolved: [...pair.resolved] } : {}),
     verdict: pair.verdict,
     ...(pair.bake !== undefined ? { bake: pair.bake } : {}),
   };
 }
 
 /** Fold per-stage rows into the run-level receipt (nodes SUM —
- *  the run's graph key space; populated/carried/dropped the
- *  sorted union; verdict `complete` iff every stage is). */
+ *  the run's graph key space; populated/carried/dropped/resolved
+ *  the sorted union; verdict `complete` iff every stage is). */
 export function graphReceiptFoldOf(rows: readonly GraphReceiptStageRow[], promptId?: string): GraphReceipt {
   const union = (pick: (r: GraphReceiptStageRow) => readonly string[]): string[] => {
     const s = new Set<string>();
@@ -336,11 +358,13 @@ export function graphReceiptFoldOf(rows: readonly GraphReceiptStageRow[], prompt
     nodes += r.nodes;
     if (r.verdict !== "complete") complete = false;
   }
+  const resolved = union((r) => r.resolved ?? []);
   return {
     nodes,
     populated: union((r) => r.populated),
     carried: union((r) => r.carried),
     dropped: union((r) => r.dropped),
+    ...(resolved.length > 0 ? { resolved } : {}),
     verdict: complete ? "complete" : "params_unbound",
     stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
     // THE BAKE rides the fold: the first stage that carries one

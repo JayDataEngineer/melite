@@ -662,7 +662,7 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     }
   });
 
-  it("ARM h — THE RUN-fcf9572a HONESTY FACE: envelope keys are NEVER judged while real unwired knobs receipt params_unbound; the run fold agrees with its stages", async () => {
+  it("ARM h — THE RUN-fcf9572a HONESTY FACE: envelope keys are NEVER judged, selector coordinates ride RESOLVED (B4), real unwired knobs receipt params_unbound; the run fold agrees with its stages", async () => {
     // THE BURN (stuck-run receipt remainder 4, 2026-11-09 night,
     // re-pinned by D-11): run-fcf9572a5ffb-5ba89b44 settled completed
     // with graph_receipt.verdict "partial", dropped ["draft_id",
@@ -671,35 +671,54 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     // agent reasoning about integration will read 'partial' as 'a
     // node was dropped' and go hunting"). The cure pins (i) the
     // envelope keys NEVER enter judgment (not populated, not
-    // carried, not dropped), (ii) the real unwired knobs (quant,
-    // variant — knobs the synth rig invented, the compose ignores)
-    // receipt params_unbound naming EXACTLY those keys, (iii) the
-    // verdict↔dropped biconditional on every stage row, (iv) the
-    // run/stage fold agreement (run complete iff every stage
-    // complete).
+    // carried, not dropped), (ii) B4 (promgen handoff, 2026-11-17):
+    // the SELECTOR coordinates (quant, variant — body keys the
+    // variant door consumes server-side into the loader's weight
+    // filename) ride the RESOLVED roster, never dropped — the
+    // consumer lane burned an hour on `dropped:["variant"]` while
+    // the engine loaded `krea2_raw_int8_convrot.safetensors` at the
+    // variant's own steps/cfg (the receipt read a working marriage
+    // as a lie), (iii) a genuinely unwired knob (flavor — a key no
+    // door consumes and no graph carries) receipts params_unbound
+    // naming EXACTLY it, (iv) the verdict↔dropped biconditional on
+    // every stage row, (v) the run/stage fold agreement (run
+    // complete iff every stage complete).
     const { sidecar } = await runBench({
       prompt: "the courier steps in",
       steps: 12,
       guidance: 3.5,
-      orphans: { draft_id: "d1", model: "receipt-model", press_key: "k", quant: "q", variant: "v" },
+      orphans: { draft_id: "d1", model: "receipt-model", press_key: "k", quant: "q", variant: "v", flavor: "smoke" },
     });
     const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
     assert.ok(receipt !== undefined, "the receipt exists (arm a's cure)");
     assert.equal(receipt["verdict"], "params_unbound",
-      "the real unwired knobs are a params-plane fact, named for the plane (D-11): " + JSON.stringify(receipt));
+      "the genuinely unwired knob is a params-plane fact, named for the plane (D-11): " + JSON.stringify(receipt));
     // THE SCOPE GATE (D-11): envelope keys — door vocabulary and row
     // coordinates — are never knobs; their absence from the graph is
     // not evidence of anything
     assert.deepEqual(
       receipt["dropped"],
+      ["flavor"],
+      "dropped names EXACTLY the genuinely unwired knob, SORTED (draft_id/model/press_key never judged; quant/variant ride RESOLVED — B4): " + JSON.stringify(receipt),
+    );
+    // B4'S RESOLVED ROSTER: the selector coordinates the variant door
+    // consumed — named for the agent, never lied about
+    assert.deepEqual(
+      receipt["resolved"],
       ["quant", "variant"],
-      "dropped names EXACTLY the real unwired knobs, SORTED (draft_id/model/press_key never judged): " + JSON.stringify(receipt),
+      "resolved names the selector coordinates SORTED (the variant door took them server-side): " + JSON.stringify(receipt),
     );
     for (const envelope of ["draft_id", "model", "press_key"]) {
       assert.ok(!(receipt["populated"] as string[]).includes(envelope),
         `the envelope key ${envelope} is NEVER judged — not even populated (out of scope at the gate)`);
       assert.ok(!(receipt["carried"] as string[]).includes(envelope),
         `the envelope key ${envelope} never rides carried either`);
+    }
+    for (const selector of ["quant", "variant"]) {
+      assert.ok(!(receipt["populated"] as string[]).includes(selector),
+        `the selector coordinate ${selector} is never a knob — not populated (B4)`);
+      assert.ok(!(receipt["carried"] as string[]).includes(selector),
+        `the selector coordinate ${selector} never rides carried (B4)`);
     }
     assert.deepEqual(
       receipt["carried"],
@@ -708,8 +727,8 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
     );
     assert.deepEqual(
       (receipt["populated"] as string[]).sort(),
-      ["guidance", "prompt", "quant", "steps", "variant"],
-      "populated is every judged scalar (envelope keys excluded at the gate); carried/dropped partition it",
+      ["flavor", "guidance", "prompt", "steps"],
+      "populated is every judged scalar (envelope keys excluded at the gate, selector coordinates resolved at their own gate); carried/dropped partition it: " + JSON.stringify(receipt),
     );
     // THE BICONDITIONAL + THE FOLD (the judge): no params_unbound
     // without named drops, no complete with drops, and the run
@@ -730,6 +749,32 @@ describe("runs-graph-receipt (the served-graph receipt, purge P1)", () => {
       stages.every((s) => s["verdict"] === "complete") ? "complete" : "params_unbound",
       "the run verdict is the AND of its stages: " + JSON.stringify(receipt),
     );
+  });
+
+  // ARM h-B4 — THE CURE FACE (promgen handoff B4, 2026-11-17): a
+  // press whose ONLY out-of-graph coordinates are the selector pair
+  // receipts COMPLETE — the variant door consumed them server-side
+  // (the weights filename is the resolved form), so a working
+  // marriage never reads as params_unbound again. This is the exact
+  // shape of the consumer's krea-2 press (variant:"raw" → the graph
+  // loaded krea2_raw_int8_convrot at the variant's steps/cfg) that
+  // burned an hour under the old dropped:["variant"] lie.
+  it("ARM h-B4 — THE CURE FACE: a selector-only press receipts COMPLETE with the resolved roster — the marriage never drags the verdict", async () => {
+    const { sidecar } = await runBench({
+      prompt: "the courier steps in",
+      steps: 12,
+      guidance: 3.5,
+      orphans: { draft_id: "d1", model: "receipt-model", press_key: "k", quant: "q", variant: "v" },
+    });
+    const receipt = sidecar["graph_receipt"] as Record<string, unknown>;
+    assert.equal(receipt["verdict"], "complete",
+      "a selector-only press is COMPLETE — the variant door resolved them (B4's whole point): " + JSON.stringify(receipt));
+    assert.deepEqual(receipt["dropped"], [], "nothing dropped: " + JSON.stringify(receipt));
+    assert.deepEqual(receipt["resolved"], ["quant", "variant"],
+      "the resolved roster still names them for the agent: " + JSON.stringify(receipt));
+    const stages = receipt["stages"] as Array<Record<string, unknown>>;
+    assert.equal(stages[0]!["verdict"], "complete", "the stage row agrees: " + JSON.stringify(stages[0]));
+    assert.deepEqual(stages[0]!["resolved"], ["quant", "variant"], "the stage row carries the resolved roster too: " + JSON.stringify(stages[0]));
   });
 });
 
