@@ -341,6 +341,21 @@ describe("the stall auto-recovery loop (the \"will never finish\" burn, 2026-11-
         acquireStallRetries: 1,
         fetcher: async (_url: string, signal?: AbortSignal) => {
           calls += 1;
+          // A REAL fetch rejects on an aborted signal BEFORE any
+          // response judgment — the re-open attempt arrives with the
+          // operation signal already aborted, so its wire never
+          // yields headers the range judgment could voice. Resolving
+          // a 200 anyway let the ignored-range judgment RACE the
+          // pre-aborted death (the tail assert flapped on which
+          // voice landed last); awaiting the signal makes attempt 2
+          // die exactly as the guard's law claims: instantly, its
+          // own voice never minted.
+          if (calls === 2 && signal !== undefined) {
+            return await new Promise<never>((_resolve, reject) => {
+              if (signal.aborted) { reject(new Error("aborted")); return; }
+              signal.addEventListener("abort", () => { reject(new Error("aborted")); }, { once: true });
+            });
+          }
           return { status: 200, body: wedgedBody(FULL.subarray(0, PART), signal) } as never;
         },
       };
@@ -359,17 +374,24 @@ describe("the stall auto-recovery loop (the \"will never finish\" burn, 2026-11-
       assert.equal(calls, 1, "the first flight opened");
       // fake t=250: the watchdog's first tick baselines the bytes;
       // fake t=500: the second tick fires the stall, the catch voices
-      // the re-open, and the recovery pause arms its 500ms timer
-      // (pending at t=1000 — the advance stops at 600, INSIDE the
-      // pause)
-      await vi.advanceTimersByTimeAsync(600);
-      // the stall's catch chain crosses the writer's real i/o hops —
-      // flush in bounded setImmediate rounds (fake time stays frozen
-      // at 600, so the pause's t=1000 timer CANNOT fire here)
-      for (let round = 0; round < 100; round += 1) {
-        await new Promise((resolve) => { setImmediate(resolve); });
+      // the re-open, and the recovery pause arms its 500ms timer.
+      // THE VOICE IS THE CROSSING'S OWN LAW, not a fixed advance: the
+      // stall fires one 100ms tick past the 250ms budget AFTER THE
+      // WIRE OPENS, but the open loop's exit clock rides real i/o —
+      // a fixed +600 sometimes stopped before the stall's tick
+      // (faces L+N red with an EMPTY voice, M green; 1-in-5 isolated
+      // too). The catch sets the detail BEFORE arming
+      // stallRetryDelay's pause, so voice-observed ⟹ pause-armed,
+      // and the poll's 25ms steps can never run the pause's 500ms
+      // timer past ~25ms before the observation exits the loop.
+      let midPause = service.progressOf(id);
+      for (let round = 0; !/re-opening the fetch at the kept offset/.test(String(midPause?.detail ?? "")) && round < 160; round += 1) {
+        await vi.advanceTimersByTimeAsync(25);
+        for (let hop = 0; hop < 10; hop += 1) {
+          await new Promise((resolve) => { setImmediate(resolve); });
+        }
+        midPause = service.progressOf(id);
       }
-      const midPause = service.progressOf(id);
       assert.match(String(midPause?.detail ?? ""), /re-opening the fetch at the kept offset/,
         "the stall voice landed before the pause parked the loop");
       // the dispose lands MID-PAUSE with fake time frozen: the
