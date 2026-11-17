@@ -451,6 +451,12 @@ export function sidecarDoc(args: {
    *  settled — one spelling on disk and on the wire
    *  (`attribution`). Absent while the stamp landed. */
   attribution?: string;
+  /** THE COLD-LOAD RETRY LEDGER (promgen A1, 2026-11-17): the spent
+   *  retry budget — one spelling on disk and on the wire
+   *  (`engine_retry_count`). Absent until the door re-queues the
+   *  engine-core eviction race; a boot between retry and re-claim
+   *  keeps the spent budget (never a second free retry). */
+  engineRetryCount?: number;
 }): Record<string, unknown> {
   return {
     // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
@@ -507,6 +513,9 @@ export function sidecarDoc(args: {
     // the list row's 8191-byte window must reach it so a missed
     // stamp is visible even when the payload before it is bulky.
     ...(args.attribution !== undefined && args.attribution !== "" ? { attribution: args.attribution } : {}),
+    // THE COLD-LOAD RETRY LEDGER (A1) — same optional-key law: the
+    // count rides only once spent.
+    ...(args.engineRetryCount !== undefined ? { engine_retry_count: args.engineRetryCount } : {}),
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,

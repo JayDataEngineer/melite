@@ -201,6 +201,17 @@ export interface RunRecord {
    *  performing run on the same pipeline read apart. Absent on
    *  variant-less runs. */
   variant?: string;
+  /** THE COLD-LOAD RETRY LEDGER (promgen handoff A1, 2026-11-17):
+   * engine-core model loads race their own eviction sweep —
+   * ComfyUI's model_management free_memory walks current_loaded_models
+   * while a second load mutates it (IndexError: list index out of
+   * range, engine core, not ours to patch — LAW 1). The lane's
+   * evidence: run-598c035d24c6 failed on it, the 20s-later manual
+   * re-run completed. The pump's failure catch re-queues a run that
+   * died on exactly that signature ONCE; this counter is the budget
+   * (absent = never retried). Rides every sidecar rewrite so a boot
+   * between retry and re-claim never double-retries. */
+  engineRetryCount?: number;
   /** THE LOUDNESS STAMP (roadmap OWED 2026-09-26 — the compact-row
    *  chip): the engine's meter reading lifted off the stage
    *  result_outputs.loudness at settle (BS.1770-4 integrated +
@@ -468,6 +479,10 @@ function sidecarFacesOf(run: RunRecord): {
    *  died at its bound — rides every rewrite so a disk row keeps
    *  the miss the tab never showed. */
   attribution: string | undefined;
+  /** THE COLD-LOAD RETRY LEDGER (A1): rides every rewrite — a boot
+   *  between retry and re-claim keeps the spent budget (never a
+   *  second free retry). */
+  engineRetryCount: number | undefined;
 } {
   return {
     runId: run.runId,
@@ -509,6 +524,8 @@ function sidecarFacesOf(run: RunRecord): {
     // THE ATTRIBUTION MARKER rides every rewrite too (D3-07 — a
     // disk row keeps the stamp-miss the tab never showed).
     attribution: run.attribution,
+    // THE COLD-LOAD RETRY LEDGER (A1) — same carry law.
+    engineRetryCount: run.engineRetryCount,
   };
 }
 
