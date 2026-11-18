@@ -150,5 +150,23 @@ if (seatMoved.length > 0) {
   console.log(`  root seat pins moved: ${String(seatMoved.length)}`)
   for (const line of seatMoved) console.log(`    ${line}`)
 }
+
+// THE TESTED-VERSIONS ROW (operator 2026-11-18: "is this automated, or
+// something that will simply be forgotten?"). The README's Tested
+// versions table names the release in its Melite row; the bump is the
+// ONE WRITER of that row (the wall readme-tested-versions.spec.ts
+// judges it against this same census — a bumped tree with a stale row
+// reds the battery, a bumped tree via any other path reds too).
+const readmePath = join(REPO, 'README.md')
+const readme = readFileSync(readmePath, 'utf8')
+const rowRe = /(\| Melite \| `v)([0-9A-Za-z.-]+)(`)/
+if (!rowRe.test(readme)) die(`the README's Tested versions table carries no '\| Melite \| `v…`' row to move — restore the table (tests/walls/ts/suites/readme-tested-versions.spec.ts names its shape)`)
+const readmeMoved = []
+const nextReadme = readme.replace(rowRe, (_m, pre, ver, post) => {
+  if (ver !== args.to) readmeMoved.push(`${ver} -> ${args.to}`)
+  return `${pre}${args.to}${post}`
+})
+if (!args.dryRun && readmeMoved.length > 0) writeFileSync(readmePath, nextReadme)
+if (readmeMoved.length > 0) console.log(`  README Tested-versions Melite row: ${readmeMoved.join(', ')}`)
 if (args.dryRun) console.log('bump-release-version: DRY RUN — nothing written')
-else console.log(`bump-release-version: ${args.to} is in every manifest under ${join(REPO, 'packages')} and in the root seat pins`)
+else console.log(`bump-release-version: ${args.to} is in every manifest under ${join(REPO, 'packages')}, in the root seat pins, and in the README's Tested versions row`)
