@@ -780,7 +780,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // (card.js + family-seats.js), the seed-vc family DECL
   // (index.js + actions.js), and the melite-tools contact-sheet
   // tool face. Zero deletions; add-minus-del verified against HEAD.
-  const LIB_CENSUS_PIN = 679;
+  // (2026-11-18) 679 → 680: +1 — the detached-menu anchor seam
+  // (packages/web/card-base/lib/menu-anchor.js, the popup-burn
+  // cure). Zero deletions; add-minus-del verified against HEAD.
+  const LIB_CENSUS_PIN = 680;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

@@ -949,6 +949,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/web/card-base/src/layout.tsx': { statements: 90.91, branches: 97.06, functions: 85.71, lines: 90 },
   '**/packages/web/card-base/src/media-library.ts': { statements: 83.33, branches: 83.33, functions: 50, lines: 80 },
+  // menu-anchor.ts (the detached-menu anchor seam, 4817e89e3): minted
+  // from two stable scoped faces (2/2 statements, 2/2 functions, 2/2
+  // lines, zero branch paths) — K=1 margins, branches null.
+  '**/packages/web/card-base/src/menu-anchor.ts': { statements: 50, branches: null, functions: 50, lines: 50 },
   '**/packages/web/card-base/src/mods.tsx': { statements: 99.83, branches: 99.7, functions: 99.3, lines: 99.79 },
   '**/packages/web/card-base/src/owners.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/web/card-base/src/pick-store.ts': { statements: 94.44, branches: 75, functions: 75, lines: 94.12 },
