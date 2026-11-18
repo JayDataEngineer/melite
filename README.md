@@ -10,6 +10,19 @@ estate validates the card, queues one run at a time, calls ComfyUI or another en
 engines contract, and serves the resulting artifacts. The architecture is DSH + Cordis +
 TypeScript; DSH is the only web host.
 
+## Tested versions
+
+| Component | Version |
+| --- | --- |
+| Melite | `v0.2.3-rc.4` (the release tag — every workspace package stamps it) |
+| DSH | `0.2.2-rc.5` |
+| ComfyUI | `0.45.0` |
+
+The table names what the current release was last tested against, not a
+compatibility range — DSH's pre-release line moves fast, so re-test the
+estate (boot, cards tab, one image run) whenever either engine side moves.
+The install lines below pin the Melite tag.
+
 ## Architecture
 
 - **Layer A — DSH/Cordis harness:** tool surface, shared bench, card view,
