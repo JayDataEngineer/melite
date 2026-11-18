@@ -62,6 +62,77 @@ test("an idempotent patch keeps the done mark — staleness judges the VIEW, not
   assert.equal(row["runStatus"], "done", "the done mark stands — the view is unchanged");
 });
 
+test("a params patch mid-run KEEPS the live word — the observer owns running/queued until settle (the play→stop burn, 2026-11-18)", async () => {
+  // THE BURN (reproduced live on :3088): the operator pressed play,
+  // the tile flipped to stop, and a params refine landed mid-run —
+  // the staleness delete erased the LIVE word under the done mark's
+  // law, the stream pushed the cleared row, and the tile died back
+  // to PLAY while the engine still rendered (the observer re-stamps
+  // only when the progress fold moves, so an eventless tail stays
+  // play-faced for the whole run). Staleness exists for the SKIP
+  // law; a live word is the run observer's until settle.
+  const drafts = await boot();
+  await seed(drafts, "live1", {
+    stages: [{ id: "a", card: "hero", params: { steps: 4 },
+      runStatus: "running", result: { run_id: "r-live" } }],
+  });
+  const ans = await patchBench(drafts, "live1", {
+    stage: "a", params: { steps: 9 }, expect_rev: 0,
+  });
+  assert.equal(ans.stale, undefined, "a live word never answers stale — a run in flight is not invalidated by authoring");
+  const row = (getBench(drafts, "live1").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(row["runStatus"], "running", "running survives the mid-run params patch — the tile keeps its stop face");
+  // the waiting face rides the same carve-out
+  await seed(drafts, "live2", {
+    stages: [{ id: "a", card: "hero", params: { steps: 4 }, runStatus: "queued" }],
+  });
+  await patchBench(drafts, "live2", { stage: "a", params: { steps: 9 }, expect_rev: 0 });
+  const q = (getBench(drafts, "live2").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(q["runStatus"], "queued", "queued survives too — the waiting face is live");
+  // TERMINAL and out-of-vocabulary words still clear: the skip law
+  // keeps its whole purpose
+  for (const [i, word] of ["done", "completed", "failed", "weirdword"].entries()) {
+    const s = "term" + i;
+    await seed(drafts, s, {
+      stages: [{ id: "a", card: "hero", params: { steps: 4 }, runStatus: word }],
+    });
+    const a = await patchBench(drafts, s, { stage: "a", params: { steps: 9 }, expect_rev: 0 });
+    assert.equal(a.stale, true, word + " answers stale");
+    const r = (getBench(drafts, s).stages as Array<Record<string, unknown>>)[0]!;
+    assert.equal(r["runStatus"], undefined, word + " still clears — the skip law stands");
+  }
+});
+
+test("a rewire mid-run KEEPS the live word too (the staleness law's wiring half)", async () => {
+  // The wiring half of the play→stop burn: a rewire is a view
+  // change the same law a params patch is — and the same
+  // carve-out guards the live word (the observer owns it until
+  // settle), while the done mark still dies (the view changed).
+  const drafts = await boot();
+  await seed(drafts, "livew", {
+    stages: [
+      { id: "a", card: "hero", params: { image: "$image" }, runStatus: "running" },
+      { id: "b", card: "hero", params: {} },
+    ],
+  });
+  await rewireBench(drafts, "livew", {
+    stage: "a", input: "image", from: { stage: "b", output: "default" }, expect_rev: 0,
+  });
+  const row = (getBench(drafts, "livew").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(row["runStatus"], "running", "a wiring change mid-run keeps the live word — the stop face survives the rewire");
+  await seed(drafts, "donew", {
+    stages: [
+      { id: "a", card: "hero", params: { image: "$image" }, runStatus: "done" },
+      { id: "b", card: "hero", params: {} },
+    ],
+  });
+  await rewireBench(drafts, "donew", {
+    stage: "a", input: "image", from: { stage: "b", output: "default" }, expect_rev: 0,
+  });
+  const d = (getBench(drafts, "donew").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(d["runStatus"], undefined, "a wiring change still clears the done mark — the skip law stands");
+});
+
 test("patch refuses non-string stages, non-record params, and empty bodies", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });

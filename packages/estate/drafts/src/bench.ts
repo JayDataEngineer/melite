@@ -14,6 +14,7 @@
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
 import { promoteQvoiceBag, unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, liveBenchRows, normalizeBenchStage, projectStages, SELF_NAMED_FAMILIES, stripKeys, type DraftId } from '@melite/contracts/benchStage'
+import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
@@ -1416,16 +1417,27 @@ export async function patchBench(
     // stays the write's own).
     stampCompiledAt(st);
     // THE STALENESS ARM (the silent no-op cure): a params change
-    // invalidates the stage's run memory — the done mark described
-    // the PREVIOUS params, and the skip-done law (bench order, Run
-    // All's own law) skipped the patched stage while the flow
-    // answered [done] with nothing minted. The agent burned twelve
-    // calls diagnosing the no-op. Clearing runStatus here is the
-    // door maintaining coherence, never a caller outcome write
+    // invalidates the stage's TERMINAL run memory — the done mark
+    // described the PREVIOUS params, and the skip-done law (bench
+    // order, Run All's own law) skipped the patched stage while the
+    // flow answered [done] with nothing minted. The agent burned
+    // twelve calls diagnosing the no-op. Clearing runStatus here is
+    // the door maintaining coherence, never a caller outcome write
     // (the refusal above governs the CALLER's runStatus key); the
     // result row keeps the last artifact for the enrichment read.
+    // THE LIVE-WORD CARVE-OUT (the play→stop burn, 2026-11-18): a
+    // LIVE word (running/queued/… — isLiveRunStatus) is the run
+    // OBSERVER's until settle, not run memory about the params. An
+    // authoring patch mid-run (the chat lane refining params while
+    // the engine renders) erased it with the same delete, the
+    // stream pushed the cleared row, and the tile's stop face died
+    // back to play — the observer re-stamps only when the progress
+    // fold moves, so an eventless tail stayed play-faced for the
+    // whole run. Live words survive the patch; the observer's
+    // terminal delivery owns the settle.
     paramsChanged = canonicalParams(stored) !== beforeCanonical;
-    if (paramsChanged && typeof st["runStatus"] === "string" && st["runStatus"] !== "") {
+    if (paramsChanged && typeof st["runStatus"] === "string" && st["runStatus"] !== ""
+      && !isLiveRunStatus(st["runStatus"])) {
       delete st["runStatus"];
       staleCleared = true;
     }
@@ -3099,20 +3111,26 @@ export async function rewireBench(
   );
   // THE STALENESS ARM (the patch door's staleness law, wiring half —
   // qa8 partial sweep P6): a wiring change is a view change — the
-  // next run composes different inputs, so the stage's run memory
-  // is a lie the same way a changed params view is. Clearing
+  // next run composes different inputs, so the stage's TERMINAL run
+  // memory is a lie the same way a changed params view is. Clearing
   // runStatus here is the door maintaining coherence, never a
   // caller outcome write (the refusal above governs the CALLER's
   // runStatus key); the result row keeps the last artifact for the
   // enrichment read. Idempotent restatement keeps the mark (the
-  // canonical compare: no change, no stale).
+  // canonical compare: no change, no stale). THE LIVE-WORD
+  // CARVE-OUT (the play→stop burn, 2026-11-18 — the patch arm's
+  // law, wiring half): a LIVE word (isLiveRunStatus) is the run
+  // observer's until settle, never run memory about the view — a
+  // rewire mid-run keeps the tile's stop face; the observer's
+  // terminal delivery owns the settle.
   const beforeInputsJson: string = JSON.stringify(
     isRecord(st["inputs"]) ? st["inputs"] : {},
   );
   st["inputs"] = inputs;
   const wiringChanged: boolean = beforeInputsJson !== JSON.stringify(inputs);
   let staleCleared = false;
-  if (wiringChanged && typeof st["runStatus"] === "string" && st["runStatus"] !== "") {
+  if (wiringChanged && typeof st["runStatus"] === "string" && st["runStatus"] !== ""
+    && !isLiveRunStatus(st["runStatus"])) {
     delete st["runStatus"];
     staleCleared = true;
   }
