@@ -539,10 +539,20 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
         }
     }
     if (f.type === 'number') {
+        // THE SEATED-SPAN SPINNER (the canvas burn's typed half): the
+        // unset-aware typed face soft-clamps its HTML bounds to the
+        // lane envelope when one states them — the box's spinners end
+        // at the seated family's ceiling, the same span the track and
+        // the write door judge (an unset seat stays unset: the value
+        // law above is untouched).
+        const lo = envelope !== undefined && envelope !== null
+            ? Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]) : f.min;
+        const hi = envelope !== undefined && envelope !== null
+            ? Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1]) : f.max;
         return h(Input, {
             type: 'number',
-            min: f.min,
-            max: f.max,
+            min: lo,
+            max: hi,
             step: f.step,
             value: String(value ?? ''),
             placeholder: placeholder ?? f.placeholder ?? '',

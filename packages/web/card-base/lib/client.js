@@ -14958,17 +14958,21 @@ window.__ModuleLoader__.load({
 					...envelope !== void 0 ? { envelope } : {}
 				});
 			}
-			if (f.type === "number") return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				min: f.min,
-				max: f.max,
-				step: f.step,
-				value: String(value ?? ""),
-				placeholder: placeholder ?? f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label,
-				...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
-			});
+			if (f.type === "number") {
+				const lo = envelope !== void 0 && envelope !== null ? Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]) : f.min;
+				const hi = envelope !== void 0 && envelope !== null ? Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1]) : f.max;
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					type: "number",
+					min: lo,
+					max: hi,
+					step: f.step,
+					value: String(value ?? ""),
+					placeholder: placeholder ?? f.placeholder ?? "",
+					onChange: (e) => onEdit(f.name, e.target.value),
+					"aria-label": f.label,
+					...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
+				});
+			}
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: String(value ?? ""),
 				placeholder: placeholder ?? f.placeholder ?? "",
@@ -15696,11 +15700,26 @@ window.__ModuleLoader__.load({
 				model: family ?? ""
 			}, base).filter((v) => !isUnstatedRequiredVoice(v.message) && !(gateFields.has(v.field) && v.message.includes("fires nothing on this lane")));
 			const shownGateViolations = mutedViolations === void 0 ? gateViolations : gateViolations.filter((v) => !mutedViolations.includes(v.message));
-			const variantEnvelope = offeredVariantOf(spec.variants ?? [], value, spec)?.sampler_envelope ?? null;
+			const offered = offeredVariantOf(spec.variants ?? [], value, spec);
+			const variantEnvelope = offered?.sampler_envelope ?? null;
+			const laneBounds = laneBoundsFor(spec, offered?.id ?? null);
 			const knobEnvelope = (f) => {
-				if (f.name !== "steps" && f.name !== "cfg") return {};
-				const bound = variantEnvelope?.[f.name];
-				return { envelope: bound !== void 0 && bound.length === 2 ? [bound[0], bound[1]] : null };
+				const mins = [];
+				const maxs = [];
+				if (f.name === "steps" || f.name === "cfg") {
+					const bound = variantEnvelope?.[f.name];
+					if (bound !== void 0 && bound.length === 2) {
+						mins.push(bound[0]);
+						maxs.push(bound[1]);
+					}
+				}
+				const row = laneBounds?.[f.name];
+				if (row !== void 0) {
+					if (row.min !== void 0) mins.push(row.min);
+					if (row.max !== void 0) maxs.push(row.max);
+				}
+				if (mins.length === 0 && maxs.length === 0) return {};
+				return { envelope: [mins.length > 0 ? Math.max(...mins) : Number.NEGATIVE_INFINITY, maxs.length > 0 ? Math.min(...maxs) : Number.POSITIVE_INFINITY] };
 			};
 			const groups = groupFields(groupFieldsAll, {
 				...value,

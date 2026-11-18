@@ -933,3 +933,46 @@ test('THE MEDIA-SEAT FACE: an image-typed row renders NO freehand input — rail
   expect(await screen.findByText('shot-a.png')).not.toBeNull()
   expect(mediaKinds).toEqual(['image', 'image'])
 })
+
+// ── THE SEATED-FAMILY CANVAS SPAN (the 2026-11-18 burn: "it GAVE
+// me the option to go high res, then went full red when I used the
+// option it gave me") — the card schema's 4096 is the WIDEST
+// boarded family's ceiling, never the seated family's; the lanes
+// bounds the bench-write judge refuses with clamp the canvas knobs
+// themselves, so the form can never OFFER what the write would
+// refuse. The refused face renders the held value AS ITSELF — the
+// write-desync banner class ("THE WRITE DID NOT LAND") dies at the
+// field, never at the press.
+const canvasRefs: Record<number, Ref> = {
+  0: { type: 'object', dict: { height: 1 } },
+  1: { type: 'number', meta: { description: 'Height', min: 256, max: 4096, step: 16 } },
+}
+const canvasDoc = (bounds: Record<string, { min?: number; max?: number }>): FormSpecDoc => ({
+  form: 'image-gen',
+  model: 'krea-2',
+  schema: { uid: 0, refs: canvasRefs },
+  variants: [{ id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'turbo' }],
+  lanes: { bounds },
+} as never)
+
+test('CANVAS SPAN: a 2048-capped family never offers 4096 — the track clamps to the seated span', () => {
+  form({ spec: canvasDoc({ height: { min: 256, max: 2048 } }), user: { variant: 'turbo', height: 1024 } })
+  const track = document.querySelector('input[type="range"]') as HTMLInputElement | null
+  if (track === null) throw new Error('the height knob seats')
+  expect(track.getAttribute('max')).toBe('2048')
+  expect(track.getAttribute('min')).toBe('256')
+})
+
+test('CANVAS SPAN: a HELD 4096 on the 2048 family renders refused AS ITSELF (never a silent unlanded write)', () => {
+  form({ spec: canvasDoc({ height: { min: 256, max: 2048 } }), user: { variant: 'turbo', height: 4096 } })
+  const refused = document.querySelector('[data-refused="height"]')
+  expect(refused?.textContent).toMatch(/4096 — OUTSIDE the variant envelope \[256, 2048\]/)
+})
+
+test('CANVAS SPAN: the 4096 family (h3-image\'s shape) offers and holds 4096 clean', () => {
+  form({ spec: canvasDoc({ height: { min: 256, max: 4096 } }), user: { variant: 'turbo', height: 4096 } })
+  expect(document.querySelector('[data-refused="height"]')).toBeNull()
+  const track = document.querySelector('input[type="range"]') as HTMLInputElement | null
+  if (track === null) throw new Error('the height knob seats')
+  expect(track.getAttribute('max')).toBe('4096')
+})

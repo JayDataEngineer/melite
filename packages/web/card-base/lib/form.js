@@ -30,7 +30,7 @@
 import { createElement as h, useId, useState } from 'react';
 import { SegmentedTabs } from '@deepseek-ai/dsh-client-ui-primitives';
 import { ModifiersSection } from "./mods.js";
-import { coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from "./spec.js";
+import { coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneBoundsFor, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from "./spec.js";
 import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations';
 import css from './card.module.css';
 import { useSquareProvider } from "./square-provider.js";
@@ -257,15 +257,51 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // compose gate would refuse; the wire stays loud for API authors.
     // Null when the variant declares no envelope (the family's own
     // domain rides).
-    const variantEnvelope = (offeredVariantOf(spec.variants ?? [], value, spec)?.sampler_envelope) ?? null;
-    // knob-level bound: only steps/cfg carry envelopes; a malformed
-    // served pair (not length 2) clamps nothing — the wire gate still
+    const offered = offeredVariantOf(spec.variants ?? [], value, spec);
+    const variantEnvelope = offered?.sampler_envelope ?? null;
+    // THE SEATED-FAMILY SPAN (the 2026-11-18 canvas burn: the operator
+    // typed the 4096 the schema offered and the write refused it —
+    // "it GAVE me the option to go high res, then went full red when I
+    // used the option it gave me"). The card schema's ceiling is the
+    // WIDEST boarded family's, never the seated one's; the lane bounds
+    // the bench-write judge reads (laneBoundsFor — family base ⊕
+    // variant replace, the door's own laneBoundsOf spelling) narrow the
+    // same knobs, width/height included: the form never offers what
+    // the seated model would refuse at the write. The wire stays loud
+    // for API authors.
+    const laneBounds = laneBoundsFor(spec, offered?.id ?? null);
+    // knob-level bound: the sampler envelope states steps/cfg; the
+    // lane bounds may state any field; both judge the write, so the
+    // knob clamps to the INTERSECTION of the stated sources (a
+    // source's missing end stays open — the atom's own intersect with
+    // the field's ends lands the finite track). A malformed served
+    // pair (not length 2) clamps nothing — the wire gate still
     // refuses, so the display stays permissive rather than wrong.
     const knobEnvelope = (f) => {
-        if (f.name !== 'steps' && f.name !== 'cfg')
+        const mins = [];
+        const maxs = [];
+        if (f.name === 'steps' || f.name === 'cfg') {
+            const bound = variantEnvelope?.[f.name];
+            if (bound !== undefined && bound.length === 2) {
+                mins.push(bound[0]);
+                maxs.push(bound[1]);
+            }
+        }
+        const row = laneBounds?.[f.name];
+        if (row !== undefined) {
+            if (row.min !== undefined)
+                mins.push(row.min);
+            if (row.max !== undefined)
+                maxs.push(row.max);
+        }
+        if (mins.length === 0 && maxs.length === 0)
             return {};
-        const bound = variantEnvelope?.[f.name];
-        return { envelope: bound !== undefined && bound.length === 2 ? [bound[0], bound[1]] : null };
+        return {
+            envelope: [
+                mins.length > 0 ? Math.max(...mins) : Number.NEGATIVE_INFINITY,
+                maxs.length > 0 ? Math.min(...maxs) : Number.POSITIVE_INFINITY,
+            ],
+        };
     };
     // THE MODEL GUARD (the grammar's own key — the base owns the
     // mechanism, the card owns the leaves): the serving family rides

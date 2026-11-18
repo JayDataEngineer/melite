@@ -91,9 +91,9 @@ export declare function MeshStagePreview(props: PreviewOwnerProps): ReturnType<t
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
  *  law: NO @react-three in any client bundle). Reached through the
  *  `/client` door like every other seam in this row. */
-export { GlbStagePreview, attachedMeshOf, attachedImageOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.js';
-export { ReportView } from './report-view.js';
-export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.js';
-export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.js';
-export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.js';
+export { GlbStagePreview, attachedMeshOf, attachedImageOf, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx';
+export { ReportView } from './report-view.tsx';
+export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx';
+export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx';
+export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx';
 //# sourceMappingURL=preview.d.ts.map
