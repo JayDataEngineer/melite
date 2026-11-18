@@ -647,6 +647,7 @@ describe("THE FLOW PRODUCER BINDINGS (the object-forge producer-law cure: the ca
 // family DECLs — h3-image stretches to 4096, the rest hold 2048 (their
 // exact effective ceiling before the schema widened: zero behavior
 // change for them, one promise kept for MiniMax).
+import type { ModelDecl } from "@melite/comfyui-card-kit/model-contract";
 import { DECL as animaDecl } from "@melite/models-anima";
 import { DECL as fluxKleinDecl } from "@melite/models-flux-klein";
 import { DECL as h3ImageDecl } from "@melite/models-h3-image";
@@ -660,7 +661,7 @@ import {
 } from "@melite/contracts/laneRelations";
 
 describe("the per-family canvas ceilings (the schema widened for one, never for all)", () => {
-  const pins = [
+  const pins: Array<[string, ModelDecl, number]> = [
     ["anima", animaDecl, 2048],
     ["flux-klein", fluxKleinDecl, 2048],
     ["h3-image", h3ImageDecl, 4096],

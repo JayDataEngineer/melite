@@ -258,6 +258,7 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
             name="source"
             label={mediaType === 'image' ? 'Image' : 'Audio'}
             kind={mediaType === 'image' ? 'image' : 'file'}
+            admitsImageAudio
             value={source}
             onEdit={pickSource}
             onFile={(file) => { void readAsDataURL(file).then((url) => { pickSource(url) }) }}

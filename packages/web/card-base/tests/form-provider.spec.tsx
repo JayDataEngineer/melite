@@ -15,7 +15,7 @@ import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { InputSquare } from '../src/square.tsx'
-import { acceptOfField } from '../src/square-provider.tsx'
+import { acceptOfField, assetKindRefusal, fileKindRefusal, urlKindOf } from '../src/square-provider.tsx'
 import { CardForm, SourceRow, useSquareProvider } from '../src/form.tsx'
 
 afterEach(cleanup)
@@ -781,4 +781,49 @@ test('THE PROVIDER: candidatesFor seats the per-field narrowing (the wire rides 
   const rows = screen.getAllByTestId('source-pick-row')
   expect(rows.length).toBe(1)
   expect(screen.getByText('A (narrowed)')).not.toBeNull()
+})
+
+// THE AUDIO SEAT (the operator's law, 2026-11-18: "Voice changer
+// input squares need to ONLY ACCEPT AUDIO. ONLY. NOT ANYTHING ELSE"):
+// an audio-hinted file field takes audio at every door the media
+// hint feeds — the OS dialog's accept, the picker's library kind, the
+// drop-kind judge, and the asset/flow URL filter. The media door has
+// served the audio kind all along; this seat only never had a
+// derivation. The voice-change card's two squares carry the hint
+// (walled in its own package).
+test('THE AUDIO SEAT: an audio-hinted file square takes audio ONLY at every door', async () => {
+  const seen: string[] = []
+  const loadMedia = async (kind: string, _signal: AbortSignal): Promise<Array<{ url: string; name: string }>> => {
+    seen.push(kind)
+    return []
+  }
+  const AUDIO = { name: 'source_audio', label: 'Source Audio', type: 'file', media: 'audio' } as SpecField
+  // THE OS ACCEPT offers the audio formats (the estate vocabulary's
+  // own list — never a private drift).
+  expect(acceptOfField(AUDIO)).toBe('audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoice')
+  // THE PICKER asks the media door for the AUDIO kind (never 'all').
+  const { cap } = captureProvider({ candidates: [], loadMedia })
+  const host = cap().square(AUDIO) as { verbs: { onPick: () => void } }
+  act(() => { host.verbs.onPick() })
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText(/runs library \(audio\)/)).not.toBeNull()
+  expect(seen).toEqual(['audio'])
+})
+
+test('THE AUDIO DROP JUDGE: a non-audio file on an audio seat refuses loud; audio admits', () => {
+  const AUDIO = { name: 'source_audio', label: 'Source Audio', type: 'file', media: 'audio' } as SpecField
+  const png = new File([new Uint8Array([1])], 'take.png', { type: 'image/png' })
+  const mp4 = new File([new Uint8Array([1])], 'take.mp4', { type: 'video/mp4' })
+  const wav = new File([new Uint8Array([1])], 'take.wav', { type: 'audio/wav' })
+  expect(fileKindRefusal(AUDIO, png)).toContain('image')
+  expect(fileKindRefusal(AUDIO, mp4)).toContain('video')
+  expect(fileKindRefusal(AUDIO, wav)).toBeNull()
+})
+
+test('THE AUDIO ASSET/FLOW FILTER: an audio artifact URL classifies audio; an image URL refuses the audio seat', () => {
+  const AUDIO = { name: 'ref_audio', label: 'Reference Audio', type: 'file', media: 'audio' } as SpecField
+  expect(urlKindOf('/runs/r1/vc/vc_00001.flac')).toBe('audio')
+  expect(urlKindOf('/runs/r1/gen/take.wav')).toBe('audio')
+  expect(assetKindRefusal(AUDIO, '/runs/r1/gen/frame_00001.png')).toContain('image')
+  expect(assetKindRefusal(AUDIO, '/runs/r1/vc/vc_00001.flac')).toBeNull()
 })

@@ -130,7 +130,7 @@ describe("the h3-image cell artifact pins (verbatim content law)", () => {
   });
 });
 
-// @contract models-h3-image-max-canvas (THE MAX-CANVAS EXPANSION,
+// @contract models-h3-image-canvas-law (THE MAX-CANVAS EXPANSION,
 // 2026-11-18). THE OPERATOR BURN: "you did not expand the max image
 // size for Minimax-image like you said you would" — the card schema
 // capped every family at 2048 per axis. This checkpoint is tuned for
@@ -172,7 +172,8 @@ describe("the max-canvas expansion (bounds rows are the per-family ceiling)", ()
   });
 
   it("the family default stays 2048×2048 — the expansion widens the ceiling, never the default", () => {
-    assert.equal(DECL.defaults.width, 2048, "unstated canvas lands the tuned default");
-    assert.equal(DECL.defaults.height, 2048, "unstated canvas lands the tuned default");
+    const defaults = DECL.defaults ?? {};
+    assert.equal(defaults.width, 2048, "unstated canvas lands the tuned default");
+    assert.equal(defaults.height, 2048, "unstated canvas lands the tuned default");
   });
 });

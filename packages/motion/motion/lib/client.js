@@ -1904,7 +1904,7 @@ window.__ModuleLoader__.load({
 				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
 				out.push({
 					field: name,
-					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — restate it inside the span, or leave it unstated for the family default (the model owns the floor and the ceiling — the declaration, not the form)"
 				});
 			}
 			return out;

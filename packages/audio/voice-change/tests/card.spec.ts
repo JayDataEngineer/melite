@@ -17,6 +17,7 @@ import {
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { ACTION_BINDINGS, BOARDED, VARIANT_ADDRESSES, DEFAULT_MODEL, composeFamilyAction } from "../src/card.ts";
 import { primeFamilySeats, seatOf } from "../src/family-seats.ts";
+import { extraOf } from "@melite/contracts/extraKeys";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -215,5 +216,23 @@ describe("the seed-vc DECL voices the authoring-incomplete class (the GUI-open c
       /required param 'source_audio' missing or empty/,
       "phase-1 compose still refuses an empty source_audio — the DECL rows author the FORM, never the run",
     );
+  });
+
+  // @contract cards-voice-change-lane (THE ONLY-AUDIO HINT'S DECL
+  // TRUTH, 2026-11-18): the operator's law — "voice changer input
+  // squares need to ONLY ACCEPT AUDIO. ONLY." — rides the SERVED
+  // schema walk, never a hand-kept client copy: both file rows carry
+  // wtype 'file' + media 'audio' in their extra bag, and every door
+  // the hint feeds (OS accept, drop judge, picker library kind,
+  // asset/flow URL filter) derives from THIS declaration.
+  it("BOTH AUDIO ROWS CARRY THE ONLY-AUDIO HINT ON THE SERVED FACE", () => {
+    const dict = def.schema.dict ?? {};
+    for (const name of ["source_audio", "ref_audio"]) {
+      const node = dict[name];
+      assert.ok(node, `${name} serves on the schema walk`);
+      const extra = extraOf(node);
+      assert.equal(extra.wtype, "file", `${name} is a file square (the pick face)`);
+      assert.equal(extra.media, "audio", `${name} carries the audio hint — the ONLY-AUDIO law's own declaration`);
+    }
   });
 });

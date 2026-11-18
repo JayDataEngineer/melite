@@ -6,8 +6,13 @@
 extensions:
 - name: ComfyUI_Seed-VC
   url: https://github.com/billwuhao/ComfyUI_Seed-VC.git
-  ref: 02c0cb8b05121dd9e391b4287c8e28e0eb4e79a4
+  ref: 90bf98dad1ccc671c33a0603743b5b69beb142d9
   required: true
+  # THE ESTATE PATCH LAYER (2026-11-18, the voice-change first-run
+  # burn): the pinned ref is UPSTREAM 02c0cb8b0512 + one estate
+  # commit (BigVGAN loads on huggingface_hub >= 1.x; the runbook is
+  # dev_docs/runbooks/seed-vc-engine-patch-2026-11-18.md). A pack
+  # update rebases the estate commit on top, never drops it.
   desc: >-
     SeedVCRun (source AUDIO + reference AUDIO -> converted AUDIO;
     steps/speed/inference_cfg_rate/f0_condition/auto_f0_adjust/

@@ -591,7 +591,12 @@ export function judgeLaneBounds(bounds, values) {
         out.push({
             field: name,
             message: "'" + name + "': " + v + " is outside this lane's range (" + span + ') — ' +
-                'the model owns the floor and the ceiling (the declaration, not the form)',
+                // THE TEACHING TAIL (2026-11-18, the honest-voice rider): a
+                // bounds refusal names its repair — restate inside the span,
+                // or drop the value for the family default. A bare "out of
+                // range" is the dead-box bug wearing a badge.
+                'restate it inside the span, or leave it unstated for the family default ' +
+                '(the model owns the floor and the ceiling — the declaration, not the form)',
         });
     }
     return out;

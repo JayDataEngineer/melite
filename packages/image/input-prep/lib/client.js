@@ -627,6 +627,7 @@ window.__ModuleLoader__.load({
 							name: "source",
 							label: mediaType === "image" ? "Image" : "Audio",
 							kind: mediaType === "image" ? "image" : "file",
+							admitsImageAudio: true,
 							value: source,
 							onEdit: pickSource,
 							onFile: (file) => {

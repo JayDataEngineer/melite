@@ -161,6 +161,16 @@ export interface InputSquareVerbs {
 export const DEFAULT_SQUARE_ACCEPT = 'image/png,image/jpeg,image/webp'
 export const MESH_SQUARE_ACCEPT = '.glb,.gltf'
 export const VIDEO_SQUARE_ACCEPT = 'video/mp4,video/webm,video/quicktime'
+/** THE AUDIO SEAT (the operator's law, 2026-11-18: "voice changer
+ *  input squares need to ONLY ACCEPT AUDIO"): the audio/* MIME plus
+ *  the estate vocabulary's own audio extensions (mediaKinds.ts —
+ *  the same list the library door and the drop judge ride), never a
+ *  private list that drifts from the estate's. */
+export const AUDIO_SQUARE_ACCEPT = 'audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoice'
+/** THE DUAL SEAT (input-prep audits F1/F2): a lane-agnostic source
+ *  seat offers both families at the OS dialog — the image triad plus
+ *  the audio vocabulary, the union of what the dual judge admits. */
+export const DUAL_SQUARE_ACCEPT = `${DEFAULT_SQUARE_ACCEPT},${AUDIO_SQUARE_ACCEPT}`
 
 export interface InputSquareProps extends InputSquareVerbs {
   /** Short field key shown under the square (e.g. "input_image").

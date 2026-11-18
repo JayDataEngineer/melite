@@ -738,7 +738,11 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     assert.deepEqual(stepRow?.bounds, [1, 100]);
     assert.deepEqual(cfgRow?.bounds, [1, 20]);
     const widthRow = diffusionParamRows().find((r) => r.name === "width");
-    assert.deepEqual(widthRow?.bounds, [256, 2048]);
+    // [256, 2048] -> [256, 4096] (2026-11-18, the max-canvas
+    // expansion): the shared diffusion surface carries the WIDEST
+    // family's ceiling; each family's own tighter cap is its DECL
+    // bounds row (the lane-bounds judge's seat).
+    assert.deepEqual(widthRow?.bounds, [256, 4096]);
     const editWidth = diffusionParamRows(EDIT_DIFFUSION_BOUNDS).find((r) => r.name === "width");
     assert.equal(editWidth, undefined, "the edit families RETIRE the size pair (size: false — the latent law)");
   });

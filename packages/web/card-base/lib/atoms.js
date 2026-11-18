@@ -16,6 +16,13 @@ export function SourceRow(props) {
         name: props.name ?? '__source_row__',
         label: props.label,
         type: props.kind === 'image' ? 'image' : 'file',
+        // THE DUAL SEAT (input-prep audits F1/F2): a lane-agnostic
+        // source admits BOTH image and audio — the pick's own shape
+        // seats the lane (the studio flips on the pick), so the resting
+        // lane's kind must not pin the drop judge. The modal narrowing
+        // (kind) is untouched: the picker still asks the resting lane's
+        // library; only the judges (drop, OS accept) widen.
+        ...(props.admitsImageAudio === true ? { media: 'image+audio' } : {}),
     };
     const onEditField = useCallback((name, v) => {
         void name;

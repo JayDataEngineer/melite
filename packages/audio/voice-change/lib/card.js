@@ -44,8 +44,8 @@ export const ACTION_BINDINGS = {
     },
 };
 const schema = z.object({
-    source_audio: z.string().role('path').description("Source Audio").extra('extra', bag({ order: null, required: true, tooltip: "The clip to convert — its WORDS and rhythm are kept; the voice is replaced by the reference", wtype: 'file' })),
-    ref_audio: z.string().role('path').description("Reference Audio").extra('extra', bag({ order: null, required: true, tooltip: "The voice to borrow — 5-25 seconds of a clean single speaker performs best (its words are NOT used, only the timbre)", wtype: 'file' })),
+    source_audio: z.string().role('path').description("Source Audio").extra('extra', bag({ order: null, required: true, tooltip: "The clip to convert — its WORDS and rhythm are kept; the voice is replaced by the reference", wtype: 'file', media: 'audio' })),
+    ref_audio: z.string().role('path').description("Reference Audio").extra('extra', bag({ order: null, required: true, tooltip: "The voice to borrow — 5-25 seconds of a clean single speaker performs best (its words are NOT used, only the timbre)", wtype: 'file', media: 'audio' })),
     // UPSTREAM 1:1 (the node's own INPUT_TYPES, seedvcnode.py
     // SeedVCRun): steps 30 [1,200], speed 1.0 [0.5,2],
     // inference_cfg_rate 0.7 [0,1], pitch_shift 0 [-24,24], and the

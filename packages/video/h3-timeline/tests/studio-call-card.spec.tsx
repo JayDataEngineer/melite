@@ -795,10 +795,19 @@ describe("THE MODS SQUARE (slice 4, design §B): the add door rides the SourceRo
     try {
       fireEvent.click(screen.getByRole("button", { name: "pack_one.safetensors source" }))
       fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
-      const inp = document.querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
+      // SCOPE INSIDE THE MODS BUCKET (2026-11-18, exposed by the
+      // audio seat's kind judge): the unscoped document query grabbed
+      // the FIRST square's input — the IMAGE bucket's add square —
+      // and the wav admitted there by the unknown-extension loophole,
+      // committing to the WRONG lane while the wall read green. The
+      // bucket-scoped input is the chip's own seat; the judge and the
+      // swap both answer at the seat this wall claims.
+      const bucket = screen.getByTestId("tl-call-mods-bucket")
+      const inp = bucket.querySelector('input[type="file"][class*="squareFileInput"]') as HTMLInputElement
       assert.ok(inp, "the retargeted file input")
       fireEvent.change(inp, { target: { files: [new File(["bytes"], "line.wav", { type: "audio/wav" })] } })
       await waitFor(() => assert.equal(calls.refs.length, 1))
+      assert.equal(calls.refs[0][1], "mods", "the swap answers at the mods seat, never a sibling lane")
       assert.ok(calls.refs[0][2].startsWith("data:audio/wav;base64,"), "the stem chip became the data: chip — swapped in place")
     } finally {
       globalThis.FileReader = realReader

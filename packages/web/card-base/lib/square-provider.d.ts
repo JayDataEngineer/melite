@@ -9,11 +9,11 @@ import type { ChainRunCandidate } from './runs-policy.js';
  * spellings): mesh seats take mesh, video-hinted seats take video,
  * image seats take the image triad; an unhinted file seat takes
  * EVERYTHING ('all' — the library law). */
-export declare function seatFileKindOf(f: SpecField): 'image' | 'video' | 'mesh' | 'all';
+export declare function seatFileKindOf(f: SpecField): 'image' | 'video' | 'audio' | 'mesh' | 'all' | 'image+audio';
 /** A candidate URL's kind by extension — the from-flow filter's own
  * vocabulary. Unknown extensions ride ('' matches every seat: the
  * artifact's content truth is the door's, never the picker's). */
-export declare function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '';
+export declare function urlKindOf(url: string): 'video' | 'image' | 'audio' | 'mesh' | '';
 /** THE SEAT'S FILE-KIND LAW (the modleaf-add journey audit,
  * 2026-11-09 — the drop seam had NO judge): the OS dialog's accept
  * is a SOFT filter the drag-drop path bypasses; this law refuses
@@ -85,6 +85,12 @@ export interface SourceRowProps {
     /** 'image' narrows the media modal to image; anything else lists
      *  the whole library (the file face). */
     kind?: 'image' | 'file';
+    /** THE DUAL-SOURCE LAW (input-prep audits F1/F2): the seat is
+     *  lane-agnostic — image AND audio both admit (the pick's own
+     *  shape seats the lane, the studio flips), so the drop judge and
+     *  the OS accept must not pin the seat to the resting lane. The
+     *  media-modal narrowing (kind) is untouched. */
+    admitsImageAudio?: boolean;
     /** THE EDGE-BEARING SEAT NAME (the list-seat law, 2026-09-26): a
      *  stack cell's visible caption is its INDEX, but the From-flow
      *  picker narrows by the OWNING field's declared edge kind

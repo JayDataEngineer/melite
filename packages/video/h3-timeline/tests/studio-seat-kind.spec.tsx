@@ -56,7 +56,11 @@ describe("the seat's media-kind discipline (the drop judge + the from-flow filte
     assert.equal(urlKindOf("runs/r1/clips/take.mkv"), "video", "the matroska container is a video");
     assert.equal(urlKindOf("runs/r1/clips/take.m4v"), "video");
     assert.equal(urlKindOf("runs/r1/clips/take.avi"), "video");
-    assert.equal(urlKindOf("runs/r1/audio/vo.mp3"), "", "audio rides (the door owns content truth)");
+    // '' -> 'audio' (2026-11-18, the operator's ONLY-AUDIO law): an
+    // audio artifact classifies audio — the audio seat's from-flow
+    // rows and asset door judge it instead of waving it through.
+    // Unknown extensions still ride (the door owns content truth).
+    assert.equal(urlKindOf("runs/r1/audio/vo.mp3"), "audio", "audio classifies audio (the audio seat judges it)");
     assert.equal(urlKindOf("runs/r1/clips/clip.mp4?tok=1"), "video", "query strips before the classifier");
     assert.equal(urlKindOf("runs/r1/tags/tags.txt"), "", "text rides");
     // the URL judge is the file judge's twin (the (b) debt): a keyed

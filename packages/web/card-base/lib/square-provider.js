@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
-import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
+import { AUDIO_SQUARE_ACCEPT, DUAL_SQUARE_ACCEPT, DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
 import { readAsDataURL } from "./chrome.js";
 import { mediaKindOf } from '@melite/contracts/mediaKinds';
 import { uploadInputFile } from "./wire.js";
@@ -29,6 +29,11 @@ function mediaKindForField(f) {
     // lane 2026-10-28: video seats never list the whole catalog).
     if (f.type === 'file' && f.media === 'video')
         return 'video';
+    // THE AUDIO SEAT (2026-11-18): an audio-hinted file field lists
+    // the AUDIO library — the media door already serves the kind; the
+    // hint only never had a derivation here.
+    if (f.type === 'file' && f.media === 'audio')
+        return 'audio';
     return 'all';
 }
 /** THE SEAT'S FILE KIND — one derivation for the OS accept, the
@@ -37,12 +42,25 @@ function mediaKindForField(f) {
  * image seats take the image triad; an unhinted file seat takes
  * EVERYTHING ('all' — the library law). */
 export function seatFileKindOf(f) {
+    // THE DUAL SEAT (input-prep audits F1/F2): a lane-agnostic source
+    // seat admits BOTH image and audio — the pick's own shape seats
+    // the lane (the studio flips on the pick), so the resting lane's
+    // kind must not pin the drop judge. Checked before the type arms:
+    // the dual is a deliberate widening of an image-typed seat.
+    if (f.media === 'image+audio')
+        return 'image+audio';
     if (f.type === 'mesh')
         return 'mesh';
     if (f.type === 'image')
         return 'image';
     if (f.media === 'video')
         return 'video';
+    // THE AUDIO SEAT (2026-11-18, the operator's ONLY-AUDIO law): an
+    // audio-hinted square takes audio at EVERY door this derivation
+    // feeds — the OS accept, the drop-kind judge, and the from-flow
+    // candidates filter.
+    if (f.media === 'audio')
+        return 'audio';
     return 'all';
 }
 /** A candidate URL's kind by extension — the from-flow filter's own
@@ -59,6 +77,10 @@ export function urlKindOf(url) {
         case 'video': return 'video';
         case 'image': return 'image';
         case 'model': return 'mesh';
+        // THE AUDIO SEAT (2026-11-18): audio artifacts were '' — invisible
+        // to an audio seat's from-flow rows and unjudgeable at the asset
+        // door. The vocabulary always knew them; this seat now says so.
+        case 'audio': return 'audio';
         default: return '';
     }
 }
@@ -77,11 +99,19 @@ export function fileKindRefusal(f, file) {
     const type = file.type;
     const fileKind = type.startsWith('video/') ? 'video'
         : type.startsWith('image/') ? 'image'
-            : type.startsWith('model/') ? 'mesh' : '';
+            : type.startsWith('audio/') ? 'audio'
+                : type.startsWith('model/') ? 'mesh' : '';
     // an untyped file (empty MIME, common for .glb and exotic locals)
     // rides — the door's own validation owns the content truth; this
     // law judges only what the type system states.
-    if (fileKind === '' || fileKind === seatKind)
+    if (fileKind === '')
+        return null;
+    // THE DUAL SEAT: both MIME families ride — the pick's own shape
+    // seats the lane, so image and audio both admit.
+    if (seatKind === 'image+audio' && fileKind !== 'image' && fileKind !== 'audio') {
+        return t('kindRefusal', { name: file.name, seatKind, fileKind });
+    }
+    if (fileKind === seatKind)
         return null;
     return t('kindRefusal', { name: file.name, seatKind, fileKind });
 }
@@ -102,6 +132,8 @@ export function assetKindRefusal(f, url) {
     const fileKind = urlKindOf(url);
     if (fileKind === '' || fileKind === seatKind)
         return null;
+    if (seatKind === 'image+audio' && (fileKind === 'image' || fileKind === 'audio'))
+        return null;
     const leaf = url.slice(url.lastIndexOf('/') + 1);
     return t('kindRefusal', { name: leaf, seatKind, fileKind });
 }
@@ -119,6 +151,12 @@ export function acceptOfField(f) {
         return MESH_SQUARE_ACCEPT;
     if (f.media === 'video')
         return VIDEO_SQUARE_ACCEPT;
+    if (f.media === 'audio')
+        return AUDIO_SQUARE_ACCEPT;
+    // the dual seat offers both families (input-prep's lane-agnostic
+    // source: the OS dialog filters nothing the seat admits).
+    if (f.media === 'image+audio')
+        return DUAL_SQUARE_ACCEPT;
     return DEFAULT_SQUARE_ACCEPT;
 }
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):

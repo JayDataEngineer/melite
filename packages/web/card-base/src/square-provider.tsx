@@ -3,6 +3,8 @@
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
+  AUDIO_SQUARE_ACCEPT,
+  DUAL_SQUARE_ACCEPT,
   DEFAULT_SQUARE_ACCEPT,
   MESH_SQUARE_ACCEPT,
   VIDEO_SQUARE_ACCEPT,
@@ -36,6 +38,10 @@ function mediaKindForField(f: SpecField): string {
   // The single-field media hint (the operator's picker law, live
   // lane 2026-10-28: video seats never list the whole catalog).
   if (f.type === 'file' && f.media === 'video') return 'video'
+  // THE AUDIO SEAT (2026-11-18): an audio-hinted file field lists
+  // the AUDIO library — the media door already serves the kind; the
+  // hint only never had a derivation here.
+  if (f.type === 'file' && f.media === 'audio') return 'audio'
   return 'all'
 }
 
@@ -44,17 +50,28 @@ function mediaKindForField(f: SpecField): string {
  * spellings): mesh seats take mesh, video-hinted seats take video,
  * image seats take the image triad; an unhinted file seat takes
  * EVERYTHING ('all' — the library law). */
-export function seatFileKindOf(f: SpecField): 'image' | 'video' | 'mesh' | 'all' {
+export function seatFileKindOf(f: SpecField): 'image' | 'video' | 'audio' | 'mesh' | 'all' | 'image+audio' {
+  // THE DUAL SEAT (input-prep audits F1/F2): a lane-agnostic source
+  // seat admits BOTH image and audio — the pick's own shape seats
+  // the lane (the studio flips on the pick), so the resting lane's
+  // kind must not pin the drop judge. Checked before the type arms:
+  // the dual is a deliberate widening of an image-typed seat.
+  if (f.media === 'image+audio') return 'image+audio'
   if (f.type === 'mesh') return 'mesh'
   if (f.type === 'image') return 'image'
   if (f.media === 'video') return 'video'
+  // THE AUDIO SEAT (2026-11-18, the operator's ONLY-AUDIO law): an
+  // audio-hinted square takes audio at EVERY door this derivation
+  // feeds — the OS accept, the drop-kind judge, and the from-flow
+  // candidates filter.
+  if (f.media === 'audio') return 'audio'
   return 'all'
 }
 
 /** A candidate URL's kind by extension — the from-flow filter's own
  * vocabulary. Unknown extensions ride ('' matches every seat: the
  * artifact's content truth is the door's, never the picker's). */
-export function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '' {
+export function urlKindOf(url: string): 'video' | 'image' | 'audio' | 'mesh' | '' {
   // THE ESTATE'S OWN VOCABULARY (2026-11-09: the private extension
   // regex had already drifted — svg and avif were images to the
   // estate and '' to the picker, so an avif artifact was INVISIBLE
@@ -65,6 +82,10 @@ export function urlKindOf(url: string): 'video' | 'image' | 'mesh' | '' {
     case 'video': return 'video'
     case 'image': return 'image'
     case 'model': return 'mesh'
+    // THE AUDIO SEAT (2026-11-18): audio artifacts were '' — invisible
+    // to an audio seat's from-flow rows and unjudgeable at the asset
+    // door. The vocabulary always knew them; this seat now says so.
+    case 'audio': return 'audio'
     default: return ''
   }
 }
@@ -83,11 +104,18 @@ export function fileKindRefusal(f: SpecField, file: File): string | null {
   const type = file.type
   const fileKind = type.startsWith('video/') ? 'video'
     : type.startsWith('image/') ? 'image'
-      : type.startsWith('model/') ? 'mesh' : ''
+      : type.startsWith('audio/') ? 'audio'
+        : type.startsWith('model/') ? 'mesh' : ''
   // an untyped file (empty MIME, common for .glb and exotic locals)
   // rides — the door's own validation owns the content truth; this
   // law judges only what the type system states.
-  if (fileKind === '' || fileKind === seatKind) return null
+  if (fileKind === '') return null
+  // THE DUAL SEAT: both MIME families ride — the pick's own shape
+  // seats the lane, so image and audio both admit.
+  if (seatKind === 'image+audio' && fileKind !== 'image' && fileKind !== 'audio') {
+    return t('kindRefusal', { name: file.name, seatKind, fileKind })
+  }
+  if (fileKind === seatKind) return null
   return t('kindRefusal', { name: file.name, seatKind, fileKind })
 }
 
@@ -106,6 +134,7 @@ export function assetKindRefusal(f: SpecField, url: string): string | null {
   if (seatKind === 'all') return null
   const fileKind = urlKindOf(url)
   if (fileKind === '' || fileKind === seatKind) return null
+  if (seatKind === 'image+audio' && (fileKind === 'image' || fileKind === 'audio')) return null
   const leaf = url.slice(url.lastIndexOf('/') + 1)
   return t('kindRefusal', { name: leaf, seatKind, fileKind })
 }
@@ -121,6 +150,10 @@ export function acceptOfField(f: SpecField | null): string {
   if (f === null) return DEFAULT_SQUARE_ACCEPT
   if (f.type === 'mesh') return MESH_SQUARE_ACCEPT
   if (f.media === 'video') return VIDEO_SQUARE_ACCEPT
+  if (f.media === 'audio') return AUDIO_SQUARE_ACCEPT
+  // the dual seat offers both families (input-prep's lane-agnostic
+  // source: the OS dialog filters nothing the seat admits).
+  if (f.media === 'image+audio') return DUAL_SQUARE_ACCEPT
   return DEFAULT_SQUARE_ACCEPT
 }
 
@@ -513,6 +546,12 @@ export interface SourceRowProps {
   /** 'image' narrows the media modal to image; anything else lists
    *  the whole library (the file face). */
   kind?: 'image' | 'file'
+  /** THE DUAL-SOURCE LAW (input-prep audits F1/F2): the seat is
+   *  lane-agnostic — image AND audio both admit (the pick's own
+   *  shape seats the lane, the studio flips), so the drop judge and
+   *  the OS accept must not pin the seat to the resting lane. The
+   *  media-modal narrowing (kind) is untouched. */
+  admitsImageAudio?: boolean
   /** THE EDGE-BEARING SEAT NAME (the list-seat law, 2026-09-26): a
    *  stack cell's visible caption is its INDEX, but the From-flow
    *  picker narrows by the OWNING field's declared edge kind

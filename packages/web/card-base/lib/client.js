@@ -1911,7 +1911,7 @@ window.__ModuleLoader__.load({
 				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
 				out.push({
 					field: name,
-					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — restate it inside the span, or leave it unstated for the family default (the model owns the floor and the ceiling — the declaration, not the form)"
 				});
 			}
 			return out;
@@ -9126,7 +9126,7 @@ window.__ModuleLoader__.load({
 				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
 				out.push({
 					field: name,
-					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — restate it inside the span, or leave it unstated for the family default (the model owns the floor and the ceiling — the declaration, not the form)"
 				});
 			}
 			return out;
@@ -13310,6 +13310,16 @@ window.__ModuleLoader__.load({
 		const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
 		const MESH_SQUARE_ACCEPT = ".glb,.gltf";
 		const VIDEO_SQUARE_ACCEPT = "video/mp4,video/webm,video/quicktime";
+		/** THE AUDIO SEAT (the operator's law, 2026-11-18: "voice changer
+		*  input squares need to ONLY ACCEPT AUDIO"): the audio/* MIME plus
+		*  the estate vocabulary's own audio extensions (mediaKinds.ts —
+		*  the same list the library door and the drop judge ride), never a
+		*  private list that drifts from the estate's. */
+		const AUDIO_SQUARE_ACCEPT = "audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoice";
+		/** THE DUAL SEAT (input-prep audits F1/F2): a lane-agnostic source
+		*  seat offers both families at the OS dialog — the image triad plus
+		*  the audio vocabulary, the union of what the dual judge admits. */
+		const DUAL_SQUARE_ACCEPT = `${DEFAULT_SQUARE_ACCEPT},${AUDIO_SQUARE_ACCEPT}`;
 		/**
 		* @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
 		* @returns the square: thumb/empty face, the verbs' controls, and the caption.
@@ -14085,6 +14095,7 @@ window.__ModuleLoader__.load({
 			if (f.type === "image") return "image";
 			if (f.type === "mesh") return "model";
 			if (f.type === "file" && f.media === "video") return "video";
+			if (f.type === "file" && f.media === "audio") return "audio";
 			return "all";
 		}
 		/** THE SEAT'S FILE KIND — one derivation for the OS accept, the
@@ -14093,9 +14104,11 @@ window.__ModuleLoader__.load({
 		* image seats take the image triad; an unhinted file seat takes
 		* EVERYTHING ('all' — the library law). */
 		function seatFileKindOf(f) {
+			if (f.media === "image+audio") return "image+audio";
 			if (f.type === "mesh") return "mesh";
 			if (f.type === "image") return "image";
 			if (f.media === "video") return "video";
+			if (f.media === "audio") return "audio";
 			return "all";
 		}
 		/** A candidate URL's kind by extension — the from-flow filter's own
@@ -14107,6 +14120,7 @@ window.__ModuleLoader__.load({
 				case "video": return "video";
 				case "image": return "image";
 				case "model": return "mesh";
+				case "audio": return "audio";
 				default: return "";
 			}
 		}
@@ -14122,8 +14136,14 @@ window.__ModuleLoader__.load({
 			const seatKind = seatFileKindOf(f);
 			if (seatKind === "all") return null;
 			const type = file.type;
-			const fileKind = type.startsWith("video/") ? "video" : type.startsWith("image/") ? "image" : type.startsWith("model/") ? "mesh" : "";
-			if (fileKind === "" || fileKind === seatKind) return null;
+			const fileKind = type.startsWith("video/") ? "video" : type.startsWith("image/") ? "image" : type.startsWith("audio/") ? "audio" : type.startsWith("model/") ? "mesh" : "";
+			if (fileKind === "") return null;
+			if (seatKind === "image+audio" && fileKind !== "image" && fileKind !== "audio") return t("kindRefusal", {
+				name: file.name,
+				seatKind,
+				fileKind
+			});
+			if (fileKind === seatKind) return null;
 			return t("kindRefusal", {
 				name: file.name,
 				seatKind,
@@ -14145,6 +14165,7 @@ window.__ModuleLoader__.load({
 			if (seatKind === "all") return null;
 			const fileKind = urlKindOf(url);
 			if (fileKind === "" || fileKind === seatKind) return null;
+			if (seatKind === "image+audio" && (fileKind === "image" || fileKind === "audio")) return null;
 			return t("kindRefusal", {
 				name: url.slice(url.lastIndexOf("/") + 1),
 				seatKind,
@@ -14162,6 +14183,8 @@ window.__ModuleLoader__.load({
 			if (f === null) return DEFAULT_SQUARE_ACCEPT;
 			if (f.type === "mesh") return MESH_SQUARE_ACCEPT;
 			if (f.media === "video") return VIDEO_SQUARE_ACCEPT;
+			if (f.media === "audio") return AUDIO_SQUARE_ACCEPT;
+			if (f.media === "image+audio") return DUAL_SQUARE_ACCEPT;
 			return DEFAULT_SQUARE_ACCEPT;
 		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
@@ -14575,7 +14598,8 @@ window.__ModuleLoader__.load({
 			const field = {
 				name: props.name ?? "__source_row__",
 				label: props.label,
-				type: props.kind === "image" ? "image" : "file"
+				type: props.kind === "image" ? "image" : "file",
+				...props.admitsImageAudio === true ? { media: "image+audio" } : {}
 			};
 			const { square, wireMenu } = useSquareProvider((0, react.useCallback)((name, v) => {
 				props.onEdit(v);
@@ -19354,6 +19378,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		exports.ASSET_DRAG_MIME = ASSET_DRAG_MIME;
+		exports.AUDIO_SQUARE_ACCEPT = AUDIO_SQUARE_ACCEPT;
 		exports.AudioLines = AudioLines;
 		exports.AudioStagePreview = AudioStagePreview;
 		exports.Box = Box;
@@ -19367,6 +19392,7 @@ window.__ModuleLoader__.load({
 		exports.ControlRow = ControlRow;
 		exports.Crop = Crop;
 		exports.DEFAULT_SQUARE_ACCEPT = DEFAULT_SQUARE_ACCEPT;
+		exports.DUAL_SQUARE_ACCEPT = DUAL_SQUARE_ACCEPT;
 		exports.DeclarativeStudio = DeclarativeStudio;
 		exports.Dices = Dices;
 		exports.EmptyState = EmptyState;
