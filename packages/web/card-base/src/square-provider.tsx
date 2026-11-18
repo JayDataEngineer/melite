@@ -14,6 +14,7 @@ import {
 } from './square.tsx'
 import { readAsDataURL } from './chrome.ts'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
+import { menuAnchorProps } from './menu-anchor.ts'
 import { uploadInputFile } from './wire.ts'
 import { type SpecField } from './spec.ts'
 import type { ChainRunCandidate } from './runs-policy.ts'
@@ -171,6 +172,11 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
 } {
   const [mirror, setMirror] = useState<Record<string, string>>({})
   const [pickAt, setPickAt] = useState<{ rect: DOMRect; field: SpecField } | null>(null)
+  // THE LIVE ANCHOR SEAT (menu-anchor.ts): the picked square's own
+  // element, written at pick time — BEFORE pickAt flips the menu
+  // open — so newer kernels (which anchor the portaled list to
+  // anchorRef.current, not to a captured rect) read a live element.
+  const menuAnchorRef = useRef<HTMLElement | null>(null)
   // THE PICKER MODAL seat (2026-09-13): From flow / From media open
   // ONE selector modal — mode decides the rows; From file goes to the
   // OS dialog. The flat click-through picker is dead (the operator:
@@ -272,6 +278,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       verbs: {
         onPick: (anchor?: unknown) => {
           const el = anchor instanceof HTMLElement ? anchor : null
+          if (el !== null) menuAnchorRef.current = el
           setPickAt(el !== null
             ? { rect: el.getBoundingClientRect(), field: f }
             : { rect: new DOMRect(8, 8, 1, 1), field: f })
@@ -299,8 +306,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   }
   const sourceMenu = pickAt === null ? null : h(Menu, {
     open: true,
-    anchor: null,
-    getAnchorRect: () => pickAt.rect,
+    ...menuAnchorProps(menuAnchorRef, pickAt.rect),
     items: [
       { id: '__flow__', label: t('fromFlow') },
       { id: '__media__', label: t('fromMedia') },

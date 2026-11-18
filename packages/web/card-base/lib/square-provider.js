@@ -5,6 +5,7 @@ import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import { AUDIO_SQUARE_ACCEPT, DUAL_SQUARE_ACCEPT, DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
 import { readAsDataURL } from "./chrome.js";
 import { mediaKindOf } from '@melite/contracts/mediaKinds';
+import { menuAnchorProps } from "./menu-anchor.js";
 import { uploadInputFile } from "./wire.js";
 import { rejectionVoice } from "./rejection-voice.js";
 import { t } from "./locales/square.js";
@@ -170,6 +171,11 @@ export function acceptOfField(f) {
 export function useSquareProvider(onEdit, wire) {
     const [mirror, setMirror] = useState({});
     const [pickAt, setPickAt] = useState(null);
+    // THE LIVE ANCHOR SEAT (menu-anchor.ts): the picked square's own
+    // element, written at pick time — BEFORE pickAt flips the menu
+    // open — so newer kernels (which anchor the portaled list to
+    // anchorRef.current, not to a captured rect) read a live element.
+    const menuAnchorRef = useRef(null);
     // THE PICKER MODAL seat (2026-09-13): From flow / From media open
     // ONE selector modal — mode decides the rows; From file goes to the
     // OS dialog. The flat click-through picker is dead (the operator:
@@ -277,6 +283,8 @@ export function useSquareProvider(onEdit, wire) {
             verbs: {
                 onPick: (anchor) => {
                     const el = anchor instanceof HTMLElement ? anchor : null;
+                    if (el !== null)
+                        menuAnchorRef.current = el;
                     setPickAt(el !== null
                         ? { rect: el.getBoundingClientRect(), field: f }
                         : { rect: new DOMRect(8, 8, 1, 1), field: f });
@@ -304,8 +312,7 @@ export function useSquareProvider(onEdit, wire) {
     };
     const sourceMenu = pickAt === null ? null : h(Menu, {
         open: true,
-        anchor: null,
-        getAnchorRect: () => pickAt.rect,
+        ...menuAnchorProps(menuAnchorRef, pickAt.rect),
         items: [
             { id: '__flow__', label: t('fromFlow') },
             { id: '__media__', label: t('fromMedia') },

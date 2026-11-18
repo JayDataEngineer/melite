@@ -37,7 +37,7 @@
  *        renders kind.fields through the same constructor atoms —
  *        the fields NEVER render flat on the card form.
  */
-import { createElement as h, useEffect, useState } from 'react';
+import { createElement as h, useEffect, useRef, useState } from 'react';
 import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import css from './card.module.css';
 import { SpecAtom } from "./form.js";
@@ -46,6 +46,7 @@ import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isHybridKind
 import { modCommitWrite } from '@melite/contracts/formSpec';
 import { LORA_ACCEPT } from '@melite/contracts/loraExtensions';
 import { SpecMenuSelect } from "./atoms.js";
+import { menuAnchorProps } from "./menu-anchor.js";
 import { InputSquare } from "./square.js";
 import { Tip } from "./layout.js";
 import { rejectionVoice } from "./rejection-voice.js";
@@ -278,6 +279,10 @@ export function ModifiersSection(props) {
     // THE KIND PICKER (DSH Menu — portal: true escapes the zoom card's
     // clipping).
     const [pickAt, setPickAt] = useState(null);
+    // THE LIVE ANCHOR SEAT (menu-anchor.ts): the add tile's own
+    // element, written before pickAt opens the menu — the same
+    // version-tolerant handoff the source square rides.
+    const menuAnchorRef = useRef(null);
     // the leaf editor (DSH Modal): which kind, create or edit, and
     // the opened entry's frozen identity (resolved from the live bag
     // at save — see resolveSeatEntry).
@@ -941,7 +946,9 @@ export function ModifiersSection(props) {
                 'data-subcard-add': 'mod',
                 'aria-label': chromeCopy.addModifierAria,
                 onClick: (e) => {
-                    setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+                    const btn = e.currentTarget;
+                    menuAnchorRef.current = btn;
+                    setPickAt({ rect: btn.getBoundingClientRect() });
                 },
             }, h(IconPlusOutlineRegular, { className: css.squareGlyph })),
         })
@@ -951,8 +958,7 @@ export function ModifiersSection(props) {
     // procedural path around the declarative contract).
     pickAt !== null ? h(Menu, {
         open: true,
-        anchor: null,
-        getAnchorRect: () => pickAt.rect,
+        ...menuAnchorProps(menuAnchorRef, pickAt.rect),
         items: addable.map((k) => ({ id: k.kind, label: k.label })),
         onSelect: (id) => {
             setPickAt(null);

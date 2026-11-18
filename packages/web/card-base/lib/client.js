@@ -13452,6 +13452,21 @@ window.__ModuleLoader__.load({
 			}) : null);
 		}
 		//#endregion
+		//#region src/menu-anchor.ts
+		/** Props handoff for one owner-detached Menu render.
+		*  @param anchorRef - holds the picked trigger element; written by
+		*  the owner's pick handler before opening.
+		*  @param rect - the rect captured from that element at pick time.
+		*  @returns the anchor subset to spread into the Menu props
+		*  alongside `open: true, portal: true`. */
+		function menuAnchorProps(anchorRef, rect) {
+			return {
+				anchor: null,
+				anchorRef,
+				getAnchorRect: () => rect
+			};
+		}
+		//#endregion
 		//#region src/estate-remote.ts
 		/** The estate's domain refusal ({ok:false} answers): the message
 		* rides verbatim; the class separates DOMAIN verdicts from transport
@@ -14198,6 +14213,7 @@ window.__ModuleLoader__.load({
 		function useSquareProvider(onEdit, wire) {
 			const [mirror, setMirror] = (0, react.useState)({});
 			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const menuAnchorRef = (0, react.useRef)(null);
 			const [modalAt, setModalAt] = (0, react.useState)(null);
 			const [pickQuery, setPickQuery] = (0, react.useState)("");
 			const fieldRef = (0, react.useRef)(null);
@@ -14278,6 +14294,7 @@ window.__ModuleLoader__.load({
 					verbs: {
 						onPick: (anchor) => {
 							const el = anchor instanceof HTMLElement ? anchor : null;
+							if (el !== null) menuAnchorRef.current = el;
 							setPickAt(el !== null ? {
 								rect: el.getBoundingClientRect(),
 								field: f
@@ -14323,8 +14340,7 @@ window.__ModuleLoader__.load({
 			};
 			const sourceMenu = pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
+				...menuAnchorProps(menuAnchorRef, pickAt.rect),
 				items: [
 					{
 						id: "__flow__",
@@ -16219,6 +16235,7 @@ window.__ModuleLoader__.load({
 			const [dragTile, setDragTile] = (0, react.useState)(null);
 			const [overTile, setOverTile] = (0, react.useState)(null);
 			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const menuAnchorRef = (0, react.useRef)(null);
 			const [leaf, setLeaf] = (0, react.useState)(null);
 			const [namedLeaf, setNamedLeaf] = (0, react.useState)(null);
 			const [leafError, setLeafError] = (0, react.useState)(null);
@@ -16647,13 +16664,14 @@ window.__ModuleLoader__.load({
 					"data-subcard-add": "mod",
 					"aria-label": chromeCopy.addModifierAria,
 					onClick: (e) => {
-						setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+						const btn = e.currentTarget;
+						menuAnchorRef.current = btn;
+						setPickAt({ rect: btn.getBoundingClientRect() });
 					}
 				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph }))
 			}) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
+				...menuAnchorProps(menuAnchorRef, pickAt.rect),
 				items: addable.map((k) => ({
 					id: k.kind,
 					label: k.label
