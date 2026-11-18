@@ -879,7 +879,7 @@ describe('doors apply', () => {
       effect: (): undefined => undefined,
       llm: undefined,
       registry: new Map([['rt', {
-        fibers: [{ uid: 7, store: undefined, inertia: undefined, ctx: {} }],
+        fibers: [{ uid: 7, state: 0 /* FiberState.PENDING */, inertia: undefined, ctx: {} }],
       }]]),
     } as unknown as Parameters<typeof estateStillActivating>[1]
     const realNow = Date.now
@@ -897,6 +897,57 @@ describe('doors apply', () => {
       // next probe re-stamped the waiter FRESH (the 503 flap)
       assert.ok(gate.firstSeen.has(7), 'the still-activating uid\u2019s stamp SURVIVED the clear')
       assert.equal(gate.firstSeen.get(7), 100_000, 'the survivor keeps its ORIGINAL stamp — never re-armed, never freshened')
+    } finally {
+      Date.now = realNow
+    }
+  })
+
+  test('THE ACTIVATING READ — lifecycle state, never the store ghost: a 4.1.0-shaped ACTIVE census is quiet, FAILED answers its own voice, and only true transitions hold the gate', async () => {
+    // THE VACUOUS-READ COUNTER-ARM (reference-audit round 2, P2):
+    // the 4.1.0 Fiber class dropped `public store`, so the OLD
+    // classifier — `store === undefined` — read undefined for
+    // EVERY live fiber on that train: an all-ACTIVE, fully serving
+    // census classified as "still activating" and closed the seat
+    // doors for the full grace window on every lazy mount and
+    // remount. The 4.1.0-shaped fixtures below carry NO store
+    // property at all (exactly the real class shape): under the
+    // old read every one of them read "activating". The law is the
+    // lifecycle STATE — PENDING/LOADING/UNLOADING hold the gate;
+    // ACTIVE serves; FAILED answers its own honest 502, never the
+    // pending gate.
+    const { estateStillActivating } = await import('../src/doors.ts')
+    const gate41 = (): PendingGateStamps => ({ pendingSince: null, quietSince: null, firstSeen: new Map(), lastIdle: new Map() })
+    const view41 = (fibers: Array<{ uid: number; state: number; inertia?: Promise<void> }>): Parameters<typeof estateStillActivating>[1] => ({
+      get: (): undefined => undefined,
+      effect: (): undefined => undefined,
+      llm: undefined,
+      registry: new Map([['rt', { fibers: fibers.map((f) => ({ ...f, ctx: {} })) }]]),
+    } as unknown as Parameters<typeof estateStillActivating>[1])
+    const t0 = 1_000_000
+    const realNow = Date.now
+    try {
+      Date.now = (): number => t0
+      // the 4.1.0 shape: NO store member exists to read — an
+      // ACTIVE census must be QUIET and must birth no stamps
+      const activeGate = gate41()
+      assert.equal(estateStillActivating(activeGate, view41([{ uid: 1, state: 2 /* FiberState.ACTIVE */ }, { uid: 2, state: 2 }])), false,
+        'an all-ACTIVE serving census opens the gate — the store ghost never closes it')
+      assert.equal(activeGate.firstSeen.size, 0, 'an ACTIVE fiber births no activation stamp')
+      // FAILED: the callback threw — the fiber is DONE, not
+      // activating; its seat answers the honest 502, never 503
+      const failedGate = gate41()
+      assert.equal(estateStillActivating(failedGate, view41([{ uid: 3, state: 3 /* FiberState.FAILED */ }])), false,
+        'a FAILED fiber is past activating — the pending gate never speaks for it')
+      assert.equal(failedGate.firstSeen.size, 0, 'a FAILED fiber births no activation stamp')
+      // the real boot race DOES hold the gate: PENDING (waiting on
+      // required services) and LOADING (callback running) are the
+      // true transitions, and UNLOADING covers the remount race
+      for (const [name, state] of [['PENDING', 0], ['LOADING', 1], ['UNLOADING', 5]] as const) {
+        const raceGate = gate41()
+        assert.equal(estateStillActivating(raceGate, view41([{ uid: 4, state }])), true,
+          `a ${name} fiber holds the gate open — a genuine transition gets its window`)
+        assert.equal(raceGate.firstSeen.get(4), t0, `a ${name} fiber births its first-seen stamp now`)
+      }
     } finally {
       Date.now = realNow
     }

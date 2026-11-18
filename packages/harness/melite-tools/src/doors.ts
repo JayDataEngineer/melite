@@ -209,7 +209,15 @@ interface CtxView {
     values(): Iterable<{
       fibers: Iterable<{
         uid: number | null
-        store: unknown
+        /** The fiber's lifecycle state (cordis FiberState, const
+         *  enum values identical on both trains — 4.0.5 and 4.1.0
+         *  fiber.ts: PENDING=0, LOADING=1, ACTIVE=2, FAILED=3,
+         *  DISPOSED=4, UNLOADING=5). The activating census reads
+         *  THIS, never the store member: 4.1.0's Fiber dropped
+         *  `public store`, so a store read is undefined for every
+         *  live fiber on that train — vacuous as an activating
+         *  signal (the activating-read cure, 2026-11-18). */
+        state: number
         inertia?: Promise<void>
         /** The fiber's own context — the preset-scope membership
          *  test reads its prototype chain against the agentPresets
@@ -321,7 +329,10 @@ function presetScopeContexts(c: CtxView): object[] {
  *  @param gate the per-apply stamp state (mutated: stamps, re-arm
  *   clear, idle reaping)
  *  @param c the ctx view the gate reads fibers from
- *  @returns true while any seat fiber is still activating */
+ *  @returns the gate's FRESH-RACER answer: true while any seat
+ *   fiber has been activating for less than the grace window —
+ *   aged permanent waiters yield false (past their window they
+ *   keep their honest probe voice, never the gate) */
 export const estateStillActivating = (gate: PendingGateStamps, c: CtxView): boolean => {
   const now = Date.now()
   const presetScopes = presetScopeContexts(c)
@@ -338,7 +349,24 @@ export const estateStillActivating = (gate: PendingGateStamps, c: CtxView): bool
       // holes. The gate answers ONE question — is the ESTATE
       // composition (the lane's own seats) still activating — and
       // a preset revision's state is not that answer at any age.
-      if (fiber.uid !== null && (fiber.store === undefined || fiber.inertia !== undefined)) {
+      // THE ACTIVATING READ (2026-11-18, reference-audit round 2):
+      // the signal is the fiber's lifecycle STATE — the cordis
+      // FiberState const enum, identical on both trains the estate
+      // serves (4.0.5 lockfile, 4.1.0 global train): a fiber still
+      // PENDING (waiting on required services), LOADING (callback
+      // running), or UNLOADING (a remount race mid-teardown) is
+      // still activating; ACTIVE serves, FAILED answers its own
+      // honest 502, and DISPOSED fibers are already excluded by the
+      // uid guard. The PREVIOUS read — `store === undefined` — was
+      // 4.0.5-truthful (store is assigned when the callback
+      // completes) but VACUOUS on the 4.1.0 train: that Fiber
+      // class dropped `public store`, so the property read returned
+      // undefined for EVERY live fiber and the census collapsed to
+      // "any non-preset fiber exists" (a lazy mount or remount
+      // closed the seat doors 503 for the full grace window). The
+      // state read measures the transition itself, not a property
+      // ghost.
+      if (fiber.uid !== null && (fiber.state === 0 /* FiberState.PENDING */ || fiber.state === 1 /* LOADING */ || fiber.state === 5 /* UNLOADING */ || fiber.inertia !== undefined)) {
         if (!presetScopes.some((scopeCtx) => Object.prototype.isPrototypeOf.call(scopeCtx, fiber.ctx))) activating.add(fiber.uid)
       }
     }
@@ -368,14 +396,22 @@ export const estateStillActivating = (gate: PendingGateStamps, c: CtxView): bool
     if (gate.quietSince === null) gate.quietSince = Date.now()
     // only a SUSTAINED lift re-arms the grace window; a flap's
     // momentary lift does not. THE 4.1.0 STORELESS BRICK (live
-    // 2026-11-18, global dsh 0.2.2-rc.4 → cordis 4.1.0: the boot
-    // census measured 305 permanent waiters — seat fibers whose
-    // activation never completes and which therefore stay in the
-    // registry, activating, for the process's whole life; the old
-    // wholesale clear read them as ended, so each sustained quiet
-    // wiped their aged stamps, the next request re-stamped all of
-    // them fresh, and the seat doors flapped 503 ~90% of every
-    // 2-minute cycle while the estate served fine in the holes):
+    // 2026-11-18, global dsh 0.2.2-rc.4 → cordis 4.1.0): the boot
+    // census measured 305 non-preset fibers under the old
+    // store-undefined read — on that train the read is true of
+    // EVERY live fiber (the 4.1.0 Fiber dropped `public store`),
+    // so the figure counted the whole non-preset census, not only
+    // never-completing waiters; the activating read is now
+    // state-based (the cure above). The retention fact the clear
+    // law rides is source-verified on both trains: fibers never
+    // self-remove until disposal (runtime.fibers pushes at birth,
+    // only the disposer removes), so a waiter whose transition
+    // never completes stays in the census for the process's whole
+    // life. The old wholesale clear read such retained waiters as
+    // ended, so each sustained quiet wiped their aged stamps, the
+    // next request re-stamped all of them fresh, and the seat
+    // doors flapped 503 ~90% of every 2-minute cycle while the
+    // estate served fine in the holes):
     // the clear drops only ENDED lifecycles — uids absent from the
     // activating census this pass. A waiter still activating keeps
     // its ORIGINAL stamp (the monotonic law three comments up — the

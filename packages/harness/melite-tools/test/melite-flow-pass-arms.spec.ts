@@ -1748,6 +1748,34 @@ describe('melite_flow bench — THE ADOPT LAW (a row owning a run is adopted, ne
     assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'a wrong-code voice NEVER heals into a fresh press — that is how doubles are born')
   })
 
+  test('a wordless 2xx probe body STOPS the press naming the wordless answer — the conservative face, never a silent adoption', async () => {
+    // THE UNREADABLE-BODY EDGE (code-audit round 2, P3): the probe
+    // can RESOLVE 2xx with no status word at all (a body shaped
+    // `{ok: true}`, a truncated row) — not gone (no typed 404
+    // code), not readable (no word to fold). The law is
+    // conservative: nothing is adopted forward, nothing re-sent —
+    // the stopped receipt names the WORDLESS answer verbatim so the
+    // operator reads what the registry actually said, never an
+    // empty "unreadable ()".
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([liveRow('s_0', 'r_silent')]) }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStatus') return { status: 200, body: { ok: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped', 'a wordless body is an unknown state — the press stops, it never guesses')
+    assert.match(String(out.error), /unreadable \(the probe answered 2xx with no status word\)/, 'the face names the wordless answer verbatim — never an empty paren')
+    assert.match(String(out.error), /r_silent/, 'the receipt carries the run id — the row memory stays addressable')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'a wordless body NEVER heals into a fresh press or an adoption settle')
+  })
+
   test('a QUEUED fold adopts too — pending row memory is live memory (the patch word folds to the queue\u2019s own live vocabulary)', async () => {
     // the drafts/patch door clears a done mark to 'pending' for a
     // re-run; when the run behind the row is STILL in flight the row

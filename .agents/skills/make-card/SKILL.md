@@ -6,12 +6,16 @@ description: Use when authoring a new melite card (a compose-surface operation l
 # Make a card
 
 A card is ONE PACKAGE: `packages/<genre>/<card>/` with `src/card.ts`
-(the registration plugin, the `./card` face), a `src/index.ts` host
-marker (registers NOTHING node-side), and — when the card ships an
-authoring surface — a `src/client/index.ts` browser face that mounts
-the studio on the `cards.stage.view` seam. Optional `src/agents/`
-(agent-facing docs). One card one package — never a second card in
-the same package.
+(the registration plugin, the `./card` face) and — per the TWO
+LAWFUL VARIANTS below — either a `src/index.ts` host marker
+(studio/tool-bearing cards) or no node entry at all beyond the card
+itself (`card.ts`-IS-the-main cards, where `.` exports
+`./lib/card.js` directly: `sfx`, `voice-change`). When the card
+ships an authoring surface, a `src/client/index.ts` browser face
+mounts the studio on the `cards.stage.view` seam. A card that
+composes model families carries a `src/family-seats.ts` (see step
+2b). Optional `src/agents/` (agent-facing docs). One card one
+package — never a second card in the same package.
 
 ## 1. The genre dir
 
@@ -22,22 +26,47 @@ skill; cards never live there). New genre? Read
 
 ## 2. The files
 
+There are TWO lawful shapes — pick by what the card ships:
+
+**(a) studio / tool-bearing cards** (`input-prep`, `rig`, `music`,
+`tts` — the card seats tools or a studio beside its compose face):
+`.` exports `./lib/index.js` (the host marker's empty apply), plus
+the `./card` face and `./client` when a studio ships.
+
+**(b) `card.ts`-IS-the-main cards** (`sfx`, `voice-change` — pure
+compose surfaces): NO `src/index.ts`, the `.` export IS
+`./lib/card.js` — the SSOT row is the bare specifier, one face, no
+host marker to write.
+
 ```
 packages/<genre>/<card>/
   package.json     # name "@melite/<genre>-<card>", private. LITERAL
-                   # exports rows (step 4) + dsh.client declaration
-                   # (step 4) + "typecheck": "tsc --noEmit" (the
-                   # battery gates every package that owns the script,
-                   # the day it declares it).
+                   # exports rows (step 4): variant (a) "." →
+                   # ./lib/index.js + "./card" (+ "./client" when a
+                   # studio ships); variant (b) "." → ./lib/card.js
+                   # + "./card" — nothing else. + dsh.client
+                   # declaration (step 4) + "typecheck":
+                   # "tsc --noEmit" (the battery gates every package
+                   # that owns the script, the day it declares it).
   tsconfig.json    # copy from a sibling card package (rig is the
                    # reference: per-program ambient; types:["node"]
                    # lives in tsconfig.base.json, inherited)
   tsdown.config.ts # ONLY when a studio ships: the shared clientBundle
                    # preset (step 4)
-  src/index.ts     # the HOST marker: export name/inject/apply, apply
-                   # is empty — the card rides ./card, the studio rides
-                   # the client face (copy from input-prep)
+  src/index.ts     # VARIANT (a) ONLY: the HOST marker — export
+                   # name/inject/apply, apply is empty — the card
+                   # rides ./card, the studio rides the client face
+                   # (copy from input-prep)
   src/card.ts      # THE registration plugin (shape below)
+  src/family-seats.ts   # when the card composes model families: the
+                   # card's ONLY bridge to the family package — zero
+                   # static imports, a guarded dynamic import primed
+                   # once at registration and read synchronously by
+                   # the post-boot compose dispatch (copy from
+                   # voice-change — the DEGRADE law: a missing
+                   # family package costs ITS OWN seat, compose
+                   # refuses loud naming the absent family; the
+                   # family-coverage wall judges the boarded ids)
   src/client/index.ts    # ONLY when a studio ships: the adapter (step 4)
   src/ui/studio/   # ONLY when a studio ships: the studio body files
   src/agents/      # OPTIONAL agent docs
@@ -49,7 +78,8 @@ packages/<genre>/<card>/
                    # studio ships (dom lane)
 ```
 
-`src/card.ts` — the shape (copy from `packages/3d/rig/src/card.ts`):
+`src/card.ts` — the shape (copy from `packages/3d/rig/src/card.ts`
+or, for a variant-(b) pure compose card, `packages/audio/voice-change/src/card.ts`):
 
 ```ts
 import type { Context } from '@melite/comfyui-card-kit/card-definition'

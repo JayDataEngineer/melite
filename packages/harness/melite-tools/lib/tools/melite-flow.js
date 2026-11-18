@@ -743,7 +743,7 @@ async function runBench(estate, a, signal, only) {
                 return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                     ...(intent !== '' ? { intent } : {}),
                     ...(only !== undefined ? { stage: only } : {}),
-                    error: `stage ${stageId} owns run ${adoptPrior} but its state is unreadable (${probeWhy}) — nothing was sent for this stage or any behind it; read ledger_tail or run_status with that id, then re-press`,
+                    error: `stage ${stageId} owns run ${adoptPrior} but its state is unreadable (${probeWhy !== '' ? probeWhy : 'the probe answered 2xx with no status word'}) — nothing was sent for this stage or any behind it; read ledger_tail or run_status with that id, then re-press`,
                     ...pressCensus(), pass };
             }
             // the stale memory heals below — the run is gone, the row

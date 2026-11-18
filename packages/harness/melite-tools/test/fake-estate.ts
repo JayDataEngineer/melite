@@ -76,13 +76,16 @@ export function fakeEstateStatus(
           if (lane.startsWith('bench') && r.status === 404) {
             throw new RemoteError('bench/not-found', msg, { session: 'main' })
           }
-          // A runs-lane 404 is the registry's own gone voice — the
+          // A runsStatus 404 is the registry's own gone voice — the
           // typed code runs/unknown-run, exactly what runsRegistry
           // throws for a run it no longer holds (the adopt probe and
           // every run_status consumer classifies on this CODE, never
           // on prose). Other 4xx stay runs/flow-compile: validation
-          // refusals happen before any run exists.
-          if (lane.startsWith('runs') && r.status === 404) {
+          // refusals happen before any run exists. (The stop and
+          // attribute lanes carry a SIBLING direct-throw pair —
+          // runs/run-unknown, both 404 at the doors seat — named in
+          // runsErrorCodes; this fake needs only the probe's seam.)
+          if (lane === 'runsStatus' && r.status === 404) {
             throw new RemoteError('runs/unknown-run', msg, { runId: '' })
           }
           throw new RemoteError('runs/flow-compile', msg, { loc: 'flow' })

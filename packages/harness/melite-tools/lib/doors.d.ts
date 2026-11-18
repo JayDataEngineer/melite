@@ -71,7 +71,15 @@ interface CtxView {
         values(): Iterable<{
             fibers: Iterable<{
                 uid: number | null;
-                store: unknown;
+                /** The fiber's lifecycle state (cordis FiberState, const
+                 *  enum values identical on both trains — 4.0.5 and 4.1.0
+                 *  fiber.ts: PENDING=0, LOADING=1, ACTIVE=2, FAILED=3,
+                 *  DISPOSED=4, UNLOADING=5). The activating census reads
+                 *  THIS, never the store member: 4.1.0's Fiber dropped
+                 *  `public store`, so a store read is undefined for every
+                 *  live fiber on that train — vacuous as an activating
+                 *  signal (the activating-read cure, 2026-11-18). */
+                state: number;
                 inertia?: Promise<void>;
                 /** The fiber's own context — the preset-scope membership
                  *  test reads its prototype chain against the agentPresets
@@ -156,7 +164,10 @@ export interface PendingGateStamps {
  *  @param gate the per-apply stamp state (mutated: stamps, re-arm
  *   clear, idle reaping)
  *  @param c the ctx view the gate reads fibers from
- *  @returns true while any seat fiber is still activating */
+ *  @returns the gate's FRESH-RACER answer: true while any seat
+ *   fiber has been activating for less than the grace window —
+ *   aged permanent waiters yield false (past their window they
+ *   keep their honest probe voice, never the gate) */
 export declare const estateStillActivating: (gate: PendingGateStamps, c: CtxView) => boolean;
 /** The estate lanes' error map (the false-death fix, 2026-10-08,
  *  corrected twice — the second critique caught bench/
