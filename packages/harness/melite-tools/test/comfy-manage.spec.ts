@@ -1106,7 +1106,7 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
     assert.match(empty, /restart counter is at 3/, 'the journal lines still render above the quiet app log')
   })
 
-  // THE BRANCH-EDGE BURN (scope C, 2026-11-19): the census carries
+  // THE BRANCH-EDGE BURN (scope C, 2026-11-06): the census carries
   // only its PRESENT truth — an absent count says nothing, a zero oom
   // count is silence, an unnamed exit code still names the exit — and
   // the poll render names a settled op's cause.

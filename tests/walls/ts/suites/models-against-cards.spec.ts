@@ -520,7 +520,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // 482 -> 480 (2026-11-09, the removal): the retired edit family
     // left the tree — its two tuning-boolean schema rows died with the
     // card's claim-law drop.
-    // 480 -> 481 (2026-11-19, queue 12's file plane): h3's
+    // 480 -> 481 (2026-11-10, queue 12's file plane): h3's
     // output_name row joins the judged face — the deliverable slug,
     // the ONE deliberate text field (born on its own 'naming' tab,
     // folded under General the same day — the tab-room ask; the
@@ -2020,7 +2020,7 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // ParamSpec rows sync against the card schema per carried
     // address (length/width/height/steps/shift_video/shift_audio
     // bounds + the seed sentinel; offenders empty).
-    // 774 -> 777 (2026-11-19, queue 12's file plane): output_name
+    // 774 -> 777 (2026-11-10, queue 12's file plane): output_name
     // joins the film action's ParamSpec (the advertised naming row)
     // and the h3 schema declares it — one agreeing pair per boarding
     // card (three carry the h3 family); a string row owns no bounds

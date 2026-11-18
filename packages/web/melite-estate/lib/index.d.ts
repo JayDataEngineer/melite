@@ -84,7 +84,7 @@ export declare const Config: Schema<Config>;
  * as one estate per repo.
  *
  * Two naming laws refuse LOUD rather than fall to a cwd tree (the
- * silent-relative-root death, the 2026-11-30 cold-boot audit):
+ * silent-relative-root death, the 2026-10-30 cold-boot audit):
  * - the empty string is ABSENT, all three fields — a profile row
  *   templated from the retired MELITE_STATE_ROOT env renders ""
  *   exactly where the var is unset, and resolveStateRoot's own

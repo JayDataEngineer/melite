@@ -1094,7 +1094,7 @@ describe("validate", () => {
 
   it("THE DECLARED-KEY SPARING (queue 12's file plane): a card that DECLARES output_name walks it into admission — the stem reaches the compose", async () => {
     // The lift's own law (the arm above) holds for POLICY keys on
-    // cards that do not declare them. The file plane (2026-11-19,
+    // cards that do not declare them. The file plane (2026-11-10,
     // the operator's naming press) seats the stem ON the card: h3's
     // carrier declares output_name, so the reserved list must NOT
     // strip it — the walk receives it and the renderer threads it

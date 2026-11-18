@@ -1046,7 +1046,7 @@ function renderH3Film(p, g, facts, model, runId) {
         // clips-free arm rides — container mux only (CreateVideo +
         // SaveVideo h264/mp4 on the decoded window files), never the
         // mix. The mix rides it: audio carries the node's output.
-        // THE OUTPUT-NAME FILE TAIL (2026-11-19, the operator's naming
+        // THE OUTPUT-NAME FILE TAIL (2026-11-10, the operator's naming
         // press): a spelled output_name rides the DELIVERED film's
         // prefix leaf (`h3_t4_film_<slug>`) so the artifact is BORN
         // named — absent, the machinery prefix is byte-frozen. Both
@@ -2537,7 +2537,7 @@ export const film = {
         { name: "refmod_identity", type: "number", bounds: [0, 2000] },
         { name: "refmod_save", type: "boolean" },
         { name: "image_name", type: "string" },
-        // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+        // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-10):
         // the deliverable slug the compose threads into every save
         // prefix (outputNameTailOf at the film stems). Plain string HERE
         // — the CARD schema row owns the slug law (charset + length,

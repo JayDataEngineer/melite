@@ -562,7 +562,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/moss-image/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/gem-soma/src/actions.ts': { statements: 83.33, branches: null, functions: 50, lines: 83.33 },
   '**/packages/models/gem-soma/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
-  // h3 coverage burn (2026-11-30): raised at the K=1 margin mint MIN'd
+  // h3 coverage burn (2026-10-30): raised at the K=1 margin mint MIN'd
   // across two full-gate faces (both print 98.26/95.85/100/99.67;
   // counts 680/692 stmts, 693/723 branches, 609/611 lines) — the burn's
   // new arms (door ghost-chip + raw-clock, lora-marriage,
@@ -576,7 +576,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // json-summary faces (h3/tests/reshoot.spec.ts + the walls seated
   // spec), K=1 margin mint — the file is feature-024's in-flight
   // reshoot module; its own spec carries the 100 face.
-  // h3 coverage burn (2026-11-30): raised at the K=1 margin mint across
+  // h3 coverage burn (2026-10-30): raised at the K=1 margin mint across
   // two full-gate faces (both print 100x4; 62/62 stmts, 39/39
   // branches, 10/10 funcs, 61/61 lines) — the compose-door refusal arms
   // (crossviewGuideSeconds 0/−48/NaN; the width/height plate budget)
@@ -586,7 +586,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // (models/h3 tests/ alone — refine.spec.ts drives renderH3Refine's
   // full surface incl. the RefineHandoff 2x emission), measured
   // 100x4: 28/28 statements, 10/10 branches, 3/3 functions.
-  // h3 coverage burn (2026-11-30): raised at the K=1 margin mint across
+  // h3 coverage burn (2026-10-30): raised at the K=1 margin mint across
   // two full-gate faces (both print 100x4; 85/85 stmts, 57/57
   // branches, 8/8 funcs, 83/83 lines) — the renderH3Refine face on the
   // FULL gate rides the card package's refine-mod.spec.ts compose arms
@@ -601,7 +601,7 @@ export const COVERAGE_BASELINE: Record<string, {
   // upscaleArmed predicate), measured 100x4: 32/32 statements,
   // 12/12 branches, 4/4 functions.
   '**/packages/models/h3/src/chainUpscale.ts': { statements: 96.88, branches: 91.67, functions: 75, lines: 96.88 },
-  // h3 coverage burn (2026-11-30): functions raised 88.89 → 90 at the
+  // h3 coverage burn (2026-10-30): functions raised 88.89 → 90 at the
   // K=1 margin mint across two full-gate faces (both print
   // 98.26/97.02/100/98.13; 113/115 stmts, 98/101 branches, 10/10 funcs,
   // 105/107 lines); statements/branches/lines keep their seated floors —

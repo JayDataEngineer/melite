@@ -220,7 +220,7 @@ function assertAcyclic(edges, ids) {
  * names") is the ESTATE's output-name seat — one reserved key serves
  * EVERY card by default (the agent can patch it on any stage); the
  * run settle reads it and mints gallery-row labels (the display
- * plane). FILE PLANE (2026-11-19, the operator's naming press): a
+ * plane). FILE PLANE (2026-11-10, the operator's naming press): a
  * card that DECLARES output_name on its own carrier (h3 does) spares
  * it from the lift (runsRegistry.ts THE DECLARED-KEY SPARING) — the
  * param walks the compose and the DELIVERED files are born named

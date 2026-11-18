@@ -816,7 +816,7 @@ export class RunsRuntimeService extends Service {
     // bag the bench stored. The copy above keeps the original row
     // untouched; the graph receipt below still judges the doc
     // verbatim.
-    // THE DECLARED-KEY SPARING (2026-11-19, queue 12's file plane): a
+    // THE DECLARED-KEY SPARING (2026-11-10, queue 12's file plane): a
     // reserved key the card's own DECLARATION admits is NOT a policy
     // key on this stage — it is the card's param, and it WALKS (h3's
     // declared output_name threads the deliverable save prefixes at
@@ -1692,7 +1692,7 @@ export class RunsRuntimeService extends Service {
     let benchComposed = false;
     if (selected.door === "draft" && benchDoc !== undefined) {
       const wired = benchWiring(benchDoc);
-      // THE CLAIMED-STAGE PRESS (the ghost-run burn, 2026-11-19:
+      // THE CLAIMED-STAGE PRESS (the ghost-run burn, 2026-11-05:
       // "running flows that don't show up on the bench"). A body
       // carrying bench_stage_id names the ONE row the caller
       // pressed — until now this door ignored the claim and

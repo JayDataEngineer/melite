@@ -334,7 +334,7 @@ describe("runArtifacts", () => {
   });
 
   it("THE BORN-NAMED FILM LEADS (queue 12's file plane): a spelled output_name slug rides the stem and the film still leads", () => {
-    // The regex's optional slug segment (filmLead.ts, 2026-11-19): a
+    // The regex's optional slug segment (filmLead.ts, 2026-11-10): a
     // run that spelled output_name mints `h3_t4_film_<slug>_00001_.mp4`
     // — the presentation-order law must keep seating it first, and the
     // machinery stem still anchors the match (the slug charset is the

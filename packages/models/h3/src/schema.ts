@@ -462,7 +462,7 @@ export const paramSchema = z.object({
   // while every grid-legal window at every legal fps passes.
   fps_seconds: z.number().description("Clip seconds (fps rail — internal, derived from the window length at compose)").min(bookSeconds(GRID_BASE_FRAMES, FPS_RAIL_MAX)).max(bookSeconds(GRID_MAX_FRAMES, FPS_RAIL_MIN)).extra('extra', bag({ hidden: true })),
   // ── THE OUTPUT-NAME SEAT, FILE PLANE (queue 12's owed half,
-  // 2026-11-19; operator press verbatim: "you were to also handle
+  // 2026-11-10; operator press verbatim: "you were to also handle
   // offering the ai the ability to name the actual outputs to make
   // it clear for the end user"). The A1 label seam (2026-11-08,
   // registry row cards-output-name-label) named the DISPLAY rows
@@ -480,7 +480,7 @@ export const paramSchema = z.object({
   // outputs the operator means. SLUG LAW: a filename segment and
   // nothing else — lowercase alnum + hyphen, 64 max; no separator
   // can smuggle a path escape into the `${runId}/` prefix wiring.
-  // THE GROUP FOLD (2026-11-19, the operator's tab-room ask): the
+  // THE GROUP FOLD (2026-11-11, the operator's tab-room ask): the
   // slug rode its own 'naming' tab — a SIXTH tab for ONE row. It
   // rides General now (no group extra), the tab dies at the rail.
   output_name: z.string().max(64).pattern(OUTPUT_NAME_SLUG_RE).description("Output name").extra('extra', bag({ order: null, wtype: 'text', tooltip: "Names the delivered files: the composed film and re-shoot plates are BORN with this stem beside the machinery prefix (h3_t4_film_<name>_00001_.mp4). Absent = the machinery name, byte-frozen." })),

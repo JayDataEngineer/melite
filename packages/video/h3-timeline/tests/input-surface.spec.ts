@@ -257,7 +257,7 @@ describe("the input surface: EVERY slot declares its slot shape (the freeform-te
     // c7bc662b7) the film-level PROMPT field is GONE — calls own
     // prompts; a prompt field reappearing on the card schema is the
     // freeform lie's return and must be refused here.
-    // (2026-11-19, queue 12's file plane) output_name joins the
+    // (2026-11-10, queue 12's file plane) output_name joins the
     // census LAWFULLY: it is the ONE deliberate text field since the
     // dense-steps straggler — a NAME is the text the operator asked
     // for ("offer the AI the ability to name the actual outputs"),

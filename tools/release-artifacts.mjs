@@ -410,7 +410,7 @@ export function stripReadmeFrontmatter (text) {
   return rest.join('\n')
 }
 
-/** THE DSH HOST PEER TRAIN (packaging burn, 2026-11-30): the two
+/** THE DSH HOST PEER TRAIN (packaging burn, 2026-11-18): the two
  *  dsh HOST faces peer with the range `>=<train> <0.3.0`, where
  *  <train> is the dsh prerelease the estate runs. npm semver admits
  *  a prerelease candidate ONLY on the comparator's own
@@ -516,7 +516,7 @@ export function stripPackedTarballs (files) {
         manifest.engines = { node: '>=22.18.0' }
       }
       manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
-      // THE REGISTRY FACE (2026-11-30, the public-face audit): npmjs
+      // THE REGISTRY FACE (2026-10-30, the public-face audit): npmjs
       // renders the manifest description verbatim and DERIVES a
       // mangled one from the tarball README's YAML frontmatter when
       // the field is absent; a missing repository leaves the package

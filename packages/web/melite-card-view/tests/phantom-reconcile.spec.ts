@@ -101,7 +101,7 @@ test('the armed set makes the probe once-per-run (idempotent across refreshes)',
 })
 
 test('a file-era list that is DOWN reads as gone — the honest stopped still lands', async () => {
-  // the gone-verdict's transport face (2026-11-30): the status door
+  // the gone-verdict's transport face (2026-10-30): the status door
   // REFUSED (an answered estate refusal — the phantom shape) and the
   // runs/list probe itself REJECTS (the wire is down). The probe's
   // catch reads that as "no list answer" — the run is gone, never a

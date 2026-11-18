@@ -61,7 +61,7 @@ describe("coldInstallRoots — the cold profile boots with zero config", () => {
     }
   });
 
-  // ── the empty-string law (cold-boot audit F1/F2, 2026-11-30) ──
+  // ── the empty-string law (cold-boot audit F1/F2, 2026-10-30) ──
   // A profile row templated from the retired MELITE_STATE_ROOT env
   // renders "" exactly where the var is unset. resolveStateRoot
   // already treats "" as unnamed; the cold derivation must not read

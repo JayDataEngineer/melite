@@ -803,14 +803,14 @@ function facadeRows(dirs) {
 /** Rows the generator never emits into any face table (workspace audit
  *  M7): the name resolves to the REGISTRY copy the runtime executes,
  *  never a vendored src twin.
- *  - (2026-11-30, retired) `@deepseek-ai/cordis-plugin-timer` once sat
+ *  - (2026-10-30, retired) `@deepseek-ai/cordis-plugin-timer` once sat
  *    here: the registry 1.1.6 law assumed the host composed the
  *    registry copy while estate-queue only borrowed its types. The
  *    estate's own manifest already chose otherwise —
  *    estate-queue/melite-estate declare the timer `workspace:~` (the
  *    vendored 1.1.3), so runtime AND types ride the vendor tree, and
  *    the vendored lib/ face is gitignored build output that never
- *    exists on a fresh clone. The CI typecheck burn (2026-11-30)
+ *    exists on a fresh clone. The CI typecheck burn (2026-10-30)
  *    proved the split: TS2307 on every clean tree, green only on
  *    machines with a stale built lib. The timer now rides vendor src
  *    in the generated faces like every workspace member — one truth,

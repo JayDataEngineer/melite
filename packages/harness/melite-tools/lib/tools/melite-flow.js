@@ -128,6 +128,10 @@ const DRAFT_TIMEOUT_MS = 15_000;
  *  family's WAIT_MAX_S=300 — above every legitimate render
  *  observed, short enough to free a wedged transcript. */
 const OBSERVE_MAX_MS = 900_000;
+/** The adopt probe's own read budget — one cheap status call, capped
+ *  tight (it classifies row memory, never observes a run to
+ *  terminal; the observation that follows spends the press budget). */
+const ADOPT_PROBE_TIMEOUT_MS = 10_000;
 /** THE PRESS BUDGET (defect board D-7, 2026-11-18 — the four burns:
  *  refine 2×, restyle, continuation, outfit, every run COMPLETED on
  *  the queue while the agent read `Error: tool call aborted`): DSH's
@@ -339,7 +343,7 @@ async function revConfirmLanding(estate, bench, snapshotRev, signal) {
     }
 }
 /** D3-04 option (c) — THE PERSISTED STAMP'S PRESS VOICE (the
- *  estate-side half, landed 2026-11-19): the bench write doors stamp
+ *  estate-side half, landed 2026-11-12): the bench write doors stamp
  *  `compiled_at` (epoch ms) on every row they author or re-settle,
  *  and this seat reads it — a pressed row YOUNGER than the settle
  *  window admits the same landing race the rev-confirm catches, on
@@ -490,7 +494,7 @@ async function runBench(estate, a, signal, only) {
     // stage's observation spends only what remains.
     const pressDeadline = Date.now() + PRESS_BUDGET_MS;
     /** THE SHARED OBSERVE-SETTLE TAIL (the adopt law's extraction,
-     * 2026-11-30): one law for a fresh press and an adopted run alike —
+     * 2026-11-18): one law for a fresh press and an adopted run alike —
      * the D-7 budget check, the observation, the pass row, and the
      * pending receipt / failure / continue verdict. Returns the press
      * receipt when the window ends on this stage; undefined continues
@@ -661,7 +665,7 @@ async function runBench(estate, a, signal, only) {
                 }
             }
         }
-        // THE ADOPT LAW (the three-press burn, 2026-11-30: one agent
+        // THE ADOPT LAW (the three-press burn, 2026-11-18: one agent
         // call pushes ~9 takes — the press budget ends the observation
         // AND the dispatch with it, and the receipt's "poll with
         // run_status" named an escape hatch that could never drain the
@@ -691,23 +695,51 @@ async function runBench(estate, a, signal, only) {
         if (adoptPrior !== '' && adoptInFlight && (adoptFold === 'running' || adoptFold === 'queued')) {
             let probed = null;
             let probeWhy = '';
+            let probeGone = false;
             try {
-                probed = await estate.runsStatus(adoptPrior, false, signal, 10_000);
+                probed = await estate.runsStatus(adoptPrior, false, signal, ADOPT_PROBE_TIMEOUT_MS);
             }
             catch (e) {
                 probeWhy = e instanceof Error ? e.message : String(e);
+                // THE TYPED GONE VOICE (the registry's own): the queue says a
+                // run it no longer holds with the CODE runs/unknown-run
+                // (runsRegistry's RemoteError — the same seam benchGet rides
+                // for bench/not-found above), never with prose. Only that
+                // code heals to a fresh press; a message-regex would pin a
+                // string accident and drift blind when the voice rewords.
+                probeGone = remoteErrorOf(e)?.code === 'runs/unknown-run';
+                // D-7, the probe's own seat: an abort mid-probe leaves the
+                // row's run DURABLE (a PRIOR press minted it — nothing this
+                // press sent is at risk), so the face is the pending receipt
+                // carrying the run_id, the same face an aborted observe
+                // returns — never a stopped receipt naming ledger_tail for a
+                // run whose existence the row already records.
+                if (signal.aborted) {
+                    const why = signal.reason instanceof Error ? signal.reason.message : String(signal.reason);
+                    pass.push({ stage: stageId, card, run_id: adoptPrior, status: 'queued', adopted: true, aborted: why });
+                    return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: adoptPrior,
+                        ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass };
+                }
             }
             const probeWord = probed !== null && typeof probed['status'] === 'string' && probed['status'] !== ''
                 ? probed['status'] : '';
             if (probeWord !== '') {
-                pressed.push(stageId);
                 mintedRuns.set(stageId, adoptPrior);
-                const settled = await settleObserved(adoptPrior, stageId, card, currentInputs, { adopted: true });
+                // W-2 × ADOPT: currentInputs resolves the wires as they stand
+                // at DRAIN time, but an adopted run consumed the identities
+                // its ORIGINAL press resolved — stamping the drain-time
+                // resolution would forge the input_runs evidence the next
+                // press's skip test judges (it would claim consumption of an
+                // upstream it never saw). The adoption observe therefore
+                // carries NO snapshot: the settled row stays snapshot-less,
+                // and W-2's own safe-on-stale law makes a wired row re-run
+                // ONCE to record its real consumption.
+                const settled = await settleObserved(adoptPrior, stageId, card, undefined, { adopted: true });
                 if (settled !== undefined)
                     return settled;
                 continue;
             }
-            if (!/not[ -_/]?found|no such run|unknown run|404/i.test(probeWhy)) {
+            if (!probeGone) {
                 return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
                     ...(intent !== '' ? { intent } : {}),
                     ...(only !== undefined ? { stage: only } : {}),
@@ -847,7 +879,7 @@ async function runBench(estate, a, signal, only) {
         // with NO wire still rides — the door's spell gate names it, the
         // one honest wall left for a genuinely unresolvable promise.
         // THE FAMILYLESS HALF RIDES THEM TOO (the ghost-run burn,
-        // 2026-11-19): a familyless press {draft_id, bench_stage_id}
+        // 2026-11-05): a familyless press {draft_id, bench_stage_id}
         // used to drop the resolved bag and ride the draft door's
         // WHOLE-BENCH compose — every sibling re-executed in one merged
         // run the bench could not see. The door now composes ONLY the
@@ -1147,7 +1179,10 @@ inputRuns) {
                 result['url'] = url;
             // W-2: the terminal stamp carries the press-time input snapshot —
             // the live patch above stays minimal, this is the evidence the
-            // next skip test judges.
+            // next skip test judges. (An ADOPTED run's caller passes NO
+            // inputRuns: the identities resolved at the ORIGINAL press, and
+            // a drain-time resolution would forge that evidence — see the
+            // adopt call site.)
             if (inputRuns !== undefined)
                 result['input_runs'] = inputRuns;
             const artifacts = {};
@@ -1887,7 +1922,7 @@ export function meliteFlow(estate) {
                     ...typeof v.run_id === 'string' && v.run_id !== '' ? { run_id: v.run_id } : {},
                     ...typeof v.status === 'string' && v.status !== '' ? { status: v.status } : {},
                     ...typeof v.error === 'string' && v.error !== '' ? { error: v.error } : {},
-                    // THE PRESS'S OWN HEROES (the refresh-flood burn, 2026-11-19:
+                    // THE PRESS'S OWN HEROES (the refresh-flood burn, 2026-11-05:
                     // a page refresh re-rendered the same settled artifacts in
                     // every historical chat card, repeating). The chat card's
                     // inline strip derives from THIS persisted array — the pass

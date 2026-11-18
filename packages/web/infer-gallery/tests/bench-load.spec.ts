@@ -557,7 +557,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     })
   })
 
-  it('THE BORN-NAMED FILM IS STILL THE HERO (queue 12 file plane, 2026-11-19): a spelled output_name slug never breaks the restore\'s film finder', async () => {
+  it('THE BORN-NAMED FILM IS STILL THE HERO (queue 12 file plane, 2026-11-10): a spelled output_name slug never breaks the restore\'s film finder', async () => {
     // bench-load's mirror of filmLead.ts admits the optional slug
     // segment (`h3_t4_film_<slug>_<n>_.mp4`): a run that spelled
     // output_name restores ITS named film as the stage hero — never

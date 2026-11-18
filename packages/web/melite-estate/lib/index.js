@@ -440,7 +440,7 @@ export const Config = Schema.object({
  * as one estate per repo.
  *
  * Two naming laws refuse LOUD rather than fall to a cwd tree (the
- * silent-relative-root death, the 2026-11-30 cold-boot audit):
+ * silent-relative-root death, the 2026-10-30 cold-boot audit):
  * - the empty string is ABSENT, all three fields — a profile row
  *   templated from the retired MELITE_STATE_ROOT env renders ""
  *   exactly where the var is unset, and resolveStateRoot's own
@@ -630,7 +630,7 @@ export async function apply(ctx, config = {}) {
         if (missing.length === 0)
             break;
         if (disposed || Date.now() >= deadline) {
-            // THE LOCK FACTS (the cold-boot audit F4, 2026-11-30): the
+            // THE LOCK FACTS (the cold-boot audit F4, 2026-10-30): the
             // most common silent queue death is the single-writer lock,
             // and cordis buries the queue row's throw — which names the
             // holder pid and the lock path — in a fiber log line the

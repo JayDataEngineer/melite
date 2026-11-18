@@ -12,7 +12,7 @@ import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, 
  * A positive out-of-band index rides the engine's upper clamp
  * (min(shape−1, index)) onto the clip's FINAL row under every build;
  * the negative spelling slices empty on the live estate (the
- * 2026-11-19 burn — clause 1 above) and is banned family-wide. */
+ * 2026-11-05 burn — clause 1 above) and is banned family-wide. */
 /** The extend entry's required seats (the reshoot/repair idiom: an
  * armed doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [
@@ -211,7 +211,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
             const target = contexMaskedTarget(g, { vaeVideo, vaeAudio }, {
                 frames: slice.out(0), audio: slice.out(1), mask: whiteMask, keepAudio: false,
             });
-            // ── THE FORCED SEAM (operator's cure, 2026-11-19): the r2v
+            // ── THE FORCED SEAM (operator's cure, 2026-11-05): the r2v
             // ref_image ride above is a SOFT prior — the model is free to
             // introduce new content in the appended clip's FIRST frame, and
             // the poncho burn did exactly that (a second figure at full
@@ -269,7 +269,7 @@ export function renderH3Extend(entry, p, facts, g, runId) {
             format: 'mp4', codec: 'h264',
         }).out();
         const after = chainSaveBoundaries(g, [priorSaved]);
-        // THE OUTPUT-NAME FILE TAIL (2026-11-19): the delivered extend
+        // THE OUTPUT-NAME FILE TAIL (2026-11-10): the delivered extend
         // film is BORN named (`extend_film_<slug>`) — x0/x1 parts stay
         // machinery prefixes (chain intermediates).
         concatSavedFilms(g, [`${runId}/x0`], after, `${runId}/extend_film${outputNameTailOf(p)}`, {

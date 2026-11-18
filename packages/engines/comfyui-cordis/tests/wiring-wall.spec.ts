@@ -976,7 +976,7 @@ function expectVaeEdge(
   return [loader[0], 0];
 }
 
-// ── THE DYNAMIC COMBO'S DEGENERATE DECLARATIONS (2026-11-30, the
+// ── THE DYNAMIC COMBO'S DEGENERATE DECLARATIONS (2026-10-30, the
 // coverage burn): dynamicComboChildren reads a raw /object_info
 // tuple, and a raw tuple can carry any shape. A detail that is not an
 // object, a detail without an options list, and option rows that are

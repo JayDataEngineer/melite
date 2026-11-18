@@ -265,7 +265,7 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
   });
 
   test("PC-7: a file-era LIVE row arms a real watcher — a watch that dies mid-poll still releases the claim", async () => {
-    // the live arm of the gone-verdict vocabulary (2026-11-30): the
+    // the live arm of the gone-verdict vocabulary (2026-10-30): the
     // status door refuses and the file-era list answers a LIVE word —
     // the run is alive per the list, so the reconcile must NOT heal the
     // row; it arms a real watcher (the heal's own law) and the watcher
@@ -299,7 +299,7 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
   });
 
   test("PC-8: the settled read resolves the run's stage by id — the matched stage's url rides the verdict", async () => {
-    // the terminal read's stage resolution (2026-11-30): a status row
+    // the terminal read's stage resolution (2026-10-30): a status row
     // that ANSWERS terminal carries per-stage artifacts, and the
     // verdict patch must carry the MATCHED stage's url — exact id
     // match first, so a multi-stage run never reads a sibling's frame.
@@ -351,7 +351,7 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
 
   test("PC-9: the probe loses the wire mid-verdict — the watch dies loud and the claim releases with nothing landed", async () => {
     // the REJECTION face of "a dead watch never holds the claim"
-    // (2026-11-30): the watch's poll read is refused (the estate
+    // (2026-10-30): the watch's poll read is refused (the estate
     // answers unknown run_id), so it probes the file-era list — but
     // the probe's own re-read loses the wire (a transport throw, not
     // an answer). probeRunGone rethrows that (a transport error is
@@ -385,7 +385,7 @@ describe("reconcileBenchRuns — the poller converges on the settled verdict", (
     }
   });
 
-  test("PC-10: the reconcile's own file-era verdict whose delivery budget dies undelivered releases its claim — nothing dishonest ever lands (the undelivered-inline arm, 2026-11-30)", async () => {
+  test("PC-10: the reconcile's own file-era verdict whose delivery budget dies undelivered releases its claim — nothing dishonest ever lands (the undelivered-inline arm, 2026-10-30)", async () => {
     // the reconcile itself read the verdict: the status read is
     // refused (the runs door answers unknown run_id), the file-era
     // list answers completed, and the verdict delivers INLINE — three

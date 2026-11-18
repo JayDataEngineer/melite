@@ -53,10 +53,11 @@ export type { BenchVerb }
 /** Status-voiced variant for specs whose fixtures answer in the
  * door's {status, body} contract: a 2xx resolves the body, a 4xx
  * throws the lane's RemoteError voice (bench* 404 → bench/not-found,
- * any other 4xx → runs/flow-compile carrying the body's error text),
- * and an unhandled lane throws runs/unknown-run naming itself. This
- * is the typed-lane re-home of the URL-status fixtures: the voices
- * are the seats' law, only the dispatch changed. */
+ * runs* 404 → runs/unknown-run — the registry's gone voice, other
+ * 4xx → runs/flow-compile carrying the body's error text), and an
+ * unhandled lane throws runs/unknown-run naming itself. This is the
+ * typed-lane re-home of the URL-status fixtures: the voices are the
+ * seats' law, only the dispatch changed. */
 export function fakeEstateStatus(
   handlers: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined>,
 ): {
@@ -74,6 +75,15 @@ export function fakeEstateStatus(
           const msg = typeof body['error'] === 'string' ? body['error'] : 'mock refusal'
           if (lane.startsWith('bench') && r.status === 404) {
             throw new RemoteError('bench/not-found', msg, { session: 'main' })
+          }
+          // A runs-lane 404 is the registry's own gone voice — the
+          // typed code runs/unknown-run, exactly what runsRegistry
+          // throws for a run it no longer holds (the adopt probe and
+          // every run_status consumer classifies on this CODE, never
+          // on prose). Other 4xx stay runs/flow-compile: validation
+          // refusals happen before any run exists.
+          if (lane.startsWith('runs') && r.status === 404) {
+            throw new RemoteError('runs/unknown-run', msg, { runId: '' })
           }
           throw new RemoteError('runs/flow-compile', msg, { loc: 'flow' })
         }

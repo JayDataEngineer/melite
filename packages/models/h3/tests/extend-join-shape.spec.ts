@@ -148,7 +148,7 @@ describe("the extend join's shape-true law (the F34 cure)", () => {
   });
 });
 
-describe("the extend body's FORCED SEAM (the poncho burn, 2026-11-19)", () => {
+describe("the extend body's FORCED SEAM (the poncho burn, 2026-11-05)", () => {
   // The r2v ref_image ride is a SOFT prior — the model may introduce
   // whole-new content on the appended clip's FIRST frame (the burn:
   // a second figure at full size with no entry). The cure pins the
@@ -173,7 +173,7 @@ describe("the extend body's FORCED SEAM (the poncho burn, 2026-11-19)", () => {
     const imageNode = out[(image as [string, number])[0]];
     assert.equal(imageNode.class_type, "ImageFromBatch",
       "the pinned image rides the LAST-FRAME node (the source's own final frame)");
-    // THE PIXEL ANCHOR RIDES THE SAME NODE (the 2026-11-19 burn's
+    // THE PIXEL ANCHOR RIDES THE SAME NODE (the 2026-11-05 burn's
     // second hollow seat): the r2v ref_image_0 and the plan's
     // picture_1 must resolve to the SAME tail node — when the pick
     // sliced empty, BOTH anchors anchored nothing.
@@ -204,7 +204,7 @@ describe("the extend body's FORCED SEAM (the poncho burn, 2026-11-19)", () => {
   });
 });
 
-describe("THE NON-EMPTY TAIL (the 2026-11-19 live burn: \"Extend is completely broken, it never starts with the last frame of the last video\")", () => {
+describe("THE NON-EMPTY TAIL (the 2026-11-05 live burn: \"Extend is completely broken, it never starts with the last frame of the last video\")", () => {
   // THE BURN: the first cut picked the prior's final frame with
   // ImageFromBatch batch_index −1. On the live estate the node
   // slices t[idx : idx+length] with NO negative normalization, so

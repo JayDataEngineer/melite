@@ -88,7 +88,7 @@ export function filmstripOf(res: CardResult | null | undefined): {
   // NAME (filmLead.ts's regex, mirrored here for the browser bundle)
   // — the legacy 'video' key and the flat list trail it. A run whose
   // gallery carries the film can never preview a window as the cut.
-  // THE OUTPUT-NAME FILE TAIL (2026-11-19): the optional slug segment
+  // THE OUTPUT-NAME FILE TAIL (2026-11-10): the optional slug segment
   // admits the born-named film (`h3_t4_film_<slug>_00001_.mp4`) —
   // filmLead.ts's law, mirrored verbatim.
   const filmName = Object.keys(arts).find((n): boolean => !stagedEcho(n) && /(?:^|[/_])h3_t4_film(?:_[a-z0-9][a-z0-9-]*)?_\d+_\.mp4$/.test(n))

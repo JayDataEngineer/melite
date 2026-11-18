@@ -594,7 +594,7 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
     // workspace link on EVERY timer consumer (estate-queue and
     // estate/manage).
     //
-    // THE ALIAS LAW (2026-11-30, superseding this arm's own first
+    // THE ALIAS LAW (2026-10-30, superseding this arm's own first
     // shape): the vendored twin's types ride its BUILT lib face —
     // gitignored per-host output — so a fresh clone cannot resolve
     // the pnpm link's types at all. The cure seats the SOURCE twin in
@@ -635,7 +635,7 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
     for (const f of faces) {
       const body = readFileSync(f, 'utf8')
       if (/"@deepseek-ai\/cordis-plugin-timer"\s*:/.test(body) && !body.includes('cordis_plugins/timer')) {
-        offenders.push(`${f.replace(ROOT + '/', '')} aliases the timer off the vendored src (the 2026-11-30 alias law)`)
+        offenders.push(`${f.replace(ROOT + '/', '')} aliases the timer off the vendored src (the 2026-10-30 alias law)`)
       }
     }
     // THE SSOT ROWS: the base config and the vitest facade both seat
@@ -649,7 +649,7 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
       offenders.push('vitest.shared.ts lost the vendored-timer alias row (the test plane would resolve the built-lib face)')
     }
     const facade = JSON.parse(readFileSync(join(ROOT, 'tools/facade-rows.json'), 'utf8')) as Record<string, string[]>
-    // the facade row is PART of the alias law (2026-11-30): the test
+    // the facade row is PART of the alias law (2026-10-30): the test
     // plane resolves the timer through the vitest facade, and the row
     // must point at the vendor src (absence re-opens the built-lib
     // hole on fresh clones; a different target re-splits the twin).

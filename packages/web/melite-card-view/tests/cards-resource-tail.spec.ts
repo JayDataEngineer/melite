@@ -583,7 +583,7 @@ describe("the watcher's supervisor voice — a never-opened channel names itself
   });
 });
 
-// ── THE DISPOSE REFUSALS (the 2026-11-30 coverage burn): a stream
+// ── THE DISPOSE REFUSALS (the 2026-10-30 coverage burn): a stream
 // whose dispose rejects must never kill the watcher — each refusal is
 // a named warn row and the watch carries on. The two seats are
 // distinct rows: the REKEY's replaced stream and the tail's own

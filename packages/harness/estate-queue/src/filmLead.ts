@@ -11,7 +11,7 @@
  *  (SaveVideo prefix `<runId>/h3_t4_film` + ComfyUI's counter
  *  suffix; F14 2026-11-12 — the run row key may carry a leading run
  *  path or harvest nodeId segment before the canonical stem).
- *  THE OUTPUT-NAME FILE TAIL (2026-11-19, queue 12's file plane): a
+ *  THE OUTPUT-NAME FILE TAIL (2026-11-10, queue 12's file plane): a
  *  spelled output_name rides the prefix leaf
  *  (`h3_t4_film_<slug>_00001_.mp4`) — the optional slug segment
  *  below admits the born-named film WITHOUT widening to foreign

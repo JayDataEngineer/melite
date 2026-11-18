@@ -11,7 +11,7 @@
 import { spawnSync } from 'node:child_process'
 
 const BUDGET = {
-  // re-measured 2026-11-30 (the knip-cure audit): knip.jsonc now teaches
+  // re-measured 2026-10-30 (the knip-cure audit): knip.jsonc now teaches
   // knip the architecture, so the counts below are the honest REMAINDER.
   // What was config-taught (argued false positives, each with its proof
   // in knip.jsonc beside the entry):

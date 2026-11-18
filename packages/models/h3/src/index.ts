@@ -108,7 +108,7 @@ export const DECL: ModelDecl = {
       // merge-patch preserved and the compose door translates them.
       "edit",
       "reshoot",
-      // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+      // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-10):
       // the deliverable slug — served (group 'naming'), hydrated,
       // emitted by the Layer-A generic loop, threaded by compose into
       // every deliverable save prefix. The studio authors it; the
@@ -412,7 +412,7 @@ export const DECL: ModelDecl = {
     // unification, §8 2026-11-12): it is a CARD mod bag now — the
     // knob→seat map mirrors DECL params, and the bag's law is
     // witnessed by tests/reshoot.spec.ts, not by this census.
-    // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+    // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-10):
     // the family declares the deliverable-naming stem — consumed at
     // the DELIVERABLE save prefixes (film/extend/re-shoot plates via
     // outputNameTailOf, schema.ts), witnessed by tests/output-name.spec.ts.

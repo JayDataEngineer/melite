@@ -107,7 +107,7 @@ const DIAL_DEFAULTS = {
     strength: 0.8,
     depth_ratio: 6,
 };
-/** The dial units (the F13 friction cure, 2026-11-19: five round
+/** The dial units (the F13 friction cure, 2026-11-05: five round
  *  trips to compose one bag entry because each refusal named exactly
  *  ONE dial and restated the type instead of the unit — the operator
  *  shot a modest orbit and learned the bands one 400 at a time).
@@ -335,7 +335,7 @@ export function buildH3Reshoot(p, g, windowFrames, runId) {
         batch_index: 0,
         length: 1,
     }).out(0);
-    // THE OUTPUT-NAME FILE TAIL (2026-11-19, the operator's naming
+    // THE OUTPUT-NAME FILE TAIL (2026-11-10, the operator's naming
     // press): the re-shoot's DELIVERED plates are BORN named
     // (`reshoot_warp_<slug>` / `reshoot_orbit_<slug>`) — the same
     // stem on both faces of the one re-shoot.

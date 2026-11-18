@@ -69,11 +69,11 @@ const GENRE_GROUPS = new Map([
   // survives — the roster row below stays as the vocabulary's
   // memory of the spelling, never a live claim.
   ['reshoot', 'h3'],
-  // THE DELIVERABLE-NAMING SEAT (queue 12's file plane, 2026-11-19):
+  // THE DELIVERABLE-NAMING SEAT (queue 12's file plane, 2026-11-10):
   // the output_name slug row — the ONE field that names the born
   // files (the operator's ask: "offering the AI the ability to
   // name the actual outputs"). Rode its own 'naming' tab for one
-  // day; FOLDED under General 2026-11-19 (the operator's tab-room
+  // day; FOLDED under General 2026-11-11 (the operator's tab-room
   // ask — a sixth tab for one row). Like 'reshoot' above, this row
   // stays as the vocabulary's memory of the spelling, never a live
   // claim — the fold's judge is output-name.spec.ts's GROUP FOLD

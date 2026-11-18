@@ -93,7 +93,7 @@ for (const group of readdirSync(packagesDir).sort()) {
       }
     }
 
-    // 2.5 — THE REGISTRY FACE (2026-11-30, the public-face audit):
+    // 2.5 — THE REGISTRY FACE (2026-10-30, the public-face audit):
     // npmjs renders the manifest description verbatim and DERIVES one
     // from the README frontmatter when the manifest field is absent —
     // mangled YAML on the package page. The manifest is the registry

@@ -18,8 +18,8 @@ discharge stroke).
 packages/models/<family>/
   package.json     # name "@melite/models-<family>", private,
                    # deps: @melite/comfyui-card-kit (model-contract,
-                   # service-faces) — the ONLY required dep (29 of the
-                   # 32 families declare nothing else). Add
+                   # service-faces) — the ONLY required dep (30 of the
+                   # 33 families declare nothing else). Add
                    # @melite/contracts and/or @deepseek-ai/schemastery
                    # ONLY when this family's code imports them (anny,
                    # h3 do; qwen3-tts adds @melite/engine-contract;
@@ -194,7 +194,7 @@ resolves each row through dynamic `import()`:
 
 AND the family owes its OWN manifest row in
 `packages/engines/comfyui-cordis/package.json` dependencies —
-`"@melite/models-<family>": "workspace:*"` (32 such rows today). The
+`"@melite/models-<family>": "workspace:*"` (33 such rows today). The
 `FAMILY_ROWS` pkg string is resolved by dynamic `import()` INSIDE the
 engine package, so the engine's manifest is what makes the specifier
 resolvable; a table row without the dep fails at boot. The same wall

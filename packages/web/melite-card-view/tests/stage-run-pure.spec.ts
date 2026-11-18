@@ -1,5 +1,5 @@
 // stage-run-pure.spec.ts — THE PASS SUMMARY'S SENTENCE CONTRACT (the
-// pure renderer, 2026-11-30): describePass reads a PassResult, and its
+// pure renderer, 2026-10-30): describePass reads a PassResult, and its
 // sentence must stay grammatical across the type's own input space —
 // a skip whose why is empty and a pass whose refused verdict is absent
 // still name their stages, never render blanks or the null word. The

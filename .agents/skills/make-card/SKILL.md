@@ -59,6 +59,17 @@ const schema = z.object({ /* fields; .extra('extra', {...}) for groups */ })
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native — the card owns its face):
+// label/description/genre/icon, all non-empty strings; genre MUST
+// equal the package's genre segment (the registration wall derives
+// it from the specifier and refuses a mismatch)
+export const identity = {
+  label: '<Label Words>',
+  description: '<what the card does, one sentence>',
+  genre: '<genre>',         // the cardPackages specifier's genre segment
+  icon: '<icon-name>',
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: '<card>',            // the tenant id's second segment
@@ -67,6 +78,8 @@ export function apply(ctx: Context): void {
     tags: ['image', 'generate'],  // RETRIEVAL (card-catalog search):
                                   // modality + operation words the card
                                   // DECLARES — never derived
+    identity,                // the identity rung rides the row (the
+                             // wall refuses a row without it)
     schema,
     compose(p, model, g, runId) { /* throw on missing required; emit the graph */ },
   }))
@@ -194,7 +207,13 @@ cd packages/<genre>/<card> && pnpm exec tsdown  # when a studio ships:
                                                 # final-newline hook
                                                 # refuses the commit)
 rm -rf coverage && node node_modules/vitest/vitest.mjs run --coverage
-                                                # per-file 100% gate
+                                                # per-file FLOORS gate
+                                                # (scripts/coverage-baseline.ts
+                                                # prices owned debt per
+                                                # file — a change adds
+                                                # ZERO new uncovered
+                                                # lines; regen only via
+                                                # coverage-regen.mjs)
 node scripts/dsh-census.mjs -strict            # ZERO banned imports
 ```
 

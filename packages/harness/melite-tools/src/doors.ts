@@ -255,8 +255,11 @@ export const ESTATE_PENDING_REARM_MS = 10_000
 /** The gate's stamp state (V5 cure, 2026-10-18: the stamps were
  *  module-scope — one dead mount's wedged window could hold a fresh
  *  mount's seat doors closed, and unload never lifted it). One
- *  record per apply; the closure owns it. */
-interface PendingGateStamps {
+ *  record per apply; the closure owns it. Exported for the gate's
+ *  unit judge: the door's 503/502 face cannot observe WHICH stamps
+ *  survived a re-arm clear (a dead uid never answers again), so the
+ *  stamp-map law rides the real function directly. */
+export interface PendingGateStamps {
   pendingSince: number | null
   quietSince: number | null
   /** Per-fiber first-observed-activating stamps (uid → ms) and
@@ -271,9 +274,11 @@ interface PendingGateStamps {
    *  re-arm quiet keeps its ORIGINAL stamp (the li-l flap brick:
    *  3379 remounts must not extend the window — entries evaporate
    *  only after a SUSTAINED lift). Uids are registry-monotonic
-   *  (never reused), and the sustained-quiet reset below clears
-   *  both maps, so they stay bounded by the fibers a mount ever
-   *  observes. */
+   *  (never reused), and the sustained-quiet reset below drops
+   *  ENDED lifecycles only (firstSeen keeps a still-activating
+   *  waiter's original stamp; lastIdle clears whole — the 4.1.0
+   *  permanent-waiter burn below), so the maps stay bounded by the
+   *  live fibers a mount observes. */
   firstSeen: Map<number, number>
   lastIdle: Map<number, number>
 }
@@ -307,7 +312,17 @@ function presetScopeContexts(c: CtxView): object[] {
   return contexts
 }
 
-const estateStillActivating = (gate: PendingGateStamps, c: CtxView): boolean => {
+/** Does the estate still hold an activating seat fiber? The pending
+ *  gate's own law function (fresh-window vs aged-answer arithmetic
+ *  below). Exported for the gate's unit judge — the door's 503/502
+ *  face cannot observe which stamp-map entries survived a re-arm
+ *  clear (a dead uid never answers again), so the stamp law rides
+ *  the real function directly.
+ *  @param gate the per-apply stamp state (mutated: stamps, re-arm
+ *   clear, idle reaping)
+ *  @param c the ctx view the gate reads fibers from
+ *  @returns true while any seat fiber is still activating */
+export const estateStillActivating = (gate: PendingGateStamps, c: CtxView): boolean => {
   const now = Date.now()
   const presetScopes = presetScopeContexts(c)
   const activating = new Set<number>()
@@ -353,16 +368,19 @@ const estateStillActivating = (gate: PendingGateStamps, c: CtxView): boolean => 
     if (gate.quietSince === null) gate.quietSince = Date.now()
     // only a SUSTAINED lift re-arms the grace window; a flap's
     // momentary lift does not. THE 4.1.0 STORELESS BRICK (live
-    // 2026-11-18, global dsh 0.2.2-rc.4 → cordis 4.1.0: every
-    // side-effect fiber carries store === undefined for life, so
-    // 305 permanent waiters rode this clear — each sustained quiet
+    // 2026-11-18, global dsh 0.2.2-rc.4 → cordis 4.1.0: the boot
+    // census measured 305 permanent waiters — seat fibers whose
+    // activation never completes and which therefore stay in the
+    // registry, activating, for the process's whole life; the old
+    // wholesale clear read them as ended, so each sustained quiet
     // wiped their aged stamps, the next request re-stamped all of
     // them fresh, and the seat doors flapped 503 ~90% of every
     // 2-minute cycle while the estate served fine in the holes):
-    // the clear drops only ENDED lifecycles. A waiter still
-    // activating keeps its ORIGINAL stamp (the monotonic law three
-    // comments up — the clear may never contradict it); a genuinely
-    // new mount still births a fresh racer with a fresh window.
+    // the clear drops only ENDED lifecycles — uids absent from the
+    // activating census this pass. A waiter still activating keeps
+    // its ORIGINAL stamp (the monotonic law three comments up — the
+    // clear may never contradict it); a genuinely new mount still
+    // births a fresh racer with a fresh window.
     if (gate.pendingSince !== null && Date.now() - gate.quietSince >= ESTATE_PENDING_REARM_MS) {
       gate.pendingSince = null
       for (const uid of [...gate.firstSeen.keys()]) {

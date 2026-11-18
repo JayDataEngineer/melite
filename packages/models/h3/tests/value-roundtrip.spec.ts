@@ -1932,7 +1932,7 @@ const CENSUS_DOCS = {
     audio_clips: [{ src: "data/input/take.wav", start_frame: 0, dur_frames: 24, text: "hello there" }],
     calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })],
   },
-  // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19): the
+  // THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-10): the
   // film doc with the deliverable stem spelled — the census judge row
   // below proves the film's SaveVideo prefix is BORN named and no
   // machinery film prefix survives beside it.
@@ -2110,7 +2110,7 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   { kind: "at", param: "refmod_identity", doc: "media", cls: "MiniMaxH3RefModExtract", input: "identity", value: 650 },
   { kind: "at", param: "refmod_save", doc: "media", cls: "MiniMaxH3RefModExtract", input: "save", value: false },
   { kind: "at", param: "image_name", doc: "alias", cls: "LoadImage", input: "image", value: "data/input/alias.png", mode: "some" },
-  // ── THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+  // ── THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-10):
   // the deliverable stem's consumer is the film concat's OWN
   // SaveVideo prefix — the value lands INSIDE the filename the run
   // will mint, never as a node input key. The judge row is the

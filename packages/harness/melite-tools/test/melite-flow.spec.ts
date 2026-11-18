@@ -1237,7 +1237,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     assert.ok(!text.includes(' → ? '), 'no anonymous arrow remains')
   })
 
-  test('GHOST CURE (2026-11-19): a familyless stage press carries its RESOLVED params + bench_stage_id — the door composes one row, never the bench', async () => {
+  test('GHOST CURE (2026-11-05): a familyless stage press carries its RESOLVED params + bench_stage_id — the door composes one row, never the bench', async () => {
     // The burn: "running flows that don't show up on the bench."
     // A familyless stage (a flow composition card — no boarded
     // family) pressed with {draft_id, bench_stage_id} ALONE used to
@@ -1912,7 +1912,7 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
     assert.deepEqual(tool.output.presentationMeta!({} as never, undefined as never), { mode: '?', target: '?' })
   })
 
-  test('presentationMeta carries the press\'s OWN settled heroes (the refresh-flood cure, 2026-11-19)', () => {
+  test('presentationMeta carries the press\'s OWN settled heroes (the refresh-flood cure, 2026-11-05)', () => {
     // THE FROZEN CHANNEL: the chat card's inline strip derives from
     // these persisted rows — the pass rows that minted a url. Before
     // this key the card re-derived the strip from the present-time
@@ -3612,7 +3612,7 @@ describe('W-2 — the stale downstream skip (the input_runs snapshot law)', () =
   })
 })
 
-// THE BRANCH-EDGE BURN (scope C, 2026-11-19): the CAS birth faces'
+// THE BRANCH-EDGE BURN (scope C, 2026-11-05): the CAS birth faces'
 // rev-less read, the card-mode start refusal, the flow press's
 // non-Error edges, and the render/meta junk-tolerant replay faces —
 // arms pinned to the exact uncovered records the reporter named.

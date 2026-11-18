@@ -22,9 +22,14 @@ its own shipped profile); melite carries no parallel mode.
   every composition) and `melite-tools-doors` (inject webServer + llm +
   tools — web profiles only; server profiles disable the row by id).
 - Base toolset: `melite_discover`, `melite_load`, `melite_construct`,
-  `melite_view`, `comfy_manage`, `melite_skill_read`,
-  `ledger_tail`; the /melite-runs delegation adds `melite_flow` and
-  `run_status`. `adhocTools` registers session-named extras only.
+  `melite_view`, `melite_contact_sheet`, `melite_read`, `comfy_manage`,
+  `melite_skill_read`, `melite_skill_write`, `ledger_tail`; the
+  /melite-runs delegation adds `melite_flow` and `run_status`.
+  `adhocTools` registers session-named extras only. `melite_flow`'s
+  bench press ADOPTS rows that already own a run (one `runsStatus`
+  probe, never a re-send); a budget-spent or aborted observation
+  returns a pending receipt carrying `run_id` and the re-press
+  drain counsel (`pass[]` rows carry `adopted: true`).
 - Doors: `/melite-tools/catalog` (live tool schemas + llm route list) and
   `/melite-tools/enhance` (the editor door; one execution core shared with
   everything else).

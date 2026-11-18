@@ -272,7 +272,7 @@ describe("the loaded-history face (the wand-restored result renders the persiste
   })
 
   it("THE BORN-NAMED FILM still leads by NAME (queue 12's file plane — the slug segment never breaks the projection's film pick)", () => {
-    // projection.ts's mirror of filmLead.ts (2026-11-19): a run that
+    // projection.ts's mirror of filmLead.ts (2026-11-10): a run that
     // spelled output_name delivers `h3_t4_film_<slug>_<n>_.mp4`; the
     // projection's film finder must seat it over the pointer tier and
     // the window — on BOTH faces the finder reads (artifact name and

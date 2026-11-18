@@ -40,6 +40,20 @@ npm_config_userconfig=/tmp/gpr-publish.npmrc \
 
 `publish-npm.mjs` already emits `--tag next` for prerelease versions.
 
+## The dsh peer-train stamp (why packed peers diverge from the tree)
+
+The tree's peerDependencies stay at the dev baseline
+(`>=0.2.1-rc.2 <0.3.0` — peer-literal moves re-key pnpm cells and are
+their own migration arc), but `tools/release-artifacts.mjs` G1.5
+(`stampDshPeerTrain`, `DSH_PEER_TRAIN`) stamps the packed manifests
+with the train the artifacts were built against
+(`>=0.2.2-rc.4 <0.3.0`): published tarballs' peer floors must be able
+to select the registry's dsh train, or a fresh consumer install can
+never resolve the harness. Do not "fix" the divergence by copying the
+tree's floors into packs — the wall
+(`tests/walls/ts/suites/release-artifact-plane.spec.ts` G10, sealed
+tarball re-extraction) fires red.
+
 ## Acceptance (the same gate, pointed at backend B)
 
 ```sh

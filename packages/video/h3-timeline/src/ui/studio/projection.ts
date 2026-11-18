@@ -49,7 +49,7 @@ function videoUrlOf(
       const [name, url] = entry
       return typeof url === 'string' && url !== '' && refGenreOf(name, url) === 'video'
     })
-  // THE OUTPUT-NAME FILE TAIL (2026-11-19): the optional slug segment
+  // THE OUTPUT-NAME FILE TAIL (2026-11-10): the optional slug segment
   // admits the born-named film (`h3_t4_film_<slug>_00001_.mp4`) on
   // both faces — the artifact name and the served url — filmLead.ts's
   // law, mirrored verbatim.

@@ -1,5 +1,5 @@
 // runs-claim-press.spec.ts — THE CLAIMED-STAGE PRESS WALL (the
-// ghost-run burn, 2026-11-19: "we have the ghost run issue again,
+// ghost-run burn, 2026-11-05: "we have the ghost run issue again,
 // where it is running flows that don't show up on the bench"). The
 // agent's familyless walk presses one stage with
 // {draft_id, bench_stage_id}; the draft door IGNORED the claim and

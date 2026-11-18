@@ -111,7 +111,7 @@ const seat = (
     modelFacts: (): unknown => ({ m1: {} }),
     resolveCardFamily: (): unknown => "m1",
     modelMids: (): unknown => new Set<string>(),
-    // THE DECLARED-KEY SPARING's seat truth (2026-11-19): no DECLs on
+    // THE DECLARED-KEY SPARING's seat truth (2026-11-10): no DECLs on
     // this rig — every reserved key keeps lifting.
     cardDecls: (): unknown => ({}),
     phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),

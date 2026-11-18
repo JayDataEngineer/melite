@@ -1,5 +1,5 @@
 // @melite/models-h3 — THE OUTPUT-NAME FILE-PLANE WALL (queue 12's
-// owed half, 2026-11-19; operator press verbatim: "you were to also
+// owed half, 2026-11-10; operator press verbatim: "you were to also
 // handle offering the ai the ability to name the actual outputs to
 // make it clear for the end user. You had claimed it to work. ...
 // But, you hid it stashed it, but it was false when you made that
@@ -231,7 +231,7 @@ describe("THE OUTPUT-NAME FILE PLANE (queue 12's owed half — the born-named de
     );
   });
 
-  it("THE GROUP FOLD (2026-11-19, the operator's tab-room ask): the slug rides GENERAL — no 'naming' group survives the served face, the sixth tab dies", () => {
+  it("THE GROUP FOLD (2026-11-11, the operator's tab-room ask): the slug rides GENERAL — no 'naming' group survives the served face, the sixth tab dies", () => {
     // toJSON() is schemastery's serialization — the SAME envelope the
     // estate serves and card-base's form.tsx reads for the tab rail
     // (groupFields → titleCaseId(g.group ?? 'General')). Judging the

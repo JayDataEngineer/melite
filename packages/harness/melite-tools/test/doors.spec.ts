@@ -18,6 +18,7 @@ import * as os from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { apply, inject, ESTATE_PENDING_GRACE_MS, ESTATE_PENDING_REARM_MS } from '../src/doors.ts'
+import type { PendingGateStamps } from '../src/doors.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { resolveRepoRoot } from '@melite/comfyui-cordis'
 import type { LlmStreamSeam } from '../src/llm-complete.ts'
@@ -811,8 +812,9 @@ describe('doors apply', () => {
         Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 3_000
         assert.equal((await probe()).status, 502)
         // past the re-arm bound: the clear FIRES — the late
-        // waiter's ended stamps drop (idle rearm-2s, under the
-        // reaper), the permanent waiter's aged stamp SURVIVES
+        // waiter's ended stamps drop (its idle stamp is rearm−1s
+        // old at the clear, under the reaper's bound), the
+        // permanent waiter's aged stamp SURVIVES
         // (still activating — the monotonic law)
         Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 1_000 + ESTATE_PENDING_REARM_MS + 1_000
         assert.equal((await probe()).status, 502)
@@ -848,6 +850,55 @@ describe('doors apply', () => {
     } finally {
       await waiter.dispose()
       await door.dispose()
+    }
+  })
+
+  test('UNIT JUDGE — the re-arm clear drops ENDED uids and keeps a still-activating waiter\u2019s ORIGINAL stamp (the stamp maps, read back through the real gate function)', async () => {
+    // The door's 503/502 face cannot observe WHICH stamps survived a
+    // re-arm clear — a disposed uid never answers a probe again — so
+    // the ended-half of the filtered clear rides the real law
+    // function directly: the stamp maps are the cure's own state,
+    // estateStillActivating is the code the door runs every probe,
+    // and the readback is the maps after the clear FIRES.
+    // Staging mirrors the live arm above: uid 7 = the permanent
+    // waiter (still activating, its firstSeen stamp AGED), uid 9 =
+    // the ended lifecycle (absent from the registry, idling INSIDE
+    // the running quiet at rearm−1s — young enough that the idle
+    // reaper cannot have eaten it first).
+    const { estateStillActivating } = await import('../src/doors.ts')
+    const quietStart = 500_000
+    const clearAt = quietStart + ESTATE_PENDING_REARM_MS + 1_000
+    const gate: PendingGateStamps = {
+      pendingSince: 100_000,
+      quietSince: quietStart,
+      firstSeen: new Map([[7, 100_000], [9, 200_000]]),
+      lastIdle: new Map([[9, quietStart + 2_000]]),
+    }
+    const view = {
+      get: (): undefined => undefined,
+      effect: (): undefined => undefined,
+      llm: undefined,
+      registry: new Map([['rt', {
+        fibers: [{ uid: 7, store: undefined, inertia: undefined, ctx: {} }],
+      }]]),
+    } as unknown as Parameters<typeof estateStillActivating>[1]
+    const realNow = Date.now
+    try {
+      Date.now = (): number => clearAt
+      const activating = estateStillActivating(gate, view)
+      assert.equal(activating, false, 'the aged waiter opens no window — the gate answers open')
+      // THE ENDED HALF: uid 9's stamps are GONE after the clear —
+      // an ended lifecycle's memory never outlives the re-arm
+      assert.ok(!gate.firstSeen.has(9), 'the ENDED uid\u2019s firstSeen stamp dropped — ghosts do not accumulate')
+      assert.equal(gate.lastIdle.size, 0, 'lastIdle cleared wholesale — only ended uids were idling')
+      // THE MONOTONIC HALF: uid 7 (still activating) keeps its
+      // ORIGINAL stamp through the clear — the 4.1.0 brick's cure:
+      // under the old wholesale .clear() this entry died too and the
+      // next probe re-stamped the waiter FRESH (the 503 flap)
+      assert.ok(gate.firstSeen.has(7), 'the still-activating uid\u2019s stamp SURVIVED the clear')
+      assert.equal(gate.firstSeen.get(7), 100_000, 'the survivor keeps its ORIGINAL stamp — never re-armed, never freshened')
+    } finally {
+      Date.now = realNow
     }
   })
 

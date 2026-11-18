@@ -372,9 +372,9 @@ export interface LayerA {
      *  for the run. */
     model?: string;
     audio_stem?: string;
-    /** THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-19):
+    /** THE OUTPUT-NAME FILE SEAT (queue 12's file plane, 2026-11-10):
      *  the deliverable-naming slug — a served schema row
-     *  (General's tab since the 2026-11-19 group fold — born on its
+     *  (General's tab since the 2026-11-11 group fold — born on its
      *  own 'naming' tab, folded under General for tab room) the
      *  studio CARRIES end-to-end: hydrated from the
      *  doc, emitted by serializeLayerA's loop (undefined/"" = absent,

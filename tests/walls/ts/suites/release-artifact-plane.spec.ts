@@ -860,7 +860,7 @@ describe('G5 — stub-loader synthesis (exec-stub-loader.mjs laws)', () => {
   })
 })
 
-// G10 — THE DSH HOST PEER TRAIN (packaging burn, 2026-11-30): the
+// G10 — THE DSH HOST PEER TRAIN (packaging burn, 2026-11-18): the
 // published 0.2.3-rc.4 tarballs carried `>=0.2.1-rc.2 <0.3.0` on
 // the dsh host faces while the registry's only dsh train was
 // 0.2.2-rc.4 — npm semver admits a prerelease ONLY on the

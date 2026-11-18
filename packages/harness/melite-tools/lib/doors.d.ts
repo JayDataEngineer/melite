@@ -117,6 +117,47 @@ export declare const ESTATE_PENDING_GRACE_MS = 120000;
  *  cannot extend the grace window. Exported for the re-arm wall
  *  (a later boot race gets a fresh window: doors.spec.ts). */
 export declare const ESTATE_PENDING_REARM_MS = 10000;
+/** The gate's stamp state (V5 cure, 2026-10-18: the stamps were
+ *  module-scope — one dead mount's wedged window could hold a fresh
+ *  mount's seat doors closed, and unload never lifted it). One
+ *  record per apply; the closure owns it. Exported for the gate's
+ *  unit judge: the door's 503/502 face cannot observe WHICH stamps
+ *  survived a re-arm clear (a dead uid never answers again), so the
+ *  stamp-map law rides the real function directly. */
+export interface PendingGateStamps {
+    pendingSince: number | null;
+    quietSince: number | null;
+    /** Per-fiber first-observed-activating stamps (uid → ms) and
+     *  last-observed-idle stamps (uid → ms). A fiber activating
+     *  continuously longer than the grace is PERMANENT — the
+     *  tools/agentPresets s1 + pluginMarket s0 waiters the census
+     *  showed on every boot (receipts/2026-10-23-estate-settle-gate.md
+     *  §NOT COVERED) — and permanent waiters must not freeze the
+     *  stamp: past the window they keep their honest probe voice,
+     *  but a LATER genuine race (a re-mounted seat) still gets its
+     *  OWN fresh grace. A fiber that lifts and re-trips inside the
+     *  re-arm quiet keeps its ORIGINAL stamp (the li-l flap brick:
+     *  3379 remounts must not extend the window — entries evaporate
+     *  only after a SUSTAINED lift). Uids are registry-monotonic
+     *  (never reused), and the sustained-quiet reset below drops
+     *  ENDED lifecycles only (firstSeen keeps a still-activating
+     *  waiter's original stamp; lastIdle clears whole — the 4.1.0
+     *  permanent-waiter burn below), so the maps stay bounded by the
+     *  live fibers a mount observes. */
+    firstSeen: Map<number, number>;
+    lastIdle: Map<number, number>;
+}
+/** Does the estate still hold an activating seat fiber? The pending
+ *  gate's own law function (fresh-window vs aged-answer arithmetic
+ *  below). Exported for the gate's unit judge — the door's 503/502
+ *  face cannot observe which stamp-map entries survived a re-arm
+ *  clear (a dead uid never answers again), so the stamp law rides
+ *  the real function directly.
+ *  @param gate the per-apply stamp state (mutated: stamps, re-arm
+ *   clear, idle reaping)
+ *  @param c the ctx view the gate reads fibers from
+ *  @returns true while any seat fiber is still activating */
+export declare const estateStillActivating: (gate: PendingGateStamps, c: CtxView) => boolean;
 /** The estate lanes' error map (the false-death fix, 2026-10-08,
  *  corrected twice — the second critique caught bench/
  *  store-failed defaulting to 400 and ~20 codes classified

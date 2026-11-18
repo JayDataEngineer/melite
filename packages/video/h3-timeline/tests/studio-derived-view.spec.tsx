@@ -233,7 +233,7 @@ describe("filmstrip (the last run's windows)", () => {
     )
   })
 
-  // THE BORN-NAMED FILM (queue 12's file plane, 2026-11-19): a run
+  // THE BORN-NAMED FILM (queue 12's file plane, 2026-11-10): a run
   // that spelled output_name delivers `h3_t4_film_<slug>_<n>_.mp4`
   // — the browser-side hero finder (useDerivedView's mirror of
   // filmLead.ts) must seat the NAMED film as the hero; a window

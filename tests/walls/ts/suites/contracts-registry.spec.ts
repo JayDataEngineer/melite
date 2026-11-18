@@ -65,7 +65,7 @@ function specsOf(r: Record<string, unknown>): string[] {
 
 const base = (p: string) => p.slice(p.lastIndexOf('/') + 1)
 
-// THE CLONE LAW (fresh-clone audit F1, 2026-11-30): dev_docs/ is
+// THE CLONE LAW (fresh-clone audit F1, 2026-10-30): dev_docs/ is
 // deliberately untracked (developer-local material, never pushed),
 // so a fresh clone — and CI — carries no registry to judge. The
 // wall reds deterministically there (rows()=[] names every suite

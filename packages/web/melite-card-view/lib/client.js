@@ -8473,7 +8473,7 @@ window.__ModuleLoader__.load({
 		*  shape the chat tile renders — the press's OWN stage list, exactly
 		*  as the projector froze it. Never the bench's present tense: a
 		*  historical card shows the rows THAT call produced, once, forever
-		*  (the same law the previews froze under, 2026-11-19). */
+		*  (the same law the previews froze under, 2026-11-05). */
 		function frozenRowsOf(rows) {
 			return rows.map((r) => ({
 				stageId: r.stage,
