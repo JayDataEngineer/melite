@@ -1,6 +1,6 @@
 import { type DraftId } from '@melite/contracts/benchStage';
-import type { Estate } from '../estate.js';
-import type { ToolDefinition } from '../types.js';
+import type { Estate } from '../estate.ts';
+import type { ToolDefinition } from '../types.ts';
 /** THE OUTCOME OBSERVER, agent-side (observeRunOutcome's law, the
  *  attribution half): poll the run to terminal, writing every flip
  *  onto the stage row (runStatus + result) through the DRAFTS

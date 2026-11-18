@@ -285,7 +285,7 @@ export interface PendingGateStamps {
    *  (never reused), and the sustained-quiet reset below drops
    *  ENDED lifecycles only (firstSeen keeps a still-activating
    *  waiter's original stamp; lastIdle clears whole — the 4.1.0
-   *  permanent-waiter burn below), so the maps stay bounded by the
+   *  storeless burn below), so the maps stay bounded by the
    *  live fibers a mount observes. */
   firstSeen: Map<number, number>
   lastIdle: Map<number, number>

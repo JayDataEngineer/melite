@@ -1,5 +1,5 @@
 import Schema from '@deepseek-ai/schemastery';
-import type { LlmStreamSeam } from './llm-complete.js';
+import type { LlmStreamSeam } from './llm-complete.ts';
 import { mcpFormDoc } from '@melite/engine-mcp/formDoc';
 /** The tool-row shape, DERIVED from the contract's own signature
  *  (rolldown's dts emit chokes on cross-package type-only imports —
@@ -12,7 +12,7 @@ type McpToolRows = Parameters<typeof mcpFormDoc>[0]['tools'];
  *  text"). The WEB wall that renders every lora seat needs the SAME
  *  table this door's form-spec serve reads — one table, two
  *  consumers, never a copy (discovery.ts's own doctrine, 022). */
-export { MODIFIER_PACKS } from './discovery.js';
+export { MODIFIER_PACKS } from './discovery.ts';
 export declare const inject: string[];
 /** Door config — same spelling as the tool plane's. */
 export interface Config {
@@ -150,7 +150,7 @@ export interface PendingGateStamps {
      *  (never reused), and the sustained-quiet reset below drops
      *  ENDED lifecycles only (firstSeen keeps a still-activating
      *  waiter's original stamp; lastIdle clears whole — the 4.1.0
-     *  permanent-waiter burn below), so the maps stay bounded by the
+     *  storeless burn below), so the maps stay bounded by the
      *  live fibers a mount observes. */
     firstSeen: Map<number, number>;
     lastIdle: Map<number, number>;

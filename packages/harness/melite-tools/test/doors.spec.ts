@@ -709,14 +709,20 @@ describe('doors apply', () => {
   })
 
   // THE STORELESS BRICK (live 2026-11-18, the browser-tier burn):
-  // the global dsh train moved to cordis 4.1.0, where every
-  // side-effect fiber carries store === undefined FOR LIFE — the
-  // lane booted with 305 permanent waiters, and the RE-ARM CLEAR
-  // (`.clear()` on the stamps) wiped their AGED stamps at every
-  // sustained quiet; the next request re-stamped all 305 fresh and
-  // the seat doors flapped 503 estate/pending ~90% of every
-  // 2-minute cycle while the estate served fine in the holes (the
-  // journeys' doc reads died in the walls). The cured clear drops
+  // the global dsh train moved to cordis 4.1.0, where the old
+  // activating read (store === undefined) was true of EVERY live
+  // non-preset fiber — the 4.1.0 Fiber class dropped `public
+  // store` — so the boot census counted 305 of them, the whole
+  // non-preset census, not only never-completing waiters (the
+  // activating read is now state-based; see THE ACTIVATING READ
+  // arm below and registry infra-doors-activating-read). Fibers
+  // never self-remove until disposal (source-verified, both
+  // trains), and the RE-ARM CLEAR (`.clear()` on the stamps) wiped
+  // the retained waiters' AGED stamps at every sustained quiet; the
+  // next request re-stamped them all fresh and the seat doors
+  // flapped 503 estate/pending ~90% of every 2-minute cycle while
+  // the estate served fine in the holes (the journeys' doc reads
+  // died in the walls). The cured clear drops
   // only ENDED lifecycles: a waiter still activating keeps its
   // ORIGINAL stamp through the re-arm (the monotonic law), and a
   // genuinely new mount still births a fresh racer.
