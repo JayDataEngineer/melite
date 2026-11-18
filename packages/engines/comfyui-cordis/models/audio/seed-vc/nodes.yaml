@@ -6,7 +6,7 @@
 extensions:
 - name: ComfyUI_Seed-VC
   url: https://github.com/JayDataEngineer/ComfyUI_Seed-VC.git
-  ref: 90bf98dad1ccc671c33a0603743b5b69beb142d9
+  ref: 9582649cb860e44a590ea577c15388c311968aae
   required: true
   # THE ESTATE FORK (2026-11-18, the push-gate burn): the estate
   # patch (BigVGAN loads on huggingface_hub >= 1.x; the runbook is

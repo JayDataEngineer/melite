@@ -262,6 +262,22 @@ describe.skipIf(!REGISTRY_PRESENT)('THE REGISTRY WALL (every law accounted, ever
       .join('.*') + '$')
     const matches = (pattern: string): boolean => {
       const target = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern
+      // A `#symbol` anchor names the seam INSIDE the home: the file
+      // must exist AND carry the symbol. The bare existence check
+      // could never resolve an anchored token (every anchored row
+      // red from seating, each hiding behind the arm's first-throw)
+      // — so the anchor is judged as stated, not stripped.
+      const hash = target.indexOf('#')
+      if (hash !== -1) {
+        const file = target.slice(0, hash)
+        const symbol = target.slice(hash + 1)
+        if (file === '' || symbol === '') return false
+        try {
+          return existsSync(join(ROOT, file)) && readFileSync(join(ROOT, file), 'utf8').includes(symbol)
+        } catch {
+          return false
+        }
+      }
       if (!target.includes('*')) return existsSync(join(ROOT, target))
       const re = globToRegExp(target)
       const walk = (dir: string): boolean => {
