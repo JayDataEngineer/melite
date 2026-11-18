@@ -27,10 +27,10 @@
 	url = https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod.git
 [submodule "vendor/comfyui_extensions/Comfyui_Minimax_h3_latent_Upscaler-Plus"]
 	path = vendor/comfyui_extensions/Comfyui_Minimax_h3_latent_Upscaler-Plus
-	url = https://github.com/xmarre/Comfyui_Minimax_h3_latent_Upscaler-Plus
+	url = https://github.com/JayDataEngineer/Comfyui_Minimax_h3_latent_Upscaler-Plus.git
 [submodule "vendor/comfyui_extensions/ComfyUI-CrossViewWarp"]
 	path = vendor/comfyui_extensions/ComfyUI-CrossViewWarp
-	url = https://github.com/cseti007/ComfyUI-CrossViewWarp
+	url = https://github.com/comfyrob/ComfyUI-CrossViewWarp.git
 [submodule "vendor/comfyui_extensions/ComfyUI-CameraReference3D"]
 	path = vendor/comfyui_extensions/ComfyUI-CameraReference3D
 	url = https://github.com/lovemachine100/ComfyUI-CameraReference3D

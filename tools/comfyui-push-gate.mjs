@@ -9,14 +9,19 @@
 // network. This gate runs at the pre-push seat, the one place both
 // facts are checkable:
 //
-// THREE LAWS (each refusal names the pack + the law):
-//   1. COMMITTED — no uncommitted, staged, or untracked bytes on the
-//      custom-node planes: vendor/comfyui_extensions/ (the gitlinks
-//      AND any stray file inside), .gitmodules, and the shipped
+// FOUR LAWS (each refusal names the pack + the law):
+//   1. COMMITTED — no uncommitted, staged, or gitlink-pointer change
+//      on the custom-node planes: vendor/comfyui_extensions/ (the
+//      gitlink pointers), .gitmodules, and the shipped
 //      extension-manifest.json. A pack re-checked-out at another
-//      sha without committing the gitlink shows as a dirty path
+//      sha without committing the gitlink shows as a dirty pointer
 //      here: the dev box is running different bytes than the push
-//      ships.
+//      ships. What this face CANNOT see is interior dirt: every
+//      vendored pack on the estate carries `ignore = all` in the
+//      local submodule config, so the parent porcelain is blind
+//      inside a pack (proven empirically 2026-11-18: neither an
+//      untracked nor a modified-tracked file inside a pack shows at
+//      the plane). Interior dirt is FACE 4's to judge.
 //   2. PIN TRUTH (local) — every manifest row with a vendored twin
 //      pins exactly the tracked gitlink (the cold-clone wall's law,
 //      restated at the push seat so a CI-bypassing push cannot ship
@@ -33,6 +38,28 @@
 //      — kills every from-nothing install. No offline pass, no
 //      escape hatch: a probe that cannot run is a probe that
 //      refused.
+//   4. FLEET HYGIENE (inside every vendored pack — operator
+//      2026-11-18: "all of the vendor githubs we make are pushed to
+//      latest and there's nothing unpushed") — the parent's
+//      porcelain is BLIND inside a submodule (every vendored pack
+//      carries `ignore = all`: neither an untracked nor a
+//      modified-tracked file inside a pack shows at the plane), and
+//      the pin-liveness probe judges only the pinned sha, never the
+//      pack's own state. So each vendored pack is judged at its own
+//      door, after a fresh fetch of every remote (a pack may track
+//      several — CrossViewWarp's pin lives on its comfyrob remote,
+//      not origin — so judging against origin refs alone false-reds
+//      correctly-pinned packs): its interior porcelain must be empty
+//      (DIRTY-INSIDE), no commit reachable from HEAD or any local
+//      branch may sit beyond every remote-tracking ref (UNPUSHED —
+//      the Seed-VC burn class: the estate patch lived only in a
+//      local clone), and its checked-out HEAD must equal the shipped
+//      gitlink (HEAD!=GITLINK). A fetch that cannot run refuses (no
+//      silent skip — absence is not hygiene). Our fork mirrors of
+//      living upstreams MAY legitimately run ahead of the pin on
+//      origin (upstream syncs we have not re-vendored yet) — the law
+//      judges OUR bytes (pushed, clean, seated), not upstream's
+//      movement.
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -58,6 +85,15 @@ export function judgeCommitted(dirty) {
   return refusals
 }
 
+/** Remote-URL normalization for the URL-SPLIT law: a trailing slash
+ *  and a trailing .git suffix carry no identity (the estate writes
+ *  both spellings across the manifest and .gitmodules). Exported
+ *  for the wall. */
+export function normalizeRemoteUrl(url) {
+  const noslash = url.endsWith('/') ? url.slice(0, -1) : url
+  return noslash.endsWith('.git') ? noslash.slice(0, -4) : noslash
+}
+
 /** FACE 2 — judge local pin truth (exported for the wall).
  *  @param {{ links: Map<string, string>, submodules: Map<string, string>, manifest: Array<{ name: string, url: string, ref: string }> }} seats
  *  @returns {string[]} refusals (empty = clean) */
@@ -69,6 +105,15 @@ export function judgePins({ links, submodules, manifest }) {
     // bare get() here once made this law fire on nothing).
     const sha = links.get(`vendor/comfyui_extensions/${row.name}`)
     if (sha !== undefined && row.ref !== sha) refusals.push(`${row.name}: PIN-TRUTH — manifest ref ${row.ref} != vendored gitlink ${sha} (cold installs and dev boxes diverge)`)
+    // URL-SPLIT (2026-11-18, the CrossViewWarp/Upscaler-Plus find): a
+    // fresh `git clone --recurse-submodules` fetches the pack from
+    // the .gitmodules URL, while the liveness probe and every
+    // provision read the manifest URL — two doors, and they must
+    // name one remote. A manifest repoint that leaves .gitmodules
+    // behind ships a cold-clone death (the pin unservable from the
+    // door the clone walks through).
+    const subUrl = submodules.get(`vendor/comfyui_extensions/${row.name}`)
+    if (sha !== undefined && subUrl !== undefined && normalizeRemoteUrl(subUrl) !== normalizeRemoteUrl(row.url)) refusals.push(`${row.name}: PIN-TRUTH — URL-SPLIT (manifest ${row.url} vs .gitmodules ${subUrl}; a fresh recurse-clone fetches the WRONG remote — repoint .gitmodules to the serving remote)`)
   }
   for (const [name, sha] of links) {
     if (!submodules.has(name)) refusals.push(`${name}: PIN-TRUTH — gitlink ${sha.slice(0, 8)} with no .gitmodules entry (every fresh clone dies fetching it)`)
@@ -90,6 +135,40 @@ export function judgeRemotes(pins, probe) {
   for (const pin of pins) {
     const r = probe(pin.url, pin.ref)
     if (!r.ok) refusals.push(`${pin.name}: REMOTE-LIVENESS — ${pin.ref.slice(0, 12)} (${pin.why}) is not servable from ${pin.url}: ${r.detail}`)
+  }
+  return refusals
+}
+
+/** Python bytecode caches are MACHINE DIRT, never shippable work:
+ *  deterministic regenerable artifacts of importing the pack (the
+ *  engine and provisioning import vendor trees in place, so
+ *  __pycache__/ reappears on its own). Nobody pushes pycache, so a
+ *  gate that refused on it would train cleaning bytecode before
+ *  every push — noise. DIRTY-INSIDE judges human bytes only.
+ *  Exported for the wall. */
+export const HYGIENE_BYTECODE = /(^|\/)__pycache__\/|\.py[co]$/;
+
+/** FACE 4 — judge fleet hygiene over collected pack states
+ *  (exported for the wall; the CLI collects real states with git,
+ *  tests inject fakes — the unit plane never touches the network).
+ *  @param {Array<{ name: string, gitlink: string, head: string | null, dirty: string[], ahead: string[], fetchError: string | null }>} states
+ *  @returns {string[]} refusals (empty = every pack clean, seated, and pushed) */
+export function judgeFleetHygiene(states) {
+  const refusals = []
+  for (const s of states) {
+    const short = s.name.replace('vendor/comfyui_extensions/', '')
+    if (s.head === null) {
+      refusals.push(`${short}: FLEET-HYGIENE — pack not checked out (no HEAD reads at ${s.name}; fresh clones must recurse submodules)`)
+      continue
+    }
+    if (s.fetchError !== null) {
+      refusals.push(`${short}: FLEET-HYGIENE — origin unfetchable, hygiene unverifiable (${s.fetchError}; no silent skip — absence is not hygiene)`)
+      continue
+    }
+    if (s.head !== s.gitlink) refusals.push(`${short}: FLEET-HYGIENE — HEAD!=GITLINK (checked out ${s.head.slice(0, 12)} but the push ships ${s.gitlink.slice(0, 12)}; commit the re-checkout or restore it)`)
+    const human = s.dirty.filter((p) => !HYGIENE_BYTECODE.test(p))
+    if (human.length > 0) refusals.push(`${short}: FLEET-HYGIENE — DIRTY-INSIDE (${human.length} interior path(s), parent porcelain blind by ignore=all: ${human.slice(0, 3).join(', ')}${human.length > 3 ? ', …' : ''}; commit/push the pack or clean it)`)
+    if (s.ahead.length > 0) refusals.push(`${short}: FLEET-HYGIENE — UNPUSHED (${s.ahead.length} local commit(s) beyond every remote ref: ${s.ahead.slice(0, 3).map((h) => h.slice(0, 12)).join(', ')}${s.ahead.length > 3 ? ', …' : ''}; push the pack or drop them — the Seed-VC burn class)`)
   }
   return refusals
 }
@@ -154,15 +233,79 @@ function main() {
       console.error(`  ${r.ok ? 'ok  ' : 'DEAD'} ${pin.name} ${pin.ref.slice(0, 12)} (${pin.why})${r.ok ? '' : ` — ${r.detail}`}`)
     }
   }
-  void Promise.all(Array.from({ length: 6 }, worker)).then(() => {
+  void Promise.all(Array.from({ length: 6 }, worker)).then(async () => {
     refusals.push(...judgeRemotes(pins, (url, ref) => answers.get(`${url} ${ref}`) ?? { ok: false, detail: 'probe never ran' }))
+    // FACE 4 — fleet hygiene (network: a fresh origin fetch per
+    // pack, then the at-the-door judgment; pool of 4 — fetches are
+    // heavier than dry-run probes).
+    const states = await collectFleetStates(root, links)
+    for (const s of states) {
+      if (s.fetchError === null) console.error(`  ${s.dirty.length === 0 && s.ahead.length === 0 && s.head === s.gitlink ? 'ok  ' : 'DIRTY'} ${s.name.replace('vendor/comfyui_extensions/', '')} head=${(s.head ?? 'absent').slice(0, 12)} gitlink=${s.gitlink.slice(0, 12)}`)
+      else console.error(`  DEAD ${s.name.replace('vendor/comfyui_extensions/', '')} unfetchable — ${s.fetchError}`)
+    }
+    refusals.push(...judgeFleetHygiene(states))
     if (refusals.length > 0) {
       console.error('comfyui-push-gate: REFUSED — the custom-node fleet is not fully committed and pushed:')
       for (const r of refusals) console.error(`  ${r}`)
       process.exit(1)
     }
-    console.error('comfyui-push-gate: every pin committed locally and alive on its remote')
+    console.error('comfyui-push-gate: every pin committed locally and alive on its remote; every vendored pack clean, seated, and pushed')
   })
+}
+
+/** FACE 4 collection — one state per vendored pack, read at the
+ *  pack's own door (the parent porcelain cannot see in: ignore=all).
+ *  Fresh fetch of EVERY remote first (a pack may track several —
+ *  CrossViewWarp's pin lives on its comfyrob remote, not origin — so
+ *  judging against origin refs alone false-reds correctly-pinned
+ *  packs), then the ahead set: HEAD plus every local branch tip,
+ *  minus everything ANY remote-tracking ref reaches (stash and tags
+ *  excluded by construction — shelved work is not unpushed work, and
+ *  tags name releases, not branches).
+ *  @param {string} root the repo top
+ *  @param {Map<string, string>} links path -> shipped gitlink sha
+ *  @returns {Promise<Array<{ name: string, gitlink: string, head: string | null, dirty: string[], ahead: string[], fetchError: string | null }>>} */
+async function collectFleetStates(root, links) {
+  const queue = [...links.entries()]
+  const states = []
+  const worker = async () => {
+    for (;;) {
+      const entry = queue.shift()
+      if (entry === undefined) return
+      const [name, gitlink] = entry
+      const dir = join(root, name)
+      let head = null
+      try {
+        head = execFileSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 15000 }).trim() || null
+      } catch { head = null }
+      if (head === null) {
+        states.push({ name, gitlink, head, dirty: [], ahead: [], fetchError: null })
+        continue
+      }
+      const dirty = execFileSync('git', ['-C', dir, 'status', '--porcelain', '-z', '--no-renames', '--untracked-files=all'], { encoding: 'utf8', timeout: 15000 }).split('\0').filter(Boolean).map((l) => l.slice(3))
+      let fetchError = null
+      try {
+        execFileSync('git', ['-C', dir, 'fetch', '--quiet', '--all'], { encoding: 'utf8', timeout: 120000, stdio: ['ignore', 'ignore', 'pipe'] })
+      } catch (err) {
+        const stderr = String(err.stderr ?? '')
+        fetchError = stderr.split('\n').filter(Boolean).pop() ?? String(err.message ?? 'fetch failed')
+      }
+      let ahead = []
+      if (fetchError === null) {
+        try {
+          const tips = execFileSync('git', ['-C', dir, 'for-each-ref', '--format=%(objectname)', 'refs/heads'], { encoding: 'utf8', timeout: 15000 }).split('\n').filter(Boolean)
+          const refs = [...new Set([head, ...tips])]
+          ahead = execFileSync('git', ['-C', dir, 'log', '--format=%H', ...refs, '--not', '--remotes'], { encoding: 'utf8', timeout: 15000 }).split('\n').filter(Boolean)
+        } catch (err) {
+          fetchError = `ahead computation failed: ${String(err.message ?? err).split('\n')[0]}`
+        }
+      }
+      states.push({ name, gitlink, head, dirty, ahead, fetchError })
+    }
+  }
+  await Promise.all(Array.from({ length: 4 }, worker))
+  states.sort((a, b) => (a.name < b.name ? -1 : 1))
+  return states
 }
 
 /** The real network probe — exit 0 means the server can serve that

@@ -193,11 +193,17 @@ pre-push:
     # First live run (2026-11-15) refused a real tree: two dirty
     # gitlinks and two pins dead upstream (CameraReference3D
     # d2540a97, Upscaler-Plus 63649245). ~40s, ~30 probes, pool of
-    # 6, one retry per probe. The wall is
+    # 6, one retry per probe. FACE 4 (2026-11-18, the operator's
+    # "nothing unpushed" law) judges every pack at its own door
+    # after fetching all remotes — interior dirt (the parent is
+    # blind: ignore=all), local commits beyond every remote ref,
+    # HEAD!=gitlink — and FACE 2's URL-SPLIT refuses a manifest
+    # repoint that leaves .gitmodules naming the wrong remote (the
+    # CrossViewWarp/Upscaler-Plus cold-clone class). The wall is
     # comfyui-push-gate.spec.ts; the CLI is tools/comfyui-push-gate.mjs.
     # NO GLOB — the pins rot on OTHER remotes (force-pushes we never
     # see), so it fires on every push.
-    - name: comfyui-nodes (committed + alive pins)
+    - name: comfyui-nodes (committed + alive pins + fleet hygiene)
       run: node tools/comfyui-push-gate.mjs
 
     # THE TAG-MINT GATE (the 2026-11-14 release burn: v0.2.3-rc.1 and
