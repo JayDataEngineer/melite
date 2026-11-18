@@ -5,19 +5,26 @@
 # everything else is ComfyUI core (LoadAudio, SaveAudio).
 extensions:
 - name: ComfyUI_Seed-VC
-  url: https://github.com/billwuhao/ComfyUI_Seed-VC.git
+  url: https://github.com/JayDataEngineer/ComfyUI_Seed-VC.git
   ref: 90bf98dad1ccc671c33a0603743b5b69beb142d9
   required: true
-  # THE ESTATE PATCH LAYER (2026-11-18, the voice-change first-run
-  # burn): the pinned ref is UPSTREAM 02c0cb8b0512 + one estate
-  # commit (BigVGAN loads on huggingface_hub >= 1.x; the runbook is
-  # dev_docs/runbooks/seed-vc-engine-patch-2026-11-18.md). A pack
-  # update rebases the estate commit on top, never drops it.
+  # THE ESTATE FORK (2026-11-18, the push-gate burn): the estate
+  # patch (BigVGAN loads on huggingface_hub >= 1.x; the runbook is
+  # dev_docs/runbooks/seed-vc-engine-patch-2026-11-18.md) lived only
+  # in the engine's local clone — the pin named a ref upstream could
+  # never serve, and a cold install died at the door. The fork
+  # JayDataEngineer/ComfyUI_Seed-VC (upstream billwuhao 02c0cb8b0512
+  # + the one estate commit) is the pin's servable home, vendored as
+  # the twin gitlink under vendor/comfyui_extensions/ (the PIN-TRUTH
+  # law: manifest ref == gitlink sha). A pack update rebases the
+  # estate commit on top, never drops it.
   desc: >-
     SeedVCRun (source AUDIO + reference AUDIO -> converted AUDIO;
     steps/speed/inference_cfg_rate/f0_condition/auto_f0_adjust/
     pitch_shift/unload_model). Upstream billwuhao/ComfyUI_Seed-VC,
-    Apache-2.0, an in-graph wrapper over Plachtaa/seed-vc. The
+    Apache-2.0, an in-graph wrapper over Plachtaa/seed-vc — carried
+    as the estate fork (the huggingface_hub >= 1.x / BigVGAN fix).
+    The
     wrapper loads BOTH DiT checkpoints at init — the v2
     small-wavenet (22.05k, speech) and the v2 base-f0 44k (singing,
     f0_condition=true) — plus campplus speaker embedding, RMVPE F0,

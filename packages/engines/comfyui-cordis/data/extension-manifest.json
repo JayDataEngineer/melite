@@ -59,10 +59,10 @@
   },
   {
     "name": "ComfyUI_Seed-VC",
-    "url": "https://github.com/billwuhao/ComfyUI_Seed-VC.git",
+    "url": "https://github.com/JayDataEngineer/ComfyUI_Seed-VC.git",
     "ref": "90bf98dad1ccc671c33a0603743b5b69beb142d9",
     "required": true,
-    "desc": "SeedVCRun (source AUDIO + reference AUDIO -> converted AUDIO; steps/speed/inference_cfg_rate/f0_condition/auto_f0_adjust/ pitch_shift/unload_model). Upstream billwuhao/ComfyUI_Seed-VC, Apache-2.0, an in-graph wrapper over Plachtaa/seed-vc. The wrapper loads BOTH DiT checkpoints at init — the v2 small-wavenet (22.05k, speech) and the v2 base-f0 44k (singing, f0_condition=true) — plus campplus speaker embedding, RMVPE F0, two BigVGAN vocoders, and whisper-small content encoding, all from the engine models/TTS tree the seed-vc family provisions.",
+    "desc": "SeedVCRun (source AUDIO + reference AUDIO -> converted AUDIO; steps/speed/inference_cfg_rate/f0_condition/auto_f0_adjust/ pitch_shift/unload_model). Upstream billwuhao/ComfyUI_Seed-VC, Apache-2.0, an in-graph wrapper over Plachtaa/seed-vc — carried as the estate fork (the huggingface_hub >= 1.x / BigVGAN fix). The wrapper loads BOTH DiT checkpoints at init — the v2 small-wavenet (22.05k, speech) and the v2 base-f0 44k (singing, f0_condition=true) — plus campplus speaker embedding, RMVPE F0, two BigVGAN vocoders, and whisper-small content encoding, all from the engine models/TTS tree the seed-vc family provisions.",
     "pip": [
       "munch",
       "descript-audio-codec"
