@@ -820,6 +820,21 @@ test('THE AUDIO DROP JUDGE: a non-audio file on an audio seat refuses loud; audi
   expect(fileKindRefusal(AUDIO, wav)).toBeNull()
 })
 
+test('THE DUAL DROP JUDGE: a lane-agnostic source seat admits image AND audio; other kinds refuse loud', () => {
+  // the OS accept offers both families (DUAL_SQUARE_ACCEPT) — the
+  // drop judge refusing one of them was the form-offered/
+  // write-refused split-brain class (the 2026-11-18 coverage ratchet
+  // caught the image arm refusing under a comment that promised it).
+  const DUAL = { name: 'source', label: 'Source', type: 'file', media: 'image+audio' } as SpecField
+  const png = new File([new Uint8Array([1])], 'take.png', { type: 'image/png' })
+  const wav = new File([new Uint8Array([1])], 'take.wav', { type: 'audio/wav' })
+  const mp4 = new File([new Uint8Array([1])], 'take.mp4', { type: 'video/mp4' })
+  expect(acceptOfField(DUAL)).toBe('image/png,image/jpeg,image/webp,audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoice')
+  expect(fileKindRefusal(DUAL, png)).toBeNull()
+  expect(fileKindRefusal(DUAL, wav)).toBeNull()
+  expect(fileKindRefusal(DUAL, mp4)).toContain('video')
+})
+
 test('THE AUDIO ASSET/FLOW FILTER: an audio artifact URL classifies audio; an image URL refuses the audio seat', () => {
   const AUDIO = { name: 'ref_audio', label: 'Reference Audio', type: 'file', media: 'audio' } as SpecField
   expect(urlKindOf('/runs/r1/vc/vc_00001.flac')).toBe('audio')

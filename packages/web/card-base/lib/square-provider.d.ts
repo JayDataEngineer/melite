@@ -1,7 +1,7 @@
 /** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
-import { type InputSquareVerbs } from './square.tsx';
+import { type InputSquareVerbs } from './square.js';
 import { type SpecField } from './spec.js';
 import type { ChainRunCandidate } from './runs-policy.js';
 /** THE SEAT'S FILE KIND — one derivation for the OS accept, the

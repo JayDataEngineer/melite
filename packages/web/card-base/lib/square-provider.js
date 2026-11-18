@@ -108,9 +108,14 @@ export function fileKindRefusal(f, file) {
     if (fileKind === '')
         return null;
     // THE DUAL SEAT: both MIME families ride — the pick's own shape
-    // seats the lane, so image and audio both admit.
-    if (seatKind === 'image+audio' && fileKind !== 'image' && fileKind !== 'audio') {
-        return t('kindRefusal', { name: file.name, seatKind, fileKind });
+    // seats the lane, so image and audio both admit (the same admit
+    // the OS accept offers: a dialog that offers both families while
+    // this judge refused one was the form-offered/write-refused
+    // split-brain class).
+    if (seatKind === 'image+audio') {
+        return fileKind === 'image' || fileKind === 'audio'
+            ? null
+            : t('kindRefusal', { name: file.name, seatKind, fileKind });
     }
     if (fileKind === seatKind)
         return null;

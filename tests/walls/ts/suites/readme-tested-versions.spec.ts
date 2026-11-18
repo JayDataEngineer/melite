@@ -19,7 +19,7 @@
 // exists to refuse).
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -63,6 +63,15 @@ function workspaceStamp(): { version: string; count: number } {
   return { version: version!, count: [...versions.values()][0]! };
 }
 
+/** PATH walk — the argv-form `command -v` (the walls-tier portability
+ * law: no shell spawns; cmd.exe parses none of the shell spellings). */
+function onPath(bin: string): boolean {
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    if (dir !== "" && existsSync(join(dir, bin))) return true;
+  }
+  return false;
+}
+
 describe("THE TESTED-VERSIONS TABLE (README)", () => {
   it("the table seats all three rows (Melite, DSH, ComfyUI) — the table itself is the contract", () => {
     for (const c of ["Melite", "DSH", "ComfyUI"]) {
@@ -81,12 +90,11 @@ describe("THE TESTED-VERSIONS TABLE (README)", () => {
   it("the DSH row EQUALS the host dsh the lanes run (gated: no binary, no verdict — the arm says so)", () => {
     const bin = process.env.DSH_BIN ?? "dsh";
     if (!existsSync(join(ROOT, "node_modules"))) throw new Error("no node_modules — run pnpm install");
-    const probe = execFileSync("bash", ["-lc", `command -v ${JSON.stringify(bin).replace(/"/g, "'")} >/dev/null 2>&1 || echo MISSING`], { encoding: "utf8" }).trim();
-    if (probe === "MISSED" || probe === "MISSING") {
+    if (!onPath(bin)) {
       console.warn(`readme-tested-versions: no ${bin} binary on this box — the DSH row carries no verdict here (test it where the lanes run)`);
       return;
     }
-    const live = execFileSync("bash", ["-lc", `${JSON.stringify(bin).replace(/"/g, "'")} --version`], { encoding: "utf8" })
+    const live = execFileSync(bin, ["--version"], { encoding: "utf8" })
       .trim().split("\n")[0]!.trim();
     expect(rowOf("DSH")!, `the README's DSH row says ${rowOf("DSH")} but this box's lanes run dsh ${live}`
       + " — re-test the estate on the new dsh, then move the row (the table names what was TESTED)").toBe(live);

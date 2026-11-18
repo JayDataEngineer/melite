@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h } from 'react';
 import { type SpecField, type SpecValues } from './spec.js';
-import { type SquareHost } from './square-provider.tsx';
+import { type SquareHost } from './square-provider.js';
 /** THE INFO GLYPH (hour 21): the field's declared help prose (the
  *  schema's extra.tooltip) rides a hover (i) beside the label — one
  *  definition for every card; absent prose, no glyph. The text is

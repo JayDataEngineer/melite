@@ -14153,7 +14153,7 @@ window.__ModuleLoader__.load({
 			const type = file.type;
 			const fileKind = type.startsWith("video/") ? "video" : type.startsWith("image/") ? "image" : type.startsWith("audio/") ? "audio" : type.startsWith("model/") ? "mesh" : "";
 			if (fileKind === "") return null;
-			if (seatKind === "image+audio" && fileKind !== "image" && fileKind !== "audio") return t("kindRefusal", {
+			if (seatKind === "image+audio") return fileKind === "image" || fileKind === "audio" ? null : t("kindRefusal", {
 				name: file.name,
 				seatKind,
 				fileKind
