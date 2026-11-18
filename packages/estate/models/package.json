@@ -7,11 +7,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5",
+    "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/estate-provisioning": "workspace:*",
-    "@deepseek-ai/schemastery": "^3.18.5",
-    "@melite/comfyui-card-kit": "workspace:*"
+    "@melite/estate-provisioning": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",

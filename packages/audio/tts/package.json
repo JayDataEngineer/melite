@@ -31,9 +31,9 @@
     "@melite/models-qwen3-tts": "workspace:*"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "^5.9.3"
   },
   "name": "@melite/audio-tts",
   "description": "Text-to-speech card and agent tool over the one qwen3-tts family (Base/CustomVoice/VoiceDesign variants), with preset voices and saved qvoice personas.",

@@ -63,7 +63,7 @@ import { describe, it } from "vitest";
 // route).
 // 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
 // family route + two lanes × variant/cell routes (7 addresses).
-const SERVED_ADDR_CENSUS = 79 // 71→79 2026-11-11: the H3-Image pair lands — each twin serves its family route + base variant + 3 quant-cell routes (74→71 2026-11-09: the retired edit family removed whole — its route and quant-cell addresses die with the package. 75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route address dies with its only card; earlier: 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
+const SERVED_ADDR_CENSUS = 80 // 79→80 2026-11-17: seed-vc serves (the voice-change card) — the family's one route address joins (71→79 2026-11-11: the H3-Image pair lands — each twin serves its family route + base variant + 3 quant-cell routes (74→71 2026-11-09: the retired edit family removed whole — its route and quant-cell addresses die with the package. 75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route address dies with its only card; earlier: 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -83,7 +83,7 @@ const SERVED_ADDR_CENSUS = 79 // 71→79 2026-11-11: the H3-Image pair lands —
 // own atom (its routes resolve to their declared owner).
 // 26 -> 25 (2026-11-12): the openjutsu lane deleted by operator
 // order — viggle-animate's claimed atom dies with its only card.
-const OWNER_ATOM_CENSUS = 26 // 24→26 2026-11-11: the H3-Image pair lands — two new owning atoms (the twins' family routes). (25→24 2026-11-09: the retired edit family's atom dies with its package)
+const OWNER_ATOM_CENSUS = 27 // 26→27 2026-11-17: seed-vc's family route joins as an owning atom (the voice-change card). (24→26 2026-11-11: the H3-Image pair lands — two new owning atoms (the twins' family routes). (25→24 2026-11-09: the retired edit family's atom dies with its package)
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -525,7 +525,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // the ONE deliberate text field (born on its own 'naming' tab,
     // folded under General the same day — the tab-room ask; the
     // census count never moved).
-    assert.equal(walked, 481,
+    assert.equal(walked, 490,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -966,6 +966,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // provisions.
     const PROVISION_DECLARERS = ["anima", "anny", "fibo2-edit", "flux-klein", "h3", "h3-image", "h3-image-edit", "joytag", "kimodo",
       "krea-2", "mask-select", "moss-image", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
+      "seed-vc",
       "seedvr2-ema", "transfer-rig",
       "trellis2-native", "wd14", "yue2", "z-image"]; // 2026-11-11: the H3-Image pair starts its own provisioning (encoder tiers + vae, the shared-weights dedup riding the h3 video family's seated encoder). 2026-11-09: the retired edit family's rows die with its package (2026-11-12: viggle-animate removed — the openjutsu lane deleted, operator order)
     // the rows those families declare, exactly (D-M12: a floor let a
@@ -1014,7 +1015,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 // VDA-Small secondary-path files, the video VAE (h3's digest,
 // re-declared: the family owns every weight its lane loads) and the
 // frozen text embed (the pack repo's text_cond row).
-const PROVISION_ROW_COUNT = 101; // 95→101 2026-11-11: the H3-Image pair lands — each twin provisions 3 rows (the int8 encoder tier, the nvfp4 encoder tier, the vae; the encoder files dedup on disk against the h3 video family's seated weights, and the DECL still owns the download rows). (97→95 2026-11-09: the retired edit family's two provision rows die with its package. // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1); 96→97 2026-11-01: the silver-dareties default cure — h3 provisions the official silver_official_releases DARE-TIES merge (silveroxides minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2)
+const PROVISION_ROW_COUNT = 120; // 101→120 2026-11-17: seed-vc provisions 19 single-file rows (both DiT lanes + campplus + rmvpe + two BigVGAN pairs + whisper-small's 11 files). (95→101 2026-11-11: the H3-Image pair lands — each twin provisions 3 rows (the int8 encoder tier, the nvfp4 encoder tier, the vae; the encoder files dedup on disk against the h3 video family's seated weights, and the DECL still owns the download rows). (97→95 2026-11-09: the retired edit family's two provision rows die with its package. // 95→96 2026-11-13: the reshoot official rework — h3 provisions the CrossView LoRA (Cseti/MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1); 96→97 2026-11-01: the silver-dareties default cure — h3 provisions the official silver_official_releases DARE-TIES merge (silveroxides minimax_h3_fl2v_turbo_silver_dareties_comfy_pruned_v2)
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1524,12 +1525,13 @@ describe("requires is the union of requiresByFamily", () => {
     // THE COMPARED FLOOR (the walls audit's row 8, 2026-10-10): the
     // arm skipped every card without a requiresByFamily table — a
     // rename that emptied the column made it a silent pass. The
-    // exact count is pinned (THREE cards carry the table today —
-    // the h3 lineage's two plus image-gen's qwen-img-21 Impact slice
-    // (MASK-C, the image-gen region gap): a third card is a
+    // exact count is pinned (THREE cards carried the table before
+    // 2026-11-17 — the h3 lineage's two plus image-gen's qwen-img-21
+    // Impact slice (MASK-C, the image-gen region gap); the fourth is
+    // voice-change (seed-vc's pack seat): a further table is a
     // deliberate edit, and a rename that empties the column is a
     // red wall.
-    assert.equal(compared, 3,
+    assert.equal(compared, 4,
       `the H4 union arm compared real cards (got ${String(compared)} — a further requiresByFamily table is a deliberate edit, an emptied column is a rename)`);
   });
 });
@@ -1927,7 +1929,7 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // euler fixed, offenders empty).
     // 13 -> 12 (2026-11-12): the openjutsu card deleted by operator
     // order — it boarded viggle-animate; the family died with it.
-    assert.equal(cards, 12, "the boarded-cards census changed — update this pin deliberately");
+    assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
     // RE-PINNED DOWN (same closeout order): the emptied field took
     // two shared-name pairs with it.
     // 636 -> 629 (2026-10-13, the autoremesher excision): the
@@ -2023,7 +2025,7 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // and the h3 schema declares it — one agreeing pair per boarding
     // card (three carry the h3 family); a string row owns no bounds
     // or enum, so offenders stay empty.
-    assert.equal(pairs, 799, "the shared-name pair census changed — update this pin deliberately"); // 800→799 2026-11-11 (later the same day): the phantom-port law restored — h3-image's reference_images row leaves the action ParamSpec (the seat fires on qwen-img-21 alone); the card-side row stays, unpaired. 777→800 2026-11-11: the H3-Image pair lands — the t2i twin's 8 shared rows + the edit twin's 7 (prompt/seed/steps/cfg/sampler/scheduler + the list seats) join both homes. (791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
+    assert.equal(pairs, 808, "the shared-name pair census changed — update this pin deliberately"); // 799→808 2026-11-17: the voice-change card's nine knob rows join both homes (steps/speed/cfg/f0/auto-f0/pitch/unload + the two audio paths). (800→799 2026-11-11 (later the same day): the phantom-port law restored — h3-image's reference_images row leaves the action ParamSpec (the seat fires on qwen-img-21 alone); the card-side row stays, unpaired. 777→800 2026-11-11: the H3-Image pair lands — the t2i twin's 8 shared rows + the edit twin's 7 (prompt/seed/steps/cfg/sampler/scheduler + the list seats) join both homes. (791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
     // 796→791 2026-11-01 (the blender-lane removal): the rig card's fbx/decimate/species knobs and gem-soma's two export knobs leave both homes together
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });

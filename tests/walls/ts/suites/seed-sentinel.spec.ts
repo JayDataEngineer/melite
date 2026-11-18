@@ -225,6 +225,7 @@ describe("GATE S: the seed sentinel mints at render", () => {
         // deleted package; the TTS two-family actions are one family's
         // now).
         "qwen3-tts/src/actions.ts",
+    "seed-vc/src/actions.ts",
         "seedvr2-ema/src/actions.ts",
         "skin/src/actions.ts",
         "transfer-rig/src/actions.ts",

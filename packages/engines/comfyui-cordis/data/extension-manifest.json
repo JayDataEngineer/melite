@@ -58,6 +58,18 @@
     "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/audio/nodes.yaml"
   },
   {
+    "name": "ComfyUI_Seed-VC",
+    "url": "https://github.com/billwuhao/ComfyUI_Seed-VC.git",
+    "ref": "02c0cb8b05121dd9e391b4287c8e28e0eb4e79a4",
+    "required": true,
+    "desc": "SeedVCRun (source AUDIO + reference AUDIO -> converted AUDIO; steps/speed/inference_cfg_rate/f0_condition/auto_f0_adjust/ pitch_shift/unload_model). Upstream billwuhao/ComfyUI_Seed-VC, Apache-2.0, an in-graph wrapper over Plachtaa/seed-vc. The wrapper loads BOTH DiT checkpoints at init — the v2 small-wavenet (22.05k, speech) and the v2 base-f0 44k (singing, f0_condition=true) — plus campplus speaker embedding, RMVPE F0, two BigVGAN vocoders, and whisper-small content encoding, all from the engine models/TTS tree the seed-vc family provisions.",
+    "pip": [
+      "munch",
+      "descript-audio-codec"
+    ],
+    "_source": "engines/comfyui-cordis:packages/engines/comfyui-cordis/models/audio/seed-vc/nodes.yaml"
+  },
+  {
     "name": "ComfyUI-Florence2",
     "url": "https://github.com/kijai/ComfyUI-Florence2.git",
     "ref": "9ece3de914214c5f581d725167bc9d0eeb0d1120",

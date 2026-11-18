@@ -17,6 +17,9 @@
       "node"
     ],
     "paths": {
+        "@melite/audio-voice-change": ["./../../audio/voice-change/src/card.ts"],
+        "@melite/audio-voice-change/card": ["./../../audio/voice-change/src/card.ts"],
+        "@melite/models-seed-vc": ["./../../models/seed-vc/src/index.ts"],
         "@melite/media-preview": ["./../../web/media-preview/src/host.ts"],
         "@melite/media-preview/client": ["./../../web/media-preview/src/client/index.ts"],
         "@melite/models-h3-image/mods/mask": ["./../../models/h3-image/mods/mask.ts"],

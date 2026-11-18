@@ -167,6 +167,17 @@ export interface RunRecord {
      *  performing run on the same pipeline read apart. Absent on
      *  variant-less runs. */
     variant?: string;
+    /** THE COLD-LOAD RETRY LEDGER (promgen handoff A1, 2026-11-17):
+     * engine-core model loads race their own eviction sweep —
+     * ComfyUI's model_management free_memory walks current_loaded_models
+     * while a second load mutates it (IndexError: list index out of
+     * range, engine core, not ours to patch — LAW 1). The lane's
+     * evidence: run-598c035d24c6 failed on it, the 20s-later manual
+     * re-run completed. The pump's failure catch re-queues a run that
+     * died on exactly that signature ONCE; this counter is the budget
+     * (absent = never retried). Rides every sidecar rewrite so a boot
+     * between retry and re-claim never double-retries. */
+    engineRetryCount?: number;
     /** THE LOUDNESS STAMP (roadmap OWED 2026-09-26 — the compact-row
      *  chip): the engine's meter reading lifted off the stage
      *  result_outputs.loudness at settle (BS.1770-4 integrated +

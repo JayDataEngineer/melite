@@ -58,6 +58,7 @@
     "@melite/models-qwen-img-21": "workspace:*",
     "@melite/models-qwen-img-edit-21": "workspace:*",
     "@melite/models-qwen3-tts": "workspace:*",
+    "@melite/models-seed-vc": "workspace:*",
     "@melite/models-seedvr2-ema": "workspace:*",
     "@melite/models-skin": "workspace:*",
     "@melite/models-somax": "workspace:*",
@@ -72,14 +73,14 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@melite/card-base": "workspace:*",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "files": [
     "lib/index.js",

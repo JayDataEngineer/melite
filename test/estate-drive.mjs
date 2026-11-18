@@ -104,7 +104,13 @@ function request(method, params) {
   return id;
 }
 
-const SESSION = "estate-job-" + Date.now().toString(36);
+// THE SESSION KEY WEARS THE CONVERSATION SHAPE (the one-seat law,
+// audit 2026-10-31-one-seat-bench-identity): a bare id keys a
+// DELEGATED lane whose parent the host sessions service must
+// resolve — a root SDK session has none, so the run door refuses.
+// `session-` seats the drive's own conversation bench (inheritance
+// seeds it on first touch), the shape every real conversation keys.
+const SESSION = "session-estate-job-" + Date.now().toString(36);
 const events = [];
 let idle = false;
 
@@ -118,9 +124,13 @@ const initId = request("initialize", {
 });
 
 // await initialize
+// 60s, the sibling drives' own value (agent-drive/craft-drive): the
+// estate profile's boot is a deterministic ~31s on the 33-family
+// tree — a 30s timeout reds every run on boot alone, never on the
+// lane it probes.
 const t0 = Date.now();
 while (!frames.some((f) => f.id === initId)) {
-  if (Date.now() - t0 > 30000) {
+  if (Date.now() - t0 > 60000) {
     console.error("estate-drive: initialize timeout");
     console.error("stderr tail:", stderrTail.split("\n").slice(-6).join("\n"));
     child.kill();

@@ -159,7 +159,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // (flows-are-compositions: body-to-somax/audio-native-tts/
     // extend-video/music-native — card= stages ride the card plane,
     // never this fixture) changed no class: still 11.
-    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(11);
+    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(12); // 11→12 2026-11-17: SeedVCRun joins (the voice-change card's flow class)
     // the roster's census: 7 since the card-wrapper collapse
     // (2026-11-14, flows-are-compositions — a one-card "flow" was a
     // wrapper; the cards press their own doors now). History: the

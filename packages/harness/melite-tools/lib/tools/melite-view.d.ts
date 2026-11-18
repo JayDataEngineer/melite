@@ -6,6 +6,28 @@ import type { MeshSummary } from './glbSummary.js';
 import type { MediaListRow } from '@melite/estate-media';
 import type { VisionQuestionKind, VisionRoute } from './vision-route.js';
 import type { ToolDefinition } from '../types.js';
+/** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
+ *  manifest in order — own root first, then the extras (the queue
+ *  seat's stateRoots config). First root holding the run serves (own
+ *  writes win); a miss names every searched root. Exported for the
+ *  contact-sheet door (B9 — the same walk over N runs, one spelling).
+ *  @param seat the queue seat (stateRoot owner + optional extras).
+ *  @param kind the media kind the walk lists.
+ *  @param runId the run tree to find.
+ *  @returns that root's rows for the run plus the root, or null on miss. */
+export declare const firstRootWithRun: (seat: {
+    stateRoot: string;
+    stateRoots?: readonly string[];
+}, kind: "image" | "video" | "audio" | "model", runId: string) => Promise<{
+    own: MediaListRow[];
+    root: string;
+} | null>;
+/** Exported for the contact-sheet door (B9): the caller's artifact
+ *  filter rides the SAME spelling-normalized containment the view
+ *  door judges by — one matcher, both observe doors.
+ *  @param rowName a row name the walk produced.
+ *  @param token the caller's artifact filter ("" = newest row). */
+export declare const artifactRowMatches: (rowName: string, token: string) => boolean;
 /** Identify the media type declared by a supported image signature. */
 export declare function sniffImageMediaType(data: Uint8Array): ImageMediaType | undefined;
 /** Map a path to its declared image media type by extension. */
@@ -152,8 +174,9 @@ export declare function viewAudioArtifact(seat: QueueSeatSeam, runId: string, ar
 /** The structural exec view the route gate reads (the types.ts
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
- * ToolRunContext). */
-interface ViewExec {
+ * ToolRunContext). Exported for the contact-sheet door (B9 — the
+ * same route gate, one spelling). */
+export interface ViewExec {
     signal: AbortSignal;
     agent?: {
         session?: {

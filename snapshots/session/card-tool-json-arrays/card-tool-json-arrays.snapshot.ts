@@ -24,7 +24,10 @@ describe('card-tool JSON arrays (keyless replay)', () => {
     assert.equal(parent.rows[1]?.text, 'Create a two-shot film and carry one dialogue clip.')
 
     const posts: Array<{ path: string; body: Record<string, unknown> }> = []
-    const tool = buildH3TimelineTool(async (_method, path, body) => {
+    // await: the builder is async since the param surface moved onto
+    // the family seat (the plugin law, 2026-11-16) — it primes
+    // @melite/models-h3 before requireSeat serves the vocabulary.
+    const tool = await buildH3TimelineTool(async (_method, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> })
       if (path === '/v1/flows/drafts') return { draftId: 'd-snapshot' }
       return { run_id: 'r-snapshot', status: 'queued' }

@@ -34,9 +34,9 @@
     "@melite/models-qwen-img-edit-21": "workspace:*"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "^5.9.3"
   },
   "name": "@melite/image-image-edit",
   "description": "Anchored image-edit card and agent tool over the qwen-img-edit-21 and fibo2-edit families.",

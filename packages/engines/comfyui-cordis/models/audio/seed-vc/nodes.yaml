@@ -1,0 +1,33 @@
+# seed-vc — ComfyUI extension dependencies (the voice-change lane,
+# 2026-11-17). The Seed-VC voice conversion rides the upstream pack's
+# own SeedVCRun node (both DiT lanes — the 22k small-wavenet lane and
+# the 44k f0 lane — load inside the wrapper's init from models/TTS);
+# everything else is ComfyUI core (LoadAudio, SaveAudio).
+extensions:
+- name: ComfyUI_Seed-VC
+  url: https://github.com/billwuhao/ComfyUI_Seed-VC.git
+  ref: 02c0cb8b05121dd9e391b4287c8e28e0eb4e79a4
+  required: true
+  desc: >-
+    SeedVCRun (source AUDIO + reference AUDIO -> converted AUDIO;
+    steps/speed/inference_cfg_rate/f0_condition/auto_f0_adjust/
+    pitch_shift/unload_model). Upstream billwuhao/ComfyUI_Seed-VC,
+    Apache-2.0, an in-graph wrapper over Plachtaa/seed-vc. The
+    wrapper loads BOTH DiT checkpoints at init — the v2
+    small-wavenet (22.05k, speech) and the v2 base-f0 44k (singing,
+    f0_condition=true) — plus campplus speaker embedding, RMVPE F0,
+    two BigVGAN vocoders, and whisper-small content encoding, all
+    from the engine models/TTS tree the seed-vc family provisions.
+  # The REAL pip needs only (the upstream requirements.txt also
+  # lists funasr + sounddevice; both are phantom: the campplus
+  # speaker-embedding code is vendored in the pack's seed_vc tree
+  # and sounddevice is imported nowhere on the reachable path).
+  # descript-audio-codec supplies the audiotools surface the
+  # length-regulator's VectorQuantize (seed_vc.dac.nn.quantize)
+  # imports; munch rides the config loading. Everything else in
+  # upstream's requirements.txt (librosa, einops, pydub, soundfile,
+  # hydra-core, pyyaml, python-dotenv, huggingface-hub) the shared
+  # engine venv already serves.
+  pip:
+    - munch
+    - descript-audio-codec

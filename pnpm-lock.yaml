@@ -118,6 +118,9 @@ importers:
       '@melite/models-qwen3-tts':
         specifier: 0.2.3-rc.4
         version: link:packages/models/qwen3-tts
+      '@melite/models-seed-vc':
+        specifier: 0.2.3-rc.4
+        version: link:packages/models/seed-vc
       '@melite/models-seedvr2-ema':
         specifier: 0.2.3-rc.4
         version: link:packages/models/seedvr2-ema
@@ -477,6 +480,31 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/audio/voice-change:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.5
+        version: 3.18.5
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/models-seed-vc':
+        specifier: workspace:*
+        version: link:../../models/seed-vc
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.5
+        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/engines/agent:
     dependencies:
       '@deepseek-ai/dsh-llm':
@@ -553,6 +581,9 @@ importers:
       '@melite/audio-tts':
         specifier: workspace:*
         version: link:../../audio/tts
+      '@melite/audio-voice-change':
+        specifier: workspace:*
+        version: link:../../audio/voice-change
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../comfyui-card-kit
@@ -655,6 +686,9 @@ importers:
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
+      '@melite/models-seed-vc':
+        specifier: workspace:*
+        version: link:../../models/seed-vc
       '@melite/models-seedvr2-ema':
         specifier: workspace:*
         version: link:../../models/seedvr2-ema
@@ -1860,6 +1894,22 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/models/seed-vc:
+    dependencies:
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.5
+        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/models/seedvr2-ema:
     dependencies:
       '@melite/comfyui-card-kit':
@@ -2922,6 +2972,9 @@ importers:
       '@melite/models-qwen3-tts':
         specifier: workspace:*
         version: link:../../models/qwen3-tts
+      '@melite/models-seed-vc':
+        specifier: workspace:*
+        version: link:../../models/seed-vc
       '@melite/models-seedvr2-ema':
         specifier: workspace:*
         version: link:../../models/seedvr2-ema

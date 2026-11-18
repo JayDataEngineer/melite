@@ -718,6 +718,31 @@ function appLogPort(ctx) {
 function appLogPath(ctx, port) {
     return join(ctx.repoRoot, "data", "runtime", "comfyui", "user", "comfyui_" + port + ".log");
 }
+/** THE UNIT'S OWN WIRING (promgen handoff A2, 2026-11-17): the
+ *  estate's engine unit is HAND-SEATED on real lanes and its
+ *  StandardOutput names where the application log actually lands
+ *  (the observed deployment: `append:/tmp/estate-comfyui-8188.log`)
+ *  — a path the canonical derivation below never produced, which
+ *  left a LIVE 41MB application log invisible to the door (the
+ *  handoff's "no engine application log on disk"). The unit file
+ *  is the deployment's own truth: discovery over assumption. Not
+ *  cached — the door is operator-frequency, and a unit re-pointed
+ *  by hand must be honored on the very next read. */
+async function unitAppLogPath(ctx) {
+    try {
+        const out = await execFileAsync("systemctl", ["--user", "cat", ctx.comfyUnit], {
+            timeout: 5 * 1000,
+            encoding: "utf8",
+        });
+        const m = /^StandardOutput=(?:append:|file:)(\S+)/m.exec(out.stdout);
+        return m === null ? null : m[1];
+    }
+    catch {
+        /* no systemctl, no bus, no unit — the canonical derivation
+         * owns the answer (and its absent verdict names both seats) */
+        return null;
+    }
+}
 /** THE FRESH BOUND: an app log within the hour, or written since the
  *  last known engine boot (the estate's restart receipt), may be the
  *  live application log. Anything older predates the current engine —
@@ -746,20 +771,23 @@ function tailLines(path, max) {
         closeSync(fd);
     }
 }
-/** The app-log liveness stamp: stat the derivable path, judge fresh
+/** The app-log liveness stamp: stat the resolved path, judge fresh
  *  against the boot receipt, and when fresh serve its tail. Absent,
- *  stale, and underivable are HONEST WORDS — never invented lines. */
-function appLogRow(ctx, port, tail) {
-    if (port === null) {
+ *  stale, and underivable are HONEST WORDS — never invented lines.
+ *  @param path the RESOLVED application-log path (the unit's own
+ *    StandardOutput directive first — the deployment's truth — then
+ *    the canonical derivation; null when neither seat produced one). */
+function appLogRow(ctx, path, tail) {
+    if (path === null) {
         return {
             known: false,
             verdict: "unknown",
-            note: "no app log known — " + (ctx.endpoint()["provision"] === "managed"
-                ? "the endpoint config carries no engine port to derive the path from"
-                : "a byo endpoint's engine tree is user-owned; the estate paths only its managed deployment"),
+            note: "no app log known — neither the unit's StandardOutput directive nor " +
+                (ctx.endpoint()["provision"] === "managed"
+                    ? "the endpoint config's port-derived runtime path named one"
+                    : "a byo endpoint's user-owned engine tree named one (the estate paths only its managed deployment)"),
         };
     }
-    const path = appLogPath(ctx, port);
     let mtimeMs;
     try {
         mtimeMs = statSync(path).mtimeMs;
@@ -769,7 +797,7 @@ function appLogRow(ctx, port, tail) {
             known: false,
             verdict: "absent",
             path,
-            note: "no engine application log on disk — the unit's stdout capture never wrote one at this path; the journal tail is systemd's harness capture (restarts/exits/oom), never application output",
+            note: "no engine application log at " + path + " — neither the unit's StandardOutput directive nor the canonical runtime path produced a file; the journal tail is systemd's harness capture (restarts/exits/oom), never application output",
         };
     }
     const ageSeconds = Math.max(0, Math.round((Date.now() - mtimeMs) / 1000));
@@ -837,7 +865,14 @@ async function hLogs(req, ctx) {
     const lines = stdout.split("\n").filter((ln) => ln !== "");
     const wrapper = wrapperLineCount(lines, ctx.comfyUnit);
     const oom = countOomLines(lines);
-    const appLog = appLogRow(ctx, appLogPort(ctx), tail);
+    // THE DISCOVERY CHAIN (A2): the unit's own StandardOutput first
+    // (the hand-seated deployment's truth), the canonical derivation
+    // second (the estate-provisioned shape) — MANAGED only: a byo
+    // endpoint's engine tree is user-owned and the estate's unit does
+    // not own it (the logs-truth law, unchanged).
+    const port = appLogPort(ctx);
+    const unitPath = port !== null ? await unitAppLogPath(ctx) : null;
+    const appLog = appLogRow(ctx, unitPath ?? (port !== null ? appLogPath(ctx, port) : null), tail);
     const data = {
         source: {
             kind: "journal",

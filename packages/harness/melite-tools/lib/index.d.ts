@@ -45,6 +45,7 @@ export { meliteFlow } from './tools/melite-flow.js';
 export { comfyManage } from './tools/comfy-manage.js';
 export { meliteLoad } from './tools/melite-load.js';
 export { meliteView } from './tools/melite-view.js';
+export { meliteContactSheet } from './tools/contact-sheet.js';
 export { meliteRead, readRunText } from './tools/melite-read.js';
 export { skillRead } from './tools/skill-read.js';
 export { skillWrite } from './tools/skill-write.js';
@@ -91,11 +92,11 @@ export declare const EAGER_TOOL_NAMES: readonly ["melite_discover", "melite_load
  * twins carry the melite_ prefix (operator 2026-10-08: they are OUR
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
-export declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail"];
+export declare const DEFERRED_TOOL_NAMES: readonly ["melite_view", "melite_contact_sheet", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail"];
 /** BASE tool names (discovery, compose, view, management, audit).
  *  melite_view is the observe arm (viewing an artifact is not a run
  *  press — the compose law holds). */
-export declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail"];
+export declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_contact_sheet", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail"];
 /** THE RUN DOORS — the /melite-runs delegation's execution verbs,
  *  seated by the user's toggle and by the persisted record at boot
  *  (runsDelegation.ts). Not an interface: the same lane gains and
@@ -106,7 +107,7 @@ export declare const RUN_DOOR_NAMES: readonly ["melite_flow", "run_status"];
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 export declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail", "melite_flow", "run_status"];
+export declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "melite_construct", "melite_view", "melite_contact_sheet", "melite_read", "comfy_manage", "melite_skill_read", "melite_skill_write", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway.
  *  THE TYPED CONTEXT (F-2/F-4 cure, 2026-11-05): the hand-declared
  *  CtxView parallel is retired — logger/effect are cordis Context

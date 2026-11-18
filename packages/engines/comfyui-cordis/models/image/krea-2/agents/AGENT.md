@@ -7,8 +7,7 @@ genre: image
 # Krea 2
 
 The stylized branch of the image family — painterly, illustrative,
-design-forward renders. THE PHOTOREAL SEATS (operator ranking,
-2026-11-16): moss-image and krea-2 RAW — this family's own raw
+design-forward renders. THE PHOTOREAL SEATS: moss-image and krea-2 RAW — this family's own raw
 variant is one of the two; the retired photoreal family is struck
 from the ranking entirely (the photoreal-ban law, same date).
 Choose krea-2 when the brief says stylized; choose raw (not turbo)

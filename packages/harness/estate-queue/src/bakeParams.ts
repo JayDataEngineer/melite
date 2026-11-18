@@ -8,7 +8,7 @@
 
 /** One collected validation failure (loc = dotted path;
  *  empty = model-level). */
-export interface VError {
+interface VError {
   readonly loc: readonly (string | number)[];
   readonly msg: string;
   readonly input: unknown;

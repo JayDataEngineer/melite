@@ -26,9 +26,9 @@
     "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "^5.9.3"
   },
   "files": [
     "lib/index.js",

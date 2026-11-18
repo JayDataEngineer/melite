@@ -1,12 +1,4 @@
 import type { Plugin } from "@deepseek-ai/cordis";
-/** The contract every family module exports: one plugin object and
- *  the DECL it registers (the id pairing is asserted at load). */
-export interface FamilyModule {
-    family: Plugin;
-    DECL: {
-        id: string;
-    };
-}
 /** One frozen row: the package specifier beside the family id its
  *  DECL must carry. The pairing cannot drift — loadFamilies refuses
  *  a loaded DECL whose id differs from the row. */

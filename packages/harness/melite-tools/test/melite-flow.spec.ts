@@ -3919,6 +3919,61 @@ describe('B2 — the start timeout recovers the landed run (never a blind re-pre
     assert.ok(!err.includes('run-old-e3'), 'an old run is never claimed as the candidate: ' + err)
   })
 
+  // the recovery read's own row guards (B2's tail): a malformed row —
+  // a bare value, an empty id, a zero stamp, an ABSENT id (the
+  // non-string type-guard tail), an ABSENT stamp (the non-number
+  // tail) — is SKIPPED, never claimed as the candidate; the hunt
+  // continues to the true row.
+  test('malformed list rows are skipped — the recovery never claims a junk row as the landed run', async () => {
+    const nowS = Math.floor(Date.now() / 1000)
+    const seen = mockEstate([
+      flowLoad(undefined),
+      timeoutStart,
+      (lane: string) => {
+        if (lane === 'runsList') {
+          return {
+            status: 200,
+            body: { count: 7, runs: [
+              null,
+              'a bare string row',
+              { run_id: '', status: 'queued', created_at: nowS + 1 },
+              { status: 'queued', created_at: nowS + 1 },
+              { run_id: 'run-no-stamp-e4', status: 'queued', created_at: 0 },
+              { run_id: 'run-no-birth-e6', status: 'queued' },
+              { run_id: 'run-recovered-e5', status: 'queued', created_at: (nowS + 1) * 1000 },
+            ] },
+          }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(3000))) as Record<string, unknown>
+    const err = out['error'] as string
+    assert.ok(err.includes('run-recovered-e5'), 'the true row is recovered past the junk: ' + err)
+    assert.ok(!err.includes('run-no-stamp-e4'), 'a zero-stamp row is never the candidate: ' + err)
+    assert.ok(!err.includes('run-no-birth-e6'), 'a birthless row is never the candidate: ' + err)
+  })
+
+  // the list read's own shape guard (B2's tail): a 200 whose runs
+  // field is not an array degrades to no rows — the recovery keeps
+  // its honest absence voice, never a crash.
+  test('a non-array runs field reads as zero rows — the honest absence voice stands', async () => {
+    const seen = mockEstate([
+      flowLoad(undefined),
+      timeoutStart,
+      (lane: string) => {
+        if (lane === 'runsList') return { status: 200, body: { count: 1, runs: 'not-an-array' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(3000))) as Record<string, unknown>
+    const err = out['error'] as string
+    assert.ok(err.includes('no run minted'), 'the shape guard degrades to the absence voice: ' + err)
+    assert.ok(err.includes('safe to press again'), 'the re-press verdict: ' + err)
+  })
+
   test('a dead list read degrades to the door-naming fallback — never masks the timeout', async () => {
     const seen = mockEstate([
       flowLoad(undefined),

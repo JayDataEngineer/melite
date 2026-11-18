@@ -41,6 +41,7 @@
     "@melite/models-qwen-img-21": "0.2.3-rc.4",
     "@melite/models-qwen-img-edit-21": "0.2.3-rc.4",
     "@melite/models-qwen3-tts": "0.2.3-rc.4",
+    "@melite/models-seed-vc": "0.2.3-rc.4",
     "@melite/models-seedvr2-ema": "0.2.3-rc.4",
     "@melite/models-skin": "0.2.3-rc.4",
     "@melite/models-somax": "0.2.3-rc.4",

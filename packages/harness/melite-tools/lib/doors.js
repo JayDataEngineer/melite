@@ -235,10 +235,27 @@ const estateStillActivating = (gate, c) => {
         if (gate.quietSince === null)
             gate.quietSince = Date.now();
         // only a SUSTAINED lift re-arms the grace window; a flap's
-        // momentary lift does not
+        // momentary lift does not. THE 4.1.0 STORELESS BRICK (live
+        // 2026-11-18, global dsh 0.2.2-rc.4 → cordis 4.1.0: every
+        // side-effect fiber carries store === undefined for life, so
+        // 305 permanent waiters rode this clear — each sustained quiet
+        // wiped their aged stamps, the next request re-stamped all of
+        // them fresh, and the seat doors flapped 503 ~90% of every
+        // 2-minute cycle while the estate served fine in the holes):
+        // the clear drops only ENDED lifecycles. A waiter still
+        // activating keeps its ORIGINAL stamp (the monotonic law three
+        // comments up — the clear may never contradict it); a genuinely
+        // new mount still births a fresh racer with a fresh window.
         if (gate.pendingSince !== null && Date.now() - gate.quietSince >= ESTATE_PENDING_REARM_MS) {
             gate.pendingSince = null;
-            gate.firstSeen.clear();
+            for (const uid of [...gate.firstSeen.keys()]) {
+                if (!activating.has(uid))
+                    gate.firstSeen.delete(uid);
+            }
+            // lastIdle clears wholesale: the activating pass above already
+            // deleted every activating uid from it, so only ended
+            // lifecycles' idle stamps remain — there is no stamp worth
+            // keeping in that map (firstSeen owns the monotonic law).
             gate.lastIdle.clear();
         }
         return false;

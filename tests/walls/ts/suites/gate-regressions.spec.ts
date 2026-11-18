@@ -776,7 +776,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // 11 family-seats.js (the L3 wave, eda297f44) and the five seat
   // outputs between the prompt-gate repin and that wave. Zero
   // deletions; verified add-minus-del against the pin-setting commit.
-  const LIB_CENSUS_PIN = 674;
+  // (2026-11-18) 674 → 679: +5 — the voice-change card seat
+  // (card.js + family-seats.js), the seed-vc family DECL
+  // (index.js + actions.js), and the melite-tools contact-sheet
+  // tool face. Zero deletions; add-minus-del verified against HEAD.
+  const LIB_CENSUS_PIN = 679;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

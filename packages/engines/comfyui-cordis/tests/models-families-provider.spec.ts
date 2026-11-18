@@ -47,7 +47,8 @@ describe("the families provider (the lanes' models seat)", () => {
     // is gone, the table counts what boots.
     // 30 -> 32 (2026-11-11): the H3-Image pair lands — h3-image
     // (t2i) + h3-image-edit, the same weights on two cards.
-    expect(ids.length).toBe(32);
+    // 32 -> 33 (2026-11-17): seed-vc lands (the voice-change card).
+    expect(ids.length).toBe(33);
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -73,7 +74,8 @@ describe("the families provider (the lanes' models seat)", () => {
     // the blender-lane estate cut) — same census as the arm above.
     // 31 -> 30 (2026-11-09): qwen-img-edit-2511 removed whole.
     // 30 -> 32 (2026-11-11): the H3-Image pair lands.
-    expect(seat.familyCount()).toBe(32);
+    // 32 -> 33 (2026-11-17): seed-vc lands.
+    expect(seat.familyCount()).toBe(33);
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

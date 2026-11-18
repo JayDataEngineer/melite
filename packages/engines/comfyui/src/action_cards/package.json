@@ -12,9 +12,9 @@
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
+    "@melite/three-client": "workspace:*",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "@melite/three-client": "workspace:*"
+    "react-dom": "^19.3.0"
   },
   "exports": {
     ".": {

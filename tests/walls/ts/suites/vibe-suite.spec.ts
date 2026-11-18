@@ -189,7 +189,7 @@ describe("THE VIBE SUITE BASELINE — the agent flow's acceptance harness (v0 pi
     assert.ok(!digest.includes("THE BENCH GRAMMAR"), "the 200-word bench grammar is deferred")
     assert.match(digest, /lanes: 1 declared \(h3\)/, "the lane digest names the declared families")
     assert.match(digest, /mods: loras\[\] \(ordered; fields: name, strength\)/, "the mods line names the kind AND its fields")
-    assert.match(digest, /digest: d1 \(quote it to skip a reload\)/)
+    assert.match(digest, /digest: d1 \(quote it to skip a reload WITHIN one estate revision/, "re-pinned 2026-11-17: the digest voice grew the estate-revision clause")
     const full = voice(true)
     assert.ok(full.includes("params: prompt*, seed, ref_images (* required)"), "detail=true serves every name (the synthetic face's own rows — the retired pin lane is not one of them)")
     assert.ok(full.includes("THE BENCH GRAMMAR"), "detail=true serves the bench grammar")

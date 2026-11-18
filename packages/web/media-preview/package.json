@@ -60,7 +60,7 @@
     "lib/**/*.d.ts",
     "cordis.patch.yml"
   ],
-  "description": "The share door's preview face \u2014 the estate's video/audio vocabulary renders in the GUI's sidebar document seat (the DSH present toolcall's channel).",
+  "description": "The share door's preview face — the estate's video/audio vocabulary renders in the GUI's sidebar document seat (the DSH present toolcall's channel).",
   "repository": {
     "type": "git",
     "url": "https://github.com/JayDataEngineer/melite.git",

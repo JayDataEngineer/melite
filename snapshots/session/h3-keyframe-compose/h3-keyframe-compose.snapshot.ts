@@ -50,7 +50,10 @@ describe('h3 keyframe compose (keyless replay)', () => {
       { image: '/assets/runs/r1/last-look.png', frame: 89 },
     ]
     const posts: Array<{ path: string; body: Record<string, unknown> }> = []
-    const tool = buildH3TimelineTool(async (_method, path, body) => {
+    // await: the builder is async since the param surface moved onto
+    // the family seat (the plugin law, 2026-11-16) — it primes
+    // @melite/models-h3 before requireSeat serves the vocabulary.
+    const tool = await buildH3TimelineTool(async (_method, path, body) => {
       posts.push({ path, body: (body ?? {}) as Record<string, unknown> })
       if (path === '/v1/flows/drafts') return { draftId: 'd-kf-snapshot' }
       return { run_id: 'r-kf-snapshot', status: 'queued' }

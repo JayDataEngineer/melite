@@ -21,9 +21,9 @@
     "@melite/estate-provisioning": "workspace:*"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

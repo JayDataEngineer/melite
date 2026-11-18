@@ -69,8 +69,8 @@
     "@melite/estate-media": "workspace:*",
     "@melite/estate-runs": "workspace:*",
     "@melite/formats": "workspace:*",
-    "clsx": "*",
-    "@melite/three-client": "workspace:*"
+    "@melite/three-client": "workspace:*",
+    "clsx": "*"
   },
   "dsh": {
     "bundle": {

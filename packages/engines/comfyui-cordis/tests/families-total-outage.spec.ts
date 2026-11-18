@@ -46,6 +46,10 @@ vi.mock("@melite/models-yue2", () => {
   throw Object.assign(new Error("Cannot find package '@melite/models-yue2' (PRUNED by the total-outage spec)"), { code: "ERR_MODULE_NOT_FOUND" });
 });
 
+vi.mock("@melite/models-seed-vc", () => {
+  throw Object.assign(new Error("Cannot find package '@melite/models-seed-vc' (PRUNED by the total-outage spec)"), { code: "ERR_MODULE_NOT_FOUND" });
+});
+
 vi.mock("@melite/models-qwen3-tts", () => {
   throw Object.assign(new Error("Cannot find package '@melite/models-qwen3-tts' (PRUNED by the total-outage spec)"), { code: "ERR_MODULE_NOT_FOUND" });
 });
@@ -138,7 +142,7 @@ import { loadFamilies } from "../src/models/families/index.ts";
 describe("a total family-plane outage refuses the load", () => {
   it("zero survivors reject with the estate-defect voice", async () => {
     await expect(loadFamilies()).rejects.toThrow(
-      /total family outage: all 32 family packages failed to load \(the install is broken, not pruned/,
+      /total family outage: all 33 family packages failed to load \(the install is broken, not pruned/,
     );
   });
 });

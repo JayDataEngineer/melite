@@ -32,4 +32,19 @@ export declare const DOOR_KEYS: readonly string[];
  *  receipt's light sidecar module reads the same ONE list; the
  *  registry re-exports it unchanged (one door, one list). */
 export declare const CARD_ENVELOPE_KEYS: readonly string[];
+/** THE SELECTOR COORDINATES (promgen handoff B4, 2026-11-17): run
+ *  body keys that CHOOSE the weights cell at the variant door
+ *  (selectCardVariant — the coordinate law), consumed server-side
+ *  into the loader's weight filename. Unlike envelope keys they may
+ *  ride INSIDE params (the consumer lane stated `variant: "raw"`
+ *  there), and unlike knobs their VALUE never rides the graph as a
+ *  literal — `krea2_raw_int8_convrot.safetensors` is the resolved
+ *  form, so literal-matching reads a working marriage as "dropped"
+ *  and the receipt told the consumer an hour's lie ("params_unbound
+ *  dropped:[variant]" while the engine loaded the raw weights at
+ *  the variant's own steps/cfg). The receipt classifies them
+ *  `resolved` — named for the agent, never judged as drops; the
+ *  marriage's own judge is the variant door, which refuses unknown
+ *  coordinates LOUD (never a silent neighbor cell). */
+export declare const SELECTOR_KEYS: readonly string[];
 //# sourceMappingURL=vocab.d.ts.map

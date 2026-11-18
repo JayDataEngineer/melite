@@ -25,13 +25,14 @@ describe("C2 — the run-press contract states BOTH modes (never a flat 'never y
   });
 });
 
-describe("C4 — the operator ranking is carried, with its date", () => {
-  it("the ranking block names every seat and the 2026-11-16 date", () => {
-    const at = AGENT_MD.indexOf("THE OPERATOR RANKING");
+describe("C4 — the operator ranking is carried (the served-doc date ban strips the stamp; the registry receipt keeps the date)", () => {
+  it("the ranking block names every seat, with no calendar date riding the served doc", () => {
+    const at = AGENT_MD.indexOf("THE PHOTOREAL/ANIME ROUTING RANKING");
     assert.ok(at > 0, "the ranking block exists");
     const block = AGENT_MD.slice(at, AGENT_MD.indexOf("## Worked examples") > at ? AGENT_MD.indexOf("## Worked examples") : at + 1600);
     const body = block;
-    for (const seat of ["moss-image", "krea-2 raw", "anima turbo", "h3-image", "2048-class", "h3-image-edit", "qwen-img-edit-21", "2026-11-16"]) {
+    assert.ok(!/20\d\d-\d\d-\d\d/.test(body), "no calendar date rides the served doc (the origin-label wall's sibling ban)");
+    for (const seat of ["moss-image", "krea-2 raw", "anima turbo", "h3-image", "2048-class", "h3-image-edit", "qwen-img-edit-21"]) {
       assert.ok(body.includes(seat), `the ranking names ${seat}`);
     }
     assert.ok(/retired photoreal family is struck/i.test(body), "the struck family is named by its ban-law spelling");

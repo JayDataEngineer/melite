@@ -4,6 +4,22 @@ import { deadline } from "@deepseek-ai/dsh-timeout";
 import { errText, runRel } from "./runsTypes.js";
 import { notifyRunChanged } from "./runsChange.js";
 import { engineFilmName } from "./filmLead.js";
+import { claimPersist } from "./runsTypes.js";
+import { appendLedger } from "./queueLock.js";
+/** THE COLD-LOAD TRANSIENT SIGNATURE (promgen handoff A1,
+ *  2026-11-17): the engine's own history verdict for a node that
+ *  died mid-execution on an IndexError — ComfyUI's model_management
+ *  free_memory walking current_loaded_models while a second model
+ *  load mutates the list (three occurrences in the lane's engine
+ *  application log, all the same trace, all at load-under-eviction;
+ *  the graph receipts were complete and nodes had begun executing).
+ *  The shape pins BOTH facts: the engine-core exception type AND
+ *  the mid-execution marker — a graph defect that throws IndexError
+ *  in a custom node also matches and costs ONE bounded re-run
+ *  before its second settle voices it permanently. No other
+ *  exception type rides: unmeasured classes stay terminal until
+ *  the lane measures them. */
+const COLD_LOAD_TRANSIENT = /IndexError: [^\n]*\n @ \S+ \([^)]*\d+ nodes? executed before the failure\)/;
 /** THE HUNG-RUN FUSE (the serial-queue ERROR, audit 2026-10-22):
  *  a never-settling engine call holds the pump's activeId forever —
  *  the claim-release law covers throws, not hangs, so every later
@@ -541,6 +557,49 @@ export async function runOne(run, ctx, settle) {
     catch (exc) {
         const text = errText(exc);
         const stopped = run.stopFlag && text.toLowerCase().includes("stop");
+        // THE COLD-LOAD RETRY (promgen handoff A1, 2026-11-17): the
+        // engine-core eviction race — ComfyUI's model_management
+        // free_memory IndexError while a second model load mutates the
+        // list it walks — kills an otherwise-green graph at load time.
+        // The lane's evidence pair: run-598c035d24c6 failed on it, the
+        // 20s-later re-press of the SAME request completed. Engine
+        // core is not ours to patch (LAW 1); the door retries the run
+        // ONCE on exactly the measured signature. A permanent loop of
+        // these is an engine filing defect: the budget exhausts and
+        // the second settle voices it loud (never masked).
+        if (!stopped &&
+            (run.engineRetryCount ?? 0) < 1 &&
+            COLD_LOAD_TRANSIENT.test(text)) {
+            run.engineRetryCount = (run.engineRetryCount ?? 0) + 1;
+            // the stage rows re-queue with the run at their PRESS face
+            // ("pending" — runsStart's own stamp): no borrowed verdict,
+            // no terminal stamp — the retry is a fresh claim of the same
+            // pressed request.
+            for (const stage of run.stages) {
+                delete stage["progress"];
+                delete stage["activity"];
+                stage["status"] = "pending";
+            }
+            run.status = "queued";
+            run.error =
+                "cold-load retry " + String(run.engineRetryCount) +
+                    "/1 — engine model-load eviction race (engine-core IndexError at free_memory; the graph itself was green): re-queued. First cause: " + text;
+            appendLedger(ctx.queue.stateRoot, "run.retry", {
+                run_id: run.runId,
+                retry_count: run.engineRetryCount,
+                error: text,
+            });
+            notifyRunChanged(run.runId);
+            // the queued face hits disk BEFORE the claim releases (a
+            // boot between retry and re-claim rides the D-8 hold — the
+            // sweep replays a queued row, never fails it), then the row
+            // returns to the FIFO tail and the claim frees for the pump's
+            // next dequeue. No settle: a retried run is not terminal.
+            await claimPersist(run);
+            ctx.queue.core.releaseActive();
+            ctx.queue.core.enqueue(run);
+            return;
+        }
         // THE PER-ROW TRUTH STAMP (F2): the merged submit's death is
         // the RUN's receipt, not each row's — answered rows stand, the
         // sole stage carries the cause, and every unanswered peer reads

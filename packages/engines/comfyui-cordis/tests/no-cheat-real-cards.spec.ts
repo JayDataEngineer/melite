@@ -46,7 +46,9 @@ const defs: Map<string, CardDefinition> = await loadCardDefs();
 // doors, each composing loud-or-lawful through the door below.
 // 18 -> 17 (2026-11-12): the openjutsu card deleted by operator order
 // (R15) — the swap lane's own three doors stay.
-  assert.equal(defs.size, 17, `the registry serves exactly 17 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21, quad-remesh 2026-10-22)`);
+  // 17 -> 18 (2026-11-17): the voice-change card boards (seed-vc, the
+  // Seed-VC voice changer — the audio genre's fourth card).
+  assert.equal(defs.size, 18, `the registry serves exactly 18 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21, quad-remesh 2026-10-22)`);
 
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();

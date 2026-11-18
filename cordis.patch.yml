@@ -44,6 +44,8 @@
       name: "@melite/models-yue2"
     - id: family-qwen3-tts
       name: "@melite/models-qwen3-tts"
+    - id: family-seed-vc
+      name: "@melite/models-seed-vc"
     - id: family-anima
       name: "@melite/models-anima"
     - id: family-fibo2-edit

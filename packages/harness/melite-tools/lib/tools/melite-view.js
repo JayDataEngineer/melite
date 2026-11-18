@@ -44,8 +44,13 @@ import { rootsManifest, searchedVoice } from '@melite/estate-queue';
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
  *  manifest in order — own root first, then the extras (the queue
  *  seat's stateRoots config). First root holding the run serves (own
- *  writes win); a miss names every searched root. */
-const firstRootWithRun = async (seat, kind, runId) => {
+ *  writes win); a miss names every searched root. Exported for the
+ *  contact-sheet door (B9 — the same walk over N runs, one spelling).
+ *  @param seat the queue seat (stateRoot owner + optional extras).
+ *  @param kind the media kind the walk lists.
+ *  @param runId the run tree to find.
+ *  @returns that root's rows for the run plus the root, or null on miss. */
+export const firstRootWithRun = async (seat, kind, runId) => {
     for (const root of rootsManifest(seat.stateRoot, seat.stateRoots ?? [])) {
         const { items } = await listMedia(root, kind);
         const own = items.filter((i) => i.runId === runId);
@@ -79,7 +84,12 @@ const artifactStem = (spelling) => {
     stem = stem.replace(COLLISION_HASH, "").replace(/_+$/, "");
     return stem === "" ? leaf : stem + ext;
 };
-const artifactRowMatches = (rowName, token) => {
+/** Exported for the contact-sheet door (B9): the caller's artifact
+ *  filter rides the SAME spelling-normalized containment the view
+ *  door judges by — one matcher, both observe doors.
+ *  @param rowName a row name the walk produced.
+ *  @param token the caller's artifact filter ("" = newest row). */
+export const artifactRowMatches = (rowName, token) => {
     if (token === "")
         return true;
     if (rowName.includes(token))

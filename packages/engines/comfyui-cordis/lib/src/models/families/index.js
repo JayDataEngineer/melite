@@ -21,6 +21,7 @@ export const FAMILY_ROWS = [
     { pkg: "@melite/models-music3", id: "music3" },
     { pkg: "@melite/models-yue2", id: "yue2" },
     { pkg: "@melite/models-qwen3-tts", id: "qwen3-tts" },
+    { pkg: "@melite/models-seed-vc", id: "seed-vc" },
     { pkg: "@melite/models-anima", id: "anima" },
     { pkg: "@melite/models-fibo2-edit", id: "fibo2-edit" },
     { pkg: "@melite/models-florence2", id: "florence2" },

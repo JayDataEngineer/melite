@@ -139,7 +139,7 @@ export const BOARDED = ['qwen-img-edit-21', 'fibo2-edit', 'h3-image-edit'];
 const composeFamilyAction = (p, model, g, runId) => {
     const seat = seatOf(String(model.family ?? model.id));
     if (seat === undefined) {
-        throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (${BOARDED.join(', ')}) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name). State params.model (one of those families) on the stage to compose it (session 7a82: the add_stage landed familyless and only the operator's press met this refusal).`);
+        throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (${BOARDED.join(', ')}) composes its own declared segment; this address owns none (a family package absent from the install refuses here, by name). State params.model (one of those families) on the stage to compose it (the bench gate refuses a familyless row at mint, naming bench + stage — this voice means the compose reached the engine without one).`);
     }
     instantiateAction(declaredAction(seat.decl, 'edit'), p, model, g, runId);
 };

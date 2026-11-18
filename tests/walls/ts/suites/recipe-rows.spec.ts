@@ -175,7 +175,7 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // 22 -> 24 (2026-11-11, the H3-Image landing): both twins carry
     // the Recipe group on their cards (the t2i twin on image-gen,
     // the edit twin on image-edit — the qwen 2.1 pair's shape).
-    assert.equal(checked, 24, `the law reaches the table, exactly (checked ${String(checked)})`);
+    assert.equal(checked, 25, `the law reaches the table, exactly (checked ${String(checked)})`); // 24→25 2026-11-17: seed-vc declares the Recipe group (the singing f0 stamp) — the law's table grows with the card
   });
 
   it("LAW K (k cure, 2026-11-08): every card-carrying Recipe family DECLARES its group default, and the default names an existing Recipe row (the initial-recipe law — DECL-declared, never row-order-emergent; the birth stamp reads this declaration)", async (): Promise<void> => {
@@ -209,7 +209,7 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // declarer row dies with its package.
     // 22 -> 24 (2026-11-11, the H3-Image landing): the k law's table
     // grows with LAW A's — both twins declare the Recipe group.
-    assert.equal(checked, 24, `the k law reaches the same table (checked ${String(checked)})`);
+    assert.equal(checked, 25, `the k law reaches the same table (checked ${String(checked)})`); // 24→25 2026-11-17: seed-vc joins (its group default is declared)
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {

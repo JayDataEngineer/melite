@@ -1,0 +1,48 @@
+{
+  "name": "@melite/models-seed-vc",
+  "version": "0.2.3-rc.4",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@melite/comfyui-card-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
+  "description": "Seed-VC voice conversion \u2014 re-voice speech or singing from a reference clip on the ComfyUI engine; both DiT lanes (speech 22k + singing f0 44k) with digest-pinned provisions.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JayDataEngineer/melite.git",
+    "directory": "packages/models/seed-vc"
+  },
+  "keywords": [
+    "melite",
+    "comfyui",
+    "cordis",
+    "agent",
+    "media-generation",
+    "library"
+  ]
+}

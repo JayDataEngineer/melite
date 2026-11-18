@@ -14,7 +14,7 @@
 //   5. PRESENTATION: Bench <verb>[ · <stage|card>] card; render
 //      refuses loud or names verb → rev.
 
-import { describe, test } from 'vitest'
+import { describe, test, vi } from 'vitest'
 import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -26,6 +26,17 @@ import type { Estate } from '../src/estate.ts'
 import { fakeEstate, fakeEstateRecorded } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
+
+// THE ABSENT-LANE MOCK (the plugin law's S4 door): the h3 family's
+// lazy seats resolve null for this file — the one arm that judges
+// the absent-lane refusal needs the lane GONE, and no other arm in
+// this spec reaches a seat (the construct door only calls the
+// contract seat inside the cuts verb).
+vi.mock('../src/tools/h3-lane-seats.ts', () => ({
+  h3TimelineContractSeat: async () => null,
+  h3ModelSeat: async () => null,
+  h3CardSeat: async () => null,
+}))
 
 // The foreign seat's undeclared failure code this wall simulates —
 // declared here (type-only, erased at runtime) so the RemoteError seam
@@ -525,6 +536,50 @@ describe('melite_construct mutations — every verb', () => {
     assert.match(String(badRoot.error), /must root in a JSON array/)
     assert.equal(seen.length, 0, 'every refusal fired before any write — the bench is untouched')
     rmSync(dir, { recursive: true, force: true })
+  })
+
+  // B8 arm 5 (the parse-tail refusals — the coverage debt the budget
+  // ratchet named): a jsonl line that PARSES to a non-object, a .json
+  // that does not parse at all, and a .json array holding a bare
+  // member. Three distinct refusals, each naming its own shape.
+  test('B8 arm 5: parseable-but-wrong shapes each refuse by name — jsonl non-object line, unparseable .json, bare array member', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const dir = join(tmpdir(), 'melite-b8t-' + Date.now())
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'bare.jsonl'), '[1,2]\n')
+    const bareLine = await tool.execute({ verb: 'load', stages_file: join(dir, 'bare.jsonl'), expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(bareLine.error), /line 1 is not a stage object — one stage per jsonl line/, String(bareLine.error))
+    writeFileSync(join(dir, 'trunc.json'), '{"stages": [')
+    const trunc = await tool.execute({ verb: 'load', stages_file: join(dir, 'trunc.json'), expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(trunc.error), /is not parseable JSON/, String(trunc.error))
+    writeFileSync(join(dir, 'member.json'), '[42]')
+    const bareMember = await tool.execute({ verb: 'load', stages_file: join(dir, 'member.json'), expect_rev: 1 }, exec()) as Record<string, unknown>
+    assert.match(String(bareMember.error), /stages_file\[0\] is not a stage object — every array member is a stage row/, String(bareMember.error))
+    assert.equal(seen.length, 0, 'the bench is untouched — every refusal precedes the write')
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  // B8 arm 6 (the absent lane — the plugin law's loud door): with the
+  // h3 timeline contract seat resolving null, the cuts verb REFUSES
+  // naming the missing family package at the construct door itself —
+  // the split law cannot be validated by a law that is not installed,
+  // and the tools plane's module load never crashed to learn it.
+  test('B8 arm 6: cuts with the h3 contract lane ABSENT refuses loud at the door — never a module-load crash', async () => {
+    const { seen, estate } = mockEstate((lane) => {
+      if (lane === 'benchGet') return {
+        session: 'session-chat7', rev: 4, intent: '',
+        stages: [{ id: 's1', card: 'h3-timeline', params: { calls: [{ text: 'the figure turns', start_frame: 0, end_frame: 48 }] } }],
+        log: [],
+      }
+      throw new Error('unmocked lane ' + lane)
+    })
+    const tool = meliteConstruct(estate)
+    const out = await tool.execute({ verb: 'patch', stage: 's1', params: { cuts: '2.5' } }, exec()) as Record<string, unknown>
+    assert.match(String(out.error), /cuts: the h3 timeline contract \(@melite\/models-h3\) is not installed/, String(out.error))
+    assert.equal(seen.filter((r) => r.lane === 'benchVerb').length, 0, 'the refusal fired before any write')
   })
 
   test('load with overwrite:true confirms wholesale replacement (the overwrite law)', async () => {

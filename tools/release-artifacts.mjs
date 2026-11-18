@@ -410,6 +410,36 @@ export function stripReadmeFrontmatter (text) {
   return rest.join('\n')
 }
 
+/** THE DSH HOST PEER TRAIN (packaging burn, 2026-11-30): the two
+ *  dsh HOST faces peer with the range `>=<train> <0.3.0`, where
+ *  <train> is the dsh prerelease the estate runs. npm semver admits
+ *  a prerelease candidate ONLY on the comparator's own
+ *  [major,minor,patch] tuple — the tree's dev-resolution floor
+ *  `>=0.2.1-rc.2` can never select the registry's `0.2.2-rc.4`, so
+ *  clean consumer installs died ERESOLVE or pnpm seated a second
+ *  host tree. THE FLOOR IS MINTED AT THIS DOOR, never in the tree's
+ *  literals: pnpm keys install cells by peer-set, so a range change
+ *  in a workspace manifest re-keys the whole dev graph (measured:
+ *  19 packages stop compiling on the re-resolved cells) — the
+ *  registry face (private/engines/publishConfig) is already
+ *  PRODUCED here, and the train floor joins it. The tree keeps the
+ *  range its lockfile resolves against; the tarball ships the
+ *  train. Exported for the wall suite. */
+export const DSH_PEER_TRAIN = '0.2.2-rc.4'
+export const DSH_PEER_HOST_FACES = ['@deepseek-ai/dsh', '@deepseek-ai/dsh-client-ui-slots']
+export const dshPeerTrainRange = () => `>=${DSH_PEER_TRAIN} <0.3.0`
+
+/** Stamp a publish manifest's dsh host peer rows onto the train —
+ *  the packed bytes carry the floor the registry can satisfy. */
+export function stampDshPeerTrain (manifest) {
+  const peers = manifest.peerDependencies
+  if (peers === undefined || typeof peers !== 'object' || peers === null) return manifest
+  for (const face of DSH_PEER_HOST_FACES) {
+    if (typeof peers[face] === 'string') peers[face] = dshPeerTrainRange()
+  }
+  return manifest
+}
+
 /** G1.5: rewrite every packed tarball for publication. Two rewrites in
  *  one repack, so the gates below and the manifest sha256s describe the
  *  exact published bytes:
@@ -515,6 +545,11 @@ export function stripPackedTarballs (files) {
         const stripped = stripReadmeFrontmatter(readme)
         if (stripped !== readme) writeFileSync(readmePath, stripped)
       }
+      // THE DSH PEER TRAIN: the manifest's host-peer rows are STAMPED
+      // onto the registry train here — the tree's own range resolves
+      // the dev graph; the packed bytes declare the floor consumers
+      // can actually install.
+      stampDshPeerTrain(manifest)
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
       run('bash', ['-c', `tar -czf ${f}.new -C ${dir} package && mv ${f}.new ${f}`])
     } finally { rmSync(dir, { recursive: true, force: true }) }

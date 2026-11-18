@@ -79,8 +79,10 @@ interface QueueSeatSeam {
 /** One run's row in the canonical value: the picked artifact when
  *  the run holds one (artifact/url/host), or `missing: true` when it
  *  does not (the gray cell — the failure is judgment data, so it is
- *  NAMED, never dropped). */
-export interface SheetRunRow {
+ *  NAMED, never dropped). A type alias, not an interface: the tool
+ *  registration bounds the run value by a JsonValue record, and
+ *  aliases carry the implicit index signature interfaces lack. */
+export type SheetRunRow = {
   run_id: string
   artifact?: string
   url?: string
@@ -88,8 +90,9 @@ export interface SheetRunRow {
   missing?: true
 }
 
-/** The canonical value: per-run rows plus the committed sheet. */
-export interface ContactSheetValue {
+/** The canonical value: per-run rows plus the committed sheet. Alias
+ *  for the same JsonValue-record reason as SheetRunRow. */
+export type ContactSheetValue = {
   runs: SheetRunRow[]
   image: NonNullable<Parameters<typeof imageRefFromValue>[0]>
   columns: number
@@ -206,6 +209,32 @@ async function composeSheet(
  *  and every run that rendered gray (the sweep's failures are the
  *  judgment data — printed, never implied).
  *  @param value the canonical sheet value. */
+/** The render-plane boundary narrow: the tool contract hands the
+ * renderer a JsonValue (model/tool JSON boundary — the law's own
+ * validation seat, never a cast); a foreign shape throws loud. */
+function contactSheetValue(v: JsonValue): ContactSheetValue {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+    throw new Error('melite_contact_sheet render: the run value is not an object')
+  }
+  const runs = v.runs
+  if (!Array.isArray(runs)) throw new Error('melite_contact_sheet render: the value carries no runs array')
+  const image = v.image
+  if (typeof image !== 'object' || image === null || Array.isArray(image)) {
+    throw new Error('melite_contact_sheet render: the value carries no image object')
+  }
+  const columns = v.columns
+  const cell = v.cell
+  if (typeof columns !== 'number' || typeof cell !== 'number') {
+    throw new Error('melite_contact_sheet render: the value carries no grid counts')
+  }
+  for (const k of ['attachmentId', 'mediaType', 'bytes', 'width', 'height'] as const) {
+    if (image[k] === undefined) {
+      throw new Error('melite_contact_sheet render: the image ref carries no ' + k)
+    }
+  }
+  return { runs: runs as SheetRunRow[], image: image as ContactSheetValue['image'], columns, cell }
+}
+
 function sheetContent(value: ContactSheetValue): ContentBlock[] {
   const missing = value.runs.filter((r) => r.missing === true).map((r) => r.run_id)
   const image = value.image
@@ -288,19 +317,16 @@ export function meliteContactSheet(ctx: Context): ToolDefinition {
           cell: { type: 'number', required: true, description: 'The cell size used, after the limits clamp.' },
         },
       },
-      render: (_args, value) => sheetContent(value as unknown as ContactSheetValue),
+      render: (_args, value) => sheetContent(contactSheetValue(value)),
     },
     isConcurrencySafe: () => true,
     async execute(args, exec0): Promise<ContactSheetValue> {
-      const exec = exec0 as unknown as ViewExec
-      const a = (typeof args === 'object' && args !== null ? args : {}) as {
-        run_ids?: unknown, artifact?: unknown, columns?: unknown, cell?: unknown,
-      }
-      // run_ids is schema-typed array-of-string: the wrapper gate
-      // rejects non-arrays and non-string members before the body
-      // (ToolArgsError there). The bounds ride here — the schema
-      // carries no minItems/maxItems.
-      const rawIds = a.run_ids as string[]
+      const exec: ViewExec = exec0
+      // run_ids is schema-typed array-of-string (InferArgs): the
+      // wrapper gate rejects non-arrays and non-string members
+      // before the body (ToolArgsError there). The bounds ride
+      // here — the schema carries no minItems/maxItems.
+      const rawIds = args.run_ids
       if (rawIds.length === 0) {
         throw new Error('run_ids is empty — name the 1-' + String(MAX_RUNS) + ' estate runs to judge')
       }
@@ -326,11 +352,11 @@ export function meliteContactSheet(ctx: Context): ToolDefinition {
       // THE ROUTE GATE (melite_view's own law): a route that declares
       // no image input refuses LOUD before any filesystem work — the
       // sheet is pixels, and there is no text-only arm to fall to.
-      const capability = await routeImageCapability(ctx as unknown as { get(name: string): unknown }, exec, runIds[0]!)
+      const capability = await routeImageCapability(ctx, exec, runIds[0]!)
       if (!capability.capable) {
         throw new Error('cannot compose the contact sheet on route "' + capability.model + '": the model declares no image input — the sheet is one image for the model to see (view single runs for their text observations, or route a vision-capable model)')
       }
-      const filter = typeof a.artifact === 'string' ? a.artifact.trim() : ''
+      const filter = args.artifact !== undefined ? args.artifact.trim() : ''
       const cells: SheetCell[] = []
       for (const runId of runIds) {
         const found = await firstRootWithRun(seat, 'image', runId)
@@ -354,12 +380,12 @@ export function meliteContactSheet(ctx: Context): ToolDefinition {
           + ' — a sheet of only gray cells judges nothing (check the run ids, or read the failures through ledger_tail) '
           + searchedVoice(rootsManifest(seat.stateRoot, seat.stateRoots ?? [])))
       }
-      const wanted = typeof a.columns === 'number' && Number.isInteger(a.columns) && a.columns > 0 && a.columns <= cells.length
-        ? a.columns
+      const wanted = args.columns !== undefined && Number.isInteger(args.columns) && args.columns > 0 && args.columns <= cells.length
+        ? args.columns
         : Math.ceil(Math.sqrt(cells.length))
       const sheet = await composeSheet(
         cells, wanted,
-        typeof a.cell === 'number' && a.cell > 0 ? a.cell : DEFAULT_CELL,
+        args.cell !== undefined && args.cell > 0 ? args.cell : DEFAULT_CELL,
         attachments.imageLimits,
       )
       const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
@@ -394,5 +420,5 @@ export function meliteContactSheet(ctx: Context): ToolDefinition {
       }
     },
   })
-  return def as unknown as ToolDefinition
+  return def
 }

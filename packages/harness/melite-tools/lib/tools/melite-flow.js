@@ -178,7 +178,40 @@ function assetUrlsOf(row) {
     const urls = row['asset_urls'];
     return Array.isArray(urls) ? urls.filter((u) => typeof u === 'string' && u !== '') : [];
 }
+/** B2's recovery read (promgen handoff, 2026-11-17): the newest run
+ *  minted at/after the press. The list door serves newest-first rows
+ *  with created_at stamps — a run minted inside the press window is
+ *  the landed candidate; the first row UNDER the press ends the hunt
+ *  (newest-first: nothing later exists). Best-effort by design — a
+ *  dead list read degrades to the door-naming fallback voice, never
+ *  masks the timeout. */
+async function newestRunSince(estate, pressedAtMs, signal) {
+    try {
+        const res = await estate.runsList('10', signal, 10_000);
+        const rows = Array.isArray(res?.runs) ? res.runs : [];
+        for (const row of rows) {
+            if (typeof row !== 'object' || row === null)
+                continue;
+            const r = row;
+            const id = typeof r['run_id'] === 'string' ? r['run_id'] : '';
+            const created = typeof r['created_at'] === 'number' ? r['created_at'] : 0;
+            if (id === '' || created <= 0)
+                continue;
+            // the sidecar stamps epoch seconds; a ms-shaped stamp reads as-is
+            const createdMs = created > 1e12 ? created : created * 1000;
+            if (createdMs >= pressedAtMs - 2000) {
+                return { id, ageS: Math.max(0, Math.round((createdMs - pressedAtMs) / 1000)) };
+            }
+            return null;
+        }
+    }
+    catch {
+        // the recovery read is best-effort — the fallback voice names the door
+    }
+    return null;
+}
 async function startRun(estate, body, signal) {
+    const pressedAt = Date.now();
     let res;
     try {
         res = await estate.runsStart(body, signal, TIMEOUT_MS);
@@ -189,6 +222,23 @@ async function startRun(estate, body, signal) {
         const re = remoteErrorOf(e);
         if (re !== null && re !== undefined) {
             return { error: re.message || 'queue refused the start' };
+        }
+        // B2 (promgen handoff, 2026-11-17): the start's 30 s bound dying
+        // said nothing about landed-or-not — the consumer re-pressed
+        // blind while run-598c had QUEUED, RUN, and FAILED inside the
+        // bound. A timeout is D-7's class exactly (existence UNKNOWN),
+        // and the estate already owns the recovery read: the list door
+        // serves newest-first rows with created stamps. Recover the
+        // candidate instead of throwing — the voice names the run, the
+        // poll door, and the double-press hazard; when no candidate
+        // answers, the list-door fallback is named the same way.
+        const why = e instanceof Error ? e.message : String(e);
+        if (/outlived its \d+ms bound/.test(why)) {
+            const minted = await newestRunSince(estate, pressedAt, signal);
+            if (minted !== null) {
+                return { error: `start outlived its 30 s bound — but the run LANDED: ${minted.id} was minted ${minted.ageS}s after the press. Poll run_status(runId="${minted.id}") for its truth; do NOT press again — a second press duplicates the render and burns the seed` };
+            }
+            return { error: `start outlived its 30 s bound and no run minted within it — the press died before the queue took it (safe to press again). If in doubt, read the runs list (estate GET /v1/flows/runs) before re-pressing` };
         }
         throw e;
     }
@@ -439,6 +489,73 @@ async function runBench(estate, a, signal, only) {
     // loop starts the clock at the first pressed stage, and every
     // stage's observation spends only what remains.
     const pressDeadline = Date.now() + PRESS_BUDGET_MS;
+    /** THE SHARED OBSERVE-SETTLE TAIL (the adopt law's extraction,
+     * 2026-11-30): one law for a fresh press and an adopted run alike —
+     * the D-7 budget check, the observation, the pass row, and the
+     * pending receipt / failure / continue verdict. Returns the press
+     * receipt when the window ends on this stage; undefined continues
+     * the pass into the next row. */
+    const settleObserved = async (runId, stageId, card, currentInputs, extras = {}) => {
+        const pendingReceipt = () => ({ mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass });
+        // D-7 — THE PRESS BUDGET: this stage's observation spends only
+        // what remains of the whole press's window. Budget spent → the
+        // pending receipt NOW (the run is durable, run_id carried); the
+        // remaining stages are never observed into an aborter's window.
+        const remainMs = pressDeadline - Date.now();
+        if (remainMs <= 0) {
+            pass.push({ stage: stageId, card, run_id: runId, status: 'queued',
+                ...(extras.adopted === true ? { adopted: true } : {}),
+                note: 'the press budget spent — the run is durable on the queue; re-press to drain the tail: a live run is adopted (never re-sent), settled stages skip' });
+            return pendingReceipt();
+        }
+        let outcome;
+        try {
+            outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test), Math.min(OBSERVE_MAX_MS, remainMs), 2, currentInputs);
+        }
+        catch (thrown) {
+            // D-7 — an aborted OBSERVE leaves the run DURABLE (the start
+            // answered): the face is the pending receipt carrying the
+            // run_id, never a `thrown` stage row and never a phantom press
+            // of the remaining stages on a dead signal. The only throw out
+            // of observeAndAttribute is the signal's own reason (its
+            // loop-top throwIfAborted; every lane call inside is locally
+            // caught), so `aborted` always holds here.
+            const why = thrown instanceof Error ? thrown.message : String(thrown);
+            pass.push({ stage: stageId, card, run_id: runId, status: 'queued', ...(extras.adopted === true ? { adopted: true } : {}), aborted: why });
+            return pendingReceipt();
+        }
+        pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
+            ...(extras.adopted === true ? { adopted: true } : {}),
+            ...(extras.stale !== undefined ? { stale: extras.stale } : {}),
+            ...(extras.warning !== undefined ? { warning: extras.warning } : {}),
+            ...(outcome.url !== '' ? { url: outcome.url } : {}),
+            ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
+            ...(outcome.asset_urls.length > 0 ? { asset_urls: outcome.asset_urls } : {}),
+            ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}),
+            ...(outcome.stamp_note !== undefined ? { stamp_note: outcome.stamp_note } : {}),
+            ...(outcome.attribution !== undefined ? { attribution: outcome.attribution } : {}) });
+        if (outcome.status === 'queued') {
+            // THE PENDING RECEIPT (the commission wedge, 2026-10-03): the
+            // observation budget spent on a run that is still live — the
+            // flow is NOT failed. The run continues on the queue, the
+            // render prints `[pending] — poll with run_status`, and the
+            // background attribution link still lands the terminal stamp
+            // on the stage row when the run settles. The re-press is the
+            // drain verb (the adopt law): live runs are adopted, never
+            // re-sent, and settled stages skip.
+            return pendingReceipt();
+        }
+        if (outcome.status !== 'done') {
+            // THE PASS CONTINUES (F20 residual, 2026-10-30): a stage that
+            // ran and FAILED is that stage's outcome — it must not cancel
+            // the press's remaining stages. The failure is recorded in
+            // `pass` and named at the END. A pre-run REFUSAL above still
+            // stops (the doc itself is wrong); only a settled non-done
+            // status continues.
+            failures.push({ stage: stageId, card, status: outcome.status, run_id: runId });
+        }
+        return undefined;
+    };
     for (const row of rows) {
         const stageId = row['id'];
         // THE PER-STAGE PRESS (W-8): the named row alone rides the
@@ -460,7 +577,7 @@ async function runBench(estate, a, signal, only) {
                 ...(only !== undefined ? { stage: only } : {}),
                 error: `the call was aborted before stage ${stageId} was pressed (${why}) — `
                     + (mintedRuns.size > 0
-                        ? `the ${mintedRuns.size} pressed run(s) are durable on the queue: poll run_status with the run_id(s) in pass[] before re-pressing (a re-press doubles the queue); the unpressed stages were never sent`
+                        ? `the ${mintedRuns.size} pressed run(s) are durable on the queue: watch them with run_status using the run_id(s) in pass[], and re-press to drain — a live run is ADOPTED (never re-sent) and settled stages skip; the unpressed stages were never sent`
                         : 'no stage was pressed — nothing is on the queue; re-press is safe'),
                 ...pressCensus(), pass };
         }
@@ -543,6 +660,62 @@ async function runBench(estate, a, signal, only) {
                     continue;
                 }
             }
+        }
+        // THE ADOPT LAW (the three-press burn, 2026-11-30: one agent
+        // call pushes ~9 takes — the press budget ends the observation
+        // AND the dispatch with it, and the receipt's "poll with
+        // run_status" named an escape hatch that could never drain the
+        // pass: the carried id answers ONE stage, the tail was never
+        // sent, and a re-press re-sent whatever was still queued): a row
+        // that already owns a run is NEVER re-sent — the press ADOPTS
+        // it. The live stamp (the observer's first flip) writes the
+        // MINIMAL result — run_id alone, no terminal evidence — so the
+        // adopt gate reads exactly that shape: a live-folded row whose
+        // result carries ONLY the run id is an observation in flight
+        // (W-2 ARM A's counter-class: the patch door clears a done mark
+        // to 'pending' for a re-run and the OLD result keeps its url —
+        // that row re-runs, it is never adopted). One cheap status read
+        // then classifies the memory: the run answers live or terminal →
+        // ADOPT, then the pass continues into the never-sent tail (a
+        // terminal run settles on the first poll, landing the mark the
+        // window cut short); the run is GONE (stale row memory) → fresh
+        // press; the read itself dies → the run's state is UNKNOWN and
+        // nothing is sent for this stage or any behind it — a re-press
+        // on an unknown is the doubling this law exists to kill.
+        const adoptResult = row['result'] !== null && typeof row['result'] === 'object' && !Array.isArray(row['result'])
+            ? row['result'] : null;
+        const adoptPrior = adoptResult !== null && typeof adoptResult['run_id'] === 'string'
+            ? adoptResult['run_id'] : '';
+        const adoptInFlight = adoptResult !== null && Object.keys(adoptResult).every((k) => k === 'run_id');
+        const adoptFold = statusOrPendingOf(typeof row['runStatus'] === 'string' ? row['runStatus'] : '');
+        if (adoptPrior !== '' && adoptInFlight && (adoptFold === 'running' || adoptFold === 'queued')) {
+            let probed = null;
+            let probeWhy = '';
+            try {
+                probed = await estate.runsStatus(adoptPrior, false, signal, 10_000);
+            }
+            catch (e) {
+                probeWhy = e instanceof Error ? e.message : String(e);
+            }
+            const probeWord = probed !== null && typeof probed['status'] === 'string' && probed['status'] !== ''
+                ? probed['status'] : '';
+            if (probeWord !== '') {
+                pressed.push(stageId);
+                mintedRuns.set(stageId, adoptPrior);
+                const settled = await settleObserved(adoptPrior, stageId, card, currentInputs, { adopted: true });
+                if (settled !== undefined)
+                    return settled;
+                continue;
+            }
+            if (!/not[ -_/]?found|no such run|unknown run|404/i.test(probeWhy)) {
+                return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
+                    ...(intent !== '' ? { intent } : {}),
+                    ...(only !== undefined ? { stage: only } : {}),
+                    error: `stage ${stageId} owns run ${adoptPrior} but its state is unreadable (${probeWhy}) — nothing was sent for this stage or any behind it; read ledger_tail or run_status with that id, then re-press`,
+                    ...pressCensus(), pass };
+            }
+            // the stale memory heals below — the run is gone, the row
+            // presses fresh
         }
         if (card === '') {
             // THE FOREIGN-ROW VOICE (the compose-plane cure, 2026-11-14): a
@@ -728,67 +901,13 @@ async function runBench(estate, a, signal, only) {
         const runId = started['run_id'];
         if (runId !== '')
             mintedRuns.set(stageId, runId);
-        // D-7 — THE PRESS BUDGET: this stage's observation spends only
-        // what remains of the whole press's window. Budget spent → the
-        // pending receipt NOW (the run is durable, run_id carried); the
-        // remaining stages are never observed into an aborter's window.
-        const remainMs = pressDeadline - Date.now();
-        if (remainMs <= 0) {
-            pass.push({ stage: stageId, card, run_id: runId, status: 'queued',
-                note: 'the press budget spent — the run is durable on the queue, poll with run_status' });
-            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass };
-        }
-        let outcome;
-        try {
-            outcome = await observeAndAttribute(estate, draftId, stageId, runId, signal, wireBool(a.test), Math.min(OBSERVE_MAX_MS, remainMs), 2, currentInputs);
-        }
-        catch (thrown) {
-            // D-7 — an aborted OBSERVE leaves the run DURABLE (the start
-            // answered): the face is the pending receipt carrying the
-            // run_id, never a `thrown` stage row and never a phantom press
-            // of the remaining stages on a dead signal.
-            // THE ONLY ESCAPE IS THE ABORT: every throw out of
-            // observeAndAttribute is the signal's own reason — its loop-top
-            // signal.throwIfAborted(); every lane call inside is locally
-            // caught (the poll retry, both stamp seats, the run-row mark)
-            // and sleepAbort resolves, never rejects — so `aborted` always
-            // holds here and no thrown-row face exists for observe. The
-            // dead non-abort arm is removed (coverage debt 2026-11-19).
-            const why = thrown instanceof Error ? thrown.message : String(thrown);
-            pass.push({ stage: stageId, card, run_id: runId, status: 'queued', aborted: why });
-            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass };
-        }
-        pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
-            ...(staleVoice !== undefined ? { stale: staleVoice } : {}),
-            ...(rowWarningText !== undefined ? { warning: rowWarningText } : {}),
-            ...(outcome.url !== '' ? { url: outcome.url } : {}),
-            ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}),
-            ...(outcome.asset_urls.length > 0 ? { asset_urls: outcome.asset_urls } : {}),
-            ...(outcome.host_paths.length > 0 ? { host_paths: outcome.host_paths } : {}),
-            ...(outcome.stamp_note !== undefined ? { stamp_note: outcome.stamp_note } : {}),
-            ...(outcome.attribution !== undefined ? { attribution: outcome.attribution } : {}) });
-        if (outcome.status === 'queued') {
-            // THE PENDING RECEIPT (the commission wedge, 2026-10-03): the
-            // observation budget spent on a run that is still live — the
-            // flow is NOT failed. The run continues on the queue, the
-            // render prints `[pending] — poll with run_status`, and the
-            // background attribution link still lands the terminal stamp
-            // on the stage row when the run settles.
-            return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass };
-        }
-        if (outcome.status !== 'done') {
-            // THE PASS CONTINUES (F20 residual, 2026-10-30): a stage that
-            // ran and FAILED is that stage's outcome — it must not cancel
-            // the press's remaining stages (the round-4 burn: `run all`
-            // stopped at the first failure and the later stages never got
-            // their press). The failure is recorded in `pass` and named at
-            // the END, so the operator sees every stage's outcome AND the
-            // press finishes what it can. A pre-run REFUSAL above still
-            // stops (the doc itself is wrong); only a settled non-done
-            // status continues.
-            failures.push({ stage: stageId, card, status: outcome.status, run_id: runId });
-            continue;
-        }
+        // THE SHARED OBSERVE-SETTLE TAIL (the adopt law's extraction):
+        // budget check, observation, pass row, pending receipt /
+        // failure / continue — one law for every observed run, freshly
+        // pressed or adopted.
+        const settled = await settleObserved(runId, stageId, card, currentInputs, { stale: staleVoice, warning: rowWarningText });
+        if (settled !== undefined)
+            return settled;
     }
     // THE RUN-ID VISIBILITY LAW (commissions 032/033, the transcript-016
     // half that never landed): the SUCCESS return carries the final
@@ -1244,13 +1363,25 @@ a, signal) {
      * id and family alias is far under 80 chars, so the truncation arm
      * is defensive only (2026-10-13, the coverage-cure pass). */
     const intent = card.length > 80 ? card.slice(0, 77) + '…' : card;
-    // F16 (2026-11-12): the stage the press writes must carry the
-    // model the start rides — the bench the press LEAVES BEHIND has to
-    // compile standalone (runsValidateStages' own voice was the burn:
-    // "card 'tts' requires params.model" on the tts stage a press
-    // minted without it). Pure-tool cards (requiresModel false) take
-    // no stamp — a phantom model seat pollutes nothing.
-    const stageParams = cardDef?.requiresModel !== false ? { ...normalizedBag, model } : normalizedBag;
+    // F16 (2026-11-12) + B5 (promgen handoff, 2026-11-17): the stage
+    // the press writes must carry the model the start rides — the bench
+    // the press LEAVES BEHIND has to compile standalone
+    // (runsValidateStages' own voice was the burn: "card 'tts' requires
+    // params.model" on the tts stage a press minted without it). B5's
+    // burn: the same press on image-edit minted a FAMILYLESS bench row
+    // — image-edit boards three families through requiresModel: false,
+    // so the old requiresModel-keyed stamp skipped it, and the row only
+    // refused at PRESS time ("no declared action for family ''",
+    // session 7a82) while image-gen's stamped row ran. ONE LAW: the
+    // stamp keys on BOARDED-NESS, never requiresModel — every
+    // family-boarding card's row carries params.model (the seat its
+    // compose door reads), so birth and merge arms both leave a
+    // standalone bench. A card boarding NOTHING (trim — the F56
+    // trim+krea-2 hijack burn) keeps the bare bag: stamping a stated
+    // model would route the row into a stranger's lane at the next
+    // bench press instead of composing the card by its own id.
+    const boardsFamilies = cardDef !== undefined && (cardDef.boarded ?? []).length > 0;
+    const stageParams = cardDef === undefined || boardsFamilies ? { ...normalizedBag, model } : normalizedBag;
     // F15 — THE MERGE LAW (2026-11-12, the friction report's burn: a
     // `card: tts` press WIPED a composed film/swap/track bench —
     // stages dropped, intent flipped). A single-card press on a bench
@@ -1356,7 +1487,19 @@ a, signal) {
             return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) };
         }
     }
-    const started = await startRun(estate, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal);
+    // B7 (promgen handoff 2026-11-17 — bench attribution): the start
+    // body now carries bench_stage_id — the MINTED row's id (s_0 at
+    // birth, the appended stage on merge). Without the claim, the
+    // {model:} arm's identity seam (benchStageIdOf) answers undefined
+    // on a multi-stage bench — the sidecar's stage digest names the
+    // card SKELETON, a namespace the draft never heard of, and the
+    // bench read's join binds NOTHING: 18 of 19 rows read
+    // `last_run null (no run in the window names this stage)` while
+    // 16+ runs landed (the handoff's bench-session-c11f9743 evidence).
+    // The claim is JUDGED server-side (membership on the bench doc),
+    // the sidecar names the row, and withLastRun's draft_id +
+    // stage_ids join paints last_run — the bench answers "what ran?".
+    const started = await startRun(estate, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId, bench_stage_id: stageId }, signal);
     if (typeof started["error"] === "string")
         return { mode: 'card', target: card, ...(rode !== undefined ? { rode } : {}), ...started };
     const runId = started['run_id'];
@@ -1529,8 +1672,10 @@ export function meliteFlow(estate) {
             + 'doc-backed draft_id (CARD BIRTH LAW), and a start without a materialized bench needs no draft_id — it rides the '
             + 'value as the chat tile handle, never an '
             + 'agent arg. Returns {run_id, draft_id}; the synchronous window is bounded (~2 min, defect board D-7): a '
-            + 'long render returns status pending WITH the run_id — the run is durable on the queue, poll with run_status '
-            + '(never re-press). One active run machine-wide.',
+            + 'long render returns status pending WITH the run_id — the run is durable on the queue, poll with run_status. '
+            + 'A pending bench press is RE-PRESSED to drain its tail: a row that already owns a live run is ADOPTED '
+            + '(observed, never re-sent) and settled rows skip, so the re-press is the drain verb, never a double. '
+            + 'One active run machine-wide.',
         // D-7 — the wedge backstop: the press budget (~110 s) plus the
         // stamp-back takes bound the healthy settle well inside this; the
         // declared limit lets the timeout-policy plugin voice a clean
@@ -1590,7 +1735,7 @@ export function meliteFlow(estate) {
                 properties: {
                     run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on a pre-run refusal; PRESENT on a stopped-mid-flow refusal (a stage that ran and failed — render prints it after the error).' },
                     draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal and absent on a card-less flow press.' },
-                    status: { type: 'string', description: 'The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — re-wait with run_status(run_id)); absent on refusal.' },
+                    status: { type: 'string', description: 'The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — watch with run_status(run_id) and re-press to drain: a live run is adopted, never re-sent, settled rows skip); absent on refusal.' },
                     mode: { type: 'string', description: 'Which composition ran (or was attempted): bench | card | flow. bench is the commonest success value — the shared-bench run returns mode:\'bench\' at every bench return site.', required: true },
                     target: { type: 'string', description: 'The card id, flow name, or bench draft id (echoed on refusal).', required: true },
                     error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },

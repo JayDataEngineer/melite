@@ -224,6 +224,12 @@ test('U4 ARM 2 — every event class the ledger filter vocabulary names has an e
     const base = token.endsWith('*') ? token.slice(0, -1) : token
     if (literals.has(base) || dynamicPrefixes.has(base)) return true
     for (const lit of literals) if (lit.startsWith(base)) return true
+    // the dynamic prefix family emits every member the prefix mints
+    // ("run." + run.status serves run.failed the same as run.queued;
+    // the promgen A3 render comment named run.failed and the wall
+    // called the live class dead — the emitter rode the prefix arm
+    // the live() check never consulted)
+    for (const pre of dynamicPrefixes) if (base.startsWith(pre)) return true
     return false
   }
   const dead = [...named].filter((t) => !live(t)).sort()

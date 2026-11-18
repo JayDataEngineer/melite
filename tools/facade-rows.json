@@ -47,6 +47,12 @@
   "@melite/audio-tts/tool": [
     "./packages/audio/tts/src/tool.ts"
   ],
+  "@melite/audio-voice-change": [
+    "./packages/audio/voice-change/src/card.ts"
+  ],
+  "@melite/audio-voice-change/card": [
+    "./packages/audio/voice-change/src/card.ts"
+  ],
   "@melite/engine-agent": [
     "./packages/engines/agent/src/index.ts"
   ],
@@ -475,6 +481,9 @@
   ],
   "@melite/models-qwen3-tts/mods/qvoice_save": [
     "./packages/models/qwen3-tts/mods/qvoice_save.ts"
+  ],
+  "@melite/models-seed-vc": [
+    "./packages/models/seed-vc/src/index.ts"
   ],
   "@melite/models-seedvr2-ema": [
     "./packages/models/seedvr2-ema/src/index.ts"

@@ -85,7 +85,7 @@ describe('form-spec read (keyless replay)', () => {
     // packages; the identity rung is asserted for every card by the
     // loader itself (cardDefs.ts:240).
     const defs = await loadCardDefs()
-    // Exact: the compose seats 14 cards today — a card landing or
+    // Exact: the compose seats 18 cards today — a card landing or
     // leaving MOVES this number and is argued here (the walls carry the
     // deeper census; this pin only proves the snapshot tier seats the
     // real compose, not a stub). 15 -> 14 (2026-10-11, the autoremesher
@@ -94,8 +94,10 @@ describe('form-spec read (keyless replay)', () => {
     // reached the snapshot arm past the lib-drift gate. 14 -> 17
     // (2026-11-12, the swap-parity R0 doors: video-trim + video-frames
     // + video-track stage the swap inputs for the timeline's replace
-    // mod — commit cbe0ab94f, operator-ordered reseat).
-    assert.equal(defs.size, 17, 'the compose seated the estate\'s cards')
+    // mod — commit cbe0ab94f, operator-ordered reseat). 17 -> 18
+    // (2026-11-17, the voice-change card boards the seed-vc family —
+    // the audio lane's card joins the seated compose).
+    assert.equal(defs.size, 18, 'the compose seated the estate\'s cards')
     assert.ok(defs.has('image-edit'), 'the recorded session\'s card is seated')
     const ident = defs.get('image-edit')?.identity
     assert.ok(typeof ident?.label === 'string' && ident.label !== '', 'the identity rung is present on the seated card')

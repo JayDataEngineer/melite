@@ -1,4 +1,4 @@
-import { CARD_ENVELOPE_KEYS } from "./vocab.js";
+import { CARD_ENVELOPE_KEYS, SELECTOR_KEYS } from "./vocab.js";
 export function sidecarStageOf(stage) {
     const out = {
         id: stage.id,
@@ -126,9 +126,17 @@ export function graphReceiptOf(params, composed) {
     const populated = [];
     const found = [];
     const missed = [];
+    const resolved = [];
     for (const [key, value] of Object.entries(params)) {
         if (CARD_ENVELOPE_KEYS.includes(key))
             continue;
+        // B4 (promgen handoff): selector coordinates name their own
+        // roster — never judged as knobs (the variant door consumed
+        // them; see SELECTOR_KEYS' doc for the burn's shape)
+        if (SELECTOR_KEYS.includes(key)) {
+            resolved.push(key);
+            continue;
+        }
         const scalar = receiptScalarOf(value);
         if (scalar === undefined)
             continue;
@@ -138,11 +146,13 @@ export function graphReceiptOf(params, composed) {
     populated.sort();
     found.sort();
     missed.sort();
+    resolved.sort();
     return {
         nodes,
         populated,
         carried: found,
         dropped: missed,
+        ...(resolved.length > 0 ? { resolved } : {}),
         // the verdict names its plane (D-11): not integration
         // vocabulary — populated params whose literal never rode
         verdict: missed.length === 0 ? "complete" : "params_unbound",
@@ -158,13 +168,14 @@ export function graphReceiptStageOf(stage, pair) {
         populated: [...pair.populated],
         carried: [...pair.carried],
         dropped: [...pair.dropped],
+        ...(pair.resolved !== undefined ? { resolved: [...pair.resolved] } : {}),
         verdict: pair.verdict,
         ...(pair.bake !== undefined ? { bake: pair.bake } : {}),
     };
 }
 /** Fold per-stage rows into the run-level receipt (nodes SUM —
- *  the run's graph key space; populated/carried/dropped the
- *  sorted union; verdict `complete` iff every stage is). */
+ *  the run's graph key space; populated/carried/dropped/resolved
+ *  the sorted union; verdict `complete` iff every stage is). */
 export function graphReceiptFoldOf(rows, promptId) {
     const union = (pick) => {
         const s = new Set();
@@ -180,11 +191,13 @@ export function graphReceiptFoldOf(rows, promptId) {
         if (r.verdict !== "complete")
             complete = false;
     }
+    const resolved = union((r) => r.resolved ?? []);
     return {
         nodes,
         populated: union((r) => r.populated),
         carried: union((r) => r.carried),
         dropped: union((r) => r.dropped),
+        ...(resolved.length > 0 ? { resolved } : {}),
         verdict: complete ? "complete" : "params_unbound",
         stages: rows.map((r) => graphReceiptStageOf(r.stage, r)),
         // THE BAKE rides the fold: the first stage that carries one
@@ -278,6 +291,9 @@ export function sidecarDoc(args) {
         // the list row's 8191-byte window must reach it so a missed
         // stamp is visible even when the payload before it is bulky.
         ...(args.attribution !== undefined && args.attribution !== "" ? { attribution: args.attribution } : {}),
+        // THE COLD-LOAD RETRY LEDGER (A1) — same optional-key law: the
+        // count rides only once spent.
+        ...(args.engineRetryCount !== undefined ? { engine_retry_count: args.engineRetryCount } : {}),
         error: args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
         stages: args.stages,
         skipped_stages: [...args.skippedStages],

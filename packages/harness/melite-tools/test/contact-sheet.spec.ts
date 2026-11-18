@@ -13,7 +13,7 @@
 // @contract flows-contact-sheet-door
 import { describe, test, beforeAll, afterAll } from 'vitest'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import sharp from 'sharp'
@@ -324,13 +324,79 @@ describe('melite_contact_sheet refusals — loud and named', () => {
     )
     assert.equal(saved.length, 0)
   })
+
+  // the render boundary's own refusal tails (the JsonValue narrow the
+  // tool contract hands the renderer): every malformed saved value is
+  // refused BY NAME at the render door — never rendered as a broken
+  // sheet.
+  test('the render narrow refuses every malformed saved value by name — object, runs, image, grid, ref key', () => {
+    const tool = meliteContactSheet(fakeCtx())
+    const render = tool.output!.render!
+    assert.throws(() => render({} as never, 'a bare string' as never), /the run value is not an object/)
+    assert.throws(() => render({} as never, {} as never), /the value carries no runs array/)
+    assert.throws(() => render({} as never, { runs: [], image: 5 } as never), /the value carries no image object/)
+    assert.throws(() => render({} as never, { runs: [], image: {}, columns: '3', cell: 4 } as never), /the value carries no grid counts/)
+    assert.throws(
+      () => render({} as never, { runs: [], image: { attachmentId: 'a', mediaType: 'm', bytes: 1, width: 2 }, columns: 1, cell: 4 } as never),
+      /the image ref carries no height/,
+    )
+  })
+
+  // the concurrency law's own face: the sheet only READS the runs tree
+  // and the store — the harness may fan it out with its siblings.
+  test('the tool declares itself concurrency-safe (a read-only sweep)', () => {
+    const tool = meliteContactSheet(fakeCtx()) as { isConcurrencySafe?: (args: unknown) => boolean }
+    assert.ok(typeof tool.isConcurrencySafe === 'function', 'the face is served')
+    // valid args (the wrapper soft-gates junk — the defineTool
+    // conversion-invariance law, melite-view's twin arm)
+    assert.equal(tool.isConcurrencySafe!({ run_ids: ['run-aa-red'] } as never), true)
+  })
+
+  // a row that lists but cannot be read (mode 000 — the walk finds
+  // the file, both leaf reads miss with EACCES): the cell goes gray
+  // through the named-null path — a raced/vanished artifact is
+  // judgment data, never a crash. A healthy run rides along so the
+  // sheet still judges something (the all-gray refusal stands guard).
+  test('a listed-but-unreadable row grays through the null read (both leaves miss)', async () => {
+    const ff = join(root, 'output', 'run-ff-vanished')
+    mkdirSync(ff, { recursive: true })
+    const hostile = join(ff, 'gen_00001_.png')
+    writeFileSync(hostile, Buffer.from('x'))
+    chmodSync(hostile, 0o000)
+    try {
+      const tool = meliteContactSheet(fakeCtx())
+      const out = await tool.execute({ run_ids: ['run-bb-green', 'run-ff-vanished'] }, visualExec as never) as ContactSheetValue
+      const row = out.runs.find((r) => r.run_id === 'run-ff-vanished')
+      assert.ok(row !== undefined, 'the row is never dropped')
+      assert.equal(row.artifact, 'gen_00001_.png', 'the row was listed')
+      assert.equal(row.host, undefined, 'the read missed both leaves — the host field stays absent (the named-null path)')
+    } finally {
+      rmSync(ff, { recursive: true, force: true })
+    }
+  })
+
+  // the label is SVG and the run id is its text: the GRAMMAR gate is
+  // the guard (a markup-bearing id can never reach the label — the
+  // escape in the label builder is defense-in-depth behind it, and
+  // its tails stay uncovered past the gate by design).
+  test('a markup-bearing run id is refused at the grammar gate — it can never reach the SVG label', async () => {
+    const tool = meliteContactSheet(fakeCtx())
+    await assert.rejects(
+      tool.execute({ run_ids: ['run-zz<a>&b'] }, visualExec as never) as never,
+      /is not a run id — a run id is a "run-…" directory name/,
+    )
+    assert.equal(saved.length, 0, 'nothing composed — the refusal precedes the walk')
+  })
 })
 
 describe('melite_contact_sheet presentation', () => {
   test('presentCall titles the sweep (a generic read card, the run count named)', () => {
     const tool = meliteContactSheet(fakeCtx())
-    const view = tool.presentCall!({ run_ids: ['run-aa-red', 'run-bb-green'] } as never)
-    assert.equal(view.card, 'generic')
+    const present = tool.presentCall
+    assert.ok(present !== undefined, 'the tool serves its presentCall face')
+    const view = present({ run_ids: ['run-aa-red', 'run-bb-green'] } as never)
+    assert.ok(view !== undefined, 'the call renders a view')
+    if (view.card !== 'generic') throw new Error('the sweep card is generic, saw ' + view.card)
     assert.equal(view.kind, 'read')
     assert.ok(view.title.includes('2 runs'), 'the title carries the sweep size')
   })

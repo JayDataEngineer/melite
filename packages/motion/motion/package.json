@@ -38,19 +38,19 @@
     "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
     "@melite/models-kimodo": "workspace:*",
+    "@melite/three-client": "workspace:*",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "@melite/three-client": "workspace:*"
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@testing-library/dom": "*",
     "@types/node": "^22.20.0",
     "@types/react": "~19.3.0",
     "@types/react-dom": "~19.3.0",
     "@types/three": "^0.184.1",
     "tsdown": "^0.22.14",
-    "typescript": "~6.0.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "~6.0.3"
   },
   "name": "@melite/motion-motion",
   "description": "Text-to-motion card, motion agent tool, and browser studio over the Kimodo TextToPose family, with chained re-skinning through RaySomaxBake.",
@@ -68,8 +68,8 @@
   },
   "sideEffects": true,
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "files": [
     "lib/index.js",

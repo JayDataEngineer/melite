@@ -95,6 +95,17 @@ export interface GraphReceiptPair {
     readonly carried: readonly string[];
     /** The judged keys NOT found in the graph, sorted — the honesty face. */
     readonly dropped: readonly string[];
+    /** THE RESOLVED ROSTER (promgen B4, 2026-11-17): selector
+     *  coordinates (SELECTOR_KEYS — variant/quant) the run body
+     *  stated. They are not knobs and never drop: the variant door
+     *  consumed them server-side into the loader's weight filename
+     *  (`variant: "raw"` → `krea2_raw_int8_convrot.safetensors` at
+     *  the variant's own steps/cfg), so literal-matching cannot see
+     *  the marriage. Named here so the agent reads `resolved:
+     *  ["variant"]` — the door took it — instead of the hour-long lie
+     *  that read `dropped: ["variant"]` as "your variant was
+     *  ignored". Absent when none rode. */
+    readonly resolved?: readonly string[];
     readonly verdict: "complete" | "params_unbound";
     /** THE BAKE'S RECORD (study §7 item 2, the run voice): present
      *  iff the composed graph bakes or loads a refmod mod — read off
@@ -155,8 +166,8 @@ export declare function graphReceiptOf(params: Record<string, unknown>, composed
  *  inside the run-level `graph_receipt`). */
 export declare function graphReceiptStageOf(stage: string, pair: GraphReceiptPair): GraphReceiptStageRow;
 /** Fold per-stage rows into the run-level receipt (nodes SUM —
- *  the run's graph key space; populated/carried/dropped the
- *  sorted union; verdict `complete` iff every stage is). */
+ *  the run's graph key space; populated/carried/dropped/resolved
+ *  the sorted union; verdict `complete` iff every stage is). */
 export declare function graphReceiptFoldOf(rows: readonly GraphReceiptStageRow[], promptId?: string): GraphReceipt;
 /** THE VARIANT LIFT (commission 033's self-critique #5, 2026-09-24):
  *  the first non-empty `variant` string across the submitted bodies —
@@ -263,6 +274,12 @@ export declare function sidecarDoc(args: {
      *  settled — one spelling on disk and on the wire
      *  (`attribution`). Absent while the stamp landed. */
     attribution?: string;
+    /** THE COLD-LOAD RETRY LEDGER (promgen A1, 2026-11-17): the spent
+     *  retry budget — one spelling on disk and on the wire
+     *  (`engine_retry_count`). Absent until the door re-queues the
+     *  engine-core eviction race; a boot between retry and re-claim
+     *  keeps the spent budget (never a second free retry). */
+    engineRetryCount?: number;
 }): Record<string, unknown>;
 /** The door name the run started with (_pipeline_of 2111-2119:
  *  exactly one of flow | flow_inline | model — the sidecar's

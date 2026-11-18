@@ -259,6 +259,8 @@ function sidecarFacesOf(run) {
         // THE ATTRIBUTION MARKER rides every rewrite too (D3-07 — a
         // disk row keeps the stamp-miss the tab never showed).
         attribution: run.attribution,
+        // THE COLD-LOAD RETRY LEDGER (A1) — same carry law.
+        engineRetryCount: run.engineRetryCount,
     };
 }
 /** The claim persist (the commission wedge landing, 2026-10-03):

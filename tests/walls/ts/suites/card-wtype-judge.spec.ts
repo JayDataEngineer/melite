@@ -88,7 +88,7 @@ import { cardPackages, loadCardDefs } from "@melite/comfyui-cordis";
 // track cards join the composition roster — the swap lane's
 // three preprocessing doors, every field wtype-agreeing with its
 // zod shape (judged arm below greens on the same run).
-const CARD_ROSTER = 17; // 18→17 2026-11-12: the openjutsu card deleted by operator order
+const CARD_ROSTER = 18; // 17→18 2026-11-17: the voice-change card boards (seed-vc, the Seed-VC voice changer) — the audio genre's fourth card (18→17 2026-11-12: the openjutsu card deleted by operator order)
 // 466 (2026-11-06): input-prep's crop-studio field joined the estate.
 // 466 -> 467 (2026-11-08, the model choice): input-prep's scale_model
 // select — the standard upscale-model vocabulary (union of consts →
@@ -145,7 +145,7 @@ const CARD_ROSTER = 17; // 18→17 2026-11-12: the openjutsu card deleted by ope
 // edit-arm trio + mask_expand + the mannequin blur pair +
 // frame_load_cap) — every wtype agreeing with its zod shape, argued
 // here.
-const FIELD_ROSTER = 481; // 480→481 2026-11-19: queue 12's file plane — h3's output_name row (the deliverable slug, group 'naming') joins the judged face. (482→480 2026-11-09: the retired edit family removed whole — the card's two tuning-boolean schema rows and the lane's two action rows leave the judged face. (493→482 2026-11-01: the blender-lane removal — the rig card's creature/decimate/format/species rows, gem-soma's two export knobs, and anny's five turnaround knobs leave the judged face. (504→493 2026-11-12: the eleven flat reshoot_* knobs retired into the reshoot mod bag.)
+const FIELD_ROSTER = 490; // 481→490 2026-11-17: the voice-change card's nine knob rows join the judged face (source/ref audio paths + steps/speed/cfg/f0/auto-f0/pitch/unload). (480→481 2026-11-19: queue 12's file plane — h3's output_name row (the deliverable slug, group 'naming') joins the judged face. (482→480 2026-11-09: the retired edit family removed whole — the card's two tuning-boolean schema rows and the lane's two action rows leave the judged face. (493→482 2026-11-01: the blender-lane removal — the rig card's creature/decimate/format/species rows, gem-soma's two export knobs, and anny's five turnaround knobs leave the judged face. (504→493 2026-11-12: the eleven flat reshoot_* knobs retired into the reshoot mod bag.)
 
 interface DictField {
   readonly type?: string;

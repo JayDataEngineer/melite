@@ -2,6 +2,9 @@
 {
   "compilerOptions": {
       "paths": {
+        "@melite/audio-voice-change": ["./../../audio/voice-change/src/card.ts"],
+        "@melite/audio-voice-change/card": ["./../../audio/voice-change/src/card.ts"],
+        "@melite/models-seed-vc": ["./../../models/seed-vc/src/index.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],
         "@melite/3d-img-to-mesh": ["./../../3d/img-to-mesh/src/index.ts"],

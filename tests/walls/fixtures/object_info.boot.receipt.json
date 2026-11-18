@@ -1,12 +1,12 @@
 {
- "derived_at": "2026-11-14T05:59:13.795Z",
+ "derived_at": "2026-11-17T16:02:22.822Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "13f5d1e7cbe0e571bdf4b2ac07d2ccb6b7169b7d69a999082d76f0e9fd0f81c6",
-  "mtime_ms": 1794426232441.123,
-  "class_count": 1880,
-  "origin": "capture"
+  "sha256": "0fe3d080cac96011929686575da2dd6af06b114ce3ac256f39daab542d2db293",
+  "mtime_ms": 1794931342544.6204,
+  "class_count": 1889,
+  "origin": "live"
  },
  "bootstrap_seed": {
   "path": "tests/walls/fixtures/object_info.boot.bootstrap.json",
@@ -15,16 +15,24 @@
  },
  "derivation": {
   "facts_path": "packages/engines/comfyui-cordis/data/model-facts.json",
-  "addressed_class_count": 95,
+  "addressed_class_count": 97,
   "bootstrap_class_count": 97,
-  "fixture_class_count": 191,
-  "rows_probed": 32,
+  "fixture_class_count": 192,
+  "rows_probed": 33,
   "refused_rows": 0
  },
  "delta": {
-  "added": [],
+  "added": [
+   "SeedVCRun"
+  ],
   "pruned": [],
-  "updated": [],
+  "updated": [
+   "AudiocoreVoiceStudio",
+   "CreateVideo",
+   "MiniMaxH3RefModsLoader",
+   "UNETLoader",
+   "VAELoader"
+  ],
   "reordered_keys": 0
  }
 }

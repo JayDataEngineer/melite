@@ -135,6 +135,7 @@ export const cardPackages: string[] = [
     // video door.
     '@melite/audio-music',
     '@melite/audio-tts',
+    '@melite/audio-voice-change',
     '@melite/image-image-edit',
     '@melite/motion-motion/card',
     '@melite/video-h3-timeline/card',

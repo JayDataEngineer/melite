@@ -25,6 +25,7 @@ import { meliteDiscover } from "./tools/melite-discover.js";
 import { meliteConstruct } from "./tools/melite-construct.js";
 import { meliteLoad } from "./tools/melite-load.js";
 import { meliteView } from "./tools/melite-view.js";
+import { meliteContactSheet } from "./tools/contact-sheet.js";
 import { meliteRead } from "./tools/melite-read.js";
 import { skillRead } from "./tools/skill-read.js";
 import { skillWrite } from "./tools/skill-write.js";
@@ -47,6 +48,7 @@ export { meliteFlow } from "./tools/melite-flow.js";
 export { comfyManage } from "./tools/comfy-manage.js";
 export { meliteLoad } from "./tools/melite-load.js";
 export { meliteView } from "./tools/melite-view.js";
+export { meliteContactSheet } from "./tools/contact-sheet.js";
 export { meliteRead, readRunText } from "./tools/melite-read.js";
 export { skillRead } from "./tools/skill-read.js";
 export { skillWrite } from "./tools/skill-write.js";
@@ -84,7 +86,7 @@ export const EAGER_TOOL_NAMES = [
  * catalog's doors, not DSH core's skill machinery — the old
  * unprefixed names invited exactly that conflation). */
 export const DEFERRED_TOOL_NAMES = [
-    'melite_view', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
+    'melite_view', 'melite_contact_sheet', 'melite_read', 'comfy_manage', 'melite_skill_read', 'melite_skill_write', 'ledger_tail',
 ];
 /** BASE tool names (discovery, compose, view, management, audit).
  *  melite_view is the observe arm (viewing an artifact is not a run
@@ -187,6 +189,7 @@ export async function apply(ctx, config = {}) {
     const expandEstateDoors = () => {
         const doors = [
             ['melite_view', () => c.tools.register(meliteView(ctx))],
+            ['melite_contact_sheet', () => c.tools.register(meliteContactSheet(ctx))],
             ['melite_read', () => c.tools.register(meliteRead(ctx))],
             ['comfy_manage', () => c.tools.register(comfyManage(estate))],
             ['melite_skill_read', () => c.tools.register(skillRead(estate))],

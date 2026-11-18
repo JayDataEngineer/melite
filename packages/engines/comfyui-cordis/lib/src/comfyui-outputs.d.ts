@@ -1,6 +1,25 @@
 import type { Client } from "@stable-canvas/comfyui-client";
 import type { EngineJson } from "./comfyui-types.js";
-export declare function artifactFileStem(nodeId: string, name: string): string;
+/** B11 (promgen handoff, 2026-11-17): the SUBFOLDER rides the
+ *  flattened name. The old stem dropped it whole — every run's hero
+ *  PNG landed as `SaveImage.0_gen_00001_.png`, artifact identity
+ *  living only in the directory name, so tooling that copied files
+ *  out of the runs tree (sweep contact-sheet scripts) met N files
+ *  with ONE name and had to re-derive run ids from paths. The
+ *  engine's subfolder is the run-media prefix law's own spelling
+ *  (`<runId>/<kind>` for the deliverable lanes), so prefixing the
+ *  slug restores identity IN the filename (and cures a latent
+ *  collision: two subfolders saving the same leaf through the same
+ *  node used to overwrite each other — the flattened name was
+ *  identical). Slashes flatten to underscores (one filename
+ *  segment); the over-cap arm keeps the F-D digest law (the digest
+ *  now covers sub + id — distinct subs stay collision-proof).
+ *  Sub-less rows never reach this stem (the caller keeps their own
+ *  names verbatim).
+ *  @param nodeId the producing node's id.
+ *  @param name the engine-reported leaf name.
+ *  @param sub the engine-reported subfolder ("" = the plain stem). */
+export declare function artifactFileStem(nodeId: string, name: string, sub?: string): string;
 /** The /view artifact-fetch budget (stroke 83): the run's own
  *  timeout when it EXCEEDS the 180s floor, else the
  *  floor. The harvest rides the run's budget — a long run may

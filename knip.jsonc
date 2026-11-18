@@ -47,6 +47,17 @@
     "tools/*.d.mts",
     "tests/helpers/launch-probe.mjs",
     "tests/walls/ts/fixtures/manager-stub.mjs",
+    // ── THE vi.mock FACTORY PLANE (2026-11-17, the battery's knip
+    // tier re-run after the seed-vc card): the prune-*-loader.mjs /
+    // prune-*-hook.mjs / l2-journey-driver.mjs siblings are spec
+    // machinery referenced ONLY by string inside vi.mock() factories
+    // (the hoisting law: a factory may not close over top-level
+    // variables, so each mock rides its own loader file) — knip
+    // cannot trace string-only specifiers, but the suites that mock
+    // them fail loud without them.
+    "tests/walls/ts/suites/*-loader.mjs",
+    "tests/walls/ts/suites/*-hook.mjs",
+    "tests/walls/ts/suites/l2-journey-driver.mjs",
     "packages/harness/melite-tools/test/estate-drive.mjs",
     "packages/web/melite-card-deck/prove-live.mjs",
     "packages/web/melite-card-view/probe-*.mts",
@@ -175,6 +186,11 @@
     "@melite/models-h3",
     "@melite/models-krea-2",
     "@melite/models-moss-sfx",
+    // The card package's own family row (audio/voice-change ->
+    // models-seed-vc) rides the same global entry class: the family
+    // seat is a guarded dynamic import by string (family-seats.ts),
+    // so no static import exists for knip to trace.
+    "@melite/models-seed-vc",
     "@melite/models-music3",
     "@melite/models-qwen-img-edit-21",
     "@melite/motion-motion",
@@ -315,6 +331,7 @@
         "@melite/audio-music",
         "@melite/audio-sfx",
         "@melite/audio-tts",
+        "@melite/audio-voice-change",
         "@melite/image-image-edit",
         "@melite/image-image-gen",
         "@melite/image-input-prep",
@@ -351,6 +368,7 @@
         "@melite/models-wd14",
         "@melite/models-yue2",
         "@melite/models-z-image",
+        "@melite/models-seed-vc",
         "@melite/motion-motion",
         "@melite/video-h3-timeline",
         "@melite/video-trim",
@@ -364,7 +382,7 @@
       ]
     },
     "packages/web/melite-estate": {
-      // ALL 31 rows are the estate bundle's cordis.patch.yml FAMILY ROWS
+      // ALL 32 rows are the estate bundle's cordis.patch.yml FAMILY ROWS
       // (family-anny -> @melite/models-anny, ...): the DSH Loader owns each
       // family's lifecycle and resolves the rows BY PACKAGE NAME against the
       // manifest's declared closure (the patch yml header states the law;
@@ -403,7 +421,8 @@
         "@melite/models-trellis2-native",
         "@melite/models-wd14",
         "@melite/models-yue2",
-        "@melite/models-z-image"
+        "@melite/models-z-image",
+        "@melite/models-seed-vc"
       ]
     },
     "packages/engines/comfyui/src/action_cards": {

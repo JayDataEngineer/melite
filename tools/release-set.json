@@ -1,7 +1,7 @@
 {
   "tag": "v0.2.3-rc.3",
   "version": "0.2.3-rc.3",
-  "count": 82,
+  "count": 84,
   "names": [
     "@melite-plugin/dsh-card-deck",
     "@melite-plugin/dsh-card-view",
@@ -16,6 +16,7 @@
     "@melite/audio-music",
     "@melite/audio-sfx",
     "@melite/audio-tts",
+    "@melite/audio-voice-change",
     "@melite/card-base",
     "@melite/cards",
     "@melite/catalog",
@@ -69,6 +70,7 @@
     "@melite/models-qwen-img-21",
     "@melite/models-qwen-img-edit-21",
     "@melite/models-qwen3-tts",
+    "@melite/models-seed-vc",
     "@melite/models-seedvr2-ema",
     "@melite/models-skin",
     "@melite/models-somax",

@@ -61,6 +61,10 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
   versionCoherenceOffender: (innerFiles: Map<string, { inner: { name: string, version: string } }>, tag: string) => string | null
   publintOffender: (tarName: string, f: string) => Promise<void>
+  DSH_PEER_TRAIN: string
+  DSH_PEER_HOST_FACES: string[]
+  dshPeerTrainRange: () => string
+  stampDshPeerTrain: (manifest: unknown) => unknown
 }
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
@@ -853,5 +857,69 @@ describe('G5 — stub-loader synthesis (exec-stub-loader.mjs laws)', () => {
       expect(r.stderr).toBe('')
       expect(r.status).toBe(0)
     } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+})
+
+// G10 — THE DSH HOST PEER TRAIN (packaging burn, 2026-11-30): the
+// published 0.2.3-rc.4 tarballs carried `>=0.2.1-rc.2 <0.3.0` on
+// the dsh host faces while the registry's only dsh train was
+// 0.2.2-rc.4 — npm semver admits a prerelease ONLY on the
+// comparator's own [major,minor,patch] tuple, so the floor could
+// never select it: clean installs died ERESOLVE, pnpm seated a
+// SECOND host tree. The floor is minted at the pack door (the tree's
+// own range resolves the dev graph — a literal change re-keys pnpm's
+// peer-set cells and stops 19 packages compiling), so the tarball
+// ships the train the tree can never carry as a literal.
+describe('G10 — the dsh host peer train', () => {
+  const STAMPED = gates.dshPeerTrainRange()
+
+  it('the train names a prerelease and the stamp is the minted form', () => {
+    expect(gates.DSH_PEER_TRAIN.includes('-'), 'a stable floor needs no tuple law; the train tracks the prerelease rail').toBe(true)
+    expect(STAMPED).toBe(`>=${gates.DSH_PEER_TRAIN} <0.3.0`)
+  })
+
+  it('the stamp rewrites every host-peer row onto the train, leaving every other peer untouched', () => {
+    const manifest = {
+      name: '@melite/fx',
+      peerDependencies: {
+        '@deepseek-ai/cordis': '^4.0.5',
+        '@deepseek-ai/dsh': '>=0.2.1-rc.2 <0.3.0',
+        '@deepseek-ai/dsh-client-ui-slots': '>=0.2.1-rc.2 <0.3.0',
+        react: '^19.2.6',
+      },
+    }
+    gates.stampDshPeerTrain(manifest)
+    expect(manifest.peerDependencies['@deepseek-ai/dsh'], 'the burned baseline floor stamps onto the train').toBe(STAMPED)
+    expect(manifest.peerDependencies['@deepseek-ai/dsh-client-ui-slots']).toBe(STAMPED)
+    expect(manifest.peerDependencies['@deepseek-ai/cordis'], 'non-host peers ride verbatim').toBe('^4.0.5')
+    expect(manifest.peerDependencies.react).toBe('^19.2.6')
+    const hostless = { name: '@melite/fx', peerDependencies: { '@deepseek-ai/cordis': '^4.0.5' } }
+    gates.stampDshPeerTrain(hostless)
+    expect(hostless.peerDependencies, 'packages without host faces are not forced to board them').toEqual({ '@deepseek-ai/cordis': '^4.0.5' })
+  })
+
+  it('the PACKED manifest carries the train floor end-to-end (the real tarball door)', () => {
+    // a tarball-shaped fixture whose manifest carries the burned
+    // baseline range — stripPackedTarballs (the G1.5 door the real
+    // cut runs) must rewrite it before the bytes are sealed.
+    const burned = '>=0.2.1-rc.2 <0.3.0'
+    const manifest = {
+      name: '@melite/fx-train', version: '0.0.0', description: 'fixture', license: 'MIT',
+      private: true,
+      repository: { type: 'git', url: 'https://example.invalid/JayDataEngineer/melite.git', directory: 'packages/web/fx-train' },
+      peerDependencies: { '@deepseek-ai/dsh': burned },
+      dependencies: {},
+    }
+    const fx = fixture({ 'package.json': JSON.stringify(manifest) })
+    const out = mkdtempSync(join(tmpdir(), 'melite-train-read-'))
+    try {
+      gates.stripPackedTarballs([fx.f])
+      // the sealed bytes are the truth — re-extract the tarball the
+      // door re-packed, never the fixture's own tree
+      execFileSync('tar', ['-xzf', fx.f, '-C', out])
+      const inner = JSON.parse(readFileSync(join(out, 'package', 'package.json'), 'utf8')) as { peerDependencies: Record<string, string>, private?: unknown }
+      expect(inner.peerDependencies['@deepseek-ai/dsh'], 'the packed bytes declare the floor the registry can satisfy').toBe(STAMPED)
+      expect(inner.private, 'the same door still strips the workspace-only keys').toBeUndefined()
+    } finally { rmSync(fx.dir, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }) }
   })
 })

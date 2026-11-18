@@ -99,7 +99,7 @@ export function galleryTail(t: string): string | null {
   return path;
 }
 
-export type SourceFace = "run" | "abs";
+type SourceFace = "run" | "abs";
 
 /** A collected pointer: the VERBATIM string (history stamps what
  *  the params held — the engine trims for staging, the record

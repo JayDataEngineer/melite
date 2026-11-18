@@ -707,6 +707,150 @@ describe('doors apply', () => {
     }
   })
 
+  // THE STORELESS BRICK (live 2026-11-18, the browser-tier burn):
+  // the global dsh train moved to cordis 4.1.0, where every
+  // side-effect fiber carries store === undefined FOR LIFE — the
+  // lane booted with 305 permanent waiters, and the RE-ARM CLEAR
+  // (`.clear()` on the stamps) wiped their AGED stamps at every
+  // sustained quiet; the next request re-stamped all 305 fresh and
+  // the seat doors flapped 503 estate/pending ~90% of every
+  // 2-minute cycle while the estate served fine in the holes (the
+  // journeys' doc reads died in the walls). The cured clear drops
+  // only ENDED lifecycles: a waiter still activating keeps its
+  // ORIGINAL stamp through the re-arm (the monotonic law), and a
+  // genuinely new mount still births a fresh racer.
+  test('THE STORELESS BRICK: permanent waiters survive the re-arm clear — the door stays open; a new mount still gets its fresh window', async () => {
+    const ctx = new Context()
+    const routes: Route[] = []
+    ctx.provide('webServer', {
+      port: 0,
+      register: (route: Route) => {
+        routes.push(route)
+        return () => {}
+      },
+    } as never)
+    ctx.provide('llm', fakeLlm() as never)
+    ctx.provide('tools', { schemas: () => [] } as never)
+    // the permanent waiter — store-less for life under 4.1.0, its
+    // dependency never lands
+    const waiter = ctx.plugin({
+      name: 'estate-waiter',
+      inject: ['queue'],
+      apply: (child: Context) => {
+        child.provide('runs', {
+          validate: async () => ({ ok: true }),
+        })
+      },
+    })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never }) // the provides above satisfy the door's private CtxView at runtime; cordis's Plugin type can't see them
+    const probe = (): Promise<{ status: number; body: unknown }> =>
+      call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+    try {
+      await door
+      await waiter
+      await Promise.resolve()
+      const realNow = Date.now
+      const t0 = realNow()
+      try {
+        // inside the grace: the typed pending, the stamp starts
+        Date.now = (): number => t0
+        assert.equal((await probe()).status, 503)
+        // past the grace: the waiter is aged out, the quiet begins,
+        // the gate opens
+        Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 1_000
+        assert.equal((await probe()).status, 502)
+        // past the re-arm bound: the clear FIRES — and the waiter's
+        // aged stamp SURVIVES it (its uid is still activating)
+        Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 1_000 + ESTATE_PENDING_REARM_MS + 1_000
+        assert.equal((await probe()).status, 502)
+        // THE LAW: the very next request must NOT resurrect the
+        // waiter as a fresh racer — under the old .clear() this
+        // probe re-stamped every permanent waiter fresh and answered
+        // 503, the 2-minute flap's engine
+        assert.equal((await probe()).status, 502)
+        // THE OTHER HALF of the filtered clear — an ENDED lifecycle
+        // (a waiter that was probed activating, stamped, then
+        // disposed) is dropped by the clear: its stamps do not
+        // outlive it. The staging is the delicate part: the ended
+        // waiter must idle INSIDE an already-running quiet (its
+        // idle stamp younger than the quiet's start), or the idle
+        // reaper — same REARM bound — drops it first and the clear
+        // never sees it. So the second waiter rides the same t0
+        // window as the permanent one, outlives the grace, and
+        // disposes only after the quiet has begun.
+        const late = ctx.plugin({
+          name: 'estate-waiter-late',
+          inject: ['queue'],
+          apply: (child: Context) => {
+            child.provide('runs', {
+              validate: async () => ({ ok: true }),
+            })
+          },
+        })
+        await late
+        // both waiters ride the fresh window: this probe stamps the
+        // late waiter (t0+1s) and re-arms pendingSince for the
+        // clear below
+        Date.now = (): number => t0 + 1_000
+        assert.equal((await probe()).status, 503)
+        // past the grace: the quiet begins with the late waiter
+        // STILL activating — its own stamp is 1s younger, so at
+        // t0+grace+1s it is aged out too and opens no window of
+        // its own
+        Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 1_000
+        assert.equal((await probe()).status, 502)
+        // NOW the late waiter ends — its idle stamp lands inside
+        // the running quiet (t0+grace+3s), young enough that the
+        // idle reaper — the same REARM bound — can never tick it
+        // out before the clear fires
+        await late.dispose()
+        Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 3_000
+        assert.equal((await probe()).status, 502)
+        // past the re-arm bound: the clear FIRES — the late
+        // waiter's ended stamps drop (idle rearm-2s, under the
+        // reaper), the permanent waiter's aged stamp SURVIVES
+        // (still activating — the monotonic law)
+        Date.now = (): number => t0 + ESTATE_PENDING_GRACE_MS + 1_000 + ESTATE_PENDING_REARM_MS + 1_000
+        assert.equal((await probe()).status, 502)
+        // THE LAW, second clear: the very next request must NOT
+        // resurrect the permanent waiter as a fresh racer — under
+        // the old .clear() this probe re-stamped it fresh and
+        // answered 503
+        assert.equal((await probe()).status, 502)
+        // a GENUINELY new mount (a re-mounted seat, a fresh uid):
+        // its own fresh window — the filtered clear never
+        // over-cleared the gate's honesty
+        const race = ctx.plugin({
+          name: 'estate-runs-fresh',
+          inject: ['queue'],
+          apply: (child: Context) => {
+            child.provide('runs', {
+              validate: async () => ({ ok: true }),
+            })
+          },
+        })
+        await race
+        const fresh = await probe()
+        assert.equal(fresh.status, 503)
+        assert.deepEqual(fresh.body, {
+          error: 'estate composition is still activating',
+          code: 'estate/pending',
+          pending: true,
+        })
+        await race.dispose()
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      await waiter.dispose()
+      await door.dispose()
+    }
+  })
+
   // THE PRESET-ISOLATE LAW (the 2026-10-26 flap, the operator's
   // "RESTROING TAKES TOO LONG" order): the live lane's runs door
   // cycled 503 estate/pending ~2min-down/12s-up for hours while the

@@ -16,12 +16,33 @@ import { basename, join } from "node:path";
  *  the file's name is just a name) and nothing parses the filename
  *  back into an id. 240 bytes sits under ext4's 255 with margin. */
 const FILE_NAME_CAP = 240;
-export function artifactFileStem(nodeId, name) {
-    const joined = nodeId + "_" + name;
+/** B11 (promgen handoff, 2026-11-17): the SUBFOLDER rides the
+ *  flattened name. The old stem dropped it whole — every run's hero
+ *  PNG landed as `SaveImage.0_gen_00001_.png`, artifact identity
+ *  living only in the directory name, so tooling that copied files
+ *  out of the runs tree (sweep contact-sheet scripts) met N files
+ *  with ONE name and had to re-derive run ids from paths. The
+ *  engine's subfolder is the run-media prefix law's own spelling
+ *  (`<runId>/<kind>` for the deliverable lanes), so prefixing the
+ *  slug restores identity IN the filename (and cures a latent
+ *  collision: two subfolders saving the same leaf through the same
+ *  node used to overwrite each other — the flattened name was
+ *  identical). Slashes flatten to underscores (one filename
+ *  segment); the over-cap arm keeps the F-D digest law (the digest
+ *  now covers sub + id — distinct subs stay collision-proof).
+ *  Sub-less rows never reach this stem (the caller keeps their own
+ *  names verbatim).
+ *  @param nodeId the producing node's id.
+ *  @param name the engine-reported leaf name.
+ *  @param sub the engine-reported subfolder ("" = the plain stem). */
+export function artifactFileStem(nodeId, name, sub = "") {
+    const slug = sub.replace(/\//g, "_");
+    const prefix = slug === "" ? "" : slug + "_";
+    const joined = prefix + nodeId + "_" + name;
     if (Buffer.byteLength(joined, "utf8") <= FILE_NAME_CAP)
         return joined;
     const tail = nodeId.slice(nodeId.lastIndexOf(".") + 1);
-    const digest = createHash("sha1").update(nodeId).digest("hex").slice(0, 12);
+    const digest = createHash("sha1").update(sub + "/" + nodeId).digest("hex").slice(0, 12);
     return tail + "-" + digest + "_" + name;
 }
 /** The /view artifact-fetch budget (stroke 83): the run's own
@@ -108,7 +129,7 @@ export async function fetchOutputArtifacts(client, runDir, entry, timeoutS) {
                 if (ftype === "input")
                     continue;
                 const name = basename(filename);
-                const dest = join(runDir, sub !== "" ? artifactFileStem(nodeId, name) : name);
+                const dest = join(runDir, sub !== "" ? artifactFileStem(nodeId, name, sub) : name);
                 // THE SPLIT CATCH (audit M-S9): only the REMOTE half folds —
                 // one unreachable artifact never kills the harvest. The
                 // local write below throws loud: disk-full, permission, and

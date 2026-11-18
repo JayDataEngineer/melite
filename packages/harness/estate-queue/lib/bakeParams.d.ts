@@ -1,6 +1,6 @@
 /** One collected validation failure (loc = dotted path;
  *  empty = model-level). */
-export interface VError {
+interface VError {
     readonly loc: readonly (string | number)[];
     readonly msg: string;
     readonly input: unknown;
@@ -14,4 +14,5 @@ export declare function renderErrors(model: string, errs: readonly VError[]): st
  *  input, not the parsed doc.
  *  Returns the failure text, or null. */
 export declare function validateBakeParams(s: string): string | null;
+export {};
 //# sourceMappingURL=bakeParams.d.ts.map

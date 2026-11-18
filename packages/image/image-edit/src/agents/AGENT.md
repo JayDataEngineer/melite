@@ -72,8 +72,6 @@ KSampler.steps) before blaming the prompt.
    seat (masked detailing of a photo composes THERE).
 6. Qwen-Image-Edit uses low CFG (flow-matching) — guidance tops at 10;
    the 21 lane rides cfg 1 (leave the default).
-   (C3, 2026-11-16: the list once skipped 7 — a law was retired and
-   the numbering never closed; 7–9 below are contiguous now.)
 7. OUTPAINT: on qwen-img-edit-2.1 the native path is SIZE READJUST —
    flip Match OFF, state the wider width/height, prompt the newly
    visible space ("outpaint the newly visible …"); the anchor renders

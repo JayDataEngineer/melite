@@ -314,6 +314,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "qwen3-tts-voicedesign",
   "qwen3-tts-voicedesign-base",
   "qwen3-tts-voicedesign-design",
+  "seed-vc",
   "seedvr2-ema",
   // (removed 2026-11-12, the 7B death: the row offered a body with no
   //  cells and no provision — a dead door; the servability arm in the
@@ -523,7 +524,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 64 -> 66 (2026-11-11, the H3-Image landing): both twins serve
     // their base variant row (int8_convrot_pruned / w4a8 / bf16 are
     // CELLS of the one row, not variants — the qwen 2.1 pair's shape).
-    assert.equal(variants, 66);
+    assert.equal(variants, 67); // 66→67 2026-11-17: seed-vc's one serving variant (standard) joins
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -558,6 +559,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 81 -> 87 (2026-11-11, the H3-Image landing): each twin's base
     // variant carries its three quant cells (int8_convrot_pruned,
     // w4a8, bf16) — six new cells on the pair.
-    assert.equal(cells, 87);
+    // 87 -> 88 (2026-11-17): seed-vc's standard variant carries its one native cell.
+    assert.equal(cells, 88);
   });
 });

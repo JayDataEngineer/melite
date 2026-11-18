@@ -724,8 +724,8 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
     assert.equal(pass.length, 1, 'only s_0 pressed — the sibling was never sent')
     assert.equal(pass[0]!['run_id'], 'r_between')
     assert.equal(pass[0]!['status'], 'done')
-    assert.match(String(out.error), /the 1 pressed run\(s\) are durable on the queue: poll run_status/,
-      'the durable-run counsel names the count: ' + String(out.error))
+    assert.match(String(out.error), /the 1 pressed run\(s\) are durable on the queue: watch them with run_status/,
+      'the durable-run counsel names the count and the adopt drain: ' + String(out.error))
     assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the sibling was never minted')
   })
   test('a mid-start abort carrying a NON-Error throw names the flat reason — the receipt still points at ledger_tail', async () => {
@@ -865,8 +865,8 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       assert.equal(pass.length, 2)
       assert.equal(pass[0]!['status'], 'done', 's_0 observed to its end before the budget died')
       assert.equal(pass[1]!['status'], 'queued')
-      assert.equal(pass[1]!['note'], 'the press budget spent — the run is durable on the queue, poll with run_status',
-        'the queued note names the budget, never a failure')
+      assert.equal(pass[1]!['note'], 'the press budget spent — the run is durable on the queue; re-press to drain the tail: a live run is adopted (never re-sent), settled stages skip',
+        'the queued note names the budget and the drain verb, never a failure')
       const noIntent = await press(undefined)
       assert.equal(noIntent.status, 'pending')
       assert.equal(noIntent.intent, undefined, 'a bench with no intent rides no intent key — the word is the bench\u2019s')
@@ -912,7 +912,7 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       const pass = out.pass as Array<Record<string, unknown>>
       assert.equal(pass.length, 1)
       assert.equal(pass[0]!['status'], 'queued')
-      assert.equal(pass[0]!['note'], 'the press budget spent — the run is durable on the queue, poll with run_status')
+      assert.equal(pass[0]!['note'], 'the press budget spent — the run is durable on the queue; re-press to drain the tail: a live run is adopted (never re-sent), settled stages skip')
     } finally {
       vi.useRealTimers()
     }
@@ -1388,5 +1388,335 @@ describe('melite_flow bench — the stop faces carry the intent + the pressed st
     assert.equal(out.intent, INTENT, 'the intent rides even a failed press')
     assert.deepEqual(out.host_paths, ['/abs/clip.mp4'],
       'the absolute host path prints once — the second row\u2019s duplicate is dropped')
+  })
+})
+
+// THE ADOPT LAW (the three-press burn, 2026-11-30: one agent call
+// pushes ~9 takes — the press budget ends the observation AND the
+// dispatch with it, and the old receipt's counsel named an escape
+// hatch that could never drain the pass: a re-press re-sent whatever
+// was still queued). A row that already owns a run is NEVER re-sent —
+// the press ADOPTS it: one cheap status read classifies the row's
+// own memory, live and terminal runs observe inside the remaining
+// budget, a gone run heals to a fresh press, and an unreadable one
+// stops the press naming ledger_tail — never a double.
+describe('melite_flow bench — THE ADOPT LAW (a row owning a run is adopted, never re-sent)', () => {
+  const liveRow = (id: string, runId: string): Record<string, unknown> => ({
+    id, card: 'h3-timeline', params: {},
+    runStatus: 'running', result: { run_id: runId },
+  })
+  const freshRow = (id: string): Record<string, unknown> => ({ id, card: 'h3-timeline', params: {} })
+
+  test('a live prior run is ADOPTED — observed to terminal, never re-sent, and the tail presses on', async () => {
+    // probe (call 1) answers running; the adopted observation's
+    // polls (calls 2+) answer completed — the window the first
+    // press lost, reclaimed without a second start.
+    let statusReads = 0
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([liveRow('s_0', 'r_live'), freshRow('s_1')]) }
+        return undefined
+      },
+      (lane: string, args: unknown[]) => {
+        if (lane !== 'runsStatus') return undefined
+        const id = String(args[0])
+        if (id === 'r_live') {
+          statusReads += 1
+          return statusReads === 1
+            ? { status: 200, body: { status: 'running', stages: [] } }
+            : { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/final.png' }] } }
+        }
+        return { status: 200, body: { status: 'completed', stages: [{ id: 's_1', url: 'out/next.png' }] } }
+      },
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: `r_${String((args[0] as Record<string, unknown>)['bench_stage_id'] ?? 'x')}`, status: 'queued' } }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done', 'the adopted run settles and the tail drains in the same press')
+    const starts = fake.calls.filter((c) => c.lane === 'runsStart')
+    assert.deepEqual(starts.map((c) => (c.args[0] as Record<string, unknown>)['bench_stage_id']), ['s_1'], 's_0 was NEVER re-sent — the doubling dies here')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['stage'], 's_0')
+    assert.equal(pass[0]!['run_id'], 'r_live')
+    assert.equal(pass[0]!['status'], 'done')
+    assert.equal(pass[0]!['adopted'], true, 'the pass row names the adoption — the operator reads why no start flew')
+    assert.equal(pass[1]!['stage'], 's_1')
+    assert.equal(pass[1]!['status'], 'done')
+  })
+
+  test('a prior run the SERVER already settled is adopted and stamped on the first poll — the mark the window cut short', async () => {
+    // the background attribution's re-arms ran out before the run
+    // settled: the row still says running, the queue says completed.
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([liveRow('s_0', 'r_settled')]) }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStatus') return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/late.png' }] } }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'a settled run is observed, never re-minted')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['status'], 'done')
+    assert.equal(pass[0]!['adopted'], true)
+    assert.ok(out.status === 'done', 'the press finishes — the row is whole again')
+  })
+
+  test('a prior run the queue no longer knows HEALS to a fresh press — stale row memory never strands the stage', async () => {
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([liveRow('s_0', 'r_gone')]) }
+        return undefined
+      },
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStatus' && String(args[0]) === 'r_gone') return { status: 404, body: { error: 'no such run r_gone' } }
+        if (lane === 'runsStatus') return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/fresh.png' }] } }
+        return undefined
+      },
+      (lane: string, args: unknown[]) => {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_new', status: 'queued' } }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    const starts = fake.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 1, 'the gone run heals into exactly one fresh press')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['run_id'], 'r_new')
+    assert.ok(!('adopted' in pass[0]!), 'a fresh press carries no adoption mark')
+    assert.equal(pass[0]!['status'], 'done')
+  })
+
+  test('a CLEARED done mark never adopts — the old result keeps its terminal evidence and the row re-runs (the W-2 counter-class)', async () => {
+    // the patch door cleared the mark to pending for a re-run; the
+    // old result still carries its url. The live-folded word plus
+    // terminal evidence is the RE-RUN shape, never an in-flight
+    // observation (the observer's live stamp writes run_id ALONE).
+    const clearedRow = (id: string, runId: string): Record<string, unknown> => ({
+      id, card: 'h3-timeline', params: {},
+      runStatus: 'pending', result: { run_id: runId, url: '/melite-media/runs/' + runId + '/out/final.png' },
+    })
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([clearedRow('s_0', 'r_old')]) }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStatus') return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/final.png' }] } }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_fresh', status: 'queued' } }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const starts = fake.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 1, 'the cleared row re-runs — its live-folded word is the patch door’s, never an observation’s')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['run_id'], 'r_fresh')
+    assert.ok(!('adopted' in pass[0]!), 'terminal evidence on the row means re-run intent, never adoption')
+  })
+  test('an UNREADABLE prior run stops the press naming ledger_tail — nothing is sent on an unknown existence', async () => {
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([liveRow('s_0', 'r_opaque'), freshRow('s_1')]) }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStatus') throw new Error('socket hang up')
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.match(String(out.error), /unreadable/, 'the refusal names the unknown state')
+    assert.match(String(out.error), /ledger_tail/, 'the counsel names the read-before-press door')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'an unknown existence sends NOTHING — not this stage, not the tail')
+  })
+
+  test('an abort MID-OBSERVE of an ADOPTED run returns the pending face — the adoption mark rides the queued row, the run stays durable', async () => {
+    // the session died while the press observed the run it had just
+    // adopted: the receipt is pending + run_id (the run lives on the
+    // queue), the pass row carries BOTH the adoption mark and the
+    // abort's word — the operator reads why no start flew and why
+    // the observation ended, and the sibling is never pressed.
+    const controller = new AbortController()
+    let adoptReads = 0
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([liveRow('s_0', 'r_adopted'), freshRow('s_1')]) }
+        return undefined
+      },
+      (lane: string, args: unknown[]) => {
+        if (lane !== 'runsStatus') return undefined
+        if (String(args[0]) !== 'r_adopted') return { status: 200, body: { status: 'completed', stages: [{ id: 's_1', url: 'out/next.png' }] } }
+        adoptReads += 1
+        if (adoptReads === 1) return { status: 200, body: { status: 'running', stages: [] } }
+        controller.abort(new Error('session teardown'))
+        throw new Error('observer transport died')
+      },
+      (lane: string) => {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_never', status: 'queued' } }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(controller.signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'pending', 'the adopted run is durable — an aborted observation is pending, never stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.equal(out.run_id, 'r_adopted')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass.length, 1, 'the sibling stage was never pressed')
+    assert.equal(pass[0]!['run_id'], 'r_adopted')
+    assert.equal(pass[0]!['status'], 'queued')
+    assert.equal(pass[0]!['adopted'], true, 'the aborted row keeps its adoption mark — no start flew for this run')
+    assert.match(String(pass[0]!['aborted']), /session teardown/, 'the abort word rides the row verbatim')
+    assert.ok(!('thrown' in pass[0]!), 'an aborted observe is not a thrown stage — the run lives')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'nothing was ever sent — adoption observed, the abort ended the press')
+  })
+
+  test('a TERMINAL word on the minimal stamp never adopts — a failed run is not live memory; the row re-runs', async () => {
+    // the adopt gate trusts the observer's LIVE vocabulary
+    // (running/queued) alone. A row whose fold word is terminal
+    // ('failed') carrying the minimal stamp is a run that already
+    // ENDED — there is nothing to observe to terminal, so the press
+    // sends fresh rather than probing a corpse.
+    const deadRow = (id: string, runId: string): Record<string, unknown> => ({
+      id, card: 'h3-timeline', params: {},
+      runStatus: 'failed', result: { run_id: runId },
+    })
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: benchWith([deadRow('s_0', 'r_dead')]) }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStatus') return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/again.png' }] } }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_fresh2', status: 'queued' } }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ bench: true }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'done')
+    const starts = fake.calls.filter((c) => c.lane === 'runsStart')
+    assert.equal(starts.length, 1, 'a terminal fold re-runs — the press never probes a dead run for liveness')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStatus').length, 1, 'the single status read belongs to the fresh run observation — no adoption probe flew')
+    const pass = out.pass as Array<Record<string, unknown>>
+    assert.equal(pass[0]!['run_id'], 'r_fresh2')
+    assert.ok(!('adopted' in pass[0]!), 'a re-run carries no adoption mark')
+  })
+
+  test('a non-Error probe throw rides the stopped face verbatim — and the receipt carries the bench intent and the pressed stage', async () => {
+    // the estate lane can throw bare values (a torn-down transport
+    // surfacing a string): the unreadable face must carry the word
+    // verbatim, never drop it to "[object Object]" or a generic —
+    // and the stopped receipt names whose press it was (intent +
+    // the named stage, the same fields the pending receipt carries).
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') return { status: 200, body: { draft_id: 'd_arms', rev: 1, intent: 'the evening set', stages: [liveRow('s_0', 'r_opaque2')] } }
+        return undefined
+      },
+      (lane: string) => {
+        if (lane === 'runsStatus') throw 'lane torn down'
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const out = await tool.execute({ stage: 's_0' }, fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.stoppedAt, 's_0')
+    assert.match(String(out.error), /unreadable \(lane torn down\)/, 'the bare-string throw rides the face verbatim')
+    assert.equal(out.intent, 'the evening set', 'the stopped receipt carries the bench intent — the operator knows whose press died')
+    assert.equal(out.stage, 's_0', 'the stopped receipt carries the named stage — a per-stage press reads its own face')
+    assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 0, 'an unknown existence sends NOTHING')
+  })
+
+  test('an adoption that outlives the press budget returns pending — the queued row keeps the adoption mark and the drain counsel', async () => {
+    // THE PRESS BUDGET bounds adoption's observation too: the row
+    // was adopted (the probe flew, the run is live), but the budget
+    // the earlier stage spent leaves nothing to observe with — the
+    // receipt is pending NOW, carrying run_id and the re-press
+    // counsel, and the queued pass row keeps its adoption mark.
+    vi.useFakeTimers()
+    try {
+      const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+        (lane: string) => {
+          if (lane === 'benchGet') return { status: 200, body: benchWith([{ id: 's_0', card: 'h3-timeline', params: {} }, liveRow('s_1', 'r_adopted2')]) }
+          return undefined
+        },
+        (lane: string, args: unknown[]) => {
+          if (lane !== 'runsStatus') return undefined
+          if (String(args[0]) === 'r_adopted2') {
+            // the probe answers — and the wall clock the budget
+            // reads has moved past the deadline while the first
+            // stage's observation ran: the adoption is honest, the
+            // window to observe it is gone
+            vi.setSystemTime(Date.now() + 120_000)
+            return { status: 200, body: { status: 'running', stages: [] } }
+          }
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/first.png' }] } }
+        },
+        (lane: string, args: unknown[]) => {
+          if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_first', status: 'queued' } }
+          if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+          return undefined
+        },
+      ]
+      const fake = fakeEstateStatus(lanes)
+      const tool = meliteFlow(fake.estate)
+      const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
+      const runP = tool.execute({ bench: true }, exec) as Promise<Record<string, unknown>>
+      await vi.advanceTimersByTimeAsync(10_000)
+      const out = await runP
+      assert.equal(out.status, 'pending', 'the adopted run is durable — the spent budget is pending, never failed')
+      assert.equal(out.stoppedAt, 's_1')
+      assert.equal(out.run_id, 'r_adopted2')
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass[0]!['stage'], 's_0')
+      assert.equal(pass[0]!['status'], 'done')
+      assert.equal(pass[1]!['stage'], 's_1')
+      assert.equal(pass[1]!['run_id'], 'r_adopted2')
+      assert.equal(pass[1]!['status'], 'queued')
+      assert.equal(pass[1]!['adopted'], true, 'the budget-spent row keeps its adoption mark — the run was adopted, never re-sent')
+      assert.match(String(pass[1]!['note']), /re-press to drain/, 'the drain counsel rides the row')
+      assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'only the first stage ever started — the adopted stage never re-sent')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

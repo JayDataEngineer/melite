@@ -26,13 +26,13 @@ import { join, resolve } from 'node:path'
 // never carry the count.
 const ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
 const TOKEN = /prove(?:d|n)?nance/gi
-// 1182 (2026-11-12): +4 mechanical fallout — media-preview's two
-// generated tsconfig faces materialize the pre-existing catalog
-// family-origin alias (the module this wall's §4 rename debt
-// tracks, 2 tokens per face; the H3-Image pair's 1178 the same
-// class). No new concept named the banned token; fall-only resumes
+// 1186 (2026-11-18): +4 mechanical fallout, same class as the 1182 —
+// the seed-vc family and voice-change card each add one generated
+// tsconfig face materializing the pre-existing catalog family-origin
+// alias (the module this wall's §4 rename debt tracks, 2 tokens per
+// face). No new concept named the banned token; fall-only resumes
 // (the rename retires the alias wholesale when it lands).
-const CEILING = 1182
+const CEILING = 1186
 
 /** Tracked files the gate sweeps (derived — never a hand list). */
 function trackedFiles(): string[] {

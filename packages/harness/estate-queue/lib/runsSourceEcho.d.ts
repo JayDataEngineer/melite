@@ -30,7 +30,7 @@ export declare const GALLERY_ARTIFACT_PATH = "/infer-gallery/artifact";
  *  path) — the caller falls through to the absolute face and the
  *  pointer still refuses loud, never rides silent. */
 export declare function galleryTail(t: string): string | null;
-export type SourceFace = "run" | "abs";
+type SourceFace = "run" | "abs";
 /** A collected pointer: the VERBATIM string (history stamps what
  *  the params held — the engine trims for staging, the record
  *  keeps the author's spelling) plus its parsed face. */
@@ -78,4 +78,5 @@ export declare function resolveSourceRefs(refs: readonly string[], roots: readon
 /** Backward face (roots-only walk — the first law's signature).
  *  New code prefers resolveSourceRefs. */
 export declare function resolveMediaRefs(refs: readonly string[], roots: readonly string[]): SourceEchoRef[];
+export {};
 //# sourceMappingURL=runsSourceEcho.d.ts.map

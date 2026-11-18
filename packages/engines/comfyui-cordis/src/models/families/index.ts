@@ -1,4 +1,4 @@
-// families/index.ts — the family table (32 plugins, generated +
+// families/index.ts — the family table (33 plugins, generated +
 // frozen): every family owns its declaration file; this index is
 // the ONLY load order (sorted by genre then id — the table's key
 // order is id-sorted at the service, order here is just load
@@ -26,7 +26,7 @@ import type { Plugin } from "@deepseek-ai/cordis";
 
 /** The contract every family module exports: one plugin object and
  *  the DECL it registers (the id pairing is asserted at load). */
-export interface FamilyModule {
+interface FamilyModule {
   family: Plugin
   DECL: { id: string }
 }
@@ -70,6 +70,7 @@ export const FAMILY_ROWS: readonly FamilyRow[] = [
   { pkg: "@melite/models-music3", id: "music3" },
   { pkg: "@melite/models-yue2", id: "yue2" },
   { pkg: "@melite/models-qwen3-tts", id: "qwen3-tts" },
+  { pkg: "@melite/models-seed-vc", id: "seed-vc" },
   { pkg: "@melite/models-anima", id: "anima" },
   { pkg: "@melite/models-fibo2-edit", id: "fibo2-edit" },
   { pkg: "@melite/models-florence2", id: "florence2" },

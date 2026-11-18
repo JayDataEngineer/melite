@@ -153,7 +153,7 @@ function failedLandingOf(verb, estateAnswered) {
  *  probe), and a read that also fails names the unreachable bench,
  *  never a guess. Every answer carries the estate's face_stamp so a
  *  refusal is attributable to the build that served it (D-07). */
-async function refusalOf(e, verb, bench, estate, signal) {
+async function refusalOf(e, verb, bench, estate, signal, pressedStage) {
     const refusal = remoteErrorOf(e);
     if (refusal !== undefined) {
         const details = refusal.details;
@@ -171,6 +171,7 @@ async function refusalOf(e, verb, bench, estate, signal) {
     }
     const error = e instanceof Error ? e.message : String(e);
     const readBack = {};
+    let landing;
     if (MUTATION_VERBS.has(verb)) {
         try {
             const fresh = await estate.benchGet(bench, signal, 15000);
@@ -178,6 +179,22 @@ async function refusalOf(e, verb, bench, estate, signal) {
                 readBack['read_back_rev'] = fresh['rev'];
             else
                 readBack['read_back'] = 'no_rev';
+            // B3 (promgen handoff, 2026-11-17): the read-back USED to stop
+            // at the rev — the answer said 'ambiguous_no_write' while its
+            // own evidence (rev 594→595, the pressed stage sitting in the
+            // roster) PROVED the write landed, and the timeout's cost was
+            // a second blind mutation. The read-back now judges what it
+            // holds: a pressed stage id present in the bench's live roster
+            // is a PROVEN landing — 'landed_read_back' — and the voice
+            // means what it says (the stage is on the bench; only the
+            // ANSWER died). Absence keeps the honest ambiguity.
+            if (pressedStage !== undefined && pressedStage !== '' && Array.isArray(fresh['stages'])) {
+                const present = fresh['stages'].some((s) => typeof s === 'object' && s !== null &&
+                    s['id'] === pressedStage &&
+                    s['archived'] !== true);
+                if (present)
+                    landing = 'landed_read_back';
+            }
         }
         catch {
             readBack['read_back'] = 'unreachable';
@@ -186,7 +203,8 @@ async function refusalOf(e, verb, bench, estate, signal) {
     return jsonClean({
         verb, bench, face_stamp: faceStamp(),
         error, error_kind: 'remote', ok: false,
-        ...failedLandingOf(verb, false), ...readBack,
+        ...(landing !== undefined ? { landing: landing } : failedLandingOf(verb, false)),
+        ...readBack,
     });
 }
 // ── THE COMPILE VERDICT ON EVERY WIRING MUTATION (session
@@ -1215,14 +1233,14 @@ export function meliteConstruct(estate, opts = {}) {
                     + 'repaired 90 of 243 frames): split with the VERB {cuts: "2.5, 5"} — seconds, expanded '
                     + 'through the same split law the strip\'s Add cut rides, into the calls rows, the new seams carried '
                     + '(context carry is THE DEFAULT; stock is the operator\'s manual escape hatch, never authored). '
-                    + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
+                    + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s params.model — ONE seat for every family-boarding card (B5, 2026-11-17): image-gen, image-edit and music all read it there; no stage row carries a top-level `model`, and the add_stage `model` arg folds into params.model at the mint) without '
                     + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
                     + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone. '
                     + 'STAGE-POLICY KEYS (F41) are authored here, on the stage row (never the card surface): boundary_unload_models: true arms the pass-seam model unload, vram_budget_mb sets a stage\'s VRAM budget — the stored row keeps them verbatim and admission judges the rest of the bag.',
             },
             params_file: {
                 type: 'string',
-                description: 'add_stage: read the params bag from a FILE on disk (a validated artifact — the bytes are read, never re-typed through the output budget; D-37). JSON object root; refuses loud on a missing file, unparseable JSON or a non-object root. Exclusive with params — one source of truth per mint.',
+                description: 'add_stage: read the params bag from a FILE on disk (a validated artifact — the bytes are read, never re-typed through the output budget; D-37). JSON object root; refuses loud on a missing file, unparseable JSON or a non-object root. PATH LAW (B10): a RELATIVE path resolves against the HARNESS process\'s working directory — NOT your session cwd (the promgen burn: a plan-relative path met ENOENT while the absolute path seated) — so state an ABSOLUTE path. Exclusive with params — one source of truth per mint.',
             },
             inputs: {
                 type: 'object', additionalProperties: true,
@@ -1265,6 +1283,14 @@ export function meliteConstruct(estate, opts = {}) {
                 },
                 description: 'load: the full replacement [{id?, engine?, card?, params?, inputs?, expected?, outputs?}].',
             },
+            stages_file: {
+                type: 'string',
+                description: 'load: read the stage array from a FILE on disk (the B8 bulk door — a 12-48 stage wall seats in ONE call, byte-exact from the plan artifact, never retyped through the output budget). '
+                    + '.json roots in an array of stage objects (same schema as inline stages); .jsonl carries one stage object per line (what plan writers emit). '
+                    + 'Exclusive with stages — one source of truth per load; neither present refuses (an empty-handed load is a silent bench wipe). '
+                    + 'Refuses loud naming the path, the jsonl LINE number, or the stage index; any refusal leaves the bench untouched. '
+                    + 'The answer echoes stages_file_seated {path, sha, bytes} for audit.',
+            },
             intent: { type: 'string', description: 'load: what this bench produces.' },
             overwrite: {
                 type: 'boolean',
@@ -1286,7 +1312,7 @@ export function meliteConstruct(estate, opts = {}) {
                     error: { type: 'string', description: 'Refusal text (ok: false).' },
                     landing: {
                         type: 'string',
-                        description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | refused_no_write (the estate answered — the write never applied) | ambiguous_no_write (no structured answer — the write is UNPROVEN; read_back_rev is the bench\'s own rev when the read-back reached it, read_back names unreachable otherwise). Absent when the verb wrote no stage.',
+                        description: 'The write\'s landing state: landed_and_compiling | landed_not_compiling (the stage is ON the bench; the compile refusal rides below) | landed_read_back (the verb\'s ANSWER died — timeout/transport — but the read-back found the pressed stage on the bench: the write LANDED, never re-press it) | refused_no_write (the estate answered — the write never applied) | ambiguous_no_write (no structured answer and the read-back could not prove the stage — the write is UNPROVEN; read_back_rev is the bench\'s own rev when the read-back reached it, read_back names unreachable otherwise). Absent when the verb wrote no stage.',
                     },
                     applied_derivations: {
                         type: 'array',
@@ -1309,7 +1335,9 @@ export function meliteConstruct(estate, opts = {}) {
                         ? '\nlanding: refused_no_write — the estate answered the refusal; nothing landed, retry is safe'
                         : v.landing === 'ambiguous_no_write'
                             ? `\nlanding: ambiguous_no_write — the write is UNPROVEN (the seat failed without answering); ${rb}`
-                            : '';
+                            : v.landing === 'landed_read_back'
+                                ? '\nlanding: landed_read_back — the pressed stage is ON the bench (the read-back proved it); only the answer died, never re-press'
+                                : '';
                     return [{ type: 'text', text: 'melite_construct REFUSED: ' + v.error + landing }];
                 }
                 // STROKE 85 (the operator's report — the blind read that
@@ -1632,7 +1660,7 @@ export function meliteConstruct(estate, opts = {}) {
                 return jsonClean({
                     verb, bench, ok: false, face_stamp: faceStamp(),
                     error: 'verb is required — the call was refused before anything was read or written (a payload never derives a verb; a WRITE is never guessed). '
-                        + "State one: 'read' | 'load' {stages} | 'patch' {stage, params} | 'add_stage' {card, params | params_file, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
+                        + "State one: 'read' | 'load' {stages | stages_file} | 'patch' {stage, params} | 'add_stage' {card, params | params_file, inputs?} | 'remove_stage' {stage} | 'archive'/'unarchive' {stage} | 'clear' | 'floor' {stage?} | 'rewire' {stage, input, from?} | 'undo' {n?, author?} | 'validate'.",
                     error_kind: 'verb-required',
                 });
             }
@@ -1709,7 +1737,90 @@ export function meliteConstruct(estate, opts = {}) {
                     });
                 }
                 if (verb === 'load') {
-                    const rawStages = Array.isArray(a.stages) ? a.stages : [];
+                    // B8 (the promgen request, filed 2026-11-11 — bulk-load): a
+                    // character wall is 12-48 stages; seating it cost one huge
+                    // inline paste (7-20k tokens of agent output, one mistyped
+                    // character silently not-the-wall) or N add_stage round
+                    // trips (24 calls, revs 285-296). The file door seats the
+                    // SAME stage array from disk — promgen's --out plan lines
+                    // seat byte-exact, one call. Exactly one source per load:
+                    // stages or stages_file, never both, never neither (the
+                    // empty-replace arm died with this door — an accidental
+                    // load{} used to WIPE the bench to [] silently).
+                    const fileStated = typeof a.stages_file === 'string' && a.stages_file !== '';
+                    if (fileStated && a.stages !== undefined) {
+                        return out({ error: 'stages and stages_file are exclusive — one source of truth per load (state the file, or the array, never both)' });
+                    }
+                    if (!fileStated && a.stages === undefined) {
+                        return out({ error: 'load seats stages from exactly one source — state stages (the inline array) or stages_file (a .json array or .jsonl plan file), never neither: an empty-handed load is a silent bench wipe' });
+                    }
+                    let rawStages;
+                    // the file receipt (params_file's own shape, D-37): path +
+                    // sha + bytes ride the answer so the seating is auditable
+                    // against the artifact that produced it.
+                    let fileSeated;
+                    if (fileStated) {
+                        const fs = await import('node:fs/promises');
+                        let text;
+                        try {
+                            text = await fs.readFile(a.stages_file, 'utf8');
+                        }
+                        catch (e) {
+                            return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the plan file must exist where this tool runs' });
+                        }
+                        const seats = [];
+                        if (a.stages_file.endsWith('.jsonl')) {
+                            // one stage object per line (what promgen's --out
+                            // writes); blank lines are separators, never stages.
+                            const lines = text.split('\n');
+                            for (let i = 0; i < lines.length; i++) {
+                                const line = lines[i].trim();
+                                if (line === '')
+                                    continue;
+                                let parsed;
+                                try {
+                                    parsed = JSON.parse(line);
+                                }
+                                catch (e) {
+                                    return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' line ' + (i + 1) + ' is not parseable JSON (' + (e instanceof Error ? e.message : String(e)) + ') — the line names its own fix' });
+                                }
+                                if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+                                    return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' line ' + (i + 1) + ' is not a stage object — one stage per jsonl line, never a bare value or an array' });
+                                }
+                                seats.push(parsed);
+                            }
+                        }
+                        else {
+                            let parsed;
+                            try {
+                                parsed = JSON.parse(text);
+                            }
+                            catch (e) {
+                                return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' is not parseable JSON (' + (e instanceof Error ? e.message : String(e)) + ') — a truncated paste and a short plan differ here, the file does not' });
+                            }
+                            if (!Array.isArray(parsed)) {
+                                return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' must root in a JSON array of stage objects — got ' + (parsed === null ? 'null' : Array.isArray(parsed) ? 'an array' : typeof parsed) });
+                            }
+                            seats.push(...parsed);
+                        }
+                        if (seats.length === 0) {
+                            return out({ error: 'stages_file ' + JSON.stringify(a.stages_file) + ' seats zero stages — an empty plan is a silent bench wipe; seat at least one stage or clear the bench on purpose' });
+                        }
+                        for (let i = 0; i < seats.length; i++) {
+                            if (typeof seats[i] !== 'object' || seats[i] === null || Array.isArray(seats[i])) {
+                                return out({ error: 'stages_file[' + i + '] is not a stage object — every array member is a stage row, never a bare value' });
+                            }
+                        }
+                        rawStages = seats;
+                        fileSeated = {
+                            path: a.stages_file,
+                            sha: createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 12),
+                            bytes: Buffer.byteLength(text, 'utf8'),
+                        };
+                    }
+                    else {
+                        rawStages = Array.isArray(a.stages) ? a.stages : [];
+                    }
                     // SLICE 5 — the wholesale replace walks the SAME first-door
                     // grammar add_stage speaks: every stage's inputs are judged
                     // against its card's declared lanes (unknown lanes REFUSE,
@@ -1789,7 +1900,7 @@ export function meliteConstruct(estate, opts = {}) {
                     // a landed replace IS that projection (the write is
                     // CAS-strict — load never rebases), so the pre verdict rides
                     // as the landed verdict; no second compose of the same rows.
-                    return out({ rev: r.rev, stages: r.stages, ...(spells.length > 0 ? { spells } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile) });
+                    return out({ rev: r.rev, stages: r.stages, ...(fileSeated !== undefined ? { stages_file_seated: fileSeated } : {}), ...(spells.length > 0 ? { spells } : {}), ...(appliedDerivations.length > 0 ? { applied_derivations: appliedDerivations } : {}), ...(compile !== undefined ? { ...compile } : {}), ...landingOf(compile) });
                 }
                 if (verb === 'patch') {
                     // THE SPELL VOICE needs the stage's wired inputs, which a
@@ -1969,7 +2080,14 @@ export function meliteConstruct(estate, opts = {}) {
                             text = await fs.readFile(a.params_file, 'utf8');
                         }
                         catch (e) {
-                            return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the validated artifact must exist where this tool runs' });
+                            // B10 (promgen handoff, 2026-11-17): a relative path
+                            // resolves against the HARNESS process's cwd, never the
+                            // caller's session cwd — the promgen burn passed a
+                            // plan-relative path and met ENOENT while the absolute
+                            // path seated. The refusal NAMES the resolution base
+                            // (a bare ENOENT read as "file missing" when it was
+                            // "wrong base").
+                            return out({ error: 'params_file ' + JSON.stringify(a.params_file) + ' cannot be read (' + (e instanceof Error ? e.message : String(e)) + ') — the validated artifact must exist where this tool runs: a RELATIVE path resolves against the HARNESS process\'s working directory, not your session cwd (state an absolute path)' });
                         }
                         let parsed;
                         try {
@@ -2339,7 +2457,10 @@ export function meliteConstruct(estate, opts = {}) {
                 }
             }
             catch (e) {
-                return await refusalOf(e, verb, bench, estate, signal);
+                // B3: the pressed stage id rides the read-back judge — when
+                // the args carry one (add_stage/patch/remove/rewire/archive)
+                const stageOf = typeof a['stage'] === 'string' ? a['stage'] : undefined;
+                return await refusalOf(e, verb, bench, estate, signal, stageOf);
             }
         },
     });

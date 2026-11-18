@@ -24,6 +24,9 @@
           "node"
       ],
       "paths": {
+        "@melite/audio-voice-change": ["./../../audio/voice-change/src/card.ts"],
+        "@melite/audio-voice-change/card": ["./../../audio/voice-change/src/card.ts"],
+        "@melite/models-seed-vc": ["./../../models/seed-vc/src/index.ts"],
         "@melite/media-preview": ["./../media-preview/src/host.ts"],
         "@melite/media-preview/client": ["./../media-preview/src/client/index.ts"],
         "@melite/models-h3-image/mods/mask": ["./../../models/h3-image/mods/mask.ts"],
@@ -317,8 +320,7 @@
         "@deepseek-ai/cordis-plugin-loader": ["./../../../vendor/cordis_plugins/loader/src/index.ts"],
         "@deepseek-ai/cordis-plugin-logger-console": ["./../../../vendor/cordis_plugins/logger-console/src/browser.ts"],
         "react": ["./node_modules/@types/react"],
-        "react-dom": ["./node_modules/@types/react-dom"],
-        "three": ["./node_modules/@types/three"]
+        "react-dom": ["./node_modules/@types/react-dom"]
       },
       "strictFunctionTypes": true
   },

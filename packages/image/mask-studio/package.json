@@ -33,6 +33,7 @@
     "react": "^19.3.0"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@testing-library/jest-dom": "*",
     "@testing-library/react": "*",
     "@testing-library/user-event": "*",
@@ -41,8 +42,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.184.1",
     "tsdown": "^0.22.14",
-    "typescript": "~6.0.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "~6.0.3"
   },
   "name": "@melite/image-mask-studio",
   "peerDependencies": {

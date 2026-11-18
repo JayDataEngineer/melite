@@ -16,6 +16,7 @@
  */
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
+import { foldThrownValue } from '@melite/estate-queue';
 import { statusOrPendingOf } from '@melite/contracts/stageView';
 import { jsonClean } from "../json-clean.js";
 import { isTerminalStatus } from '@melite/contracts/stageView';
@@ -359,6 +360,17 @@ export function runStatus(estate) {
                     const re = remoteErrorOf(e);
                     if (re !== null && re !== undefined) {
                         return jsonClean({ run_id: runId, error: `${re.code}: ${re.message}` });
+                    }
+                    // THE THROWN-OBJECT FOLD (promgen B1, 2026-11-17): a seat
+                    // that rejects with a plain object (the consumer lane's
+                    // "Error: [object Object]" — every run_status call dead)
+                    // used to ride `throw e` up to the harness, whose wrapper
+                    // stringifies non-Errors into the vacuous literal. The
+                    // tool's own contract answers instead: the thrown value
+                    // folds by its own words (the same law the ledger tier's
+                    // foldThrownValue seats, qa8 F38 — never String()).
+                    if (!(e instanceof Error)) {
+                        return jsonClean({ run_id: runId, error: 'runs/status: ' + foldThrownValue(e) });
                     }
                     throw e;
                 }

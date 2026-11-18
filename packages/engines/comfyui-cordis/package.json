@@ -70,6 +70,7 @@
     "@melite/audio-music": "workspace:*",
     "@melite/audio-sfx": "workspace:*",
     "@melite/audio-tts": "workspace:*",
+    "@melite/audio-voice-change": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/engine-contract": "workspace:*",
@@ -104,6 +105,7 @@
     "@melite/models-qwen-img-21": "workspace:*",
     "@melite/models-qwen-img-edit-21": "workspace:*",
     "@melite/models-qwen3-tts": "workspace:*",
+    "@melite/models-seed-vc": "workspace:*",
     "@melite/models-seedvr2-ema": "workspace:*",
     "@melite/models-skin": "workspace:*",
     "@melite/models-somax": "workspace:*",
@@ -113,16 +115,16 @@
     "@melite/models-yue2": "workspace:*",
     "@melite/models-z-image": "workspace:*",
     "@melite/motion-motion": "workspace:*",
-    "@melite/video-h3-timeline": "workspace:*",
-    "@melite/video-trim": "workspace:*",
     "@melite/video-frames": "workspace:*",
+    "@melite/video-h3-timeline": "workspace:*",
     "@melite/video-track": "workspace:*",
+    "@melite/video-trim": "workspace:*",
     "@stable-canvas/comfyui-client": "^1.5.9"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "typescript": "^5.9.3"
   },
   "files": [
     "lib/index.js",
