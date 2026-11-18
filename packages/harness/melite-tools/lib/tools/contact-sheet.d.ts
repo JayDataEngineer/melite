@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
-import { imageRefFromValue } from './melite-view.ts';
-import type { ToolDefinition } from '../types.ts';
+import { imageRefFromValue } from './melite-view.js';
+import type { ToolDefinition } from '../types.js';
 /** One run's row in the canonical value: the picked artifact when
  *  the run holds one (artifact/url/host), or `missing: true` when it
  *  does not (the gray cell — the failure is judgment data, so it is

@@ -37,6 +37,34 @@ export const DECL: ModelDecl = {
     { "name": "source_audio", "class": "user" },
     { "name": "ref_audio", "class": "user" },
   ],
+  // THE LANE'S FOUR WORDS (the GUI-open cure, 2026-11-18 — the tts
+  // precedent, qwen3-tts's `text`): the required seats are ALSO lane
+  // relations, because the BENCH ADD DOOR judges a card's stage
+  // through the runs validate seat BEFORE the write, and only the
+  // LANE judge's "this lane requires" voice carries the
+  // authoring-incomplete class the write seat DROPS (the
+  // frictionless-authoring ruling, operator 2026-11-11). Without
+  // these rows the class never fired: the pre-mint gate ran the
+  // card's own compose throw ("required param 'source_audio'
+  // missing or empty") as a HARD refusal — bench/compile-refused,
+  // no stage, no rev — and the voice-change card could never be
+  // OPENED from the cards tab (the operator's burn, 2026-11-18:
+  // "I click the card to open it. it cannot open"). With them, an
+  // axis-seeded add voices the class, lands the stage, and the form
+  // the landed stage opens collects the two clips; the RUN press
+  // owns the refusal until both are stated.
+  "relations": {
+    "required": [
+      {
+        "fields": ["source_audio"],
+        "cure": "state the clip to convert — its words and rhythm are kept",
+      },
+      {
+        "fields": ["ref_audio"],
+        "cure": "state the voice to borrow — 5-25 seconds of a clean single speaker performs best",
+      },
+    ],
+  },
   // THE WHOLE WEIGHT SET, DIGEST-PINNED: the upstream wrapper loads
   // every file below at init from the engine's models/TTS tree
   // (seedvcnode.py: model_path = models_dir/TTS/Seed-VC, the

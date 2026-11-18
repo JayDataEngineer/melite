@@ -1783,9 +1783,15 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // span (the routes ride the family bounds row).
     // 16 -> 13 (2026-11-09, the removal): the retired edit family's
     // family row + its 3 route rows die with its package.
-    assert.equal(judgedFamilies, 13,
-      `the bounds census is EXACT: the edit lanes' solver span over their 13 route ids (saw ${String(judgedFamilies)})`);
-    assert.equal(judged, 13,
+    // 13 -> 46 (2026-11-18, the max-canvas expansion): all seven
+    // image-gen families declare canvas bounds rows (h3-image
+    // 4096 — the operator's owed expansion; the six siblings pin
+    // their own 2048 so the widened shared surface never hands a
+    // 4096 canvas to a checkpoint not tuned for it); each family
+    // layer + its route ids carries the pair (33 layers).
+    assert.equal(judgedFamilies, 46,
+      `the bounds census is EXACT: the edit lanes' solver span + the image-gen canvas rows (saw ${String(judgedFamilies)})`);
+    assert.equal(judged, 79,
       `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
   });
 

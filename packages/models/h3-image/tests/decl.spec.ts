@@ -129,3 +129,50 @@ describe("the h3-image cell artifact pins (verbatim content law)", () => {
     }
   });
 });
+
+// @contract models-h3-image-max-canvas (THE MAX-CANVAS EXPANSION,
+// 2026-11-18). THE OPERATOR BURN: "you did not expand the max image
+// size for Minimax-image like you said you would" — the card schema
+// capped every family at 2048 per axis. This checkpoint is tuned for
+// a ~2048² (≈4.2MP) working area; the expansion stretches ONE axis
+// to 4096 while the other comes down (4096×1024 keeps the area).
+// This arm walls the DECL's own bounds row — the per-family ceiling
+// the lane-bounds judge reads at every seat (the card schema's 4096
+// is the WIDEST family's ceiling, never this family's alone).
+import {
+  judgeLaneBounds,
+  laneBoundsOf,
+} from "@melite/contracts/laneRelations";
+
+describe("the max-canvas expansion (bounds rows are the per-family ceiling)", () => {
+  const bounds = laneBoundsOf(DECL.bounds ?? null, null);
+
+  it("declares a bounds row for both axes — the ceiling is the declaration's, never the form's", () => {
+    assert.notEqual(bounds, null, "the DECL states its own canvas ceiling");
+    assert.equal(bounds!.width.max, 4096, "width stretches to 4096 (the expansion)");
+    assert.equal(bounds!.height.max, 4096, "height stretches to 4096 (the expansion)");
+    assert.equal(bounds!.width.min, 256, "the floor survives (the 2.1 width burn)");
+  });
+
+  it("a 4096×1024 canvas (the ~4.2MP area law, one axis stretched) judges CLEAN", () => {
+    assert.deepEqual(judgeLaneBounds(bounds, { width: 4096, height: 1024 }), [],
+      "the long canvas admits — the working area is what the checkpoint is tuned for");
+  });
+
+  it("a 4097 axis refuses with the range voice — the ceiling is hard", () => {
+    const v = judgeLaneBounds(bounds, { width: 4097, height: 1024 });
+    assert.equal(v.length, 1);
+    assert.match(v[0].message, /'width': 4097 is outside this lane's range \(256–4096\)/);
+  });
+
+  it("an under-floor axis refuses (the floor is the declaration's too)", () => {
+    const v = judgeLaneBounds(bounds, { width: 192, height: 1024 });
+    assert.equal(v.length, 1);
+    assert.match(v[0].message, /'width': 192 is outside this lane's range \(256–4096\)/);
+  });
+
+  it("the family default stays 2048×2048 — the expansion widens the ceiling, never the default", () => {
+    assert.equal(DECL.defaults.width, 2048, "unstated canvas lands the tuned default");
+    assert.equal(DECL.defaults.height, 2048, "unstated canvas lands the tuned default");
+  });
+});

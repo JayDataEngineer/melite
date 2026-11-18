@@ -143,3 +143,77 @@ describe("the voice-change compose gate", () => {
     assert.deepEqual(def.requires, ['ComfyUI_Seed-VC']);
   });
 });
+
+// @contract cards-voice-change-lane (THE GUI-OPEN ARM, 2026-11-18)
+// THE OPERATOR BURN: clicking the Voice Change card in the cards tab
+// REFUSED at the bench add door — "stage s_0 (voice-change) would not
+// compose: required param 'source_audio' missing or empty … refused
+// before the write". Root cause: seed-vc declared ZERO relation rows,
+// so the pre-mint gate never heard the incomplete-draft class — the
+// card's own phase-1 compose throw arrived with NO incomplete mark
+// and the write was refused (the tts precedent: qwen3-tts declares
+// its required word, so tts opens). This arm walls the DECL TRUTH:
+// the family's relations voice the unstated-required class, the
+// write seat's filter drops it (the write LANDS, the form opens),
+// and the card's own compose throw stays the RUN door's depth.
+import { DECL as seedVcDecl } from "@melite/models-seed-vc";
+import {
+  dropAuthoringIncomplete,
+  isUnstatedRequiredVoice,
+  judgeLaneRelations,
+} from "@melite/contracts/laneRelations";
+
+describe("the seed-vc DECL voices the authoring-incomplete class (the GUI-open cure)", () => {
+  it("a fresh card (nothing stated) is the unstated-required class — the write seat drops it and the stage LANDS", () => {
+    const violations = judgeLaneRelations(
+      [seedVcDecl.relations] as never,
+      {},
+    );
+    assert.equal(violations.length, 2, "both required words voice");
+    assert.equal(
+      violations[0].message,
+      "this lane requires 'source_audio' — 'source_audio' is not stated — state the clip to convert — its words and rhythm are kept",
+      "the source_audio voice, cure words verbatim (the card tooltip's words)",
+    );
+    assert.equal(
+      violations[1].message,
+      "this lane requires 'ref_audio' — 'ref_audio' is not stated — state the voice to borrow — 5-25 seconds of a clean single speaker performs best",
+      "the ref_audio voice, cure words verbatim",
+    );
+    for (const v of violations) {
+      assert.equal(isUnstatedRequiredVoice(v.message), true,
+        "every violation is the unstated-required voice (the class the add door drops)");
+    }
+    assert.deepEqual(dropAuthoringIncomplete(violations), [],
+      "the write seat filters the class — the incomplete verdict LANDS the stage, the form opens");
+  });
+
+  it("a HALF state (source_audio stated, ref_audio empty) is still the class — one keystroke never refuses", () => {
+    const violations = judgeLaneRelations(
+      [seedVcDecl.relations] as never,
+      { source_audio: "/bench/take-12.wav" },
+    );
+    assert.equal(violations.length, 1, "only the ref_audio half voices");
+    assert.match(violations[0].message, /^this lane requires 'ref_audio'/);
+    assert.equal(isUnstatedRequiredVoice(violations[0].message), true);
+    assert.deepEqual(dropAuthoringIncomplete(violations), [],
+      "the half state still lands — the run press owns the refusal");
+  });
+
+  it("a COMPLETE state judges clean — the class never leaks past a stated word", () => {
+    const violations = judgeLaneRelations(
+      [seedVcDecl.relations] as never,
+      { source_audio: "/bench/take-12.wav", ref_audio: "/bench/voice.wav" },
+    );
+    assert.deepEqual(violations, [],
+      "both words stated — zero lane-relation violations; the card's own compose owns from here");
+  });
+
+  it("the relations cure NEVER softens the run door — the card's own compose throw stays hard", () => {
+    assert.throws(
+      () => def.compose(def.schema({}), speech, new GraphBuilder(), "s_0"),
+      /required param 'source_audio' missing or empty/,
+      "phase-1 compose still refuses an empty source_audio — the DECL rows author the FORM, never the run",
+    );
+  });
+});

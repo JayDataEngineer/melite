@@ -51,6 +51,19 @@ export const DECL = {
             },
         ],
     },
+    // THE MAX-CANVAS EXPANSION (operator 2026-11-18: "you did not
+    // expand the max image size for Minimax-image like you said you
+    // would"). This checkpoint is tuned for a ~2048² (≈4.2MP) working
+    // area — the expansion stretches ONE axis to 4096 while the other
+    // comes down (4096×1024 stays ~4.2MP; 4096×4096 quadruples the
+    // area the conditioning geometry is tuned for, so it is out of
+    // tune, not out of bounds). The card schema's ceiling is 4096; THIS
+    // row is the per-family ceiling the lane-bounds judge reads — the
+    // sibling image-gen families each pin their own 2048 below.
+    "bounds": {
+        "width": { "min": 256, "max": 4096 },
+        "height": { "min": 256, "max": 4096 },
+    },
     // THE LORAS BOARDING (operator 2026-11-06: every family applies
     // LoRAs): boards 'loras' — no first-party rows yet (the H3-Image
     // release ships no adapters; the h3 VIDEO turbo line is the video

@@ -636,3 +636,75 @@ describe("THE FLOW PRODUCER BINDINGS (the object-forge producer-law cure: the ca
     }
   });
 });
+
+// @contract models-image-canvas-ceilings (THE CEILING SWEEP, 2026-11-18).
+// The schema's width/height ceiling widened 2048 → 4096 for the h3-image
+// max-canvas expansion — but the schema serves EVERY family, and a 4096
+// canvas on a checkpoint tuned for 2048 is garbage-in. THE PER-FAMILY
+// CEILING LAW: the schema's max is the WIDEST family's ceiling; every
+// family pins its OWN bounds row and the lane-bounds judge refuses a
+// canvas past it at every seat. This sweep rides all SEVEN boarded
+// family DECLs — h3-image stretches to 4096, the rest hold 2048 (their
+// exact effective ceiling before the schema widened: zero behavior
+// change for them, one promise kept for MiniMax).
+import { DECL as animaDecl } from "@melite/models-anima";
+import { DECL as fluxKleinDecl } from "@melite/models-flux-klein";
+import { DECL as h3ImageDecl } from "@melite/models-h3-image";
+import { DECL as krea2Decl } from "@melite/models-krea-2";
+import { DECL as mossImageDecl } from "@melite/models-moss-image";
+import { DECL as qwenImg21Decl } from "@melite/models-qwen-img-21";
+import { DECL as zImageDecl } from "@melite/models-z-image";
+import {
+  judgeLaneBounds,
+  laneBoundsOf,
+} from "@melite/contracts/laneRelations";
+
+describe("the per-family canvas ceilings (the schema widened for one, never for all)", () => {
+  const pins = [
+    ["anima", animaDecl, 2048],
+    ["flux-klein", fluxKleinDecl, 2048],
+    ["h3-image", h3ImageDecl, 4096],
+    ["krea-2", krea2Decl, 2048],
+    ["moss-image", mossImageDecl, 2048],
+    ["qwen-img-21", qwenImg21Decl, 2048],
+    ["z-image", zImageDecl, 2048],
+  ];
+
+  it("EVERY boarded family pins a canvas bounds row — an unpinned family inherits the schema's widened 4096 silently", () => {
+    for (const [fam, decl, max] of pins) {
+      const bounds = laneBoundsOf(decl.bounds ?? null, null);
+      assert.notEqual(bounds, null, `${fam} declares its own canvas ceiling`);
+      assert.equal(bounds!.width.max, max, `${fam} width ceiling is ${max}`);
+      assert.equal(bounds!.height.max, max, `${fam} height ceiling is ${max}`);
+      assert.equal(bounds!.width.min, 256, `${fam} keeps the 256 floor`);
+    }
+  });
+
+  it("a 4096 canvas admits ONLY on h3-image — every other family refuses it in the lane-bounds voice", () => {
+    for (const [fam, decl, max] of pins) {
+      const v = judgeLaneBounds(laneBoundsOf(decl.bounds ?? null, null), { width: 4096, height: 1024 });
+      if (max === 4096) {
+        assert.deepEqual(v, [], `${fam} admits the long canvas (the expansion)`);
+      } else {
+        assert.equal(v.length, 1, `${fam} refuses the widened canvas`);
+        assert.match(v[0].message, new RegExp(`'width': 4096 is outside this lane's range \\(256–${max}\\)`),
+          `${fam} names its own ceiling in the refusal`);
+      }
+    }
+  });
+
+  it("THE SCHEMA SEAT: the card schema itself now admits 4096 (the widest family's ceiling) and still refuses past it", () => {
+    const wide = def.schema({ prompt: "a long panorama", width: 4096, height: 1024, model: "h3-image" });
+    assert.equal(wide.width, 4096, "the schema parses the long canvas");
+    assert.throws(
+      () => def.schema({ prompt: "too far", width: 4112, height: 1024 }),
+      /4096|max|at most/i,
+      "the schema ceiling stays hard at 4096",
+    );
+    assert.throws(
+      () => def.schema({ prompt: "under floor", width: 192, height: 1024 }),
+      /256|min|at least/i,
+      "the schema floor stays 256",
+    );
+  });
+});

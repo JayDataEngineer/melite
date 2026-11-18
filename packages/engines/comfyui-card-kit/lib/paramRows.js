@@ -29,7 +29,7 @@ import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "./vocab.js";
 export function diffusionParamRows(bounds = {}) {
     const steps = bounds.steps ?? [1, 100];
     const cfg = bounds.cfg ?? [1, 20];
-    const size = bounds.size === undefined ? [256, 2048] : bounds.size;
+    const size = bounds.size === undefined ? [256, 4096] : bounds.size;
     const sizeRows = size === false
         ? []
         : ["width", "height"].map((name) => size === null ? { name, type: "number" } : { name, type: "number", bounds: size });

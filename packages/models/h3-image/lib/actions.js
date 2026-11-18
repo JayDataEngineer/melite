@@ -40,6 +40,11 @@ export const t2i = {
     // the image-gen card schema's own — the family door judges
     // defaults and variant presets against this row; the closed sets
     // resolve from the ONE engine vocabulary, never hand-copied.
+    // THE MAX-CANVAS EXPANSION (2026-11-18): the shared size surface
+    // widens to [256, 4096] (the widest family's ceiling — this one);
+    // this family's own DECL bounds row holds the same 4096, and the
+    // six sibling image-gen families' DECL rows hold their own 2048
+    // (the lane-bounds judge's seat — the RANGE RULE).
     params: [...diffusionParamRows()],
     facts: parseT2IFacts,
     build({ p, facts, model, g, runId }) {

@@ -254,6 +254,16 @@ export const DECL = {
     // THE REQUIRED WORD, STATED (the qwen-img-21 precedent): every
     // image lane states WHAT the picture is — the bench-write door
     // refuses an empty prompt in the field's voice before compose.
+    // THE CEILING PIN (2026-11-18, with the image-gen schema
+    // widening to 4096 for h3-image): this family keeps its own
+    // 2048 ceiling — declared so the lane-bounds judge refuses a
+    // 4096 canvas here instead of passing it to a checkpoint not
+    // tuned for it. The card schema's 4096 is the WIDEST family's
+    // ceiling, never every family's.
+    "bounds": {
+        "width": { "min": 256, "max": 2048 },
+        "height": { "min": 256, "max": 2048 },
+    },
     "relations": {
         "required": [
             {
