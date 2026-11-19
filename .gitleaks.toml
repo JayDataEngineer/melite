@@ -66,7 +66,22 @@
       # engine + harness specs: node class names, fixture ids, and
       # pack-resolution pin SHAs.
       '''packages/engines/comfyui-(card-kit|cordis)/tests/''',
-      '''packages/harness/melite-tools/test/''',
+      '''packages/harness/melite-tools/tests/''',
+      # the node ports (2026-11-19, the shell-free wave): the ported
+      # lane scripts carry the mise install path
+      # ('.local/share/mise/installs/node/24.21.0/bin') and
+      # slash-joined tool paths
+      # ('packages/harness/provisioner/bin/infer-provision.mjs')
+      # the entropy heuristic reads as base64. Reference paths, never
+      # keys; the keyword rules below stay armed on these files.
+      '''scripts/[^/]+\.mjs$''',
+      # the tier-roster spec lists snapshot file paths wholesale.
+      '''scripts/testing-tiers\.spec\.ts$''',
+      # the keyless recorded-session snapshot tree (moved root
+      # snapshots/ -> tests/snapshots/ 2026-11-19): session replay
+      # payloads carry base64 media headers — the tier is KEYLESS by
+      # law (test:snapshot), never symmetric key material.
+      '''tests/snapshots/''',
       # the same package's EMITTED lib (2026-11-19, the CI burn): the
       # tool definitions carry slash-joined door/key literals —
       # 'engine/manager/packs/store/wiring',
