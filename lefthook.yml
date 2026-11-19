@@ -128,6 +128,54 @@ pre-push:
     - name: bundle-bytes (changed client bundles)
       run: node tools/hook-client-bundle-bytes.mjs {push_files}
 
+    # THE SECRETS-SCAN PARITY SEAT (2026-11-19, the operator's 1:1
+    # burn): the Secrets Scan workflow (gitleaks-action) was the one
+    # push-gated CI job with NO local counterpart — the battery's
+    # 2026-11-14 parity wave cured knip/coverage/e2e/browser and
+    # missed it, and every push after the wave shipped the finding
+    # class CI caught and nothing local did. Same binary, same config
+    # file, same commit-range shape as the action's push event; the
+    # gate is FAIL-LOUD when the binary is absent (a skip would
+    # rebuild the exact gap this cures). The ci-parity wall
+    # (tests/walls/ts/suites/ci-parity.spec.ts) owns the mapping.
+    - name: gitleaks (secrets scan parity)
+      run: |
+        GBIN="$(command -v gitleaks || true)"
+        if [ -z "$GBIN" ]; then
+          echo "gitleaks absent — the Secrets Scan workflow's only local seat dies here."
+          echo "install: https://github.com/gitleaks/gitleaks/releases (binary to ~/.local/bin)"
+          exit 1
+        fi
+        if git rev-parse --verify -q "@{push}" >/dev/null 2>&1; then
+          RANGE="@{push}..HEAD"
+        else
+          # NEVER fall back to full history: pre-allowlist archaeology
+          # (9k+ findings) is not this push's to judge — the action's
+          # own push semantics scan the push range only. A no-upstream
+          # push stands down LOUD; CI's scan owns that window.
+          echo "SKIP-LOUD: no upstream tracking ref — the secrets-scan range phase stands down (track with git push -u, or let CI's scan own this push)"
+          exit 0
+        fi
+        mkdir -p .scratch
+        "$GBIN" detect --redact --exit-code=2 --config .gitleaks.toml \
+          --log-opts="--no-merges $RANGE" \
+          > .scratch/hook-gitleaks.$$.log 2>&1; code=$?
+        tail -n 20 .scratch/hook-gitleaks.$$.log
+        if [ $code -ne 0 ]; then
+          echo "gitleaks log kept at .scratch/hook-gitleaks.$$"
+          exit $code
+        fi
+        rm -f .scratch/hook-gitleaks.$$.log
+        echo "gitleaks: clean on $RANGE"
+
+    # THE DOCS PARITY SEAT (same 2026-11-19 wave): the Docs workflow
+    # builds the VitePress site on every push; the sentry never did.
+    # Cheap (~1min), fail-red exactly as CI's build step fails. CI
+    # carries GITHUB_REPOSITORY from the runner; the local seat sets
+    # the same slug explicitly (the projection needs it).
+    - name: docs (vitepress build parity)
+      run: DOCS_REPO_SLUG=JayDataEngineer/melite pnpm run docs:build
+
     # The full local battery on push: tsc per typecheck package
     # (CI runs unit/coverage/tiers only — types are the battery's
     # to own) + the walls via the root vitest node project.

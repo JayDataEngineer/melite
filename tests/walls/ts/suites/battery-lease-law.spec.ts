@@ -86,6 +86,23 @@ describe('battery-leases: the store fails open — corrupt JSON fires every tier
   })
 })
 
+// THE LOAD LAW (2026-11-19, the push-kill): expandGlobs walks the
+// whole tree once per tier, and the per-tier loops below paid it
+// ~twenty times inside one 30s default window — under the full
+// fleet's CPU load the battery red on a TIMEOUT over a green tree
+// (the same suite runs inside CI's shared runners, which are
+// slower still). The tree is frozen while a suite runs (vitest owns
+// it), so each tier's expansion is computed ONCE and the heaviest
+// arms carry explicit budgets; the judged invariants are unchanged.
+const expanded = new Map<string, string[]>()
+const filesFor = (id: string): string[] => {
+  const cached = expanded.get(id)
+  if (cached) return cached
+  const files = expandGlobs(process.cwd(), tierGlobs(id))
+  expanded.set(id, files)
+  return files
+}
+
 describe('battery-leases: the tier table — conservative inputs, self-keyed, disjoint spec trees', () => {
   it('every declared tier has a non-empty input set', () => {
     for (const [id, globs] of Object.entries(TIER_INPUTS)) {
@@ -104,16 +121,16 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
     // the root package.json + at least one root tsconfig + at least one
     // workflow file (a glob that matches nothing is a dead self-key).
     for (const id of Object.keys(TIER_INPUTS)) {
-      const files = expandGlobs(process.cwd(), tierGlobs(id))
+      const files = filesFor(id)
       expect(files.some((f) => f === 'package.json'), `tier ${id} hashes the root package.json`).toBe(true)
       expect(files.some((f) => /tsconfig[^/]*\.json$/.test(f) && !f.includes('/')), `tier ${id} hashes a root tsconfig`).toBe(true)
       expect(files.some((f) => f.startsWith('.github/workflows/')), `tier ${id} hashes the workflow tree`).toBe(true)
     }
-  })
+  }, 120_000)
 
   it('THE DISJOINTNESS (the 24h burn class): the e2e tier judges no browser spec and the browser tier judges no e2e row — a cure in one plane never rides the other green', () => {
-    const e2eFiles = expandGlobs(process.cwd(), tierGlobs('e2e'))
-    const browserFiles = expandGlobs(process.cwd(), tierGlobs('browser'))
+    const e2eFiles = filesFor('e2e')
+    const browserFiles = filesFor('browser')
     expect(e2eFiles.some((f) => f.startsWith('packages/web/melite-card-view/e2e/')),
       'the e2e tier hashes browser specs — a browser cure would re-fire the GPU tier').toBe(false)
     expect(browserFiles.some((f) => f.startsWith('tests/e2e/')),
@@ -122,10 +139,10 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
 
   it('the big tiers hash real trees on this repo (a glob that matches nothing hashes nothing — that carries forever)', () => {
     for (const id of ['tsc', 'walls', 'e2e', 'browser', 'coverage', 'knip']) {
-      const files = expandGlobs(process.cwd(), tierGlobs(id))
+      const files = filesFor(id)
       expect(files.length, `tier ${id} matched zero files — its glob table drifted from the tree`).toBeGreaterThan(10)
     }
-  })
+  }, 120_000)
 
   it('THE JUDGED-SURFACE LAW (pipeline audit 2026-11-17): every spec the e2e tier RUNS is hashed by its lease — the config includes are the truth, the glob table may never be narrower', () => {
     const cfg = readFileSync(join(process.cwd(), 'vitest.e2e.config.ts'), 'utf8')

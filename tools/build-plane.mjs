@@ -1011,6 +1011,40 @@ import { pathToFileURL } from 'node:url'
 const invokedDirectly = import.meta.url === pathToFileURL(process.argv[1] ?? '').href
 const cmd = invokedDirectly ? (process.argv[2] ?? '') : ''
 if (invokedDirectly) {
+
+/* THE ONE-WRITER LOCK (2026-11-19, the push-kill): two build-plane
+ * instances interleaving lib/ writes redden every concurrent reader
+ * — a manual `pnpm run build` raced the push sentry's battery and
+ * its tsc read half-written d.ts faces ("✗ packages/estate/drafts",
+ * green on the settled tree minutes later). mkdir is atomic on every
+ * filesystem we ride, so the lock is a directory under data/tmp
+ * (runtime state, never committed); the holder stamps its pid and a
+ * corpse (killed mid-build, the killed-sentry class) is reclaimed by
+ * liveness probe. Read-only verbs (facade) skip it. The lock never
+ * queues: a second writer FAILS LOUD with the holder's pid — silent
+ * interleaving is the defect this cures. */
+if (cmd !== 'facade') {
+  const LOCK_DIR = join(ROOT, 'data', 'tmp', 'build-plane.lock')
+  try {
+    mkdirSync(LOCK_DIR, { recursive: false })
+  } catch {
+    const pidFile = join(LOCK_DIR, 'pid')
+    const raw = existsSync(pidFile) ? readFileSync(pidFile, 'utf8').trim() : ''
+    const pid = Number.parseInt(raw, 10)
+    let alive = false
+    if (Number.isInteger(pid) && pid > 0) {
+      try { process.kill(pid, 0); alive = true } catch (err) { alive = err?.code === 'EPERM' }
+    }
+    if (alive) {
+      console.error(`build-plane: another instance (pid ${pid}) holds the tree lock (${relative(ROOT, LOCK_DIR)}) — concurrent builds interleave lib/ writes and redden every reader. Wait for it, or kill ${pid} if it is a corpse.`)
+      process.exit(3)
+    }
+    rmSync(LOCK_DIR, { recursive: true, force: true })
+    mkdirSync(LOCK_DIR, { recursive: false })
+  }
+  writeFileSync(join(LOCK_DIR, 'pid'), `${process.pid}\n`)
+}
+
 const dirs = memberDirs()
 switch (cmd) {
   case 'rewrite': {
