@@ -58,10 +58,25 @@
       # chains (provenance/runStatus/result/title).
       '''packages/web-kit/contracts/''',
       '''packages/(motion/motion|web/card-base|web/infer-gallery|web/melite-card-view|web/melite-card-deck)/lib/client\.js$''',
+      # three-client's bundle (2026-11-19): three.js import path
+      # literals — '/three/examples/jsm/loaders/DRACOLoader',
+      # '/three/examples/jsm/controls/TransformControls' and six
+      # siblings — read as base64 by the entropy heuristic.
+      '''packages/web/three-client/lib/client\.js$''',
       # engine + harness specs: node class names, fixture ids, and
       # pack-resolution pin SHAs.
       '''packages/engines/comfyui-(card-kit|cordis)/tests/''',
       '''packages/harness/melite-tools/test/''',
+      # the same package's EMITTED lib (2026-11-19, the CI burn): the
+      # tool definitions carry slash-joined door/key literals —
+      # 'engine/manager/packs/store/wiring',
+      # 'unarchive/clear/floor/rewire/undo/validate',
+      # 'interrupted/succeeded/success/unknown' — which the entropy
+      # heuristic reads as base64. All 16 hits inspected string by
+      # string (2026-11-19 range census); the src of every one rides
+      # the same allowlisted class, and the keyword rules below stay
+      # armed on this file.
+      '''packages/harness/melite-tools/lib/''',
       '''packages/web/melite-estate/tests/provisioning-coverage\.spec\.ts$''',
       # e2e seeds and receipts: the base64 1x1 PNG header and engine
       # path literals.
