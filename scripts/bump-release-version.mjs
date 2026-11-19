@@ -160,7 +160,7 @@ if (seatMoved.length > 0) {
 const readmePath = join(REPO, 'README.md')
 const readme = readFileSync(readmePath, 'utf8')
 const rowRe = /(\| Melite \| `v)([0-9A-Za-z.-]+)(`)/
-if (!rowRe.test(readme)) die(`the README's Tested versions table carries no '\| Melite \| `v…`' row to move — restore the table (tests/walls/ts/suites/readme-tested-versions.spec.ts names its shape)`)
+if (!rowRe.test(readme)) die(`the README's Tested versions table carries no '\| Melite \| \`v…\`' row to move — restore the table (tests/walls/ts/suites/readme-tested-versions.spec.ts names its shape)`)
 const readmeMoved = []
 const nextReadme = readme.replace(rowRe, (_m, pre, ver, post) => {
   if (ver !== args.to) readmeMoved.push(`${ver} -> ${args.to}`)
