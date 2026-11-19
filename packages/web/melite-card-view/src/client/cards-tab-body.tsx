@@ -918,6 +918,12 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           onRemoveStage,
           stageRuns,
           running,
+          // THE PASS-STOP DOOR: the header Play becomes Stop while the
+          // pass runs — the controller the pass owns is the kill
+          // (a second Play was never the door; the abort lets the
+          // in-flight card's observer settle, then the pass summary
+          // names the stranded stages).
+          onStopPass: () => { runAllAbort.current?.abort() },
           onPatchParams: onPatchParamsStage,
           renderStageView,
           renderPreview,

@@ -89,6 +89,8 @@ export const chromeCopy = {
     groupTitle: (p) => 'Group (' + String(p.count) + ')',
     /** Play button hover while the pass is running. */
     passRunning: 'the pass is running',
+    /** Stop-pass button hover: the in-flight card settles first. */
+    stopPassHint: 'stop the pass after the in-flight card settles',
     /** Play button hover: the pass runs every card in bench order. */
     runAllHint: 'run every card in bench order — one run per card, stop on failure',
     // the settle line's own opener (the F20 pass summary: the outcome
@@ -108,6 +110,8 @@ export const chromeCopy = {
     saveFlowHint: 'mint this bench as a named flow (restores from the Flows face)',
     /** Run button word (rides after the play/spinner glyph — the leading space is verbatim). */
     playLabel: ' Play',
+    /** Stop-pass button word (rides after the stop glyph — the leading space is verbatim). */
+    stopPassLabel: ' Stop',
     /** Save button word (the mint press + the save-panel confirm). */
     saveButton: 'Save',
     /** Save-panel cancel word. */

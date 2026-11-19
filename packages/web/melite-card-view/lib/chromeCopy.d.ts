@@ -88,6 +88,8 @@ export declare const chromeCopy: {
     }) => string;
     /** Play button hover while the pass is running. */
     readonly passRunning: "the pass is running";
+    /** Stop-pass button hover: the in-flight card settles first. */
+    readonly stopPassHint: "stop the pass after the in-flight card settles";
     /** Play button hover: the pass runs every card in bench order. */
     readonly runAllHint: "run every card in bench order — one run per card, stop on failure";
     readonly passSummaryPrefix: "run all:";
@@ -105,6 +107,8 @@ export declare const chromeCopy: {
     readonly saveFlowHint: "mint this bench as a named flow (restores from the Flows face)";
     /** Run button word (rides after the play/spinner glyph — the leading space is verbatim). */
     readonly playLabel: " Play";
+    /** Stop-pass button word (rides after the stop glyph — the leading space is verbatim). */
+    readonly stopPassLabel: " Stop";
     /** Save button word (the mint press + the save-panel confirm). */
     readonly saveButton: "Save";
     /** Save-panel cancel word. */

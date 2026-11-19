@@ -5072,6 +5072,8 @@ window.__ModuleLoader__.load({
 			groupTitle: (p) => "Group (" + String(p.count) + ")",
 			/** Play button hover while the pass is running. */
 			passRunning: "the pass is running",
+			/** Stop-pass button hover: the in-flight card settles first. */
+			stopPassHint: "stop the pass after the in-flight card settles",
 			/** Play button hover: the pass runs every card in bench order. */
 			runAllHint: "run every card in bench order — one run per card, stop on failure",
 			passSummaryPrefix: "run all:",
@@ -5089,6 +5091,8 @@ window.__ModuleLoader__.load({
 			saveFlowHint: "mint this bench as a named flow (restores from the Flows face)",
 			/** Run button word (rides after the play/spinner glyph — the leading space is verbatim). */
 			playLabel: " Play",
+			/** Stop-pass button word (rides after the stop glyph — the leading space is verbatim). */
+			stopPassLabel: " Stop",
 			/** Save button word (the mint press + the save-panel confirm). */
 			saveButton: "Save",
 			/** Save-panel cancel word. */
@@ -23417,7 +23421,7 @@ window.__ModuleLoader__.load({
 		*  a hung bench door releases the busy fence instead of holding the
 		*  save spinner forever. */
 		const SAVE_DIAL_MS = 2e4;
-		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }) {
+		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose, onStopPass }) {
 			const faces = JSON.stringify(bench.stages);
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
@@ -23811,7 +23815,13 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.cardsBench,
 				"data-cards-bench": benchRev
-			}, (0, react.createElement)("header", { className: card_module_css_default.benchHead }, (0, react.createElement)("span", { className: card_module_css_default.revTag }, "rev " + benchRev), (0, react.createElement)("span", { className: card_module_css_default.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}, (0, react.createElement)("header", { className: card_module_css_default.benchHead }, (0, react.createElement)("span", { className: card_module_css_default.revTag }, "rev " + benchRev), (0, react.createElement)("span", { className: card_module_css_default.groupBar }, running && onStopPass !== void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
+				"data-testid": "pass-stop",
+				title: chromeCopy.stopPassHint,
+				onClick: onStopPass
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFillRegular, { size: 14 }), chromeCopy.stopPassLabel) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				size: "sm",
 				variant: "outline",
 				disabled: running || live.stages.length === 0,
@@ -24605,6 +24615,9 @@ window.__ModuleLoader__.load({
 				onRemoveStage,
 				stageRuns,
 				running,
+				onStopPass: () => {
+					runAllAbort.current?.abort();
+				},
 				onPatchParams: onPatchParamsStage,
 				renderStageView,
 				renderPreview,

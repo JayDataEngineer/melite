@@ -4,7 +4,7 @@
 
 import { AUTHORSHIP_KEY, AUTHORSHIP_LEGACY_KEY, BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { forgetDraftWrites, patchStageParamsChained } from './draft.ts'
@@ -31,7 +31,7 @@ import { rejectionVoice, refusalVoice } from './rejection-voice.ts'
 import { CAS_CONFLICT_CODE } from '@melite/card-base/client'
 import { chromeCopy } from '../chromeCopy.ts'
 
-export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose }: {
+export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError, onDrillClose, onStopPass }: {
   sessionKey: string
   bench: CardsBenchValue
   onRun: () => void
@@ -41,6 +41,12 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   onRemoveStage: (stage: BenchStageView) => void
   stageRuns: Record<string, string>
   running: boolean
+  /** THE PASS-STOP DOOR (operator 2026-11-19: "it does not become a
+   *  stop button while stuff is running"): while a sequential pass is
+   *  live the header's Play BECOMES Stop — the abort controller the
+   *  pass owns is the only clean kill (a second Play never was). A
+   *  host that passes no door keeps the spinner face. */
+  onStopPass?: () => void
   /** THE SETTLEMENT RIDE (2026-10-15, the ghost cure): the
    *  studio's optimistic overlay retracts a write the door refused —
    *  the boolean rides every adapter below unbroken to the owner. */
@@ -567,7 +573,15 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + benchRev),
       h('span', { className: css.groupBar },
-            h(Button, {
+            running && onStopPass !== undefined
+              ? h(Button, {
+                size: 'sm',
+                variant: 'outline',
+                ...{ 'data-testid': 'pass-stop' },
+                title: chromeCopy.stopPassHint,
+                onClick: onStopPass,
+              }, h(IconStopFillRegular, { size: 14 }), chromeCopy.stopPassLabel)
+              : h(Button, {
               size: 'sm',
               variant: 'outline',
               disabled: running || live.stages.length === 0,
