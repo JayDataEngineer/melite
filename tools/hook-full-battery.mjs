@@ -479,9 +479,21 @@ await tier("coverage", async () => {
     }
   }
   await tier("browser", async () => {
-    const probe = await spawnTee("pnpm", ["exec", "playwright", "--version"], { shell });
-    if (probe.status !== 0) {
-      console.warn("SKIP-LOUD: playwright absent — the browser tier is unjudged here (pnpm exec playwright install; CI owns it)");
+    // THE EXECUTABLE PROBE, NOT THE CLI PROBE (2026-11-19, the
+    // rc.5 push-kill): `playwright --version` succeeding says
+    // nothing — the rc.5 wave bumped the playwright pin, the
+    // expected chromium build moved (1255), the box still carried
+    // the old cache, and every browser journey died at 0ms with
+    // "Executable doesn't exist" while the probe stayed green. CI
+    // installs browsers as an explicit step on every runner; the
+    // local seat must SELF-HEAL the same way: `playwright install
+    // chromium` is a fast no-op when the build matches and seats
+    // it when it does not. Install failure (offline box) stands
+    // down LOUD — CI owns that window, and a deadlock-free gate
+    // is the coverage-ratchet law.
+    const install = await spawnTee("pnpm", ["--filter", "@melite-plugin/dsh-card-view", "exec", "playwright", "install", "chromium"], { shell });
+    if (install.status !== 0) {
+      console.warn("SKIP-LOUD: chromium not installable here (offline?) — the browser tier is unjudged on this box; CI installs browsers per-run and owns this window");
       return { status: 0 };
     }
     const browser = await spawnTee("pnpm", ["run", "test:web:browser"], { shell });

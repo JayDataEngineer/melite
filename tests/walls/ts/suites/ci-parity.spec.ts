@@ -84,6 +84,14 @@ const PARITY: Record<string, {
       { file: "tools/hook-full-battery.mjs", contains: "vitest.snapshot.config.ts" },
       { file: "tools/hook-full-battery.mjs", contains: "vitest.web.config.ts" },
       { file: "tools/hook-full-battery.mjs", contains: 'await tier("browser"' },
+      // The browser tier's PREREQUISITE is part of the parity: CI
+      // installs playwright browsers as its own step on every runner;
+      // the local seat must too. The 2026-11-19 push-kill: the rc.5
+      // playwright bump moved the expected chromium build, the box
+      // cache was stale, and every journey died at 0ms while a
+      // `playwright --version` probe stayed green — a CLI probe can
+      // never certify an executable.
+      { file: "tools/hook-full-battery.mjs", contains: '"playwright", "install", "chromium"' },
     ],
   },
   "tests.yml:cold-start-proof": {
