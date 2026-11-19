@@ -24,7 +24,7 @@
     "./package.json": "./package.json"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-client-ui-slots": ">=0.2.1-rc.2 <0.3.0",
+    "@deepseek-ai/dsh-client-ui-slots": ">=0.2.2-rc.5 <0.3.0",
     "react": "^19.2.6"
   },
   "peerDependenciesMeta": {

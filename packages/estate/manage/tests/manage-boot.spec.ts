@@ -68,7 +68,10 @@ describe('THE MANAGE ROUTE BOOT WALL (/api/manage/act answers after boot)', () =
       const queueFace = await import(queueUrl.href) as QueueFace
       const queuePlugin = queueFace.default
       await (await import(modelsBootUrl.href) as ModelsBoot).bootModels()
-      await ctx.plugin(TimerService)
+      // cordis 4.1.0's typed plugin() overload spreads the plugin's
+      // constructor args after ctx (GetPluginConfig<TimerService> is
+      // any[]): the timer takes none, so the spread seat is [].
+      await ctx.plugin(TimerService, [])
       await ctx.plugin(queuePlugin, { stateRoot: join(root, 'runs') })
       await ctx.plugin(queueFace.manageProvider, {})
       await ctx.plugin(manageRemotePlugin)
