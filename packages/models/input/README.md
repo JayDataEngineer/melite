@@ -11,7 +11,7 @@ The input-prep card binds the prep action: audio passes through (LoadAudio → S
 
 ## Declaration
 
-`src/index.ts` declares the DECL and the `family-input` plugin; `src/actions.ts` owns the prep segment and its typed params.
+`src/index.ts` declares the DECL and the `family-input` plugin; `src/actions.ts` owns the prep segment and its typed params. The `./scale-vocab` subpath is the client-safe scale vocabulary — `SCALE_METHODS` (the closed upscale-method set: nearest-exact, bilinear, area, bicubic, lanczos), `MIN_DIM` (8 — a side below 8px upscales to a blank), `UPSCALE_MODELS` (the standard upscale-model roster; the engine refuses loud when a picked file is absent), and `SCALE_MODEL_OPTIONS` (the roster led by the `""` unstated sentinel). It carries zero imports so the crop studio's client bundle stays pure; actions.ts re-exports the names — one truth, two consumers.
 
 ## Model Experience
 
