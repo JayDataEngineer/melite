@@ -634,7 +634,7 @@ async function main() {
   }
   say("BUNDLE REPRO (the committed bundle rebuilds byte-identical from pristine HEAD)");
   const REPRO_LOG = join(tmpdir(), "ship-bundle-repro.log");
-  const repro = spawnSync(PNPM_BIN, ["exec", "vitest", "run", "packages/harness/melite-tools/test/bundle-repro.spec.ts"], {
+  const repro = spawnSync(PNPM_BIN, ["exec", "vitest", "run", "packages/harness/melite-tools/tests/bundle-repro.spec.ts"], {
     cwd: REPO, encoding: "utf8", env: { ...process.env, BUNDLE_REPRO: "1", BUNDLE_REPRO_PNPM: PNPM_BIN },
   });
   writeFileSync(REPRO_LOG, (repro.stdout ?? "") + (repro.stderr ?? ""));
