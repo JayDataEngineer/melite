@@ -571,7 +571,19 @@ const PINS: Record<string, number> = {
   // E2-12 standdown key beside the refusal template — gateRefusalMessage
   // strips BOTH templates to the same bare words); localizing would
   // fork the drill's identity per locale.
-  'packages/web/melite-card-view/src': 23,
+  // RE-PIN 23→27 (2026-10-31 debt 5, the press-wedge curable face):
+  // +4 arm B string returns in client/draft.ts — curableGhostSentence's
+  // fragments (the ghost sentence's head at :611, its body at :612/:613,
+  // and the curable-action tail at :615). The ledger row's OWN
+  // curable-face voice: spelled once in the ledger so the run fence,
+  // the flush-failure seat, and the strip affordance cannot drift (the
+  // debt's cure demands the refusal NAME the curable action — a face
+  // forked per seat is the old dead-end grammar again). The same
+  // string-contract class as gateRefusalVoice's SD-7 re-pin above: the
+  // voice IS the ledger's identity; localizing would fork it per
+  // locale. The affordance verb itself rides chromeCopy
+  // (reofferNullWord), never a raw literal.
+  'packages/web/melite-card-view/src': 27,
   // deck: 2 — the register() title/guideDescription positions now ride
   // assetsCopy (D2's proof seat: a literal at those arguments fires
   // this wall). Residue: index.ts:41 + :50 `message` embed notices
