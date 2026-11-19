@@ -2,7 +2,7 @@
   "name": "@melite-plugin/dsh-estate",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "version": "0.2.3-rc.4",
+  "version": "0.3.0-alpha",
   "type": "module",
   "exports": {
     ".": {

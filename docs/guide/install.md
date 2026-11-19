@@ -11,7 +11,7 @@ npm install -g @deepseek-ai/dsh
 ## Seat
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.3-rc.4"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.3.0-alpha"
 ```
 
 The command seats the repository into the profile as a prebuilt

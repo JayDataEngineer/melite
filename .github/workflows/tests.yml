@@ -338,7 +338,7 @@ jobs:
         # the wall judges — fetch them.
           fetch-tags: true
       - name: Container seat proof
-        run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#v0.2.3-rc.4"'
+        run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#v0.3.0-alpha"'
 
   # No walls job: the wall suites run inside `unit` (root vitest
   # node project). Live GPU inference stays opt-in locally — it needs

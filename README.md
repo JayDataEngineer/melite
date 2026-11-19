@@ -19,7 +19,7 @@ TypeScript; DSH is the only web host.
 
 | Component | Version |
 | --- | --- |
-| Melite | `v0.2.3-rc.4` (the release tag — every workspace package stamps it) |
+| Melite | `v0.3.0-alpha` (the release tag — every workspace package stamps it) |
 | DSH | `0.2.2-rc.5` |
 | ComfyUI | `0.45.0` |
 
@@ -73,7 +73,7 @@ verbatim.
 Seat Melite into a DSH profile — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.3-rc.4"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.3.0-alpha"
 ```
 
 Installs are pinned to the release tag — they never move on their own.
@@ -95,7 +95,7 @@ are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
 1. Seat — the official DSH way, one command:
 
 ```sh
-dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.2.3-rc.4"
+dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.3.0-alpha"
 ```
 
 2. Boot:

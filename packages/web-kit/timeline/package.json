@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/timeline",
-  "version": "0.2.3-rc.4",
+  "version": "0.3.0-alpha",
   "type": "module",
   "exports": {
     "./ui/timeline": {
