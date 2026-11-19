@@ -82,7 +82,7 @@ function tagList(): string[] {
       .map((s) => s.trim())
       .filter(Boolean);
   const tags = roster();
-  if (tags.length > 0) return tags;
+  if (tags.length > 0 && process.env.GITHUB_ACTIONS !== "true") return tags;
   // THE CI CHECKOUT PITFALL (run 44498457238, 2026-11-19): the
   // runner's ACTUAL fetch command on a push event is
   //   git fetch --prune --no-recurse-submodules --depth=1 \
@@ -91,18 +91,39 @@ function tagList(): string[] {
   // tags refspec (the flag only widens the fetch at fetch-depth 0),
   // so `git tag -l` here is [] and the roster arms below refused a
   // census the API arms had just proven true on the remote. The wall
-  // provisions its own roster where that checkout shape seats it:
-  // one depth-1 tags fetch (each tag's tip only — 9 tags today),
-  // loud on failure, never on a dev clone (whose roster pre-exists).
-  // ARM 9 reproduces the checkout shape from a scratch bare repo and
-  // proves this exact fetch fills the roster.
+  // provisions its own roster where that checkout shape seats it.
+  //
+  // THE PARTIAL-ROSTER BURN (run 44534605455, 2026-11-19, the
+  // v0.3.0-alpha release): the same depth-1 tags fetch landed a
+  // PARTIAL roster on the runner — ARM 2 green (the seat tag made
+  // it), ARM 4 red on an old excluded tag — while the identical
+  // fetch fills a scratch repo full (ARM 9's own proof). Roster
+  // COMPLETENESS cannot ride shallow-fetch mechanics at all: names
+  // are NETWORK TRUTH, and one ls-remote answers every name. The
+  // fetch below still runs FIRST, best-effort, because the
+  // read-at-tag arms (rootNameAt) need OBJECTS seated locally; the
+  // union then guarantees the roster holds every remote name.
   if (process.env.GITHUB_ACTIONS === "true") {
-    execFileSync(
-      "git",
-      ["fetch", "--depth=1", "--prune", "--no-recurse-submodules", "origin", "+refs/tags/*:refs/tags/*"],
-      { cwd: ROOT, encoding: "utf8" },
-    );
-    return roster();
+    try {
+      execFileSync(
+        "git",
+        ["fetch", "--depth=1", "--prune", "--no-recurse-submodules", "origin", "+refs/tags/*:refs/tags/*"],
+        { cwd: ROOT, encoding: "utf8" },
+      );
+    } catch {
+      // object seating is best-effort; the roster below is still
+      // complete — a tag whose objects did not land reads as
+      // nameless at rootNameAt, and ARM 6's network arms hold the
+      // remote truth regardless.
+    }
+    const remote = execFileSync("git", ["ls-remote", "--tags", "origin"], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((l) => l.split("\t")[1]!)
+      .filter((r) => r.startsWith("refs/tags/") && !r.endsWith("^{}"))
+      .map((r) => r.slice("refs/tags/".length));
+    return [...new Set([...roster(), ...remote])].sort();
   }
   return tags;
 }
@@ -347,12 +368,26 @@ describe("the seat pin (README + install guide + census)", () => {
         git(["tag", "-l"], join(scratch, "clone")).trim(),
         "the checkout shape must carry NO tags — if this goes green the fixture lost the burn shape",
       ).toBe("");
-      // The provisioning (verbatim tagList()'s CI branch):
+      // The provisioning (verbatim tagList()'s CI branch): the fetch
+      // seats objects best-effort...
       git(
         ["fetch", "--depth=1", "--prune", "--no-recurse-submodules", "origin", "+refs/tags/*:refs/tags/*"],
         join(scratch, "clone"),
       );
       expect(git(["tag", "-l"], join(scratch, "clone")).trim(), "the tags fetch must fill the roster the checkout left empty").toContain("v9.9.9-test");
+      // ...and the roster's COMPLETENESS leg (verbatim tagList()'s
+      // CI union): ls-remote answers every name the shallow fetch
+      // may have dropped (the v0.3.0-alpha partial-roster burn —
+      // delete this leg and ARM 4 reds on the runner while every
+      // local face stays green).
+      const remoteNames = execFileSync("git", ["ls-remote", "--tags", "origin"], { cwd: join(scratch, "clone"), encoding: "utf8" })
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((l) => l.split("\t")[1]!)
+        .filter((r) => r.startsWith("refs/tags/") && !r.endsWith("^{}"))
+        .map((r) => r.slice("refs/tags/".length));
+      expect(remoteNames, "the ls-remote union leg must name every remote tag — the roster's completeness truth").toContain("v9.9.9-test");
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }

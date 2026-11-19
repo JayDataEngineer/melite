@@ -69,9 +69,12 @@ describe('THE MANAGE ROUTE BOOT WALL (/api/manage/act answers after boot)', () =
       const queuePlugin = queueFace.default
       await (await import(modelsBootUrl.href) as ModelsBoot).bootModels()
       // cordis 4.1.0's typed plugin() overload spreads the plugin's
-      // constructor args after ctx (GetPluginConfig<TimerService> is
-      // any[]): the timer takes none, so the spread seat is [].
-      await ctx.plugin(TimerService, [])
+      // constructor args after ctx. The timer takes none: the
+      // currently-instantiated cordis peer resolves the rest seat as
+      // undefined (the lockfile re-save at v0.3.0-alpha re-derived
+      // the peer instantiation — [] no longer typechecks), and for a
+      // zero-arg plugin omitted args and [] are the same call.
+      await ctx.plugin(TimerService)
       await ctx.plugin(queuePlugin, { stateRoot: join(root, 'runs') })
       await ctx.plugin(queueFace.manageProvider, {})
       await ctx.plugin(manageRemotePlugin)

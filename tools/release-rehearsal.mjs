@@ -33,7 +33,7 @@ import { stripLeakageComments } from './strip-artifact-comments.mjs'
 
 const CONTAINER = 'melite-rehearsal'
 const IMAGE = 'node:22-bookworm'
-const DSH_VERSION = '0.2.1-rc.2'
+const DSH_VERSION = '0.2.2-rc.5'
 const PNPM_VERSION = '10.33.2'
 const PROFILE = 'rehearsal'
 // THE SEED STACK IS THE SERVED STACK: mount order lives in the web

@@ -922,4 +922,39 @@ describe('G10 — the dsh host peer train', () => {
       expect(inner.private, 'the same door still strips the workspace-only keys').toBeUndefined()
     } finally { rmSync(fx.dir, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }) }
   })
+
+  it('the consumer-proof toolchains ride the train floor (the v0.3.0-alpha rehearsal burn, 2026-11-19)', () => {
+    // The rehearsal container (tools/release-rehearsal.mjs
+    // DSH_VERSION) and the cold-start proof (tools/cold-start-proof.mjs
+    // --dsh-cli default) install a HOST dsh into fresh containers
+    // before seating the plugin. The one-version wave moved every
+    // package's peer floor onto the train; both toolchain constants
+    // rotted below it and the rehearsal refused at
+    // `dsh plugin install` ("to accept the risk… allow-version
+    // @melite/…") — a release lane that only runs at dispatch, so
+    // nothing daily judged it. This arm derives both constants from
+    // the tools' own text (never a frozen literal) and holds them on
+    // the train the packed bytes declare.
+    const seats: Array<[string, RegExp]> = [
+      ['tools/release-rehearsal.mjs', /const DSH_VERSION = '([^']+)'/],
+      ['tools/cold-start-proof.mjs', /const DSH_CLI = flag\("--dsh-cli", "([^"]+)"\)/],
+    ]
+    const num = (t: string): number[] => t.split(/[.-]/).map((x) => Number.parseInt(x, 10) || 0)
+    const cmp = (a: string, b: string): number => {
+      const [x, y] = [num(a), num(b)]
+      for (let i = 0; i < Math.max(x.length, y.length); i++) {
+        const d = (x[i] ?? 0) - (y[i] ?? 0)
+        if (d !== 0) return d
+      }
+      return 0
+    }
+    for (const [file, re] of seats) {
+      const m = re.exec(readFileSync(join(ROOT, file), 'utf8'))
+      expect(m, `${file} carries no toolchain dsh constant the arm can derive — the regex and the tool drifted`).not.toBeNull()
+      expect(
+        cmp(m![1]!, gates.DSH_PEER_TRAIN),
+        `${file} seats dsh@${m![1]} but the packed bytes floor the host peer at >=${gates.DSH_PEER_TRAIN} — a container below the train refuses the install (the v0.3.0-alpha rehearsal burn)`,
+      ).toBeGreaterThanOrEqual(0)
+    }
+  })
 })

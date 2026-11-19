@@ -59,7 +59,7 @@
 //                     passes github:JayDataEngineer/melite#v0.3.0-alpha)
 //   --image <image>   the container image (default node:22-bookworm-slim)
 //   --dsh-cli <ver>   the @deepseek-ai/dsh CLI version the container
-//                     installs globally (default 0.2.1-rc.5)
+//                     installs globally (default 0.2.2-rc.5)
 //   --receipt <path>  also write the JSON receipt there
 //
 // Machine as found (the release-rehearsal law): the container leg
@@ -95,7 +95,7 @@ const MODE_CONTAINER_ONLY = process.argv.includes("--container-only");
 const MODE_ENGINE_ONLY = process.argv.includes("--engine-only");
 const REMOTE = flag("--remote", "file:///proof/seat");
 const IMAGE = flag("--image", "node:22-bookworm-slim");
-const DSH_CLI = flag("--dsh-cli", "0.2.1-rc.5");
+const DSH_CLI = flag("--dsh-cli", "0.2.2-rc.5");
 const RECEIPT_PATH = flag("--receipt", "");
 
 // ── the receipt ─────────────────────────────────────────────────
