@@ -903,13 +903,19 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     const response = await fetcher(url());
     assert.equal(response.status, 200);
     const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
-    let chunks = 0;
+    // BYTE-TOTAL, never per-read framing (the macos flake, run
+    // 44593244961): loopback coalesces writes into one read() —
+    // a reader may deliver [1,2,3,1,2,3] or all 30 bytes at once.
+    // The invariant is the dial letting a flowing source finish:
+    // every byte lands, in order, and the fetch never aborts.
+    const received: number[] = [];
     for (;;) {
       const chunk = await reader.read();
       if (chunk.done) break;
-      chunks += 1;
+      received.push(...chunk.value);
     }
-    assert.equal(chunks, 10);
+    assert.equal(received.length, 30);
+    assert.deepEqual(received, Array.from({ length: 10 }, () => [1, 2, 3]).flat());
   });
 
   test("a stalled source trips the dial and aborts the read", async () => {
@@ -942,14 +948,19 @@ describe("the direct arm's idle dial (the 9.35GB cure, 2026-10-10)", () => {
     const response = await idleDialFetch(5)(url(), new AbortController().signal);
     assert.equal(response.status, 200);
     const reader = (response.body ?? new ReadableStream<Uint8Array>()).getReader();
-    let chunks = 0;
+    // BYTE-TOTAL like the slow.bin arm above: per-read framing is
+    // loopback luck, not the invariant.
+    const received: number[] = [];
+    let reads = 0;
     for (;;) {
       const chunk = await reader.read();
       if (chunk.done) break;
-      assert.deepEqual(Array.from(chunk.value), [1, 2, 3]);
-      chunks += 1;
+      received.push(...chunk.value);
+      reads += 1;
     }
-    assert.equal(chunks, 10);
+    assert.equal(received.length, 30);
+    assert.deepEqual(received, Array.from({ length: 10 }, () => [1, 2, 3]).flat());
+    assert.ok(reads >= 1, "the body streamed, not a single buffered blob");
   });
 
   test("a body-less 204 returns a null body without arming a poke", async () => {
