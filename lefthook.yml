@@ -146,6 +146,15 @@ pre-push:
           echo "install: https://github.com/gitleaks/gitleaks/releases (binary to ~/.local/bin)"
           exit 1
         fi
+        # THE VERSION PARITY ARM (2026-11-19): a scanner at a different
+        # build than CI's action (8.24.3) is not the same gate — 8.21.2
+        # sat on this box while CI ran 8.24.3, so "the local seat is
+        # green" proved a different binary. Bump BOTH sides together.
+        GVER="$("$GBIN" version 2>/dev/null | tr -cd '0-9.' )"
+        if [ "$GVER" != "8.24.3" ]; then
+          echo "gitleaks $GVER — CI's secrets scan installs 8.24.3 (gitleaks-action@v2's pin); a drifted scanner is not the same gate. Install 8.24.3 or bump this arm and the action together."
+          exit 1
+        fi
         if git rev-parse --verify -q "@{push}" >/dev/null 2>&1; then
           RANGE="@{push}..HEAD"
         else

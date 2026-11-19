@@ -297,4 +297,22 @@ describe("the preflight door (audit 019 C3)", () => {
     const rows = loadShippedExtensionManifest();
     assert.ok(rows.length > 0, "the shipped manifest carries rows");
   });
+  it("ARM a caller-supplied abort signal rides the folder dial (the wiring probe is cancellable)", async () => {
+    const storeDir = join(ROOT, "store");
+    mkdirSync(storeDir);
+    route(greenRoute({ "pack-a": "1", "pack-b": "2", "pack-opt": "3" }));
+    const controller = new AbortController();
+    const answer = await preflight(CTX({
+      signal: controller.signal,
+      endpoint: () => ({
+        provision: "byo", url: "http://engine:8188",
+        model_download_path: storeDir,
+        extra_model_folders: { checkpoints: "checkpoints", taggers: "taggers" },
+      }),
+    }));
+    assert.equal(answer.code, 200);
+    const wiring = answer.axes.find((a) => a.axis === "wiring");
+    assert.equal(wiring?.state, "green");
+    assert.match(wiring?.detail ?? "", /2\/2 declared folder\(s\) registered/);
+  });
 });

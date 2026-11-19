@@ -28,6 +28,11 @@ let vramStatsFallback: unknown = { devices: [] };
 let vramStatsCalls = 0;
 const vramFreeBodies: unknown[] = [];
 let submitCalls = 0;
+/** The 4xx DIALECT RIG: the engine's refusal body rides the SDK
+ *  error's own fields (status/json) — the execute core must fold that
+ *  dialect into the loud voice instead of serving the bare status
+ *  line. Null = the submit answers normally (every other arm). */
+let submitDeath: Error | null = null;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
   // THE BOUND IS REAL HERE (2026-10-12): the salvage read rides
@@ -60,6 +65,7 @@ vi.mock("../src/comfyui-transport.ts", () => ({
     clientId: "client-1",
     queuePrompt: async () => {
       submitCalls++;
+      if (submitDeath !== null) throw submitDeath;
       return { prompt_id: "p-1" };
     },
     getSystemStats: async (): Promise<unknown> => {
@@ -1270,5 +1276,35 @@ describe("THE KILL IS NAMED (defect board D-17, 2026-11-18: 'An out-of-memory ki
         healthBoundMs: 500,
       }),
     ).resolves.toBeTruthy();
+  });
+  it("an engine 4xx on submit surfaces the engine dialect (type + details, then a string error) — never the bare status line", async () => {
+    submitDeath = Object.assign(new Error("Endpoint Bad Request (400)"), {
+      status: 400,
+      json: {
+        error: { type: "prompt_outputs_failed_validation", details: "Prompt outputs failed validation" },
+        node_errors: {
+          "7": { class_type: "EmptyLatentImage", errors: [{ message: "value 4096 greater than max 2048", details: "" }] },
+        },
+      },
+    });
+    try {
+      await expect(
+        executeSingle("/tmp/run-exec-4xx-object", { timeout_s: 10 }, {}, {}, "http://override:8188"),
+      ).rejects.toThrow(/the engine refused the prompt — HTTP 400: prompt_outputs_failed_validation; Prompt outputs failed validation/);
+    } finally {
+      submitDeath = null;
+    }
+
+    submitDeath = Object.assign(new Error("Endpoint Bad Request (400)"), {
+      status: 400,
+      json: { error: "prompt invalidation failed" },
+    });
+    try {
+      await expect(
+        executeSingle("/tmp/run-exec-4xx-string", { timeout_s: 10 }, {}, {}, "http://override:8188"),
+      ).rejects.toThrow(/the engine refused the prompt — HTTP 400: prompt invalidation failed/);
+    } finally {
+      submitDeath = null;
+    }
   });
 });

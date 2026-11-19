@@ -632,7 +632,9 @@ export default defineConfig({
           environment: 'jsdom',
           pool: 'forks',
           execArgv: vitestExecArgv,
-          setupFiles: [PROXY_SETUP],
+          // the deck's DOM-observer seat: jsdom ships no matchMedia and
+          // the DSH Tooltip/Menu hover gates read it (2026-11-19).
+          setupFiles: [PROXY_SETUP, path.join(DECK, 'test/setup.ts')],
           css: false,
           include: DECK_SPEC_TREES,
           exclude: ['**/*.e2e.ts', '**/*.expected.e2e.ts', '**/*.snapshot.ts'],

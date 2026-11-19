@@ -976,3 +976,22 @@ test('CANVAS SPAN: the 4096 family (h3-image\'s shape) offers and holds 4096 cle
   if (track === null) throw new Error('the height knob seats')
   expect(track.getAttribute('max')).toBe('4096')
 })
+
+// THE LANE ROW'S PARTIAL ENDS: a bounds row states one end and the
+// other stays the field's own — the knob clamps to the intersection
+// it is given, never inventing a bound the lane did not state.
+test('CANVAS SPAN: a lane row stating only a floor leaves the ceiling to the field own max', () => {
+  form({ spec: canvasDoc({ height: { min: 512 } }), user: { variant: 'turbo', height: 1024 } })
+  const track = document.querySelector('input[type="range"]') as HTMLInputElement | null
+  if (track === null) throw new Error('the height knob seats')
+  expect(track.getAttribute('min')).toBe('512')
+  expect(track.getAttribute('max')).toBe('4096')
+})
+
+test('CANVAS SPAN: a lane row stating only a ceiling leaves the floor to the field own min', () => {
+  form({ spec: canvasDoc({ height: { max: 2048 } }), user: { variant: 'turbo', height: 1024 } })
+  const track = document.querySelector('input[type="range"]') as HTMLInputElement | null
+  if (track === null) throw new Error('the height knob seats')
+  expect(track.getAttribute('min')).toBe('256')
+  expect(track.getAttribute('max')).toBe('2048')
+})

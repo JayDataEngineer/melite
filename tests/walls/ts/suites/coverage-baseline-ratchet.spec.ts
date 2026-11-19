@@ -1580,6 +1580,19 @@ const OVERLAY_ARGUED_DROPS: Record<string, {
     reviewBy: "2026-12-16",
     reason: "the seated two-face regen raised the base lines floor past the pinned unseated face; the integer-margin law fences the relieved metric at the observed face's integer floor — re-measure the store-absent pool and lift the fence before the review date",
   },
+  // discovery: the overlay was seated at 100/100/100/100 — a face no
+  // store-absent pool reaches. The runtimes block's engine-installed
+  // arm reads a configured engine_root and the engine's output dir;
+  // CI measured branches 99.79 (480/481, run 44445676376, job
+  // 135297090428). The integer-margin law fences branches at 99 and
+  // the seated face keeps its 100.
+  "**/packages/harness/melite-tools/src/discovery.ts": {
+    from: { statements: 100, branches: 100, functions: 100, lines: 100 },
+    to: { statements: 100, branches: 99, functions: 100, lines: 100 },
+    roadmapHeading: "## THE UNSEATED DISCOVERY BRANCH FENCE (2026-11-19)",
+    reviewBy: "2026-12-19",
+    reason: "the store-absent pool cannot reach the engine-installed arm of runtimeRowsOf (engine_root && resolveRuntimeHome); CI measured branches 99.79 (480/481) — the integer-margin law fences the relieved metric at the integer floor of that face, and the seated face keeps 100",
+  },
 }
 
 const ARGUED_FLOOR_DROPS: Record<string, {

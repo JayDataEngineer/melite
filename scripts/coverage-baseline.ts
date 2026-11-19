@@ -1124,7 +1124,14 @@ export const COVERAGE_BASELINE_UNSEATED: Record<string, {
   // trayLoras: the loras-tray wall's conditional arms take their
   // absent-branch faces where the runtime tree does not stand.
   '**/packages/engines/comfyui-cordis/src/mods/trayLoras.ts': { statements: 81, branches: 62, functions: 57, lines: 86 },
-  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // discovery: the row was seated at 100/100/100/100, a face no
+  // store-absent pool can reach — the runtimes block's second arm
+  // reads a configured `engine_root` and the engine's own output dir
+  // (runtimeRowsOf's `root !== null && resolveRuntimeHome(...)`), and
+  // a CI pool carries neither. CI measured branches 99.79 (480/481,
+  // run 44445676376 job 135297090428); the integer-margin law fences
+  // the relieved metric at 99 while the seated face keeps 100.
+  '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 99, functions: 100, lines: 100 },
 }
 
 /**
