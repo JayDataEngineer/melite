@@ -10,7 +10,7 @@ import { describe, expect, test, afterEach } from 'vitest'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import setup from '../../../global-sweep.ts'
+import setup from '../../../helpers/global-sweep.ts'
 
 const minted: string[] = []
 

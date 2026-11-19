@@ -32,7 +32,7 @@
     //   at compose (the cards wall pins table-to-manifest parity).
     // - packages/*/src/card.ts: the cardPackages string table rides
     //   the same dynamic-import law (the cycle law).
-    // - scripts/*.mjs / *.d.mts, test/*.mjs, tools/*.d.mts, the
+    // - scripts/*.mjs / *.d.mts, tests/drives/*.mjs, tools/*.d.mts, the
     //   tests/helpers+fixtures rows: the spawned harness plane
     //   (package.json script rows and drive probes execute them).
     // - the per-package rows: probe/config/fixture/e2e/hot-example
@@ -43,7 +43,7 @@
     "packages/*/*/src/card.ts",
     "scripts/*.mjs",
     "scripts/*.d.mts",
-    "test/*.mjs",
+    "tests/drives/*.mjs",
     "tools/*.d.mts",
     "tests/helpers/launch-probe.mjs",
     "tests/walls/ts/fixtures/manager-stub.mjs",
@@ -58,7 +58,14 @@
     "tests/walls/ts/suites/*-loader.mjs",
     "tests/walls/ts/suites/*-hook.mjs",
     "tests/walls/ts/suites/l2-journey-driver.mjs",
-    "packages/harness/melite-tools/test/estate-drive.mjs",
+    // ── THE SPAWNED-HARNESS .mjs CLASS (2026-11-19, the shell-free
+    // wave): the .sh predecessors were invisible to knip (never
+    // parsed); the node ports are — invoked by path from compose,
+    // dsh profile lifecycle, and the estate, never imported.
+    "infra/comfyui/boot-engine.mjs",
+    "packages/harness/install-profile.mjs",
+    "packages/harness/uninstall-profile.mjs",
+    "packages/harness/melite-tools/tests/estate-drive.mjs",
     "packages/web/melite-card-deck/prove-live.mjs",
     "packages/web/melite-card-view/probe-*.mts",
     "packages/web/melite-card-view/playwright.*.config.ts",
