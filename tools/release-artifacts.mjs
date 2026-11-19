@@ -113,6 +113,16 @@ export function exportsRows (inner, listing, tarName) {
  *  it that way — a .ts creeping into src/agents refuses the mint. */
 const SERVED_TEXT = /^package\/src\/card\.ts$/
 const SERVED_AGENTS = /^package\/src\/agents\/.+\.(md|json|ya?ml)$/
+/** THE TYPERT REMOTE MAP CARVE-OUT (2026-11-19, the rc.5 typert
+ * generator wave): the Typert host resolves the remote client's
+ * declared types from `lib/typert.remote-client.d.ts.map` at
+ * consumer install time — upstream @deepseek-ai ships this member in
+ * every typert-hosting package (dsh-host-plugin-inventory,
+ * dsh-agent-preset-registry et al.), and the rc.5 generator REFUSES
+ * a files array without it. It is product data the remote door
+ * reads, not build residue: admit EXACTLY this member — every other
+ * map stays refused. */
+const TYPERT_REMOTE_MAP = /^package\/lib\/typert\.remote-client\.d\.ts\.map$/
 export function validateTarballPayload (inner, listing, tarName) {
   const isCardPackage = inner.exports !== undefined && './card' in inner.exports
   for (const member of listing) {
@@ -121,6 +131,7 @@ export function validateTarballPayload (inner, listing, tarName) {
       if (isCardPackage && (SERVED_TEXT.test(member) || SERVED_AGENTS.test(member))) continue
       throw new Error(`payload gate: ${tarName} ships source member ${member}`)
     }
+    if (TYPERT_REMOTE_MAP.test(member)) continue
     if (/\.(js|d\.ts)\.map$/.test(member)) throw new Error(`payload gate: ${tarName} ships source map ${member}`)
   }
   const sourceTarget = (t) => /\.(ts|tsx)$/.test(t) && !/\.d\.ts$/.test(t)
