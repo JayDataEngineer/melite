@@ -10,6 +10,7 @@
 // with/without max, foreign prompt_ids filtered, nodeless events
 // dropped), and the execute faces' resolution order.
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { existsSync } from "node:fs";
 
 let interruptCalls = 0;
 let qvoicePath = "";
@@ -1102,7 +1103,12 @@ describe("THE KILL IS NAMED (defect board D-17, 2026-11-18: 'An out-of-memory ki
     );
   });
 
-  it("D-35: the refusal reports the ENGINE event with the host swap reading — the unit lever BEFORE the doc lecture", async () => {
+  // The host figures come from /proc/meminfo — a Linux-only read. On
+  // macOS/Windows the clause cannot exist, so the arm self-skips there
+  // (the estate's host-fact self-skip law); it still fires on every
+  // Linux seat, where the estate actually runs.
+  const HAS_PROC_MEMINFO = existsSync("/proc/meminfo");
+  it.skipIf(!HAS_PROC_MEMINFO)("D-35: the refusal reports the ENGINE event with the host swap reading — the unit lever BEFORE the doc lecture", async () => {
     // The board burn (run-52ef3b0f106c): an engine up 2.4 days died
     // under 56 GB of host swap and the caller got the memory
     // lecture — then fixed it with comfy_manage launch, exactly the

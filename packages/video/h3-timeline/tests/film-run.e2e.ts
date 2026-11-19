@@ -53,8 +53,13 @@ const REPO = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.u
 // hand-rolled repo-relative path watched a root this prompt never
 // writes to (the film rendered green for 38s while the watch starved).
 const ENGINE_ROOT = engineRootOf()
-assert.ok(ENGINE_ROOT, "the endpoint statement declares engine_root (the raw-prompt output tree depends on it)")
-const OUTDIR = join(ENGINE_ROOT, "output");
+// The endpoint statement (engine_root) is machine-local estate state —
+// CI carries no engine. The assert rides only when the live proof
+// actually runs (FILM_E2E=1); otherwise every test self-skips and a
+// module-scope assert would brick the file in CI (the self-skip
+// contract the header's boot-brick note already follows).
+if (RUN) assert.ok(ENGINE_ROOT, "the endpoint statement declares engine_root (the raw-prompt output tree depends on it)")
+const OUTDIR = ENGINE_ROOT === null ? "" : join(ENGINE_ROOT, "output");
 
 const facts = loadFacts(
   join(REPO, "packages", "engines", "comfyui-cordis", "data", "model-facts.json"),

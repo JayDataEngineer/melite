@@ -24,6 +24,11 @@ import type { ContactSheetValue } from '../src/tools/contact-sheet.ts'
 
 // ── fixtures: a real runs tree, real PNGs (sharp-minted) ───────────
 
+/** Escape every regex metacharacter in a literal string (a temp root
+ *  carries `\\` on Windows and `.` on macOS - a hand-rolled slash-only
+ *  escape matched on one seat and missed on the other). */
+const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 let root = ''
 /** 64×64 solid PNGs — distinct colors so the cell sample is proof
  *  the sheet carries THE run's own image (not a neighbor's, not a
@@ -287,7 +292,7 @@ describe('melite_contact_sheet refusals — loud and named', () => {
     const tool = meliteContactSheet(fakeCtx({ extras: ['/tmp/other-root'] }))
     await assert.rejects(
       tool.execute({ run_ids: ['run-cc-none'] }, visualExec as never) as never,
-      new RegExp('none of the 1 runs hold an image artifact.*\\(searched ' + root.replace(/\//g, '\\/') + ', /tmp/other-root\\)'),
+      new RegExp('none of the 1 runs hold an image artifact.*\\(searched ' + escapeRegex(root) + ', /tmp/other-root\\)'),
     )
   })
 
@@ -357,7 +362,9 @@ describe('melite_contact_sheet refusals — loud and named', () => {
   // through the named-null path — a raced/vanished artifact is
   // judgment data, never a crash. A healthy run rides along so the
   // sheet still judges something (the all-gray refusal stands guard).
-  test('a listed-but-unreadable row grays through the null read (both leaves miss)', async () => {
+  // chmod 000 is a POSIX permission bit; NTFS ACLs ignore it, so the
+  // file stays readable and the arm cannot be judged on Windows.
+  test.skipIf(process.platform === 'win32')('a listed-but-unreadable row grays through the null read (both leaves miss)', async () => {
     const ff = join(root, 'output', 'run-ff-vanished')
     mkdirSync(ff, { recursive: true })
     const hostile = join(ff, 'gen_00001_.png')

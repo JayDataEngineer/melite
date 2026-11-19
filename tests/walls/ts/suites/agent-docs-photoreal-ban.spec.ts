@@ -32,6 +32,10 @@ const RETIRED = 'z-image'
 const agentDocs = (dir: string): string[] => {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
+    // never descend into installed dependencies — the ban judges the
+    // estate's own doc seats; a cold .pnpm tree (CI's fresh install)
+    // costs tens of thousands of stats and blew the 60s test budget
+    if (entry === 'node_modules') continue
     const full = join(dir, entry)
     const st = statSync(full)
     if (st.isDirectory() && entry === 'agents') {

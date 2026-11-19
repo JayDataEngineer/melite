@@ -46,6 +46,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-tags: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -109,6 +110,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+        # THE SEAT-PIN WALL'S TAG PLANE (2026-11-19, the always-red CI burn): the
+        # seat census reads git tags; a default shallow checkout carries none, so
+        # ARM 2/4 red on every run with an empty tag list. Tags are repo state
+        # the wall judges — fetch them.
+          fetch-tags: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -129,6 +136,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+        # THE SEAT-PIN WALL'S TAG PLANE (2026-11-19, the always-red CI burn): the
+        # seat census reads git tags; a default shallow checkout carries none, so
+        # ARM 2/4 red on every run with an empty tag list. Tags are repo state
+        # the wall judges — fetch them.
+          fetch-tags: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -151,6 +164,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+        # THE SEAT-PIN WALL'S TAG PLANE (2026-11-19, the always-red CI burn): the
+        # seat census reads git tags; a default shallow checkout carries none, so
+        # ARM 2/4 red on every run with an empty tag list. Tags are repo state
+        # the wall judges — fetch them.
+          fetch-tags: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -175,6 +194,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -211,6 +231,7 @@ jobs:
           # tree is green wherever submodules materialize. Every
           # seat that judges vendor bytes fetches vendor bytes.
           submodules: recursive
+          fetch-tags: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -231,6 +252,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-tags: true
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -309,6 +331,12 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+        # THE SEAT-PIN WALL'S TAG PLANE (2026-11-19, the always-red CI burn): the
+        # seat census reads git tags; a default shallow checkout carries none, so
+        # ARM 2/4 red on every run with an empty tag list. Tags are repo state
+        # the wall judges — fetch them.
+          fetch-tags: true
       - name: Container seat proof
         run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#v0.2.3-rc.4"'
 

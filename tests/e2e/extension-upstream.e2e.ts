@@ -76,14 +76,44 @@ async function pooled<T>(items: readonly T[], limit: number, thunk: (item: T) =>
  * through the commit's .patch door, the WEB tier (the REST API's
  * 60/hr unauthenticated budget rate-limits the estate's own gate
  * cadence, the 429s this spec's mutation runs proved); any other
- * host falls back to ls-remote's ref list. */
+ * host falls back to ls-remote's ref list.
+ *
+ * TRANSIENT RETRY (2026-11-19, the always-red CI burn): a 5xx from
+ * GitHub proves nothing about a pin — the pre-push sentry was red
+ * on seven rows at once, all `HTTP 503`, and green on the next run.
+ * 5xx and network faults retry with backoff; a 404/410 is the real
+ * finding (the commit is gone) and reports immediately. */
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504])
+
+async function patchProbe(url: string, ref: string): Promise<{ ok: boolean; status: number }> {
+  const attempt = async (): Promise<Response> =>
+    fetch(url, { signal: AbortSignal.timeout(15000) })
+  let last: Response | null = null
+  for (let i = 0; i < 3; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, i * 2000))
+    try {
+      last = await attempt()
+    } catch (err) {
+      if (i === 2) throw err
+      continue
+    }
+    if (!RETRY_STATUSES.has(last.status)) return { ok: last.ok, status: last.status }
+  }
+  return { ok: last?.ok ?? false, status: last?.status ?? 0 }
+}
+
 async function refResolves(url: string, ref: string): Promise<string | null> {
   const gh = /^https:\/\/github\.com\/([^/]+)\/([^/.]+?)(?:\.git)?$/u.exec(url)
   if (gh) {
-    const res = await fetch(`https://github.com/${gh[1]}/${gh[2]}/commit/${ref}.patch`, {
-      signal: AbortSignal.timeout(15000),
-    })
-    return res.ok ? null : `pin ${ref} does not resolve at ${url} (HTTP ${res.status})`
+    const probe = await patchProbe(`https://github.com/${gh[1]}/${gh[2]}/commit/${ref}.patch`, ref)
+    if (probe.ok) return null
+    // 5xx after every retry = upstream unavailable, not a dead pin.
+    // Report it as unjudged so a persistent outage still surfaces
+    // loudly without pretending the pin is gone.
+    const why = RETRY_STATUSES.has(probe.status)
+      ? `upstream unavailable (HTTP ${probe.status} on all 3 attempts) — pin unjudged`
+      : `pin ${ref} does not resolve at ${url} (HTTP ${probe.status})`
+    return why
   }
   const { stdout } = await run('git', ['ls-remote', url], { timeout: 30000 })
   return stdout.includes(ref) ? null : `pin ${ref} not advertised by ${url}`

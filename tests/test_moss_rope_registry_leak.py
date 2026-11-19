@@ -46,6 +46,7 @@ import sys
 import tempfile
 import types
 import unittest
+import importlib.util
 from pathlib import Path
 
 
@@ -198,6 +199,10 @@ class MossRopeRegistryLeak(unittest.TestCase):
         finally:
             _restore_modules(saved)
 
+    @unittest.skipIf(
+        importlib.util.find_spec("torch") is None,
+        "arm 4 runs the tolerant initializer's real math (torch at call time) — CI's pytest seat carries no torch; arms 1-3 stay weight-free",
+    )
     def test_arm_4_tolerant_math_answers_theta_less_config(self):
         """The fallback math serves a config with rope_parameters and
         NO rope_theta — the exact crash shape, answered."""

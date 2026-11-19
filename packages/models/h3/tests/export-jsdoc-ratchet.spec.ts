@@ -186,7 +186,10 @@ describe("THE EXPORT-JSDOC RATCHET — every function-like export states its @pa
   test("each src file's undocumented census equals its seated baseline exactly", () => {
     const failures: string[] = [];
     for (const file of FILES) {
-      const rel = relative(PKG, file);
+      // POSIX-normalized: the baseline keys are "src/actions.ts"; a
+      // raw relative() is "src\\actions.ts" on Windows and every
+      // lookup would miss (the portability seat's red).
+      const rel = relative(PKG, file).replaceAll("\\", "/");
       const missing = undocumentedExports(file);
       const seated = BASELINE[rel];
       if (missing.length === 0) {
