@@ -15,9 +15,9 @@
     "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -29,7 +29,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0"
   },
   "description": "WD14 Tagger family — booru keyword tagging of images for NovelAI, Pony, and Illustrious prompt recreation, with the tag action on the ComfyUI engine.",
   "repository": {

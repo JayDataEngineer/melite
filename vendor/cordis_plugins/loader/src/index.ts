@@ -100,15 +100,19 @@ export class Loader extends EntryTree {
       return interpolate(this.ctx, config)
     }, { global: true })
 
-    ctx.on('internal/update', async function (config, noSave, next) {
-      if (!this.entry || noSave || this.parent.fiber?.entry === this.entry) return next()
-      await next()
-      const unparse = this.runtime?.Config?.['simplify']
-      this.entry.options.config = unparse ? unparse(config) : config
-      this.entry.parent.tree.write()
-    }, { global: true, prepend: true })
+    // cordis 4.1.0: the 3-arg internal/update listener (config, noSave, next)
+    // is gone — the waterfall now passes (resolvedConfig, restart). Persistence
+    // rides 'internal/commit' instead, emitted with (fiber, config) only when
+    // the update is saveable (the noSave guard moved into the event itself).
+    ctx.on('internal/commit', (fiber, config) => {
+      const entry = fiber.entry
+      if (!entry || fiber.parent.fiber?.entry === entry) return
+      const unparse = fiber.runtime?.Config?.['simplify']
+      entry.options.config = unparse ? unparse.call(fiber.runtime?.Config, config) : config
+      entry.parent.tree.write()
+    })
 
-    ctx.on('internal/update', function (config, _, next) {
+    ctx.on('internal/update', function (this: Fiber, _config: any, next: () => void | Promise<void>) {
       if (!this.entry || this.parent.fiber?.entry === this.entry) return next()
       self.showLog(this.entry, 'reload')
       return next()

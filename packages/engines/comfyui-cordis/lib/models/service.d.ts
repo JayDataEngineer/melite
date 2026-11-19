@@ -2,6 +2,7 @@ import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 import { type CatalogArtifactRow, type CatalogModel } from "../catalog.js";
 import { ModelRow, type CellRow, type ModelDecl, type DeclVariantRow } from '@melite/comfyui-card-kit/model-contract';
+import '@melite/comfyui-card-kit/service-faces';
 export declare const MODELS_SERVICE = "models";
 export declare class ModelsService extends Service {
     private readonly table;

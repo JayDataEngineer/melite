@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 		let _melite_card_base_client = require("@melite/card-base/client");
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/**
 		* img-to-mesh-studio — the FIRST-PARTY cards.stage.view surface
 		* (2026-09-12, the ui-tool built-in law: the host package ships the
@@ -59,7 +59,6 @@ window.__ModuleLoader__.load({
 		const name = "imgToMeshStudio";
 		const inject = ["slots"];
 		const apply = (0, _melite_card_base_client.defineStageViewRegistration)("img-to-mesh", ImgToMeshStudio);
-		//#endregion
 		exports.ImgToMeshStudio = ImgToMeshStudio;
 		exports.apply = apply;
 		exports.inject = inject;

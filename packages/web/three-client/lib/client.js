@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region ../../../three/build/three.core.js
+		// ../../../three/build/three.core.js
 		/**
 		* @license
 		* Copyright 2010-2026 Three.js Authors
@@ -41172,8 +41172,7 @@ levels: {
 			if (window.__THREE__) warn("WARNING: Multiple instances of Three.js being imported.");
 			else window.__THREE__ = "184";
 		}
-		//#endregion
-		//#region ../../../three/build/three.module.js
+		// ../../../three/build/three.module.js
 		/**
 		* @license
 		* Copyright 2010-2026 Three.js Authors
@@ -52019,8 +52018,7 @@ void main() {
 				gl.unpackColorSpace = ColorManagement._getUnpackColorSpace();
 			}
 		};
-		//#endregion
-		//#region ../../../three/examples/jsm/loaders/DRACOLoader.js
+		// ../../../three/examples/jsm/loaders/DRACOLoader.js
 		const _taskCache = /* @__PURE__ */ new WeakMap();
 		/**
 		* A loader for the Draco format.
@@ -52432,8 +52430,7 @@ void main() {
 				}
 			}
 		}
-		//#endregion
-		//#region ../../../three/examples/jsm/exporters/GLTFExporter.js
+		// ../../../three/examples/jsm/exporters/GLTFExporter.js
 		/**
 		* The KHR_mesh_quantization extension allows these extra attribute component types
 		*
@@ -54466,8 +54463,7 @@ void main() {
 				return dstAttribute;
 			}
 		};
-		//#endregion
-		//#region ../../../three/examples/jsm/utils/BufferGeometryUtils.js
+		// ../../../three/examples/jsm/utils/BufferGeometryUtils.js
 		/**
 		* Returns a new indexed geometry based on `TrianglesDrawMode` draw mode.
 		* This mode corresponds to the `gl.TRIANGLES` primitive in WebGL.
@@ -54521,8 +54517,7 @@ void main() {
 				return geometry;
 			}
 		}
-		//#endregion
-		//#region ../../../three/examples/jsm/utils/SkeletonUtils.js
+		// ../../../three/examples/jsm/utils/SkeletonUtils.js
 		/**
 		* Clones the given 3D object and its descendants, ensuring that any `SkinnedMesh` instances are
 		* correctly associated with their bones. Bones are also cloned, and must be descendants of the
@@ -54557,8 +54552,7 @@ void main() {
 			callback(a, b);
 			for (let i = 0; i < a.children.length; i++) parallelTraverse(a.children[i], b.children[i], callback);
 		}
-		//#endregion
-		//#region ../../../three/examples/jsm/loaders/GLTFLoader.js
+		// ../../../three/examples/jsm/loaders/GLTFLoader.js
 		/**
 		* A loader for the glTF 2.0 format.
 		*
@@ -57011,8 +57005,7 @@ void main() {
 				return primitiveDef.targets !== void 0 ? addMorphTargets(geometry, primitiveDef.targets, parser) : geometry;
 			});
 		}
-		//#endregion
-		//#region ../../../three/examples/jsm/controls/OrbitControls.js
+		// ../../../three/examples/jsm/controls/OrbitControls.js
 		/**
 		* Fires when the camera has been transformed by the controls.
 		*
@@ -58123,8 +58116,7 @@ void main() {
 				});
 			}
 		}
-		//#endregion
-		//#region ../../../three/examples/jsm/environments/RoomEnvironment.js
+		// ../../../three/examples/jsm/environments/RoomEnvironment.js
 		/**
 		* This class represents a scene with a basic room setup that can be used as
 		* input for {@link PMREMGenerator#fromScene}. The resulting PMREM represents the room's
@@ -58241,8 +58233,7 @@ void main() {
 				emissiveIntensity: intensity
 			});
 		}
-		//#endregion
-		//#region ../../../three/examples/jsm/controls/TransformControls.js
+		// ../../../three/examples/jsm/controls/TransformControls.js
 		const _raycaster = new Raycaster();
 		const _tempVector = new Vector3();
 		const _tempVector2 = new Vector3();
@@ -59982,8 +59973,7 @@ void main() {
 				super.updateMatrixWorld(force);
 			}
 		};
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/**
 		* three-client entry — the ONE graph row for 3D (the ONE-ROW LAW
 		* extended to three, roadmap "multiple three.js copies", lane wire
@@ -60013,7 +60003,6 @@ void main() {
 		* (the loader hands a ctx; the marker takes it, card-base's
 		* shape). */
 		function apply(_ctx) {}
-		//#endregion
 		exports.ACESFilmicToneMapping = ACESFilmicToneMapping;
 		exports.AddEquation = AddEquation;
 		exports.AddOperation = AddOperation;

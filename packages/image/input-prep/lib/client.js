@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __defProp = Object.defineProperty;
 		var __esmMin = (fn, res, err) => () => {
 			if (err) throw err[0];
@@ -23,11 +23,10 @@ window.__ModuleLoader__.load({
 			if (!no_symbols) __defProp(target, Symbol.toStringTag, { value: "Module" });
 			return target;
 		};
-		//#endregion
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let react = require("react");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region ../../models/input/src/scale-vocab.ts
+		// ../../models/input/src/scale-vocab.ts
 		var scale_vocab_exports = /* @__PURE__ */ __exportAll({
 			MIN_DIM: () => 8,
 			SCALE_METHODS: () => SCALE_METHODS,
@@ -51,8 +50,7 @@ window.__ModuleLoader__.load({
 			];
 			SCALE_MODEL_OPTIONS = ["", ...UPSCALE_MODELS];
 		}));
-		//#endregion
-		//#region src/ui/studio/scaleVocabSeat.ts
+		// src/ui/studio/scaleVocabSeat.ts
 		let seat = null;
 		let loading = null;
 		/** Load the vocabulary seat (idempotent). Guarded: a module that
@@ -92,8 +90,7 @@ window.__ModuleLoader__.load({
 			}, []);
 			return vocab;
 		};
-		//#endregion
-		//#region \0dsh-css:packages/image/input-prep/src/ui/studio/prep.module.css.mjs
+		// \0dsh-css:packages/image/input-prep/src/ui/studio/prep.module.css.mjs
 		const css = ".o0BhZq_studioHost{flex-direction:column;width:100%;min-height:320px;display:flex}.o0BhZq_paramsCol{flex-direction:column;gap:10px;min-width:0;display:flex}.o0BhZq_previewPane{flex-direction:column;flex:auto;gap:6px;min-width:0;display:flex}.o0BhZq_paneNote{color:#ffffffa6;border:1px dashed #7f7f7f66;border-radius:8px;padding:18px 14px;font-size:12px;line-height:1.5}.o0BhZq_paneMeta{color:#ffffff80;font-size:11px}.o0BhZq_previewWrap{user-select:none;touch-action:none;align-self:flex-start;max-width:100%;display:inline-block;position:relative}.o0BhZq_previewImg{border-radius:8px;max-width:100%;max-height:52vh;display:block}.o0BhZq_previewOverlay{cursor:crosshair;border-radius:8px;position:absolute;inset:0}.o0BhZq_cropBox{cursor:move;border:1px solid #fff;position:absolute;box-shadow:0 0 0 100000px #00000080}.o0BhZq_cropBadge{color:#fff;white-space:nowrap;background:#0009;border-radius:4px;padding:1px 5px;font-size:10px;position:absolute;top:-20px;left:4px}.o0BhZq_previewHint{color:#ffffffbf;pointer-events:none;white-space:nowrap;background:#00000080;border-radius:4px;padding:2px 8px;font-size:11px;position:absolute;bottom:10px;left:50%;transform:translate(-50%)}.o0BhZq_handle,.o0BhZq_handle_nw,.o0BhZq_handle_ne,.o0BhZq_handle_se,.o0BhZq_handle_sw,.o0BhZq_handle_n,.o0BhZq_handle_e,.o0BhZq_handle_s,.o0BhZq_handle_w{background:#fff;border:1px solid #0006;border-radius:2px;width:12px;height:12px;position:absolute}.o0BhZq_handle_nw{cursor:nwse-resize;top:-7px;left:-7px}.o0BhZq_handle_ne{cursor:nesw-resize;top:-7px;right:-7px}.o0BhZq_handle_se{cursor:nwse-resize;bottom:-7px;right:-7px}.o0BhZq_handle_sw{cursor:nesw-resize;bottom:-7px;left:-7px}.o0BhZq_handle_n{cursor:ns-resize;margin-left:-6px;top:-7px;left:50%}.o0BhZq_handle_s{cursor:ns-resize;margin-left:-6px;bottom:-7px;left:50%}.o0BhZq_handle_w{cursor:ew-resize;margin-top:-6px;top:50%;left:-7px}.o0BhZq_handle_e{cursor:ew-resize;margin-top:-6px;top:50%;right:-7px}.o0BhZq_rail{background:#7f7f7f14;border:1px solid #7f7f7f40;border-radius:8px;flex-direction:column;gap:8px;padding:10px;display:flex}.o0BhZq_railTitle{letter-spacing:.04em;text-transform:uppercase;color:#fff9;font-size:11px;font-weight:600}.o0BhZq_railRow{flex-wrap:wrap;align-items:flex-end;gap:8px;display:flex}.o0BhZq_railHint{color:#ffffff80;font-size:11px;line-height:1.4}.o0BhZq_field{color:#ffffffb3;flex-direction:column;flex:1;gap:3px;min-width:0;font-size:11px;display:flex}.o0BhZq_field input,.o0BhZq_field select{color-scheme:light;box-sizing:border-box;color:#fff;background:#00000059;border:1px solid #7f7f7f66;border-radius:6px;width:100%;padding:5px 7px;font-size:12px}.o0BhZq_chip{color:#ffffffd9;cursor:pointer;background:#00000040;border:1px solid #7f7f7f66;border-radius:6px;padding:5px 10px;font-size:11px}.o0BhZq_chip:disabled{opacity:.45;cursor:default}";
 		const tagId = "@melite/image-input-prep/prep.module.css@ae27df0f";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -131,8 +128,7 @@ window.__ModuleLoader__.load({
 			"railTitle": "o0BhZq_railTitle",
 			"studioHost": "o0BhZq_studioHost"
 		};
-		//#endregion
-		//#region src/ui/studio/CropPreview.tsx
+		// src/ui/studio/CropPreview.tsx
 		/**
 		* CropPreview — the input-prep studio's preview pane (operator
 		* 2026-11, defect 3: "where the 'preview' section is a place where
@@ -415,8 +411,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/ui/studio/component.tsx
+		// src/ui/studio/component.tsx
 		/**
 		* InputPrepStudio — the input-prep card's own stage view (operator
 		* 2026-11, defect 3: "turn the Image Prep into something like an
@@ -839,8 +834,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/**
 		* Browser client face for the input-prep card's OWN studio
 		* registration (2026-11, the composition-root law — same seam as
@@ -856,7 +850,6 @@ window.__ModuleLoader__.load({
 		* name/inject/apply). */
 		const name = "inputPrepStudio";
 		const inject = ["slots"];
-		//#endregion
 		exports.apply = (0, _melite_card_base_client.defineStageViewRegistration)("input-prep", InputPrepStudio);
 		exports.inject = inject;
 		exports.name = name;

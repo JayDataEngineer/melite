@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __create = Object.create;
 		var __defProp = Object.defineProperty;
 		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -42,7 +42,6 @@ window.__ModuleLoader__.load({
 			value: mod,
 			enumerable: true
 		}) : target, mod));
-		//#endregion
 		let zod = require("zod");
 		let react = require("react");
 		react = __toESM(react, 1);
@@ -55,7 +54,7 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let _melite_three_client_client = require("@melite/three-client/client");
 		_melite_three_client_client = __toESM(_melite_three_client_client, 1);
-		//#region ../../../@deepseek-ai/dsh-typert-protocol/lib/types/remote-info.js
+		// ../../../@deepseek-ai/dsh-typert-protocol/lib/types/remote-info.js
 		/** Lazy assembly of generated Remote definitions using caller-supplied Zod; no runtime imports. */
 		/**
 		* Retain one generated definition per endpoint without constructing parsers or projections.
@@ -210,8 +209,7 @@ window.__ModuleLoader__.load({
 				return this.projection.value;
 			}
 		};
-		//#endregion
-		//#region ../../estate/drafts/lib/typert.remote-client.js
+		// ../../estate/drafts/lib/typert.remote-client.js
 		let JsonValueRemoteCodec$schema$value$1;
 		const JsonValueRemoteCodec$schema$1 = () => JsonValueRemoteCodec$schema$value$1 ??= zod.z.union([
 			zod.z.literal(null),
@@ -2356,8 +2354,7 @@ window.__ModuleLoader__.load({
 				}
 			}
 		}, zod.z);
-		//#endregion
-		//#region ../../estate/runs/lib/typert.remote-client.js
+		// ../../estate/runs/lib/typert.remote-client.js
 		let JsonValueRemoteCodec$schema$value;
 		const JsonValueRemoteCodec$schema = () => JsonValueRemoteCodec$schema$value ??= zod.z.union([
 			zod.z.literal(null),
@@ -2911,8 +2908,7 @@ window.__ModuleLoader__.load({
 				}
 			}
 		}, zod.z);
-		//#endregion
-		//#region ../../estate/media/lib/typert.remote-client.js
+		// ../../estate/media/lib/typert.remote-client.js
 		let _melite_estate_media_media_list_parameter_0$schema$value;
 		const _melite_estate_media_media_list_parameter_0$schema = () => _melite_estate_media_media_list_parameter_0$schema$value ??= zod.z.string();
 		let _melite_estate_media_media_list_result$schema$value;
@@ -2996,8 +2992,7 @@ window.__ModuleLoader__.load({
 				}
 			} }
 		}, zod.z);
-		//#endregion
-		//#region ../../estate/manage/lib/typert.remote-client.js
+		// ../../estate/manage/lib/typert.remote-client.js
 		let ManageJsonValueRemoteCodec$schema$value;
 		const ManageJsonValueRemoteCodec$schema = () => ManageJsonValueRemoteCodec$schema$value ??= zod.z.union([
 			zod.z.literal(null),
@@ -3163,8 +3158,7 @@ window.__ModuleLoader__.load({
 				}
 			} }
 		}, zod.z);
-		//#endregion
-		//#region \0dsh-css:packages/web/melite-card-view/src/client/card.module.css.mjs
+		// \0dsh-css:packages/web/melite-card-view/src/client/card.module.css.mjs
 		const css$3 = ".qMfk9G_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.qMfk9G_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.qMfk9G_head{align-items:center;gap:8px;min-width:0;display:flex}.qMfk9G_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.qMfk9G_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.qMfk9G_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.qMfk9G_state[data-state=running],.qMfk9G_state[data-state=queued],.qMfk9G_state[data-state=pending],.qMfk9G_state[data-state=starting],.qMfk9G_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.qMfk9G_state[data-state=failed],.qMfk9G_state[data-state=error],.qMfk9G_state[data-state=stopped],.qMfk9G_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.qMfk9G_media{corner-shape:round;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:999px;flex:none;margin:-2px 0 -2px auto;padding:1px 6px}.qMfk9G_media:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.qMfk9G_media:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.qMfk9G_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.qMfk9G_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.qMfk9G_chatPreview{flex-direction:column;width:100%;min-width:0;display:flex}.qMfk9G_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.qMfk9G_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.qMfk9G_drill{width:92vw;max-width:min(860px,92vw)}.qMfk9G_paramsCol,.qMfk9G_params{flex-direction:column;gap:8px;min-width:0;display:flex}.qMfk9G_field{flex-direction:column;gap:3px;min-width:0;display:flex}.qMfk9G_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.qMfk9G_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.qMfk9G_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.qMfk9G_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.qMfk9G_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.qMfk9G_runSummary{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:11px;position:relative}.qMfk9G_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px;position:relative}.qMfk9G_rowWrap{flex-direction:column;display:flex;position:relative}.qMfk9G_errorDismiss{color:var(--dsw-alias-state-error-primary);position:absolute;top:2px;right:2px}.qMfk9G_flowLink{flex:none;margin-left:auto;text-decoration:underline}.qMfk9G_failed{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px;position:relative}.qMfk9G_errorLine{padding-right:18px;position:relative}.qMfk9G_missing{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_loading{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;padding:2px 0;font-size:11px}.qMfk9G_rowError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;flex-basis:100%;font-size:11px;display:block}.qMfk9G_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.qMfk9G_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.qMfk9G_drillProgress>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.qMfk9G_cardsBench{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;padding:0 14px 18px;display:flex;overflow-y:auto}.qMfk9G_benchHead{z-index:1;background:var(--dsw-alias-bg-base);justify-content:space-between;align-items:center;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_runView{overflow-anchor:none;flex-direction:column;flex:1;gap:8px;min-width:0;min-height:0;display:flex;overflow-y:auto}.qMfk9G_runHead{z-index:1;background:var(--dsw-alias-bg-base);align-items:baseline;gap:8px;padding-top:12px;display:flex;position:sticky;top:0}.qMfk9G_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.qMfk9G_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_runActions{gap:8px;display:flex}.qMfk9G_graphReceiptOk{border:.5px solid var(--dsw-alias-state-success-primary);corner-shape:round;color:var(--dsw-alias-state-success-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_graphReceiptPartial{border:.5px solid var(--dsw-alias-state-warn-primary);corner-shape:round;color:var(--dsw-alias-state-warn-primary);border-radius:999px;padding:0 8px;font-size:11px}.qMfk9G_restoreNote{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:11px}.qMfk9G_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.qMfk9G_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.qMfk9G_tile{margin:0;padding:0;display:block}.qMfk9G_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.qMfk9G_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.qMfk9G_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.qMfk9G_tileImg,.qMfk9G_tileImgLink{width:100%;height:100%;display:block}.qMfk9G_tileImg{object-fit:cover}.qMfk9G_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.qMfk9G_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.qMfk9G_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.qMfk9G_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.qMfk9G_kindInitial{font-size:28px;font-weight:700;line-height:1}.qMfk9G_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.qMfk9G_tileDot{position:absolute;bottom:6px;right:6px}.qMfk9G_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.qMfk9G_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.qMfk9G_tileInner:hover .qMfk9G_tileIconBtn,.qMfk9G_tileIconBtn:focus-visible{opacity:1}.qMfk9G_tileIconBtn:disabled{cursor:default}.qMfk9G_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.qMfk9G_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.qMfk9G_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.qMfk9G_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.qMfk9G_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.qMfk9G_tileSpin>svg{animation:1s linear infinite qMfk9G_tileSpinTurn}.qMfk9G_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes qMfk9G_tileSpinTurn{to{transform:rotate(360deg)}}.qMfk9G_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.qMfk9G_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.qMfk9G_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.qMfk9G_tileAdd .qMfk9G_tileInner{border-style:dashed}.qMfk9G_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.qMfk9G_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.qMfk9G_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.qMfk9G_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.qMfk9G_drill [class*=_title_]{font-size:18px;font-weight:800}.qMfk9G_pickerCardLabel{font-size:12px;font-weight:500}.qMfk9G_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.qMfk9G_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.qMfk9G_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.qMfk9G_tileShared{display:block;position:relative}.qMfk9G_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.qMfk9G_zoomScroll{flex:1;min-height:0;overflow-y:auto}.qMfk9G_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.qMfk9G_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.qMfk9G_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) qMfk9G_zoom-in;display:flex;overflow:hidden}@keyframes qMfk9G_zoom-in{0%{opacity:0;transform:scale(.92)}}.qMfk9G_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.qMfk9G_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.qMfk9G_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.qMfk9G_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.qMfk9G_zoomTitle{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;font-size:13px;font-weight:600;line-height:20px;overflow:hidden}.qMfk9G_zoomClamp{text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:170px;display:block;overflow:hidden}.qMfk9G_llmSearchRow{border-bottom:1px solid var(--dsh-frame-hairline,var(--dsw-alias-border-l2));margin-bottom:4px;padding:4px 6px 6px;display:block}.qMfk9G_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.qMfk9G_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.qMfk9G_tabScroll{overflow-anchor:none;flex-direction:column;flex:1;min-width:0;height:100%;min-height:0;display:flex;overflow-y:auto}.qMfk9G_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.qMfk9G_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both qMfk9G_zoomShimmer}.qMfk9G_skWide{width:60%}.qMfk9G_skShort{flex:1;height:28px}.qMfk9G_skBlock{border-radius:10px;height:120px}.qMfk9G_skRow{gap:10px;display:flex}.qMfk9G_skLabel{width:30%}.qMfk9G_skTile{flex:1;height:64px}.qMfk9G_skeleton{flex-direction:column;gap:10px;width:100%;padding:8px 0;display:flex}.qMfk9G_srOnly{clip-path:inset(50%);white-space:nowrap;border:0;width:1px;height:1px;position:absolute;overflow:hidden}@keyframes qMfk9G_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes qMfk9G_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.qMfk9G_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both qMfk9G_tilePop}.qMfk9G_tileDragging{opacity:.55;z-index:2}.qMfk9G_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.qMfk9G_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.qMfk9G_dangerVerb{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary)}.qMfk9G_groupBar{align-items:center;gap:8px;display:flex}.qMfk9G_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.qMfk9G_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.qMfk9G_memberList{margin:0 0 12px;padding:0;list-style:none}.qMfk9G_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.qMfk9G_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.qMfk9G_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.qMfk9G_tileEnter,.qMfk9G_skLine,.qMfk9G_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.qMfk9G_studioSplit{grid-template-columns:1fr}}.qMfk9G_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.qMfk9G_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.qMfk9G_previewClickable{cursor:pointer}.qMfk9G_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.qMfk9G_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex;position:relative}.qMfk9G_verbBar{flex-wrap:wrap;flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.qMfk9G_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.qMfk9G_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.qMfk9G_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.qMfk9G_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}";
 		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@2f8629f1";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
@@ -3302,8 +3296,7 @@ window.__ModuleLoader__.load({
 			"zoomTitle": "qMfk9G_zoomTitle",
 			"zoomWebhook": "qMfk9G_zoomWebhook"
 		};
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchStage.js
+		// ../../web-kit/contracts/lib/benchStage.js
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
@@ -3638,8 +3631,7 @@ window.__ModuleLoader__.load({
 			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stageView.js
+		// ../../web-kit/contracts/lib/stageView.js
 		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -3884,8 +3876,7 @@ window.__ModuleLoader__.load({
 				"reused"
 			]);
 		}));
-		//#endregion
-		//#region ../melite-run-wire/src/index.ts
+		// ../melite-run-wire/src/index.ts
 		init_benchStage();
 		init_stageView();
 		/** The ONE media-url rewrite (readRunStatus + the file-era list
@@ -4084,8 +4075,7 @@ window.__ModuleLoader__.load({
 			if (!Object.prototype.hasOwnProperty.call(families, cardId)) throw new Error(`card '${cardId}' is not carried by the catalog (no /v1/model-catalog row — the run seat cannot default its family)`);
 			return families[cardId]?.[0] ?? null;
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
+		// ../../web-kit/contracts/src/stageView.ts
 		/** THE STATUS FOLD — the one owner of "what does this raw status word
 		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
 		*  the same words privately and disagreed — 'cached' rendered as `done`
@@ -4209,8 +4199,7 @@ window.__ModuleLoader__.load({
 		function statusOrPendingOf(value) {
 			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
 		}
-		//#endregion
-		//#region src/client/rejection-voice.ts
+		// src/client/rejection-voice.ts
 		/** The voice for a refused HTTP response, the same lossless law: a
 		* JSON body's error field speaks itself; any other body names the
 		* status and carries the raw text verbatim — never "undefined" for
@@ -4225,8 +4214,7 @@ window.__ModuleLoader__.load({
 			} catch {}
 			return `HTTP ${res.status}${raw === "" ? "" : `: ${raw}`}`;
 		}
-		//#endregion
-		//#region src/client/draft.ts
+		// src/client/draft.ts
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
 			const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftId), "drafts/get");
@@ -4932,8 +4920,7 @@ window.__ModuleLoader__.load({
 			}
 			return changed ? patch : null;
 		}
-		//#endregion
-		//#region ../../estate/provisioning/src/contracts.ts
+		// ../../estate/provisioning/src/contracts.ts
 		const PROVISION_STATES = [
 			"unknown",
 			"absent",
@@ -4993,8 +4980,7 @@ window.__ModuleLoader__.load({
 			const pct = Math.min(100, Math.round(bytes / total * 100));
 			return formatByteSize(bytes) + "/" + formatByteSize(total) + " (" + String(pct) + "%)";
 		}
-		//#endregion
-		//#region src/chromeCopy.ts
+		// src/chromeCopy.ts
 		/**
 		* chromeCopy.ts — THE OPERATOR-FACING MAINTENANCE CHROME DICTIONARY.
 		*
@@ -5406,8 +5392,7 @@ window.__ModuleLoader__.load({
 			/** The verb dialog's ×-close aria label (the Modal's closeLabel). */
 			verbCloseDialog: "Close"
 		};
-		//#endregion
-		//#region src/client/run-rescue-core.ts
+		// src/client/run-rescue-core.ts
 		/**
 		* run-rescue-core.ts — the run-gate rescue's data half (roadmap item 4,
 		* the operator's 2026-09-20 order: hit RUN without a model or a
@@ -5432,12 +5417,6 @@ window.__ModuleLoader__.load({
 		* model file the presence mark believed present, an engine refusal
 		* mid-run. Same seat, same vocabulary, later gate.
 		*/
-		/** THE HUMAN BYTE VOICE — re-homed (2026-11, audit F10 last
-		*  remainder) to `@melite/estate-provisioning/contracts` as the ONE
-		*  byte vocabulary the deck's declared-resources face also imports;
-		*  this module re-exports it so the rescue popup's call sites and
-		*  walls are untouched. The import keeps the local bindings the
-		*  module's own rate/progress lines read. */
 		/** Parse a failed run's reason for a rescueable miss. The
 		* missing-extension refusal names its pack verbatim
 		* ("card 'x' requires 'PACK' …"); the lane-presence gate names its
@@ -5797,8 +5776,7 @@ window.__ModuleLoader__.load({
 			for (const s of stages) if (typeof s.card === "string" && s.card !== "") return s.card;
 			return null;
 		}
-		//#endregion
-		//#region src/client/run-rescue.tsx
+		// src/client/run-rescue.tsx
 		/**
 		* run-rescue.tsx — the run-gate rescue's face (roadmap item 4): the
 		* rescue that renders where a failed run's error lands WHEN the miss
@@ -6332,8 +6310,7 @@ window.__ModuleLoader__.load({
 				onClick: dismissPopup
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconCloseOutlineRegular, { size: 12 }))));
 		}
-		//#endregion
-		//#region src/client/card-drill.tsx
+		// src/client/card-drill.tsx
 		/**
 		* card-drill.tsx — THE CARD DRILLDOWN: the second state of the card
 		* system, ONE component every card surface drills through (the chat
@@ -6420,8 +6397,7 @@ window.__ModuleLoader__.load({
 				}
 			}, running ? "running…" : "Run")))));
 		}
-		//#endregion
-		//#region src/client/skeleton.tsx
+		// src/client/skeleton.tsx
 		/** The shared shell: aria-busy announces the hydration, the hidden
 		* word carries the non-visual truth, the children are the shapes. */
 		function Skel(props) {
@@ -6496,8 +6472,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region ../../vendor/typert-protocol/src/remote-error.ts
+		// ../../vendor/typert-protocol/src/remote-error.ts
 		/**
 		* One Remote call failure: a real Error carrying its stable code and typed
 		* details. Owners throw it at the failure point; the Host Gateway encodes it
@@ -6605,8 +6580,7 @@ window.__ModuleLoader__.load({
 		function draftIdOf(literal) {
 			return literal;
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/sleep.ts
+		// ../../web-kit/catalog/src/sleep.ts
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -6651,8 +6625,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchSnapshot.ts
+		// ../../web-kit/contracts/src/benchSnapshot.ts
 		init_sleep$1();
 		function isRecord$1(v) {
 			return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -6681,8 +6654,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region src/client/cards-resource.ts
+		// src/client/cards-resource.ts
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
@@ -7829,8 +7801,7 @@ window.__ModuleLoader__.load({
 				});
 			}
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		// ../../web-kit/contracts/src/mediaKinds.ts
 		/** The estate media-kind vocabulary (typed DATA — see header). */
 		function mediaVocab$1() {
 			return {
@@ -7916,8 +7887,7 @@ window.__ModuleLoader__.load({
 			if (dot < 0 || dot === name.length - 1) return void 0;
 			return KIND_BY_EXT$1[name.slice(dot + 1).toLowerCase()];
 		}
-		//#endregion
-		//#region src/client/preview-kinds.ts
+		// src/client/preview-kinds.ts
 		/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
 		*  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
 		*  PRIMITIVES"): one consult, keyed by media kind, the card-base
@@ -8053,8 +8023,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		//#endregion
-		//#region src/client/bench-row.ts
+		// src/client/bench-row.ts
 		/** bench-row.ts — the bench stage distilled to the card row: the dot
 		* map, the row interface, the distillation, the card grouping
 		* (extracted from CardsTab.tsx hour 15). */
@@ -8155,8 +8124,7 @@ window.__ModuleLoader__.load({
 				stage
 			};
 		}
-		//#endregion
-		//#region src/client/FlowCards.tsx
+		// src/client/FlowCards.tsx
 		/**
 		* The melite_flow toolview — THE ACTION CARDS, rendered NATIVE in the
 		* DSH React tree (2026-09-10 Phase 1: the iframe died).
@@ -8703,8 +8671,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/client/construct-card.tsx
+		// src/client/construct-card.tsx
 		/**
 		* The melite_construct toolview — THE FLOW LINK, rendered NATIVE in
 		* the DSH React tree beside FlowCards.
@@ -8874,8 +8841,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region src/client/auto-mode-decoration.ts
+		// src/client/auto-mode-decoration.ts
 		/** The host command this decorates (without the leading slash). */
 		const AUTO_MODE_COMMAND = "melite-runs";
 		/**
@@ -8934,8 +8900,7 @@ window.__ModuleLoader__.load({
 				}
 			}), "melite-card-view: auto-mode menu decoration");
 		}
-		//#endregion
-		//#region src/client/card-tools.ts
+		// src/client/card-tools.ts
 		/**
 		* card-tools — CARD_TOOLS, the wire-name list every card seat keys on.
 		* Its own module because two seats need it at eval time: the client
@@ -8972,8 +8937,7 @@ window.__ModuleLoader__.load({
 		*  purpose: that list means "produces a draft" (the mentions fold
 		*  keys on it), and construct produces none. */
 		const FLOW_TOOLS = ["melite_construct"];
-		//#endregion
-		//#region src/client/card-mentions.ts
+		// src/client/card-mentions.ts
 		const CARD_TOOL_SET = new Set(CARD_TOOLS);
 		function isRecord(value) {
 			return typeof value === "object" && value !== null;
@@ -9080,8 +9044,7 @@ window.__ModuleLoader__.load({
 				} };
 			} };
 		}
-		//#endregion
-		//#region src/client/stage-run.ts
+		// src/client/stage-run.ts
 		/** stage-run.ts — the card stage's run doors: ONE stage through the
 		* composing {model:} door (card stages) or the FLOW door (the
 		* generic MCP card — a standalone-subagent spawn), and the bench's
@@ -9328,8 +9291,7 @@ window.__ModuleLoader__.load({
 				outcomes
 			};
 		}
-		//#endregion
-		//#region src/client/add-stage.ts
+		// src/client/add-stage.ts
 		/**
 		* add-stage.ts — the bench's mutation verb callers (the tab's
 		* add/remove/reorder/group/ungroup paths). Every verb is ONE typed
@@ -9442,8 +9404,7 @@ window.__ModuleLoader__.load({
 		async function undoBenchWire(doc, sessionKey, signal) {
 			return await withRebase("undo", doc, sessionKey, signal);
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		// ../../web-kit/catalog/src/clientStore.ts
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -9526,8 +9487,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		// ../../web-kit/catalog/src/api.ts
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl$1(u) {
@@ -9659,8 +9619,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail$1 = 0;
 			inflight$1 = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		// ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Fire one contract toast through the wired sink.
 		* @param type - toast severity.
@@ -9677,8 +9636,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast$1 = __esmMin((() => {
 			sink$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		// ../../web-kit/catalog/src/catalogContract.ts
 		function validateCatalogContract$1(catalog) {
 			const violations = [];
 			if (!isObj$3(catalog)) return {
@@ -9791,8 +9749,7 @@ window.__ModuleLoader__.load({
 			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		// ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute$1,
 			axisCellExists: () => axisCellExists$1,
@@ -10502,8 +10459,7 @@ window.__ModuleLoader__.load({
 			* (2026-09-12). */
 			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		// ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -10589,8 +10545,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		// ../../web-kit/catalog/src/runStatusContract.ts
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -10672,8 +10627,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		// ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -10732,8 +10686,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/extraKeys.js
+		// ../../web-kit/contracts/lib/extraKeys.js
 		/** THE TYPED WRITE — declarations pass their literal through this
 		*  so an unknown key or malformed value fails EVERY wall: tsc at
 		*  the literal, this throw at runtime (spread arms), the boot
@@ -10881,8 +10834,7 @@ window.__ModuleLoader__.load({
 			];
 			ROLE_SET = ["path"];
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/laneRelations.js
+		// ../../web-kit/contracts/lib/laneRelations.js
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
 		*  number (0 included), a boolean, a non-empty array (mod bag) or
@@ -11649,8 +11601,7 @@ window.__ModuleLoader__.load({
 			knownIds = (variants) => variants.map((v) => v.id);
 			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/familyLane.js
+		// ../../web-kit/contracts/lib/familyLane.js
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
 		*  presence grammar every family judge shares — the derivation,
@@ -11721,14 +11672,12 @@ window.__ModuleLoader__.load({
 			};
 		}
 		var init_familyLane = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		// ../../web-kit/contracts/lib/FlowTypes.js
 		var FLOW_ID_RE;
 		var init_FlowTypes = __esmMin((() => {
 			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchResult.js
+		// ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
 		* law, 2026-09-20: "this can all be validated by contract"). The
 		* run observer patches this row onto the bench stage; every
@@ -11832,17 +11781,13 @@ window.__ModuleLoader__.load({
 			}
 		}
 		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/card.js
+		// ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/character.js
+		// ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraTypes.js
+		// ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		// ../../web-kit/contracts/lib/loraExtensions.js
 		var LORA_EXTENSIONS, LORA_ACCEPT, LORA_EXTENSION_SUFFIX_RE;
 		var init_loraExtensions = __esmMin((() => {
 			LORA_EXTENSIONS = [
@@ -11855,14 +11800,11 @@ window.__ModuleLoader__.load({
 			LORA_ACCEPT = LORA_EXTENSIONS.join(",");
 			LORA_EXTENSION_SUFFIX_RE = new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		// ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		// ../../web-kit/contracts/lib/modifierFaces.js
 		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		// ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
 		}
@@ -12490,8 +12432,7 @@ window.__ModuleLoader__.load({
 				}
 			});
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		// ../../web-kit/contracts/lib/modifierSubcards.js
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
 		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
 		* old cards load; the next save rewrites them as id-keyed rows. */
@@ -12742,8 +12683,7 @@ window.__ModuleLoader__.load({
 			};
 			_cnIdCounter = 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		// ../../web-kit/contracts/lib/objectUrlCache.js
 		/** True iff `s` is a base64 data URL (large enough that streaming
 		*  matters — the timeline package gates its blob handling on this).
 		*  The object-URL cache this module once carried was deleted with the
@@ -12753,8 +12693,7 @@ window.__ModuleLoader__.load({
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
 		var init_objectUrlCache = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		// ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
 		*  door (status/view/ledger/list — and, since the operator's law
 		*  of the same night ("the agent maker and the user share
@@ -12807,14 +12746,11 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stagePreview.js
+		// ../../web-kit/contracts/lib/stagePreview.js
 		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/studio.js
+		// ../../web-kit/contracts/lib/studio.js
 		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		// ../../web-kit/contracts/lib/timelineTypes.js
 		/** Coerce an unknown persisted/imported status into the SegmentStatus
 		* union. Anything outside it (e.g. pre-refactor persisted "error") is
 		* normalized to 'empty' — an out-of-union status silently breaks the
@@ -12930,8 +12866,7 @@ window.__ModuleLoader__.load({
 				"motionAmplitude"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/vocab.js
+		// ../../web-kit/contracts/lib/vocab.js
 		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
 		function isAuthorship(v) {
@@ -12946,8 +12881,7 @@ window.__ModuleLoader__.load({
 			};
 			AUTHORSHIP_VALUES = Object.values(Authorship);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/index.js
+		// ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
 			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY$1,
 			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY$1,
@@ -13092,8 +13026,7 @@ window.__ModuleLoader__.load({
 			init_vocab();
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/sleep.js
+		// ../../web-kit/catalog/lib/sleep.js
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -13138,8 +13071,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/clientStore.js
+		// ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -13222,8 +13154,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/api.js
+		// ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -13364,8 +13295,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail = 0;
 			inflight = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/contractToast.js
+		// ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -13390,8 +13320,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast = __esmMin((() => {
 			sink = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContract.js
+		// ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -13505,8 +13434,7 @@ window.__ModuleLoader__.load({
 			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/modelCatalog.js
+		// ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -14210,8 +14138,7 @@ window.__ModuleLoader__.load({
 			_bgRetryTimer = null;
 			ensureCatalog();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContractStore.js
+		// ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -14297,8 +14224,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContract.js
+		// ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -14381,8 +14307,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
+		// ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -14441,8 +14366,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		// ../../web-kit/catalog/lib/familyParamContract.js
 		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
 			coerceParamsToSchema: () => coerceParamsToSchema$1,
@@ -14939,8 +14863,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardBirth.js
+		// ../../web-kit/catalog/lib/cardBirth.js
 		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
@@ -14991,8 +14914,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth$1 = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		// ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops$1,
 			collectNamedArtifacts: () => collectNamedArtifacts$1,
@@ -15269,8 +15191,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP$1 = 2e3;
 			_requiredEmptyResolver$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/tagMap.js
+		// ../../web-kit/catalog/lib/tagMap.js
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor$1(v) {
@@ -15603,8 +15524,7 @@ window.__ModuleLoader__.load({
 				map: initial$1.map
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/serviceForms.js
+		// ../../web-kit/catalog/lib/serviceForms.js
 		async function loadForms(opts) {
 			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
 			if (_inflight$1) return _inflight$1;
@@ -15709,8 +15629,7 @@ window.__ModuleLoader__.load({
 			isGenerateForm = (k) => isForm(k, "form_generate");
 			isEditForm = (k) => isForm(k, "form_edit");
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		// ../../web-kit/catalog/lib/waveform-peaks.js
 		/** Compute min/max peaks for a single channel of PCM data.
 		*  Exported for unit testing. */
 		function computeMinMaxPeaks(data, numBuckets) {
@@ -15859,8 +15778,7 @@ window.__ModuleLoader__.load({
 				"high"
 			];
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/enhance.js
+		// ../../web-kit/catalog/lib/enhance.js
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
 		* off the proof route — never a restated copy. Null when this
@@ -16080,8 +15998,7 @@ window.__ModuleLoader__.load({
 		var init_enhance = __esmMin((() => {
 			init_api();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardLlm.js
+		// ../../web-kit/catalog/lib/cardLlm.js
 		/** Read the preferred card LLM route ("provider/model"), if set. */
 		function getCardLlm$1() {
 			try {
@@ -16109,8 +16026,7 @@ window.__ModuleLoader__.load({
 		var init_cardLlm = __esmMin((() => {
 			CARD_LLM_KEY$1 = "melite:card-llm:v1";
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		// ../../web-kit/catalog/lib/familyAuthorship.js
 		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
@@ -16157,8 +16073,7 @@ window.__ModuleLoader__.load({
 		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/index.js
+		// ../../web-kit/catalog/lib/index.js
 		var lib_exports = /* @__PURE__ */ __exportAll({
 			CARD_LLM_KEY: () => CARD_LLM_KEY$1,
 			CatalogContractError: () => CatalogContractError,
@@ -16287,8 +16202,7 @@ window.__ModuleLoader__.load({
 			init_cardLlm();
 			init_familyAuthorship();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		// ../../web-kit/catalog/src/familyParamContract.ts
 		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
 			coerceParamsToSchema: () => coerceParamsToSchema,
@@ -16785,8 +16699,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
+		// ../../web-kit/catalog/src/cardBirth.ts
 		var cardBirth_exports = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard,
 			ensureDraftId: () => ensureDraftId
@@ -16837,8 +16750,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		// ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops,
 			collectNamedArtifacts: () => collectNamedArtifacts,
@@ -17115,8 +17027,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
+		// ../../web-kit/catalog/src/tagMap.ts
 		init_clientStore$1();
 		init_api$1();
 		const TAG_COLOR_VALUES = Object.values({
@@ -17403,13 +17314,11 @@ window.__ModuleLoader__.load({
 			tags: initial.tags,
 			map: initial.map
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/serviceForms.ts
+		// ../../web-kit/catalog/src/serviceForms.ts
 		init_api$1();
 		init_clientStore$1();
 		createClientStore$1({ cache: {} });
-		//#endregion
-		//#region ../../web-kit/catalog/src/enhance.ts
+		// ../../web-kit/catalog/src/enhance.ts
 		init_api$1();
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
@@ -17444,8 +17353,7 @@ window.__ModuleLoader__.load({
 				return null;
 			}
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardLlm.ts
+		// ../../web-kit/catalog/src/cardLlm.ts
 		/**
 		* cardLlm.ts — the card LLM preference (the ✦ rail's model dropdown
 		* store, operator order: "the cards need a model dropdown to select
@@ -17488,8 +17396,7 @@ window.__ModuleLoader__.load({
 		function cardLlmArg() {
 			return getCardLlm() ?? void 0;
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
+		// ../../web-kit/catalog/src/index.ts
 		init_api$1();
 		init_contractToast$1();
 		init_catalogContract$1();
@@ -17500,8 +17407,7 @@ window.__ModuleLoader__.load({
 		init_runStatusContractStore$1();
 		init_runStatusContract$1();
 		init_cardBirth();
-		//#endregion
-		//#region src/client/llm-picker.ts
+		// src/client/llm-picker.ts
 		/**
 		* llm-picker.ts — the enhance model picker's pure filter (burn e,
 		* operator 2026-10-26: the dropdown for enhance LLM selection "HAS NO
@@ -17528,8 +17434,7 @@ window.__ModuleLoader__.load({
 			if (q === "") return [...routes];
 			return routes.filter((r) => r.toLowerCase().includes(q));
 		}
-		//#endregion
-		//#region src/client/zoom.tsx
+		// src/client/zoom.tsx
 		/**
 		* zoom.tsx — the zoom overlay, CSS-law port (2026-09-12).
 		*
@@ -17817,13 +17722,11 @@ window.__ModuleLoader__.load({
 			});
 			return mounted ? (0, react_dom.createPortal)(tree, document.body, "zoom-portal") : tree;
 		}
-		//#endregion
-		//#region src/client/dnd-payloads.ts
+		// src/client/dnd-payloads.ts
 		/** The tile-reorder drag's MIME (native HTML5 sortable — DSH ships no
 		*  drag library; the estate drags natively). Carries the source id. */
 		const CARD_DRAG_MIME = "application/x-melite-card";
-		//#endregion
-		//#region src/client/card-labels.ts
+		// src/client/card-labels.ts
 		/** card-labels.ts — the card's professional name, resolved client-side.
 		*
 		* The bench rows carry the card id ('image-gen'); the tile and the
@@ -17849,8 +17752,7 @@ window.__ModuleLoader__.load({
 			}, []);
 			return (cardId) => labels?.get(cardId) ?? null;
 		}
-		//#endregion
-		//#region src/client/sortable-tile.tsx
+		// src/client/sortable-tile.tsx
 		/** sortable-tile.tsx — the bench tile: the native-reorder wrapper, the
 		* chat-input chrome, the audio-bars face (extracted from CardsTab.tsx
 		* hour 15). */
@@ -18060,8 +17962,7 @@ window.__ModuleLoader__.load({
 				style: { height: ht + "%" }
 			})));
 		}
-		//#endregion
-		//#region src/client/verb-bar.tsx
+		// src/client/verb-bar.tsx
 		/** THE VERB BAR: one button per served verb — every verb's dialog
 		*  is reachable (its knobs are viewable, local-only included); a
 		*  verb with no flow route voices its own refusal AT THE PRESS,
@@ -18232,8 +18133,7 @@ window.__ModuleLoader__.load({
 		function dialogFields(verb) {
 			return verb.fields === null ? [] : (0, _melite_card_base_client.fieldsOfEnvelope)(verb.fields);
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
+		// \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
 		const css$2 = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_dangerVerb{color:var(--dsw-alias-state-error-primary)}.P_5Nua_walkBtn{z-index:10;border:1px solid var(--dsw-alias-border-l3);border-radius:999px;width:40px;height:40px;padding:0;position:absolute;top:50%;transform:translateY(-50%)}.P_5Nua_walkBtn[aria-label=Previous\\ media]{left:10px}.P_5Nua_walkBtn[aria-label=Next\\ media]{right:10px}.P_5Nua_overlayClose{z-index:10;position:absolute;top:8px;right:8px}.P_5Nua_renameInput{width:min(280px,60vw)}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
 		const tagId$2 = "@melite-plugin/dsh-card-view/overlay.module.css@71525c21";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
@@ -18252,8 +18152,7 @@ window.__ModuleLoader__.load({
 			"walkBtn": "P_5Nua_walkBtn",
 			"wand": "P_5Nua_wand"
 		};
-		//#endregion
-		//#region ../../web-kit/formats/lib/glbLoad.js
+		// ../../web-kit/formats/lib/glbLoad.js
 		/**
 		* glbLoad — THE shared GLB loading kernel (2026-09-05 dedup order).
 		*
@@ -18333,8 +18232,7 @@ window.__ModuleLoader__.load({
 			root.position.y = -box.min.y * scale;
 			return box;
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/lib/mediaKinds.js
+		// ../../web-kit/contracts/lib/mediaKinds.js
 		/** The estate media-kind vocabulary (typed DATA — see header). */
 		function mediaVocab() {
 			return {
@@ -18434,8 +18332,7 @@ window.__ModuleLoader__.load({
 			const withoutQuery = value.split(/[?#]/, 1)[0];
 			return mediaKindOf(withoutQuery) === "model";
 		}
-		//#endregion
-		//#region ../infer-gallery/src/client/artifact-ops.ts
+		// ../infer-gallery/src/client/artifact-ops.ts
 		/** The run-relative artifact path behind one same-origin artifact
 		*  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
 		*  the URL rides no such path (foreign URLs, card previews). */
@@ -18447,8 +18344,7 @@ window.__ModuleLoader__.load({
 				return null;
 			}
 		}
-		//#endregion
-		//#region ../infer-gallery/src/client/galleryCopy.ts
+		// ../infer-gallery/src/client/galleryCopy.ts
 		/**
 		* galleryCopy.ts — THE INFER-GALLERY COPY DICTIONARY (the copy-scope
 		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
@@ -18694,8 +18590,7 @@ window.__ModuleLoader__.load({
 			/** The page-size dial's label. */
 			perPageLabel: "Per page"
 		};
-		//#endregion
-		//#region ../infer-gallery/src/client/ui.tokens.ts
+		// ../infer-gallery/src/client/ui.tokens.ts
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
 		* declared ONCE (audit F6). Numbered suffixes = same alias, different
@@ -18707,8 +18602,7 @@ window.__ModuleLoader__.load({
 		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
 		const stateWarnPrimary1 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.9))";
 		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
-		//#endregion
-		//#region ../infer-gallery/src/client/mesh-view.tsx
+		// ../infer-gallery/src/client/mesh-view.tsx
 		/**
 		* mesh-view — THE 3D VIEWPORT for the media plane (the operator's
 		* 2026-09-26 order, paraphrased: 3d output is hooked into the media
@@ -18912,8 +18806,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region ../infer-gallery/src/drilldown.tsx
+		// ../infer-gallery/src/drilldown.tsx
 		/**
 		* drilldown.tsx — THE MEDIA DRILLDOWN, one component for every surface
 		* (the operator's hour-24 order: "clicking the preview component should
@@ -19409,8 +19302,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region ../../estate/drafts/src/trail.ts
+		// ../../estate/drafts/src/trail.ts
 		init_benchStage();
 		/** One url, canonical: the run-relative path. The media route and
 		*  the gallery proxy spell the SAME file two ways
@@ -19471,23 +19363,20 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
 		/**
 		* MotionTimelineBarScale — the bar's ABSOLUTE scale model (split from
 		* MotionTimelineBar.tsx, pure move): measure-once pin, zoom,
 		* playhead-anchored scroll, frame<->px. Bodies below are the bar's.
 		*/
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts
 		/**
 		* MotionTimelineBarDrag — the bar's one global pointer session (split
 		* from MotionTimelineBar.tsx, pure move): scrub + clip drag/resize +
 		* keyframe drag, the pose-studio pattern (window listeners + live-ref
 		* drag state). Bodies below are the bar's.
 		*/
-		//#endregion
-		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
+		// \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
 		const css$1 = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_plannedBand{pointer-events:none;background:repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 8px);border-left:1px dashed var(--dsw-alias-border-l2);position:absolute;top:0;bottom:0}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamChip{z-index:40;border:1px solid var(--dsw-alias-line-2);background:var(--dsw-alias-bg-layer-1);min-width:14px;height:14px;color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:9999px;justify-content:center;align-items:center;padding:0 3px;font-size:9px;line-height:1;display:inline-flex;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_seamChip:hover{filter:brightness(1.25)}.t2WLSa_seamChipCarried{box-shadow:0 0 4px}.t2WLSa_seamChipCut{opacity:.8;border-style:dashed}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_splitSeat{z-index:40;border:1px solid var(--dsw-alias-line-2);background:var(--dsw-alias-bg-layer-1);min-width:16px;height:14px;color:var(--dsw-alias-label-primary);opacity:0;cursor:pointer;border-radius:9999px;justify-content:center;align-items:center;padding:0 3px;font-size:9px;line-height:1;display:inline-flex;position:absolute;bottom:2px;left:50%;transform:translate(-50%)}.t2WLSa_splitSeat:hover{filter:brightness(1.25);border-color:var(--dsw-alias-label-primary)}.t2WLSa_promptClip:hover .t2WLSa_splitSeat{opacity:1}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSpanBody{padding:0;display:block}.t2WLSa_commissionSegmentPos{border-left:2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);z-index:1;border-radius:3px;align-items:center;padding:1px 4px;display:flex;position:absolute;top:3px;bottom:3px}.t2WLSa_commissionSegmentPos[data-commission-planned=true]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);border-left-style:dashed}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
 		const tagId$1 = "@melite-plugin/dsh-card-view/timeline.module.css@8b64aceb";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
@@ -19598,8 +19487,7 @@ window.__ModuleLoader__.load({
 			"zoomPct": "t2WLSa_zoomPct",
 			"zoomRow": "t2WLSa_zoomRow"
 		};
-		//#endregion
-		//#region ../../web-kit/timeline/src/timelineCopy.ts
+		// ../../web-kit/timeline/src/timelineCopy.ts
 		/**
 		* timelineCopy.ts — THE TIMELINE KIT COPY DICTIONARY (the copy-scope
 		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
@@ -19731,8 +19619,7 @@ window.__ModuleLoader__.load({
 			/** The sub-minute second unit ("5.2s"). */
 			secondsUnit: "s"
 		};
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
 		/**
 		* MotionTimelineBar — the motion card's bar, pose-studio display model.
 		*
@@ -19781,8 +19668,7 @@ window.__ModuleLoader__.load({
 		* the root, theme.{barBg,playhead} for the accents) — defaults render
 		* byte-identical, so no tenant changes.
 		*/
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/FilmPlayer.tsx
+		// ../../web-kit/timeline/src/timeline/FilmPlayer.tsx
 		/**
 		* FilmPlayer — ONE film, ONE native player (the timeline genre's
 		* shared video surface, moved from h3-timeline's kit 2026-09-17:
@@ -19870,8 +19756,7 @@ window.__ModuleLoader__.load({
 				}
 			});
 		});
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/TimelineScrubBar.tsx
+		// ../../web-kit/timeline/src/timeline/TimelineScrubBar.tsx
 		/**
 		* TimelineScrubBar — the form card's OPTIONAL BOTTOM SEAM (the
 		* generic-tools stroke, 2026-09-17: "form cards can have an
@@ -19975,8 +19860,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/TimelineScrollbar.tsx
+		// ../../web-kit/timeline/src/timeline/TimelineScrollbar.tsx
 		/**
 		* TimelineScrollbar — the timeline's scrollbar + zoom chrome,
 		* MELITE-AUTHORED. Re-homed out of the vendored
@@ -19990,8 +19874,7 @@ window.__ModuleLoader__.load({
 		* The scrollbar body moved verbatim; only the imports and the zoom seats
 		* (now `TimelineZoomCluster`) changed.
 		*/
-		//#endregion
-		//#region \0dsh-css:packages/web/melite-card-view/src/client/filmSeam.module.css.mjs
+		// \0dsh-css:packages/web/melite-card-view/src/client/filmSeam.module.css.mjs
 		const css = ".obTlHq_player{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;width:100%;min-width:0;max-width:100%;height:auto;max-height:100%;display:block}";
 		const tagId = "@melite-plugin/dsh-card-view/filmSeam.module.css@970a0999";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -20002,8 +19885,7 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var filmSeam_module_css_default = { "player": "obTlHq_player" };
-		//#endregion
-		//#region src/client/filmSeam.tsx
+		// src/client/filmSeam.tsx
 		/**
 		* filmSeam.tsx — THE FORM CARD'S OPTIONAL TIMELINE SEAM (the
 		* form-seams stroke, 2026-09-17): "form cards can have an optional
@@ -20112,11 +19994,9 @@ window.__ModuleLoader__.load({
 				"data-testid": props["data-testid"] ?? "film-seam-bar"
 			});
 		}
-		//#endregion
-		//#region ../../image/mask-studio/src/paintInk.ts
+		// ../../image/mask-studio/src/paintInk.ts
 		const PAINT_STROKE_INK = "rgba(255, 255, 255, 1)";
-		//#endregion
-		//#region ../../image/mask-studio/src/ui/paintCopy.ts
+		// ../../image/mask-studio/src/ui/paintCopy.ts
 		/**
 		* paintCopy.ts — THE PAINT LEAF COPY DICTIONARY. Client UI copy is locale-owned —
 		* presentation code owns no copy literals; it consumes them here through the typed
@@ -20148,8 +20028,7 @@ window.__ModuleLoader__.load({
 			/** The bbox toolbar's clear action. */
 			clearBoxAction: "Clear box"
 		};
-		//#endregion
-		//#region ../../image/mask-studio/src/ui/PaintLeafCanvas.tsx
+		// ../../image/mask-studio/src/ui/PaintLeafCanvas.tsx
 		const FIT$1 = 640;
 		/** Load an image element from a URL (null while loading/failed —
 		*  the canvas degrades to the blank 1024 fit, never a crash). */
@@ -20398,8 +20277,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region ../../image/mask-studio/src/ui/BboxLeafCanvas.tsx
+		// ../../image/mask-studio/src/ui/BboxLeafCanvas.tsx
 		const FIT = 640;
 		const loadImage = (url) => new Promise((resolve) => {
 			if (url === "") {
@@ -20600,8 +20478,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region ../../image/mask-studio/src/ui/orbCopy.ts
+		// ../../image/mask-studio/src/ui/orbCopy.ts
 		/**
 		* orbCopy.ts — THE ORBIT COPY DICTIONARY. Client UI copy is locale-owned —
 		* presentation code owns no copy literals; it consumes them here through the
@@ -20623,8 +20500,7 @@ window.__ModuleLoader__.load({
 			*  the view, the wheel dollies, double-click resets the view. */
 			hint: (p) => `Drag the blue handle to set orbit/tilt (${p.snap}\u00B0 snap) \u00B7 drag empty space to rotate the view \u00B7 wheel = dolly \u00B7 double-click resets the view. The dials below ride the same seats.`
 		};
-		//#endregion
-		//#region ../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx
+		// ../../image/mask-studio/src/ui/OrbitLeafCanvas.tsx
 		const d2r = (x) => x * Math.PI / 180;
 		const r2d = (x) => x * 180 / Math.PI;
 		const SNAP_DEG = 5;
@@ -21036,8 +20912,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region ../../video/h3-timeline/src/ui/studio/studioCopy.ts
+		// ../../video/h3-timeline/src/ui/studio/studioCopy.ts
 		/**
 		* studioCopy.ts — THE STUDIO COPY DICTIONARY (the rail-law audit's
 		* H8, 2026-10-31). Client UI copy is locale-owned (the estate's
@@ -21709,8 +21584,7 @@ window.__ModuleLoader__.load({
 			end_frame: 90
 		}];
 		studioCopy.imageGuideLane;
-		//#endregion
-		//#region ../../video/h3-timeline/src/ui/studio/commissions.ts
+		// ../../video/h3-timeline/src/ui/studio/commissions.ts
 		/** Whether a call's text is the studio's own starter placeholder
 		*  verbatim (trimmed) — the one text every NON-PLAIN face stands
 		*  down (dormant, v2v, AND the prompt seat — operator 2026-11-18:
@@ -21724,8 +21598,7 @@ window.__ModuleLoader__.load({
 		function isStarterCallText(text) {
 			return text.trim() === STARTER_CALLS[0].text;
 		}
-		//#endregion
-		//#region ../../video/h3-timeline/src/ui/studio/V2vLeafFace.tsx
+		// ../../video/h3-timeline/src/ui/studio/V2vLeafFace.tsx
 		/** V2vLeafFace.tsx — THE VIDEO2VIDEO FORM'S WINDOWS FACE (queue 11
 		*  reopened, operator 2026-11-08: "Doesn't have a cut here. … NO
 		*  WINDOWS IN THE FORM!" — their correction of my strip-head-only
@@ -22107,8 +21980,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/client/forms-edge-meta.ts
+		// src/client/forms-edge-meta.ts
 		/** forms-edge-meta.ts — the /v1/forms edge-meta session cache
 		* (extracted from CardsTab.tsx hour 15: one seam, one file). */
 		/** The /v1/forms edge-meta cache (card id → declared input/output
@@ -22130,8 +22002,7 @@ window.__ModuleLoader__.load({
 			});
 			return formsEdgeMetaPromise;
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/planes.ts
+		// ../../web-kit/contracts/src/planes.ts
 		/** The canonical row categories (the group coordinate). 'Quant' is
 		*  derived-only — a DECL row never carries it (cells are the quant
 		*  plane's only seat); the serving door mints Quant rows from cells.
@@ -22141,8 +22012,7 @@ window.__ModuleLoader__.load({
 			quant: "Quant",
 			recipe: "Recipe"
 		};
-		//#endregion
-		//#region src/client/lane-strike.ts
+		// src/client/lane-strike.ts
 		/**
 		* lane-strike.ts — THE BASE STRIKE (audits 018 C4 + 016 C5, the
 		* client half of the pick⇄base edge).
@@ -22237,8 +22107,7 @@ window.__ModuleLoader__.load({
 				strikes
 			};
 		}
-		//#endregion
-		//#region src/client/stage-drill.tsx
+		// src/client/stage-drill.tsx
 		/** stage-drill.tsx — THE SHARED DRILLDOWN: the spec-formatted stage
 		* editor, the zoom face, the preview seam consult (extracted from
 		* CardsTab.tsx hour 15 — the biggest seam). */
@@ -23433,8 +23302,7 @@ window.__ModuleLoader__.load({
 				priorStageIds
 			}, missFace ?? (0, react.createElement)("div", null));
 		}
-		//#endregion
-		//#region src/client/add-card-door.tsx
+		// src/client/add-card-door.tsx
 		/** add-card-door.tsx — THE PLAIN DOOR: the picker whose pick IS the
 		* add (extracted from CardsTab.tsx hour 15). */
 		/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
@@ -23541,8 +23409,7 @@ window.__ModuleLoader__.load({
 				onClick: () => pick(c)
 			}, (0, react.createElement)("span", { className: card_module_css_default.pickerCardLabel }, busyId === c.id ? "adding…" : c.label)))))));
 		}
-		//#endregion
-		//#region src/client/bench-view.tsx
+		// src/client/bench-view.tsx
 		/** bench-view.tsx — the bench user plane: the grouped tiles, the
 		* reorder/group gestures, the drop zones (extracted from CardsTab.tsx
 		* hour 15). */
@@ -24083,8 +23950,7 @@ window.__ModuleLoader__.load({
 				}
 			}) : null);
 		}
-		//#endregion
-		//#region src/client/draft-run-views.tsx
+		// src/client/draft-run-views.tsx
 		/** draft-run-views.tsx — the draft authoring face and the run's live
 		* status view (extracted from CardsTab.tsx hour 15). */
 		/**
@@ -24252,8 +24118,7 @@ window.__ModuleLoader__.load({
 				}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview }, face, dot !== null ? (0, react.createElement)("span", { className: card_module_css_default.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot })) : null), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, s.status))));
 			})));
 		}
-		//#endregion
-		//#region src/client/cards-tab-body.tsx
+		// src/client/cards-tab-body.tsx
 		/** cards-tab-body.tsx — CardsTab + the address law (extracted from
 		* CardsTab.tsx hour 15; the tab body's own composition — the bench,
 		* draft, and run views ride their own seam files). */
@@ -24777,8 +24642,7 @@ window.__ModuleLoader__.load({
 				onStop
 			}));
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		(0, _melite_card_base_client.wireContractToastToRowStore)();
 		/** The tab type's identity (the key its body registers under). */
 		const CARDS_TAB_ID = "@melite-plugin/dsh-card-view";
@@ -24972,7 +24836,6 @@ window.__ModuleLoader__.load({
 				console.error("[melite-card-view] bench spotlight registration failed:", error);
 			}
 		}
-		//#endregion
 		exports.CARD_TOOLS = CARD_TOOLS;
 		exports.FLOW_TOOLS = FLOW_TOOLS;
 		exports.apply = apply;

@@ -110,12 +110,12 @@ export default function isolate(ctx: Context) {
       for (const symbol of [oldMap[name], newMap[name]]) {
         const impl = symbol && entry.ctx.reflect.store[symbol]
         if (!impl) continue
-        if (!impl.fiber) {
+        if (!impl.ctx) {
           entry.ctx.logger.warn(new Error(`expected service ${name} to be implemented`))
           continue
         }
-        diff[name] = [oldMap[name], newMap[name], entry.ctx[delim], impl.fiber.ctx[delim]]
-        if (entry.ctx[delim] !== impl.fiber.ctx[delim]) break
+        diff[name] = [oldMap[name], newMap[name], entry.ctx[delim], impl.ctx[delim]]
+        if (entry.ctx[delim] !== impl.ctx[delim]) break
       }
     }
 

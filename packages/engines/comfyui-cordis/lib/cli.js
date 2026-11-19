@@ -2,6 +2,7 @@
 // compose (compose is per-run, not hot). Refusals are LOUD: message
 // on stderr, exit 1; the graph JSON on stdout is the only success
 // signal (no partial output, ever).
+import '@melite/comfyui-card-kit/service-faces';
 import { Context } from '@deepseek-ai/cordis';
 import { ComfyUIService } from "./service.js";
 import { composeCards, composeModPlane } from "./cardDefs.js";

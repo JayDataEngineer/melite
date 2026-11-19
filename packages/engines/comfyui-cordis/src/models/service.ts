@@ -52,7 +52,7 @@ import {
   type ModelDecl,
   type DeclVariantRow,
 } from '@melite/comfyui-card-kit/model-contract';
-import type {} from '@melite/comfyui-card-kit/service-faces'
+import '@melite/comfyui-card-kit/service-faces'
 import { planeRefusals } from '@melite/contracts/planes';
 import { offeredPool, resolveCellRow, resolveVariantRow } from '@melite/contracts/laneRelations';
 import { validateWriteRowsAgainstActions, type WriteRow } from "./validate.ts";

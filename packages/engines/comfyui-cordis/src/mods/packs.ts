@@ -7,6 +7,7 @@
 //
 // The Cordis contract shape: fields ARE a Schemastery object
 // schema, wire types + UI meta on .extra('extra', bag({...})).
+import '@melite/comfyui-card-kit/service-faces'
 import type { Context } from '@deepseek-ai/cordis'
 import { theService } from '../cardDefs.ts'
 import z from '@deepseek-ai/schemastery'

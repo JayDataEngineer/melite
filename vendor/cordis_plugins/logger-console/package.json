@@ -31,12 +31,12 @@
     "@deepseek-ai/cordis": "^4.0.5"
   },
   "dependencies": {
-    "@deepseek-ai/cosmokit": "^1.8.1",
-    "@deepseek-ai/schemastery": "^3.18.5",
+    "@deepseek-ai/cosmokit": "1.8.5",
+    "@deepseek-ai/schemastery": "^3.19.0",
     "supports-color": "^9.4.0"
   },
   "private": true,
   "devDependencies": {
-    "@types/node": "^22.20.0"
+    "@types/node": "^22.20.5"
   }
 }

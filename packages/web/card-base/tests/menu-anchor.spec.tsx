@@ -78,13 +78,23 @@ const MODS = {
  *  owns all three keys itself. */
 test('THE SEAM: menuAnchorProps hands over element, rect, and inert anchor', () => {
   const el = document.createElement('span')
+  document.body.append(el) // rc.5 law: the kernel's MutationObserver dismisses any menu whose anchor element is not isConnected — the live seat is only honest for a connected element
   const rect = new DOMRect(11, 22, 140, 96)
   const ref = { current: el } as { current: HTMLElement | null }
   const props = menuAnchorProps(ref, rect)
   expect(props.anchor).toBeNull()
   expect(props.anchorRef).toBe(ref)
   expect(props.anchorRef.current).toBe(el)
+  expect(props.anchorPoint).toBeUndefined()
   expect(props.getAnchorRect()).toBe(rect)
+  el.remove()
+  // the disconnected arm (rc.5): no anchorRef may ride — the kernel
+  // would watch the dead element and dismiss the list — so the seam
+  // parks a 0×0 anchorPoint at the captured rect's lower-left corner
+  const detached = menuAnchorProps(ref, rect)
+  expect(detached.anchorRef).toBeUndefined()
+  expect(detached.anchorPoint).toEqual({ x: 11, y: 118 })
+  expect(detached.getAnchorRect()).toBe(rect)
 })
 
 /** THE SOURCE SQUARE DOOR (the operator's exact burn hop): clicking

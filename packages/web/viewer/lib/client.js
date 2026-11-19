@@ -9,8 +9,7 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		["prove", "nance"].join("");
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
+		// ../../web-kit/contracts/src/stageView.ts
 		/** The terminal word set, exported so a seat that needs to SHOW it
 		*  (a poll's stop condition, a doc) reads the same list. Reconciled
 		*  with the backend's RUN_STATUSES (catalog/src/runStatusContract.ts)
@@ -29,8 +28,7 @@ window.__ModuleLoader__.load({
 			"succeeded",
 			"success"
 		]);
-		//#endregion
-		//#region ../melite-run-wire/src/index.ts
+		// ../melite-run-wire/src/index.ts
 		/** The list row's served artifact url onto the media route. The
 		*  list's currency DIFFERS from the status door's: runArtifacts
 		*  serves urls already prefixed with the run dir
@@ -43,8 +41,7 @@ window.__ModuleLoader__.load({
 			if (/^(https?:\/\/|\/)/.test(url)) return url;
 			return "/melite-media/runs/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 		}
-		//#endregion
-		//#region ../viewer-base/src/runCard.tsx
+		// ../viewer-base/src/runCard.tsx
 		/**
 		* runCard.ts — the DEFAULT run-card view: one settled model-card call
 		* (a call that returned {model, run_id, ...} for a gateway run)
@@ -238,8 +235,7 @@ window.__ModuleLoader__.load({
 				key: toolName
 			}, Row)), label);
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/** The run cards this composition serves default views for. */
 		const RUN_CARDS = [{
 			name: "image_gen",
@@ -326,7 +322,6 @@ window.__ModuleLoader__.load({
 			const runFrames = runs === void 0 ? void 0 : viewerRunFrames(ctx.remote, runs);
 			for (const card of RUN_CARDS) claimRunCardToolview(ctx, card.name, card.label, runFrames);
 		}
-		//#endregion
 		exports.apply = apply;
 		exports.inject = inject;
 		exports.viewerRunFrames = viewerRunFrames;

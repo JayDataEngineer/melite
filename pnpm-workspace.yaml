@@ -85,13 +85,24 @@ allowBuilds:
 ## ONE version for the whole graph: 3.18.4, the floor the 0.1.7 dsh
 ## packages themselves resolved to.
 overrides:
-  "@deepseek-ai/schemastery": "3.18.4"
-  ## THE CORDIS ONE-VERSION LAW (2026-10-14): the vendor webserver's
-  ## peer (^4.0.2) resolved a SECOND 4.0.2 copy beside the consumers'
-  ## 4.0.4 — two physical dts trees split Context identity, and the
-  ## webserver's `declare module '@deepseek-ai/cordis'` augmentation
-  ## merged onto the copy nobody consumed (ctx.webServer TS2339 in
-  ## infer-gallery/melite-card-deck while the runtime stayed one
-  ## plugin). ONE version for the whole graph: 4.0.4, the floor the
-  ## editor-facing packages already resolved to.
-  "@deepseek-ai/cordis": "4.0.4"
+  ## THE SCHEMASTERY ONE-VERSION LAW (2026-11-19, the dsh 0.2.2-rc.5
+  ## pin wave): the rc.5 family rides 3.19.0 while melite's direct
+  ## ^3.18.5 pins locked 3.18.5 — two instances split Schema identity
+  ## and TS2742'd every inferred schema export (the portability wall
+  ## names the .pnpm twin). ONE version for the whole graph: 3.19.0,
+  ## the floor the rc.5 dsh packages themselves resolved to.
+  "@deepseek-ai/schemastery": "3.19.0"
+  ## THE CORDIS ONE-VERSION LAW (2026-11-19, the dsh 0.2.2-rc.5 pin
+  ## wave): dsh-tools@rc.5 peers cordis ~4.1.0 while the locked graph
+  ## carried 4.0.5 — the Impl.fiber→Impl.ctx rename and the 2-arg
+  ## internal/update split every cross-package type seam. ONE version
+  ## for the whole graph: 4.1.0, the peer floor the rc.5 family rides.
+  "@deepseek-ai/cordis": "4.1.0"
+  ## THE DSH ONE-VERSION LAW (2026-11-19, the dsh 0.2.2-rc.5 pin wave):
+  ## the family resolved at THREE versions (0.2.1-rc.2 / 0.2.1-rc.5 /
+  ## 0.2.2-rc.5) across transitive ranges — pnpm split dsh-tools into
+  ## sixteen peer-hash instances and ToolDefinition identity fractured
+  ## between them (TS2322 in motion/h3-timeline). ONE version for the
+  ## whole family: 0.2.2-rc.5, the runtime the estate seats.
+  "@deepseek-ai/dsh": "0.2.2-rc.5"
+  "@deepseek-ai/dsh-*": "0.2.2-rc.5"

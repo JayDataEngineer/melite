@@ -203,7 +203,10 @@ export class Include extends EntryTree {
     this.readonly = !this.type
     this.ctx.baseUrl = new URL('.', pathToFileURL(this.filename)).href
 
-    ctx.on('internal/update', async (config, _, next) => {
+    // cordis 4.1.0: internal/update carries (resolvedConfig, restart) — the
+    // 3-arg form with noSave is gone; this listener pattern-matches the config
+    // and never persisted, so the dropped middle parameter is behavior-neutral.
+    ctx.on('internal/update', async (config: any, next: () => void | Promise<void>) => {
       if (config.path !== this.config.path) return next()
       await this.enqueue(async () => {
         const data = this.applyPatches(this.data!, config.patches)

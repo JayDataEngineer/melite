@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __create = Object.create;
 		var __defProp = Object.defineProperty;
 		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -42,7 +42,6 @@ window.__ModuleLoader__.load({
 			value: mod,
 			enumerable: true
 		}) : target, mod));
-		//#endregion
 		let react = require("react");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
@@ -50,7 +49,7 @@ window.__ModuleLoader__.load({
 		_melite_three_client_client = __toESM(_melite_three_client_client, 1);
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
-		//#region ../../web-kit/catalog/src/sleep.ts
+		// ../../web-kit/catalog/src/sleep.ts
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -95,8 +94,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		// ../../web-kit/catalog/src/clientStore.ts
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -179,8 +177,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		// ../../web-kit/catalog/src/api.ts
 		function shouldRetryStatus$1(status, method) {
 			return GATEWAY_CODES$1.has(status) || SAFE_METHODS$1.has(method) && status >= 500 && status < 600;
 		}
@@ -307,8 +304,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail$1 = 0;
 			inflight$1 = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		// ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -333,8 +329,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast$1 = __esmMin((() => {
 			sink$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		// ../../web-kit/catalog/src/catalogContract.ts
 		function validateCatalogContract$1(catalog) {
 			const violations = [];
 			if (!isObj$3(catalog)) return {
@@ -447,8 +442,7 @@ window.__ModuleLoader__.load({
 			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		// ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute$1,
 			axisCellExists: () => axisCellExists$1,
@@ -1158,8 +1152,7 @@ window.__ModuleLoader__.load({
 			* (2026-09-12). */
 			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		// ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -1245,8 +1238,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		// ../../web-kit/catalog/src/runStatusContract.ts
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -1328,8 +1320,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		// ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -1388,8 +1379,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/extraKeys.js
+		// ../../web-kit/contracts/lib/extraKeys.js
 		/** THE TYPED WRITE — declarations pass their literal through this
 		*  so an unknown key or malformed value fails EVERY wall: tsc at
 		*  the literal, this throw at runtime (spread arms), the boot
@@ -1537,8 +1527,7 @@ window.__ModuleLoader__.load({
 			];
 			ROLE_SET = ["path"];
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/laneRelations.js
+		// ../../web-kit/contracts/lib/laneRelations.js
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
 		*  number (0 included), a boolean, a non-empty array (mod bag) or
@@ -2305,8 +2294,7 @@ window.__ModuleLoader__.load({
 			knownIds$1 = (variants) => variants.map((v) => v.id);
 			knownQuants$1 = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/familyLane.js
+		// ../../web-kit/contracts/lib/familyLane.js
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
 		*  presence grammar every family judge shares — the derivation,
@@ -2377,14 +2365,12 @@ window.__ModuleLoader__.load({
 			};
 		}
 		var init_familyLane = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		// ../../web-kit/contracts/lib/FlowTypes.js
 		var FLOW_ID_RE;
 		var init_FlowTypes = __esmMin((() => {
 			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchResult.js
+		// ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
 		* law, 2026-09-20: "this can all be validated by contract"). The
 		* run observer patches this row onto the bench stage; every
@@ -2488,17 +2474,13 @@ window.__ModuleLoader__.load({
 			}
 		}
 		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/card.js
+		// ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/character.js
+		// ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraTypes.js
+		// ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		// ../../web-kit/contracts/lib/loraExtensions.js
 		var LORA_EXTENSIONS$1, LORA_ACCEPT$1, LORA_EXTENSION_SUFFIX_RE$1;
 		var init_loraExtensions = __esmMin((() => {
 			LORA_EXTENSIONS$1 = [
@@ -2511,14 +2493,11 @@ window.__ModuleLoader__.load({
 			LORA_ACCEPT$1 = LORA_EXTENSIONS$1.join(",");
 			LORA_EXTENSION_SUFFIX_RE$1 = new RegExp("\\.(?:" + LORA_EXTENSIONS$1.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		// ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		// ../../web-kit/contracts/lib/modifierFaces.js
 		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		// ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
 		}
@@ -3165,8 +3144,7 @@ window.__ModuleLoader__.load({
 				}
 			});
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		// ../../web-kit/contracts/lib/modifierSubcards.js
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
 		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
 		* old cards load; the next save rewrites them as id-keyed rows. */
@@ -3417,8 +3395,7 @@ window.__ModuleLoader__.load({
 			};
 			_cnIdCounter = 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		// ../../web-kit/contracts/lib/objectUrlCache.js
 		/** True iff `s` is a base64 data URL (large enough that streaming
 		*  matters — the timeline package gates its blob handling on this).
 		*  The object-URL cache this module once carried was deleted with the
@@ -3428,8 +3405,7 @@ window.__ModuleLoader__.load({
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
 		var init_objectUrlCache = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		// ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
 		*  door (status/view/ledger/list — and, since the operator's law
 		*  of the same night ("the agent maker and the user share
@@ -3482,11 +3458,9 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stagePreview.js
+		// ../../web-kit/contracts/lib/stagePreview.js
 		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stageView.js
+		// ../../web-kit/contracts/lib/stageView.js
 		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -3731,11 +3705,9 @@ window.__ModuleLoader__.load({
 				"reused"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/studio.js
+		// ../../web-kit/contracts/lib/studio.js
 		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		// ../../web-kit/contracts/lib/timelineTypes.js
 		/** Coerce an unknown persisted/imported status into the SegmentStatus
 		* union. Anything outside it (e.g. pre-refactor persisted "error") is
 		* normalized to 'empty' — an out-of-union status silently breaks the
@@ -3851,8 +3823,7 @@ window.__ModuleLoader__.load({
 				"motionAmplitude"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/vocab.js
+		// ../../web-kit/contracts/lib/vocab.js
 		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
 		function isAuthorship(v) {
@@ -3867,8 +3838,7 @@ window.__ModuleLoader__.load({
 			};
 			AUTHORSHIP_VALUES = Object.values(Authorship);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchStage.js
+		// ../../web-kit/contracts/lib/benchStage.js
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
@@ -4203,8 +4173,7 @@ window.__ModuleLoader__.load({
 			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/index.js
+		// ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
 			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY,
 			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY$1,
@@ -4349,8 +4318,7 @@ window.__ModuleLoader__.load({
 			init_vocab();
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/sleep.js
+		// ../../web-kit/catalog/lib/sleep.js
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -4395,8 +4363,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/clientStore.js
+		// ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -4479,8 +4446,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/api.js
+		// ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -4621,8 +4587,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail = 0;
 			inflight = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/contractToast.js
+		// ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -4647,8 +4612,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast = __esmMin((() => {
 			sink = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContract.js
+		// ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -4762,8 +4726,7 @@ window.__ModuleLoader__.load({
 			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/modelCatalog.js
+		// ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -5467,8 +5430,7 @@ window.__ModuleLoader__.load({
 			_bgRetryTimer = null;
 			ensureCatalog();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContractStore.js
+		// ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -5554,8 +5516,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContract.js
+		// ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -5638,8 +5599,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
+		// ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -5698,8 +5658,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		// ../../web-kit/catalog/lib/familyParamContract.js
 		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
 			coerceParamsToSchema: () => coerceParamsToSchema$1,
@@ -6196,8 +6155,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardBirth.js
+		// ../../web-kit/catalog/lib/cardBirth.js
 		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
@@ -6248,8 +6206,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth$1 = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		// ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops$1,
 			collectNamedArtifacts: () => collectNamedArtifacts$1,
@@ -6526,8 +6483,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP$1 = 2e3;
 			_requiredEmptyResolver$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/tagMap.js
+		// ../../web-kit/catalog/lib/tagMap.js
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor$1(v) {
@@ -6860,8 +6816,7 @@ window.__ModuleLoader__.load({
 				map: initial$1.map
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/serviceForms.js
+		// ../../web-kit/catalog/lib/serviceForms.js
 		async function loadForms(opts) {
 			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
 			if (_inflight$1) return _inflight$1;
@@ -6966,8 +6921,7 @@ window.__ModuleLoader__.load({
 			isGenerateForm = (k) => isForm(k, "form_generate");
 			isEditForm = (k) => isForm(k, "form_edit");
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		// ../../web-kit/catalog/lib/waveform-peaks.js
 		/** Compute min/max peaks for a single channel of PCM data.
 		*  Exported for unit testing. */
 		function computeMinMaxPeaks(data, numBuckets) {
@@ -7116,8 +7070,7 @@ window.__ModuleLoader__.load({
 				"high"
 			];
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/enhance.js
+		// ../../web-kit/catalog/lib/enhance.js
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
 		* off the proof route — never a restated copy. Null when this
@@ -7337,8 +7290,7 @@ window.__ModuleLoader__.load({
 		var init_enhance = __esmMin((() => {
 			init_api();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardLlm.js
+		// ../../web-kit/catalog/lib/cardLlm.js
 		/** Read the preferred card LLM route ("provider/model"), if set. */
 		function getCardLlm() {
 			try {
@@ -7366,8 +7318,7 @@ window.__ModuleLoader__.load({
 		var init_cardLlm = __esmMin((() => {
 			CARD_LLM_KEY = "melite:card-llm:v1";
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		// ../../web-kit/catalog/lib/familyAuthorship.js
 		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
@@ -7414,8 +7365,7 @@ window.__ModuleLoader__.load({
 		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/index.js
+		// ../../web-kit/catalog/lib/index.js
 		var lib_exports = /* @__PURE__ */ __exportAll({
 			CARD_LLM_KEY: () => CARD_LLM_KEY,
 			CatalogContractError: () => CatalogContractError,
@@ -7544,8 +7494,7 @@ window.__ModuleLoader__.load({
 			init_cardLlm();
 			init_familyAuthorship();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		// ../../web-kit/catalog/src/familyParamContract.ts
 		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
 			coerceParamsToSchema: () => coerceParamsToSchema,
@@ -8042,8 +7991,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
+		// ../../web-kit/catalog/src/cardBirth.ts
 		var cardBirth_exports = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard,
 			ensureDraftId: () => ensureDraftId
@@ -8094,8 +8042,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		// ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops,
 			collectNamedArtifacts: () => collectNamedArtifacts,
@@ -8372,8 +8319,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
+		// ../../web-kit/catalog/src/tagMap.ts
 		init_clientStore$1();
 		init_api$1();
 		const TAG_COLOR_VALUES = Object.values({
@@ -8660,16 +8606,13 @@ window.__ModuleLoader__.load({
 			tags: initial.tags,
 			map: initial.map
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/serviceForms.ts
+		// ../../web-kit/catalog/src/serviceForms.ts
 		init_api$1();
 		init_clientStore$1();
 		createClientStore$1({ cache: {} });
-		//#endregion
-		//#region ../../web-kit/catalog/src/enhance.ts
+		// ../../web-kit/catalog/src/enhance.ts
 		init_api$1();
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
+		// ../../web-kit/catalog/src/index.ts
 		init_api$1();
 		init_contractToast$1();
 		init_catalogContract$1();
@@ -8680,8 +8623,7 @@ window.__ModuleLoader__.load({
 		init_runStatusContractStore$1();
 		init_runStatusContract$1();
 		init_cardBirth();
-		//#endregion
-		//#region src/abortable.ts
+		// src/abortable.ts
 		/**
 		* abortable.ts — the abortable wait the run watchers share: one timer,
 		* one once-abort listener, and the listener is detached on whichever
@@ -8749,8 +8691,7 @@ window.__ModuleLoader__.load({
 			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
 			return raw;
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/planes.ts
+		// ../../web-kit/contracts/src/planes.ts
 		/** The canonical row categories (the group coordinate). 'Quant' is
 		*  derived-only — a DECL row never carries it (cells are the quant
 		*  plane's only seat); the serving door mints Quant rows from cells.
@@ -8760,8 +8701,7 @@ window.__ModuleLoader__.load({
 			quant: "Quant",
 			recipe: "Recipe"
 		};
-		//#endregion
-		//#region ../../web-kit/contracts/src/familyLane.ts
+		// ../../web-kit/contracts/src/familyLane.ts
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
 		*  presence grammar every family judge shares — the derivation,
@@ -8796,8 +8736,7 @@ window.__ModuleLoader__.load({
 			}
 			return law.lanes[law.lanes.length - 1]?.lane ?? "";
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/formSpec.ts
+		// ../../web-kit/contracts/src/formSpec.ts
 		/** THE COMMIT-SHAPE SPELLING (the qvoice_save burn's twin-kill,
 		*  Journey Law §3.2): the params write ONE committed entry
 		*  produces — flat fields for a flat kind, the param_key bag for a
@@ -8827,8 +8766,7 @@ window.__ModuleLoader__.load({
 			tooltip: "Labels this run's gallery rows — the stem rides the outputs' display labels while the delivered files keep their machine names.",
 			max: 64
 		};
-		//#endregion
-		//#region ../../web-kit/contracts/src/laneRelations.ts
+		// ../../web-kit/contracts/src/laneRelations.ts
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
 		*  number (0 included), a boolean, a non-empty array (mod bag) or
@@ -9410,8 +9348,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		//#endregion
-		//#region src/locales/chromeCopy.ts
+		// src/locales/chromeCopy.ts
 		/** The typed dictionary. Keys are stable copy ids; consumers pass
 		*  exactly the params the entry declares — the type is the seat's
 		*  own enforcement (a missing param is a compile error, not a
@@ -9621,8 +9558,7 @@ window.__ModuleLoader__.load({
 			*  no refusal voice of its own). */
 			loraUploadRefusedNote: "The upload landed but no picker row was seated — check the families shelf with the Manager."
 		};
-		//#endregion
-		//#region src/spec.ts
+		// src/spec.ts
 		/** The unset face's LABEL: a run stamp names its source ('← 28'); the
 		*  schema default rides plain (it is not inheriting anything — it IS
 		*  the engine's compose floor); the dict's honesty word only when
@@ -11251,8 +11187,7 @@ window.__ModuleLoader__.load({
 			else doc[k] = v;
 			return doc;
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		// ../../web-kit/contracts/src/mediaKinds.ts
 		/** The estate media-kind vocabulary (typed DATA — see header). */
 		function mediaVocab() {
 			return {
@@ -11364,8 +11299,7 @@ window.__ModuleLoader__.load({
 			const withoutQuery = name.split(/[?#]/, 1)[0];
 			return mediaKindOf(withoutQuery) === "audio" && !withoutQuery.toLowerCase().endsWith(".qvoice");
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
+		// ../../web-kit/contracts/src/benchStage.ts
 		/** The LIVE run-media spelling. */
 		const RUN_MEDIA_PREFIX = "/melite-media/runs";
 		/** The spelling that died with the gateway app. Still SERVED forever
@@ -11434,8 +11368,7 @@ window.__ModuleLoader__.load({
 			root.position.y = -box.min.y * scale;
 			return box;
 		}
-		//#endregion
-		//#region src/rejection-voice.ts
+		// src/rejection-voice.ts
 		/** The voice for a caught rejection, lossless by the estate's
 		* failureText law: an Error speaks its message; any other thrown
 		* value (transports and test fakes throw plain strings and
@@ -11449,8 +11382,7 @@ window.__ModuleLoader__.load({
 		function rejectionVoice(e) {
 			return e instanceof Error ? e.message : String(e);
 		}
-		//#endregion
-		//#region src/stage3d.ts
+		// src/stage3d.ts
 		/**
 		* stage3d — the SHARED raw-three stage core (the substrate law).
 		*
@@ -11673,8 +11605,7 @@ window.__ModuleLoader__.load({
 			sprite.scale.set(worldHeight * aspect, worldHeight, 1);
 			return sprite;
 		}
-		//#endregion
-		//#region src/icons.tsx
+		// src/icons.tsx
 		function Svg({ className, style, children, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
 				xmlns: "http://www.w3.org/2000/svg",
@@ -12181,8 +12112,7 @@ window.__ModuleLoader__.load({
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
 			});
 		}
-		//#endregion
-		//#region ../../../clsx/dist/clsx.mjs
+		// ../../../clsx/dist/clsx.mjs
 		function r(e) {
 			var t, f, n = "";
 			if ("string" == typeof e || "number" == typeof e) n += e;
@@ -12196,8 +12126,7 @@ window.__ModuleLoader__.load({
 			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
 			return n;
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/readFile.ts
+		// ../../web-kit/formats/src/readFile.ts
 		/**
 		* readFile — THE one read path for every slot-shaped attach, ported
 		* native from the retired kit's SlotSquare (2026-09-12, the kit
@@ -12213,8 +12142,7 @@ window.__ModuleLoader__.load({
 				reader.readAsDataURL(file);
 			});
 		}
-		//#endregion
-		//#region src/chrome.ts
+		// src/chrome.ts
 		/**
 		* Card chrome primitives — the ONE joiner + the card-base face of the
 		* ONE file reader (founded 2026-09-12, debt extermination: anny/ideo
@@ -12299,8 +12227,7 @@ window.__ModuleLoader__.load({
 				return true;
 			}
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/card.module.css.mjs
+		// \0dsh-css:packages/web/card-base/src/card.module.css.mjs
 		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:nowrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;flex:1 1 0;justify-content:center;gap:2px;min-width:0;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;flex:none;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:100%;padding:4px 4px 8px;overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:8px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:6px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:3px;font-size:11px;display:flex}.emezXW_modLeafGroup{flex-direction:column;gap:4px;display:flex}.emezXW_modGroupTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin:0;font-size:10px;font-weight:600}.emezXW_modLeafAdvanced{border-top:1px dashed var(--border,#80808040);padding-top:6px}.emezXW_modFieldPair{align-items:flex-end;gap:8px;display:flex}.emezXW_modFieldPair>.emezXW_modField{flex:1;min-width:0}.emezXW_modFieldPair>.emezXW_modField:last-child{flex:0 0 96px}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_modLeafHint{opacity:.65;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:nowrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specSlotCell{flex-direction:column;flex:1 1 0;gap:4px;min-width:0;max-width:132px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;min-width:0;margin-left:auto;font-size:9px;overflow:hidden}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
 		const tagId$4 = "@melite/card-base/card.module.css@8ce835ea";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
@@ -12431,8 +12358,7 @@ window.__ModuleLoader__.load({
 			"wireUnwire": "emezXW_wireUnwire",
 			"wiredTag": "emezXW_wiredTag"
 		};
-		//#endregion
-		//#region src/layout.tsx
+		// src/layout.tsx
 		/** The estate's tooltip anchor: the DSH Tooltip atom over a REAL
 		*  layout box (a display:contents or fragment child measures a zero
 		*  rect and pins the bubble to the viewport corner).
@@ -12562,8 +12488,7 @@ window.__ModuleLoader__.load({
 				children
 			});
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
+		// \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
 		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_inputPin{z-index:3;position:absolute;top:8px;right:8px}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero,.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_stripHint{color:var(--dsh-alias-text-secondary,#888);white-space:nowrap;align-self:center;font-size:10px}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
 		const tagId$3 = "@melite/card-base/preview.module.css@b08b3760";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
@@ -12615,8 +12540,7 @@ window.__ModuleLoader__.load({
 			"thumbVideoBtn": "oHl7Va_thumbVideoBtn",
 			"thumbVideoName": "oHl7Va_thumbVideoName"
 		};
-		//#endregion
-		//#region src/glb-stage.tsx
+		// src/glb-stage.tsx
 		/**
 		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
 		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
@@ -13118,8 +13042,7 @@ window.__ModuleLoader__.load({
 				}
 			}, "Weights")) : null);
 		}
-		//#endregion
-		//#region src/locales/square.ts
+		// src/locales/square.ts
 		/** The typed dictionary. Keys are stable copy ids; consumers pass
 		*  exactly the params the entry declares — the type is the seat's
 		*  own enforcement (a missing param is a compile error, not a
@@ -13203,8 +13126,7 @@ window.__ModuleLoader__.load({
 			if (typeof entry === "string") return entry;
 			return entry(new Proxy(params ?? {}, { get: (given, name) => given[name] ?? "" }));
 		}
-		//#endregion
-		//#region src/square.tsx
+		// src/square.tsx
 		/**
 		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
 		* — the base's default input component. Ported from the old system's
@@ -13456,23 +13378,25 @@ window.__ModuleLoader__.load({
 				}
 			}) : null);
 		}
-		//#endregion
-		//#region src/menu-anchor.ts
+		// src/menu-anchor.ts
 		/** Props handoff for one owner-detached Menu render.
 		*  @param anchorRef - holds the picked trigger element; written by
-		*  the owner's pick handler before opening.
+		*  the owner's pick handler before opening (null when the pick was
+		*  event-detached with no element).
 		*  @param rect - the rect captured from that element at pick time.
 		*  @returns the anchor subset to spread into the Menu props
 		*  alongside `open: true, portal: true`. */
 		function menuAnchorProps(anchorRef, rect) {
 			return {
 				anchor: null,
-				anchorRef,
+				...anchorRef.current instanceof HTMLElement && anchorRef.current.isConnected ? { anchorRef } : { anchorPoint: {
+					x: rect.left,
+					y: rect.bottom
+				} },
 				getAnchorRect: () => rect
 			};
 		}
-		//#endregion
-		//#region src/estate-remote.ts
+		// src/estate-remote.ts
 		/** The estate's domain refusal ({ok:false} answers): the message
 		* rides verbatim; the class separates DOMAIN verdicts from transport
 		* failures so policy code (the gone-verdict, the poll, the CAS
@@ -13676,8 +13600,7 @@ window.__ModuleLoader__.load({
 		function isDuplicateServiceSeat(error, service) {
 			return error instanceof Error && error.message.startsWith(`service "${service}" has been registered at <`) && error.message.endsWith(">");
 		}
-		//#endregion
-		//#region ../melite-run-wire/src/index.ts
+		// ../melite-run-wire/src/index.ts
 		init_benchStage();
 		init_stageView();
 		/** The ONE media-url rewrite (readRunStatus + the file-era list
@@ -13869,8 +13792,7 @@ window.__ModuleLoader__.load({
 				if (cardCatalogRowsInflight === seat) cardCatalogRowsInflight = null;
 			}
 		}
-		//#endregion
-		//#region src/wire.ts
+		// src/wire.ts
 		/** The wire dials (audit X-E1): every fetch rides a socket with a
 		*  bound — a caller signal ANDed with the dial, never a bare socket.
 		*  Reads are small same-origin JSON; uploads carry a data-URL of a
@@ -14097,8 +14019,7 @@ window.__ModuleLoader__.load({
 				...refusal !== "" ? { refusal } : {}
 			};
 		}
-		//#endregion
-		//#region src/square-provider.tsx
+		// src/square-provider.tsx
 		/** square-provider.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** The media-kind the picker fetches for a field: image fields name
@@ -14524,8 +14445,7 @@ window.__ModuleLoader__.load({
 				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
 			};
 		}
-		//#endregion
-		//#region src/wirePicker.tsx
+		// src/wirePicker.tsx
 		/** The wire picker — prior stages by ARRAY INDEX, including ones that
 		* haven't run yet ("not run yet" — wire BEFORE the upstream runs).
 		*
@@ -14612,8 +14532,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region src/atoms.tsx
+		// src/atoms.tsx
 		/** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		function SourceRow(props) {
@@ -14999,8 +14918,7 @@ window.__ModuleLoader__.load({
 		*  values (model + every axis key + overlay keys) ride the caller's
 		*  map and pass along at Run. Renders nothing when the spec declares
 		*  no matrix. */
-		//#endregion
-		//#region src/rows.tsx
+		// src/rows.tsx
 		/** rows.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** THE INFO GLYPH (hour 21): the field's declared help prose (the
@@ -15233,8 +15151,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region src/axes.tsx
+		// src/axes.tsx
 		/** axes.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** THE DSH MENU SELECT for one spec axis (the zoom.tsx idiom):
@@ -15488,8 +15405,7 @@ window.__ModuleLoader__.load({
 		*  to rail sections that render served fields outside a whole form
 		*  (mask's TuneSection). The claim seam stays CardForm's; this row
 		*  takes the resolved atom inputs. */
-		//#endregion
-		//#region src/use-form-spec.ts
+		// src/use-form-spec.ts
 		/** use-form-spec.ts — extracted from form.tsx (hour 15, the godfile split; the
 		*  operator's DRY audit law: one seam, one small file, one wall). */
 		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
@@ -15541,8 +15457,7 @@ window.__ModuleLoader__.load({
 				}, [id])
 			};
 		}
-		//#endregion
-		//#region src/spec-panel.tsx
+		// src/spec-panel.tsx
 		/** spec-panel.tsx — extracted from form.tsx (hour 15, the godfile split; the
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		/** THE DERIVED SECTIONS (the motion-params journey audit's class
@@ -15607,8 +15522,7 @@ window.__ModuleLoader__.load({
 				});
 			}))));
 		}
-		//#endregion
-		//#region src/form.tsx
+		// src/form.tsx
 		/**
 		* form.tsx — @melite/card-base: THE CONSTRUCTOR (the godfile
 		* split, hour 15: the seams live in their own files now —
@@ -15962,8 +15876,7 @@ window.__ModuleLoader__.load({
 				...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 			}) : null, own.wireMenu);
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		// ../../web-kit/contracts/src/loraExtensions.ts
 		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
 		*
 		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
@@ -15989,8 +15902,7 @@ window.__ModuleLoader__.load({
 		*  time. */
 		const LORA_ACCEPT = LORA_EXTENSIONS.join(",");
 		new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
-		//#endregion
-		//#region src/mods.tsx
+		// src/mods.tsx
 		/**
 		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
 		* and moved into the base package 2026-09-12 after the operator's
@@ -17256,8 +17168,7 @@ window.__ModuleLoader__.load({
 				onClick: props.onOpen
 			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null, props.steps !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileSteps }, `${String(props.steps)} steps`) : null);
 		}
-		//#endregion
-		//#region src/slots.ts
+		// src/slots.ts
 		function defineStageViewRegistration(key, view, inject) {
 			return (ctx) => {
 				armEstateRemoteLazyBind(() => ({
@@ -17296,8 +17207,7 @@ window.__ModuleLoader__.load({
 			*  preview only to specialize, never to bespoke. */
 			stagePreview: "cards.stage.preview"
 		};
-		//#endregion
-		//#region src/use-resolved.ts
+		// src/use-resolved.ts
 		/**
 		* use-resolved.ts — THE STUDIO SEAM, ONE UNIVERSAL DEFAULT SYSTEM
 		* (operator, 2026-09-18: "there is no universal default system
@@ -17367,8 +17277,7 @@ window.__ModuleLoader__.load({
 			}
 			return resolveValue(spec, user, base);
 		}
-		//#endregion
-		//#region src/write-through.ts
+		// src/write-through.ts
 		const TRAILING_MS = 300;
 		const rows = /* @__PURE__ */ new Map();
 		function fire(row) {
@@ -17413,8 +17322,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region src/runs-policy.ts
+		// src/runs-policy.ts
 		/**
 		* runs-policy.ts — the run verbs over THE ONE LANE (stroke 81; the
 		* shared home, stroke 81b — beside estate-remote, for the same
@@ -17722,8 +17630,7 @@ window.__ModuleLoader__.load({
 				if (await abortableSleep(interval, signal) === "abort") return;
 			}
 		}
-		//#endregion
-		//#region src/studioRail.tsx
+		// src/studioRail.tsx
 		/**
 		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
 		* (spec dev_docs/design/card-studio-pattern.md §5 + §7.10).
@@ -17763,8 +17670,7 @@ window.__ModuleLoader__.load({
 			if (slot) return null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
 		}
-		//#endregion
-		//#region src/toastStore.ts
+		// src/toastStore.ts
 		/**
 		* THE ONE TOAST STORE (node-safe half of the one toast system,
 		* stroke 37): the module state and the dual API (hook selector for
@@ -17888,8 +17794,7 @@ window.__ModuleLoader__.load({
 		function useViewportIds() {
 			return (0, react.useSyncExternalStore)(viewportEngine.subscribe, viewportEngine.getSnapshot, viewportEngine.getSnapshot);
 		}
-		//#endregion
-		//#region src/toast.tsx
+		// src/toast.tsx
 		/**
 		* ToastViewport — THE RENDERER FACE of the one toast system
 		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
@@ -17945,8 +17850,7 @@ window.__ModuleLoader__.load({
 				onDone: () => removeToast(t.id)
 			}, t.id)) });
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/shell.module.css.mjs
+		// \0dsh-css:packages/web/card-base/src/shell.module.css.mjs
 		const css$2 = "._6zZDNa_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._6zZDNa_shell{grid-template-rows:none;grid-template-columns:1fr}._6zZDNa_shell>:first-child{max-height:none;overflow-y:visible}}._6zZDNa_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow:clip auto}._6zZDNa_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._6zZDNa_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:0;max-height:none;overflow:visible}._6zZDNa_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._6zZDNa_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4;position:relative}._6zZDNa_errorDismiss{color:var(--dsw-alias-danger,#dc2626);position:absolute;top:2px;right:2px}._6zZDNa_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._6zZDNa_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._6zZDNa_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._6zZDNa_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary);margin:0;font-size:10px;font-weight:600}";
 		const tagId$2 = "@melite/card-base/shell.module.css@4caef09";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
@@ -17966,8 +17870,7 @@ window.__ModuleLoader__.load({
 			"railTitle": "_6zZDNa_railTitle",
 			"shell": "_6zZDNa_shell"
 		};
-		//#endregion
-		//#region src/shell.tsx
+		// src/shell.tsx
 		/**
 		* StudioShell + RailSection + defineShellDeclaration — the ONE card
 		* chrome owner (founded 2026-09-12, debt extermination: the six
@@ -18067,8 +17970,7 @@ window.__ModuleLoader__.load({
 		function defineShellDeclaration(declaration) {
 			return Object.freeze(declaration);
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/studio.module.css.mjs
+		// \0dsh-css:packages/web/card-base/src/studio.module.css.mjs
 		const css$1 = ".DKzjDW_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.DKzjDW_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.DKzjDW_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.DKzjDW_studioGroup{flex-direction:column;gap:6px;display:flex}.DKzjDW_studioGroupTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.65;margin:0;font-size:11px;font-weight:600}.DKzjDW_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}";
 		const tagId$1 = "@melite/card-base/studio.module.css@d92b1128";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
@@ -18086,8 +17988,7 @@ window.__ModuleLoader__.load({
 			"studioRail": "DKzjDW_studioRail",
 			"zoomDetail": "DKzjDW_zoomDetail"
 		};
-		//#endregion
-		//#region src/studio.tsx
+		// src/studio.tsx
 		/** studio.tsx — THE DECLARATIVE STUDIO (primitive ④, 2026-09-21):
 		*  the stage view owns ORGANIZATION over the SAME form-spec SSOT —
 		*  and organization is now DATA, not a client half. A card declares
@@ -18323,8 +18224,7 @@ window.__ModuleLoader__.load({
 				square: square(f)
 			})));
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/poserSkin.ts
+		// ../../web-kit/formats/src/poserSkin.ts
 		init_lib();
 		const MESH_CACHE_CAP = 16;
 		const _meshCache = /* @__PURE__ */ new Map();
@@ -18378,8 +18278,7 @@ window.__ModuleLoader__.load({
 			_meshCache.set(cacheKey, data);
 			return data;
 		}
-		//#endregion
-		//#region src/poser-figure.tsx
+		// src/poser-figure.tsx
 		/**
 		* poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90 + the live
 		* follow-up, 2026-09-17: "these knobs do LITERALLY NOTHING — they
@@ -18635,8 +18534,7 @@ window.__ModuleLoader__.load({
 				"data-testid": "figure-failed"
 			}, "figure failed: " + failed) : null);
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web/card-base/src/viewportChrome.module.css.mjs
+		// \0dsh-css:packages/web/card-base/src/viewportChrome.module.css.mjs
 		const css = ".BbYg0q_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:var(--melite-stage-bg);border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}.BbYg0q_dockTopRight{position:absolute;top:8px;right:8px}.BbYg0q_dockTopLeft{position:absolute;top:8px;left:8px}.BbYg0q_dockBottomRight{position:absolute;bottom:8px;right:8px}.BbYg0q_dockBottomLeft{position:absolute;bottom:8px;left:8px}.BbYg0q_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}.BbYg0q_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}.BbYg0q_dockFill{position:absolute;inset:0}.BbYg0q_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}.BbYg0q_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}.BbYg0q_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--melite-stage-bg) 90%, transparent);backdrop-filter:blur(4px);border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}.BbYg0q_badgeImg{object-fit:contain;width:100%;height:112px}.BbYg0q_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary);padding:2px 6px;font-size:8px;font-weight:500}";
 		const tagId = "@melite/card-base/viewportChrome.module.css@2661997";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -18661,8 +18559,7 @@ window.__ModuleLoader__.load({
 			"dockTopRight": "BbYg0q_dockTopRight",
 			"frame": "BbYg0q_frame"
 		};
-		//#endregion
-		//#region src/viewportChrome.tsx
+		// src/viewportChrome.tsx
 		function ViewportFrame({ children, label, empty, className, style, ...props }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				"data-slot": "viewport-frame",
@@ -18714,8 +18611,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
+		// ../../web-kit/contracts/src/stageView.ts
 		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
 		*  this run finished?"), which five seats also spelled privately with
 		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
@@ -18766,8 +18662,7 @@ window.__ModuleLoader__.load({
 		function isLiveRunStatus(value) {
 			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
 		}
-		//#endregion
-		//#region src/pick-store.ts
+		// src/pick-store.ts
 		const pickCells = /* @__PURE__ */ new Map();
 		const PICK_CELL_CAP = 64;
 		/** The cell for a view identity, created on first use and
@@ -18806,8 +18701,7 @@ window.__ModuleLoader__.load({
 		function resetPickCellsForTests() {
 			pickCells.clear();
 		}
-		//#endregion
-		//#region src/report-view.tsx
+		// src/report-view.tsx
 		/** The report status vocabulary → the DSH dot's own states (the
 		*  semantic set StateDot ships: done/warning/error — no invented
 		*  colors, no hand-rolled dots). TOTAL over the contract's union —
@@ -18851,8 +18745,7 @@ window.__ModuleLoader__.load({
 				className: preview_module_css_default.reportRow
 			}, (0, react.createElement)("dt", { className: preview_module_css_default.reportKey }, k), (0, react.createElement)("dd", { className: preview_module_css_default.reportVal }, String(v))))) : null);
 		}
-		//#endregion
-		//#region src/preview.tsx
+		// src/preview.tsx
 		/**
 		* preview.tsx — THE SHARED PREVIEW COMPONENTS (the preview seam's
 		* built-in claims, hour-9 2026-09-13 — the operator's law: "Where
@@ -19352,16 +19245,14 @@ window.__ModuleLoader__.load({
 				emptyHint: meshEmptyHint
 			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
-		//#endregion
-		//#region src/cards-address.ts
+		// src/cards-address.ts
 		/** The run address: `dsh-resource://cards/run/<runId>` — the wand's
 		* restore target. The runId rides encodeURIComponent: a run id with
 		* spaces or slashes stays one path segment. */
 		function cardsRunAddress(runId) {
 			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
 		}
-		//#endregion
-		//#region src/media-library.ts
+		// src/media-library.ts
 		/**
 		* media-library.ts — the runs-tree library over the mounted media
 		* namespace (stroke 81b: moved beside the bind it rides).
@@ -19385,8 +19276,7 @@ window.__ModuleLoader__.load({
 			const v = await unwrapRemote(media.list(kind, signal), "media/list");
 			return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		const name = "@melite/card-base";
 		const inject = [];
 		/** The row's one client-side effect: wire the contract-toast seam.
@@ -19420,7 +19310,6 @@ window.__ModuleLoader__.load({
 				useToastStore.getState().addToast(type, message, action);
 			});
 		}
-		//#endregion
 		exports.ASSET_DRAG_MIME = ASSET_DRAG_MIME;
 		exports.AUDIO_SQUARE_ACCEPT = AUDIO_SQUARE_ACCEPT;
 		exports.AudioLines = AudioLines;

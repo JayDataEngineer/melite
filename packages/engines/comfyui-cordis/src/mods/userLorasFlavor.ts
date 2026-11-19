@@ -13,6 +13,7 @@
 // documentation urls only), and the leaf still refuses a
 // hand-spelled name — a user's LoRA arrives as a picker row
 // because the row says so, never because a name was typed.
+import '@melite/comfyui-card-kit/service-faces'
 import type { Context } from '@deepseek-ai/cordis'
 import { boardUserLoraRows, readUserLoraRows, userLoraFlavor, userLorasPath } from '../userLoras.ts'
 

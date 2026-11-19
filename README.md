@@ -10,6 +10,8 @@ estate validates the card, queues one run at a time, calls ComfyUI or another en
 engines contract, and serves the resulting artifacts. The architecture is DSH + Cordis +
 TypeScript; DSH is the only web host.
 
+<video src="docs/trailer.mp4" controls muted></video>
+
 ## Tested versions
 
 | Component | Version |

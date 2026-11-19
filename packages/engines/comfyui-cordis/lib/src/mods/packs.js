@@ -1,3 +1,13 @@
+// mods/packs.ts — THE MOD PACKS: the distinct category taxonomy
+// (operator order 2026-09-08: "we had a distinct mods category —
+// LORAS, CONTROLNETS, in that vein"). One file
+// registers every PACK CONTRACT — the Mod parents (ported from the RETIRED melite_cards dsl.py: LorasMod, ControlNetMod, MaskMod, the qvoice pack): the CATEGORY's field schema, inherited by every boarding family.
+// A flavor (the family's own mods/<pack>.ts under the family's packaged mods (packages/models/<id>/mods/ — the packagedFlavors table in cardDefs.ts)) boards the pack and carries ONLY data — rows, the runtime door, or a bare boarding.
+// Fields live HERE and nowhere else (subclassing: the flavor inherits, never re-declares).
+//
+// The Cordis contract shape: fields ARE a Schemastery object
+// schema, wire types + UI meta on .extra('extra', bag({...})).
+import '@melite/comfyui-card-kit/service-faces';
 import z from '@deepseek-ai/schemastery';
 import { bag } from '@melite/contracts/extraKeys';
 // THE ONE HOME (the kit header's own law — "packs.ts keeps apply()

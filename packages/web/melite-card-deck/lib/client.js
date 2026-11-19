@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __create = Object.create;
 		var __defProp = Object.defineProperty;
 		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -25,12 +25,11 @@ window.__ModuleLoader__.load({
 			value: mod,
 			enumerable: true
 		}) : target, mod));
-		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region \0dsh-css:packages/web/melite-card-deck/src/client/assets.module.css.mjs
+		// \0dsh-css:packages/web/melite-card-deck/src/client/assets.module.css.mjs
 		const css = ".zcZoIq_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.zcZoIq_root,.zcZoIq_root *{box-sizing:border-box}.zcZoIq_head,.zcZoIq_healthTop,.zcZoIq_resultHead,.zcZoIq_resultRecordHead,.zcZoIq_nextRow,.zcZoIq_resultItem,.zcZoIq_resourceItem,.zcZoIq_lifecycleActions,.zcZoIq_checkRow,.zcZoIq_device{min-width:0}.zcZoIq_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.zcZoIq_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.zcZoIq_sub,.zcZoIq_freshness,.zcZoIq_resultKind,.zcZoIq_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.zcZoIq_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.zcZoIq_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.zcZoIq_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.zcZoIq_healthPanel{gap:7px}.zcZoIq_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.zcZoIq_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.zcZoIq_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.zcZoIq_healthLabel{overflow-wrap:anywhere;font-size:13px}.zcZoIq_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.zcZoIq_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.zcZoIq_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.zcZoIq_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.zcZoIq_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.zcZoIq_row>label{flex:150px;min-width:0;max-width:100%}.zcZoIq_field{flex-direction:column;gap:3px;min-width:0;display:flex}.zcZoIq_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.zcZoIq_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.zcZoIq_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.zcZoIq_mono,.zcZoIq_hash{font-family:ui-monospace,monospace;font-size:11px}.zcZoIq_chipRow{flex-wrap:wrap;gap:4px;min-width:0;display:flex}.zcZoIq_chip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;align-items:center;gap:4px;padding:3px 4px 3px 7px;font-size:11px;line-height:1;display:inline-flex}.zcZoIq_chipX{color:inherit;cursor:pointer;font:inherit;background:0 0;border:none;border-radius:4px;padding:2px 4px;font-size:13px;line-height:1}.zcZoIq_chipX:hover{background:var(--dsw-alias-border-l1)}.zcZoIq_wrapText,.zcZoIq_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.zcZoIq_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_dot{border-radius:50%;flex:none;width:9px;height:9px}.zcZoIq_dotOk{background:var(--dsw-alias-state-business-primary);}.zcZoIq_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.zcZoIq_dotBad{background:var(--dsw-alias-state-error-primary);}.zcZoIq_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.zcZoIq_deviceList{flex-direction:column;gap:5px;display:flex}.zcZoIq_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.zcZoIq_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.zcZoIq_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.zcZoIq_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.zcZoIq_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.zcZoIq_operatorNote,.zcZoIq_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_dangerNote,.zcZoIq_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.zcZoIq_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.zcZoIq_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.zcZoIq_resultRecord+.zcZoIq_resultRecord{margin-top:7px}.zcZoIq_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.zcZoIq_resultAction{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.zcZoIq_resultKind{margin-left:auto}.zcZoIq_resultOk,.zcZoIq_resultWarn,.zcZoIq_resultBad,.zcZoIq_stateOk,.zcZoIq_stateWarn,.zcZoIq_stateBad,.zcZoIq_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.zcZoIq_resultOk,.zcZoIq_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.zcZoIq_resultWarn,.zcZoIq_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.zcZoIq_resultBad,.zcZoIq_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.zcZoIq_resultMeta>span,.zcZoIq_resultFlags>span{overflow-wrap:anywhere;min-width:0}.zcZoIq_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.zcZoIq_resultItem,.zcZoIq_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.zcZoIq_resultItem+.zcZoIq_resultItem,.zcZoIq_resourceItem+.zcZoIq_resourceItem{margin-top:4px}.zcZoIq_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.zcZoIq_resourceList,.zcZoIq_resourceItems,.zcZoIq_list{min-width:0;margin:0;padding:0;list-style:none}.zcZoIq_resourceList,.zcZoIq_list{flex-direction:column;gap:5px;display:flex}.zcZoIq_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.zcZoIq_resourceRow>.zcZoIq_sub{margin-top:4px}.zcZoIq_resourceFold{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_resourceList{max-height:320px;overflow-y:auto}.zcZoIq_progressLine{align-items:center;gap:6px;min-width:0;display:inline-flex}.zcZoIq_progressLine .zcZoIq_bar{width:90px}.zcZoIq_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.zcZoIq_resourceItem{padding:4px 5px}.zcZoIq_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.zcZoIq_snapshotRow>.zcZoIq_wrapText{flex:150px}.zcZoIq_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.zcZoIq_root{gap:8px;padding:8px}.zcZoIq_section{padding:8px}.zcZoIq_healthGrid,.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:minmax(0,1fr)}.zcZoIq_row>label,.zcZoIq_healthCopy{flex-basis:100%}.zcZoIq_device{grid-template-columns:minmax(0,1fr)}.zcZoIq_bar{grid-row:2}.zcZoIq_resultKind{width:100%;margin-left:0}}";
 		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@d2a681a3";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -115,8 +114,7 @@ window.__ModuleLoader__.load({
 			"warningNote": "zcZoIq_warningNote",
 			"wrapText": "zcZoIq_wrapText"
 		};
-		//#endregion
-		//#region ../../estate/provisioning/src/contracts.ts
+		// ../../estate/provisioning/src/contracts.ts
 		/** THE LIVE ACQUIRE STATES — the states that name a fetch still
 		*  holding its plane slot (one spelling for every reader that must
 		*  tell a landing download from a settled row: the manage plane's
@@ -175,8 +173,7 @@ window.__ModuleLoader__.load({
 			if (!(total > 0)) return 0;
 			return Math.min(100, Math.round(bytes / total * 100));
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		// ../../web-kit/contracts/src/loraExtensions.ts
 		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
 		*
 		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
@@ -202,8 +199,7 @@ window.__ModuleLoader__.load({
 		*  time. */
 		const LORA_ACCEPT = LORA_EXTENSIONS.join(",");
 		new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
-		//#endregion
-		//#region src/assetsCopy.ts
+		// src/assetsCopy.ts
 		/**
 		* assetsCopy.ts — THE ASSET-BROWSER CHROME COPY DICTIONARY (the deck's
 		* locale-owned copy surface, 2026-11-05). Client UI copy is locale-owned
@@ -623,8 +619,7 @@ window.__ModuleLoader__.load({
 			/** LoRA-block restart button. */
 			restartEngineButton: "Restart engine"
 		};
-		//#endregion
-		//#region src/client/lora-section.tsx
+		// src/client/lora-section.tsx
 		/**
 		* lora-section.tsx — THE LORA BLOCK for the ComfyUI Manager sidebar
 		* (the operator's 2026-09-26 order: "custom LoRAs should be in the
@@ -974,8 +969,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/client/assets-tab.tsx
+		// src/client/assets-tab.tsx
 		/**
 		* assets-tab — the ONE DSH right-sidebar tab that is NOT cards:
 		*
@@ -3065,8 +3059,7 @@ window.__ModuleLoader__.load({
 		function registerAssetsTab(ctx) {
 			register(ctx, "melite-card-deck:comfy", "comfy-manager", assetsCopy.panelTitle, 61, assetsCopy.comfyGuide, ComfyIcon, ComfyManagerPanel);
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/** 'slots' (seat declarations) + the native right-sidebar tab registry
 		*  (ui-sidebar-right, the web profile's own subsystem) — hosts the
 		*  tabs — + the mounted estate remotes: the manage namespace carries
@@ -3087,7 +3080,6 @@ window.__ModuleLoader__.load({
 				console.error("[melite-card-deck] assets tab registration failed:", error);
 			}
 		}
-		//#endregion
 		exports.apply = apply;
 		exports.inject = inject;
 		return module.exports;

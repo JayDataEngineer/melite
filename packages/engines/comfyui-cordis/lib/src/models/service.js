@@ -26,6 +26,7 @@ import { checkModelPathPresent, findModelPresent, loadCatalogModels, resolveArti
 import { loadEndpointConfig, packageRoot, resolveRepoRoot } from "../comfyui.js";
 import { join } from "node:path";
 import { ModelError, EngineFacts, ModelDecl as ModelDeclSchema, DeclVariantRow as VariantRowSchema, CellRow as CellRowSchema, ParamRelationWords as ParamRelationWordsSchema, } from '@melite/comfyui-card-kit/model-contract';
+import '@melite/comfyui-card-kit/service-faces';
 import { planeRefusals } from '@melite/contracts/planes';
 import { offeredPool, resolveCellRow, resolveVariantRow } from '@melite/contracts/laneRelations';
 import { validateWriteRowsAgainstActions } from "./validate.js";

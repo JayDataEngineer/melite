@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __create = Object.create;
 		var __defProp = Object.defineProperty;
 		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -42,7 +42,6 @@ window.__ModuleLoader__.load({
 			value: mod,
 			enumerable: true
 		}) : target, mod));
-		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
@@ -51,7 +50,7 @@ window.__ModuleLoader__.load({
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
-		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
+		// \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
 		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_dangerVerb{color:var(--dsw-alias-state-error-primary)}.P_5Nua_walkBtn{z-index:10;border:1px solid var(--dsw-alias-border-l3);border-radius:999px;width:40px;height:40px;padding:0;position:absolute;top:50%;transform:translateY(-50%)}.P_5Nua_walkBtn[aria-label=Previous\\ media]{left:10px}.P_5Nua_walkBtn[aria-label=Next\\ media]{right:10px}.P_5Nua_overlayClose{z-index:10;position:absolute;top:8px;right:8px}.P_5Nua_renameInput{width:min(280px,60vw)}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:0;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;transition:opacity .12s;display:flex;position:absolute;top:6px;right:6px}.P_5Nua_tile:hover .P_5Nua_wand,.P_5Nua_tile:focus-visible .P_5Nua_wand,.P_5Nua_wand:focus-visible{opacity:1}";
 		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@71525c21";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -70,8 +69,7 @@ window.__ModuleLoader__.load({
 			"walkBtn": "P_5Nua_walkBtn",
 			"wand": "P_5Nua_wand"
 		};
-		//#endregion
-		//#region ../../web-kit/formats/src/glbLoad.ts
+		// ../../web-kit/formats/src/glbLoad.ts
 		/**
 		* glbLoad — THE shared GLB loading kernel (2026-09-05 dedup order).
 		*
@@ -151,8 +149,7 @@ window.__ModuleLoader__.load({
 			root.position.y = -box.min.y * scale;
 			return box;
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		// ../../web-kit/contracts/src/mediaKinds.ts
 		/** The estate media-kind vocabulary (typed DATA — see header). */
 		function mediaVocab() {
 			return {
@@ -252,8 +249,7 @@ window.__ModuleLoader__.load({
 			const withoutQuery = value.split(/[?#]/, 1)[0];
 			return mediaKindOf(withoutQuery) === "model";
 		}
-		//#endregion
-		//#region src/client/artifact-ops.ts
+		// src/client/artifact-ops.ts
 		/**
 		* artifact-ops — the modal's delete + rename wires (the media
 		* sidebar's popup modal on media stuff).
@@ -426,8 +422,7 @@ window.__ModuleLoader__.load({
 				url: row.url
 			};
 		}
-		//#endregion
-		//#region src/client/artifact-address.ts
+		// src/client/artifact-address.ts
 		/**
 		* artifact-address — the estate-artifact address codec, the one home of
 		* the format (2026-09-10's cross-plugin contract, in-tree since the
@@ -474,8 +469,7 @@ window.__ModuleLoader__.load({
 				return null;
 			}
 		}
-		//#endregion
-		//#region src/client/galleryCopy.ts
+		// src/client/galleryCopy.ts
 		/**
 		* galleryCopy.ts — THE INFER-GALLERY COPY DICTIONARY (the copy-scope
 		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
@@ -721,8 +715,7 @@ window.__ModuleLoader__.load({
 			/** The page-size dial's label. */
 			perPageLabel: "Per page"
 		};
-		//#endregion
-		//#region src/client/ui.tokens.ts
+		// src/client/ui.tokens.ts
 		/**
 		* Design tokens — every var(--dsw-alias-…) string in the media family
 		* declared ONCE (audit F6). Numbered suffixes = same alias, different
@@ -751,8 +744,7 @@ window.__ModuleLoader__.load({
 		const stateWarnPrimary2 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.92))";
 		const textTertiary2 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))";
 		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
-		//#endregion
-		//#region src/client/mesh-view.tsx
+		// src/client/mesh-view.tsx
 		/**
 		* mesh-view — THE 3D VIEWPORT for the media plane (the operator's
 		* 2026-09-26 order, paraphrased: 3d output is hooked into the media
@@ -988,8 +980,7 @@ window.__ModuleLoader__.load({
 				height: "72vh"
 			});
 		}
-		//#endregion
-		//#region src/drilldown.tsx
+		// src/drilldown.tsx
 		/**
 		* drilldown.tsx — THE MEDIA DRILLDOWN, one component for every surface
 		* (the operator's hour-24 order: "clicking the preview component should
@@ -1485,8 +1476,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
+		// ../../web-kit/contracts/src/benchStage.ts
 		/** The card plane's engine (the estate composes cards on ComfyUI by
 		*  construction — the card arm's own law). Derived, never authored:
 		*  a stage that names a CARD and no engine is a card stage. A stage
@@ -1721,8 +1711,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES$1.has(card)) return;
 			delete bag["model"];
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchSnapshot.ts
+		// ../../web-kit/contracts/src/benchSnapshot.ts
 		function isRecord(v) {
 			return typeof v === "object" && v !== null && !Array.isArray(v);
 		}
@@ -1825,8 +1814,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region src/client/waitState.ts
+		// src/client/waitState.ts
 		/**
 		* waitState — the estate's boot-race WAIT voices, in one place.
 		*
@@ -1949,8 +1937,7 @@ window.__ModuleLoader__.load({
 				}, { once: true });
 			})]);
 		}
-		//#endregion
-		//#region src/client/bench-load.ts
+		// src/client/bench-load.ts
 		/**
 		* bench-load — the restore gestures of the media plane (MediaPanel's
 		* wand + its Flows face), 2026-09-10 (the bench rework's hunk 4: the
@@ -2315,8 +2302,7 @@ window.__ModuleLoader__.load({
 				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
 		}
-		//#endregion
-		//#region src/client/decode.ts
+		// src/client/decode.ts
 		const row = (v) => Array.isArray(v) ? v : [];
 		function decodeRuns(json) {
 			const d = json ?? {};
@@ -2403,8 +2389,7 @@ window.__ModuleLoader__.load({
 				nextCursor: typeof d.nextCursor === "number" ? d.nextCursor : null
 			};
 		}
-		//#endregion
-		//#region src/client/useFeed.ts
+		// src/client/useFeed.ts
 		/**
 		* useFeed — the ONE fetch/load/never-stale engine for sidebar feeds
 		* (audit F6: the runs and drafts feeds each carried a hand-copied
@@ -2553,8 +2538,7 @@ window.__ModuleLoader__.load({
 				stale
 			};
 		}
-		//#endregion
-		//#region src/client/ui.tsx
+		// src/client/ui.tsx
 		const FONT = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
 		/** The stage every non-image tile/card sits on. */
 		const gradientStage = `linear-gradient(160deg, ${bgLayer1} 0%, ${bgLayer2} 100%)`;
@@ -2641,8 +2625,7 @@ window.__ModuleLoader__.load({
 				})
 			}, e.gateway + e.message)) });
 		}
-		//#endregion
-		//#region src/client/media-kinds.ts
+		// src/client/media-kinds.ts
 		/**
 		* Media kinds — the CLIENT plane's kind vocabulary, DERIVED from the
 		* contract's mediaVocab() (the li-ay stroke, 2026-10-11).
@@ -2704,8 +2687,7 @@ window.__ModuleLoader__.load({
 				policy: { maxListedImages: vocab.maxListedImages }
 			};
 		})();
-		//#endregion
-		//#region src/client/mesh-tile.tsx
+		// src/client/mesh-tile.tsx
 		/**
 		* mesh-tile — THE MODEL TILE'S PREVIEW (the operator's 2026-10-18
 		* order: a mesh artifact must show SOMETHING in the media sidebar,
@@ -2832,8 +2814,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region src/client/MediaPanel.tsx
+		// src/client/MediaPanel.tsx
 		/**
 		* MediaPanel — the native media archive tab (THE FULL PORT, 2026-09-11:
 		* the deleted dsh-media package's panel, ported onto the gallery's own
@@ -4864,8 +4845,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/sleep.ts
+		// ../../web-kit/catalog/src/sleep.ts
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -4910,8 +4890,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		// ../../web-kit/catalog/src/clientStore.ts
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -4994,8 +4973,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		// ../../web-kit/catalog/src/api.ts
 		function shouldRetryStatus$1(status, method) {
 			return GATEWAY_CODES$1.has(status) || SAFE_METHODS$1.has(method) && status >= 500 && status < 600;
 		}
@@ -5122,8 +5100,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail$1 = 0;
 			inflight$1 = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		// ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -5148,8 +5125,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast$1 = __esmMin((() => {
 			sink$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		// ../../web-kit/catalog/src/catalogContract.ts
 		function validateCatalogContract$1(catalog) {
 			const violations = [];
 			if (!isObj$3(catalog)) return {
@@ -5262,8 +5238,7 @@ window.__ModuleLoader__.load({
 			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		// ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute$1,
 			axisCellExists: () => axisCellExists$1,
@@ -5973,8 +5948,7 @@ window.__ModuleLoader__.load({
 			* (2026-09-12). */
 			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		// ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -6060,8 +6034,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		// ../../web-kit/catalog/src/runStatusContract.ts
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -6143,8 +6116,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		// ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -6203,8 +6175,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/extraKeys.js
+		// ../../web-kit/contracts/lib/extraKeys.js
 		/** THE TYPED WRITE — declarations pass their literal through this
 		*  so an unknown key or malformed value fails EVERY wall: tsc at
 		*  the literal, this throw at runtime (spread arms), the boot
@@ -6352,8 +6323,7 @@ window.__ModuleLoader__.load({
 			];
 			ROLE_SET = ["path"];
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/laneRelations.js
+		// ../../web-kit/contracts/lib/laneRelations.js
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
 		*  number (0 included), a boolean, a non-empty array (mod bag) or
@@ -7120,8 +7090,7 @@ window.__ModuleLoader__.load({
 			knownIds = (variants) => variants.map((v) => v.id);
 			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/familyLane.js
+		// ../../web-kit/contracts/lib/familyLane.js
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
 		*  presence grammar every family judge shares — the derivation,
@@ -7192,14 +7161,12 @@ window.__ModuleLoader__.load({
 			};
 		}
 		var init_familyLane = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		// ../../web-kit/contracts/lib/FlowTypes.js
 		var FLOW_ID_RE;
 		var init_FlowTypes = __esmMin((() => {
 			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchResult.js
+		// ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
 		* law, 2026-09-20: "this can all be validated by contract"). The
 		* run observer patches this row onto the bench stage; every
@@ -7303,17 +7270,13 @@ window.__ModuleLoader__.load({
 			}
 		}
 		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/card.js
+		// ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/character.js
+		// ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraTypes.js
+		// ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		// ../../web-kit/contracts/lib/loraExtensions.js
 		var LORA_EXTENSIONS, LORA_ACCEPT, LORA_EXTENSION_SUFFIX_RE;
 		var init_loraExtensions = __esmMin((() => {
 			LORA_EXTENSIONS = [
@@ -7326,14 +7289,11 @@ window.__ModuleLoader__.load({
 			LORA_ACCEPT = LORA_EXTENSIONS.join(",");
 			LORA_EXTENSION_SUFFIX_RE = new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		// ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		// ../../web-kit/contracts/lib/modifierFaces.js
 		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		// ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
 		}
@@ -7961,8 +7921,7 @@ window.__ModuleLoader__.load({
 				}
 			});
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		// ../../web-kit/contracts/lib/modifierSubcards.js
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
 		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
 		* old cards load; the next save rewrites them as id-keyed rows. */
@@ -8213,8 +8172,7 @@ window.__ModuleLoader__.load({
 			};
 			_cnIdCounter = 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		// ../../web-kit/contracts/lib/objectUrlCache.js
 		/** True iff `s` is a base64 data URL (large enough that streaming
 		*  matters — the timeline package gates its blob handling on this).
 		*  The object-URL cache this module once carried was deleted with the
@@ -8224,8 +8182,7 @@ window.__ModuleLoader__.load({
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
 		var init_objectUrlCache = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		// ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
 		*  door (status/view/ledger/list — and, since the operator's law
 		*  of the same night ("the agent maker and the user share
@@ -8278,11 +8235,9 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stagePreview.js
+		// ../../web-kit/contracts/lib/stagePreview.js
 		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stageView.js
+		// ../../web-kit/contracts/lib/stageView.js
 		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -8527,11 +8482,9 @@ window.__ModuleLoader__.load({
 				"reused"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/studio.js
+		// ../../web-kit/contracts/lib/studio.js
 		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		// ../../web-kit/contracts/lib/timelineTypes.js
 		/** Coerce an unknown persisted/imported status into the SegmentStatus
 		* union. Anything outside it (e.g. pre-refactor persisted "error") is
 		* normalized to 'empty' — an out-of-union status silently breaks the
@@ -8647,8 +8600,7 @@ window.__ModuleLoader__.load({
 				"motionAmplitude"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/vocab.js
+		// ../../web-kit/contracts/lib/vocab.js
 		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
 		function isAuthorship(v) {
@@ -8663,8 +8615,7 @@ window.__ModuleLoader__.load({
 			};
 			AUTHORSHIP_VALUES = Object.values(Authorship);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchStage.js
+		// ../../web-kit/contracts/lib/benchStage.js
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
@@ -8999,8 +8950,7 @@ window.__ModuleLoader__.load({
 			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/index.js
+		// ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
 			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY,
 			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY,
@@ -9145,8 +9095,7 @@ window.__ModuleLoader__.load({
 			init_vocab();
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/sleep.js
+		// ../../web-kit/catalog/lib/sleep.js
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -9191,8 +9140,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/clientStore.js
+		// ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -9275,8 +9223,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/api.js
+		// ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -9417,8 +9364,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail = 0;
 			inflight = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/contractToast.js
+		// ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -9443,8 +9389,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast = __esmMin((() => {
 			sink = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContract.js
+		// ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -9558,8 +9503,7 @@ window.__ModuleLoader__.load({
 			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/modelCatalog.js
+		// ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -10263,8 +10207,7 @@ window.__ModuleLoader__.load({
 			_bgRetryTimer = null;
 			ensureCatalog();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContractStore.js
+		// ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -10350,8 +10293,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContract.js
+		// ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -10434,8 +10376,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
+		// ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -10494,8 +10435,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		// ../../web-kit/catalog/lib/familyParamContract.js
 		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
 			coerceParamsToSchema: () => coerceParamsToSchema$1,
@@ -10992,8 +10932,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardBirth.js
+		// ../../web-kit/catalog/lib/cardBirth.js
 		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
@@ -11044,8 +10983,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth$1 = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		// ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops$1,
 			collectNamedArtifacts: () => collectNamedArtifacts$1,
@@ -11322,8 +11260,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP$1 = 2e3;
 			_requiredEmptyResolver$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/tagMap.js
+		// ../../web-kit/catalog/lib/tagMap.js
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor$1(v) {
@@ -11656,8 +11593,7 @@ window.__ModuleLoader__.load({
 				map: initial$1.map
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/serviceForms.js
+		// ../../web-kit/catalog/lib/serviceForms.js
 		async function loadForms(opts) {
 			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
 			if (_inflight$1) return _inflight$1;
@@ -11762,8 +11698,7 @@ window.__ModuleLoader__.load({
 			isGenerateForm = (k) => isForm(k, "form_generate");
 			isEditForm = (k) => isForm(k, "form_edit");
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		// ../../web-kit/catalog/lib/waveform-peaks.js
 		/** Compute min/max peaks for a single channel of PCM data.
 		*  Exported for unit testing. */
 		function computeMinMaxPeaks(data, numBuckets) {
@@ -11912,8 +11847,7 @@ window.__ModuleLoader__.load({
 				"high"
 			];
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/enhance.js
+		// ../../web-kit/catalog/lib/enhance.js
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
 		* off the proof route — never a restated copy. Null when this
@@ -12133,8 +12067,7 @@ window.__ModuleLoader__.load({
 		var init_enhance = __esmMin((() => {
 			init_api();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardLlm.js
+		// ../../web-kit/catalog/lib/cardLlm.js
 		/** Read the preferred card LLM route ("provider/model"), if set. */
 		function getCardLlm() {
 			try {
@@ -12162,8 +12095,7 @@ window.__ModuleLoader__.load({
 		var init_cardLlm = __esmMin((() => {
 			CARD_LLM_KEY = "melite:card-llm:v1";
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		// ../../web-kit/catalog/lib/familyAuthorship.js
 		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
@@ -12210,8 +12142,7 @@ window.__ModuleLoader__.load({
 		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/index.js
+		// ../../web-kit/catalog/lib/index.js
 		var lib_exports = /* @__PURE__ */ __exportAll({
 			CARD_LLM_KEY: () => CARD_LLM_KEY,
 			CatalogContractError: () => CatalogContractError,
@@ -12340,8 +12271,7 @@ window.__ModuleLoader__.load({
 			init_cardLlm();
 			init_familyAuthorship();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		// ../../web-kit/catalog/src/familyParamContract.ts
 		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
 			coerceParamsToSchema: () => coerceParamsToSchema,
@@ -12838,8 +12768,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
+		// ../../web-kit/catalog/src/cardBirth.ts
 		var cardBirth_exports = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard,
 			ensureDraftId: () => ensureDraftId
@@ -12890,8 +12819,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		// ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops,
 			collectNamedArtifacts: () => collectNamedArtifacts,
@@ -13168,8 +13096,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
+		// ../../web-kit/catalog/src/tagMap.ts
 		init_clientStore$1();
 		init_api$1();
 		const TAG_COLOR_VALUES = Object.values({
@@ -13456,16 +13383,13 @@ window.__ModuleLoader__.load({
 			tags: initial.tags,
 			map: initial.map
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/serviceForms.ts
+		// ../../web-kit/catalog/src/serviceForms.ts
 		init_api$1();
 		init_clientStore$1();
 		createClientStore$1({ cache: {} });
-		//#endregion
-		//#region ../../web-kit/catalog/src/enhance.ts
+		// ../../web-kit/catalog/src/enhance.ts
 		init_api$1();
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
+		// ../../web-kit/catalog/src/index.ts
 		init_api$1();
 		init_contractToast$1();
 		init_catalogContract$1();
@@ -13476,8 +13400,7 @@ window.__ModuleLoader__.load({
 		init_runStatusContractStore$1();
 		init_runStatusContract$1();
 		init_cardBirth();
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		setContractToastSink$1((type, message, action) => {
 			_melite_card_base_client.useToastStore.getState().addToast(type, message, action);
 		});
@@ -13545,7 +13468,6 @@ window.__ModuleLoader__.load({
 				console.error("[melite-gallery] estate-artifact tab body registration failed:", error);
 			}
 		}
-		//#endregion
 		exports.MEDIA_KINDS = MEDIA_KINDS;
 		exports.MediaPanel = MediaPanel;
 		exports.MediaTabIcon = MediaTabIcon;

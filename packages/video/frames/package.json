@@ -21,14 +21,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.5",
+    "@deepseek-ai/schemastery": "^3.19.0",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
-    "typescript": "~6.0.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@types/node": "^22.20.5",
+    "typescript": "~6.0.3"
   },
   "files": [
     "lib/index.js",
@@ -38,7 +38,7 @@
     "src/agents"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0"
   },
   "repository": {
     "type": "git",

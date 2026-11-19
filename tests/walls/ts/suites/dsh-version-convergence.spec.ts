@@ -100,9 +100,11 @@ describe("THE DSH VERSION WALL (operator 2026-11-06: ONE version of DSH, not mul
     const census = pinCensus();
     expect(census.size).toBeGreaterThan(20);
     // the lane version moves with the dsh family's lockstep (the
-    // 2026-11-09 bump: the 0.2.1-rc.2 line, cordis ^4.0.5) — the
-    // literal IS the SSOT pin this wall judges the manifests against.
-    expect(census.get("@deepseek-ai/cordis")?.get("dependencies")?.has("^4.0.5")).toBe(true);
+    // 2026-11-19 bump: the 0.2.2-rc.5 line, cordis ^4.1.0 — the dsh
+    // rc.5 family peers cordis ~4.1.0; 4.0.5 split Impl identity and
+    // the internal/update listener arity) — the literal IS the SSOT
+    // pin this wall judges the manifests against.
+    expect(census.get("@deepseek-ai/cordis")?.get("dependencies")?.has("^4.1.0")).toBe(true);
   });
 
   it("the resolution plane: every @deepseek-ai/* name resolves to exactly ONE installed version", () => {
@@ -118,6 +120,6 @@ describe("THE DSH VERSION WALL (operator 2026-11-06: ONE version of DSH, not mul
   it("the resolution plane sees the estate at all (a missing store would pass vacuously)", () => {
     const census = storeCensus();
     expect(census.size).toBeGreaterThan(20);
-    expect(census.get("@deepseek-ai/cordis")).toEqual(new Set(["4.0.5"]));
+    expect(census.get("@deepseek-ai/cordis")).toEqual(new Set(["4.1.0"]));
   });
 });

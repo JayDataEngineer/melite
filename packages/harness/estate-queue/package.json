@@ -7,12 +7,12 @@
   "description": "The estate's run core as Cordis services — serial queue, live-run registry, manage and flows seats, the skill plane, and the runs gate vocabulary.",
   "dependencies": {
     "@deepseek-ai/cordis-plugin-timer": "workspace:~",
-    "@deepseek-ai/dsh-atomic-write": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-brand": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-timeout": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-util-values": "0.2.1-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.5",
+    "@deepseek-ai/dsh-atomic-write": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-brand": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-timeout": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.2-rc.5",
+    "@deepseek-ai/dsh-util-values": "0.2.2-rc.5",
+    "@deepseek-ai/schemastery": "^3.19.0",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
@@ -21,8 +21,8 @@
     "@melite/estate-provisioning": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5",
-    "@types/node": "^22.20.0",
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
   "scripts": {
@@ -37,7 +37,7 @@
     "./package.json": "./package.json"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0"
   },
   "files": [
     "lib/index.js",

@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __create = Object.create;
 		var __defProp = Object.defineProperty;
 		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -42,7 +42,6 @@ window.__ModuleLoader__.load({
 			value: mod,
 			enumerable: true
 		}) : target, mod));
-		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
@@ -51,7 +50,7 @@ window.__ModuleLoader__.load({
 		_melite_three_client_client = __toESM(_melite_three_client_client, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region ../../web-kit/catalog/src/sleep.ts
+		// ../../web-kit/catalog/src/sleep.ts
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -96,8 +95,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		// ../../web-kit/catalog/src/clientStore.ts
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -180,8 +178,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		// ../../web-kit/catalog/src/api.ts
 		function shouldRetryStatus$1(status, method) {
 			return GATEWAY_CODES$1.has(status) || SAFE_METHODS$1.has(method) && status >= 500 && status < 600;
 		}
@@ -308,8 +305,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail$1 = 0;
 			inflight$1 = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		// ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Fire one contract toast through the wired sink.
 		* @param type - toast severity.
@@ -326,8 +322,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast$1 = __esmMin((() => {
 			sink$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		// ../../web-kit/catalog/src/catalogContract.ts
 		function validateCatalogContract$1(catalog) {
 			const violations = [];
 			if (!isObj$3(catalog)) return {
@@ -440,8 +435,7 @@ window.__ModuleLoader__.load({
 			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		// ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute$1,
 			axisCellExists: () => axisCellExists$1,
@@ -1151,8 +1145,7 @@ window.__ModuleLoader__.load({
 			* (2026-09-12). */
 			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		// ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -1238,8 +1231,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		// ../../web-kit/catalog/src/runStatusContract.ts
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -1321,8 +1313,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		// ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -1381,8 +1372,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/extraKeys.js
+		// ../../web-kit/contracts/lib/extraKeys.js
 		/** THE TYPED WRITE — declarations pass their literal through this
 		*  so an unknown key or malformed value fails EVERY wall: tsc at
 		*  the literal, this throw at runtime (spread arms), the boot
@@ -1530,8 +1520,7 @@ window.__ModuleLoader__.load({
 			];
 			ROLE_SET = ["path"];
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/laneRelations.js
+		// ../../web-kit/contracts/lib/laneRelations.js
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
 		*  number (0 included), a boolean, a non-empty array (mod bag) or
@@ -2298,8 +2287,7 @@ window.__ModuleLoader__.load({
 			knownIds = (variants) => variants.map((v) => v.id);
 			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/familyLane.js
+		// ../../web-kit/contracts/lib/familyLane.js
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
 		*  presence grammar every family judge shares — the derivation,
@@ -2370,14 +2358,12 @@ window.__ModuleLoader__.load({
 			};
 		}
 		var init_familyLane = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		// ../../web-kit/contracts/lib/FlowTypes.js
 		var FLOW_ID_RE;
 		var init_FlowTypes = __esmMin((() => {
 			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchResult.js
+		// ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
 		* law, 2026-09-20: "this can all be validated by contract"). The
 		* run observer patches this row onto the bench stage; every
@@ -2481,17 +2467,13 @@ window.__ModuleLoader__.load({
 			}
 		}
 		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/card.js
+		// ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/character.js
+		// ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraTypes.js
+		// ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		// ../../web-kit/contracts/lib/loraExtensions.js
 		var LORA_EXTENSIONS$1, LORA_ACCEPT$1, LORA_EXTENSION_SUFFIX_RE$1;
 		var init_loraExtensions = __esmMin((() => {
 			LORA_EXTENSIONS$1 = [
@@ -2504,14 +2486,11 @@ window.__ModuleLoader__.load({
 			LORA_ACCEPT$1 = LORA_EXTENSIONS$1.join(",");
 			LORA_EXTENSION_SUFFIX_RE$1 = new RegExp("\\.(?:" + LORA_EXTENSIONS$1.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		// ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		// ../../web-kit/contracts/lib/modifierFaces.js
 		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		// ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
 		}
@@ -3139,8 +3118,7 @@ window.__ModuleLoader__.load({
 				}
 			});
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		// ../../web-kit/contracts/lib/modifierSubcards.js
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
 		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
 		* old cards load; the next save rewrites them as id-keyed rows. */
@@ -3391,8 +3369,7 @@ window.__ModuleLoader__.load({
 			};
 			_cnIdCounter = 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		// ../../web-kit/contracts/lib/objectUrlCache.js
 		/** True iff `s` is a base64 data URL (large enough that streaming
 		*  matters — the timeline package gates its blob handling on this).
 		*  The object-URL cache this module once carried was deleted with the
@@ -3402,8 +3379,7 @@ window.__ModuleLoader__.load({
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
 		var init_objectUrlCache = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		// ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
 		*  door (status/view/ledger/list — and, since the operator's law
 		*  of the same night ("the agent maker and the user share
@@ -3456,11 +3432,9 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stagePreview.js
+		// ../../web-kit/contracts/lib/stagePreview.js
 		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stageView.js
+		// ../../web-kit/contracts/lib/stageView.js
 		function recordOf$1(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -3705,11 +3679,9 @@ window.__ModuleLoader__.load({
 				"reused"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/studio.js
+		// ../../web-kit/contracts/lib/studio.js
 		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		// ../../web-kit/contracts/lib/timelineTypes.js
 		/** Coerce an unknown persisted/imported status into the SegmentStatus
 		* union. Anything outside it (e.g. pre-refactor persisted "error") is
 		* normalized to 'empty' — an out-of-union status silently breaks the
@@ -3825,8 +3797,7 @@ window.__ModuleLoader__.load({
 				"motionAmplitude"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/vocab.js
+		// ../../web-kit/contracts/lib/vocab.js
 		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
 		function isAuthorship(v) {
@@ -3841,8 +3812,7 @@ window.__ModuleLoader__.load({
 			};
 			AUTHORSHIP_VALUES$1 = Object.values(Authorship$1);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchStage.js
+		// ../../web-kit/contracts/lib/benchStage.js
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
@@ -4177,8 +4147,7 @@ window.__ModuleLoader__.load({
 			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/index.js
+		// ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
 			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY,
 			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY$1,
@@ -4323,8 +4292,7 @@ window.__ModuleLoader__.load({
 			init_vocab();
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/sleep.js
+		// ../../web-kit/catalog/lib/sleep.js
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -4369,8 +4337,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/clientStore.js
+		// ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -4453,8 +4420,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/api.js
+		// ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -4595,8 +4561,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail = 0;
 			inflight = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/contractToast.js
+		// ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -4621,8 +4586,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast = __esmMin((() => {
 			sink = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContract.js
+		// ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -4736,8 +4700,7 @@ window.__ModuleLoader__.load({
 			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/modelCatalog.js
+		// ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -5441,8 +5404,7 @@ window.__ModuleLoader__.load({
 			_bgRetryTimer = null;
 			ensureCatalog();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContractStore.js
+		// ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -5528,8 +5490,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContract.js
+		// ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -5612,8 +5573,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
+		// ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -5672,8 +5632,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		// ../../web-kit/catalog/lib/familyParamContract.js
 		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
 			coerceParamsToSchema: () => coerceParamsToSchema$1,
@@ -6170,8 +6129,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardBirth.js
+		// ../../web-kit/catalog/lib/cardBirth.js
 		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
@@ -6222,8 +6180,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth$1 = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		// ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops$1,
 			collectNamedArtifacts: () => collectNamedArtifacts$1,
@@ -6500,8 +6457,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP$1 = 2e3;
 			_requiredEmptyResolver$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/tagMap.js
+		// ../../web-kit/catalog/lib/tagMap.js
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor$1(v) {
@@ -6834,8 +6790,7 @@ window.__ModuleLoader__.load({
 				map: initial$1.map
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/serviceForms.js
+		// ../../web-kit/catalog/lib/serviceForms.js
 		async function loadForms(opts) {
 			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
 			if (_inflight$1) return _inflight$1;
@@ -6940,8 +6895,7 @@ window.__ModuleLoader__.load({
 			isGenerateForm = (k) => isForm(k, "form_generate");
 			isEditForm = (k) => isForm(k, "form_edit");
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		// ../../web-kit/catalog/lib/waveform-peaks.js
 		/** Compute min/max peaks for a single channel of PCM data.
 		*  Exported for unit testing. */
 		function computeMinMaxPeaks(data, numBuckets) {
@@ -7090,8 +7044,7 @@ window.__ModuleLoader__.load({
 				"high"
 			];
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/enhance.js
+		// ../../web-kit/catalog/lib/enhance.js
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
 		* off the proof route — never a restated copy. Null when this
@@ -7311,8 +7264,7 @@ window.__ModuleLoader__.load({
 		var init_enhance = __esmMin((() => {
 			init_api();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardLlm.js
+		// ../../web-kit/catalog/lib/cardLlm.js
 		/** Read the preferred card LLM route ("provider/model"), if set. */
 		function getCardLlm() {
 			try {
@@ -7340,8 +7292,7 @@ window.__ModuleLoader__.load({
 		var init_cardLlm = __esmMin((() => {
 			CARD_LLM_KEY = "melite:card-llm:v1";
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		// ../../web-kit/catalog/lib/familyAuthorship.js
 		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
@@ -7388,8 +7339,7 @@ window.__ModuleLoader__.load({
 		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/index.js
+		// ../../web-kit/catalog/lib/index.js
 		var lib_exports = /* @__PURE__ */ __exportAll({
 			CARD_LLM_KEY: () => CARD_LLM_KEY,
 			CatalogContractError: () => CatalogContractError,
@@ -7518,8 +7468,7 @@ window.__ModuleLoader__.load({
 			init_cardLlm();
 			init_familyAuthorship();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		// ../../web-kit/catalog/src/familyParamContract.ts
 		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
 			coerceParamsToSchema: () => coerceParamsToSchema,
@@ -8016,8 +7965,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
+		// ../../web-kit/catalog/src/cardBirth.ts
 		var cardBirth_exports = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard,
 			ensureDraftId: () => ensureDraftId
@@ -8068,8 +8016,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		// ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops,
 			collectNamedArtifacts: () => collectNamedArtifacts,
@@ -8346,8 +8293,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
+		// ../../web-kit/catalog/src/tagMap.ts
 		init_clientStore$1();
 		init_api$1();
 		const TAG_COLOR_VALUES = Object.values({
@@ -8634,16 +8580,13 @@ window.__ModuleLoader__.load({
 			tags: initial.tags,
 			map: initial.map
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/serviceForms.ts
+		// ../../web-kit/catalog/src/serviceForms.ts
 		init_api$1();
 		init_clientStore$1();
 		createClientStore$1({ cache: {} });
-		//#endregion
-		//#region ../../web-kit/catalog/src/enhance.ts
+		// ../../web-kit/catalog/src/enhance.ts
 		init_api$1();
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
+		// ../../web-kit/catalog/src/index.ts
 		init_api$1();
 		init_contractToast$1();
 		init_catalogContract$1();
@@ -8654,8 +8597,7 @@ window.__ModuleLoader__.load({
 		init_runStatusContractStore$1();
 		init_runStatusContract$1();
 		init_cardBirth();
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		// ../../web-kit/contracts/src/loraExtensions.ts
 		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
 		*
 		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
@@ -8677,11 +8619,9 @@ window.__ModuleLoader__.load({
 		];
 		LORA_EXTENSIONS.join(",");
 		new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierSubcards.ts
+		// ../../web-kit/contracts/src/modifierSubcards.ts
 		init_lib$2();
-		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
+		// ../../web-kit/contracts/src/stageView.ts
 		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -8902,8 +8842,7 @@ window.__ModuleLoader__.load({
 			imported: "imported"
 		});
 		["prove", "nance"].join("");
-		//#endregion
-		//#region ../../web-kit/formats/src/npz.ts
+		// ../../web-kit/formats/src/npz.ts
 		const CDFH_SIG = 33639248;
 		function readU16(d, o) {
 			return d[o] | d[o + 1] << 8;
@@ -9008,8 +8947,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/somaSkin.ts
+		// ../../web-kit/formats/src/somaSkin.ts
 		/**
 		* somaSkin — neutral SOMA-77 mesh skinning, a direct port of the kimodo demo's
 		* vendor/kimodo/kimodo/viz/soma_skin.py SOMASkin.skin()+lbs().
@@ -9246,8 +9184,7 @@ window.__ModuleLoader__.load({
 				out[vi + 2] = oz;
 			}
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/poseCodec.ts
+		// ../../web-kit/formats/src/poseCodec.ts
 		const SOMA77_BONE_CONNECTIONS$1 = [
 			[0, 1],
 			[1, 2],
@@ -9337,8 +9274,7 @@ window.__ModuleLoader__.load({
 			for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, Math.min(i + CHUNK, bytes.length))));
 			return btoa(bin);
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/motionNpz.ts
+		// ../../web-kit/formats/src/motionNpz.ts
 		/**
 		* motionNpz — the Motion Card's client-side motion engine.
 		*
@@ -9809,8 +9745,7 @@ window.__ModuleLoader__.load({
 				globalRotMats: rots
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/glbLoad.ts
+		// ../../web-kit/formats/src/glbLoad.ts
 		/**
 		* glbLoad — THE shared GLB loading kernel (2026-09-05 dedup order).
 		*
@@ -9857,8 +9792,7 @@ window.__ModuleLoader__.load({
 			loader.setDRACOLoader(dracoLoader());
 			return loader;
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/glbSkin.ts
+		// ../../web-kit/formats/src/glbSkin.ts
 		/** SOMA-77 — the rig every SOMAX GLB carries (skin.name "SOMA-Mixamo"). */
 		const SOMA_JOINTS = 77;
 		/** glTF skins are VEC4 — four influences per vertex. */
@@ -9945,8 +9879,7 @@ window.__ModuleLoader__.load({
 				influences: GLTF_INFLUENCES
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/bodyPresets.ts
+		// ../../web-kit/formats/src/bodyPresets.ts
 		const NEUTRAL_RACE$1 = [
 			.5,
 			.5,
@@ -9955,8 +9888,7 @@ window.__ModuleLoader__.load({
 		[...NEUTRAL_RACE$1];
 		[...NEUTRAL_RACE$1];
 		[...NEUTRAL_RACE$1];
-		//#endregion
-		//#region ../../web-kit/formats/src/motionConstraints.ts
+		// ../../web-kit/formats/src/motionConstraints.ts
 		const TRACK_TO_EE_JOINT = {
 			"left-hand": "LeftHand",
 			"right-hand": "RightHand",
@@ -10333,8 +10265,7 @@ window.__ModuleLoader__.load({
 			}
 			return changed ? segments.map((p, i) => healed.get(i) ?? p) : segments;
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/openPoseCanvas.ts
+		// ../../web-kit/formats/src/openPoseCanvas.ts
 		/** openPoseCanvas — the COCO-18 stick-figure renderer (pure DOM canvas,
 		* ex-lib/text-to-pose). Fetch-free by law. */
 		const OPENPOSE_SKELETON = [
@@ -10423,11 +10354,9 @@ window.__ModuleLoader__.load({
 			for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 			return new Blob([bytes], { type: "image/png" });
 		}
-		//#endregion
-		//#region ../../web-kit/formats/src/b64.ts
+		// ../../web-kit/formats/src/b64.ts
 		init_api();
-		//#endregion
-		//#region ../../web-kit/formats/src/poseTransforms.ts
+		// ../../web-kit/formats/src/poseTransforms.ts
 		init_lib();
 		const KP$1 = {
 			NOSE: 0,
@@ -10488,8 +10417,7 @@ window.__ModuleLoader__.load({
 			}
 			return t;
 		})();
-		//#endregion
-		//#region ../../web-kit/formats/src/prompt-tags.json
+		// ../../web-kit/formats/src/prompt-tags.json
 		var prompt_tags_default$1 = {
 			_meta: {
 				"version": 1,
@@ -10622,8 +10550,7 @@ window.__ModuleLoader__.load({
 				"abstract"
 			]
 		};
-		//#endregion
-		//#region ../../web-kit/formats/src/promptTags.ts
+		// ../../web-kit/formats/src/promptTags.ts
 		/**
 		* E4.7 — Prompt tag library + autocomplete helpers.
 		*
@@ -10667,8 +10594,7 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		Object.freeze(flatten$1(prompt_tags_default$1));
-		//#endregion
-		//#region src/ui/studio/motionDoc.ts
+		// src/ui/studio/motionDoc.ts
 		/** Canonical JSON for content comparison (the h3 A1 law): keys sorted
 		*  recursively, arrays order-preserved (row order is semantic),
 		*  undefined-valued keys SKIPPED, top-level undefined digests null.
@@ -10855,8 +10781,7 @@ window.__ModuleLoader__.load({
 		function healPrompts(rows) {
 			return untanglePrompts(rows);
 		}
-		//#endregion
-		//#region src/ui/studio/useMotionDoc.ts
+		// src/ui/studio/useMotionDoc.ts
 		/**
 		* useMotionDoc — the one-truth hook (the h3-timeline useShownDoc pattern
 		* ported to motion's channels; nativity audit F7, 2026-11-05).
@@ -10963,8 +10888,7 @@ window.__ModuleLoader__.load({
 				}, [onSave])
 			};
 		}
-		//#endregion
-		//#region \0dsh-css:packages/motion/motion/src/ui/studio/component.module.css.mjs
+		// \0dsh-css:packages/motion/motion/src/ui/studio/component.module.css.mjs
 		const css$3 = "@keyframes ihGs4q_motionSpin{to{transform:rotate(360deg)}}.ihGs4q_shellPad{gap:8px;padding:12px 16px}.ihGs4q_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.ihGs4q_railPanel{grid-column:1/-1;min-width:0}.ihGs4q_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.ihGs4q_contents{display:contents}.ihGs4q_bgSquareWrap{grid-column:1/-1;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.ihGs4q_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.ihGs4q_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.ihGs4q_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.ihGs4q_wireBtn:hover,.ihGs4q_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.ihGs4q_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.ihGs4q_centerRow{flex:1;gap:8px;min-height:0;display:flex}.ihGs4q_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.ihGs4q_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.ihGs4q_ovBg{z-index:0}.ihGs4q_ovCam{z-index:30}.ihGs4q_ovDrop{pointer-events:none;z-index:20}.ihGs4q_ovRect{pointer-events:none;z-index:40}.ihGs4q_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.ihGs4q_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.ihGs4q_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.ihGs4q_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_skelAvatar{border-radius:999px;width:96px;height:96px}.ihGs4q_skelAvatarSm{border-radius:999px;width:80px;height:80px}.ihGs4q_skelLine{width:112px;height:12px}.ihGs4q_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.ihGs4q_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.ihGs4q_veilText{font-size:12px}.ihGs4q_camPill{align-items:center;gap:4px;padding:4px;display:flex}.ihGs4q_camPill>span{flex:none;display:inline-flex}.ihGs4q_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.ihGs4q_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.ihGs4q_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.ihGs4q_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.ihGs4q_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.ihGs4q_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.ihGs4q_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.ihGs4q_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.ihGs4q_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.ihGs4q_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.ihGs4q_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.ihGs4q_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_playBtn:hover{background:#fff3}.ihGs4q_playBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_playIcon{width:14px;height:14px;margin-left:2px}.ihGs4q_timeWrap{flex-shrink:0;font-size:11px}.ihGs4q_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.ihGs4q_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.ihGs4q_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.ihGs4q_fpsChip{display:block}}.ihGs4q_hintWrap{align-items:center;gap:8px;display:flex}.ihGs4q_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.ihGs4q_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.ihGs4q_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.ihGs4q_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.ihGs4q_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.ihGs4q_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.ihGs4q_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.ihGs4q_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.ihGs4q_i12{width:12px;height:12px}.ihGs4q_i14{width:14px;height:14px}.ihGs4q_spinIcon{width:14px;height:14px;animation:1s linear infinite ihGs4q_motionSpin}";
 		const tagId$3 = "@melite/motion-motion/component.module.css@f2e7bed9";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
@@ -11035,8 +10959,7 @@ window.__ModuleLoader__.load({
 			"wireBtnOff": "ihGs4q_wireBtnOff",
 			"wireBtnOn": "ihGs4q_wireBtnOn"
 		};
-		//#endregion
-		//#region src/ui/studio/motionCopy.ts
+		// src/ui/studio/motionCopy.ts
 		/**
 		* motionCopy.ts — THE MOTION STUDIO COPY DICTIONARY (the rail-law
 		* audit's §2a, 2026-10-31). Client UI copy is locale-owned (the
@@ -11220,8 +11143,7 @@ window.__ModuleLoader__.load({
 			/** Edit-hint tail (renders after the styled Repose word). */
 			editHintTail: "patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
 		};
-		//#endregion
-		//#region \0dsh-css:packages/motion/motion/src/ui/studio/export-dialog.module.css.mjs
+		// \0dsh-css:packages/motion/motion/src/ui/studio/export-dialog.module.css.mjs
 		const css$2 = ".Tjpl1G_panel{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:var(--dsw-alias-bg-module-platform);border-radius:12px;flex-direction:column;flex-shrink:0;width:min(340px,42vw);min-height:0;max-height:100%;display:flex;overflow:hidden;box-shadow:0 25px 50px -12px #00000073}.Tjpl1G_head{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:space-between;align-items:center;padding:12px 20px;display:flex}.Tjpl1G_headTitle{align-items:center;gap:8px;display:flex}.Tjpl1G_headIcon{width:16px;height:16px;color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_headText{font-size:14px;font-weight:500}.Tjpl1G_frameChip{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 60%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);border-radius:4px;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px}.Tjpl1G_closeBtn{color:var(--dsw-alias-label-secondary)}.Tjpl1G_closeBtn:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_body{flex-direction:column;flex:1;gap:16px;min-height:0;padding:20px;display:flex;overflow-y:auto}.Tjpl1G_stack2{flex-direction:column;gap:8px;display:flex}.Tjpl1G_secTitle{text-transform:uppercase;letter-spacing:.05em;color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;font-weight:600;display:flex}.Tjpl1G_secHead{justify-content:space-between;align-items:center;display:flex}.Tjpl1G_scopeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_scopeBtn{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:10px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.Tjpl1G_scopeBtn:disabled{cursor:not-allowed;opacity:.4}.Tjpl1G_scopeBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.Tjpl1G_scopeBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.Tjpl1G_scopeBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.Tjpl1G_scopeBtnRow{align-items:center;gap:6px;display:flex}.Tjpl1G_scopeLabel{font-size:11px;font-weight:500}.Tjpl1G_scopeCheck{width:12px;height:12px;color:var(--dsw-alias-accent,#3b82f6);margin-left:auto}.Tjpl1G_scopeDesc{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);font-size:9px}.Tjpl1G_livePanel{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 4%, transparent);border-radius:8px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Tjpl1G_livePanelHead{color:var(--dsw-alias-accent,#3b82f6);align-items:center;gap:6px;font-size:10px;font-weight:500;display:flex}.Tjpl1G_liveHelp{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);margin:0;font-size:10px;line-height:1.375}.Tjpl1G_liveHelpStrong{color:color-mix(in srgb, var(--dsw-alias-label-primary) 90%, transparent)}.Tjpl1G_fieldGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_field{flex-direction:column;gap:2px;display:flex}.Tjpl1G_fieldLabel{text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);font-size:9px;font-weight:600}.Tjpl1G_numInput{font-variant-numeric:tabular-nums;width:100%;font-family:ui-monospace,monospace;font-size:10px}.Tjpl1G_outRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:10px;display:flex}.Tjpl1G_outDim{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent)}.Tjpl1G_outVal{color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_presetRow{gap:6px;display:flex}.Tjpl1G_presetBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary);border-radius:4px;padding:4px 8px;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.Tjpl1G_presetBtn:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_modesWarn{color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);font-size:9px}.Tjpl1G_modeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_modeCard{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:2px;padding:8px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.Tjpl1G_modeCardActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.Tjpl1G_modeCardIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.Tjpl1G_modeCardIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.Tjpl1G_scrubRow{align-items:center;gap:6px;display:flex}.Tjpl1G_scrubPlay{color:var(--dsw-alias-label-secondary);transition:color .12s}.Tjpl1G_scrubPlay:hover{color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_scrubCount{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);font-family:ui-monospace,monospace;font-size:10px}.Tjpl1G_stepBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary);border-radius:4px;padding:4px;transition:color .12s}.Tjpl1G_stepBtn:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_stepBtn:disabled{opacity:.3}.Tjpl1G_range{height:12px;accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.Tjpl1G_bgGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;display:grid}.Tjpl1G_bgBtn{border:1px solid #0000;border-radius:4px;padding:6px 0;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.Tjpl1G_bgBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.Tjpl1G_bgBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.Tjpl1G_bgBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.Tjpl1G_summary{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);border-radius:8px;flex-direction:column;gap:4px;padding:8px 12px;display:flex}.Tjpl1G_summaryRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);align-items:center;gap:6px;font-size:10px;display:flex}.Tjpl1G_foot{border-top:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;display:flex}.Tjpl1G_footGhost{border:1px solid var(--dsw-alias-border,#e2e4e9);height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;padding:0 12px;font-size:12px;font-weight:500}.Tjpl1G_footGhost:hover{color:var(--dsw-alias-label-primary)}.Tjpl1G_footPrimary{background:var(--dsw-alias-accent,#3b82f6);height:32px;color:var(--dsw-alias-bg-module-platform);border-radius:6px;align-items:center;gap:6px;padding:0 12px;font-size:12px;font-weight:500;display:flex}.Tjpl1G_footPrimary:disabled{cursor:not-allowed;opacity:.5}.Tjpl1G_i12{width:12px;height:12px}.Tjpl1G_i14{width:14px;height:14px}.Tjpl1G_i16{width:16px;height:16px}";
 		const tagId$2 = "@melite/motion-motion/export-dialog.module.css@5ec77289";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
@@ -11287,8 +11209,7 @@ window.__ModuleLoader__.load({
 			"summary": "Tjpl1G_summary",
 			"summaryRow": "Tjpl1G_summaryRow"
 		};
-		//#endregion
-		//#region src/ui/studio/MotionExportDialog.tsx
+		// src/ui/studio/MotionExportDialog.tsx
 		/**
 		* MotionExportDialog — the Motion Card's export surface.
 		*
@@ -12100,8 +12021,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/ui/studio/motionParams.ts
+		// src/ui/studio/motionParams.ts
 		/** Shared motion-studio param keys + stage constants.
 		*
 		*  Moved verbatim from `component.tsx` (the MotionCardEditor godfile split):
@@ -12135,8 +12055,7 @@ window.__ModuleLoader__.load({
 		* mannequin's skeleton scale): the floor plate sits this far above
 		* the world origin so it never z-fights the grid plane. */
 		const FLOOR_LIFT_Y$1 = .02;
-		//#endregion
-		//#region src/ui/studio/useMotionUndoStack.ts
+		// src/ui/studio/useMotionUndoStack.ts
 		/**
 		* useMotionUndoStack — the undo/redo cluster, re-homed onto the one-truth
 		* doc doors (2026-11-05, nativity audit F7).
@@ -12255,8 +12174,7 @@ window.__ModuleLoader__.load({
 				undoVersion
 			};
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewers/motionImageStore.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewers/motionImageStore.ts
 		init_clientStore();
 		const STORAGE_KEY = "motion-images";
 		function load() {
@@ -12291,8 +12209,7 @@ window.__ModuleLoader__.load({
 				set({ images });
 			}
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		// ../../web-kit/contracts/src/mediaKinds.ts
 		/** The estate media-kind vocabulary (typed DATA — see header). */
 		function mediaVocab() {
 			return {
@@ -12392,8 +12309,7 @@ window.__ModuleLoader__.load({
 			const withoutQuery = value.split(/[?#]/, 1)[0];
 			return mediaKindOf(withoutQuery) === "model";
 		}
-		//#endregion
-		//#region src/ui/studio/useMotionMedia.ts
+		// src/ui/studio/useMotionMedia.ts
 		/**
 		* useMotionMedia — the asset/media cluster moved verbatim from
 		* `component.tsx` (MotionCardEditor lines ~188–421 + ~580–735).
@@ -12715,8 +12631,7 @@ window.__ModuleLoader__.load({
 				handleStageDrop
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/usePoseEditing.ts
+		// src/ui/studio/usePoseEditing.ts
 		/**
 		* usePoseEditing — the edit-mode (Phase B) verbs + live reskin moved
 		* verbatim from `component.tsx` (MotionCardEditor lines ~844–1037,
@@ -12874,8 +12789,7 @@ window.__ModuleLoader__.load({
 				setEditedDeformedB64
 			]);
 		}
-		//#endregion
-		//#region ../../../clsx/dist/clsx.mjs
+		// ../../../clsx/dist/clsx.mjs
 		function r(e) {
 			var t, f, n = "";
 			if ("string" == typeof e || "number" == typeof e) n += e;
@@ -12889,8 +12803,7 @@ window.__ModuleLoader__.load({
 			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
 			return n;
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/motionTimelineState.ts
+		// ../../web-kit/timeline/src/timeline/motionTimelineState.ts
 		const MOTION_TIMELINE_TRACKS = [
 			{
 				uuid: "fullbody",
@@ -12965,8 +12878,7 @@ window.__ModuleLoader__.load({
 			if (c && "randomUUID" in c) return c.randomUUID();
 			return "tl-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts
 		/**
 		* MotionTimelineBarLayout — shared geometry + formatting atoms for
 		* the motion timeline bar (split from MotionTimelineBar.tsx, pure move).
@@ -12979,8 +12891,7 @@ window.__ModuleLoader__.load({
 		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
 		const ZOOM_STEP = 1.6;
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
 		/**
 		* MotionTimelineBarScale — the bar's ABSOLUTE scale model (split from
 		* MotionTimelineBar.tsx, pure move): measure-once pin, zoom,
@@ -13104,8 +13015,7 @@ window.__ModuleLoader__.load({
 				keepTailVisible
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts
 		/**
 		* MotionTimelineBarDrag — the bar's one global pointer session (split
 		* from MotionTimelineBar.tsx, pure move): scrub + clip drag/resize +
@@ -13270,8 +13180,7 @@ window.__ModuleLoader__.load({
 				grabPlayhead
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/icons.tsx
+		// ../../web-kit/timeline/src/timeline/icons.tsx
 		function base$1(name, className) {
 			return {
 				xmlns: "http://www.w3.org/2000/svg",
@@ -13406,8 +13315,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
+		// \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
 		const css$1 = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_plannedBand{pointer-events:none;background:repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 8px);border-left:1px dashed var(--dsw-alias-border-l2);position:absolute;top:0;bottom:0}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamChip{z-index:40;border:1px solid var(--dsw-alias-line-2);background:var(--dsw-alias-bg-layer-1);min-width:14px;height:14px;color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:9999px;justify-content:center;align-items:center;padding:0 3px;font-size:9px;line-height:1;display:inline-flex;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_seamChip:hover{filter:brightness(1.25)}.t2WLSa_seamChipCarried{box-shadow:0 0 4px}.t2WLSa_seamChipCut{opacity:.8;border-style:dashed}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_splitSeat{z-index:40;border:1px solid var(--dsw-alias-line-2);background:var(--dsw-alias-bg-layer-1);min-width:16px;height:14px;color:var(--dsw-alias-label-primary);opacity:0;cursor:pointer;border-radius:9999px;justify-content:center;align-items:center;padding:0 3px;font-size:9px;line-height:1;display:inline-flex;position:absolute;bottom:2px;left:50%;transform:translate(-50%)}.t2WLSa_splitSeat:hover{filter:brightness(1.25);border-color:var(--dsw-alias-label-primary)}.t2WLSa_promptClip:hover .t2WLSa_splitSeat{opacity:1}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSpanBody{padding:0;display:block}.t2WLSa_commissionSegmentPos{border-left:2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);z-index:1;border-radius:3px;align-items:center;padding:1px 4px;display:flex;position:absolute;top:3px;bottom:3px}.t2WLSa_commissionSegmentPos[data-commission-planned=true]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);border-left-style:dashed}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
 		const tagId$1 = "@melite/motion-motion/timeline.module.css@8b64aceb";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
@@ -13518,8 +13426,7 @@ window.__ModuleLoader__.load({
 			"zoomPct": "t2WLSa_zoomPct",
 			"zoomRow": "t2WLSa_zoomRow"
 		};
-		//#endregion
-		//#region ../../web-kit/timeline/src/timelineCopy.ts
+		// ../../web-kit/timeline/src/timelineCopy.ts
 		/**
 		* timelineCopy.ts — THE TIMELINE KIT COPY DICTIONARY (the copy-scope
 		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
@@ -13651,8 +13558,7 @@ window.__ModuleLoader__.load({
 			/** The sub-minute second unit ("5.2s"). */
 			secondsUnit: "s"
 		};
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/LaneHead.tsx
+		// ../../web-kit/timeline/src/timeline/LaneHead.tsx
 		/**
 		* LaneHead — THE ONE LANE HEAD SHELL (SD-8 lane parity, operator item
 		* c 2026-11-08: the keyframes bar's format was "not shared with the
@@ -13734,8 +13640,7 @@ window.__ModuleLoader__.load({
 				}, `${row.id}-pos-${String(i)}`)) : null]
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
 		/**
 		* MotionTimelineBarChrome — the bar's pinned + ruler + playhead chrome
 		* (split from MotionTimelineBar.tsx, pure move): the label gutter
@@ -13986,8 +13891,7 @@ window.__ModuleLoader__.load({
 				})
 			}) });
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/viser-timeline/styles.ts
+		// ../../web-kit/timeline/src/timeline/viser-timeline/styles.ts
 		const PROMPT_COLORS = [
 			[
 				0,
@@ -14031,8 +13935,7 @@ window.__ModuleLoader__.load({
 			]
 		];
 		PROMPT_COLORS[0];
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx
 		/**
 		* MotionTimelineBarLanes — the bar's lane bodies (split from
 		* MotionTimelineBar.tsx, pure move): prompt clips, beats, audio
@@ -14622,8 +14525,7 @@ window.__ModuleLoader__.load({
 				}, track.uuid);
 			}) });
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
 		/**
 		* MotionTimelineBar — the motion card's bar, pose-studio display model.
 		*
@@ -14907,8 +14809,7 @@ window.__ModuleLoader__.load({
 			});
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/TimelineScrollbar.tsx
+		// ../../web-kit/timeline/src/timeline/TimelineScrollbar.tsx
 		/**
 		* TimelineScrollbar — the timeline's scrollbar + zoom chrome,
 		* MELITE-AUTHORED. Re-homed out of the vendored
@@ -14922,8 +14823,7 @@ window.__ModuleLoader__.load({
 		* The scrollbar body moved verbatim; only the imports and the zoom seats
 		* (now `TimelineZoomCluster`) changed.
 		*/
-		//#endregion
-		//#region src/ui/studio/useMotionStage.ts
+		// src/ui/studio/useMotionStage.ts
 		/**
 		* useMotionStage — the 3D/stage cluster moved verbatim from `component.tsx`.
 		*
@@ -15184,8 +15084,7 @@ window.__ModuleLoader__.load({
 				endRectDrag
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useTimelineEnvelope.ts
+		// src/ui/studio/useTimelineEnvelope.ts
 		/**
 		* useTimelineEnvelope — the authoring envelope math (baseT/targetT +
 		* pull-the-tail extend). The doc cluster that used to live beside it —
@@ -15225,8 +15124,7 @@ window.__ModuleLoader__.load({
 				}, [onSave, toast])
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useTimelineAuthoring.ts
+		// src/ui/studio/useTimelineAuthoring.ts
 		/**
 		* useTimelineAuthoring — the timeline authoring verbs, re-homed onto the
 		* one-truth commit doors (2026-11-05, nativity audit F7). Every verb is
@@ -15378,8 +15276,7 @@ window.__ModuleLoader__.load({
 				])
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/MotionRail.tsx
+		// src/ui/studio/MotionRail.tsx
 		function MotionRail({ effectiveNpz, showSkeleton, setShowSkeleton, inPlace, setInPlace, editMode, toggleEdit, fullbodyKfAtFrame, frameIdx, stampConstraintAtFrame, editableJoints, handleRepose, reposing, keptEdit, discardKeptEdit, kimodoSpec, kimodoError, paramValues, onParamEdit, onAxisPick, exportOpen, setExportOpen, bgImage, handleBgFile, setBg, bodySrc, bodyWired, bodyWiredUpstream, bodyWiredUrl, handleBodyFile, toast, attachBody, onWireSlot, bodySlotIdx, onSave, stage, setBodyWireOpen, bodyNotice }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.railGrid,
@@ -15580,8 +15477,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region \0dsh-css:packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
+		// \0dsh-css:packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
 		const css = ".nTYLQW_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.nTYLQW_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent);animation:.9s linear infinite nTYLQW_loading-rotate}@keyframes nTYLQW_loading-rotate{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.nTYLQW_loadingIcon{animation:none}}.nTYLQW_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.nTYLQW_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
 		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@35df78cf";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -15598,8 +15494,7 @@ window.__ModuleLoader__.load({
 			"loadingIcon": "nTYLQW_loadingIcon",
 			"loadingLabel": "nTYLQW_loadingLabel"
 		};
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/actionCopy.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/actionCopy.ts
 		/**
 		* actionCopy.ts — THE MOTION/UI COPY DICTIONARY (the copy-scope
 		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
@@ -15647,11 +15542,9 @@ window.__ModuleLoader__.load({
 			/** The transport's fps badge ("<fps> fps · <frames>f"). */
 			fpsBadge: (p) => `${p.fps} fps · ${p.frames}f`
 		};
-		//#endregion
-		//#region ../../web-kit/formats/lib/somaSkin.js
+		// ../../web-kit/formats/lib/somaSkin.js
 		init_lib();
-		//#endregion
-		//#region ../../web-kit/formats/lib/poseCodec.js
+		// ../../web-kit/formats/lib/poseCodec.js
 		const SOMA77_BONE_CONNECTIONS = [
 			[0, 1],
 			[1, 2],
@@ -15730,8 +15623,7 @@ window.__ModuleLoader__.load({
 			[74, 75],
 			[75, 76]
 		];
-		//#endregion
-		//#region ../../web-kit/formats/lib/motionNpz.js
+		// ../../web-kit/formats/lib/motionNpz.js
 		/**
 		* motionNpz — the Motion Card's client-side motion engine.
 		*
@@ -15835,8 +15727,7 @@ window.__ModuleLoader__.load({
 			return children;
 		})();
 		({ "MODE": "production" }).BASE_URL;
-		//#endregion
-		//#region ../../web-kit/formats/lib/bodyPresets.js
+		// ../../web-kit/formats/lib/bodyPresets.js
 		const NEUTRAL_RACE = [
 			.5,
 			.5,
@@ -15845,11 +15736,9 @@ window.__ModuleLoader__.load({
 		[...NEUTRAL_RACE];
 		[...NEUTRAL_RACE];
 		[...NEUTRAL_RACE];
-		//#endregion
-		//#region ../../web-kit/formats/lib/b64.js
+		// ../../web-kit/formats/lib/b64.js
 		init_api();
-		//#endregion
-		//#region ../../web-kit/formats/lib/poseTransforms.js
+		// ../../web-kit/formats/lib/poseTransforms.js
 		init_lib();
 		const KP = {
 			NOSE: 0,
@@ -15910,8 +15799,7 @@ window.__ModuleLoader__.load({
 			}
 			return t;
 		})();
-		//#endregion
-		//#region ../../web-kit/formats/lib/prompt-tags.json
+		// ../../web-kit/formats/lib/prompt-tags.json
 		var prompt_tags_default = {
 			_meta: {
 				"version": 1,
@@ -16044,8 +15932,7 @@ window.__ModuleLoader__.load({
 				"abstract"
 			]
 		};
-		//#endregion
-		//#region ../../web-kit/formats/lib/promptTags.js
+		// ../../web-kit/formats/lib/promptTags.js
 		/**
 		* E4.7 — Prompt tag library + autocomplete helpers.
 		*
@@ -16089,8 +15976,7 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		Object.freeze(flatten(prompt_tags_default));
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageSkeleton.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageSkeleton.ts
 		/** Centimeters → meters. SOMA-X/ANNY joints arrive in cm; the Three.js scene
 		*  is authored in meters. Applied at every display boundary. The drag handler
 		*  converts gizmo.position back to cm so IK/FK math stays in the native cm
@@ -16174,8 +16060,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCamera.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCamera.ts
 		function cameraPosFor(view) {
 			switch (view) {
 				case "side": return [
@@ -16246,8 +16131,7 @@ window.__ModuleLoader__.load({
 				dir[2] * s
 			], ty];
 		}
-		//#endregion
-		//#region ../../web-kit/formats/lib/poserSkin.js
+		// ../../web-kit/formats/lib/poserSkin.js
 		init_lib();
 		const MESH_CACHE_CAP = 16;
 		const _meshCache = /* @__PURE__ */ new Map();
@@ -16301,8 +16185,7 @@ window.__ModuleLoader__.load({
 			_meshCache.set(cacheKey, data);
 			return data;
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageMesh.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageMesh.ts
 		const FLOOR_LIFT_Y = .02;
 		/** Compute the Y-offset that places the mesh's lowest point at FLOOR_LIFT_Y. */
 		function computeMeshLiftY(meshData) {
@@ -16327,8 +16210,7 @@ window.__ModuleLoader__.load({
 			geo.computeBoundingSphere();
 			return geo;
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
 		function createSkinCarrier(liftGroup) {
 			return {
 				mesh: null,
@@ -16506,8 +16388,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageManipulators.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageManipulators.ts
 		const JOINT_RADIUS = {};
 		for (let i = 0; i < 77; i++) JOINT_RADIUS[i] = .02;
 		for (const j of [
@@ -16922,8 +16803,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageOverlays.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageOverlays.ts
 		function createLightingOrbs(deps) {
 			const { stage, scene } = deps;
 			const orbs = {
@@ -17387,8 +17267,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageReference.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStageReference.ts
 		function createReferenceCarrier(deps) {
 			const { liftGroup, refManip } = deps;
 			return {
@@ -17557,8 +17436,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStage.ts
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/poseStage.ts
 		/**
 		* poseStage — the raw-three pose scene (the substrate law).
 		*
@@ -17837,8 +17715,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx
+		// ../../engines/comfyui/src/action_cards/motion/ui/viewer3d/PoseViewer3D.tsx
 		/**
 		* PoseViewer3D — Three.js skinned humanoid figure from SOMA mesh (NVIDIA mesh).
 		*
@@ -18193,8 +18070,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		const PoseViewer3D = (0, react.memo)(PoseViewer3DImpl);
-		//#endregion
-		//#region src/ui/studio/MotionStageView.tsx
+		// src/ui/studio/MotionStageView.tsx
 		function MotionStageView({ stageBoxRef, bgDragOver, setBgDragOver, handleStageDrop, bgImage, skin, allVertsM, restB64, editedDeformedB64, frameIdx, setFrameIdx, npz, playing, editMode, cameraView, framing, jointsFlatCm, showSkeleton, effectiveNpz, customBindMesh, inPlace, threeCtxRef, editableJoints, selectedJoint, setSelectedJoint, handleJointMove, loading, error, setCameraView, setFraming, exportOpen, stageRect, beginRectDrag, onRectPointerMove, endRectDrag, setExportOpen, npzUrl, stage, setPlaying, displayJointsM, liftY, setStageRect, exportOut, handleOutSize, handleFramePreset }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: component_module_css_default.centerRow,
@@ -18418,8 +18294,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region src/ui/studio/MotionTimelineSection.tsx
+		// src/ui/studio/MotionTimelineSection.tsx
 		function MotionTimelineSection({ npz, editMode, playing, setPlaying, fmt, curSec, totalSec, tlPrompts, targetT, addPromptCard, tlKeyframes, frameIdx, effectiveNpz, onTimelineExtend, handleTimelineFrameChange, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onPromptUpdate, onPromptMove, onPromptResize, onPromptDelete, bodyWireOpen, onWireSlot, priorStages, bodyWired, bodyWiredId, onSave, setBodyGlbState, setBodyNotice, setBodyWireOpen }) {
 			/* v8 ignore next 1 -- targetT ≥ 1 from every constructor (probe 2026-09-19): the empty-timeline face is the zero-frame fence */
 			const emptyTimelineFace = !targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -18539,8 +18414,7 @@ window.__ModuleLoader__.load({
 				})
 			] });
 		}
-		//#endregion
-		//#region src/ui/studio/component.tsx
+		// src/ui/studio/component.tsx
 		/**
 		* MotionCardEditor — the drill-down surface for a genre:"motion" card
 		* (kimodo text→motion). Turns the card into a live 3D stage like the Body
@@ -18938,8 +18812,7 @@ window.__ModuleLoader__.load({
 			bottom: { kind: "timeline" },
 			params: { slots: [] }
 		});
-		//#endregion
-		//#region src/client/upstream.ts
+		// src/client/upstream.ts
 		/**
 		* motionUpstreamStages — the studio's upstream projection, INTERNAL
 		* to the plugin (the export-discipline law, card-view-vs-dsh-web
@@ -18954,8 +18827,7 @@ window.__ModuleLoader__.load({
 			const priorIds = props.priorStageIds === void 0 ? null : new Set(props.priorStageIds);
 			return projectUpstreamStages(props).filter((upstream) => priorIds === null || priorIds.has(upstream.id));
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/**
 		* motion client entry — the card package's OWN cards.stage.view
 		* surface (the composition-root correction's law, closed 2026-09-12
@@ -19006,7 +18878,6 @@ window.__ModuleLoader__.load({
 				runCompiledGeneration: props.runCompiledGeneration
 			});
 		}
-		//#endregion
 		exports.apply = apply;
 		exports.inject = inject;
 		exports.name = name;

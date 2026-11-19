@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
+		// \0rolldown/runtime.js
 		var __create = Object.create;
 		var __defProp = Object.defineProperty;
 		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -42,14 +42,13 @@ window.__ModuleLoader__.load({
 			value: mod,
 			enumerable: true
 		}) : target, mod));
-		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
-		//#region ../../web-kit/contracts/src/stageView.ts
+		// ../../web-kit/contracts/src/stageView.ts
 		function recordOf$2(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -314,8 +313,7 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		//#endregion
-		//#region \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
+		// \0dsh-css:packages/video/h3-timeline/src/ui/studio/studio.module.css.mjs
 		const css$1 = ".ezL1Ba_tabular{font-variant-numeric:tabular-nums}.ezL1Ba_sz10{width:10px;height:10px}.ezL1Ba_sz12{width:12px;height:12px}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:first-child{grid-area:1/1;min-width:0;min-height:0}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(2){flex-direction:column;grid-area:1/2;min-width:0;min-height:0;display:flex;overflow:hidden}.ezL1Ba_studioRoot.ezL1Ba_studioRoot>:nth-child(3){grid-area:2/1/auto/-1;min-width:0;min-height:0;max-height:none;overflow:visible}.ezL1Ba_studioRoot{box-sizing:border-box;height:100%;min-height:0;color:var(--dsw-alias-label-primary);gap:8px;padding:12px}.ezL1Ba_railCol{flex-direction:column;gap:8px;min-width:0;height:100%;min-height:0;padding:10px 12px;display:flex;overflow:clip auto}.ezL1Ba_docBlock{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;min-width:0;padding-bottom:10px}.ezL1Ba_railCol>*{min-width:0}.ezL1Ba_docLines{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;flex-direction:column;gap:4px;padding:0 4px;font-size:10px;line-height:1.625;display:flex}.ezL1Ba_runFold{border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}.ezL1Ba_runBody{flex-direction:column;gap:8px;padding-bottom:10px;display:flex}.ezL1Ba_panel{flex:none}.ezL1Ba_focusHead{align-items:center;gap:8px;padding-bottom:6px;display:flex}.ezL1Ba_compactList{flex-direction:column;gap:4px;display:flex}.ezL1Ba_focusList{flex-direction:column;gap:8px;display:flex}.ezL1Ba_kfRow{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;align-items:center;gap:8px;padding:4px 8px;display:flex}.ezL1Ba_kfTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_kfDel{width:20px;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;flex:none;justify-content:center;align-items:center;transition:background-color .15s,color .15s;display:flex}.ezL1Ba_kfDel:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_callCard{padding:6px 2px;transition:color .15s}.ezL1Ba_callCardSel .ezL1Ba_cardId,.ezL1Ba_callCardSel .ezL1Ba_cardSpan{color:var(--dsw-alias-label-primary)}.ezL1Ba_cardHead{align-items:center;gap:8px;padding-bottom:4px;display:flex}.ezL1Ba_cardId{text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px;font-weight:600}.ezL1Ba_cardSpan{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:9px;overflow:hidden}.ezL1Ba_knobTag{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);border-radius:6px;flex:none;padding:1px 4px;font-size:8px;font-weight:600}.ezL1Ba_delBtn{border:1px solid var(--dsw-alias-border-l2);text-transform:uppercase;letter-spacing:.06em;height:20px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-items:center;gap:4px;margin-left:auto;padding:0 6px;font-size:9px;transition:border-color .15s,background-color .15s,color .15s;display:flex}.ezL1Ba_delBtn:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 60%, transparent);background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_spanRow{align-items:center;gap:6px;padding:4px 0;display:flex}.ezL1Ba_spanRow>span{min-width:0}.ezL1Ba_spanRow input{width:100%;max-width:100%}.ezL1Ba_spanLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:9px}.ezL1Ba_spanDash{color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_callRefs{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:6px;padding:6px}.ezL1Ba_refCountOver{color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_seamModeRow{align-items:center;gap:4px;padding:2px 2px 0;display:flex}.ezL1Ba_seamModeBtn{flex:none}.ezL1Ba_callRefsBody{flex-direction:column;gap:4px;margin-top:4px;display:flex}.ezL1Ba_knobFold{margin-top:4px}.ezL1Ba_knobCount{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);color:var(--dsw-alias-brand-primary);border-radius:6px;padding:0 4px;font-size:8px}.ezL1Ba_knobGrid{border-top:1px solid var(--dsw-alias-border-l1);grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;margin-top:4px;padding-top:6px;display:grid}.ezL1Ba_knobGrid>*,.ezL1Ba_knobGrid label>span{min-width:0}.ezL1Ba_knobGrid input,.ezL1Ba_knobGrid select{max-width:100%}.ezL1Ba_knobGrid select{color-scheme:light}.ezL1Ba_beatsWrap{flex-direction:column;gap:4px;display:flex}.ezL1Ba_beatsWrap>*{min-width:0}.ezL1Ba_railCol input,.ezL1Ba_railCol select,.ezL1Ba_railCol textarea{box-sizing:border-box}.ezL1Ba_beatErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_textHead{justify-content:space-between;align-items:center;display:flex}.ezL1Ba_textLabel{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px}.ezL1Ba_enhanceRow{align-items:center;gap:4px;display:flex}.ezL1Ba_enhanceBtn{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-brand-primary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;font-weight:500;transition:background-color .15s}.ezL1Ba_enhanceBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent)}.ezL1Ba_enhanceBtn:disabled{opacity:.3}.ezL1Ba_undoBtn{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 4px;font-size:9px;transition:background-color .15s,color .15s}.ezL1Ba_undoBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.ezL1Ba_promptBox{resize:vertical;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);width:100%;height:auto;min-height:2.25rem;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;padding:4px 8px;font-size:11px;line-height:1.5}.ezL1Ba_promptBox::placeholder{color:var(--dsw-alias-label-tertiary)}.ezL1Ba_promptBox:focus{border-color:var(--dsw-alias-brand-primary)}.ezL1Ba_promptBoxEmpty{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);color:var(--dsw-alias-state-warn-primary)}.ezL1Ba_promptBoxEmpty::placeholder{color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent)}.ezL1Ba_promptBoxEmpty:focus{border-color:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent)}.ezL1Ba_fileErr{color:var(--dsw-alias-state-error-primary);font-size:8px;line-height:1.25}.ezL1Ba_refRow{flex-direction:column;gap:2px;display:flex}.ezL1Ba_chips{flex-wrap:wrap;gap:4px;display:flex}.ezL1Ba_declaredChip{border:1px dashed var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-secondary);border-radius:6px;align-items:center;gap:4px;padding:2px 6px 2px 2px;font-size:9px;display:inline-flex}.ezL1Ba_declaredThumb{object-fit:cover;border-radius:4px;flex:none;width:24px;height:24px;display:block}.ezL1Ba_declaredThumbBtn{border:0;flex:none;padding:0;line-height:0}.ezL1Ba_declaredName{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.ezL1Ba_declaredTag{text-transform:uppercase;letter-spacing:.04em;color:var(--dsw-alias-label-tertiary);flex:none;font-size:8px}.ezL1Ba_uploadBtn{flex:none;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:inline-flex}.ezL1Ba_uploadBtn:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary)}.ezL1Ba_stripTools{flex-wrap:wrap;align-items:center;gap:4px;padding:0 0 4px;display:flex}.ezL1Ba_stripTools>button{flex:none}.ezL1Ba_splitAtInput{flex:0 72px;min-width:0}.ezL1Ba_kfEmpty{color:var(--dsw-alias-label-tertiary);padding:8px 2px;font-size:10px}.ezL1Ba_clipsRow{align-items:center;gap:8px;display:flex}.ezL1Ba_clipsNote{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:1;font-size:10px;overflow:hidden}.ezL1Ba_clipsHint{text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--dsw-alias-border-l2);max-width:46%;color:var(--dsw-alias-label-tertiary);opacity:.85;flex-shrink:0;padding-left:8px;font-size:10px;overflow:hidden}.ezL1Ba_filmBox{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:1;min-height:0;padding:8px 10px;display:flex}.ezL1Ba_histRow{flex-wrap:wrap;flex:none;align-items:center;gap:4px;padding-bottom:6px;display:flex}.ezL1Ba_histChip{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);font-family:var(--dsw-alias-font-mono,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);color:var(--dsw-alias-label-secondary);border-radius:6px;padding:2px 6px;font-size:9px;text-decoration:none;transition:border-color .15s,color .15s}.ezL1Ba_histChip:hover{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.ezL1Ba_heroRow{flex:1;align-items:center;gap:8px;min-height:0;padding-bottom:4px;display:flex;overflow-x:auto}.ezL1Ba_finalCut{box-sizing:border-box;border:1px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);min-width:0;height:100%;box-shadow:0 0 18px -6px color-mix(in srgb, var(--dsw-alias-brand-primary) 35%, transparent);border-radius:6px;flex-direction:column;flex:1;gap:4px;padding:6px;display:flex}.ezL1Ba_player{object-fit:contain;background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);border-radius:6px;flex:1;width:100%;height:100%;min-height:0}.ezL1Ba_cutBar{align-items:center;gap:4px;padding:0 2px;display:flex}.ezL1Ba_cutIcon{width:12px;height:12px;color:var(--dsw-alias-brand-primary);flex:none}.ezL1Ba_cutTime{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);margin-left:4px;font-size:9px}.ezL1Ba_cutOpen{color:var(--dsw-alias-brand-primary);text-underline-offset:2px;margin-left:auto;font-size:9px}.ezL1Ba_cutOpen:hover{text-decoration:underline}.ezL1Ba_winTile{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l3);background:var(--dsw-alias-interactive-bg-hover);border-radius:6px;flex-direction:column;flex:none;gap:4px;width:9rem;height:100%;padding:6px;transition:border-color .15s;display:flex}.ezL1Ba_winTile:hover{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent)}.ezL1Ba_winVid{background:color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent);object-fit:cover;border-radius:6px;flex:1;width:100%;min-height:0}.ezL1Ba_winName{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary);padding:0 2px;font-size:9px;overflow:hidden}.ezL1Ba_emptyGlyph{width:20px;height:20px;color:var(--dsw-alias-label-tertiary)}.ezL1Ba_laneInspector{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);flex-direction:column;gap:4px;padding:6px 0 2px;display:flex}.ezL1Ba_laneRow{align-items:center;gap:6px;display:flex}.ezL1Ba_laneName{text-overflow:ellipsis;white-space:nowrap;max-width:160px;color:var(--dsw-alias-label-secondary);flex:none;font-size:10px;overflow:hidden}.ezL1Ba_laneSelect{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:none;padding:1px 4px;font-size:10px}.ezL1Ba_laneText{border:1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary) 40%, transparent);min-width:120px;color:var(--dsw-alias-label-primary);background:0 0;border-radius:4px;flex:1;padding:2px 6px;font-size:10px}.ezL1Ba_laneDelete{color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;flex:none;padding:0 4px;font-size:12px}.ezL1Ba_laneDelete:hover{color:var(--dsw-alias-state-danger-primary)}.ezL1Ba_blockerWrap{display:block}.ezL1Ba_laneBlocker{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);color:var(--dsw-alias-label-primary);border-radius:8px;margin-bottom:6px;padding:6px 10px;font-size:11px;line-height:1.45}.ezL1Ba_gateFace{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px;line-height:1.45}.ezL1Ba_spanInfo{color:var(--dshtx2);cursor:help;user-select:none;font-size:12px;line-height:1}.ezL1Ba_v2vPromptRow{flex-wrap:nowrap;align-items:center;gap:6px;padding:0 0 4px;display:flex}.ezL1Ba_v2vPromptLabel{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:10px}.ezL1Ba_v2vPromptInput{flex:auto;min-width:0}";
 		const tagId$1 = "@melite/video-h3-timeline/studio.module.css@cc20f87c";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
@@ -412,8 +410,7 @@ window.__ModuleLoader__.load({
 			"winTile": "ezL1Ba_winTile",
 			"winVid": "ezL1Ba_winVid"
 		};
-		//#endregion
-		//#region src/ui/studio/studioCopy.ts
+		// src/ui/studio/studioCopy.ts
 		/**
 		* studioCopy.ts — THE STUDIO COPY DICTIONARY (the rail-law audit's
 		* H8, 2026-10-31). Client UI copy is locale-owned (the estate's
@@ -889,8 +886,7 @@ window.__ModuleLoader__.load({
 			/** The Window length knob's face. */
 			knobWindowLength: "Window length (frames)"
 		};
-		//#endregion
-		//#region src/ui/studio/RailBackButton.tsx
+		// src/ui/studio/RailBackButton.tsx
 		/**
 		* RailBackButton — the submenu law's exit door, ONE spelling
 		* (Sahar-conformance R2, 2026-11-06: the button was triplicated
@@ -922,8 +918,7 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/contracts/lib/familyLane.js
+		// ../../web-kit/contracts/lib/familyLane.js
 		/** A key is present for the family derivation when it states
 		*  something: null/undefined/blank/empty-array are absence. The
 		*  presence grammar every family judge shares — the derivation,
@@ -994,8 +989,7 @@ window.__ModuleLoader__.load({
 			};
 		}
 		var init_familyLane = __esmMin((() => {}));
-		//#endregion
-		//#region ../../models/h3/src/timelineContract.ts
+		// ../../models/h3/src/timelineContract.ts
 		init_familyLane();
 		/** Per-media reference caps — the max stack each declared ref lane admits. */
 		const REF_CAPS = {
@@ -1541,8 +1535,7 @@ window.__ModuleLoader__.load({
 		function migrateCallKnobKey(key) {
 			return LEGACY_KNOB_KEY[key] ?? key;
 		}
-		//#endregion
-		//#region ../../../clsx/dist/clsx.mjs
+		// ../../../clsx/dist/clsx.mjs
 		function r(e) {
 			var t, f, n = "";
 			if ("string" == typeof e || "number" == typeof e) n += e;
@@ -1556,8 +1549,7 @@ window.__ModuleLoader__.load({
 			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
 			return n;
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/motionTimelineState.ts
+		// ../../web-kit/timeline/src/timeline/motionTimelineState.ts
 		const MOTION_TIMELINE_TRACKS = [
 			{
 				uuid: "fullbody",
@@ -1626,8 +1618,7 @@ window.__ModuleLoader__.load({
 				height_scale: .5
 			}
 		];
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarLayout.ts
 		/**
 		* MotionTimelineBarLayout — shared geometry + formatting atoms for
 		* the motion timeline bar (split from MotionTimelineBar.tsx, pure move).
@@ -1640,8 +1631,7 @@ window.__ModuleLoader__.load({
 		const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 		/** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
 		const ZOOM_STEP = 1.6;
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarScale.ts
 		/**
 		* MotionTimelineBarScale — the bar's ABSOLUTE scale model (split from
 		* MotionTimelineBar.tsx, pure move): measure-once pin, zoom,
@@ -1765,8 +1755,7 @@ window.__ModuleLoader__.load({
 				keepTailVisible
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarDrag.ts
 		/**
 		* MotionTimelineBarDrag — the bar's one global pointer session (split
 		* from MotionTimelineBar.tsx, pure move): scrub + clip drag/resize +
@@ -1931,8 +1920,7 @@ window.__ModuleLoader__.load({
 				grabPlayhead
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/icons.tsx
+		// ../../web-kit/timeline/src/timeline/icons.tsx
 		function base(name, className) {
 			return {
 				xmlns: "http://www.w3.org/2000/svg",
@@ -2067,8 +2055,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
+		// \0dsh-css:packages/web-kit/timeline/src/timeline/timeline.module.css.mjs
 		const css = ".t2WLSa_root{user-select:none;display:flex}.t2WLSa_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.t2WLSa_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.t2WLSa_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.t2WLSa_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.t2WLSa_zoomBtn svg{width:14px;height:14px}.t2WLSa_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.t2WLSa_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.t2WLSa_laneHeadShell{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.t2WLSa_laneHeadShell:last-child{border-bottom:0}.t2WLSa_laneHeadShell>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.t2WLSa_laneHeadShell[data-lane-head=audio]>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary)}.t2WLSa_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.t2WLSa_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.t2WLSa_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_detachBtn svg{width:10px;height:10px}.t2WLSa_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.t2WLSa_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.t2WLSa_uploadBtn svg{width:10px;height:10px}.t2WLSa_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.t2WLSa_contentWrap{flex:1;min-width:0;position:relative}.t2WLSa_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.t2WLSa_scroller::-webkit-scrollbar{height:8px}.t2WLSa_scroller::-webkit-scrollbar-track{background:0 0}.t2WLSa_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.t2WLSa_content{position:relative}.t2WLSa_plannedBand{pointer-events:none;background:repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 6px, color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent) 8px);border-left:1px dashed var(--dsw-alias-border-l2);position:absolute;top:0;bottom:0}.t2WLSa_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);position:relative}.t2WLSa_tick{position:absolute;top:0;bottom:0}.t2WLSa_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.t2WLSa_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.t2WLSa_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.t2WLSa_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_canAdd{cursor:copy}.t2WLSa_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.t2WLSa_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.t2WLSa_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.t2WLSa_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.t2WLSa_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeDead{cursor:default;opacity:.35}.t2WLSa_edgeDead:hover{background:0 0}.t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_promptClip:hover .t2WLSa_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_seamChip{z-index:40;border:1px solid var(--dsw-alias-line-2);background:var(--dsw-alias-bg-layer-1);min-width:14px;height:14px;color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:9999px;justify-content:center;align-items:center;padding:0 3px;font-size:9px;line-height:1;display:inline-flex;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_seamChip:hover{filter:brightness(1.25)}.t2WLSa_seamChipCarried{box-shadow:0 0 4px}.t2WLSa_seamChipCut{opacity:.8;border-style:dashed}.t2WLSa_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.t2WLSa_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.t2WLSa_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.t2WLSa_edgeWide{width:16px}.t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.t2WLSa_promptClip:hover .t2WLSa_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.t2WLSa_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.t2WLSa_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.t2WLSa_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.t2WLSa_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.t2WLSa_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.t2WLSa_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.t2WLSa_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.t2WLSa_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.t2WLSa_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.t2WLSa_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.t2WLSa_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.t2WLSa_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.t2WLSa_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.t2WLSa_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.t2WLSa_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.t2WLSa_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_promptClip:hover .t2WLSa_promptDelete{opacity:1}.t2WLSa_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_splitSeat{z-index:40;border:1px solid var(--dsw-alias-line-2);background:var(--dsw-alias-bg-layer-1);min-width:16px;height:14px;color:var(--dsw-alias-label-primary);opacity:0;cursor:pointer;border-radius:9999px;justify-content:center;align-items:center;padding:0 3px;font-size:9px;line-height:1;display:inline-flex;position:absolute;bottom:2px;left:50%;transform:translate(-50%)}.t2WLSa_splitSeat:hover{filter:brightness(1.25);border-color:var(--dsw-alias-label-primary)}.t2WLSa_promptClip:hover .t2WLSa_splitSeat{opacity:1}.t2WLSa_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_beatsAdd{cursor:crosshair}.t2WLSa_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.t2WLSa_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.t2WLSa_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.t2WLSa_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.t2WLSa_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.t2WLSa_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.t2WLSa_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.t2WLSa_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.t2WLSa_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.t2WLSa_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_audioClip:active{cursor:grabbing}.t2WLSa_audioCard{border-radius:6px;top:3px;bottom:3px}.t2WLSa_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.t2WLSa_audioCardIcon svg{width:13px;height:13px}.t2WLSa_audioCard .t2WLSa_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.t2WLSa_audioCard .t2WLSa_audioTime{margin-left:0}.t2WLSa_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.t2WLSa_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.t2WLSa_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.t2WLSa_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.t2WLSa_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.t2WLSa_audioClip:hover .t2WLSa_audioClipDelete{display:flex}.t2WLSa_audioClipDelete svg{width:8px;height:8px}.t2WLSa_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.t2WLSa_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.t2WLSa_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.t2WLSa_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.t2WLSa_kfLane:last-child{border-bottom:0}.t2WLSa_kfLane[data-kf-cards=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)}.t2WLSa_kfDropWell{border:1px dashed color-mix(in srgb, var(--dsw-alias-label-tertiary) 25%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.t2WLSa_kfWrap{position:absolute;top:0;bottom:0}.t2WLSa_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.t2WLSa_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.t2WLSa_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.t2WLSa_kfMoving{transform:rotate(45deg)scale(1.25)}.t2WLSa_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.t2WLSa_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.t2WLSa_kfWrap:hover .t2WLSa_kfDelete{opacity:1}.t2WLSa_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.t2WLSa_playhead{z-index:40;pointer-events:auto;position:absolute;top:0;bottom:0}.t2WLSa_playheadCap{border:1px solid var(--dsw-alias-border-l4);pointer-events:auto;cursor:grab;touch-action:none;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.t2WLSa_playheadCap:active{cursor:grabbing}.t2WLSa_playheadCap:before{content:\"\";border-radius:9999px;position:absolute;inset:-5px}.t2WLSa_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.t2WLSa_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.t2WLSa_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.t2WLSa_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.t2WLSa_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.t2WLSa_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.t2WLSa_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.t2WLSa_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.t2WLSa_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}.t2WLSa_commissionHead{align-items:center;gap:6px;padding:0 8px;display:flex;overflow:hidden}.t2WLSa_commissionKind{letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;text-overflow:ellipsis;font-size:10px;font-weight:600;overflow:hidden}.t2WLSa_commissionLane{width:100%;position:relative}.t2WLSa_commissionSpan{border-left:3px solid var(--dsw-alias-brand-primary);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);border-radius:4px;align-items:center;gap:4px;padding:0 6px;display:flex;position:absolute;top:3px;bottom:3px;left:0;overflow:hidden}.t2WLSa_commissionWindows .t2WLSa_commissionSegment{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);border-radius:3px;flex:1 1 0;min-width:0;padding:1px 4px}.t2WLSa_commissionSpanBody{padding:0;display:block}.t2WLSa_commissionSegmentPos{border-left:2px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);z-index:1;border-radius:3px;align-items:center;padding:1px 4px;display:flex;position:absolute;top:3px;bottom:3px}.t2WLSa_commissionSegmentPos[data-commission-planned=true]{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 7%, transparent);border-left-style:dashed}.t2WLSa_commissionSegment{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;font-variant-numeric:tabular-nums;font-size:10px;line-height:1.5;overflow:hidden}";
 		const tagId = "@melite/video-h3-timeline/timeline.module.css@8b64aceb";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
@@ -2179,8 +2166,7 @@ window.__ModuleLoader__.load({
 			"zoomPct": "t2WLSa_zoomPct",
 			"zoomRow": "t2WLSa_zoomRow"
 		};
-		//#endregion
-		//#region ../../web-kit/timeline/src/timelineCopy.ts
+		// ../../web-kit/timeline/src/timelineCopy.ts
 		/**
 		* timelineCopy.ts — THE TIMELINE KIT COPY DICTIONARY (the copy-scope
 		* extension, 2026-11-05). Client UI copy is locale-owned (the estate's
@@ -2312,8 +2298,7 @@ window.__ModuleLoader__.load({
 			/** The sub-minute second unit ("5.2s"). */
 			secondsUnit: "s"
 		};
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/LaneHead.tsx
+		// ../../web-kit/timeline/src/timeline/LaneHead.tsx
 		/**
 		* LaneHead — THE ONE LANE HEAD SHELL (SD-8 lane parity, operator item
 		* c 2026-11-08: the keyframes bar's format was "not shared with the
@@ -2395,8 +2380,7 @@ window.__ModuleLoader__.load({
 				}, `${row.id}-pos-${String(i)}`)) : null]
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarChrome.tsx
 		/**
 		* MotionTimelineBarChrome — the bar's pinned + ruler + playhead chrome
 		* (split from MotionTimelineBar.tsx, pure move): the label gutter
@@ -2647,8 +2631,7 @@ window.__ModuleLoader__.load({
 				})
 			}) });
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/viser-timeline/styles.ts
+		// ../../web-kit/timeline/src/timeline/viser-timeline/styles.ts
 		const PROMPT_COLORS = [
 			[
 				0,
@@ -2692,8 +2675,7 @@ window.__ModuleLoader__.load({
 			]
 		];
 		PROMPT_COLORS[0];
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBarLanes.tsx
 		/**
 		* MotionTimelineBarLanes — the bar's lane bodies (split from
 		* MotionTimelineBar.tsx, pure move): prompt clips, beats, audio
@@ -3283,8 +3265,7 @@ window.__ModuleLoader__.load({
 				}, track.uuid);
 			}) });
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
+		// ../../web-kit/timeline/src/timeline/MotionTimelineBar.tsx
 		/**
 		* MotionTimelineBar — the motion card's bar, pose-studio display model.
 		*
@@ -3494,8 +3475,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		//#endregion
-		//#region ../../web-kit/timeline/src/timeline/FilmPlayer.tsx
+		// ../../web-kit/timeline/src/timeline/FilmPlayer.tsx
 		/**
 		* FilmPlayer — ONE film, ONE native player (the timeline genre's
 		* shared video surface, moved from h3-timeline's kit 2026-09-17:
@@ -3584,8 +3564,7 @@ window.__ModuleLoader__.load({
 			});
 		});
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		//#endregion
-		//#region ../../web-kit/contracts/src/loraExtensions.ts
+		// ../../web-kit/contracts/src/loraExtensions.ts
 		/** THE LORA EXTENSION SSOT — the one allowlist's tier-agnostic home.
 		*
 		*  History: the list lived in @melite/comfyui-cordis/user-loras and the
@@ -3607,8 +3586,7 @@ window.__ModuleLoader__.load({
 		];
 		LORA_EXTENSIONS$1.join(",");
 		new RegExp("\\.(?:" + LORA_EXTENSIONS$1.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
-		//#endregion
-		//#region ../../../@deepseek-ai/dsh-util-values/lib/index.js
+		// ../../../@deepseek-ai/dsh-util-values/lib/index.js
 		function isWhitespace(c) {
 			return c === " " || c === "\n" || c === "\r" || c === "	";
 		}
@@ -4236,16 +4214,14 @@ window.__ModuleLoader__.load({
 				}
 			});
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/src/modifierSubcards.ts
+		// ../../web-kit/contracts/src/modifierSubcards.ts
 		init_lib$2();
 		Object.values({
 			agent: "agent",
 			user: "user",
 			imported: "imported"
 		});
-		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
+		// ../../web-kit/contracts/src/benchStage.ts
 		/** The LIVE run-media spelling. */
 		const RUN_MEDIA_PREFIX$1 = "/melite-media/runs";
 		/** The spelling that died with the gateway app. Still SERVED forever
@@ -4298,8 +4274,7 @@ window.__ModuleLoader__.load({
 		}
 		["prove", "nance"].join("");
 		const RUN_ID_RE$1 = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
-		//#endregion
-		//#region src/ui/studio/projection.ts
+		// src/ui/studio/projection.ts
 		/**
 		* projection.ts — the h3 tenant's owner-currency projection (PURE
 		* MOVE from src/client/index.ts, 2026-10-27, the one-truth currency
@@ -4449,8 +4424,7 @@ window.__ModuleLoader__.load({
 				upstreams: projectUpstreamStages$1(owner)
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/StudioPreview.tsx
+		// src/ui/studio/StudioPreview.tsx
 		/** THE SEAT-HELD LAW LINE (the dictionary's own bound, audit-blessed):
 		*  the run-history chip's hover narrates its run (id, status, wall
 		*  time) with live values — one of a kind, so the wording lives here,
@@ -4584,8 +4558,7 @@ window.__ModuleLoader__.load({
 				]
 			}) });
 		}
-		//#endregion
-		//#region src/ui/studio/refUtils.ts
+		// src/ui/studio/refUtils.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -4955,8 +4928,7 @@ window.__ModuleLoader__.load({
 			for (const [k, v] of Object.entries(layer)) if (v !== void 0 && v !== "") out[k] = v;
 			return out;
 		}
-		//#endregion
-		//#region src/editDecl.ts
+		// src/editDecl.ts
 		/**
 		* editDecl.ts — THE EDIT DECLARATION'S CLIENT-SAFE SEAT.
 		*
@@ -5418,8 +5390,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		//#endregion
-		//#region src/ui/studio/commissions.ts
+		// src/ui/studio/commissions.ts
 		/**
 		* commissions.ts — THE STUDIO'S MOD PROJECTION (§9 of the multiwindow
 		* unification audit, 2026-11-12).
@@ -5701,8 +5672,7 @@ window.__ModuleLoader__.load({
 		function isStarterCallText(text) {
 			return text.trim() === STARTER_CALLS[0].text;
 		}
-		//#endregion
-		//#region src/ui/studio/docGrid.ts
+		// src/ui/studio/docGrid.ts
 		/**
 		* docGrid.ts — THE AUTHORING GRID (studio side, 2026-09-25).
 		*
@@ -5846,8 +5816,7 @@ window.__ModuleLoader__.load({
 			const toEnd = Math.abs(frame - (w.end_frame - 1));
 			return Math.min(toStart, toEnd) <= 17 ? "snap" : "interior";
 		}
-		//#endregion
-		//#region src/ui/studio/StudioStripPane.tsx
+		// src/ui/studio/StudioStripPane.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx.
@@ -6354,8 +6323,7 @@ window.__ModuleLoader__.load({
 				})
 			] });
 		}
-		//#endregion
-		//#region src/ui/studio/V2vLeafFace.tsx
+		// src/ui/studio/V2vLeafFace.tsx
 		/** V2vLeafFace.tsx — THE VIDEO2VIDEO FORM'S WINDOWS FACE (queue 11
 		*  reopened, operator 2026-11-08: "Doesn't have a cut here. … NO
 		*  WINDOWS IN THE FORM!" — their correction of my strip-head-only
@@ -6737,8 +6705,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/ui/studio/pickVerdict.ts
+		// src/ui/studio/pickVerdict.ts
 		/**
 		* pickVerdict — the recipe/axis pick's truth-in-hand law (the
 		* collapse: the touched ledger is dead with the mirror).
@@ -6775,8 +6742,7 @@ window.__ModuleLoader__.load({
 			for (const k of Object.keys(user)) if (user[k] !== void 0) stated[k] = user[k];
 			return (0, _melite_card_base_client.composeCandidateDoc)(held, stated, frame);
 		}
-		//#endregion
-		//#region src/ui/studio/omitLaneRecipe.ts
+		// src/ui/studio/omitLaneRecipe.ts
 		/**
 		* THE FILM-ONLY ROW GATE (2026-11-15, the lane-law retirement's
 		* residue; originally the row half of the Final-Cut brick cure,
@@ -6813,8 +6779,7 @@ window.__ModuleLoader__.load({
 		function omitFilmOnlyField(name) {
 			return FILM_ONLY_KEYS.includes(name);
 		}
-		//#endregion
-		//#region src/ui/studio/RunRecipeEngine.tsx
+		// src/ui/studio/RunRecipeEngine.tsx
 		/**
 		* RunRecipeEngine — the Layer A rail.
 		*
@@ -6941,8 +6906,7 @@ window.__ModuleLoader__.load({
 				}) : null
 			] });
 		}
-		//#endregion
-		//#region src/ui/studio/RunRefsClips.tsx
+		// src/ui/studio/RunRefsClips.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx.
@@ -7056,8 +7020,7 @@ window.__ModuleLoader__.load({
 				})]
 			})] });
 		}
-		//#endregion
-		//#region src/ui/studio/CallCardPrompt.tsx
+		// src/ui/studio/CallCardPrompt.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. (2026-09-15, the operator's cut: NO
@@ -7124,8 +7087,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		//#endregion
-		//#region src/ui/studio/CallCard.tsx
+		// src/ui/studio/CallCard.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -7824,8 +7786,7 @@ window.__ModuleLoader__.load({
 				]
 			}, i);
 		}
-		//#endregion
-		//#region src/ui/studio/CallCardsPanel.tsx
+		// src/ui/studio/CallCardsPanel.tsx
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -8038,8 +7999,7 @@ window.__ModuleLoader__.load({
 				})]
 			}) });
 		}
-		//#endregion
-		//#region ../../models/h3/src/filmMix.ts
+		// ../../models/h3/src/filmMix.ts
 		/** Parse raw audio_clips rows — the card's one law for what a clip
 		*  IS: a src without a numeric start_frame refuses loud (never a
 		*  silent misplacement); a row that states anything without src
@@ -8084,8 +8044,7 @@ window.__ModuleLoader__.load({
 			}
 			return clips;
 		}
-		//#endregion
-		//#region src/ui/studio/docHydrate.ts
+		// src/ui/studio/docHydrate.ts
 		/** Card-level ref lists hydrate to arrays; absent/empty stays absent
 		* (undefined = the compose sees no declared surface — same as today). */
 		function optRefs(raw, k) {
@@ -8425,8 +8384,7 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		//#endregion
-		//#region src/ui/studio/docCalls.ts
+		// src/ui/studio/docCalls.ts
 		/** An array-SHAPED string that will not parse (or parses to a
 		* non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
 		* class ("the persist effect wrote 1 call back, and the multi-call
@@ -8722,8 +8680,7 @@ window.__ModuleLoader__.load({
 			const i = Number(id.replace(/^kf-/, ""));
 			return Number.isInteger(i) ? i : -1;
 		};
-		//#endregion
-		//#region src/ui/studio/pendingOps.ts
+		// src/ui/studio/pendingOps.ts
 		/** The plain-face predicate the calls channel rides everywhere in
 		* this file (THE STARTER PLAIN-FACE LAW, operator 2026-11-18: "WHY
 		* DO I SEE THIS PROMPT ON RESHOOT BY DEFAULT … THIS PROMPT THAT
@@ -8843,8 +8800,7 @@ window.__ModuleLoader__.load({
 				layerA: layerOp === void 0 ? doc.layerA : hydrateLayerA(layerOp.value)
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useShownDoc.ts
+		// src/ui/studio/useShownDoc.ts
 		/**
 		* useShownDoc — THE COLLAPSE (the rework, 2026-10-27: one truth).
 		*
@@ -8976,8 +8932,7 @@ window.__ModuleLoader__.load({
 				setLayerAKey
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useStudioViewSync.ts
+		// src/ui/studio/useStudioViewSync.ts
 		/**
 		* useStudioViewSync — the collapse's view thirds (the rework).
 		*
@@ -9004,8 +8959,7 @@ window.__ModuleLoader__.load({
 				if (selected.callIdx >= calls.length) setSelected(null);
 			}, [calls, selected]);
 		}
-		//#endregion
-		//#region src/ui/studio/useViewSelection.ts
+		// src/ui/studio/useViewSelection.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx, reworked 2026-10-31 (the rail-law audit):
@@ -9107,8 +9061,7 @@ window.__ModuleLoader__.load({
 				}
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useFilmSync.ts
+		// src/ui/studio/useFilmSync.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -9175,8 +9128,7 @@ window.__ModuleLoader__.load({
 				knobOverrides: calls.filter(hasKnobs).length
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useFilmAudio.ts
+		// src/ui/studio/useFilmAudio.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -9415,8 +9367,7 @@ window.__ModuleLoader__.load({
 				clipElsRef
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/docPatch.ts
+		// src/ui/studio/docPatch.ts
 		/** Copy the array with the element at `i` replaced by `next` — the
 		*  single-index patch every one-field setter rides.
 		*
@@ -9429,8 +9380,7 @@ window.__ModuleLoader__.load({
 			copy[i] = next;
 			return copy;
 		}
-		//#endregion
-		//#region src/ui/studio/usePromptMutations.ts
+		// src/ui/studio/usePromptMutations.ts
 		/** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042.
 		* @param setCalls the calls write door
 		* @param starterOwed whether the doc owes the starter placeholder
@@ -9532,8 +9482,7 @@ window.__ModuleLoader__.load({
 				handlePromptUpdate
 			};
 		}
-		//#endregion
-		//#region ../../web-kit/catalog/src/sleep.ts
+		// ../../web-kit/catalog/src/sleep.ts
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -9578,8 +9527,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
+		// ../../web-kit/catalog/src/clientStore.ts
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -9662,8 +9610,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore$1 = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/api.ts
+		// ../../web-kit/catalog/src/api.ts
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl$1(u) {
@@ -9804,8 +9751,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail$1 = 0;
 			inflight$1 = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/contractToast.ts
+		// ../../web-kit/catalog/src/contractToast.ts
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -9830,8 +9776,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast$1 = __esmMin((() => {
 			sink$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContract.ts
+		// ../../web-kit/catalog/src/catalogContract.ts
 		function validateCatalogContract$1(catalog) {
 			const violations = [];
 			if (!isObj$3(catalog)) return {
@@ -9944,8 +9889,7 @@ window.__ModuleLoader__.load({
 			isObj$3 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString$1 = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/modelCatalog.ts
+		// ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports$1 = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute$1,
 			axisCellExists: () => axisCellExists$1,
@@ -10655,8 +10599,7 @@ window.__ModuleLoader__.load({
 			* (2026-09-12). */
 			if ({}.env?.MODE === "development" || {}.env?.MODE === "production") ensureCatalog$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/catalogContractStore.ts
+		// ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -10742,8 +10685,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContract.ts
+		// ../../web-kit/catalog/src/runStatusContract.ts
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -10825,8 +10767,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj$2 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
+		// ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -10885,8 +10826,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/extraKeys.js
+		// ../../web-kit/contracts/lib/extraKeys.js
 		/** THE TYPED WRITE — declarations pass their literal through this
 		*  so an unknown key or malformed value fails EVERY wall: tsc at
 		*  the literal, this throw at runtime (spread arms), the boot
@@ -11034,8 +10974,7 @@ window.__ModuleLoader__.load({
 			];
 			ROLE_SET = ["path"];
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/laneRelations.js
+		// ../../web-kit/contracts/lib/laneRelations.js
 		/** THE BLANK LAW (the estate's own): undefined, null, empty or
 		*  whitespace string, empty array, empty object = NOT stated. A
 		*  number (0 included), a boolean, a non-empty array (mod bag) or
@@ -11802,14 +11741,12 @@ window.__ModuleLoader__.load({
 			knownIds = (variants) => variants.map((v) => v.id);
 			knownQuants = (cells) => cells.map((c) => typeof c.quant === "string" ? c.quant : "");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/FlowTypes.js
+		// ../../web-kit/contracts/lib/FlowTypes.js
 		var FLOW_ID_RE;
 		var init_FlowTypes = __esmMin((() => {
 			FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchResult.js
+		// ../../web-kit/contracts/lib/benchResult.js
 		/** benchResult.ts — THE BENCH STAGE RESULT CONTRACT (the operator's
 		* law, 2026-09-20: "this can all be validated by contract"). The
 		* run observer patches this row onto the bench stage; every
@@ -11913,17 +11850,13 @@ window.__ModuleLoader__.load({
 			}
 		}
 		var init_benchResult = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/card.js
+		// ../../web-kit/contracts/lib/card.js
 		var init_card = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/character.js
+		// ../../web-kit/contracts/lib/character.js
 		var init_character = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraTypes.js
+		// ../../web-kit/contracts/lib/loraTypes.js
 		var init_loraTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/loraExtensions.js
+		// ../../web-kit/contracts/lib/loraExtensions.js
 		var LORA_EXTENSIONS, LORA_ACCEPT, LORA_EXTENSION_SUFFIX_RE;
 		var init_loraExtensions = __esmMin((() => {
 			LORA_EXTENSIONS = [
@@ -11936,14 +11869,11 @@ window.__ModuleLoader__.load({
 			LORA_ACCEPT = LORA_EXTENSIONS.join(",");
 			LORA_EXTENSION_SUFFIX_RE = new RegExp("\\.(?:" + LORA_EXTENSIONS.map((e) => e.slice(1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")$");
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/mediaTypes.js
+		// ../../web-kit/contracts/lib/mediaTypes.js
 		var init_mediaTypes = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierFaces.js
+		// ../../web-kit/contracts/lib/modifierFaces.js
 		var init_modifierFaces = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/modifierSubcards.js
+		// ../../web-kit/contracts/lib/modifierSubcards.js
 		/** Stable drag id. Both entry kinds key by `id` (the lora entry's id IS
 		* the adapter catalog id). `?? name` tolerates pre-2026-09-06 drafts so
 		* old cards load; the next save rewrites them as id-keyed rows. */
@@ -12194,8 +12124,7 @@ window.__ModuleLoader__.load({
 			};
 			_cnIdCounter = 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/objectUrlCache.js
+		// ../../web-kit/contracts/lib/objectUrlCache.js
 		/** True iff `s` is a base64 data URL (large enough that streaming
 		*  matters — the timeline package gates its blob handling on this).
 		*  The object-URL cache this module once carried was deleted with the
@@ -12205,8 +12134,7 @@ window.__ModuleLoader__.load({
 			return typeof s === "string" && s.startsWith("data:") && s.length > 128;
 		}
 		var init_objectUrlCache = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/rootsManifest.js
+		// ../../web-kit/contracts/lib/rootsManifest.js
 		/** §23 THE CROSS-ROOTS MANIFEST (2026-09-23): every run-resolving
 		*  door (status/view/ledger/list — and, since the operator's law
 		*  of the same night ("the agent maker and the user share
@@ -12259,11 +12187,9 @@ window.__ModuleLoader__.load({
 			return out;
 		}
 		var init_rootsManifest = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stagePreview.js
+		// ../../web-kit/contracts/lib/stagePreview.js
 		var init_stagePreview = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/stageView.js
+		// ../../web-kit/contracts/lib/stageView.js
 		function recordOf(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -12508,11 +12434,9 @@ window.__ModuleLoader__.load({
 				"reused"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/studio.js
+		// ../../web-kit/contracts/lib/studio.js
 		var init_studio = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/timelineTypes.js
+		// ../../web-kit/contracts/lib/timelineTypes.js
 		/** Coerce an unknown persisted/imported status into the SegmentStatus
 		* union. Anything outside it (e.g. pre-refactor persisted "error") is
 		* normalized to 'empty' — an out-of-union status silently breaks the
@@ -12628,8 +12552,7 @@ window.__ModuleLoader__.load({
 				"motionAmplitude"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/vocab.js
+		// ../../web-kit/contracts/lib/vocab.js
 		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
 		function isAuthorship(v) {
@@ -12644,8 +12567,7 @@ window.__ModuleLoader__.load({
 			};
 			AUTHORSHIP_VALUES = Object.values(Authorship);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/benchStage.js
+		// ../../web-kit/contracts/lib/benchStage.js
 		/** The run-media prefix a path addresses, or null when it addresses
 		*  none (the caller leaves such a value verbatim — this is a rewrite,
 		*  never a filter). */
@@ -12980,8 +12902,7 @@ window.__ModuleLoader__.load({
 			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
-		//#endregion
-		//#region ../../web-kit/contracts/lib/index.js
+		// ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
 			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY,
 			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY,
@@ -13126,8 +13047,7 @@ window.__ModuleLoader__.load({
 			init_vocab();
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/sleep.js
+		// ../../web-kit/catalog/lib/sleep.js
 		/**
 		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
 		*
@@ -13172,8 +13092,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		var init_sleep = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/clientStore.js
+		// ../../web-kit/catalog/lib/clientStore.js
 		/**
 		* clientStore — THE client store seat: a bound, zustand-shaped store over the
 		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
@@ -13256,8 +13175,7 @@ window.__ModuleLoader__.load({
 			return Object.assign(useStore, api);
 		}
 		var init_clientStore = __esmMin((() => {}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/api.js
+		// ../../web-kit/catalog/lib/api.js
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
 		function externalUrl(u) {
@@ -13398,8 +13316,7 @@ window.__ModuleLoader__.load({
 			consecutiveFail = 0;
 			inflight = /* @__PURE__ */ new Map();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/contractToast.js
+		// ../../web-kit/catalog/lib/contractToast.js
 		/**
 		* Wire the toast pusher the contract stores report through.
 		* @param toast - the row's addToast (browser), a test recorder, or
@@ -13424,8 +13341,7 @@ window.__ModuleLoader__.load({
 		var init_contractToast = __esmMin((() => {
 			sink = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContract.js
+		// ../../web-kit/catalog/lib/catalogContract.js
 		function validateCatalogContract(catalog) {
 			const violations = [];
 			if (!isObj$1(catalog)) return {
@@ -13539,8 +13455,7 @@ window.__ModuleLoader__.load({
 			isObj$1 = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/modelCatalog.js
+		// ../../web-kit/catalog/lib/modelCatalog.js
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
 			axisCellExists: () => axisCellExists,
@@ -14244,8 +14159,7 @@ window.__ModuleLoader__.load({
 			_bgRetryTimer = null;
 			ensureCatalog();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/catalogContractStore.js
+		// ../../web-kit/catalog/lib/catalogContractStore.js
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
 		*  outage that produced it, so the operator should also see WHEN it fired.
 		*  24h local time, seconds resolution. */
@@ -14331,8 +14245,7 @@ window.__ModuleLoader__.load({
 				}
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContract.js
+		// ../../web-kit/catalog/lib/runStatusContract.js
 		/** Validate a status payload against the ONE status-channel contract.
 		* Accepts a parsed body of ANY response (200 or non-ok) — the caller
 		* decides what a violation means on its branch. */
@@ -14415,8 +14328,7 @@ window.__ModuleLoader__.load({
 			};
 			isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/runStatusContractStore.js
+		// ../../web-kit/catalog/lib/runStatusContractStore.js
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
 		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
 		*  whole protocol layer; the store only needs it on click. */
@@ -14475,8 +14387,7 @@ window.__ModuleLoader__.load({
 				clear: () => set({ verdict: null })
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyParamContract.js
+		// ../../web-kit/catalog/lib/familyParamContract.js
 		var familyParamContract_exports$1 = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema$1,
 			coerceParamsToSchema: () => coerceParamsToSchema$1,
@@ -14973,8 +14884,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardBirth.js
+		// ../../web-kit/catalog/lib/cardBirth.js
 		var cardBirth_exports$1 = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard$1,
 			ensureDraftId: () => ensureDraftId$1
@@ -15025,8 +14935,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth$1 = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/FlowProtocol.js
+		// ../../web-kit/catalog/lib/FlowProtocol.js
 		var FlowProtocol_exports$1 = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops$1,
 			collectNamedArtifacts: () => collectNamedArtifacts$1,
@@ -15303,8 +15212,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP$1 = 2e3;
 			_requiredEmptyResolver$1 = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/tagMap.js
+		// ../../web-kit/catalog/lib/tagMap.js
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor$1(v) {
@@ -15637,8 +15545,7 @@ window.__ModuleLoader__.load({
 				map: initial$1.map
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/serviceForms.js
+		// ../../web-kit/catalog/lib/serviceForms.js
 		async function loadForms$1(opts) {
 			if (Object.keys(formsStore$1.getState().cache).length > 0 && !opts?.force) return formsStore$1.getState().cache;
 			if (_inflight$2) return _inflight$2;
@@ -15743,8 +15650,7 @@ window.__ModuleLoader__.load({
 			isGenerateForm$1 = (k) => isForm$1(k, "form_generate");
 			isEditForm$1 = (k) => isForm$1(k, "form_edit");
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/waveform-peaks.js
+		// ../../web-kit/catalog/lib/waveform-peaks.js
 		/** Compute min/max peaks for a single channel of PCM data.
 		*  Exported for unit testing. */
 		function computeMinMaxPeaks$1(data, numBuckets) {
@@ -15893,8 +15799,7 @@ window.__ModuleLoader__.load({
 				"high"
 			];
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/enhance.js
+		// ../../web-kit/catalog/lib/enhance.js
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
 		* off the proof route — never a restated copy. Null when this
@@ -16114,8 +16019,7 @@ window.__ModuleLoader__.load({
 		var init_enhance$1 = __esmMin((() => {
 			init_api();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/cardLlm.js
+		// ../../web-kit/catalog/lib/cardLlm.js
 		/** Read the preferred card LLM route ("provider/model"), if set. */
 		function getCardLlm$1() {
 			try {
@@ -16143,8 +16047,7 @@ window.__ModuleLoader__.load({
 		var init_cardLlm$1 = __esmMin((() => {
 			CARD_LLM_KEY$1 = "melite:card-llm:v1";
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		// ../../web-kit/catalog/lib/familyAuthorship.js
 		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
@@ -16191,8 +16094,7 @@ window.__ModuleLoader__.load({
 		var init_familyAuthorship$1 = __esmMin((() => {
 			init_stageView();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/lib/index.js
+		// ../../web-kit/catalog/lib/index.js
 		var lib_exports = /* @__PURE__ */ __exportAll({
 			CARD_LLM_KEY: () => CARD_LLM_KEY$1,
 			CatalogContractError: () => CatalogContractError,
@@ -16321,8 +16223,7 @@ window.__ModuleLoader__.load({
 			init_cardLlm$1();
 			init_familyAuthorship$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyParamContract.ts
+		// ../../web-kit/catalog/src/familyParamContract.ts
 		var familyParamContract_exports = /* @__PURE__ */ __exportAll({
 			assertParamsMatchFamilySchema: () => assertParamsMatchFamilySchema,
 			coerceParamsToSchema: () => coerceParamsToSchema,
@@ -16819,8 +16720,7 @@ window.__ModuleLoader__.load({
 				"source"
 			]);
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardBirth.ts
+		// ../../web-kit/catalog/src/cardBirth.ts
 		var cardBirth_exports = /* @__PURE__ */ __exportAll({
 			composeCard: () => composeCard,
 			ensureDraftId: () => ensureDraftId
@@ -16871,8 +16771,7 @@ window.__ModuleLoader__.load({
 		var init_cardBirth = __esmMin((() => {
 			init_benchStage();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowProtocol.ts
+		// ../../web-kit/catalog/src/FlowProtocol.ts
 		var FlowProtocol_exports = /* @__PURE__ */ __exportAll({
 			assertNoParamDrops: () => assertNoParamDrops,
 			collectNamedArtifacts: () => collectNamedArtifacts,
@@ -17149,8 +17048,7 @@ window.__ModuleLoader__.load({
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/tagMap.ts
+		// ../../web-kit/catalog/src/tagMap.ts
 		/** Is the value a valid TagColor? Gates untrusted JSON (localStorage,
 		*  a future server payload) before it enters the store. */
 		function isTagColor(v) {
@@ -17483,8 +17381,7 @@ window.__ModuleLoader__.load({
 				map: initial.map
 			}));
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/serviceForms.ts
+		// ../../web-kit/catalog/src/serviceForms.ts
 		async function loadForms(opts) {
 			if (Object.keys(formsStore.getState().cache).length > 0 && !opts?.force) return formsStore.getState().cache;
 			if (_inflight) return _inflight;
@@ -17589,8 +17486,7 @@ window.__ModuleLoader__.load({
 			isGenerateForm = (k) => isForm(k, "form_generate");
 			isEditForm = (k) => isForm(k, "form_edit");
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/waveform-peaks.ts
+		// ../../web-kit/catalog/src/waveform-peaks.ts
 		/** Compute min/max peaks for a single channel of PCM data.
 		*  Exported for unit testing. */
 		function computeMinMaxPeaks(data, numBuckets) {
@@ -17739,8 +17635,7 @@ window.__ModuleLoader__.load({
 				"high"
 			];
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/enhance.ts
+		// ../../web-kit/catalog/src/enhance.ts
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
 		* off the proof route — never a restated copy. Null when this
@@ -17960,8 +17855,7 @@ window.__ModuleLoader__.load({
 		var init_enhance = __esmMin((() => {
 			init_api$1();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/cardLlm.ts
+		// ../../web-kit/catalog/src/cardLlm.ts
 		/** Read the preferred card LLM route ("provider/model"), if set. */
 		function getCardLlm() {
 			try {
@@ -17989,8 +17883,7 @@ window.__ModuleLoader__.load({
 		var init_cardLlm = __esmMin((() => {
 			CARD_LLM_KEY = "melite:card-llm:v1";
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/familyAuthorship.ts
+		// ../../web-kit/catalog/src/familyAuthorship.ts
 		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
@@ -18037,8 +17930,7 @@ window.__ModuleLoader__.load({
 		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/index.ts
+		// ../../web-kit/catalog/src/index.ts
 		var src_exports = /* @__PURE__ */ __exportAll({
 			CARD_LLM_KEY: () => CARD_LLM_KEY,
 			CatalogContractError: () => CatalogContractError$1,
@@ -18167,8 +18059,7 @@ window.__ModuleLoader__.load({
 			init_cardLlm();
 			init_familyAuthorship();
 		}));
-		//#endregion
-		//#region src/ui/studio/useEnhance.ts
+		// src/ui/studio/useEnhance.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -18233,8 +18124,7 @@ window.__ModuleLoader__.load({
 				undoEnhance
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useCallMutations.ts
+		// src/ui/studio/useCallMutations.ts
 		/** Call-structure setters: extend/add/guide/span/knobs (tenant §8).
 		*  Verbatim lines 2088–2260, plus the authoring grid (2026-09-25):
 		*  every gesture that writes a frame lands on the card's own span law
@@ -18530,8 +18420,7 @@ window.__ModuleLoader__.load({
 				setCallKnob
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useBeatMutations.ts
+		// src/ui/studio/useBeatMutations.ts
 		/** Keyframe gestures — the pin channel's writers (the lane's slices
 		*  1–3: doc model + spine riders first, the drag/lane UI lands on
 		*  top). Every write rides patchAt (the single-index patch spine). */
@@ -18578,8 +18467,7 @@ window.__ModuleLoader__.load({
 				setKeyframeImage
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/useReopenRefit.ts
+		// src/ui/studio/useReopenRefit.ts
 		/**
 		* (E7, KF-A(2), keyframes-audio journey audit — plan row 85) THE
 		* REOPEN-REFIT PRODUCT SEAT: refitKeyframePinImage (refUtils.ts — the
@@ -18645,8 +18533,7 @@ window.__ModuleLoader__.load({
 				byName
 			]);
 		}
-		//#endregion
-		//#region src/ui/studio/useDerivedView.ts
+		// src/ui/studio/useDerivedView.ts
 		/**
 		* h3-timeline studio split (2026-09-06) — PURE MOVE from
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
@@ -18880,8 +18767,7 @@ window.__ModuleLoader__.load({
 				commissions
 			};
 		}
-		//#endregion
-		//#region src/ui/studio/component.tsx
+		// src/ui/studio/component.tsx
 		let readManageLane;
 		/** Seat the studio's manage lane (the client entry's apply calls
 		*  this; `undefined` unseats — the honest-empty arm a host without
@@ -19156,8 +19042,7 @@ window.__ModuleLoader__.load({
 			bottom: { kind: "timeline" },
 			params: { slots: [] }
 		});
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		/**
 		* h3-timeline client entry — the card package's OWN cards.stage.view
 		* surface (2026-09-12, the composition-root correction: a card's
@@ -19213,7 +19098,6 @@ window.__ModuleLoader__.load({
 				}
 			}, (0, react.createElement)(VideoTimelineStudio, props));
 		}
-		//#endregion
 		exports.H3TimelineStudio = H3TimelineStudio;
 		exports.apply = apply;
 		exports.inject = inject;

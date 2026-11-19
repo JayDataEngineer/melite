@@ -3,7 +3,7 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "dependencies": {
-    "@deepseek-ai/dsh-util-values": "0.2.1-rc.2"
+    "@deepseek-ai/dsh-util-values": "0.2.2-rc.5"
   },
   "exports": {
     ".": {
@@ -127,7 +127,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
+    "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
   "files": [

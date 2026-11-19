@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		// ../../web-kit/contracts/src/mediaKinds.ts
 		/** The estate media-kind vocabulary (typed DATA — see header). */
 		function mediaVocab() {
 			return {
@@ -146,8 +146,7 @@ window.__ModuleLoader__.load({
 			const ext = dot < 0 ? "" : name.slice(dot + 1).toLowerCase();
 			return MIME_BY_EXT[ext] ?? "application/octet-stream";
 		}
-		//#endregion
-		//#region src/client/mediaDocument.tsx
+		// src/client/mediaDocument.tsx
 		/**
 		* mediaDocument.tsx — the share door's preview bodies: one VIDEO face
 		* and one AUDIO face for the GUI's sidebar document seat.
@@ -266,8 +265,7 @@ window.__ModuleLoader__.load({
 				}
 			});
 		}
-		//#endregion
-		//#region src/client/index.ts
+		// src/client/index.ts
 		const VIDEO_PREVIEW_ID = "melite.preview.video";
 		const AUDIO_PREVIEW_ID = "melite.preview.audio";
 		/** The video renderer's metadata: the estate's video vocabulary,
@@ -330,7 +328,6 @@ window.__ModuleLoader__.load({
 				console.error("[melite/media-preview] audio body registration failed:", error);
 			}
 		}
-		//#endregion
 		exports.AUDIO_PREVIEW_ID = AUDIO_PREVIEW_ID;
 		exports.AudioDocumentBody = AudioDocumentBody;
 		exports.VIDEO_PREVIEW_ID = VIDEO_PREVIEW_ID;

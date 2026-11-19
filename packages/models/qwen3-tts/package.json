@@ -24,9 +24,9 @@
     "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
-    "typescript": "^5.9.3",
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build-mods.json && tsc -p tsconfig.build.json",
@@ -38,7 +38,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5"
+    "@deepseek-ai/cordis": "^4.1.0"
   },
   "description": "Qwen3-TTS 0.6B text-to-speech family — preset-persona and reference-clone speech plus persona (.qvoice) export, on the ComfyUI engine.",
   "repository": {

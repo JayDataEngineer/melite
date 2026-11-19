@@ -1,3 +1,19 @@
+// src/mods/userLorasFlavor.ts — THE USER ROWS FILE, COMPOSED (the
+// 2026-10-15 cure for the two-step door: the audit's finding was
+// that a user's LoRA needed BOTH a hand-written rows file AND a
+// patch-yml edit before it served. The file at userLorasPath()
+// now registers at composition time — the same composeModPlane
+// the family flavors ride — so rows serve with no profile edit
+// and no drop-in. THE HOT PLUGIN IS GONE (knip-back, 2026-11-15):
+// the typo'd web/melte-estate/hot corpse no profile mounted was
+// deleted; every lora verb re-reads this file through
+// rearmLoraFlavors (userLoras.ts), so ONE file is the whole door.
+//
+// The law is unchanged: nothing fetches (the rows carry
+// documentation urls only), and the leaf still refuses a
+// hand-spelled name — a user's LoRA arrives as a picker row
+// because the row says so, never because a name was typed.
+import '@melite/comfyui-card-kit/service-faces';
 import { boardUserLoraRows, readUserLoraRows, userLoraFlavor, userLorasPath } from "../userLoras.js";
 export const inject = ['comfyui'];
 export function apply(ctx) {

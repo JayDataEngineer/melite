@@ -1005,8 +1005,11 @@ describe("the span note seat (2026-11-05)", () => {
     const h = render(<CallCard c={BASE} i={0} deps={deps().d} />)
     const info = await screen.findByTestId("tl-span-info")
     assert.equal(info.textContent, "\u24d8")
-    // the Tip's portal opens on hover — then the plain words show
-    fireEvent.mouseEnter(info)
+    // the Tip's portal opens on hover — then the plain words show.
+    // pointerEnter, not mouseEnter: the rc.5 Tooltip atom binds
+    // pointer events (a real browser hover fires both classes; jsdom
+    // fires only what the test dispatches).
+    fireEvent.pointerEnter(info)
     await waitFor(() => {
       assert.ok(document.body.textContent?.includes("the frame where this call ends"),
         "the plain-words fact rides the tip portal")
