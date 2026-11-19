@@ -1010,9 +1010,7 @@ function runPaths(dirs, check) {
 import { pathToFileURL } from 'node:url'
 const invokedDirectly = import.meta.url === pathToFileURL(process.argv[1] ?? '').href
 const cmd = invokedDirectly ? (process.argv[2] ?? '') : ''
-if (invokedDirectly) {
-
-/* THE ONE-WRITER LOCK (2026-11-19, the push-kill): two build-plane
+/* THE ONE-WRITER TREE LOCK (2026-11-19, the push-kill): two build-plane
  * instances interleaving lib/ writes redden every concurrent reader
  * — a manual `pnpm run build` raced the push sentry's battery and
  * its tsc read half-written d.ts faces ("✗ packages/estate/drafts",
@@ -1022,27 +1020,77 @@ if (invokedDirectly) {
  * corpse (killed mid-build, the killed-sentry class) is reclaimed by
  * liveness probe. Read-only verbs (facade) skip it. The lock never
  * queues: a second writer FAILS LOUD with the holder's pid — silent
- * interleaving is the defect this cures. */
-if (cmd !== 'facade') {
-  const LOCK_DIR = join(ROOT, 'data', 'tmp', 'build-plane.lock')
-  try {
-    mkdirSync(LOCK_DIR, { recursive: false })
-  } catch {
-    const pidFile = join(LOCK_DIR, 'pid')
-    const raw = existsSync(pidFile) ? readFileSync(pidFile, 'utf8').trim() : ''
-    const pid = Number.parseInt(raw, 10)
-    let alive = false
-    if (Number.isInteger(pid) && pid > 0) {
-      try { process.kill(pid, 0); alive = true } catch (err) { alive = err?.code === 'EPERM' }
-    }
-    if (alive) {
-      console.error(`build-plane: another instance (pid ${pid}) holds the tree lock (${relative(ROOT, LOCK_DIR)}) — concurrent builds interleave lib/ writes and redden every reader. Wait for it, or kill ${pid} if it is a corpse.`)
-      process.exit(3)
-    }
-    rmSync(LOCK_DIR, { recursive: true, force: true })
-    mkdirSync(LOCK_DIR, { recursive: false })
+ * interleaving is the defect this cures.
+ *
+ * THE FRESH-TREE LAW (2026-11-19, CI run 44495761895): the parent
+ * runtime dir is created RECURSIVELY before the atomic lock create.
+ * data/tmp is untracked runtime state, so a fresh clone has no such
+ * parent — the first cut's bare non-recursive mkdir threw ENOENT,
+ * its bare catch read that as contention, and five CI jobs died at
+ * `pnpm run build` in 30 seconds while every developer box (whose
+ * data/tmp pre-exists) stayed green. Only EEXIST means held: every
+ * other errno surfaces. The wall judges it on a synthetic fresh root:
+ * tests/walls/ts/suites/build-plane-tree-lock.spec.ts. */
+
+/** Raised when a LIVE process holds the build-plane tree lock. */
+export class TreeLockHeld extends Error {
+  /** @param {number} pid the live holder; @param {string} lockDir repo-relative lock path */
+  constructor(pid, lockDir) {
+    super(`build-plane: another instance (pid ${pid}) holds the tree lock (${lockDir}) — concurrent builds interleave lib/ writes and redden every reader. Wait for it, or kill ${pid} if it is a corpse.`)
+    this.name = 'TreeLockHeld'
+    this.pid = pid
   }
-  writeFileSync(join(LOCK_DIR, 'pid'), `${process.pid}\n`)
+}
+
+/**
+ * Acquire `<root>`'s one-writer build lock, creating the runtime parent
+ * dirs a fresh clone lacks; returns the lock directory path.
+ * @param {string} root repo root
+ * @param {number} [pid] holder pid (defaults to this process)
+ * @returns {string} the lock directory path
+ */
+export function acquireTreeLock(root, pid = process.pid) {
+  const lockDir = join(root, 'data', 'tmp', 'build-plane.lock')
+  mkdirSync(dirname(lockDir), { recursive: true })
+  try {
+    mkdirSync(lockDir)
+  } catch (err) {
+    if (err?.code !== 'EEXIST') throw err
+    const pidFile = join(lockDir, 'pid')
+    const raw = existsSync(pidFile) ? readFileSync(pidFile, 'utf8').trim() : ''
+    const holder = Number.parseInt(raw, 10)
+    let alive = false
+    if (Number.isInteger(holder) && holder > 0) {
+      try { process.kill(holder, 0); alive = true } catch (probe) { alive = probe?.code === 'EPERM' }
+    }
+    if (alive) throw new TreeLockHeld(holder, relative(root, lockDir))
+    rmSync(lockDir, { recursive: true, force: true })
+    mkdirSync(lockDir)
+  }
+  writeFileSync(join(lockDir, 'pid'), `${pid}\n`)
+  return lockDir
+}
+
+/**
+ * Release a lock acquired by {@link acquireTreeLock}. The CLI never
+ * calls it on purpose: a dead holder is reclaimed by the next acquirer.
+ * @param {string} lockDir path returned by acquireTreeLock
+ */
+export function releaseTreeLock(lockDir) {
+  rmSync(lockDir, { recursive: true, force: true })
+}
+
+if (invokedDirectly) {
+
+/* The CLI seat of the lock: a live holder exits 3 (the sentry's
+ * contract), never queues. `facade` is read-only and skips it. */
+if (cmd !== 'facade') {
+  try {
+    acquireTreeLock(ROOT)
+  } catch (err) {
+    if (err instanceof TreeLockHeld) { console.error(err.message); process.exit(3) }
+    throw err
+  }
 }
 
 const dirs = memberDirs()
