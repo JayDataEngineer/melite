@@ -208,7 +208,7 @@
       "@melite/catalog/cardBirth": ["./packages/web-kit/catalog/src/cardBirth.ts"],
       "@melite/catalog/enhance": ["./packages/web-kit/catalog/src/enhance.ts"],
       "@melite/catalog/familyParamContract": ["./packages/web-kit/catalog/src/familyParamContract.ts"],
-      "@melite/catalog/familyProvenance": ["./packages/web-kit/catalog/src/familyProvenance.ts"],
+      "@melite/catalog/familyAuthorship": ["./packages/web-kit/catalog/src/familyAuthorship.ts"],
       "@melite/catalog/modelCatalog": ["./packages/web-kit/catalog/src/modelCatalog.ts"],
       "@melite/catalog/FlowProtocol": ["./packages/web-kit/catalog/src/FlowProtocol.ts"],
       "@melite/catalog/runStatusContract": ["./packages/web-kit/catalog/src/runStatusContract.ts"],

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
     "paths": {
+        "@melite/catalog/familyAuthorship": ["./src/familyAuthorship.ts"],
         "@melite/audio-voice-change": ["./../../audio/voice-change/src/card.ts"],
         "@melite/audio-voice-change/card": ["./../../audio/voice-change/src/card.ts"],
         "@melite/models-seed-vc": ["./../../models/seed-vc/src/index.ts"],
@@ -221,7 +222,6 @@
         "@melite/catalog/cardBirth": ["./src/cardBirth.ts"],
         "@melite/catalog/enhance": ["./src/enhance.ts"],
         "@melite/catalog/familyParamContract": ["./src/familyParamContract.ts"],
-        "@melite/catalog/familyProvenance": ["./src/familyProvenance.ts"],
         "@melite/catalog/modelCatalog": ["./src/modelCatalog.ts"],
         "@melite/catalog/FlowProtocol": ["./src/FlowProtocol.ts"],
         "@melite/catalog/runStatusContract": ["./src/runStatusContract.ts"],

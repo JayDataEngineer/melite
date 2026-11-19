@@ -15,7 +15,7 @@ import * as barrel from "../src/index.ts";
 
 describe("pure-type GATE files import cleanly", () => {
   it("barrel re-exports the runtime surface", () => {
-    assert.equal(typeof barrel.isProvenance, "function");
+    assert.equal(typeof barrel.isAuthorship, "function");
     assert.equal(typeof barrel.normalizeSegmentStatus, "function");
     assert.equal(typeof barrel.isDataUrl, "function");
     assert.equal(typeof barrel.subcardId, "function");

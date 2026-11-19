@@ -271,25 +271,25 @@ test("a batch row's record expected rides the stored row verbatim (a non-record 
 // run-257737552c00's history refused "unknown model
 // 'qwen3-tts-voicedesign-design'"; an era's compose wrote ids
 // today's registry never boarded, so the archive died at the load
-// door). Two walls: the provenance coordinate flows through the
+// door). Two walls: the authorship coordinate flows through the
 // domain's admission, and the remote's admission closure repairs
 // restores (never live rows) per the schema-master law.
-import { admissionOf, RESTORED_PROVENANCE } from "../src/remote.ts";
+import { admissionOf, RESTORED_AUTHORSHIP } from "../src/remote.ts";
 
-test("the admission carries the provenance coordinate (restored rows ride restore law, live adds pass undefined)", async () => {
+test("the admission carries the authorship coordinate (restored rows ride restore law, live adds pass undefined)", async () => {
   const drafts = await boot();
-  const seen: Array<{ card: string; provenance: unknown }> = [];
-  const admit = (card: string, _params: Record<string, unknown>, provenance: unknown): void => {
-    seen.push({ card, provenance });
+  const seen: Array<{ card: string; authorship: unknown }> = [];
+  const admit = (card: string, _params: Record<string, unknown>, authorship: unknown): void => {
+    seen.push({ card, authorship });
   };
   await ensureBench(drafts, {
     session: "prov",
-    stages: [{ id: "a", card: "tts", provenance: RESTORED_PROVENANCE, params: {} }],
+    stages: [{ id: "a", card: "tts", authorship: RESTORED_AUTHORSHIP, params: {} }],
   }, admit);
   await addStageBench(drafts, "prov", { card: "sfx", expect_rev: 0 }, admit);
   assert.deepEqual(seen, [
-    { card: "tts", provenance: RESTORED_PROVENANCE },
-    { card: "sfx", provenance: undefined },
+    { card: "tts", authorship: RESTORED_AUTHORSHIP },
+    { card: "sfx", authorship: undefined },
   ]);
 });
 
@@ -317,7 +317,7 @@ test("a RESTORED row with a poisoned model repairs in place and lands", () => {
   const admit = admissionOf(ctxWithResolver(RESOLVER) as never);
   assert.ok(admit !== undefined);
   const params: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
-  admit("tts", params, RESTORED_PROVENANCE);
+  admit("tts", params, RESTORED_AUTHORSHIP);
   assert.equal(params["model"], "qwen3-tts-voicedesign");
 });
 
@@ -366,9 +366,9 @@ test("restored model repair fills absent and empty variants but preserves a stat
   const absentParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
   const emptyParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design", variant: "" };
   const statedParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design", variant: "base" };
-  absent("tts", absentParams, RESTORED_PROVENANCE);
-  empty("tts", emptyParams, RESTORED_PROVENANCE);
-  stated("tts", statedParams, RESTORED_PROVENANCE);
+  absent("tts", absentParams, RESTORED_AUTHORSHIP);
+  empty("tts", emptyParams, RESTORED_AUTHORSHIP);
+  stated("tts", statedParams, RESTORED_AUTHORSHIP);
   assert.equal(absentParams["variant"], "design");
   assert.equal(emptyParams["variant"], "design");
   assert.equal(statedParams["variant"], "base");
@@ -390,6 +390,6 @@ test("a non-null repair that still refuses preserves the original refusal", () =
   const admit = admissionOf(ctxWithResolver(resolver) as never);
   assert.ok(admit !== undefined);
   const params: Record<string, unknown> = { model: "poison" };
-  assert.throws(() => admit("tts", params, RESTORED_PROVENANCE), /model 'poison' is not offered/);
+  assert.throws(() => admit("tts", params, RESTORED_AUTHORSHIP), /model 'poison' is not offered/);
   assert.equal(params["model"], "still-rejected");
 });

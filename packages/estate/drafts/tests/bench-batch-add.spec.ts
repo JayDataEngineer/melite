@@ -59,12 +59,12 @@ describe("addStagesBench — the batch laws", () => {
     const batchEvents = bench.log.filter((e) => e["kind"] === "add_stages");
     assert.equal(batchEvents.length, 1, "exactly one add_stages history event");
     assert.equal(batchEvents[0]!["summary"], "add 3 stages");
-    // every minted id is on the bench, provenance marked by the batch author
+    // every minted id is on the bench, authorship marked by the batch author
     const ids = new Set<string>(ans.stages);
     const seated = stageRows(bench)
       .filter((st) => ids.has(String(st["id"])));
     assert.equal(seated.length, 3);
-    for (const st of seated) assert.equal(st["provenance"], "user");
+    for (const st of seated) assert.equal(st["authorship"], "user");
   });
 
   test("a refused row persists NOTHING (whole-batch atomicity — the refusal-that-lies law)", async () => {

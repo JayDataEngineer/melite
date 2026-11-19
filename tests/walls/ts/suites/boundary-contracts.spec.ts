@@ -12,7 +12,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LOAD_CARRY_KEYS, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, normalizeBenchStage } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+import { AUTHORSHIP_KEY, AUTHORSHIP_LEGACY_KEY, LOAD_CARRY_KEYS, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, normalizeBenchStage } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 import { TERMINAL_RUN_STATUSES, RUN_STATUS_WORDS } from "../../../../packages/web/melite-run-wire/src/index.ts";
 import { RUN_STATUSES as ESTATE_RUN_STATUSES } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
 import { RUN_STATUSES as WIRE_RUN_STATUSES } from "../../../../packages/web-kit/catalog/src/runStatusContract.ts";
@@ -21,7 +21,7 @@ import { RUN_STATUSES as WIRE_RUN_STATUSES } from "../../../../packages/web-kit/
 // pin is a law the audit found UNPINNED — every one of them was a
 // live break, not a style point.
 describe("the boundary laws", () => {
-  it("a restore's provenance survives the load (the repair law's coordinate)", async () => {
+  it("a restore's authorship survives the load (the repair law's coordinate)", async () => {
     // The bench normalizer stamped the AUTHOR over every row, so a
     // design-era archive row lost the 'restored' mark the model
     // repair law reads — and refused at its next admission with no
@@ -31,16 +31,22 @@ describe("the boundary laws", () => {
     // could name — a dead stamp passed. The normalizer is now
     // DRIVEN: a restored row keeps its mark, the author's own rows
     // are stamped as before.
+    // THE STORED-ROWS LAW (CONTRACTS.md §4 debt 6, the 2026-11-19
+    // authorship rename): the coordinate rides the NEW key, and a row
+    // persisted under the LEGACY key reads back through it — one-way
+    // (the writer never emits the legacy spelling).
     const { normalizeStages } = await import("../../../../packages/estate/drafts/src/bench.ts");
-    const [restored, own] = normalizeStages(
-      [{ id: "s_0", provenance: "restored" }, { id: "s_1" }],
+    const [restored, legacyStored, own] = normalizeStages(
+      [{ id: "s_0", [AUTHORSHIP_KEY]: "restored" }, { id: "s_2", [AUTHORSHIP_LEGACY_KEY]: "restored" }, { id: "s_1" }],
       "agent" as never,
     );
-    expect(restored["provenance"]).toBe("restored");
-    expect(own["provenance"]).toBe("agent");
+    expect(restored[AUTHORSHIP_KEY]).toBe("restored");
+    expect(legacyStored[AUTHORSHIP_KEY]).toBe("restored");
+    expect(AUTHORSHIP_LEGACY_KEY in legacyStored).toBe(false);
+    expect(own[AUTHORSHIP_KEY]).toBe("agent");
     // and a live row may not CLAIM the repair coordinate
     const [forged] = normalizeStages([{ id: "s_0" }], "agent" as never);
-    expect(forged["provenance"]).not.toBe("restored");
+    expect(forged[AUTHORSHIP_KEY]).not.toBe("restored");
   });
 
   it("the arm lists live in the CONTRACT, not beside it (no second copy)", () => {

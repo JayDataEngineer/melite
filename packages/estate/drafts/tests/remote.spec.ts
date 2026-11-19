@@ -30,7 +30,7 @@ import { ensureBench, onBenchChange, notifyBenchChange } from "../src/bench.ts";
 import {
   BenchRemoteService,
   DraftsRemoteService,
-  RESTORED_PROVENANCE,
+  RESTORED_AUTHORSHIP,
   STAGE_PATCH_KEYS,
   resultOutputUrls,
   sameResultOutputs,
@@ -1826,7 +1826,7 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
   });
 
   test("a RESTORE REQUEST is honored on the wire (the bypass audit's CRITICAL-1: the carve was dead)", async () => {
-    // The forge the audit found: `provenance: "restored"` arrives in
+    // The forge the audit found: the restored authorship word arrives in
     // the request body and used to exempt the state outright. It is
     // now just a string; the carve rides a server symbol nothing over
     // the wire can carry.
@@ -1853,7 +1853,7 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
     const requested = await bench.ensure({
       session: "lane-forge",
       stages: [{
-        id: "s_0", card: "tts", provenance: "restored",
+        id: "s_0", card: "tts", authorship: "restored",
         params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
       }],
     }, sig);
@@ -1877,7 +1877,7 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
     const row = await bench.ensure({
       session: "lane-r",
       stages: [{
-        id: "s_0", card: "tts", provenance: RESTORED_PROVENANCE as never, // the server's in-process restore stamp (unforgeable over the wire by design); the door types the body as JSON, so the test names the stamp never — the runtime row is untouched
+        id: "s_0", card: "tts", authorship: RESTORED_AUTHORSHIP as never, // the server's in-process restore stamp (unforgeable over the wire by design); the door types the body as JSON, so the test names the stamp never — the runtime row is untouched
         params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
       }],
     }, sig);

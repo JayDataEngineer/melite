@@ -475,7 +475,7 @@ test("normalizeStages: non-string ids mint s_<i>; every explicit field is kept; 
       { id: 5 },
       {
         id: "full", engine: "blender", inputs: { i: { initial: "image" } },
-        params: { steps: 2, i: "$i" }, outputs: { default: "mask" }, provenance: "user",
+        params: { steps: 2, i: "$i" }, outputs: { default: "mask" }, authorship: "user",
       },
     ],
   });
@@ -487,11 +487,11 @@ test("normalizeStages: non-string ids mint s_<i>; every explicit field is kept; 
   assert.equal(bare["engine"], "comfyui", "default engine");
   assert.deepEqual(bare["inputs"], {});
   assert.deepEqual(bare["outputs"], { default: "image" });
-  assert.equal(bare["provenance"], "user", "birth author rides the bare row");
+  assert.equal(bare["authorship"], "user", "birth author rides the bare row");
   const full = (doc.stages as Array<Record<string, unknown>>).find((x) => x["id"] === "full")!;
   assert.equal(full["engine"], "blender");
   assert.deepEqual(full["outputs"], { default: "mask" });
-  assert.equal(full["provenance"], "user", "explicit provenance kept");
+  assert.equal(full["authorship"], "user", "explicit authorship kept");
 });
 
 test("every mutation arm honors author user (the log names them)", async () => {
@@ -695,7 +695,7 @@ describe("MUTATION CONTAINMENT — a mutation touches only what it names", () =>
     inputs: { image: { stage: wiredTo, output: "default" } },
     outputs: { default: "image" },
     history: [{ run_id: "run-0f1e2d-old", url: "/x/old.png" }],
-    provenance: "agent",
+    authorship: "agent",
   });
 
   test("remove_stage preserves every survivor BYTE-IDENTICALLY (disk re-read, not the in-memory doc)", async () => {
@@ -760,11 +760,11 @@ describe("MUTATION CONTAINMENT — a mutation touches only what it names", () =>
 // ── archive: F11's spent-stage mark (2026-11-12) ─────────────────
 // The friction burn: spent stages re-ran ahead of newer stages,
 // blocking the queue until manually removed. The mark keeps the row
-// (result + history — the provenance remove_stage destroys) and
+// (result + history — the authorship remove_stage destroys) and
 // every run face skips it. A LIVE stage wiring the row refuses the
 // archive (the wire would dangle at run time).
 
-test("archive marks the row and keeps its provenance; every run face reads the mark", async () => {
+test("archive marks the row and keeps its authorship; every run face reads the mark", async () => {
   const drafts = await boot();
   await seed(drafts, "arc1", {
     stages: [
@@ -779,7 +779,7 @@ test("archive marks the row and keeps its provenance; every run face reads the m
   assert.equal(stages.length, 2, "the row STAYS — archive never removes");
   assert.equal(stages[0]!["archived"], true, "the mark rides the spent row");
   assert.deepEqual(stages[0]!["result"], { run_id: "r-1", url: "/runs/r-1/out.png" },
-    "the provenance remove_stage destroys survives the mark");
+    "the authorship remove_stage destroys survives the mark");
   assert.equal(stages[1]!["archived"], undefined, "the live row is untouched");
   // the log entry carries the inverse
   const log = getBench(drafts, "arc1").log as Array<Record<string, unknown>>;

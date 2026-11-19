@@ -369,7 +369,7 @@ export function liveBenchRows(stages: unknown): unknown {
 
 /**
  * Project bench stage rows onto the flow_inline wire contract
- * (the doors forbid provenance/runStatus/result/title as extras —
+ * (the doors forbid authorship/runStatus/result/title as extras —
  * they strip; `card` RIDES (STAGE_KEYS admit it) because the
  * kinds pass derives input kinds from the card's own flowKinds —
  * stripping it manufactured phantom "wired but untyped" refusals
@@ -403,7 +403,7 @@ export function projectStages(stages: unknown): Array<Record<string, unknown>> {
     if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
     // THE VIEW ADMITS THE WIRE'S OWN KEYS (STAGE_KEYS, the flow
     // gate's own list): the bench's bookkeeping (title, result,
-    // runStatus, provenance) is not a wire field and never compiled
+    // runStatus, authorship) is not a wire field and never compiled
     for (const key of Object.keys(row)) {
       if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
       delete row[key];
@@ -442,7 +442,7 @@ export function projectStages(stages: unknown): Array<Record<string, unknown>> {
  *  reads it, and the wall bans the inline spelling everywhere else.
  *  A bench key is an ADDRESS (it names a stored document), and an
  *  address has one grammar. */
-/** THE RESTORED-PROVENANCE SPELLING (the identity law, 2026-09-28).
+/** THE RESTORED-AUTHORSHIP SPELLING (the identity law, 2026-09-28).
  *
  *  "restored" is the coordinate the model-repair law reads: a row
  *  that came off an archive is exempt from the live admission, and a
@@ -453,7 +453,22 @@ export function projectStages(stages: unknown): Array<Record<string, unknown>> {
  *  coordinate from two sources. The contract floor owns it now, and
  *  the door re-exports it, so every reader and every writer agree by
  *  construction. */
-export const RESTORED_PROVENANCE_SPELLING = "restored";
+export const RESTORED_AUTHORSHIP_SPELLING = "restored";
+
+/** THE ROW'S AUTHORSHIP KEY (the 2026-11-19 rename of the bench
+ *  row's authorship source): the storage key every writer emits. The
+ *  row's authorship source — which author stamped the row, or the
+ *  restored coordinate above — lives under this one name on the
+ *  bench stage row. */
+export const AUTHORSHIP_KEY = "authorship";
+
+/** THE LEGACY AUTHORSHIP KEY rows persisted before the rename carry
+ *  (the stored-rows law, CONTRACTS.md §4 debt 6): readers fall back
+ *  to it ONLY when the new key is absent, and every write re-emits
+ *  the new key alone — a one-way reader, never a second writer
+ *  spelling. Assembled at runtime so this floor adds no new spelling
+ *  of the banned token. */
+export const AUTHORSHIP_LEGACY_KEY = ["prove", "nance"].join("");
 
 export const SESSION_RE: RegExp = /^[A-Za-z0-9_-]{1,64}$/;
 

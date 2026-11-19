@@ -5,7 +5,7 @@ export type CardGenre = "image" | "video" | "audio" | "3d" | "motion" | "other" 
 
 /** Card TAGS — orthogonal to genre. A tag describes HOW a thing was made
  * or what it carries, never WHAT KIND of media it is. 'ai_generated' is
- * the badge former-genre that was demoted (2026-09-04): provenance is a
+ * the badge former-genre that was demoted (2026-09-04): authorship is a
  * tag, not a media category. */
 export type CardTag = "ai_generated"
 
@@ -33,7 +33,7 @@ export interface CompoundBlock {
 // and the tile play-affordance decision live here as the dependency root —
 // everything else in the kit imports from this module, never from the
 // aggregator shim.
-import type { Provenance } from "./vocab.ts"
+import type { Authorship } from "./vocab.ts"
 
 // ── The unified view-model ────────────────────────────────────────────────
 
@@ -109,7 +109,7 @@ export interface CardStage {
    *  by the surface adapter from the model route. Drives the badge icon +
    *  video gating. undefined = non-catalog service (generic badge). */
   genre?: CardGenre
-  /** Provenance/descriptor tags — orthogonal to genre. 'ai_generated'
+  /** Authorship/descriptor tags — orthogonal to genre. 'ai_generated'
    *  lives here, never in genre. */
   tags?: CardTag[]
   params: Record<string, unknown>
@@ -161,8 +161,8 @@ export interface CardStage {
  *
  * Optional for graceful rollout — existing call sites that don't set it
  * render unchanged (no badge). The closed vocabulary lives at
- * vocab.ts :: Provenance — the single owner. */
-  provenance?: Provenance
+ * vocab.ts :: Authorship — the single owner. */
+  authorship?: Authorship
   /** Whether this card's output appears in the left sidebar asset library
   * (2026-08-12). undefined / true = saved to sidebar (default). false =
   * artifact persists on disk + renders on the card but the sidebar filters

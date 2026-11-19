@@ -56,7 +56,7 @@ function doc(id: string): DraftRecord["doc"] {
     createdAt: 1700000000000,
     completedAt: null,
     intent: "test " + id,
-    stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
+    stages: [{ id: "s_0", inputs: [""], authorship: "agent" }],
   };
 }
 
@@ -905,7 +905,7 @@ test("W9b THE PRESS NAMES ITS ROW (the F21 burn, 2026-10-30): a single-card pres
     createdAt: 1700000000000,
     completedAt: null,
     intent: "two-stage bench",
-    stages: [{ id: "s_0", inputs: [""], provenance: "agent" }, { id: "s_1", inputs: [""], provenance: "agent" }],
+    stages: [{ id: "s_0", inputs: [""], authorship: "agent" }, { id: "s_1", inputs: [""], authorship: "agent" }],
   });
   const started = await runs.start(
     { model: "krea-2", test: true, draft_id: "d_multi", bench_stage_id: "s_1", params: { prompt: "a red boat" } },

@@ -593,8 +593,8 @@
   "@melite/catalog/familyParamContract": [
     "./packages/web-kit/catalog/src/familyParamContract.ts"
   ],
-  "@melite/catalog/familyProvenance": [
-    "./packages/web-kit/catalog/src/familyProvenance.ts"
+  "@melite/catalog/familyAuthorship": [
+    "./packages/web-kit/catalog/src/familyAuthorship.ts"
   ],
   "@melite/catalog/modelCatalog": [
     "./packages/web-kit/catalog/src/modelCatalog.ts"

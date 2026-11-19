@@ -168,23 +168,23 @@ export { canonicalOutputUrl, resultOutputUrls, isTerminalTrailWord as isTerminal
  *  run-257737552c00's history refused "unknown model
  *  'qwen3-tts-voicedesign-design'"; the era's compose wrote ids
  *  today's registry never boarded, so the whole archive died at
- *  the load door). A RESTORED row (provenance 'restored' — the
+ *  the load door). A RESTORED row (authorship 'restored' — the
  *  bench-load wand's stamp on every restore arm) whose model
  *  refuses gets ONE schema-master repair: the registry's longest
  *  boarded-family dash-prefix wins, a declared-variant suffix
  *  restores the variant coordinate, era junk strips. The repair
  *  mutates the row's params IN PLACE (the load lands repaired);
  *  a repair that still refuses rethrows the ORIGINAL refusal. A
- *  live-composed row (no provenance) never repairs — the loud
+ *  live-composed row (no authorship) never repairs — the loud
  *  refusal with the board is the composer's teaching surface.
  *  Exported for the wall (a pure factory over the resolver seat). */
-export declare function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+export declare function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined;
 /** The marker that says "this row is being restored BY US" — a
  *  symbol, so a request body carrying the string "restored" buys
  *  nothing (2026-10-10, the door audit's HIGH-2: the carve was
  *  purchasable). Internal restore arms pass this; nothing over the
  *  wire can. */
-export declare const RESTORED_PROVENANCE: unique symbol;
+export declare const RESTORED_AUTHORSHIP: unique symbol;
 /** THE WIRE SPELLING, MAPPED (2026-10-10, the bypass audit's
  *  CRITICAL-1: the carve compared a SYMBOL that no wire can carry,
  *  so it never fired — every restored row was judged anyway, and the
@@ -210,7 +210,7 @@ export declare const RESTORED_WIRE_SPELLING = "restored";
  *  no lane admission (registry-less lanes). Exported for the wall
  *  (a pure factory over the resolver seat, the admissionOf
  *  precedent). */
-export declare function laneAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+export declare function laneAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined;
 /** THE LANE MIGRATION, RESOLVED (2026-10-12, the stuck-switch
  *  incident's door half): the registry seam the bench patch seat
  *  runs BEFORE the admission — a lane-switching write drops its
@@ -243,7 +243,7 @@ export declare function familyReseatOf(ctx: Context): FamilyReseat | undefined;
  *  loads, the run teaches. Returns undefined when the registry seat
  *  offers no family seam (registry-less lanes, pre-B5 registries).
  *  Exported for the wall, the laneAdmissionOf precedent. */
-export declare function familyAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+export declare function familyAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined;
 /** THE PRE-MINT COMPOSE VERDICT SEAT (F14's estate half,
  *  2026-10-31): the add-stage door's whole-bench judge. Resolves the
  *  runs service LAZILY — ctx.get("runs", false), the resolverOf
@@ -271,7 +271,7 @@ export declare function composeVerdictOf(ctx: Context, signal: AbortSignal): Pre
  *  The trio is what every params-bearing bench write walks
  *  (ensure/patch/add/load); any judge refusing refuses the write in
  *  its own voice. Each seat is optional; absent seats drop out. */
-export declare function benchAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+export declare function benchAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined;
 export declare class DraftsRemoteService extends TypertRemoteService {
     /** THE BENCH ADMISSION THIS DOOR OWNS (2026-10-10, the door
      *  audit's CRITICAL): the same composed admission the bench
@@ -418,7 +418,7 @@ export declare class BenchRemoteService extends TypertRemoteService {
     archive(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
      *  spent stage archived (off: true restores it); the row stays
-     *  with its provenance, every run face skips it. */
+     *  with its authorship, every run face skips it. */
     remoteExportArchive(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/remove-stage` — splice one stage out. */
     remoteExportRemoveStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;

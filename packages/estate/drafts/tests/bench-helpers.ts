@@ -19,6 +19,7 @@ import {
 } from "@deepseek-ai/dsh-storage-domain";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
+import { AUTHORSHIP_LEGACY_KEY } from "@melite/contracts/benchStage";
 import { openDraftsDomain } from "../src/store.ts";
 import type { DraftsDomainSpec } from "../src/spec.js";
 
@@ -73,17 +74,24 @@ export async function seed(
   doc: Record<string, unknown>,
 ): Promise<void> {
   // THE SEED AUTHOR (2026-10-26): the sanctity law judges
-  // provenance, and an unmarked row refuses the agent's remove —
+  // authorship, and an unmarked row refuses the agent's remove —
   // the rig is the agent's own workshop, so seeded rows carry
   // 'agent' unless a rig names another author (rigs that mean
   // user work pass author explicitly through the real doors).
+  // A row already carrying the coordinate under the LEGACY spelling
+  // (the stored-rows compat fixtures) is marked too — the stamp
+  // must not hand the row the new key (the compat reader's own arm
+  // would read the stamp, not the fallback).
   const seeded = { ...doc } as Record<string, unknown>
   if (Array.isArray(seeded["stages"])) {
     seeded["stages"] = (seeded["stages"] as Array<unknown>).map(
-      (row: unknown): unknown =>
-        typeof row === "object" && row !== null && (row as Record<string, unknown>)["provenance"] === undefined
-          ? { provenance: "agent", ...row }
-          : row,
+      (row: unknown): unknown => {
+        if (typeof row !== "object" || row === null) return row;
+        const rec = row as Record<string, unknown>;
+        return rec["authorship"] === undefined && rec[AUTHORSHIP_LEGACY_KEY] === undefined
+          ? { authorship: "agent", ...rec }
+          : rec;
+      },
     )
   }
   await drafts.table("docs").put("bench-" + session, {

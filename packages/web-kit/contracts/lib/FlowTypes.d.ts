@@ -1,5 +1,5 @@
 import type { CompoundMode, CompoundBlock } from "./card.js";
-import type { Provenance } from "./vocab.js";
+import type { Authorship } from "./vocab.js";
 /** How a stage executes + what card it renders as.
  *
  * ``input`` — the doc-driven media-import family (the input model
@@ -69,7 +69,7 @@ export interface BackendStage {
     studio?: "body";
     studioContext?: Record<string, unknown>;
     compound?: BackendCompoundBlock;
-    provenance?: "agent";
+    authorship?: "agent";
     /** Persisted render state — present when a run completed and the
      * frontend PATCHed the result to the draft. hydrateDraft adopts it
      * so generated images survive history restore. */
@@ -225,8 +225,8 @@ export interface FlowStage {
     * 2026-08-13), ``user`` (addStage), ``imported`` (hydrateRunStages /
     * hydrateSpecSteps). Optional so legacy code paths keep working during
     * rollout; the card badge renders only when set. The closed vocabulary
-    * lives at vocab.ts :: Provenance — the single owner. */
-    provenance?: Provenance;
+    * lives at vocab.ts :: Authorship — the single owner. */
+    authorship?: Authorship;
     /** Whether this stage's output appears in the left sidebar asset library
     * (2026-08-12). undefined / true = saved to sidebar (default). false = the
     * artifact persists on disk + renders on the card, but the sidebar filters

@@ -1,7 +1,7 @@
 // Flow types — the ONE flow document data model (built from stage
 // descriptors or hydrated from a run/spec).
 import type { CompoundMode, CompoundBlock } from "./card.ts"
-import type { Provenance } from "./vocab.ts"
+import type { Authorship } from "./vocab.ts"
 //
 // ARCHITECTURE:
 // User intent ("make a waifu") or capability tile
@@ -111,7 +111,7 @@ export interface BackendStage {
   studio?: "body"
   studioContext?: Record<string, unknown>
   compound?: BackendCompoundBlock
-  provenance?: "agent"
+  authorship?: "agent"
   /** Persisted render state — present when a run completed and the
    * frontend PATCHed the result to the draft. hydrateDraft adopts it
    * so generated images survive history restore. */
@@ -283,8 +283,8 @@ export interface FlowStage {
  * 2026-08-13), ``user`` (addStage), ``imported`` (hydrateRunStages /
  * hydrateSpecSteps). Optional so legacy code paths keep working during
  * rollout; the card badge renders only when set. The closed vocabulary
- * lives at vocab.ts :: Provenance — the single owner. */
- provenance?: Provenance
+ * lives at vocab.ts :: Authorship — the single owner. */
+ authorship?: Authorship
 
  /** Whether this stage's output appears in the left sidebar asset library
  * (2026-08-12). undefined / true = saved to sidebar (default). false = the

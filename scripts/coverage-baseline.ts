@@ -774,7 +774,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/catalog/src/contractToast.ts': { statements: 80, branches: 50, functions: 50, lines: 80 },
   '**/packages/web-kit/catalog/src/enhance.ts': { statements: 99.06, branches: 97.73, functions: 92.86, lines: 98.94 },
   '**/packages/web-kit/catalog/src/familyParamContract.ts': { statements: 99.12, branches: 99.1, functions: 93.33, lines: 99.5 },
-  '**/packages/web-kit/catalog/src/familyProvenance.ts': { statements: 96.97, branches: 96.77, functions: 50, lines: 95.83 },
+  '**/packages/web-kit/catalog/src/familyAuthorship.ts': { statements: 96.97, branches: 96.77, functions: 50, lines: 95.83 },
   '**/packages/web-kit/catalog/src/generated/gatewayDoors.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/web-kit/catalog/src/index.ts': { statements: null, branches: null, functions: null, lines: null },
   '**/packages/web-kit/catalog/src/modelCatalog.ts': { statements: 99.55, branches: 99.63, functions: 98.41, lines: 99.43 },

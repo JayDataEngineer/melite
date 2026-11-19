@@ -54,7 +54,7 @@ function doc(id: string, extra: Record<string, unknown> = {}): DraftRecord["doc"
     createdAt: 1700000000000,
     completedAt: null,
     intent: "test " + id,
-    stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
+    stages: [{ id: "s_0", inputs: [""], authorship: "agent" }],
     ...extra,
   };
 }
@@ -177,7 +177,7 @@ test("bench/ensure births a bench doc with normalized stages", async () => {
   // The composer's birth defaults ride (engine/inputs/params/outputs).
   assert.equal(stages[0]!["engine"], "comfyui");
   assert.deepEqual(stages[0]!["inputs"], {});
-  assert.equal(stages[0]!["provenance"], "agent");
+  assert.equal(stages[0]!["authorship"], "agent");
 });
 
 test("bench/ensure without stages reads existing state (no CAS needed)", async () => {

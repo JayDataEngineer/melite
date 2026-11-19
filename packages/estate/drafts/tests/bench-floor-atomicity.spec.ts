@@ -76,7 +76,7 @@ async function rig(marker: string): Promise<BenchRemoteService> {
       status: "ready",
       createdAt: 1,
       completedAt: null,
-      stages: TWO_GEN_STAGES.map((r) => ({ provenance: "agent", ...r })),
+      stages: TWO_GEN_STAGES.map((r) => ({ authorship: "agent", ...r })),
     } as never,
   });
   return svc;

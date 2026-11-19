@@ -85,7 +85,10 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
   // into the card's params); the sweep key itself rides the envelope.
   "seeds",
   // the bench row's own non-wire coordinates (benchStage's stage row
-  // carries these beside the wire keys; they select, they never ride)
+  // carries these beside the wire keys; they select, they never ride).
+  // The row's authorship coordinate rides the NEW key only (the
+  // stored-rows law, CONTRACTS.md §4 debt 6 — the drafts reader heals
+  // the legacy spelling before a row serves).
   "author",
   "rev",
   "stage",
@@ -94,7 +97,7 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
   "result",
   "runStatus",
   "expect_rev",
-  "provenance",
+  "authorship",
   "capability",
 ];
 

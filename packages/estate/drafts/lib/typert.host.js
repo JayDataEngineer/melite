@@ -447,7 +447,7 @@ const $remote = createTypertRemoteInfo({
     },
     'bench/archive': {
       service: 'benchRemote',
-      description: 'Endpoint `bench/archive` — F11\'s housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its provenance, every run face skips it.',
+      description: 'Endpoint `bench/archive` — F11\'s housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its authorship, every run face skips it.',
       implementation: 'remoteExportArchive',
       invocation: { kind: 'direct' },
       parameters: [
@@ -1219,8 +1219,8 @@ export const TYPERT = {
             "kind": "method",
             "name": "remoteExportArchive",
             "signature": "@Remote(\"archive\") async remoteExportArchive( sessionKey: string, doc: BenchDoc, signal: AbortSignal, ): Promise<BenchStageRow>",
-            "summary": "Endpoint `bench/archive` — F11's housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its provenance, every run face skips it.",
-            "jsDoc": "/** Endpoint `bench/archive` — F11's housekeeping verb: mark a\n *  spent stage archived (off: true restores it); the row stays\n *  with its provenance, every run face skips it. */"
+            "summary": "Endpoint `bench/archive` — F11's housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its authorship, every run face skips it.",
+            "jsDoc": "/** Endpoint `bench/archive` — F11's housekeeping verb: mark a\n *  spent stage archived (off: true restores it); the row stays\n *  with its authorship, every run face skips it. */"
           },
           {
             "kind": "method",

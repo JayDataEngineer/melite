@@ -1,8 +1,8 @@
-// family-provenance.spec.ts — the run→family fold and the tile relative
+// family-authorship.spec.ts — the run→family fold and the tile relative
 // time formatter.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { familyProvenance, formatLastRun } from "../src/familyProvenance.ts";
+import { familyAuthorship, formatLastRun } from "../src/familyAuthorship.ts";
 import type { MediaRun } from "@melite/contracts";
 
 const run = (over: Record<string, unknown> = {}): MediaRun =>
@@ -13,12 +13,12 @@ const run = (over: Record<string, unknown> = {}): MediaRun =>
     ...over,
   }) as unknown as MediaRun;
 
-describe("familyProvenance", () => {
+describe("familyAuthorship", () => {
   it("counts only artifact-carrying runs (the fold's done family), once per family per run", () => {
     // The estate settles success as 'completed' and the cache stamps
     // 'cached'/'reused' — all count (2026-10-01, the status fold).
     // 'interrupted' folds to stopped and still excludes.
-    const out = familyProvenance([
+    const out = familyAuthorship([
       run({ families: ["a", "a", "b"], created_at: 100 }),
       run({ status: "running", families: ["a"], created_at: 200 }),
       run({ status: "interrupted", families: ["b"], created_at: 300 }),
@@ -42,7 +42,7 @@ describe("familyProvenance", () => {
   });
 
   it("keeps the max timestamp across runs", () => {
-    const out = familyProvenance([
+    const out = familyAuthorship([
       run({ families: ["a"], created_at: 900 }),
       run({ families: ["a"], created_at: 100 }),
     ]);
@@ -51,10 +51,10 @@ describe("familyProvenance", () => {
 
   it("an unreadable status word contributes nothing and never throws (2026-10-12 follow-through)", () => {
     // A listed MediaRun.status is a wire word no door validated; the
-    // view-side read folds it to no-information — no provenance, no
+    // view-side read folds it to no-information — no entry, no
     // throw through the barrel (the classifier's refusal is not this
     // seat's contract).
-    const out = familyProvenance([
+    const out = familyAuthorship([
       run({ status: "unreachable", families: ["a"], created_at: 100 }),
       run({ status: "weird", families: ["a"], created_at: 200 }),
     ]);
@@ -65,7 +65,7 @@ describe("familyProvenance", () => {
     // `status ?? ""` is the absent-status seat: a run summary whose
     // status never rode the wire folds to the same no-information
     // word an unreadable one does — never a throw, never a count.
-    const out = familyProvenance([
+    const out = familyAuthorship([
       run({ status: undefined, families: ["a"], created_at: 100 }),
       run({ status: undefined, families: ["a"], created_at: 200 }),
     ]);

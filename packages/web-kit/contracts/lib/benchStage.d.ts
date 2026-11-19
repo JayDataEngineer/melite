@@ -141,7 +141,7 @@ export declare const WIRE_STAGE_KEYS: readonly string[];
 export declare function liveBenchRows(stages: unknown): unknown;
 /**
  * Project bench stage rows onto the flow_inline wire contract
- * (the doors forbid provenance/runStatus/result/title as extras —
+ * (the doors forbid authorship/runStatus/result/title as extras —
  * they strip; `card` RIDES (STAGE_KEYS admit it) because the
  * kinds pass derives input kinds from the card's own flowKinds —
  * stripping it manufactured phantom "wired but untyped" refusals
@@ -169,7 +169,7 @@ export declare function projectStages(stages: unknown): Array<Record<string, unk
  *  reads it, and the wall bans the inline spelling everywhere else.
  *  A bench key is an ADDRESS (it names a stored document), and an
  *  address has one grammar. */
-/** THE RESTORED-PROVENANCE SPELLING (the identity law, 2026-09-28).
+/** THE RESTORED-AUTHORSHIP SPELLING (the identity law, 2026-09-28).
  *
  *  "restored" is the coordinate the model-repair law reads: a row
  *  that came off an archive is exempt from the live admission, and a
@@ -180,7 +180,20 @@ export declare function projectStages(stages: unknown): Array<Record<string, unk
  *  coordinate from two sources. The contract floor owns it now, and
  *  the door re-exports it, so every reader and every writer agree by
  *  construction. */
-export declare const RESTORED_PROVENANCE_SPELLING = "restored";
+export declare const RESTORED_AUTHORSHIP_SPELLING = "restored";
+/** THE ROW'S AUTHORSHIP KEY (the 2026-11-19 rename of the bench
+ *  row's authorship source): the storage key every writer emits. The
+ *  row's authorship source — which author stamped the row, or the
+ *  restored coordinate above — lives under this one name on the
+ *  bench stage row. */
+export declare const AUTHORSHIP_KEY = "authorship";
+/** THE LEGACY AUTHORSHIP KEY rows persisted before the rename carry
+ *  (the stored-rows law, CONTRACTS.md §4 debt 6): readers fall back
+ *  to it ONLY when the new key is absent, and every write re-emits
+ *  the new key alone — a one-way reader, never a second writer
+ *  spelling. Assembled at runtime so this floor adds no new spelling
+ *  of the banned token. */
+export declare const AUTHORSHIP_LEGACY_KEY: string;
 export declare const SESSION_RE: RegExp;
 /** The bench DRAFT id: the session key under the bench- prefix (the
  *  stored document's own name, minted from the key by one door). */

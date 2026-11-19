@@ -181,7 +181,7 @@ export declare function benchBlockOf(doc: Record<string, unknown>): BenchBlock;
  *  rows as they stand, never the count (a bench that lost stages
  *  re-mints a live id with the count — the 2026-09-12 fix). */
 export declare function mintStageId(rows: readonly Record<string, unknown>[], body: Record<string, unknown>): string;
-/** Birth defaults per the composer's law (id, inputs, provenance)
+/** Birth defaults per the composer's law (id, inputs, authorship)
  *  with the runner's object inputs. */
 export declare function normalizeStages(stagesIn: unknown, author: Author): Record<string, unknown>[];
 /** The ensure row: create marker, rev, intent, stages. */
@@ -316,14 +316,14 @@ export interface BenchStagesRow {
  *  human patch) learns the model is not offered/downloaded the
  *  moment it lands, never at run time.
  *
- *  THE PROVENANCE COORDINATE (2026-09-24, the schema-master law):
- *  the third arg names the row's provenance — an admission may
- *  REPAIR a restored row (provenance 'restored') whose era model id
+ *  THE AUTHORSHIP COORDINATE (2026-09-24, the schema-master law):
+ *  the third arg names the row's authorship — an admission may
+ *  REPAIR a restored row (authorship 'restored') whose era model id
  *  predates today's registry, while a live-composed row (no
- *  provenance) still gets the loud refusal. The repair law lives
+ *  authorship) still gets the loud refusal. The repair law lives
  *  in the injected admission (remote.ts); the domain only carries
  *  the coordinate. */
-export type StageAdmission = (card: string, params: Record<string, unknown>, provenance: unknown) => void;
+export type StageAdmission = (card: string, params: Record<string, unknown>, authorship: unknown) => void;
 /** THE PRE-MINT COMPOSE SEAT (F14's estate half, 2026-10-31): the
  *  GUI card-press door composes the bench's projection — live rows
  *  PLUS the candidate — through the runs validate seat BEFORE the
@@ -455,7 +455,7 @@ export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, sessi
  *  burn: spent stages re-ran ahead of newer stages, blocking the
  *  queue until manually removed). Sets (or, with off: true, clears)
  *  the row's `archived` mark: the row STAYS on the bench with its
- *  result and history (the provenance remove_stage destroys), but
+ *  result and history (the authorship remove_stage destroys), but
  *  every run face skips it — the bench compose and the agent's
  *  bench pass both exclude archived rows, so a spent stage never
  *  re-runs ahead of newer work. A LIVE (non-archived) stage wiring

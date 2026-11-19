@@ -12,7 +12,7 @@
  *         history/resultParams/resolved never ride a snapshot),
  *         the era's self-naming model stripped (run-ffbabb558c8:
  *         params.model === the card's own id is the family-less
- *         compose voice, refused by today's admission), provenance
+ *         compose voice, refused by today's admission), authorship
  *         stamped 'restored' (the admission repair law's
  *         coordinate), and a row that cannot load is DROPPED with
  *         a warning that rides the sidecar — visible loss, never
@@ -34,7 +34,7 @@
  *
  * WHY NOT a structural refusal at SAVE instead of drop+warn: the
  * run already RAN. A snapshot write that threw would lose the
- * provenance of a real run over a row's shape; the contract drops
+ * history of a real run over a row's shape; the contract drops
  * the unloadable row, SAYS SO in the sidecar's warnings, and the
  * loadable rest restores. The guarantee the operator asked for is
  * exact: everything persisted under this contract parses on the
@@ -49,7 +49,7 @@ export interface BenchSnapshotContract {
     readonly stages: BenchSnapshotRow[];
     /** The bench's intent label ('' when the bench carried none). */
     readonly intent: string;
-    /** The provenance head (the bench log's first entry), optional. */
+    /** The bench log's first entry (the run's origin record), optional. */
     readonly bench_head?: Record<string, unknown>;
 }
 /** The card snapshot exactly as it may appear on disk. */

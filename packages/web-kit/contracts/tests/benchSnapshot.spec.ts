@@ -114,7 +114,7 @@ describe("parseBenchSnapshot / parseCardSnapshot — the top-level law", () => {
 });
 
 describe("saveBenchSnapshotStages — the writer's law", () => {
-  it("strips run memory, strips the era's self-naming model, stamps provenance restored", () => {
+  it("strips run memory, strips the era's self-naming model, stamps authorship restored", () => {
     const saved = saveBenchSnapshotStages([
       {
         id: "s_0",
@@ -135,8 +135,8 @@ describe("saveBenchSnapshotStages — the writer's law", () => {
     ]);
     assert.deepEqual(saved.warnings, []);
     assert.deepEqual(saved.stages, [
-      { id: "s_0", card: "image-gen", params: { prompt: "a boat" }, provenance: "restored" },
-      { id: "s_1", card: "h3-timeline", params: { model: "h3", length: 56 }, provenance: "restored" },
+      { id: "s_0", card: "image-gen", params: { prompt: "a boat" }, authorship: "restored" },
+      { id: "s_1", card: "h3-timeline", params: { model: "h3", length: 56 }, authorship: "restored" },
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("saveBenchSnapshotStages — the writer's law", () => {
       "dropped unloadable stage (stages[1]: not an object)",
       "dropped unloadable stage (stages[3]: id must be a non-empty string)",
     ]);
-    assert.deepEqual(saved.stages, [{ id: "s", params: { a: 1 }, provenance: "restored" }]);
+    assert.deepEqual(saved.stages, [{ id: "s", params: { a: 1 }, authorship: "restored" }]);
     // a non-array body is not a crash — it contracts to empty
     assert.deepEqual(saveBenchSnapshotStages(undefined), { stages: [], warnings: [] });
   });

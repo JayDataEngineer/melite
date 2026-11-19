@@ -23,7 +23,7 @@ import {
   ensureBench, getBench, patchBench, addStageBench,
 } from "../src/bench.ts";
 import {
-  admissionOf, benchAdmissionOf, familyAdmissionOf, RESTORED_PROVENANCE,
+  admissionOf, benchAdmissionOf, familyAdmissionOf, RESTORED_AUTHORSHIP,
 } from "../src/remote.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { boot, codeOf } from "./bench-helpers.ts";
@@ -99,7 +99,7 @@ describe("familyAdmissionOf — the write doors' arm of the walk", () => {
   test("a RESTORED row rides the carve — the archive loads; the run teaches", () => {
     const admit = familyAdmissionOf(ctxWithResolver(FAMILY_RESOLVER) as never);
     assert.ok(admit !== undefined);
-    admit("h3-timeline", { ...STAMPED_ROW }, RESTORED_PROVENANCE);
+    admit("h3-timeline", { ...STAMPED_ROW }, RESTORED_AUTHORSHIP);
   });
 
   test("a registry-less lane (or a registry without the seam) admits nothing — the no-op law", () => {

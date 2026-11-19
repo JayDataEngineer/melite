@@ -470,7 +470,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     expect(owner).toContain("laneSampler(p)");
   });
 
-  it("RULE 6d · the restored-provenance spelling is the CONTRACT'S (a coordinate has one writer)", () => {
+  it("RULE 6d · the restored-authorship spelling is the CONTRACT'S (a coordinate has one writer)", () => {
     // "restored" is the coordinate the model-repair law reads. It was
     // a bare literal in five places — the drafts reader, the snapshot
     // restore, and three client restore arms — while the estate's own
@@ -485,12 +485,12 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     let owners = 0;
     for (const f of SOURCES) {
       const code = readCode(f);
-      const isDeclaration = /export const RESTORED_PROVENANCE_SPELLING = "restored"/.test(code);
+      const isDeclaration = /export const RESTORED_AUTHORSHIP_SPELLING = "restored"/.test(code);
       const literal = isDeclaration
-        || /provenance['"]?\]?\s*[:=]\s*['"]restored['"]|['"]restored['"]\s*===|!==\s*['"]restored['"]/.test(code);
+        || /authorship['"]?\]?\s*[:=]\s*['"]restored['"]|['"]restored['"]\s*===|!==\s*['"]restored['"]/.test(code);
       if (!literal) continue;
       if (f.includes(CONTRACT)) { owners += 1; continue }
-      offenders.push(f + " — the restored coordinate is the contract's RESTORED_PROVENANCE_SPELLING");
+      offenders.push(f + " — the restored coordinate is the contract's RESTORED_AUTHORSHIP_SPELLING");
     }
     expect(owners, "the contract floor declares the restored spelling once").toBe(1);
     expect(offenders, offenders.join("\n")).toEqual([]);

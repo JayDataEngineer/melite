@@ -26,13 +26,13 @@ import { join, resolve } from 'node:path'
 // never carry the count.
 const ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
 const TOKEN = /prove(?:d|n)?nance/gi
-// 1186 (2026-11-18): +4 mechanical fallout, same class as the 1182 —
-// the seed-vc family and voice-change card each add one generated
-// tsconfig face materializing the pre-existing catalog family-origin
-// alias (the module this wall's §4 rename debt tracks, 2 tokens per
-// face). No new concept named the banned token; fall-only resumes
-// (the rename retires the alias wholesale when it lands).
-const CEILING = 1186
+// 499 (2026-11-19): the §4 debt-6 rename landed — the bench row's
+// authorship key, the contracts vocabulary, the catalog
+// familyAuthorship subpath (retiring the generated alias faces), the
+// bench read/write seams and their served bundles, and every
+// file-touched comment drain, with the tracked lib/ and loader
+// bundles re-emitted. Fall-only resumes.
+const CEILING = 499
 
 /** Tracked files the gate sweeps (derived — never a hand list). */
 function trackedFiles(): string[] {

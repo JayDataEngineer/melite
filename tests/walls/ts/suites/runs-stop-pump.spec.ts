@@ -158,7 +158,7 @@ async function bootWithEngine(base: string): Promise<Booted> {
         createdAt: 1700000000000,
         completedAt: null,
         intent: "test " + id,
-        stages: [{ id: "s_0", inputs: [""], provenance: "agent" }],
+        stages: [{ id: "s_0", inputs: [""], authorship: "agent" }],
       },
     });
   }

@@ -1,18 +1,18 @@
 import { statusOrPendingOf } from "@melite/contracts/stageView";
-/** Fold runs into per-family provenance. Only runs that CARRY an
+/** Fold runs into per-family authorship. Only runs that CARRY an
  *  artifact count (the fold's done family: done, cached, reused —
  *  the estate settles success as "completed", which the old raw
  *  `!== "done"` compare never matched, so every real run's
- *  provenance read "never"). Running / interrupted / stopped runs
+ *  join read "never"). Running / interrupted / stopped runs
  *  haven't produced anything yet. Runs with no families field
- *  (pre-provenance sidecars) or a family-less brick contribute
+ *  (sidecars predating the join) or a family-less brick contribute
  *  nothing (backward compatible by construction). */
-export function familyProvenance(runs) {
+export function familyAuthorship(runs) {
     const out = {};
     for (const run of runs) {
         // The view-side read (2026-10-12): a MediaRun.status is a listed
         // wire word no door validated here — an unreadable run simply
-        // contributes no provenance, never a throw through the barrel.
+        // contributes no entry, never a throw through the barrel.
         const folded = statusOrPendingOf(run.status ?? "");
         if (folded !== "done" && folded !== "cached" && folded !== "reused")
             continue;
@@ -58,4 +58,4 @@ export function formatLastRun(at) {
         return `${Math.floor(diff / 86_400_000)}d ago`;
     return new Date(at).toLocaleDateString();
 }
-//# sourceMappingURL=familyProvenance.js.map
+//# sourceMappingURL=familyAuthorship.js.map

@@ -94,7 +94,7 @@ export function parseCardSnapshot(value) {
  * the bench that earned it. */
 // the strip's keys are the CONTRACT's (benchStage.ts) — one list, named
 // once, for the writer here and every arm that strips a row
-import { RESTORED_PROVENANCE_SPELLING } from "./benchStage.js";
+import { AUTHORSHIP_KEY, RESTORED_AUTHORSHIP_SPELLING } from "./benchStage.js";
 import { RESTORE_STRIP_KEYS } from "./benchStage.js";
 const RUN_MEMORY_KEYS = RESTORE_STRIP_KEYS;
 /** THE SAVE LAW — contract a bench's stage rows into what may be
@@ -118,15 +118,17 @@ export function saveBenchSnapshotStages(stages) {
             delete src[key];
         // THE SELF-NAMING MODEL STRIP (run-ffbabb558c8): a model naming
         // the row's own card is the era's family-less compose residue —
-        // today's admission refuses it; provenance 'restored' lets the
-        // repair law handle a model naming a REAL family.
+        // today's admission refuses it; the restore coordinate below
+        // lets the repair law handle a model naming a REAL family.
         const params = src['params'];
         if (typeof src['card'] === 'string' && isRecord(params) && params['model'] === src['card']) {
             const cleaned = { ...params };
             delete cleaned['model'];
             src['params'] = cleaned;
         }
-        src['provenance'] = RESTORED_PROVENANCE_SPELLING;
+        // THE AUTHORSHIP STAMP, NEW KEY ONLY (the stored-rows law,
+        // CONTRACTS.md §4 debt 6): the writer never emits the legacy key.
+        src[AUTHORSHIP_KEY] = RESTORED_AUTHORSHIP_SPELLING;
         out.push(src);
     }
     return { stages: out, warnings };

@@ -12,7 +12,7 @@
  *         history/resultParams/resolved never ride a snapshot),
  *         the era's self-naming model stripped (run-ffbabb558c8:
  *         params.model === the card's own id is the family-less
- *         compose voice, refused by today's admission), provenance
+ *         compose voice, refused by today's admission), authorship
  *         stamped 'restored' (the admission repair law's
  *         coordinate), and a row that cannot load is DROPPED with
  *         a warning that rides the sidecar — visible loss, never
@@ -34,7 +34,7 @@
  *
  * WHY NOT a structural refusal at SAVE instead of drop+warn: the
  * run already RAN. A snapshot write that threw would lose the
- * provenance of a real run over a row's shape; the contract drops
+ * history of a real run over a row's shape; the contract drops
  * the unloadable row, SAYS SO in the sidecar's warnings, and the
  * loadable rest restores. The guarantee the operator asked for is
  * exact: everything persisted under this contract parses on the
@@ -50,7 +50,7 @@ export interface BenchSnapshotContract {
   readonly stages: BenchSnapshotRow[];
   /** The bench's intent label ('' when the bench carried none). */
   readonly intent: string;
-  /** The provenance head (the bench log's first entry), optional. */
+  /** The bench log's first entry (the run's origin record), optional. */
   readonly bench_head?: Record<string, unknown>;
 }
 
@@ -153,7 +153,7 @@ export function parseCardSnapshot(value: unknown): ContractParse<CardSnapshotCon
  * the bench that earned it. */
 // the strip's keys are the CONTRACT's (benchStage.ts) — one list, named
 // once, for the writer here and every arm that strips a row
-import { RESTORED_PROVENANCE_SPELLING } from './benchStage.ts'
+import { AUTHORSHIP_KEY, RESTORED_AUTHORSHIP_SPELLING } from './benchStage.ts'
 import { RESTORE_STRIP_KEYS, stripKeys } from './benchStage.ts';
 const RUN_MEMORY_KEYS = RESTORE_STRIP_KEYS;
 
@@ -179,8 +179,8 @@ export function saveBenchSnapshotStages(stages: unknown): {
     for (const key of RUN_MEMORY_KEYS) delete src[key];
     // THE SELF-NAMING MODEL STRIP (run-ffbabb558c8): a model naming
     // the row's own card is the era's family-less compose residue —
-    // today's admission refuses it; provenance 'restored' lets the
-    // repair law handle a model naming a REAL family.
+    // today's admission refuses it; the restore coordinate below
+    // lets the repair law handle a model naming a REAL family.
     const params: unknown = src['params'];
     if (
       typeof src['card'] === 'string' && isRecord(params) && params['model'] === src['card']
@@ -189,7 +189,9 @@ export function saveBenchSnapshotStages(stages: unknown): {
       delete cleaned['model'];
       src['params'] = cleaned;
     }
-    src['provenance'] = RESTORED_PROVENANCE_SPELLING;
+    // THE AUTHORSHIP STAMP, NEW KEY ONLY (the stored-rows law,
+    // CONTRACTS.md §4 debt 6): the writer never emits the legacy key.
+    src[AUTHORSHIP_KEY] = RESTORED_AUTHORSHIP_SPELLING;
     out.push(src as BenchSnapshotRow);
   }
   return { stages: out, warnings };

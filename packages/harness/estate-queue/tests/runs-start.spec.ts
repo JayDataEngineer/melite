@@ -469,13 +469,13 @@ describe("registerCompiledRun", () => {
     assert.equal(plain.run.executeCeilMs, undefined, "a body stating nothing leaves the config to decide");
   });
 
-  it("THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26): the writer stamps a CONTRACTED stage list — junk rows drop with named warnings, the loadable row rides with provenance restored", async () => {
+  it("THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26): the writer stamps a CONTRACTED stage list — junk rows drop with named warnings, the loadable row rides with authorship restored", async () => {
     // "the saving should 100% be a schemamaster contract, that way
     // we know 100% if it will load again": whatever the bench held,
     // what PERSISTS parses on the load side. A null and a scalar
     // row are unloadable — they DROP, each drop rides the sidecar's
     // warnings row (visible loss, never silent), and the good row
-    // rides contracted (run memory stripped, provenance restored).
+    // rides contracted (run memory stripped, authorship restored).
     // Never a crash: the contract's save face always answers. (The
     // verbatim law this wall replaces — "not ours to interpret" —
     // is what let an unloadable snapshot reach disk in the first
@@ -494,7 +494,7 @@ describe("registerCompiledRun", () => {
     const snap = run.benchSnapshot as { stages: Array<Record<string, unknown>>; intent: string };
     assert.equal(snap.intent, "mixed rows");
     assert.equal(snap.stages.length, 1, "only the loadable row persisted");
-    assert.deepEqual(snap.stages[0], { id: "s", card: "c", provenance: "restored" });
+    assert.deepEqual(snap.stages[0], { id: "s", card: "c", authorship: "restored" });
     const drops = (run.warnings ?? []).filter((w) => w.startsWith("bench snapshot: dropped"));
     assert.equal(drops.length, 2, "each junk row's drop is named");
     const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
@@ -518,18 +518,18 @@ describe("registerCompiledRun", () => {
       door: { runId: "run-snap" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc },
     });
     assert.deepEqual(run.cardSnapshot, { card: "c", params: body });
-    // THE CONTRACTED STAMP: the row rides with provenance restored
+    // THE CONTRACTED STAMP: the row rides with authorship restored
     // (the admission repair law's coordinate), and the persisted
     // snapshot PARSES on the load side — the round-trip guarantee,
     // pinned at the writer (save → parse never fails).
     assert.deepEqual(run.benchSnapshot, {
-      stages: [{ id: "s", card: "c", provenance: "restored" }],
+      stages: [{ id: "s", card: "c", authorship: "restored" }],
       intent: "the beach flow",
     });
     const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.deepEqual(flow["card_snapshot"], { card: "c", params: body });
     assert.deepEqual(flow["bench_snapshot"], {
-      stages: [{ id: "s", card: "c", provenance: "restored" }],
+      stages: [{ id: "s", card: "c", authorship: "restored" }],
       intent: "the beach flow",
     });
   });
@@ -710,7 +710,7 @@ describe("registerCompiledRun", () => {
       enqueue: () => 3,
       door: { ...doorBase, runId: "run-nointent" as RunId, benchDoc: { stages, intent: 7 } },
     });
-    assert.deepEqual(run2.benchSnapshot, { stages: [{ id: "s", provenance: "restored" }], intent: "" });
+    assert.deepEqual(run2.benchSnapshot, { stages: [{ id: "s", authorship: "restored" }], intent: "" });
   });
 
   // THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23: the

@@ -27,8 +27,8 @@ import { applyOutcomePatch, trailDedupe } from "./trail.js";
 /** THE CONTRACT'S GRAMMAR, RE-EXPORTED (the identity law, 2026-09-28):
  *  the bench key is an address and has ONE grammar — the contract
  *  floor's. This copy was the owner; the floor is now. */
-import { BENCH_DRAFT_RE, RESTORED_PROVENANCE_SPELLING, SESSION_RE } from "@melite/contracts/benchStage";
-import { RESTORED_PROVENANCE } from "./remote.js";
+import { AUTHORSHIP_KEY, AUTHORSHIP_LEGACY_KEY, BENCH_DRAFT_RE, RESTORED_AUTHORSHIP_SPELLING, SESSION_RE } from "@melite/contracts/benchStage";
+import { RESTORED_AUTHORSHIP } from "./remote.js";
 export { SESSION_RE };
 /** The bench id mint (the contract floor's own, branded there). */
 function benchIdOf(session) {
@@ -71,6 +71,48 @@ function stagesOf(doc) {
     if (!Array.isArray(stages))
         return [];
     return stages.filter((s) => isRecord(s));
+}
+// ── THE STORED-ROWS COMPAT READER (CONTRACTS.md §4 debt 6, the
+// 2026-11-19 authorship rename) ────────────────────────────────────
+// Rows already persisted carry the row's authorship source under the
+// LEGACY key. The stored-rows law: the read path resolves the NEW
+// key first and falls back to the legacy key only when the new is
+// absent — ONE-WAY. Every write stamps AUTHORSHIP_KEY and strips the
+// legacy spelling (healStageAuthorship), so a row never regains the
+// legacy key once read: the writer never emits it, and the seam
+// migrates each stored row the first time it is read back.
+/** The row's authorship coordinate: the new key, falling back to the
+ *  legacy storage key rows persisted before the rename carry
+ *  (undefined when the row names no author). */
+function stageAuthorshipOf(row) {
+    const cur = row[AUTHORSHIP_KEY];
+    if (cur !== undefined)
+        return cur;
+    return row[AUTHORSHIP_LEGACY_KEY];
+}
+/** The one-way heal at the read seam: move a legacy-keyed authorship
+ *  coordinate onto the new key, in place, and strip the legacy key.
+ *  Idempotent (a healed row is a no-op); total (never throws — a
+ *  legacy key that is not there simply does not heal). Module-private:
+ *  every door reaches it through the read seams below, never by name. */
+function healStageAuthorship(row) {
+    if (row[AUTHORSHIP_KEY] !== undefined) {
+        delete row[AUTHORSHIP_LEGACY_KEY];
+        return;
+    }
+    const legacy = row[AUTHORSHIP_LEGACY_KEY];
+    if (legacy === undefined)
+        return;
+    row[AUTHORSHIP_KEY] = legacy;
+    delete row[AUTHORSHIP_LEGACY_KEY];
+}
+/** Heal every stage row of a doc read back from the domain (the
+ *  store/deserialize seam — every door reads stored rows through
+ *  loadBench or getBench, so the reader seats there and nowhere
+ *  else needs the legacy spelling). */
+function healStoredStageAuthorship(doc) {
+    for (const row of stagesOf(doc))
+        healStageAuthorship(row);
 }
 /** THE SEED-ANCESTOR WALK (the one-seat audit, 2026-10-31, depth
  *  BLOCKER: the landed inheritance covered only ensureBench's pure
@@ -184,7 +226,7 @@ function takenStageIds(rows) {
     }
     return taken;
 }
-/** Birth defaults per the composer's law (id, inputs, provenance)
+/** Birth defaults per the composer's law (id, inputs, authorship)
  *  with the runner's object inputs. */
 export function normalizeStages(stagesIn, author) {
     if (!Array.isArray(stagesIn))
@@ -220,8 +262,13 @@ export function normalizeStages(stagesIn, author) {
         // the load arm's rows cross the same remote encoding — the
         // store-seat unwrap applies here too (wireParams law)
         row["params"] = wireParams(row["params"]);
+        // THE STORED-ROWS COMPAT READER, BODY HALF: a row that arrived
+        // (from storage or a caller body) carrying the legacy authorship
+        // key heals onto the new key before the coordinate check below
+        // reads it (the stored-rows law, CONTRACTS.md §4 debt 6).
+        healStageAuthorship(row);
         // THE RESTORE COORDINATE SURVIVES (2026-10-10, the document-plane
-        // audit's CRITICAL-1): provenance 'restored' is how the model
+        // audit's CRITICAL-1): authorship 'restored' is how the model
         // REPAIR law knows a row came off an archive. Unconditionally
         // stamping the author here erased it on every load, so a
         // design-era row (params.model naming the card, an unboarded
@@ -237,9 +284,9 @@ export function normalizeStages(stagesIn, author) {
         // wire and another in memory is two facts wearing one name —
         // the stamp respects both, and the door that mints the symbol
         // is the only producer of it.
-        if (row["provenance"] !== RESTORED_PROVENANCE_SPELLING
-            && row["provenance"] !== RESTORED_PROVENANCE) {
-            row["provenance"] = author;
+        if (row[AUTHORSHIP_KEY] !== RESTORED_AUTHORSHIP_SPELLING
+            && row[AUTHORSHIP_KEY] !== RESTORED_AUTHORSHIP) {
+            row[AUTHORSHIP_KEY] = author;
         }
         return row;
     });
@@ -472,6 +519,11 @@ export async function ensureBench(drafts, body, admit, lineage) {
         };
     }
     const doc = rec.doc;
+    // THE STORED-ROWS COMPAT READER, ENSURE HALF: the ensure door reads
+    // stored rows for the carry/rebase arms — the same heal as the
+    // serve and load arms (the stored-rows law, CONTRACTS.md §4 debt 6
+    // — one-way: writes emit the new key only).
+    healStoredStageAuthorship(doc);
     const block = benchBlockOf(doc);
     if (body["stages"] === undefined) {
         return {
@@ -609,6 +661,11 @@ export function getBench(drafts, session) {
         });
     }
     const doc = rec.doc;
+    // THE STORED-ROWS COMPAT READER, SERVE HALF: rows persisted before
+    // the authorship rename read back through the new key here (the
+    // stored-rows law, CONTRACTS.md §4 debt 6 — one-way: writes emit
+    // the new key only).
+    healStoredStageAuthorship(doc);
     // THE SERVE-TIME CRIME GATE (2026-10-10, the operator's live
     // report: a bench doc born BEFORE the bench/self-wire law
     // persisted its crime and served silently until a run tripped a
@@ -830,6 +887,10 @@ async function loadBench(drafts, session, birth) {
         }
     }
     const doc = rec.doc;
+    // THE STORED-ROWS COMPAT READER, LOAD HALF (the same law as the
+    // serve arm below): every mutation door births through loadBench,
+    // so stored rows heal at the one deserialize point they share.
+    healStoredStageAuthorship(doc);
     return { draftId, doc, block: benchBlockOf(doc) };
 }
 /** The CAS law, one voice (missing expect_rev refuses too). */
@@ -1254,9 +1315,9 @@ const wireParams = (v) => isRecord(v)
 /** Admit one RESTORED stage state (the undo arms): the same seat,
  *  NO restored carve — the audit's GAP 6 caught the lie: the comment
  *  claimed no exemption while the call forwarded the very
- *  provenance string the load seat's carve matches, so an undo on a
+ *  authorship string the load seat's carve matches, so an undo on a
  *  restored row judged nothing at all. Undo rewrites live-authored
- *  state; it is judged like any other write, with no provenance. A
+ *  state; it is judged like any other write, with no authorship. A
  *  stage with no card row (an mcp or flow id) is not this seat's
  *  business. */
 function admitRestored(admit, stage, params) {
@@ -1299,7 +1360,7 @@ export function strippedForAdmission(card, params) {
     }
     return judged;
 }
-function admitStage(admit, card, params, provenance = undefined) {
+function admitStage(admit, card, params, authorship = undefined) {
     if (admit === undefined)
         return;
     if (typeof card !== "string" || card === "")
@@ -1311,7 +1372,7 @@ function admitStage(admit, card, params, provenance = undefined) {
     // birth arms pass normalizeStages' rows, whose params normalizeBenchStage
     // has already healed to {} when the doc carried anything else, and the
     // patch arm passes strippedForAdmission's own copy.
-    admit(card, strippedForAdmission(card, params), provenance);
+    admit(card, strippedForAdmission(card, params), authorship);
 }
 /** The compound row's card literal — the bench's own shape, never a
  *  declared card. Named once so every seat that must exempt a
@@ -1367,7 +1428,7 @@ function admitStages(admit, stages) {
         }
         if (admit === undefined)
             continue;
-        admitStage(admit, s["card"], s["params"], s["provenance"]);
+        admitStage(admit, s["card"], s["params"], stageAuthorshipOf(s));
     }
 }
 // ── THE WIRING ADMISSION (2026-09-15, the phantom-wire cure) ───────
@@ -1654,7 +1715,9 @@ export async function addStageBench(drafts, session, body, admit, lineage, compo
         ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
         ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
     }, stageId);
-    row["provenance"] = author;
+    // THE WRITER EMITS THE NEW KEY ONLY (the stored-rows law,
+    // CONTRACTS.md §4 debt 6): the legacy spelling is never written.
+    row[AUTHORSHIP_KEY] = author;
     if (isRecord(body["expected"]))
         row["expected"] = body["expected"];
     // D3-04 (c): the mint stamps the row's settle moment — the press
@@ -1801,7 +1864,8 @@ export async function addStagesBench(drafts, session, body, admit, lineage) {
             ...(isRecord(rawInputs) ? { inputs: rawInputs } : {}),
             ...(isRecord(stageBody["outputs"]) ? { outputs: stageBody["outputs"] } : {}),
         }, stageId);
-        row["provenance"] = author;
+        // the new key only, same writer law as the single add door
+        row[AUTHORSHIP_KEY] = author;
         if (isRecord(stageBody["expected"]))
             row["expected"] = stageBody["expected"];
         // D3-04 (c): every batch row carries its own settle stamp — the
@@ -2144,7 +2208,7 @@ const ARCHIVE_KEYS = ["stage", "off", "expect_rev", "author"];
  *  burn: spent stages re-ran ahead of newer stages, blocking the
  *  queue until manually removed). Sets (or, with off: true, clears)
  *  the row's `archived` mark: the row STAYS on the bench with its
- *  result and history (the provenance remove_stage destroys), but
+ *  result and history (the authorship remove_stage destroys), but
  *  every run face skips it — the bench compose and the agent's
  *  bench pass both exclude archived rows, so a spent stage never
  *  re-runs ahead of newer work. A LIVE (non-archived) stage wiring

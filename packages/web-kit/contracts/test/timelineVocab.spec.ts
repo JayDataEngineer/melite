@@ -1,7 +1,7 @@
 // timelineVocab.spec.ts — normalizeSegmentStatus (every arm) plus a touch
 // of each timeline constant (SEGMENT_STATUSES, TRACK_COLORS,
 // DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, FLF_MODES), and the
-// provenance vocabulary (isProvenance every arm + PROVENANCE_VALUES).
+// authorship vocabulary (isAuthorship every arm + AUTHORSHIP_VALUES).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {
@@ -12,7 +12,7 @@ import {
   TRACK_COLORS,
   normalizeSegmentStatus,
 } from "../src/timelineTypes.ts";
-import { PROVENANCE_VALUES, isProvenance } from "../src/vocab.ts";
+import { AUTHORSHIP_VALUES, isAuthorship } from "../src/vocab.ts";
 
 describe("normalizeSegmentStatus", () => {
   it("passes every canonical status through", () => {
@@ -74,23 +74,23 @@ describe("timeline constants", () => {
   });
 });
 
-describe("provenance vocabulary", () => {
-  it("PROVENANCE_VALUES lists the frozen trio", () => {
-    assert.deepEqual([...PROVENANCE_VALUES], ["agent", "user", "imported"]);
+describe("authorship vocabulary", () => {
+  it("AUTHORSHIP_VALUES lists the frozen trio", () => {
+    assert.deepEqual([...AUTHORSHIP_VALUES], ["agent", "user", "imported"]);
   });
 
   it("accepts every frozen value", () => {
-    assert.equal(isProvenance("agent"), true);
-    assert.equal(isProvenance("user"), true);
-    assert.equal(isProvenance("imported"), true);
+    assert.equal(isAuthorship("agent"), true);
+    assert.equal(isAuthorship("user"), true);
+    assert.equal(isAuthorship("imported"), true);
   });
 
   it("rejects unknown strings and non-strings", () => {
-    assert.equal(isProvenance("system"), false);
-    assert.equal(isProvenance(""), false);
-    assert.equal(isProvenance(null), false);
-    assert.equal(isProvenance(undefined), false);
-    assert.equal(isProvenance(42), false);
-    assert.equal(isProvenance({}), false);
+    assert.equal(isAuthorship("system"), false);
+    assert.equal(isAuthorship(""), false);
+    assert.equal(isAuthorship(null), false);
+    assert.equal(isAuthorship(undefined), false);
+    assert.equal(isAuthorship(42), false);
+    assert.equal(isAuthorship({}), false);
   });
 });

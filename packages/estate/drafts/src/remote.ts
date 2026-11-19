@@ -15,7 +15,7 @@ import {
 } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { admitWiring, benchBlockOf, strippedForAdmission, toleratedByRow, canonicalParams, diffParams, mergeParamValue, type BenchBlock, type PremintCompose } from "./bench.js";
-import { STAGE_PATCH_KEYS, type StagePatchKey, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
+import { STAGE_PATCH_KEYS, type StagePatchKey, RESTORED_AUTHORSHIP_SPELLING } from "@melite/contracts/benchStage";
 import { FLOW_ID_RE } from "@melite/contracts";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { dirname, isAbsolute, join, resolve } from "node:path";
@@ -362,20 +362,20 @@ function resolverOf(ctx: Context): StageResolver | null {
  *  run-257737552c00's history refused "unknown model
  *  'qwen3-tts-voicedesign-design'"; the era's compose wrote ids
  *  today's registry never boarded, so the whole archive died at
- *  the load door). A RESTORED row (provenance 'restored' — the
+ *  the load door). A RESTORED row (authorship 'restored' — the
  *  bench-load wand's stamp on every restore arm) whose model
  *  refuses gets ONE schema-master repair: the registry's longest
  *  boarded-family dash-prefix wins, a declared-variant suffix
  *  restores the variant coordinate, era junk strips. The repair
  *  mutates the row's params IN PLACE (the load lands repaired);
  *  a repair that still refuses rethrows the ORIGINAL refusal. A
- *  live-composed row (no provenance) never repairs — the loud
+ *  live-composed row (no authorship) never repairs — the loud
  *  refusal with the board is the composer's teaching surface.
  *  Exported for the wall (a pure factory over the resolver seat). */
-export function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
+export function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined {
   const reg = resolverOf(ctx);
   if (reg === null || reg.admitStageModel === undefined) return undefined;
-  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
+  return (card: string, params: Record<string, unknown>, authorship: unknown): void => {
     const admitOnce = (): void => {
       const verdict = reg.admitStageModel!(card, params["model"]);
       if (!verdict.ok) {
@@ -391,8 +391,8 @@ export function admissionOf(ctx: Context): ((card: string, params: Record<string
       return;
     } catch (original) {
       if (
-        provenance !== RESTORED_PROVENANCE
-        && provenance !== RESTORED_WIRE_SPELLING
+        authorship !== RESTORED_AUTHORSHIP
+        && authorship !== RESTORED_WIRE_SPELLING
         || typeof params["model"] !== "string"
         || params["model"] === ""
         || reg.repairStageModel === undefined
@@ -422,7 +422,7 @@ export function admissionOf(ctx: Context): ((card: string, params: Record<string
  *  nothing (2026-10-10, the door audit's HIGH-2: the carve was
  *  purchasable). Internal restore arms pass this; nothing over the
  *  wire can. */
-export const RESTORED_PROVENANCE: unique symbol = Symbol("melite.restored-provenance");
+export const RESTORED_AUTHORSHIP: unique symbol = Symbol("melite.restored-authorship");
 
 /** THE WIRE SPELLING, MAPPED (2026-10-10, the bypass audit's
  *  CRITICAL-1: the carve compared a SYMBOL that no wire can carry,
@@ -435,7 +435,7 @@ export const RESTORED_PROVENANCE: unique symbol = Symbol("melite.restored-proven
  *  comparisons treat it as the marker. */
 /** THE CONTRACT'S SPELLING (the identity law, 2026-09-28) — the
  *  door and its callers read ONE coordinate, not two. */
-export const RESTORED_WIRE_SPELLING = RESTORED_PROVENANCE_SPELLING;
+export const RESTORED_WIRE_SPELLING = RESTORED_AUTHORSHIP_SPELLING;
 
 /** The bench documents' id prefix (the bench family, not a flow export). */
 const BENCH_ID_PREFIX = "bench-";
@@ -544,12 +544,12 @@ async function currencyWalk(v: unknown): Promise<unknown> {
  *  precedent). */
 export function laneAdmissionOf(
   ctx: Context,
-): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
+): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined {
   const reg = resolverOf(ctx);
   if (reg === null || reg.admitStageRelations === undefined) return undefined;
-  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
+  return (card: string, params: Record<string, unknown>, authorship: unknown): void => {
     // THE CARVE IS THE SERVER'S, NOT THE CLIENT'S (2026-10-10, the
-    // door audit's HIGH-2): `provenance` arrives in the request body,
+    // door audit's HIGH-2): the legacy authorship key arrives in the request body,
     // and melite_construct's load verb forwards it verbatim — so a
     // caller could exempt any state by claiming "restored", and the
     // one receipt for the carve in the suite WAS that bypass. The
@@ -559,7 +559,7 @@ export function laneAdmissionOf(
     // seat re-judges the DECL anyway (li-s), so a pre-law archive
     // still teaches at Run — the carve only spares a live composer
     // the a priori voice, and it is no longer purchasable.
-    if (provenance === RESTORED_PROVENANCE || provenance === RESTORED_WIRE_SPELLING) {
+    if (authorship === RESTORED_AUTHORSHIP || authorship === RESTORED_WIRE_SPELLING) {
       return // the archive loads; the run teaches
     }
     const verdict = reg.admitStageRelations!(card, params);
@@ -617,11 +617,11 @@ export function familyReseatOf(
  *  Exported for the wall, the laneAdmissionOf precedent. */
 export function familyAdmissionOf(
   ctx: Context,
-): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
+): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined {
   const reg = resolverOf(ctx);
   if (reg === null || reg.admitStageFamily === undefined) return undefined;
-  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
-    if (provenance === RESTORED_PROVENANCE || provenance === RESTORED_WIRE_SPELLING) {
+  return (card: string, params: Record<string, unknown>, authorship: unknown): void => {
+    if (authorship === RESTORED_AUTHORSHIP || authorship === RESTORED_WIRE_SPELLING) {
       return // the archive loads; the run teaches
     }
     const verdict = reg.admitStageFamily!(card, params);
@@ -713,7 +713,7 @@ export function composeVerdictOf(
  *  its own voice. Each seat is optional; absent seats drop out. */
 export function benchAdmissionOf(
   ctx: Context,
-): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
+): ((card: string, params: Record<string, unknown>, authorship: unknown) => void) | undefined {
   const modelAdmit = admissionOf(ctx);
   const laneAdmit = laneAdmissionOf(ctx);
   const familyAdmit = familyAdmissionOf(ctx);
@@ -722,8 +722,8 @@ export function benchAdmissionOf(
   );
   if (judges.length === 0) return undefined;
   if (judges.length === 1) return judges[0];
-  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
-    for (const judge of judges) judge(card, params, provenance);
+  return (card: string, params: Record<string, unknown>, authorship: unknown): void => {
+    for (const judge of judges) judge(card, params, authorship);
   };
 }
 
@@ -836,7 +836,7 @@ export class DraftsRemoteService extends TypertRemoteService {
    *  exact class of hole this door was closed for. One resolver
    *  lookup per write, and the seat is whatever is live then. */
   private benchAdmit():
-    | ((card: string, params: Record<string, unknown>, provenance: unknown) => void)
+    | ((card: string, params: Record<string, unknown>, authorship: unknown) => void)
     | undefined {
     return benchAdmissionOf(this.ctx);
   }
@@ -1280,7 +1280,7 @@ export class DraftsRemoteService extends TypertRemoteService {
         // NO PROVENANCE (the audit's GAP 3): the restored carve is
         // load-time grace; a patch is a live compose act judged by
         // the DECL the next run composes from. Forwarding the row's
-        // provenance here made the grace sticky forever.
+        // the row's authorship here made the grace sticky forever.
         // THE JUDGE SEES THE STORED ROW (2026-10-10, the write-seat
         // audit's row 7): the same self-naming strip every bench
         // door judges through — a model key naming the row's own
@@ -1820,7 +1820,7 @@ export class BenchRemoteService extends TypertRemoteService {
 
   /** Endpoint `bench/archive` — F11's housekeeping verb: mark a
    *  spent stage archived (off: true restores it); the row stays
-   *  with its provenance, every run face skips it. */
+   *  with its authorship, every run face skips it. */
   @Remote("archive")
   async remoteExportArchive(
     sessionKey: string,

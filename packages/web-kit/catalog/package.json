@@ -45,9 +45,9 @@
       "types": "./lib/familyParamContract.d.ts",
       "default": "./lib/familyParamContract.js"
     },
-    "./familyProvenance": {
-      "types": "./lib/familyProvenance.d.ts",
-      "default": "./lib/familyProvenance.js"
+    "./familyAuthorship": {
+      "types": "./lib/familyAuthorship.d.ts",
+      "default": "./lib/familyAuthorship.js"
     },
     "./modelCatalog": {
       "types": "./lib/modelCatalog.d.ts",

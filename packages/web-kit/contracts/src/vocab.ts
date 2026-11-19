@@ -1,18 +1,18 @@
 /** Frozen vocabularies — types + vocabulary CONSTANTS only (no
  * render, no fetch; the icon-bearing META table stays app-side). */
 
-export const Provenance = {
+export const Authorship = {
   agent: "agent",
   user: "user",
   imported: "imported",
 } as const
 
-export type Provenance = (typeof Provenance)[keyof typeof Provenance]
+export type Authorship = (typeof Authorship)[keyof typeof Authorship]
 
-export const PROVENANCE_VALUES: readonly Provenance[] = Object.values(Provenance)
+export const AUTHORSHIP_VALUES: readonly Authorship[] = Object.values(Authorship)
 
-/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
  * metadata, a drag payload) before rendering. */
-export function isProvenance(v: unknown): v is Provenance {
-  return typeof v === "string" && (PROVENANCE_VALUES as string[]).includes(v)
+export function isAuthorship(v: unknown): v is Authorship {
+  return typeof v === "string" && (AUTHORSHIP_VALUES as string[]).includes(v)
 }

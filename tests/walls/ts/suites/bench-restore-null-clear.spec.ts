@@ -100,7 +100,7 @@ async function crossStampedDoc(): Promise<Rig> {
   const fossilRow = (id: string, card: string) => ({
     id,
     card,
-    provenance: "restored",
+    authorship: "restored",
     result: perStageFilm(),
     runStatus: "done",
   });
@@ -129,16 +129,16 @@ const rowOf = (
 
 /** THE CURED RELOAD BODY (what bench-load.ts's bench_snapshot arm
  *  posts for this doc: the snapshot rows stripped by
- *  RESTORE_STRIP_KEYS, provenance stamped, s_17's own per-stage
+ *  RESTORE_STRIP_KEYS, authorship stamped, s_17's own per-stage
  *  truth, and an EXPLICIT result: null on every truthless row — the
  *  unmatched set AND the skipped set). Arm (c) rides the real client
  *  instead; the hand-built copy here is arm (a)'s door-level spelling
  *  and must move with the client's arms if they ever diverge. */
 const curedReloadStages = () => [
-  { id: "s_1", card: "h3-timeline", provenance: "restored", result: null },
-  { id: "s_6", card: "tagger", provenance: "restored", result: null },
-  { id: "s_9", card: "tagger", provenance: "restored", result: null },
-  { id: "s_17", card: "h3-timeline", provenance: "restored", result: perStageFilm() },
+  { id: "s_1", card: "h3-timeline", authorship: "restored", result: null },
+  { id: "s_6", card: "tagger", authorship: "restored", result: null },
+  { id: "s_9", card: "tagger", authorship: "restored", result: null },
+  { id: "s_17", card: "h3-timeline", authorship: "restored", result: perStageFilm() },
 ];
 
 describe("the restore-memory null-clear (D1, the reservoir audit F1)", () => {
@@ -176,14 +176,14 @@ describe("the restore-memory null-clear (D1, the reservoir audit F1)", () => {
         // ABSENT — the poster is silent: the fill-never-clobber carry
         // keeps the stage's own landed memory (the stage memory law,
         // 2026-09-20; the chat agent re-loading the card mid-iteration).
-        { id: "s_17", card: "h3-timeline", provenance: "restored" },
+        { id: "s_17", card: "h3-timeline", authorship: "restored" },
         // STATED — the post wins over the fossil prev (fill, never clobber).
         {
-          id: "s_6", card: "tagger", provenance: "restored",
+          id: "s_6", card: "tagger", authorship: "restored",
           result: { run_id: "run-fresh-press", url: route("run-fresh-press/s_6/out.png") },
         },
         // NEW ID — starts clean, fossil or no fossil.
-        { id: "s_new", card: "tagger", provenance: "agent" },
+        { id: "s_new", card: "tagger", authorship: "agent" },
       ],
     }, sig);
     const served = await bench.get(SESSION, sig);

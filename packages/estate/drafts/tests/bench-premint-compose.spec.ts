@@ -94,7 +94,7 @@ describe("the add-stage pre-mint compose gate (F14's estate half)", () => {
     // pass derives input kinds from it).
     const candidateKeys = Object.keys(seen[0]![1]!);
     assert.ok(candidateKeys.includes("card"), "the card rides the projection");
-    for (const bookkeeping of ["provenance", "runStatus", "result", "title"]) {
+    for (const bookkeeping of ["authorship", "runStatus", "result", "title"]) {
       assert.ok(!candidateKeys.includes(bookkeeping), `the projection strips ${bookkeeping}`);
     }
   });
@@ -138,7 +138,7 @@ describe("the add-stage pre-mint compose gate (F14's estate half)", () => {
     assert.equal(row.rev, 1, "the write landed");
   });
 
-  test("ARM 5 — a green verdict lands: the row, the rev, the provenance", async () => {
+  test("ARM 5 — a green verdict lands: the row, the rev, the authorship", async () => {
     const drafts = await boot();
     // seed (not ensure): the doc's intent is the known 'seeded' —
     // the bench's own intent is what the projection composes under.
@@ -160,7 +160,7 @@ describe("the add-stage pre-mint compose gate (F14's estate half)", () => {
     assert.deepEqual(intents, ["seeded"], "the bench's own intent rides the projection");
     const landed = (getBench(drafts, "pm5").stages as Array<Record<string, unknown>>)
       .find((s) => s["id"] === "s_0")!;
-    assert.equal(landed["provenance"], "user", "the author stamp survives the gate");
+    assert.equal(landed["authorship"], "user", "the author stamp survives the gate");
   });
 
   test("ARM 6 — the wiring gate still fires first: a phantom wire never reaches the compose", async () => {

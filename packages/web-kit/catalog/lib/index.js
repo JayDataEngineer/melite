@@ -16,5 +16,5 @@ export * from "./waveform-peaks.js";
 export * from "./cardBirth.js";
 export * from "./enhance.js";
 export * from "./cardLlm.js";
-export * from "./familyProvenance.js";
+export * from "./familyAuthorship.js";
 //# sourceMappingURL=index.js.map

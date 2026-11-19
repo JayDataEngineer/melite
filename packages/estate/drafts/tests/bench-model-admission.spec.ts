@@ -92,32 +92,32 @@ test("a param-less row still reaches admission (the card check runs on {} — no
 
 // ── the 2026-10-10 audit's declaration-plane pins (GAP 3/4/5/6) ──
 // The restored carve is LOAD-TIME grace; the audit found it sticky
-// (patch and undo forwarded the row's provenance, so a pre-law row
+// (patch and undo forwarded the row's authorship, so a pre-law row
 // never met today's law again), the undo arms unjudged (a poison row
 // re-entered the doc through remove_stage/load with no seat
 // looking), and the patch arm aliasing the live record (a refusal
 // leaked the merge into the cached doc).
 
-test("the restored carve is LOAD-TIME grace: a patch judges with no provenance (the grace never sticks)", async () => {
+test("the restored carve is LOAD-TIME grace: a patch judges with no authorship (the grace never sticks)", async () => {
   const drafts = await boot();
   await seed(drafts, "sticky", {
-    stages: [{ id: "s_0", card: "tts", provenance: "restored", params: { model: "x", text: "hi" } }],
+    stages: [{ id: "s_0", card: "tts", authorship: "restored", params: { model: "x", text: "hi" } }],
   });
   const seen: unknown[] = [];
-  const admit = (card: string, params: Record<string, unknown>, provenance: unknown): void => {
-    seen.push(provenance);
+  const admit = (card: string, params: Record<string, unknown>, authorship: unknown): void => {
+    seen.push(authorship);
   };
   await patchBench(drafts, "sticky", {
     stage: "s_0", params: { text: "hello again" }, expect_rev: 0,
   }, admit);
   assert.equal(seen.length, 1);
-  assert.equal(seen[0], undefined, "the patch door must not forward the row's restored provenance");
+  assert.equal(seen[0], undefined, "the patch door must not forward the row's restored authorship");
 });
 
-test("undo's patch arm judges with no provenance AND a refusal leaves the doc untouched (the copy law)", async () => {
+test("undo's patch arm judges with no authorship AND a refusal leaves the doc untouched (the copy law)", async () => {
   const drafts = await boot();
   await seed(drafts, "copylaw", {
-    stages: [{ id: "s_0", card: "tts", provenance: "restored", params: { text: "clean" } }],
+    stages: [{ id: "s_0", card: "tts", authorship: "restored", params: { text: "clean" } }],
     bench: {
       rev: 1,
       log: [entry(1, "patch", "agent", { stage: "s_0", params_before: { text: "poison", frobnicate: 1 } })],
