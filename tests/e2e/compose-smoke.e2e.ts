@@ -18,7 +18,7 @@ import { expect, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 import { cardRegistryProvider } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 

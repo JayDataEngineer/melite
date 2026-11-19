@@ -20,7 +20,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-SEQUENCE_FILE = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "Comfyui_Minimax_h3_latent_Upscaler-Plus" / "nodes" / "minimax_h3_refine_sequence.py"
+SEQUENCE_FILE = Path(__file__).resolve().parents[2] / "vendor" / "comfyui_extensions" / "Comfyui_Minimax_h3_latent_Upscaler-Plus" / "nodes" / "minimax_h3_refine_sequence.py"
 
 
 def _source() -> str:

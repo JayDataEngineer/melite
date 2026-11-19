@@ -13,7 +13,7 @@ import pytest
 torch = pytest.importorskip("torch", reason="the moss-sfx progress wall rides torch tensors")
 
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
+PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
 IMPL_ROOT = PACKAGE_ROOT / "engines" / "moss_sfx_impl"
 if str(IMPL_ROOT) not in sys.path:
     sys.path.insert(0, str(IMPL_ROOT))

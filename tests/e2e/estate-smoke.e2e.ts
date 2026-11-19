@@ -17,7 +17,7 @@ import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 
 describe('estate composition smoke (headless boot)', () => {
   it('the shipped plugins boot together on fresh state and the world answers (lock held, drafts round-trip, media lists empty)', async () => {

@@ -33,7 +33,7 @@ import pytest
 
 
 PACK = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "vendor"
     / "comfyui_extensions"
     / "melite-audio-nodes"

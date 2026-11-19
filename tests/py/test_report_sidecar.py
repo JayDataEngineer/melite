@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 MOD = REPO / "vendor" / "comfyui_extensions" / "melite-autorig-nodes" / "report_sidecar.py"
 
 

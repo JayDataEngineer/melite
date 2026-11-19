@@ -35,7 +35,7 @@ import modelsFamiliesProvider from '../../packages/engines/comfyui-cordis/src/en
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 import { freeEngineResidency, restartEngineResidency } from './gpu-harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, engineVramFits, GPU_RENDER } from './engine-gate.ts'
 

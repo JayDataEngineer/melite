@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 PACK = REPO / "vendor" / "comfyui_extensions" / "melite-kimodo-nodes"
 FIXTURE = REPO / "tests" / "fixtures" / "anny_estimator_body.glb"
 

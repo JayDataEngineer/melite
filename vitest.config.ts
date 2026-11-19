@@ -171,14 +171,14 @@ const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includ
 // THE /TMP OWNERSHIP NET (stroke 13, 2026-09-14): suites mkdtemp
 // under tmpdir(); the global sweep reclaims pre-run trees at teardown
 // so iterate-run-fix loops can never accumulate a million inodes
-// again (tests/global-sweep.ts owns the prefix table).
+// again (tests/helpers/global-sweep.ts owns the prefix table).
 // CONFIG-ROOT-ABSOLUTE (2026-09-29, the per-package run fix): a bare
 // relative join resolves against the INVOKING cwd, so `vitest run`
 // from inside a package (pnpm --filter X exec vitest) looked for
 // <pkg>/tests/global-sweep.ts and died with ERR_LOAD_URL before a
 // single spec loaded — per-package runs were impossible. Resolved
 // against THIS config file, the sweep is found from any cwd.
-const TMP_SWEEP = fileURLToPath(new URL('./tests/global-sweep.ts', import.meta.url))
+const TMP_SWEEP = fileURLToPath(new URL('./tests/helpers/global-sweep.ts', import.meta.url))
 
 export default defineConfig({
   // THE BOOT BUDGET (2026-10-10; CORRECTED 2026-09-28): many suites

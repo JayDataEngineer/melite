@@ -25,7 +25,7 @@ import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { CardRegistryService } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT, GPU_RENDER } from './engine-gate.ts'
 
 const pngSize = (p: string): { w: number; h: number } => {

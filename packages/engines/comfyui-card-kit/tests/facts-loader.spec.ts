@@ -22,7 +22,7 @@ import { assertModUse } from "../src/mods/guard.ts";
 
 // TMP NOTE (stroke 13): this tree mints at MODULE scope (before any
 // test exists — onTestFinished can't own it); the global sweep
-// (tests/global-sweep.ts) reclaims it at run teardown instead.
+// (tests/helpers/global-sweep.ts) reclaims it at run teardown instead.
 
 
 const reads = {

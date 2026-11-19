@@ -1,6 +1,6 @@
 // global-sweep.ts — the /tmp ownership net (stroke 13, 2026-09-14).
 //
-// THE LAW (tests/harness.ts, quoted): "Own each acquired resource
+// THE LAW (tests/helpers/harness.ts, quoted): "Own each acquired resource
 // through its teardown: every helper that mints a temp dir / env
 // overlay returns a disposer." Most suites predate the helper and
 // mkdtemp freely — a single suite run leaks a few dozen trees, which
@@ -46,7 +46,7 @@ import { tmpdir } from "node:os";
 // was 135 of 232 prefixes short and 12 rows dead when the wall first
 // diffed it. The wiring arm (scripts/test-infra-wiring.spec.ts) pins
 // the generator itself.
-import { suitePrefixes } from "../scripts/tmp-prefixes.mjs";
+import { suitePrefixes } from "../../scripts/tmp-prefixes.mjs";
 const SUITE_PREFIXES: readonly string[] = suitePrefixes();
 
 /** vitest globalSetup contract: run start; returns teardown sweep. */

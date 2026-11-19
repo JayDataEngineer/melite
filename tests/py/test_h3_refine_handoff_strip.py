@@ -50,7 +50,7 @@ if TORCH_PRESENT:
     import torch
 
 NODES_DIR = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "vendor"
     / "comfyui_extensions"
     / "Comfyui_Minimax_h3_latent_Upscaler-Plus"

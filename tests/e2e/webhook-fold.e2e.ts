@@ -19,7 +19,7 @@ import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entri
 import { cardRegistryProvider } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 

@@ -1,6 +1,6 @@
 /**
- * tests/harness.ts — shared fixtures for every tier (DSH testing.md:
- * "shared fixtures live in a plain tests/harness.ts, never another
+ * tests/helpers/harness.ts — shared fixtures for every tier (DSH testing.md:
+ * "shared fixtures live in a plain tests/helpers/harness.ts, never another
  * *.e2e.ts (importing a spec re-registers its describe and duplicates
  * real API calls)").
  *

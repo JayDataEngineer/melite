@@ -5,8 +5,8 @@
 //
 // Mirror the operator's live web-profile rows into the lane's rows file,
 // render the profile with estate-provision, restart the seat, wait for the
-// fresh boot token, and run the GUI gates (test/gui-model-picker.mjs,
-// test/gui-media-restore.mjs).
+// fresh boot token, and run the GUI gates (tests/drives/gui-model-picker.mjs,
+// tests/drives/gui-media-restore.mjs).
 // Idempotent: if the mirrored rows are unchanged the render still runs but
 // the mirror step prints "unchanged".
 //
@@ -344,7 +344,7 @@ if (wcode !== '404' && wcode !== '200') process.stderr.write(`lane-sync: WARN �
 
 // 5) GATE — the operator's law: if it shows in the GUI, it gets tested.
 if (SKIP_GATE !== 1) {
-  runOrExit('node', ['test/gui-model-picker.mjs'], { env: { ...process.env, GUI_TOKEN: fresh } });
-  runOrExit('node', ['test/gui-media-restore.mjs'], { env: { ...process.env, GUI_TOKEN: fresh } });
+  runOrExit('node', ['tests/drives/gui-model-picker.mjs'], { env: { ...process.env, GUI_TOKEN: fresh } });
+  runOrExit('node', ['tests/drives/gui-media-restore.mjs'], { env: { ...process.env, GUI_TOKEN: fresh } });
 }
 out(`lane-sync: DONE — ${URL}/?token=${fresh}`);

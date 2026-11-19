@@ -262,7 +262,7 @@ drive (never a raw curl at an estate route — `make-flow`'s rule, and
 `estate-drive.mjs` is the one proof that owns the lane):
 
 ```sh
-MELITE_STATE_ROOT=$(mktemp -d) node test/estate-drive.mjs   # the live lane
+MELITE_STATE_ROOT=$(mktemp -d) node tests/drives/estate-drive.mjs   # the live lane
 # the drive boots a fresh estate on the built lib/, loads every card
 # (yours included), and prints its own flow-validation line
 # the studio proof is build-time + test-time (the client spec), and

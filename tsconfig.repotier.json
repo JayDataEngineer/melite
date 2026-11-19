@@ -26,5 +26,5 @@
       "@melite/estate-runs": ["packages/estate/runs/src/index.ts"]
     }
   },
-  "include": ["tools/**/*.ts", "tests/*.ts", "tests/helpers/**/*.ts", "tests/e2e/**/*.ts"]
+  "include": ["tools/**/*.ts", "tests/helpers/**/*.ts", "tests/e2e/**/*.ts"]
 }

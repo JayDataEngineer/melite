@@ -15,7 +15,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
-PACK = Path(__file__).resolve().parents[1] / "vendor/comfyui_extensions/melite-utility-nodes/nodes.py"
+PACK = Path(__file__).resolve().parents[2] / "vendor/comfyui_extensions/melite-utility-nodes/nodes.py"
 _spec = importlib.util.spec_from_file_location("melite_utility_nodes_list_door", PACK)
 assert _spec and _spec.loader
 nodes = importlib.util.module_from_spec(_spec)

@@ -136,7 +136,7 @@ function bagRowsOf(family: string): Array<{ row: string; id: string }> {
 }
 
 /** The drive scripts' declared id vocabularies (the missing-tests
- *  audit #12, 2026-11-06): test/drive-3d.mjs's usage line named
+ *  audit #12, 2026-11-06): tests/drives/drive-3d.mjs's usage line named
  *  `gem_soma` (the underscore era died with the wave-24 rename)
  *  and `autoremesher` (dead since the 2026-10-13 excision) — a
  *  developer following the usage fed a dead id into the drive

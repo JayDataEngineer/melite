@@ -5,7 +5,7 @@
 // table a BACKSTOP for pre-cure leftovers only, but a backstop that
 // misses 135 of 232 minted prefixes is not a backstop — this walks
 // the tree for every literal mkdtempSync prefix and emits the sorted
-// list, so tests/global-sweep.ts imports the truth instead of
+// list, so tests/helpers/global-sweep.ts imports the truth instead of
 // hand-maintaining a stale copy of it.
 //
 // Usage:

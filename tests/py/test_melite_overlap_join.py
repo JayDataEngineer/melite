@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-utility-nodes"
+PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "vendor" / "comfyui_extensions" / "melite-utility-nodes"
 
 av = pytest.importorskip("av", reason="PyAV is the join node's decode seat (pip install av)")
 torch = pytest.importorskip("torch", reason="the join blends as torch tensors")

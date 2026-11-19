@@ -10,7 +10,7 @@
  * the gate joins them.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 
 const KEYS = ['INFERENCE_TEST_SANDBOX', 'MELITE_REPO_ROOT', 'COMFYUI_ENDPOINT_CONFIG'] as const
 

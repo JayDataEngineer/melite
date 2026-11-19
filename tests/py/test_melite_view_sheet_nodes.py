@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-utility-nodes"
-FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
+PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "vendor" / "comfyui_extensions" / "melite-utility-nodes"
+FIXTURES = Path(__file__).resolve().parents[2] / "tests" / "fixtures"
 
 av = pytest.importorskip("av", reason="PyAV is the view nodes' decode seat (pip install av)")
 torch = pytest.importorskip("torch", reason="the view nodes compose sheets as torch tensors")

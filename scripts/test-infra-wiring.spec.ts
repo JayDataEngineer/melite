@@ -127,7 +127,7 @@ describe('the tmp sweep table is the tree (flake audit §3a, Option A)', () => {
     if (new Set(generated).size !== generated.length) throw new Error('duplicate prefixes')
     // and global-sweep must CONSUME the walk, not a hand copy: the
     // module source names the import, and no hand table grew back
-    const sweepSrc = readFileSync(join(ROOT, 'tests/global-sweep.ts'), 'utf8')
+    const sweepSrc = readFileSync(join(ROOT, 'tests/helpers/global-sweep.ts'), 'utf8')
     if (!sweepSrc.includes('tmp-prefixes.mjs')) throw new Error('global-sweep.ts no longer imports the generator — a hand table grew back')
     if (/const SUITE_PREFIXES[^=]*=\s*\[/.test(sweepSrc)) throw new Error('a literal prefix table returned — regenerate, never hand-maintain')
   })

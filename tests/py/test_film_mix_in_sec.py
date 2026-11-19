@@ -19,7 +19,7 @@ import pytest
 
 torch = pytest.importorskip("torch", reason="film_mix.py imports torch at module top")
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
+PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
 
 
 def _load_film_mix(monkeypatch):

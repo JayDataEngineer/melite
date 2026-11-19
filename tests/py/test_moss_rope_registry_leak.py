@@ -51,7 +51,7 @@ from pathlib import Path
 
 
 PACK_ENGINES = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parents[2]
     / "vendor"
     / "comfyui_extensions"
     / "melite-audio-nodes"

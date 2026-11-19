@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 VENDOR = REPO / "vendor" / "comfyui_extensions"
 ENDPOINT = REPO / "data" / "comfyui_endpoint.json"
 

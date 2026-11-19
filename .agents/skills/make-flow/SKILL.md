@@ -160,7 +160,7 @@ cd packages/harness/estate-queue && pnpm run typecheck
 ## 4. Prove the flow (no second process — the estate row serves)
 
 ```sh
-MELITE_STATE_ROOT=$(mktemp -d) node test/estate-drive.mjs   # the live lane
+MELITE_STATE_ROOT=$(mktemp -d) node tests/drives/estate-drive.mjs   # the live lane
 # In an agent lane, prove the same contract through melite_load/melite_construct
 # validation. Do not curl a raw estate route.
 ```

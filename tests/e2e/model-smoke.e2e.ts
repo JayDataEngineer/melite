@@ -41,7 +41,7 @@ import {
   type CraftAttachmentsSeam,
   type CraftLlmSeam,
 } from '../../packages/engines/craft/src/craft-engine.ts'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 
 // ── the gate: a named critic route + its key ─────────────────────
 // The key env defaults to DEEPSEEK_API_KEY (the deepseek-official

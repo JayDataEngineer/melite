@@ -30,7 +30,7 @@ import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entri
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 import { ENGINE_FREE, ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
 

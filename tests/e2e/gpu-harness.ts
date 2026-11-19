@@ -30,7 +30,7 @@ import { cardRegistryProvider } from '../../packages/harness/estate-queue/src/ca
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
-import { mintSandbox } from '../harness.ts'
+import { mintSandbox } from '../helpers/harness.ts'
 
 /** The engine gate lives in ONE home now (operator order 2026-11-06):
  *  presence, busy-defer, and pins ride ./engine-gate.ts — this

@@ -29,7 +29,7 @@ import pytest
 
 torch = pytest.importorskip("torch", reason="nodes.py imports torch at module top")
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
+PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "vendor" / "comfyui_extensions" / "melite-audio-nodes"
 
 
 def _stub_module(name: str) -> types.ModuleType:
