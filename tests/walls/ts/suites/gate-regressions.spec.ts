@@ -160,13 +160,18 @@ describe("THE REPO TIER (tools/ + tests/ typed by nothing)", () => {
     expect(script).toMatch(/repo tier/);
   });
 
-  it("the tracked config exists and covers tools/, tests/*.ts, tests/e2e", () => {
+  it("the tracked config exists and covers tools/, tests/helpers, tests/e2e", () => {
     const cfgPath = join(REPO, "tsconfig.repotier.json");
     expect(existsSync(cfgPath), "tsconfig.repotier.json must stay tracked at the root").toBe(true);
     const cfg = read("tsconfig.repotier.json");
     expect(cfg).toContain('"tools/**/*.ts"');
-    expect(cfg).toContain('"tests/*.ts"');
+    // (LAYOUT LAW, 2026-11-19) the loose tests/*.ts face is GONE —
+    // the tier judges tests/helpers/** (harness + global-sweep moved
+    // there) and tests/e2e/**. A returning bare tests/*.ts include
+    // would re-open the loose-file door the layout wall bans.
+    expect(cfg).toContain('"tests/helpers/**/*.ts"');
     expect(cfg).toContain('"tests/e2e/**/*.ts"');
+    expect(cfg).not.toContain('"tests/*.ts"');
   });
 });
 
