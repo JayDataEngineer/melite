@@ -232,6 +232,14 @@ export const chromeCopy = {
    *  named key through the bench door. Composed with the field name
    *  at the render seat ("Unstamp 'double_reference'"). */
   unstampWord: 'Unstamp',
+  /** The ledger refusal's re-offer verb (CONTRACTS §4 debt 5, the
+   *  press wedge's curable face): the refusal names a ghost key no
+   *  field of the form states (a failed tombstone null-write), so the
+   *  words ACT — one click re-offers the null write for exactly that
+   *  key through the bench door (JSON Merge Patch deletes it).
+   *  Composed with the key at the render seat
+   *  ("Re-offer null 'guidance_scale'"). */
+  reofferNullWord: 'Re-offer null',
   /** THE STAGE-VIEW LOAD REFUSAL (2026-11-09, the fallback
    *  extermination): a card whose served spec declares a studio
    *  (FormSpecDoc.stage_view) must never wear the generic form when

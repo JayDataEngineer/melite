@@ -24,7 +24,7 @@
 import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
 import {
   RESTORE_STRIP_KEYS,
-  RESTORED_PROVENANCE_SPELLING,
+  RESTORED_AUTHORSHIP_SPELLING,
   benchSessionOf,
   draftIdOf,
   normalizeBenchStage,
@@ -562,7 +562,9 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
             // ride the reload either (see the null-clear law above).
             st['result'] = null
           }
-          st['provenance'] = RESTORED_PROVENANCE_SPELLING
+          // the restore coordinate stamps the NEW authorship key only
+          // (the stored-rows law, CONTRACTS.md §4 debt 6)
+          st['authorship'] = RESTORED_AUTHORSHIP_SPELLING
         }
         const bsIntent = bs.intent !== '' ? bs.intent : 'restored run'
         await loadStagesOntoBench(bsStages, bsIntent.slice(0, 77), deps)
@@ -607,10 +609,10 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // THE STAGE ROW IS THE CONTRACT'S (the audit's Rule 1: this arm
       // built the row by hand — a THIRD copy of the self-naming strip
       // and its own engine/outputs laws). The contract shapes the row;
-      // the restore's provenance and preview ride on top.
+      // the restore's authorship and preview ride on top.
       const restoredCardRow: Record<string, unknown> = {
         ...normalizeBenchStage({ id: 's_0', card, params }, 0),
-        provenance: RESTORED_PROVENANCE_SPELLING,
+        authorship: RESTORED_AUTHORSHIP_SPELLING,
       }
       if (result !== undefined) restoredCardRow['result'] = result
       const stages = [restoredCardRow]
@@ -635,7 +637,7 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // with prompt text and ran model = <the prompt>)
       const restoredBareRow: Record<string, unknown> = {
         ...normalizeBenchStage({ id: 's_0', params }, 0),
-        provenance: RESTORED_PROVENANCE_SPELLING,
+        authorship: RESTORED_AUTHORSHIP_SPELLING,
       }
       if (result !== undefined) restoredBareRow['result'] = result
       const stages = [restoredBareRow]

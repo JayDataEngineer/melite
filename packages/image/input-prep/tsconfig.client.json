@@ -18,6 +18,7 @@
           "node"
       ],
       "paths": {
+        "@melite/catalog/familyAuthorship": ["./../../web-kit/catalog/src/familyAuthorship.ts"],
         "@melite/audio-voice-change": ["./../../audio/voice-change/src/card.ts"],
         "@melite/audio-voice-change/card": ["./../../audio/voice-change/src/card.ts"],
         "@melite/models-seed-vc": ["./../../models/seed-vc/src/index.ts"],
@@ -239,7 +240,6 @@
         "@melite/catalog/cardBirth": ["./../../web-kit/catalog/src/cardBirth.ts"],
         "@melite/catalog/enhance": ["./../../web-kit/catalog/src/enhance.ts"],
         "@melite/catalog/familyParamContract": ["./../../web-kit/catalog/src/familyParamContract.ts"],
-        "@melite/catalog/familyProvenance": ["./../../web-kit/catalog/src/familyProvenance.ts"],
         "@melite/catalog/modelCatalog": ["./../../web-kit/catalog/src/modelCatalog.ts"],
         "@melite/catalog/FlowProtocol": ["./../../web-kit/catalog/src/FlowProtocol.ts"],
         "@melite/catalog/runStatusContract": ["./../../web-kit/catalog/src/runStatusContract.ts"],

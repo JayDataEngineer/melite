@@ -479,14 +479,14 @@ describe('loadRunOntoBench — the run record wins', () => {
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages).toHaveLength(3)
     const shared = { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') }
-    expect(stages[0]).toMatchObject({ id: 's_0', card: 'image-gen', provenance: 'restored', result: shared })
+    expect(stages[0]).toMatchObject({ id: 's_0', card: 'image-gen', authorship: 'restored', result: shared })
     expect('runStatus' in stages[0]!).toBe(false)
     // (D6 re-pin, 2026-11-06: "image previews not recovered on all
     // cards") the old arm pinned the DEFECT as law — s_1 (card
     // 'other', never matched by card_snapshot.card) restored
     // previewless and its card rendered no image. The run's result
     // is shared truth; each card's own preview law picks its hero.
-    expect(stages[1]).toMatchObject({ id: 's_1', card: 'other', provenance: 'restored', result: shared })
+    expect(stages[1]).toMatchObject({ id: 's_1', card: 'other', authorship: 'restored', result: shared })
     // THE SKIPPED SET never carries another stage's product.
     // (re-pin 2026-10-31, the D1 cure — the restore-preview
     // recurrence audit F1: a truthless row posts an EXPLICIT
@@ -497,7 +497,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     // census rides EVERY row — the skipped one too — but it is
     // row-level truth: the result stays the explicit null.
     expect(stages[2]).toEqual({
-      id: 's_2', card: 'skipped-card', provenance: 'restored', result: null,
+      id: 's_2', card: 'skipped-card', authorship: 'restored', result: null,
       run_artifacts: { 'run-0f1e2d-r1/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') },
     })
     expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
@@ -635,7 +635,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     // them was not part of the run and restores preview-less, like
     // the skipped set. The run-level floor survives only for
     // sidecars with NO stage rows (the legacy arm below).
-    expect(stages[0]).toMatchObject({ id: 's_0', provenance: 'restored' })
+    expect(stages[0]).toMatchObject({ id: 's_0', authorship: 'restored' })
     // (re-pin 2026-10-31, the D1 cure — the restore-preview
     // recurrence audit F1): the truthless row posts the EXPLICIT
     // result: null clear key, never a stripped absence — the
@@ -684,7 +684,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     // the tagger and the other h3 stage never wear another stage's
     // film — preview-less, never a single shared image
     for (const st of [stages[0]!, stages[1]!]) {
-      expect(st['provenance']).toBe('restored')
+      expect(st['authorship']).toBe('restored')
       // (re-pin 2026-10-31, the D1 cure — the restore-preview
       // recurrence audit F1): the truthless rows post the EXPLICIT
       // result: null clear key — never a stripped absence, which the
@@ -956,7 +956,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(stages[0]).toMatchObject({
       id: 's_0',
       card: 'sfx',
-      provenance: 'restored',
+      authorship: 'restored',
       result: { run_id: 'r-leak', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rleak/tts/SaveAudio.0_tts_00001.flac') },
     })
   })
@@ -976,7 +976,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages).toHaveLength(1)
-    expect(stages[0]).toMatchObject({ id: 's_0', engine: 'comfyui', card: 'image-gen', provenance: 'restored' })
+    expect(stages[0]).toMatchObject({ id: 's_0', engine: 'comfyui', card: 'image-gen', authorship: 'restored' })
     expect(ensuredBody(calls).intent).toBe('solo')
   })
 
@@ -1088,7 +1088,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       // from the card's ports at compose; fabricating an image
       // default here mis-kinded every video/tts/film stage).
       id: 's_0', engine: 'comfyui', card: 'image-gen', params: { seed: 3 },
-      inputs: {}, outputs: {}, provenance: 'restored',
+      inputs: {}, outputs: {}, authorship: 'restored',
     })
     expect(ensuredBody(calls).intent).toBe('restored run')
   })
@@ -1313,7 +1313,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       params: { model: 'image-gen' },
       inputs: {},
       outputs: { default: 'image' },
-      provenance: 'restored',
+      authorship: 'restored',
     })
     expect(ensuredBody(reqCalls.calls).intent).toBe('restored run')
 
@@ -1390,7 +1390,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       params: { model: 'image-gen', prompt: 'old prompt' },
       inputs: {},
       outputs: { default: 'image' },
-      provenance: 'restored',
+      authorship: 'restored',
     })
     // THE INTENT IS A LABEL, NEVER A PAYLOAD (the wire audit's M5):
     // this arm restores a request body with no card, so the birth law
@@ -1493,7 +1493,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       expect(d.errors).toEqual([])
       const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
       expect(stages).toHaveLength(2)
-      expect(stages[0]).toMatchObject({ id: 's_0', provenance: 'restored' })
+      expect(stages[0]).toMatchObject({ id: 's_0', authorship: 'restored' })
       // the stages' own products still ride; the run census never does
       expect('run_artifacts' in stages[0]!).toBe(false)
       expect('run_artifacts' in stages[1]!).toBe(false)

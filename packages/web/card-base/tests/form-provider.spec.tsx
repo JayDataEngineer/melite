@@ -244,6 +244,28 @@ test('FROM FLOW: rows write the param; an empty row only closes (never a blank w
   expect(onEdit).toHaveBeenCalledWith('https://host/a.png')
 })
 
+test('THE ONE ACCEPT LAW: both doors ride the seat law — the square input matches the wire door (the split-accept burn, 2026-11-18)', () => {
+  // Operator burn (input-prep, live DOM): SourceRow mounted TWO
+  // hidden file inputs with TWO accept laws — the wire door's inert
+  // resting attr (a caller's bespoke image/*) and the square door's
+  // hardwired DEFAULT image triad — while the seat's own law (the
+  // dual triad, admitsImageAudio) retargeted the wire door at click.
+  // Two doors, two laws, none of them the seat's. The host now
+  // carries acceptOfField and SourceRow threads it to the square
+  // input: BOTH doors answer the ONE law.
+  const view = render(h(SourceRow, { label: 'Source', kind: 'file', admitsImageAudio: true, value: null, onEdit: () => {} }))
+  const dual = acceptOfField({ name: 'x', label: 'x', type: 'file', media: 'image+audio' } as SpecField)
+  expect(dual).toContain('audio/') // sanity: the dual law admits the audio family
+  const squareInput = view.container.querySelector('[data-slot-input]') as HTMLInputElement
+  expect(squareInput, 'the square door mounts its input (onFile verbs)').not.toBeNull()
+  expect(squareInput.getAttribute('accept')).toBe(dual)
+  // and the wire door retargets to the SAME law at click — one law,
+  // both doors
+  fireEvent.click(screen.getByRole('button', { name: 'Source source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From file' }))
+  expect(providerFileInput().getAttribute('accept')).toBe(dual)
+})
+
 test('FROM FLOW: no candidates — the empty face, never a dead list', () => {
   render(h(SourceRow, { label: 'Doc', kind: 'file', value: null, onEdit: () => {} }))
   fireEvent.click(screen.getByRole('button', { name: 'Doc source' }))

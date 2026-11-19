@@ -727,6 +727,31 @@ describe('the studio (InputPrepStudio)', () => {
       expect(thumb?.getAttribute('src')).toBe(IMG)
     })
 
+    it('THE SEAT RIDES THE PANEL LANGUAGE (the out-of-menu burn, 2026-11-18: the bare square glued to the column edge beside a boxed rail)', () => {
+      // Operator, verbatim: "the image input is oddly out of menu, and
+      // it has no margin between the top and left". The seat rode bare
+      // (no chrome) while the transform rail below it was a boxed
+      // panel — two visual languages and zero inset. The seat now sits
+      // inside the SAME panel chrome (.rail), so the panel's padding
+      // is the margin and the seat reads as part of the menu. Toggle
+      // the wrapper div out and the containment below reds.
+      render(h(InputPrepStudio, owner({ params: { source: IMG } })))
+      const panel = screen.getByTestId('prep-source')
+      const rail = screen.getByTestId('prep-rail')
+      // same chrome class on both panels (one language, not a lookalike)
+      expect(panel.className).toBe(rail.className)
+      // the seat is INSIDE the panel, and the panel precedes the rail
+      const seat = document.querySelector('[data-source-row="Image"]')
+      expect(panel.contains(seat)).toBe(true)
+      expect(panel.compareDocumentPosition(rail) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+      // the audio lane keeps the panel (the seat never loses its home)
+      const view = render(h(InputPrepStudio, owner({ params: { source: 'x.wav', media_type: 'audio' } })))
+      const audioPanel = view.container.querySelector('[data-testid="prep-source"]')
+      expect(audioPanel).not.toBeNull()
+      expect(audioPanel?.contains(document.querySelector('[data-source-row="Audio"]'))).toBe(true)
+      view.unmount()
+    })
+
     it('THE LABEL SPEAKS THE LANE (the 2026-10-22 burn: the seat said "Source file" while the square is an IMAGE seat)', () => {
       const { unmount } = render(h(InputPrepStudio, owner({ params: { source: IMG } })))
       expect(document.querySelector('[data-source-row="Image"]')).not.toBeNull()

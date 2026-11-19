@@ -50,7 +50,7 @@ import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { OrbitLeafCanvas } from '@melite/image-mask-studio/orbit-canvas'
 import { V2vLeafFace } from '@melite/video-h3-timeline/v2v-face'
 import { cardLlmArg, setCardLlm } from '@melite/catalog'
-import { paramFields, patchStageOutcome, patchStageParamsChained, mediaUrl, stageWriteState, unlandedWriteVoice } from './draft.ts'
+import { paramFields, patchStageOutcome, patchStageParamsChained, mediaUrl, stageWriteState, unlandedGhostKeys, unlandedWriteVoice } from './draft.ts'
 import css from './card.module.css'
 import { FormSkeleton } from './skeleton.tsx'
 import { StudioShell } from '@melite/card-base/client'
@@ -168,6 +168,18 @@ export function ScrollLockedDetail(props: { children?: ReactNode, testid?: strin
  *  2026-10-16). */
 function modBagKeys(doc: FormSpecDoc): string[] {
   return (doc.features?.modifiers ?? []).map((k) => k.param_key)
+}
+
+/** THE AUTHORABLE KEYS (CONTRACTS §4 debt 5, the press wedge's form
+ *  truth): every key the form can state or pick — the declared fields
+ *  plus the axis keys (the Model rail's picks). A failed key among
+ *  these has a live cure (retype or re-pick, the reconcile law's
+ *  declared-field clause); a failed key outside them is the wedge
+ *  ghost unlandedGhostKeys judges. */
+function authorableKeysOf(doc: FormSpecDoc): Set<string> {
+  const keys = new Set(fieldsOf(doc).map((f) => f.name))
+  for (const g of axisGroups(doc)) keys.add(axisKey(g))
+  return keys
 }
 
 /** The one refusal template — composeGateRefusal derives from it (the
@@ -1159,6 +1171,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // banner's unstamp delivers the switch verb's own verdict from the
   // banner: one click writes the named key's null through the bench
   // door (JSON Merge Patch deletes the bench key) and retires the face.
+  // THE SAME VERB IS THE WEDGE'S CURE (CONTRACTS §4 debt 5): the
+  // ledger refusal's ghost key (a failed tombstone null-write the
+  // form cannot author) rides this write as its re-offered null —
+  // one door verb for both refusal classes, never a second spelling.
   const onUnstamp = useCallback((name: string): void => {
     touchedRef.current.add(name)
     setUser((m) => {
@@ -1173,9 +1189,21 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // field-less (inert) rows stay: they name no key to clear. The
     // seat's words shrink with the set (the strip mounts under
     // `error`: nulling it would take the strip down with the row).
+    // THE WEDGE'S SURVIVORS (CONTRACTS §4 debt 5): the same intent
+    // governs the unlanded voice — curing one ghost must not take the
+    // OTHER ghosts' affordance down with it (a face that dies after
+    // its first cure re-forms the wedge: the remaining tombstones
+    // would owe a fresh refused press just to be re-offered). The
+    // remaining set is the render's own ghost judgment minus the key
+    // whose null is in flight (wedgeGhostsRef below mirrors it per
+    // render; the ledger stays the truth — a refused re-offer is
+    // re-voiced whole by the settle catch).
     const survivors = gateSet.filter((v) => v.field !== name)
     setGateSet(survivors)
-    setError(survivors.length === 0 ? null : survivors.map((v) => gateRefusalVoice(v)).join('\n'))
+    const remainingGhosts = wedgeGhostsRef.current.filter((k) => k !== name)
+    setError(survivors.length === 0
+      ? (remainingGhosts.length > 0 ? unlandedWriteVoice(bench.draftId, stage.id, remainingGhosts) : null)
+      : survivors.map((v) => gateRefusalVoice(v)).join('\n'))
     // the WRITE FACE too: the trailing write's gate voiced the same
     // field-named refusal on its own face — its subject just left the
     // bench, so the words retire with it (a later refusal re-voices).
@@ -1211,6 +1239,25 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const laneStrike = strikeDeadLaneStamps(spec, user, servedBaseRaw)
   const servedBase: SpecValues | undefined = servedBaseRaw === undefined ? undefined : laneStrike.base
   const value: SpecValues = resolveValue(spec ?? { form: '' }, user, servedBase)
+  // THE WEDGE GHOSTS' FORM TRUTH (CONTRACTS §4 debt 5, the curable
+  // face): what the form can author (declared fields + axis keys)
+  // and the user map MINUS the drill's own heal/drop verdicts — a
+  // seeded copy a failed reopen heal already nulled is the drill's
+  // verdict, not a hand's word (the strike's de-author law). Derived
+  // per render like every other face; the press and the strip read
+  // the ONE judgment, never two spellings.
+  const authorableKeys = spec === null ? new Set<string>() : authorableKeysOf(spec)
+  const ghostAuthoredKeys = new Set(Object.keys(user).filter((k) => !droppedRef.current.has(k)))
+  const wedgeGhostKeys = (): string[] => spec === null
+    ? []
+    : unlandedGhostKeys(stageWriteState(bench.draftId, stage.id), authorableKeys, ghostAuthoredKeys)
+  // THE GHOST JUDGMENT'S CLICK-TIME MIRROR (CONTRACTS §4 debt 5):
+  // onUnstamp is memoized, so its shrink reads the LAST render's
+  // judgment through this ref — the same one derivation the strip and
+  // the press read, never a second spelling (the ref object is the
+  // stable binding; the judgment itself is re-derived per render).
+  const wedgeGhostsRef = useRef<string[]>([])
+  wedgeGhostsRef.current = wedgeGhostKeys()
   // THE STRIKE NOTE'S DISMISSAL (the enhance-note grammar): the ×
   // retires the note; a NEW strike set re-voices (the dismissal keys
   // on the set, never a blind latch).
@@ -1539,7 +1586,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // fence refuses on), never a bare rejection string the row
           // never heard of. The resync pulls the fresh rev so the
           // next press re-tries against the doc that actually landed.
-          setGateSet([]); setError(unlandedWriteVoice(bench.draftId, stage.id))
+          // THE CURABLE FACE (CONTRACTS §4 debt 5): a tombstone
+          // null-write among the refused keys that no field of the
+          // form can author rides the ghost sentence — the refusal
+          // names its cure (the re-offered null), never a dead end.
+          setGateSet([]); setError(unlandedWriteVoice(bench.draftId, stage.id, wedgeGhostKeys()))
           onResync?.()
           return
         }
@@ -1554,7 +1605,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // own gate — defense in depth, never delegation: this drill's
       // onRun prop may be any host's verb, and a bare start must be
       // unexpressible from this seat.
-      const fence = await refuseForUnlandedWrite(bench.draftId, stage.id)
+      // THE CURABLE CANDIDATES (CONTRACTS §4 debt 5): the wedge
+      // ghosts derived from the PRE-flush row — the fence flushes
+      // internally, so it intersects them with the POST-flush failed
+      // set and names the cure only for keys the flush did not heal.
+      const fence = await refuseForUnlandedWrite(bench.draftId, stage.id, wedgeGhostKeys())
       if (fence !== null) { setGateSet([]); setError(fence); return }
       onRun()
     } catch (e: unknown) {
@@ -2011,6 +2066,26 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
               'aria-label': chromeCopy.unstampWord + " '" + (v.field ?? '') + "'",
               onClick: () => { if (v.field != null) onUnstamp(v.field) },
             }, chromeCopy.unstampWord + " '" + (v.field ?? '') + "'")),
+            // THE CURABLE FACE (CONTRACTS §4 debt 5, the press wedge's
+            // cure): the ledger refusal named a ghost key no field of
+            // the form can author — the words ACT here, riding the
+            // SD-7 unstamp verb (patchStageParamsChained with the one
+            // key's JSON Merge Patch null: the tombstone delete the
+            // failed family switch still owes). THE CURE SHAPE (the
+            // debt offers two): re-offer the null, NOT a local ghost
+            // drop — the press composes from the served row, so a
+            // local-only drop would let a run leave over a doc the
+            // ghost still poisons (the one-truth press law: the
+            // presenter owns no second copy of the bench row). The
+            // set derives from the LEDGER per render: a landing
+            // delete retires its own button; a refusal with no ghost
+            // left never mounts one.
+            wedgeGhostKeys().map((k) => h(Button, {
+              key: 'reoffer:' + k,
+              size: 'sm', variant: 'ghost',
+              'aria-label': chromeCopy.reofferNullWord + " '" + k + "'",
+              onClick: () => { onUnstamp(k) },
+            }, chromeCopy.reofferNullWord + " '" + k + "'")),
             h(Button, {
               size: 'sm', variant: 'ghost', className: css.errorDismiss,
               'aria-label': chromeCopy.dismissError,

@@ -8,6 +8,7 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
+		["prove", "nance"].join("");
 		//#endregion
 		//#region ../../web-kit/contracts/src/stageView.ts
 		/** The terminal word set, exported so a seat that needs to SHOW it

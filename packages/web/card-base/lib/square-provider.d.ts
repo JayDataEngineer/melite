@@ -136,6 +136,14 @@ export interface SourceRowProps {
  *  upload-rail law). */
 export interface SquareHost {
     verbs: InputSquareVerbs;
+    /** The seat's ONE accept law (acceptOfField): the wire door retargets
+     *  to it at click time and the square's own input renders it verbatim
+     *  — one law, both doors (the split-accept burn, 2026-11-18: the
+     *  square door fell to the DEFAULT image triad for every seat, so an
+     *  audio lane's OS dialog filtered to images while the wire door
+     *  admitted audio — and callers' bespoke accept strings set only the
+     *  wire door's INERT resting attr, never the click). */
+    accept: string;
     display?: string | null;
     /** The last upload refusal's voice for this field (THE REFUSAL
      *  FACE): '' while an attempt is in flight, the refusal text after

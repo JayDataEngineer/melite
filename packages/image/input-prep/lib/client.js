@@ -623,25 +623,31 @@ window.__ModuleLoader__.load({
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.StudioShell, {
 					params: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: prep_module_css_default.paramsCol,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
-							name: "source",
-							label: mediaType === "image" ? "Image" : "Audio",
-							kind: mediaType === "image" ? "image" : "file",
-							admitsImageAudio: true,
-							value: source,
-							onEdit: pickSource,
-							onFile: (file) => {
-								(0, _melite_card_base_client.readAsDataURL)(file).then((url) => {
-									pickSource(url);
-								});
-							},
-							loadMedia: _melite_card_base_client.fetchMediaLibrary,
-							accept: mediaType === "image" ? "image/*" : "audio/*",
-							candidates: props.upstream.map((u) => ({
-								id: u.id,
-								label: u.title,
-								url: u.url
-							}))
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: prep_module_css_default.rail,
+							"data-testid": "prep-source",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								className: prep_module_css_default.railTitle,
+								children: "Source"
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
+								name: "source",
+								label: mediaType === "image" ? "Image" : "Audio",
+								kind: mediaType === "image" ? "image" : "file",
+								admitsImageAudio: true,
+								value: source,
+								onEdit: pickSource,
+								onFile: (file) => {
+									(0, _melite_card_base_client.readAsDataURL)(file).then((url) => {
+										pickSource(url);
+									});
+								},
+								loadMedia: _melite_card_base_client.fetchMediaLibrary,
+								candidates: props.upstream.map((u) => ({
+									id: u.id,
+									label: u.title,
+									url: u.url
+								}))
+							})]
 						}), mediaType === "image" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: prep_module_css_default.rail,
 							"data-testid": "prep-rail",

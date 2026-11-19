@@ -64,6 +64,12 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
     h(InputSquare, {
       label: props.hideLabel === true ? '' : props.label,
       ...(props.ariaLabel !== undefined ? { ariaLabel: props.ariaLabel } : {}),
+      // THE ONE ACCEPT LAW (the split-accept burn, 2026-11-18): the
+      // square's own OS dialog rides the provider's acceptOfField —
+      // the same law the wire door retargets to at click. The old
+      // shape always fell to DEFAULT_SQUARE_ACCEPT (the image triad),
+      // so an audio lane's square door filtered the dialog to images.
+      accept: host.accept,
       // THE VALUE RIDES VERBATIM (2026-11-04, the detach law): the
       // square owns the renderability split (thumb / mesh / the held
       // face) and the ✕ rides the HELD fact — a bare name or an

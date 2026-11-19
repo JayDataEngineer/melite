@@ -1,5 +1,5 @@
 ---
-description: The share door's preview face — the estate's video and audio vocabulary registered into the GUI's sidebar document seat, so a presented artifact previews where a presented image already does.
+description: The share door's preview face — the estate's video/audio vocabulary renders in the GUI's sidebar document seat (the DSH present toolcall's channel).
 kind: package-bundle
 ---
 
@@ -27,3 +27,14 @@ Nothing directly. The plugin changes what the user's sidebar shows after the age
 #### Token effect
 
 Zero — a client plugin with no tool schema.
+
+#### KV Cache effect
+
+Independent — no session events, no tool schema, no persistent prompt prefix; the registrations touch nothing a model request reads.
+
+## Known Limitations and Deferred Work
+
+- **The vocabulary, not a probe, decides** — matching is by file suffix against `mediaVocab`'s video/audio sets, binaryExtensions-whole; an estate artifact with a suffix outside both sets still hits the seat's unsupported dead end.
+- **Decode is the browser's own face** — a container the browser cannot decode (mkv/avi on some engines) shows the native element's error face; no transcode arm exists.
+- **qvoice previews render the embedding note, not a player** — the container is voice embeddings, not PCM (the no-play-button law).
+- **Web-surface only** — the row disables where the composition carries no web app; nothing registers node-side, and the bodies are presentational (bytes-complete; a non-bytes content renders nothing).

@@ -17,6 +17,10 @@ import {
   TriStateAtom,
 } from '../src/form.tsx'
 import { OverlayKnob } from '../src/rows.tsx'
+// THE ONE ACCEPT LAW: the seat's host carries the seat's accept — the
+// spec's hand-made partials derive it from the same seam the seat
+// serves (acceptOfField), never a frozen literal.
+import { acceptOfField } from '../src/square-provider.tsx'
 
 // THE MENU SELECT helpers (S7h): the tri/enum atoms ride the DSH
 // Menu — picks open the trigger (aria-label = the field label) and
@@ -149,7 +153,7 @@ test('SLIDER: a null envelope keeps the field bounds; a disjoint envelope refuse
 test('SPEC ATOM: the image square builds when claimed; bare text when not (never a bare URL input)', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'img', label: 'Image', type: 'image' })
-  const square = { verbs: {}, display: undefined }
+  const square = { verbs: {}, accept: acceptOfField(f), display: undefined }
   const { unmount } = render(h(SpecAtom, { f, value: 'https://host/a.png', onEdit, square }))
   expect(screen.getByRole('button', { name: 'Image source' })).not.toBeNull()
   unmount()
@@ -160,7 +164,7 @@ test('SPEC ATOM: the image square builds when claimed; bare text when not (never
 test('SPEC ATOM: a mesh field rides the same square — the inline viewport, never a URL input', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'rig', label: 'Rig', type: 'mesh' })
-  render(h(SpecAtom, { f, value: 'data/input/donor.glb', onEdit, square: { verbs: {} } }))
+  render(h(SpecAtom, { f, value: 'data/input/donor.glb', onEdit, square: { verbs: {}, accept: acceptOfField(f) } }))
   expect(screen.getByRole('button', { name: 'Rig source' })).not.toBeNull()
   expect(document.querySelector('[data-viewport="square-mesh"]')).not.toBeNull()
 })
@@ -170,12 +174,12 @@ test('SPEC ATOM: the square face — mirror wins, then the value; junk values sh
   const f = F({ name: 'img', label: 'Image', type: 'image' })
   const first = render(h(SpecAtom, {
     f, value: 'stale-value', onEdit,
-    square: { verbs: {}, display: 'https://host/fresh.png' },
+    square: { verbs: {}, accept: acceptOfField(f), display: 'https://host/fresh.png' },
   }))
   expect(document.querySelector('img')?.getAttribute('src')).toBe('https://host/fresh.png')
   first.unmount()
   render(h(SpecAtom, {
-    f, value: 'stale-value', onEdit, square: { verbs: {}, display: '' },
+    f, value: 'stale-value', onEdit, square: { verbs: {}, accept: acceptOfField(f), display: '' },
   }))
   expect(screen.getByText('stale-value')).not.toBeNull()
 })
@@ -185,7 +189,7 @@ test('SPEC ATOM: the detach law — an unrenderable value is HELD, the ✕ armed
   const f = F({ name: 'img', label: 'Image', type: 'image' })
   const box = render(h(SpecAtom, {
     f, value: 'ghost-name.png', onEdit,
-    square: { verbs: { onClear: () => { onEdit('') } }, display: '' },
+    square: { verbs: { onClear: () => { onEdit('') } }, accept: acceptOfField(f), display: '' },
   })).container
   // the box carries the raw value as the held face — no thumb, no PLUS glyph
   expect(box.querySelector('img')).toBeNull()
@@ -220,18 +224,18 @@ test('SPEC ATOM: a committed image upload previews — the estate path resolves 
   const onEdit = vi.fn()
   const f = F({ name: 'img', label: 'Image', type: 'image' })
   const view = render(h(SpecAtom, {
-    f, value: 'data/input/x.png', onEdit, square: { verbs: {} },
+    f, value: 'data/input/x.png', onEdit, square: { verbs: {}, accept: acceptOfField(f) },
   }))
   expect(view.container.querySelector('img')?.getAttribute('src')).toBe('/v1/assets/inputs/x.png')
   view.unmount()
   const spaced = render(h(SpecAtom, {
-    f, value: 'data/input/my file (1).webp', onEdit, square: { verbs: {} },
+    f, value: 'data/input/my file (1).webp', onEdit, square: { verbs: {}, accept: acceptOfField(f) },
   }))
   expect(spaced.container.querySelector('img')?.getAttribute('src')).toBe('/v1/assets/inputs/my%20file%20(1).webp')
   spaced.unmount()
   // the non-image estate path still refuses the thumb (junk rides metric, never <img>)
   const junk = render(h(SpecAtom, {
-    f, value: 'data/input/x.txt', onEdit, square: { verbs: {} },
+    f, value: 'data/input/x.txt', onEdit, square: { verbs: {}, accept: acceptOfField(f) },
   }))
   expect(junk.container.querySelector('img')).toBeNull()
 })
@@ -415,9 +419,10 @@ test('FIELD ROW: the seed dice — random fills, fixed hollows, the toggle mints
 
 test('FIELD ROW: the stacked face — key, required star, the hover (i), and the passthrough seams', () => {
   const onEdit = vi.fn()
-  const square = { verbs: {} }
+  const f = F({ required: true, tooltip: 'be nice' })
+  const square = { verbs: {}, accept: acceptOfField(f) }
   render(h(SpecFieldRow, {
-    f: F({ required: true, tooltip: 'be nice' }), value: 'x', onEdit, square,
+    f, value: 'x', onEdit, square,
     wireCandidates: [{ id: 'a', label: 'A', url: 'https://host/a.png' }],
   }))
   expect(screen.getByText('*')).not.toBeNull()
@@ -476,9 +481,10 @@ test('SOURCE ROW: a host file law + a claimed pick face ride through (the seams 
 
 test('SPEC ATOM: an empty label falls back to the field name (a control never ships unnamed)', () => {
   const onEdit = vi.fn()
+  const f = F({ name: 'img', label: '', type: 'image' })
   render(h(SpecAtom, {
-    f: F({ name: 'img', label: '', type: 'image' }),
-    value: 'https://host/a.png', onEdit, square: { verbs: {} },
+    f,
+    value: 'https://host/a.png', onEdit, square: { verbs: {}, accept: acceptOfField(f) },
   }))
   expect(screen.getByRole('button', { name: 'img source' })).not.toBeNull()
   const tri = render(h(SpecAtom, { f: F({ name: 't', label: '', type: 'tri' }), value: true, onEdit }))

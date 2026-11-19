@@ -243,29 +243,49 @@ export function InputPrepStudio(props: StageViewOwnerProps) {
       // clear, writing the source param.
       params={(
         <div className={css.paramsCol}>
-          {/* THE SOURCE SEAT (the 2026-10-22 media burn: the label
-              said "Source file" while the seat is an IMAGE square,
-              and From-media opened EMPTY — the studio never injected
-              the wire's loadMedia, so the modal rendered "nothing to
-              pick yet" beside a full library; the wall asserted the
-              menu's TEXT, never the door). The label speaks the lane
-              ('Image' / 'Audio'), the square is kind-typed (an image
-              slot filters the media modal to images and renders the
-              thumb), upload rides onFile → data-URL (the ONE read
-              path every square attach uses), and From-media rides
-              fetchMediaLibrary — the same seams MotionRail wires. */}
-          <SourceRow
-            name="source"
-            label={mediaType === 'image' ? 'Image' : 'Audio'}
-            kind={mediaType === 'image' ? 'image' : 'file'}
-            admitsImageAudio
-            value={source}
-            onEdit={pickSource}
-            onFile={(file) => { void readAsDataURL(file).then((url) => { pickSource(url) }) }}
-            loadMedia={fetchMediaLibrary}
-            accept={mediaType === 'image' ? 'image/*' : 'audio/*'}
-            candidates={props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url }))}
-          />
+          {/* THE SOURCE PANEL (operator 2026-11-18: "the image input
+              is oddly out of menu, no margin between the top and
+              left"): the seat rode BARE beside a BOXED transform
+              rail — two chrome languages, the square glued to the
+              column's top-left edge. The seat joins the panel
+              language: the SAME .rail chrome (padding, border,
+              background), a Source title above it. The shared
+              SourceRow itself stays chrome-free — every other card
+              seats it inside the generic form's own panel. */}
+          <div className={css.rail} data-testid="prep-source">
+            <div className={css.railTitle}>Source</div>
+            {/* THE SOURCE SEAT (the 2026-10-22 media burn: the label
+                said "Source file" while the seat is an IMAGE square,
+                and From-media opened EMPTY — the studio never injected
+                the wire's loadMedia, so the modal rendered "nothing to
+                pick yet" beside a full library; the wall asserted the
+                menu's TEXT, never the door). The label speaks the lane
+                ('Image' / 'Audio'), the square is kind-typed (an image
+                slot filters the media modal to images and renders the
+                thumb), upload rides onFile → data-URL (the ONE read
+                path every square attach uses), and From-media rides
+                fetchMediaLibrary — the same seams MotionRail wires.
+                NO bespoke accept (the split-accept burn, 2026-11-18):
+                the seat is DUAL by construction (admitsImageAudio —
+                the pick's own shape seats the lane, the studio flips
+                on the pick), so the OS dialog rides the seat's ONE
+                accept law (DUAL triad at BOTH doors) and a dropped
+                wav on the image lane flips to audio as authored. The
+                old image/*-vs-audio/* override set only the wire
+                input's INERT resting attr — the click retargeted to
+                the seat law anyway. */}
+            <SourceRow
+              name="source"
+              label={mediaType === 'image' ? 'Image' : 'Audio'}
+              kind={mediaType === 'image' ? 'image' : 'file'}
+              admitsImageAudio
+              value={source}
+              onEdit={pickSource}
+              onFile={(file) => { void readAsDataURL(file).then((url) => { pickSource(url) }) }}
+              loadMedia={fetchMediaLibrary}
+              candidates={props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url }))}
+            />
+          </div>
           {/* THE DECLARED SURFACE LAW (image-3d wave-2): the transform
               rail mirrors the declaration's visible_when — crop/scale
               are image-lane knobs (card.ts); on the audio arm the rail

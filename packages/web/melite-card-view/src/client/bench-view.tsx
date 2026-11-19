@@ -2,7 +2,7 @@
  * reorder/group gestures, the drop zones (extracted from CardsTab.tsx
  * hour 15). */
 
-import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
+import { AUTHORSHIP_KEY, AUTHORSHIP_LEGACY_KEY, BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, IconCloseOutlineRegular, IconLoadingOutlineRegular, IconPlayOutlineRegular, Input, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
@@ -478,7 +478,12 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     const stages = bench.stages.map((st) => {
       const row: Record<string, unknown> = { ...st }
       for (const key of BIRTH_STRIP_KEYS) delete row[key]
-      delete row['provenance']
+      // the row's authorship coordinate never rides a save-back ensure
+      // — both spellings (the legacy key rides stored rows until the
+      // drafts reader heals them; the stored-rows law, CONTRACTS.md
+      // §4 debt 6)
+      delete row[AUTHORSHIP_KEY]
+      delete row[AUTHORSHIP_LEGACY_KEY]
       return row
     })
     const attempt = (expectRev: number | null, signal: AbortSignal): Promise<Response> =>

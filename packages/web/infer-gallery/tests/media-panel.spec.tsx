@@ -844,7 +844,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     // the live draft door is never read — the run's own record wins.
     expect(hits).not.toContain('/v1/flows/drafts/d9')
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'the prompt that RAN' }, inputs: {}, outputs: {}, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/out.png'), artifacts: { 'run-0f1e2d-r1/generate/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/out.png')] } },
+      { id: 's_0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'the prompt that RAN' }, inputs: {}, outputs: {}, authorship: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/out.png'), artifacts: { 'run-0f1e2d-r1/generate/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/out.png')] } },
     ])
     expect(ensures[0]?.['intent']).toBe('the prompt that RAN')
   })
@@ -910,7 +910,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['expect_rev']).toBe(4)
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-21', prompt: 'red hair' }, inputs: {}, outputs: {}, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] } },
+      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-21', prompt: 'red hair' }, inputs: {}, outputs: {}, authorship: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] } },
     ])
   })
 
@@ -945,7 +945,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(hits).not.toContain('/v1/flows/drafts/bench-main')
     expect(ensures[0]?.['stages']).toEqual([
-      { id: 's_0', engine: 'comfyui', params: { model: 'anima', prompt: 'beach girl', variant: 'fp8' }, inputs: {}, outputs: { default: 'image' }, provenance: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/img.png'), artifacts: { 'run-0f1e2d-r1/generate/img.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/img.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/img.png')] } },
+      { id: 's_0', engine: 'comfyui', params: { model: 'anima', prompt: 'beach girl', variant: 'fp8' }, inputs: {}, outputs: { default: 'image' }, authorship: 'restored', result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/img.png'), artifacts: { 'run-0f1e2d-r1/generate/img.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/img.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/generate/img.png')] } },
     ])
   })
 
@@ -993,7 +993,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     // The run's result is shared truth; stale run state still dies
     // first (the strip), then the fresh stamp lands on EVERY ran
     // stage. The stale '/old.png' must never ride.
-    expect(stages?.[0]?.['provenance']).toBe('restored')
+    expect(stages?.[0]?.['authorship']).toBe('restored')
     const shared = { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png'), artifacts: { 'run-0f1e2d-r1/edit/out.png': '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png') }, assetUrls: ['/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/edit/out.png')] }
     expect(stages?.[0]?.['result']).toEqual(shared)
     expect(stages?.[1]?.['result']).toEqual(shared)

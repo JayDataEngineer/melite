@@ -589,12 +589,73 @@ export async function flushStageWrites(draftId: DraftId, stageId: string): Promi
   return stageWriteState(draftId, stageId)
 }
 
+/** THE CURABLE GHOST SENTENCE (the estate's law: a refusal states its
+ *  cure — CONTRACTS §4 debt 5, the press wedge). Appended to a ledger
+ *  refusal when the refusing set carries wedge ghosts: the failed
+ *  keys no face of the form can author. The named cure is the
+ *  RE-OFFERED NULL — the door's own JSON Merge Patch delete (the
+ *  unset path's domain half) — not a local ghost drop: the press
+ *  composes from the served row, so a local-only drop would let a
+ *  run leave over a doc the ghost still poisons (the one-truth press
+ *  law — the presenter owns no second copy of the bench row).
+ *  @param failedKeys the refusing row's unlanded keys.
+ *  @param curableGhosts the wedge ghosts the caller's form derived;
+ *  undefined = the caller carries no ghost derivation (legacy bare
+ *  voice — every seat that does not derive keeps its exact words). */
+function curableGhostSentence(failedKeys: readonly string[], curableGhosts?: readonly string[]): string {
+  if (curableGhosts === undefined) return ''
+  const ghosts = failedKeys.filter((k) => curableGhosts.includes(k))
+  if (ghosts.length === 0) return ''
+  const named = ghosts.map((k) => "'" + k + "'").join(', ')
+  const verb = ghosts.length === 1 ? 'is' : 'are'
+  return ' Ghost key(s) ' + named + ' ' + verb
+    + ' a departed family\'s leftover whose cleanup null-write failed — no field of this form states '
+    + (ghosts.length === 1 ? 'it' : 'them') + ', so no retype can clear '
+    + (ghosts.length === 1 ? 'it' : 'them')
+    + '. The curable action: re-offer the null write for exactly the named key (the "Re-offer null" affordance beside this refusal) — when the tombstone delete lands, the ledger clears and the run composes.'
+}
+
+/** THE PRESS-WEDGE GHOSTS (CONTRACTS §4 debt 5, the curable-face
+ *  cure): a failed key the form can no longer author. The family
+ *  switch's tombstone null-write failed (door down / CAS-exhausted
+ *  under a second author) — the stale key stays on the row (the
+ *  compose gate refuses), stays in failedKeys (this ledger refuses),
+ *  is undeclared by the arrival's form (can't retype), and the
+ *  failure reconcile KEEPS it (the held row still carries the key,
+ *  reconcileStageWriteFailures) — every later press refuses with no
+ *  curable face. PURE — the caller owns the form's truth (the
+ *  declared keys and the authored set); the ledger owns the failure
+ *  memory.
+ *  @param state the stage's write state (the failed keys judged).
+ *  @param declaredKeys every key the form can state or pick — the
+ *  declared fields plus the axis keys (a key with a widget has a
+ *  live cure: retype or re-pick; never a ghost).
+ *  @param authoredKeys the user map's keys MINUS the drill's own
+ *  heal/drop verdicts (a seeded copy a failed heal already nulled is
+ *  the drill's verdict, not a hand's word — the strike's de-author
+ *  law, lane-strike.ts).
+ *  @returns the failed keys with no authoring face, in the ledger's
+ *  own order. */
+export function unlandedGhostKeys(
+  state: Pick<StageWriteState, 'failedKeys'>,
+  declaredKeys: ReadonlySet<string>,
+  authoredKeys: ReadonlySet<string>,
+): string[] {
+  return state.failedKeys.filter((k) => !declaredKeys.has(k) && !authoredKeys.has(k))
+}
+
 /** THE RUN GATE'S VOICE (the one-press/one-engine law) — the ONE
  * seat every run verb rides (runCardStage, the chat tile, every
  * future caller): flush the stage's authoring writes, then refuse
  * with the naming message when a key's latest write has not landed.
- * Null = the press may compose. Never throws. */
-export async function refuseForUnlandedWrite(draftId: DraftId, stageId: string): Promise<string | null> {
+ * Null = the press may compose. Never throws.
+ * @param curableGhosts the wedge ghosts the caller's form derived
+ * (unlandedGhostKeys over the pre-flush row); a refusing key among
+ * them rides the curable sentence — the refusal names its cure. */
+export async function refuseForUnlandedWrite(
+  draftId: DraftId, stageId: string,
+  curableGhosts?: readonly string[],
+): Promise<string | null> {
   const state = await flushStageWrites(draftId, stageId)
   if (state.failedKeys.length === 0) {
     // guard-expiry honesty: a schedule that outlived the flush loop
@@ -610,6 +671,7 @@ export async function refuseForUnlandedWrite(draftId: DraftId, stageId: string):
     + (state.lastError ?? 'authoring write(s) still in flight')
     + ' (unlanded keys: ' + state.failedKeys.join(', ') + '). '
     + 'The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.'
+    + curableGhostSentence(state.failedKeys, curableGhosts)
 }
 
 /** THE WRITE FACE'S VOICE (2026-11-02, the one-home law): the banner
@@ -619,13 +681,18 @@ export async function refuseForUnlandedWrite(draftId: DraftId, stageId: string):
  *  lastError, the row's unlanded keys: NO call site builds its own
  *  string — a per-path dialect is how the UI lied about the backend
  *  it renders. @param draftId the bench draft @param stageId the
- *  stage whose row voices @returns the banner string, always */
-export function unlandedWriteVoice(draftId: DraftId, stageId: string): string {
+ *  stage whose row voices @param curableGhosts the wedge ghosts the
+ *  caller's form derived (unlandedGhostKeys); a refusing key among
+ *  them rides the curable sentence — the run press's flush-failure
+ *  seat passes them, every other call site keeps the bare voice.
+ *  @returns the banner string, always */
+export function unlandedWriteVoice(draftId: DraftId, stageId: string, curableGhosts?: readonly string[]): string {
   const state = stageWriteState(draftId, stageId)
   return 'THE WRITE DID NOT LAND — '
     + (state.lastError ?? 'authoring write(s) still in flight')
     + ' (unlanded keys: ' + (state.failedKeys.length > 0 ? state.failedKeys.join(', ') : 'none recorded yet') + '). '
     + 'The studio shows your edit; the bench does not — Run would refuse this stage until the write lands.'
+    + curableGhostSentence(state.failedKeys, curableGhosts)
 }
 
 /** Drop the whole ledger (spec isolation ONLY — same discipline as

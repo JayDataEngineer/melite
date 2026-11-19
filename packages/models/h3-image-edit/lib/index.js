@@ -30,10 +30,9 @@ export const DECL = {
     ],
     // THE LANE SURFACE (the same visible set the sibling edit lanes
     // serve): the ordered input list + the card's validation-only
-    // legacy aliases + the mask gate (refused-loud on this lane —
-    // no mask mod boards here yet; the crop_stitch region arm is the
-    // mask plane's own cure when it lands) + the sampling block and
-    // the canvas pair. NO negative_prompt: the lane zeroes the
+    // legacy aliases + the mask seat (mods/mask.ts boards the
+    // bareFlavor; the edit action serves the crop_stitch region
+    // tail) + the sampling block and the canvas pair. NO negative_prompt: the lane zeroes the
     // negative by design (ConditioningZeroOut at cfg 1) — a stated
     // negative has no seat and refuses field-named.
     "params": [

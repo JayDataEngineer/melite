@@ -285,6 +285,11 @@ export function useSquareProvider(onEdit, wire) {
             error: uploadErr[f.name] ?? null,
             busy: busyName,
             busyVoice: busyName === null || busyName === '' ? null : t('uploading', { name: busyName }),
+            // THE ONE ACCEPT LAW: consult acceptOfField at the host so every
+            // door the seat opens (the wire input's click-time retarget AND
+            // the square's own input) answers the same law — see the
+            // interface comment (the split-accept burn).
+            accept: acceptOfField(f),
             verbs: {
                 onPick: (anchor) => {
                     const el = anchor instanceof HTMLElement ? anchor : null;

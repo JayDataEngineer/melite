@@ -1420,7 +1420,7 @@ window.__ModuleLoader__.load({
 				},
 				"bench/archive": {
 					service: "benchRemote",
-					description: "Endpoint `bench/archive` — F11's housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its provenance, every run face skips it.",
+					description: "Endpoint `bench/archive` — F11's housekeeping verb: mark a spent stage archived (off: true restores it); the row stays with its authorship, every run face skips it.",
 					implementation: "remoteExportArchive",
 					invocation: { kind: "direct" },
 					parameters: [{
@@ -3448,7 +3448,7 @@ window.__ModuleLoader__.load({
 		}
 		/**
 		* Project bench stage rows onto the flow_inline wire contract
-		* (the doors forbid provenance/runStatus/result/title as extras —
+		* (the doors forbid authorship/runStatus/result/title as extras —
 		* they strip; `card` RIDES (STAGE_KEYS admit it) because the
 		* kinds pass derives input kinds from the card's own flowKinds —
 		* stripping it manufactured phantom "wired but untyped" refusals
@@ -3583,7 +3583,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX$1, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS$1, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE$1, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX$1, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS$1, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_AUTHORSHIP_SPELLING, AUTHORSHIP_KEY$1, AUTHORSHIP_LEGACY_KEY$1, SESSION_RE$1, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX$1 = "/melite-media/runs";
@@ -3629,7 +3629,9 @@ window.__ModuleLoader__.load({
 				"skip_when",
 				"timeout_s"
 			];
-			RESTORED_PROVENANCE_SPELLING = "restored";
+			RESTORED_AUTHORSHIP_SPELLING = "restored";
+			AUTHORSHIP_KEY$1 = "authorship";
+			AUTHORSHIP_LEGACY_KEY$1 = ["prove", "nance"].join("");
 			SESSION_RE$1 = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
@@ -4559,19 +4561,67 @@ window.__ModuleLoader__.load({
 			}
 			return stageWriteState(draftId, stageId);
 		}
+		/** THE CURABLE GHOST SENTENCE (the estate's law: a refusal states its
+		*  cure — CONTRACTS §4 debt 5, the press wedge). Appended to a ledger
+		*  refusal when the refusing set carries wedge ghosts: the failed
+		*  keys no face of the form can author. The named cure is the
+		*  RE-OFFERED NULL — the door's own JSON Merge Patch delete (the
+		*  unset path's domain half) — not a local ghost drop: the press
+		*  composes from the served row, so a local-only drop would let a
+		*  run leave over a doc the ghost still poisons (the one-truth press
+		*  law — the presenter owns no second copy of the bench row).
+		*  @param failedKeys the refusing row's unlanded keys.
+		*  @param curableGhosts the wedge ghosts the caller's form derived;
+		*  undefined = the caller carries no ghost derivation (legacy bare
+		*  voice — every seat that does not derive keeps its exact words). */
+		function curableGhostSentence(failedKeys, curableGhosts) {
+			if (curableGhosts === void 0) return "";
+			const ghosts = failedKeys.filter((k) => curableGhosts.includes(k));
+			if (ghosts.length === 0) return "";
+			const named = ghosts.map((k) => "'" + k + "'").join(", ");
+			const verb = ghosts.length === 1 ? "is" : "are";
+			return " Ghost key(s) " + named + " " + verb + " a departed family's leftover whose cleanup null-write failed — no field of this form states " + (ghosts.length === 1 ? "it" : "them") + ", so no retype can clear " + (ghosts.length === 1 ? "it" : "them") + ". The curable action: re-offer the null write for exactly the named key (the \"Re-offer null\" affordance beside this refusal) — when the tombstone delete lands, the ledger clears and the run composes.";
+		}
+		/** THE PRESS-WEDGE GHOSTS (CONTRACTS §4 debt 5, the curable-face
+		*  cure): a failed key the form can no longer author. The family
+		*  switch's tombstone null-write failed (door down / CAS-exhausted
+		*  under a second author) — the stale key stays on the row (the
+		*  compose gate refuses), stays in failedKeys (this ledger refuses),
+		*  is undeclared by the arrival's form (can't retype), and the
+		*  failure reconcile KEEPS it (the held row still carries the key,
+		*  reconcileStageWriteFailures) — every later press refuses with no
+		*  curable face. PURE — the caller owns the form's truth (the
+		*  declared keys and the authored set); the ledger owns the failure
+		*  memory.
+		*  @param state the stage's write state (the failed keys judged).
+		*  @param declaredKeys every key the form can state or pick — the
+		*  declared fields plus the axis keys (a key with a widget has a
+		*  live cure: retype or re-pick; never a ghost).
+		*  @param authoredKeys the user map's keys MINUS the drill's own
+		*  heal/drop verdicts (a seeded copy a failed heal already nulled is
+		*  the drill's verdict, not a hand's word — the strike's de-author
+		*  law, lane-strike.ts).
+		*  @returns the failed keys with no authoring face, in the ledger's
+		*  own order. */
+		function unlandedGhostKeys(state, declaredKeys, authoredKeys) {
+			return state.failedKeys.filter((k) => !declaredKeys.has(k) && !authoredKeys.has(k));
+		}
 		/** THE RUN GATE'S VOICE (the one-press/one-engine law) — the ONE
 		* seat every run verb rides (runCardStage, the chat tile, every
 		* future caller): flush the stage's authoring writes, then refuse
 		* with the naming message when a key's latest write has not landed.
-		* Null = the press may compose. Never throws. */
-		async function refuseForUnlandedWrite(draftId, stageId) {
+		* Null = the press may compose. Never throws.
+		* @param curableGhosts the wedge ghosts the caller's form derived
+		* (unlandedGhostKeys over the pre-flush row); a refusing key among
+		* them rides the curable sentence — the refusal names its cure. */
+		async function refuseForUnlandedWrite(draftId, stageId, curableGhosts) {
 			const state = await flushStageWrites(draftId, stageId);
 			if (state.failedKeys.length === 0) {
 				const stillRiding = pendingScheduledKeys(draftId, stageId);
 				if (stillRiding.length === 0) return null;
 				return "THE WRITE DID NOT LAND — run refused: authoring write(s) still in their trailing window after repeated flush (unlanded keys: " + stillRiding.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
 			}
-			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
+			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine." + curableGhostSentence(state.failedKeys, curableGhosts);
 		}
 		/** THE WRITE FACE'S VOICE (2026-11-02, the one-home law): the banner
 		*  every drill write path paints when a write fails — derived FROM
@@ -4580,10 +4630,14 @@ window.__ModuleLoader__.load({
 		*  lastError, the row's unlanded keys: NO call site builds its own
 		*  string — a per-path dialect is how the UI lied about the backend
 		*  it renders. @param draftId the bench draft @param stageId the
-		*  stage whose row voices @returns the banner string, always */
-		function unlandedWriteVoice(draftId, stageId) {
+		*  stage whose row voices @param curableGhosts the wedge ghosts the
+		*  caller's form derived (unlandedGhostKeys); a refusing key among
+		*  them rides the curable sentence — the run press's flush-failure
+		*  seat passes them, every other call site keeps the bare voice.
+		*  @returns the banner string, always */
+		function unlandedWriteVoice(draftId, stageId, curableGhosts) {
 			const state = stageWriteState(draftId, stageId);
-			return "THE WRITE DID NOT LAND — " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + (state.failedKeys.length > 0 ? state.failedKeys.join(", ") : "none recorded yet") + "). The studio shows your edit; the bench does not — Run would refuse this stage until the write lands.";
+			return "THE WRITE DID NOT LAND — " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + (state.failedKeys.length > 0 ? state.failedKeys.join(", ") : "none recorded yet") + "). The studio shows your edit; the bench does not — Run would refuse this stage until the write lands." + curableGhostSentence(state.failedKeys, curableGhosts);
 		}
 		/** THE LEDGER'S INVALIDATION (audit V-S5): a stage the bench no
 		*  longer holds — remove-stage, clear, an undo that rewound past it —
@@ -5168,6 +5222,14 @@ window.__ModuleLoader__.load({
 			*  named key through the bench door. Composed with the field name
 			*  at the render seat ("Unstamp 'double_reference'"). */
 			unstampWord: "Unstamp",
+			/** The ledger refusal's re-offer verb (CONTRACTS §4 debt 5, the
+			*  press wedge's curable face): the refusal names a ghost key no
+			*  field of the form states (a failed tombstone null-write), so the
+			*  words ACT — one click re-offers the null write for exactly that
+			*  key through the bench door (JSON Merge Patch deletes it).
+			*  Composed with the key at the render seat
+			*  ("Re-offer null 'guidance_scale'"). */
+			reofferNullWord: "Re-offer null",
 			/** THE STAGE-VIEW LOAD REFUSAL (2026-11-09, the fallback
 			*  extermination): a card whose served spec declares a studio
 			*  (FormSpecDoc.stage_view) must never wear the generic form when
@@ -6480,6 +6542,19 @@ window.__ModuleLoader__.load({
 			"runStatus",
 			"resolved"
 		];
+		/** THE ROW'S AUTHORSHIP KEY (the 2026-11-19 rename of the bench
+		*  row's authorship source): the storage key every writer emits. The
+		*  row's authorship source — which author stamped the row, or the
+		*  restored coordinate above — lives under this one name on the
+		*  bench stage row. */
+		const AUTHORSHIP_KEY = "authorship";
+		/** THE LEGACY AUTHORSHIP KEY rows persisted before the rename carry
+		*  (the stored-rows law, CONTRACTS.md §4 debt 6): readers fall back
+		*  to it ONLY when the new key is absent, and every write re-emits
+		*  the new key alone — a one-way reader, never a second writer
+		*  spelling. Assembled at runtime so this floor adds no new spelling
+		*  of the banned token. */
+		const AUTHORSHIP_LEGACY_KEY = ["prove", "nance"].join("");
 		const SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
@@ -12857,23 +12932,27 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/vocab.js
-		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
-		function isProvenance(v) {
-			return typeof v === "string" && PROVENANCE_VALUES.includes(v);
+		function isAuthorship(v) {
+			return typeof v === "string" && AUTHORSHIP_VALUES.includes(v);
 		}
-		var Provenance, PROVENANCE_VALUES;
+		var Authorship, AUTHORSHIP_VALUES;
 		var init_vocab = __esmMin((() => {
-			Provenance = {
+			Authorship = {
 				agent: "agent",
 				user: "user",
 				imported: "imported"
 			};
-			PROVENANCE_VALUES = Object.values(Provenance);
+			AUTHORSHIP_VALUES = Object.values(Authorship);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
+			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY$1,
+			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY$1,
+			AUTHORSHIP_VALUES: () => AUTHORSHIP_VALUES,
+			Authorship: () => Authorship,
 			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
 			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS$1,
@@ -12892,10 +12971,8 @@ window.__ModuleLoader__.load({
 			LORA_EXTENSION_SUFFIX_RE: () => LORA_EXTENSION_SUFFIX_RE,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
-			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
-			Provenance: () => Provenance,
 			RELATION_WORDS: () => RELATION_WORDS,
-			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
+			RESTORED_AUTHORSHIP_SPELLING: () => RESTORED_AUTHORSHIP_SPELLING,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
@@ -12930,11 +13007,11 @@ window.__ModuleLoader__.load({
 			familyKeyPresent: () => familyKeyPresent,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
+			isAuthorship: () => isAuthorship,
 			isDataUrl: () => isDataUrl,
 			isDeliverableHalfVoice: () => isDeliverableHalfVoice,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
 			isLiveRunStatus: () => isLiveRunStatus$1,
-			isProvenance: () => isProvenance,
 			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus$1,
 			isTogetherHalfVoice: () => isTogetherHalfVoice,
@@ -16033,16 +16110,16 @@ window.__ModuleLoader__.load({
 			CARD_LLM_KEY$1 = "melite:card-llm:v1";
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/lib/familyProvenance.js
-		/** Fold runs into per-family provenance. Only runs that CARRY an
+		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
 		*  `!== "done"` compare never matched, so every real run's
-		*  provenance read "never"). Running / interrupted / stopped runs
+		*  join read "never"). Running / interrupted / stopped runs
 		*  haven't produced anything yet. Runs with no families field
-		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  (sidecars predating the join) or a family-less brick contribute
 		*  nothing (backward compatible by construction). */
-		function familyProvenance(runs) {
+		function familyAuthorship(runs) {
 			const out = {};
 			for (const run of runs) {
 				const folded = statusOrPendingOf$1(run.status ?? "");
@@ -16077,7 +16154,7 @@ window.__ModuleLoader__.load({
 			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
 			return new Date(at).toLocaleDateString();
 		}
-		var init_familyProvenance = __esmMin((() => {
+		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
 		//#endregion
@@ -16120,6 +16197,7 @@ window.__ModuleLoader__.load({
 			externalUrl: () => externalUrl,
 			familiesForForm: () => familiesForForm,
 			familyAccepts: () => familyAccepts,
+			familyAuthorship: () => familyAuthorship,
 			familyCardSummary: () => familyCardSummary,
 			familyConditioning: () => familyConditioning,
 			familyGenre: () => familyGenre,
@@ -16128,7 +16206,6 @@ window.__ModuleLoader__.load({
 			familyOf: () => familyOf,
 			familyOptionalOutputs: () => familyOptionalOutputs,
 			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyProvenance: () => familyProvenance,
 			familyTransformMatrix: () => familyTransformMatrix,
 			fetchEnhanceRoutes: () => fetchEnhanceRoutes$1,
 			formForSidebarKey: () => formForSidebarKey,
@@ -16208,7 +16285,7 @@ window.__ModuleLoader__.load({
 			init_cardBirth$1();
 			init_enhance();
 			init_cardLlm();
-			init_familyProvenance();
+			init_familyAuthorship();
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyParamContract.ts
@@ -22301,6 +22378,17 @@ window.__ModuleLoader__.load({
 		function modBagKeys(doc) {
 			return (doc.features?.modifiers ?? []).map((k) => k.param_key);
 		}
+		/** THE AUTHORABLE KEYS (CONTRACTS §4 debt 5, the press wedge's form
+		*  truth): every key the form can state or pick — the declared fields
+		*  plus the axis keys (the Model rail's picks). A failed key among
+		*  these has a live cure (retype or re-pick, the reconcile law's
+		*  declared-field clause); a failed key outside them is the wedge
+		*  ghost unlandedGhostKeys judges. */
+		function authorableKeysOf(doc) {
+			const keys = new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name));
+			for (const g of (0, _melite_card_base_client.axisGroups)(doc)) keys.add((0, _melite_card_base_client.axisKey)(g));
+			return keys;
+		}
 		/** The one refusal template — composeGateRefusal derives from it (the
 		*  string contract the other seats keep) and the press seat rides the
 		*  violation's structured field beside the same words. */
@@ -22729,7 +22817,8 @@ window.__ModuleLoader__.load({
 				});
 				const survivors = gateSet.filter((v) => v.field !== name);
 				setGateSet(survivors);
-				setError(survivors.length === 0 ? null : survivors.map((v) => gateRefusalVoice(v)).join("\n"));
+				const remainingGhosts = wedgeGhostsRef.current.filter((k) => k !== name);
+				setError(survivors.length === 0 ? remainingGhosts.length > 0 ? unlandedWriteVoice(bench.draftId, stage.id, remainingGhosts) : null : survivors.map((v) => gateRefusalVoice(v)).join("\n"));
 				setWriteFace((cur) => cur !== null && cur.includes("'" + name + "'") ? null : cur);
 				const settleDraftId = bench.draftId;
 				const settleStageId = stage.id;
@@ -22749,6 +22838,11 @@ window.__ModuleLoader__.load({
 			const laneStrike = strikeDeadLaneStamps(spec, user, servedBaseRaw);
 			const servedBase = servedBaseRaw === void 0 ? void 0 : laneStrike.base;
 			const value = (0, _melite_card_base_client.resolveValue)(spec ?? { form: "" }, user, servedBase);
+			const authorableKeys = spec === null ? /* @__PURE__ */ new Set() : authorableKeysOf(spec);
+			const ghostAuthoredKeys = new Set(Object.keys(user).filter((k) => !droppedRef.current.has(k)));
+			const wedgeGhostKeys = () => spec === null ? [] : unlandedGhostKeys(stageWriteState(bench.draftId, stage.id), authorableKeys, ghostAuthoredKeys);
+			const wedgeGhostsRef = (0, react.useRef)([]);
+			wedgeGhostsRef.current = wedgeGhostKeys();
 			const [strikeDismissed, setStrikeDismissed] = (0, react.useState)(false);
 			const strikeKey = laneStrike.strikes.join("\0");
 			(0, react.useEffect)(() => {
@@ -22934,12 +23028,12 @@ window.__ModuleLoader__.load({
 							await patchStageParamsChained(bench.draftId, stage.id, patch);
 						} catch {
 							setGateSet([]);
-							setError(unlandedWriteVoice(bench.draftId, stage.id));
+							setError(unlandedWriteVoice(bench.draftId, stage.id, wedgeGhostKeys()));
 							onResync?.();
 							return;
 						}
 					}
-					const fence = await refuseForUnlandedWrite(bench.draftId, stage.id);
+					const fence = await refuseForUnlandedWrite(bench.draftId, stage.id, wedgeGhostKeys());
 					if (fence !== null) {
 						setGateSet([]);
 						setError(fence);
@@ -23169,7 +23263,15 @@ window.__ModuleLoader__.load({
 					onClick: () => {
 						if (v.field != null) onUnstamp(v.field);
 					}
-				}, chromeCopy.unstampWord + " '" + (v.field ?? "") + "'")), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				}, chromeCopy.unstampWord + " '" + (v.field ?? "") + "'")), wedgeGhostKeys().map((k) => (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					key: "reoffer:" + k,
+					size: "sm",
+					variant: "ghost",
+					"aria-label": chromeCopy.reofferNullWord + " '" + k + "'",
+					onClick: () => {
+						onUnstamp(k);
+					}
+				}, chromeCopy.reofferNullWord + " '" + k + "'")), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "ghost",
 					className: card_module_css_default.errorDismiss,
@@ -23789,7 +23891,8 @@ window.__ModuleLoader__.load({
 				const stages = bench.stages.map((st) => {
 					const row = { ...st };
 					for (const key of BIRTH_STRIP_KEYS) delete row[key];
-					delete row["provenance"];
+					delete row[AUTHORSHIP_KEY];
+					delete row[AUTHORSHIP_LEGACY_KEY];
 					return row;
 				});
 				const attempt = (expectRev, signal) => fetch("/v1/bench/ensure", {

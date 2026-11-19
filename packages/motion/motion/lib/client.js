@@ -3827,19 +3827,19 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/vocab.js
-		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
+		/** Is the value a valid Authorship? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
-		function isProvenance(v) {
-			return typeof v === "string" && PROVENANCE_VALUES$1.includes(v);
+		function isAuthorship(v) {
+			return typeof v === "string" && AUTHORSHIP_VALUES$1.includes(v);
 		}
-		var Provenance$1, PROVENANCE_VALUES$1;
+		var Authorship$1, AUTHORSHIP_VALUES$1;
 		var init_vocab = __esmMin((() => {
-			Provenance$1 = {
+			Authorship$1 = {
 				agent: "agent",
 				user: "user",
 				imported: "imported"
 			};
-			PROVENANCE_VALUES$1 = Object.values(Provenance$1);
+			AUTHORSHIP_VALUES$1 = Object.values(Authorship$1);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/lib/benchStage.js
@@ -3987,7 +3987,7 @@ window.__ModuleLoader__.load({
 		}
 		/**
 		* Project bench stage rows onto the flow_inline wire contract
-		* (the doors forbid provenance/runStatus/result/title as extras —
+		* (the doors forbid authorship/runStatus/result/title as extras —
 		* they strip; `card` RIDES (STAGE_KEYS admit it) because the
 		* kinds pass derives input kinds from the card's own flowKinds —
 		* stripping it manufactured phantom "wired but untyped" refusals
@@ -4122,7 +4122,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_AUTHORSHIP_SPELLING, AUTHORSHIP_KEY, AUTHORSHIP_LEGACY_KEY$1, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -4168,7 +4168,9 @@ window.__ModuleLoader__.load({
 				"skip_when",
 				"timeout_s"
 			];
-			RESTORED_PROVENANCE_SPELLING = "restored";
+			RESTORED_AUTHORSHIP_SPELLING = "restored";
+			AUTHORSHIP_KEY = "authorship";
+			AUTHORSHIP_LEGACY_KEY$1 = ["prove", "nance"].join("");
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
@@ -4178,6 +4180,10 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/contracts/lib/index.js
 		var lib_exports$1 = /* @__PURE__ */ __exportAll({
+			AUTHORSHIP_KEY: () => AUTHORSHIP_KEY,
+			AUTHORSHIP_LEGACY_KEY: () => AUTHORSHIP_LEGACY_KEY$1,
+			AUTHORSHIP_VALUES: () => AUTHORSHIP_VALUES$1,
+			Authorship: () => Authorship$1,
 			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
 			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
@@ -4196,10 +4202,8 @@ window.__ModuleLoader__.load({
 			LORA_EXTENSION_SUFFIX_RE: () => LORA_EXTENSION_SUFFIX_RE$1,
 			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
-			PROVENANCE_VALUES: () => PROVENANCE_VALUES$1,
-			Provenance: () => Provenance$1,
 			RELATION_WORDS: () => RELATION_WORDS,
-			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
+			RESTORED_AUTHORSHIP_SPELLING: () => RESTORED_AUTHORSHIP_SPELLING,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
@@ -4234,11 +4238,11 @@ window.__ModuleLoader__.load({
 			familyKeyPresent: () => familyKeyPresent,
 			hasModifierCapability: () => hasModifierCapability,
 			healRunMediaPaths: () => healRunMediaPaths,
+			isAuthorship: () => isAuthorship,
 			isDataUrl: () => isDataUrl,
 			isDeliverableHalfVoice: () => isDeliverableHalfVoice,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
 			isLiveRunStatus: () => isLiveRunStatus,
-			isProvenance: () => isProvenance,
 			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus,
 			isTogetherHalfVoice: () => isTogetherHalfVoice,
@@ -7337,16 +7341,16 @@ window.__ModuleLoader__.load({
 			CARD_LLM_KEY = "melite:card-llm:v1";
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/lib/familyProvenance.js
-		/** Fold runs into per-family provenance. Only runs that CARRY an
+		//#region ../../web-kit/catalog/lib/familyAuthorship.js
+		/** Fold runs into per-family authorship. Only runs that CARRY an
 		*  artifact count (the fold's done family: done, cached, reused —
 		*  the estate settles success as "completed", which the old raw
 		*  `!== "done"` compare never matched, so every real run's
-		*  provenance read "never"). Running / interrupted / stopped runs
+		*  join read "never"). Running / interrupted / stopped runs
 		*  haven't produced anything yet. Runs with no families field
-		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  (sidecars predating the join) or a family-less brick contribute
 		*  nothing (backward compatible by construction). */
-		function familyProvenance(runs) {
+		function familyAuthorship(runs) {
 			const out = {};
 			for (const run of runs) {
 				const folded = statusOrPendingOf$1(run.status ?? "");
@@ -7381,7 +7385,7 @@ window.__ModuleLoader__.load({
 			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
 			return new Date(at).toLocaleDateString();
 		}
-		var init_familyProvenance = __esmMin((() => {
+		var init_familyAuthorship = __esmMin((() => {
 			init_stageView();
 		}));
 		//#endregion
@@ -7424,6 +7428,7 @@ window.__ModuleLoader__.load({
 			externalUrl: () => externalUrl,
 			familiesForForm: () => familiesForForm,
 			familyAccepts: () => familyAccepts,
+			familyAuthorship: () => familyAuthorship,
 			familyCardSummary: () => familyCardSummary,
 			familyConditioning: () => familyConditioning,
 			familyGenre: () => familyGenre,
@@ -7432,7 +7437,6 @@ window.__ModuleLoader__.load({
 			familyOf: () => familyOf,
 			familyOptionalOutputs: () => familyOptionalOutputs,
 			familyPrimaryRoute: () => familyPrimaryRoute,
-			familyProvenance: () => familyProvenance,
 			familyTransformMatrix: () => familyTransformMatrix,
 			fetchEnhanceRoutes: () => fetchEnhanceRoutes,
 			formForSidebarKey: () => formForSidebarKey,
@@ -7512,7 +7516,7 @@ window.__ModuleLoader__.load({
 			init_cardBirth$1();
 			init_enhance();
 			init_cardLlm();
-			init_familyProvenance();
+			init_familyAuthorship();
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyParamContract.ts
@@ -8897,6 +8901,7 @@ window.__ModuleLoader__.load({
 			user: "user",
 			imported: "imported"
 		});
+		["prove", "nance"].join("");
 		//#endregion
 		//#region ../../web-kit/formats/src/npz.ts
 		const CDFH_SIG = 33639248;

@@ -94,7 +94,7 @@ export interface BenchStageView {
    *  flow-era shape. */
   inputs?: Record<string, unknown>
   outputs?: string[]
-  provenance?: string
+  authorship?: string
   runStatus?: string
   /** THE TRANSPORT-HEALTH CHANNEL (LOW-23, 2026-10-12): the card
    *  plane's resource signal — 'unreachable' after the escalation
