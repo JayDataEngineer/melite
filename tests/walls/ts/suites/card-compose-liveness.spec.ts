@@ -59,6 +59,7 @@ import type { ModelFactsRow } from "../../../../packages/harness/estate-queue/sr
 import type {} from "../../../../packages/harness/estate-queue/src/service.ts";
 import { formSpecArm } from "../../../../packages/harness/melite-tools/src/discovery.ts";
 import { fieldsOf } from "../../../../packages/web/card-base/src/spec.ts";
+import { extraOf } from "../../../../packages/web-kit/contracts/src/extraKeys.ts";
 import { ESTATE_NAMING_ROW } from "../../../../packages/web-kit/contracts/src/formSpec.ts";
 // THE H3 STUDIO'S OWN SERIALIZER (B4/R1's serializer writer face): the
 // tenant-tree probe below dispatches on the file carrying this export
@@ -202,22 +203,28 @@ export function unknownNodeClasses(graph: Graph, vocabulary: ReadonlySet<string>
  *  quoted member is legal by the card's own law). Returns the built
  *  graph, or the refusal text when the card is dead (error "" means
  *  the probe rounds ran out with fresh names still coming — the
- *  caller's skip voice, never a silent pass). */
+ *  caller's skip voice, never a silent pass). `doc` rides the
+ *  grounded probe doc (only the keys the loop filled — the schema
+ *  walk applies the declared defaults inside compose), so the
+ *  per-dial probe below can flip one enum off THE default-dial shape
+ *  instead of re-grounding per dial. An optional `seed` starts the
+ *  doc from a caller-stated shape (the per-dial probe's bag arms). */
 function composeProbedRow(
   def: { compose: (doc: unknown, model: unknown, g: GraphBuilder, seat: string) => void; schema: (doc: unknown) => unknown },
   model: unknown,
-): { graph: Graph | null; error: string } {
-  const doc: Record<string, unknown> = {};
-  const filled = new Set<string>();
+  seed: Record<string, unknown> = {},
+): { graph: Graph | null; error: string; doc: Record<string, unknown> } {
+  const doc: Record<string, unknown> = { ...seed };
+  const filled = new Set<string>(Object.keys(seed));
   for (let round = 0; round < 14; round++) {
     try {
       const g = new GraphBuilder();
       def.compose(def.schema({ ...doc }), model, g, "liveness-probe");
       const graph = g.toJSON() as Graph;
       if (graph && typeof graph === "object" && Object.keys(graph).length > 0) {
-        return { graph, error: "" };
+        return { graph, error: "", doc: { ...doc } };
       }
-      return { graph: null, error: "compose produced an EMPTY graph" };
+      return { graph: null, error: "compose produced an EMPTY graph", doc: { ...doc } };
     } catch (err) {
       const lastError = err instanceof Error ? err.message : String(err);
       // THE UNDECLARED DELETE (the tts dead-card burn, 2026-10-22):
@@ -240,11 +247,219 @@ function composeProbedRow(
         ? named
         : named.filter((n) => !filled.has(n));
       if (fresh.length === 0) {
-        return { graph: null, error: lastError };
+        return { graph: null, error: lastError, doc: { ...doc } };
       }
       for (const name of fresh) {
         filled.add(name);
         doc[name] = enumOffer ? (enumOffer[1] as string) : fillFor(name);
+      }
+    }
+  }
+  return { graph: null, error: "", doc: { ...doc } };
+}
+
+// ── §4 DEBT 1 (drained 2026-11-18): THE PER-DIAL COMPOSE PROBE ──────
+// (card-compose-liveness's blind spot — D-16's carrier). The
+// dead-card arms above compose each facts row ONCE, at the probe doc
+// the schema defaults ground — ONE dial per card. D-16 shipped
+// `ImageResize` (a class no engine build owns) on BOTH `mask_source`
+// alternates (static-png, video) under this wall's green face,
+// because the default dial — the unarmed film posture — wires no
+// resize. The cure (0d1bd259e) rewired core `ImageScale` (registry
+// models-h3-mask-doors-real-nodes); THIS is the owed wall: every
+// ENUM field's every SCHEMA-DECLARED alternative composes, and every
+// resulting graph is vocabulary-checked by THE SAME judge
+// (unknownNodeClasses — the arm above's helper, never a fork).
+//
+// THE BOUNDED VOCABULARY (never an unstated value): a dial is an
+// enum field with a DECLARED option vocabulary, and the options
+// walked are the declaration's own members —
+//  • the carrier knob's const-union (the SAME judgment emitKnob
+//    serves as the params_schema enum, params-emit.ts — one
+//    judgment, never a second walk), plus the knob's extra.options
+//    rows (the BOTH-shapes law, extraKeys.ts);
+//  • the mod-kind stanza's declared select rows (type 'select' +
+//    options) — the D-16 dial's home: `mask_source` rides the edit
+//    kind's field rows, not the carrier dict, because the bag is an
+//    `any` knob. `optionsFrom` is a pointer to a dynamic source, not
+//    a declared vocabulary — a knob carrying only that is NOT a dial
+//    here (bounded means bounded).
+//
+// THE ONE-FLIP LAW (the cartesian-vs-flip choice, stated): one
+// alternative per composition — flip one enum, keep every other seat
+// at the grounded base doc's values. The cartesian product is
+// quadratic in the DECLARED dials (image-gen alone: sampler ×
+// scheduler = 44 × 9 = 396 composes where the single flips judge the
+// same dials at 53), and the wall's judge is per-graph class
+// membership: a dead class hides on ONE dial's branch — D-16's crime
+// was a single dial's alternate — while a conjunction-gated branch
+// (two alternates armed together) is a shape no card composes today.
+// The product buys no coverage the flips lack, at a cost the wall's
+// own run budget cannot seat.
+
+/** Structural view of one carrier knob node (the walk reads type /
+ *  list / meta only — the same members params-emit's Schema carries). */
+type DialNode = { type?: string; list?: unknown; meta?: Record<string, unknown> };
+
+/** One declared dial: where it lives and the options it declares.
+ *  `bag` dials ride a mod-kind stanza (param_key's entry objects);
+ *  `knob` dials are top-level carrier keys. */
+type EnumDial =
+  | { plane: "knob"; name: string; options: unknown[]; declaredDefault: unknown }
+  | { plane: "bag"; paramKey: string; kind: string; name: string; options: unknown[]; declaredDefault: unknown; fields: ReadonlyArray<Record<string, unknown>> };
+
+/** A knob's DECLARED option vocabulary — the same judgment emitKnob
+ *  runs when it serves the params_schema enum: a union whose every
+ *  member is a non-null const (declaration order), else the knob's
+ *  extra.options rows (BOTH shapes normalized to the value arm).
+ *  Null = no declared vocabulary (freeform or typed seat — not a
+ *  dial; boolean toggles are not selects and are the studio walls'
+ *  run-door territory, never enumerated here). */
+function declaredEnumOptions(node: DialNode): unknown[] | null {
+  if (node.type === "union" && Array.isArray(node.list) && node.list.length > 0) {
+    const branches = node.list as Array<{ type?: string; value?: unknown }>;
+    if (branches.every((b) => b.type === "const" && b.value !== null)) {
+      return branches.map((b) => b.value);
+    }
+  }
+  const opts = extraOf(node as { meta?: Record<string, unknown> }).options;
+  if (Array.isArray(opts) && opts.length > 0) {
+    return opts.map((o) => (typeof o === "string" ? o : (o as { value: unknown }).value));
+  }
+  return null;
+}
+
+/** Every dial one card declares, both planes, in declaration order. */
+function enumDialsOf(def: {
+  schemaCarrier?: { dict?: Record<string, DialNode> };
+  schema: ((v: unknown) => unknown) & { dict?: Record<string, DialNode> };
+  mods?: ReadonlyArray<{ kind?: string; param_key?: string; entry?: string; options?: unknown; fields?: ReadonlyArray<Record<string, unknown>> }>;
+}): EnumDial[] {
+  const dials: EnumDial[] = [];
+  const carrier = def.schemaCarrier ?? def.schema;
+  for (const [name, node] of Object.entries(carrier?.dict ?? {})) {
+    const options = declaredEnumOptions(node);
+    if (options !== null && options.length > 0) {
+      dials.push({ plane: "knob", name, options, declaredDefault: node.meta?.["default"] });
+    }
+  }
+  for (const kind of def.mods ?? []) {
+    // THE UNDRIVEABLE FACE, LOUD (the param-seat-parity writer-face
+    // law): an option-entry kind's bag entries are catalog options —
+    // a dial whose entry shape this probe cannot compose. None
+    // exists on the facts rows today; the first one must teach this
+    // probe, never silently fall out of the roster.
+    if (kind.entry === "option" && Array.isArray(kind.options) && kind.options.length > 0) {
+      throw new Error(
+        `card kind '${kind.param_key ?? kind.kind ?? "?"}' declares an option-entry bag — a catalog dial the per-dial probe cannot compose; teach composeProbedBagDial the entry shape`,
+      );
+    }
+    for (const field of kind.fields ?? []) {
+      const name = field["name"];
+      if (field["type"] !== "select" || typeof name !== "string") continue;
+      const rows = field["options"];
+      if (!Array.isArray(rows) || rows.length === 0) continue;
+      const options = rows.map((o) => (typeof o === "string" ? o : (o as { value: unknown }).value));
+      if (options.length === 0) continue;
+      dials.push({
+        plane: "bag", paramKey: kind.param_key ?? "", kind: kind.kind ?? "", name,
+        options, declaredDefault: field["default"], fields: kind.fields ?? [],
+      });
+    }
+  }
+  return dials;
+}
+
+/** THE STANZA SEAT FILL: one entry field's probe value, by the row's
+ *  OWN declared type (the stanza row carries its type — never the
+ *  name guess fillFor runs at the doc plane). Media seats take the
+ *  probe asset by the row's declared media; prompt rows take the
+ *  probe text; everything else rides its declared default verbatim
+ *  (the card's own default cell is the most lawful seed an entry can
+ *  carry). */
+function stanzaSeatFill(fields: ReadonlyArray<Record<string, unknown>>, name: string): unknown {
+  const row = fields.find((f) => f["name"] === name) ?? {};
+  const type = row["type"];
+  const media = row["media"];
+  if (type === "image" || type === "mesh") return "probe.png";
+  if (type === "file") return media === "audio" ? "probe.wav" : media === "video" ? "probe.mp4" : "probe.png";
+  if (type === "text") return "the liveness probe";
+  if (type === "boolean") return typeof row["default"] === "boolean" ? row["default"] : false;
+  if (type === "number") return typeof row["default"] === "number" ? row["default"] : 1;
+  return row["default"] ?? "";
+}
+
+/** THE BAG-DIAL PROBE COMPOSE: compose one facts row's card with ONE
+ *  mod-kind dial flipped to one declared option. The entry is seeded
+ *  from the kind's OWN field rows (stanzaSeatFill per seat — the
+ *  empty default of a staged-media or prompt seat is never lawful
+ *  under a demanding dial; the door's derived pole for an unstated
+ *  denoise is the refusal the whole-frame grounding already paid
+ *  for), then the loop runs the SAME named-refusal law as
+ *  composeProbedRow, with the fill routed INTO the stanza when the
+ *  named param is one of the kind's declared fields (a stanza
+ *  refusal's names are entry seats, not doc keys). */
+function composeProbedBagDial(
+  def: { compose: (doc: unknown, model: unknown, g: GraphBuilder, seat: string) => void; schema: (doc: unknown) => unknown },
+  model: unknown,
+  dial: Extract<EnumDial, { plane: "bag" }>,
+  option: unknown,
+  base: Record<string, unknown>,
+): { graph: Graph | null; error: string } {
+  const fieldNames = new Set(dial.fields.map((f) => f["name"]).filter((n): n is string => typeof n === "string"));
+  const entry: Record<string, unknown> = {};
+  for (const name of fieldNames) {
+    const row = dial.fields.find((f) => f["name"] === name)!;
+    // seed law: media + prompt seats probe-filled; every other seat
+    // rides its declared default verbatim
+    entry[name] = row["type"] === "image" || row["type"] === "file" || row["type"] === "mesh" || row["type"] === "text"
+      ? stanzaSeatFill(dial.fields, name)
+      : row["default"];
+  }
+  entry[dial.name] = option;
+  const doc: Record<string, unknown> = { ...base, [dial.paramKey]: [entry] };
+  const filledSeats = new Set<string>();
+  const filledDoc = new Set<string>();
+  for (let round = 0; round < 14; round++) {
+    try {
+      const g = new GraphBuilder();
+      def.compose(def.schema({ ...doc }), model, g, "per-dial-probe");
+      const graph = g.toJSON() as Graph;
+      if (graph && typeof graph === "object" && Object.keys(graph).length > 0) {
+        return { graph, error: "" };
+      }
+      return { graph: null, error: "compose produced an EMPTY graph" };
+    } catch (err) {
+      const lastError = err instanceof Error ? err.message : String(err);
+      const undeclared = undeclaredNames(lastError);
+      if (undeclared.length > 0) {
+        // the delete arm is a DOC-plane instruction (the admission's
+        // undeclared param(s) voice) — the stanza's seats are the
+        // kind's own declaration and can never be "undeclared"
+        for (const name of undeclared) { delete doc[name]; filledDoc.delete(name); }
+        continue;
+      }
+      const named = namedMulti(lastError);
+      const enumOffer = /expected "([^"]+)"/.exec(lastError);
+      let acted = false;
+      for (const name of named) {
+        if (!fieldNames.has(name) || filledSeats.has(name)) continue;
+        filledSeats.add(name);
+        entry[name] = enumOffer ? (enumOffer[1] as string) : stanzaSeatFill(dial.fields, name);
+        acted = true;
+      }
+      const freshDoc = enumOffer
+        ? named.filter((n) => !fieldNames.has(n))
+        : named.filter((n) => !fieldNames.has(n) && !filledDoc.has(n));
+      if (freshDoc.length > 0) {
+        for (const name of freshDoc) {
+          filledDoc.add(name);
+          doc[name] = enumOffer ? (enumOffer[1] as string) : fillFor(name);
+        }
+        acted = true;
+      }
+      if (!acted) {
+        return { graph: null, error: lastError };
       }
     }
   }
@@ -413,6 +628,120 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
       `DEAD CARDS — these compose refused or compose phantom nodes (every one is a run that dies on the lane): ${dead.join(" | ")}`,
     );
   });
+
+  it("THE PER-DIAL PROBE (§4 debt 1, D-16's carrier): every ENUM field's every schema-declared alternative composes and vocabulary-checks — a dead node class on ANY dial of any card reds before a lane ships", async () => {
+    // THE BLIND SPOT this arm closes: the arms above compose each
+    // facts row once, at the default dial — D-16 shipped ImageResize
+    // on BOTH mask_source alternates under their green face (the
+    // default dial wires no resize). Here the sweep grounds each
+    // pair's base doc once (the default dial the dead-card arm
+    // judges — one grounding, never one per dial), flips ONE enum
+    // per composition off it (the one-flip law, stated with the
+    // per-dial block above), and hands every resulting graph to THE
+    // SAME vocabulary judge the arm above runs.
+    const defs = await loadCardDefs();
+    const dead: string[] = [];
+    /** The dial census: every alternative neither composed nor
+     *  carried silently — each skip names its refusal (an unnumbered
+     *  excuse is a hole; a numbered one is a census). */
+    const skipped: string[] = [];
+    /** Keyed `${modelId}|${card}|${where}=${option}` for every dial
+     *  alternative a composed graph rode — the anti-vacuity set the
+     *  carrier arm reads. */
+    const judged = new Set<string>();
+    let judgedCount = 0;
+    for (const [modelId, row] of pairs) {
+      const def = defs.get(row.card)!;
+      let dials: EnumDial[];
+      try {
+        dials = enumDialsOf(def);
+      } catch (err) {
+        dead.push(`${modelId} / ${row.card}: ${err instanceof Error ? err.message : String(err)}`);
+        continue;
+      }
+      if (dials.length === 0) continue;
+      // THE GROUNDING: the default dial's probe doc, the dead-card
+      // arm's own loop. A pair whose base refuses is THAT arm's
+      // finding — the dial sweep stands down for it, named.
+      const base = composeProbedRow(def, facts.models[modelId]!);
+      if (base.graph === null) {
+        skipped.push(`${modelId} / ${row.card}: the base doc refused to ground — the dead-card arm owns this voice: ${base.error}`);
+        continue;
+      }
+      for (const dial of dials) {
+        for (const option of dial.options) {
+          // the default dial is the grounded shape the dead-card arm
+          // already judged — re-riding it buys nothing (the declared
+          // default when one exists, else the value the grounding
+          // itself rode)
+          const ridden = dial.plane === "knob" ? base.doc[dial.name] : dial.declaredDefault;
+          if (option === ridden || option === dial.declaredDefault) continue;
+          const where = dial.plane === "knob" ? dial.name : `${dial.paramKey}.${dial.name}`;
+          const key = `${modelId}|${row.card}|${where}=${String(option)}`;
+          const composed = dial.plane === "knob"
+            ? composeProbedRow(def, facts.models[modelId]!, { ...base.doc, [dial.name]: option })
+            : composeProbedBagDial(def, facts.models[modelId]!, dial, option, base.doc);
+          if (composed.graph === null) {
+            skipped.push(`${modelId} / ${row.card} dial ${where}=${String(option)}: ${composed.error || "the probe rounds ran out with fresh names still coming"}`);
+            continue;
+          }
+          judged.add(key);
+          judgedCount += 1;
+          const unknown = unknownNodeClasses(composed.graph, vocabulary);
+          if (unknown.length) {
+            dead.push(`${modelId} / ${row.card}: dial ${where}=${String(option)} composes node classes the engine does not own: ${unknown.join(", ")}`);
+          }
+        }
+      }
+    }
+    // THE CARRIER ARM (D-16's own dial — the burn this wall exists
+    // for): the select row named mask_source (named the way CURE-1
+    // named motion_bg_image — the incident write this wall was born
+    // from) must COMPOSE on every alternative, never skip: a probe
+    // that can no longer ground the staged-PNG / mask-video dials is
+    // a wall gone blind on exactly the dial D-16 burned through. A
+    // NEW lawful refusal here is an adjudication row (the value
+    // judge's table above) or a probe cure — never a silence.
+    const carrierSkips: string[] = [];
+    for (const [modelId, row] of pairs) {
+      const def = defs.get(row.card)!;
+      for (const dial of enumDialsOf(def)) {
+        if (dial.plane !== "bag" || dial.name !== "mask_source") continue;
+        for (const option of dial.options) {
+          if (String(option) === String(dial.declaredDefault)) continue;
+          const key = `${modelId}|${row.card}|${dial.paramKey}.${dial.name}=${String(option)}`;
+          if (!judged.has(key)) {
+            carrierSkips.push(`${modelId} / ${row.card} dial ${dial.paramKey}.${dial.name}=${String(option)} did not compose (skip census: ${skipped.find((s) => s.startsWith(`${modelId} / ${row.card} dial ${dial.paramKey}.${dial.name}=${String(option)}`)) ?? "not enumerated — the walk lost it"})`);
+          }
+        }
+      }
+    }
+    assert.deepEqual(
+      carrierSkips,
+      [],
+      `THE D-16 CARRIER DIAL WENT UNJUDGED — the per-dial probe must ground the mask_source alternates (the burn shipped exactly there under a green wall): ${carrierSkips.join(" | ")}`,
+    );
+    // THE ANTI-VACUITY FLOOR (the D5 lesson — a judge that skips
+    // everything is a vacuous green): the sweep's judged count rides
+    // the declared dial population, pinned at the drained debt's
+    // measured run (2026-11-18: 1759 judged alternatives across 33
+    // facts rows, 5 lawful skips in the census above — the
+    // master-gated upscale_route sub-dial and the YuE2-only mode
+    // dial on the MiniMax lane, each refusing loud). A probe
+    // regression that grounds nothing reds HERE before it reds
+    // nowhere.
+    assert.ok(
+      judgedCount >= 1500,
+      `the per-dial sweep judged only ${judgedCount} alternative-dial graphs — the declared dial population collapsed (the probe regressed or the walk went blind); today's census rides 1759`,
+    );
+    console.log(`[per-dial probe] judged ${judgedCount} alternative-dial graphs across ${pairs.length} facts rows; ${skipped.length} dial composition(s) refused (the census, each with its voice):`);
+    for (const s of skipped) console.log(`[per-dial probe]   SKIP ${s}`);
+    assert.deepEqual(
+      dead,
+      [],
+      `DEAD DIALS — these alternate dials compose node classes the engine does not own (every one is D-16's shape: a run that dies at the queue on a dial the default never wires): ${dead.join(" | ")}`,
+    );
+  }, 120_000);
 
   it("THE VALUE JUDGE (the 2026-11-09 stale-compose burn): every literal a composed graph wires into an enum-typed input is a member of the engine build's own enum — the LIVE wiring gate's judgment fired HERE, at the test tier, so a card stale against the engine build reds the suite and NEVER the operator's run", async () => {
     // THE BURN this arm was born red on: the operator pressed Run on
