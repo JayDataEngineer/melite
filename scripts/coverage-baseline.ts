@@ -889,7 +889,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/store/timelineVariants.ts': { statements: 98.53, branches: 98.15, functions: 95.45, lines: 98.08 },
   '**/packages/web-kit/timeline/src/timeline/FilmPlayer.tsx': { statements: 98.18, branches: 96.15, functions: 85.71, lines: 97.87 },
   // §9 NEW ROW 100x4 (2026-11-12): the commission rail — its own spec
-  // (packages/web-kit/timeline/test/commissionsRail.spec.tsx) covers
+  // (packages/web-kit/timeline/tests/commissionsRail.spec.tsx) covers
   // every branch (opt-in empty, bare label span, window segments).
   '**/packages/web-kit/timeline/src/timeline/CommissionsRail.tsx': { statements: 88.89, branches: 90, functions: 66.67, lines: 88.89 },
   '**/packages/web-kit/timeline/src/timeline/MotionTimelineBar.tsx': { statements: 90, branches: 94.44, functions: 50, lines: 90 },

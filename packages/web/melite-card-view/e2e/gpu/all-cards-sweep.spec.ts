@@ -28,7 +28,7 @@
  * the card named — the receipt, not a timeout-only verdict.
  *
  * The keyless law: this spec runs ONLY through
- * scripts/e2e-gpu-lane.sh with E2E_GPU_SWEEP=1 — it self-skips on
+ * scripts/e2e-gpu-lane.mjs with E2E_GPU_SWEEP=1 — it self-skips on
  * the routine lane (the sweep is a 90-minute GPU census, not a
  * per-commit gate). Self-skips without any of its three gates.
  */
@@ -37,7 +37,7 @@ import { callBench, collectPageErrors, expectNoPageErrors, openAConversation, se
 
 test.skip(
   !STUDIO_URL || process.env.E2E_GPU !== '1' || process.env.E2E_GPU_SWEEP !== '1',
-  'the all-cards sweep needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.sh) AND E2E_GPU_SWEEP=1 (the on-demand census gate)',
+  'the all-cards sweep needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.mjs) AND E2E_GPU_SWEEP=1 (the on-demand census gate)',
 )
 
 /** The catalog row the sweep drives: a card and the model families

@@ -71,6 +71,13 @@ import {
 } from "./harness.ts";
 
 const misses = await preflightMisses();
+// SKIP-LOUD, VISIBLY: the contract says the tier "prints exactly what
+// is missing and skips" — the print is this line. A naked clone (the
+// repo face's container) carries no estate facts, and its receipt
+// greps this marker: the skip is a stated reason, never a silence.
+if (misses.length > 0) {
+  console.log("COLDSTART-TIER SKIP-LOUD — missing on this machine:\n" + misses.map((m) => "  - " + m).join("\n"));
+}
 
 /** The docker availability miss (empty string = docker answers). */
 function dockerMiss(): string {

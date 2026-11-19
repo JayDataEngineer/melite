@@ -72,7 +72,7 @@ function pnpmHealthy(): boolean {
 const PNPM_OK = pnpmHealthy();
 
 // ---- preflight: dsh on PATH at or above the provisioner's pin ----
-// (the floor gate the e2e lane runs, e2e-studio-lane.sh:62-83: the
+// (the floor gate the e2e lane runs (e2e-studio-lane.mjs, the freshness
 // mise 0.1.5-rc.2 burn — an under-floor registry refuses our codec
 // shape and every symptom lands far from the cause. A version the
 // regex cannot read fails the preflight loud, never boots.)

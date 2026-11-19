@@ -69,11 +69,18 @@ export function readPin(name: string): string {
 }
 
 /** The estate venv's python — the live engine's own interpreter
- *  (engines.comfyui.live_root from the endpoint facts). */
+ *  (engines.comfyui.live_root from the endpoint facts). A facts file
+ *  that is ABSENT or unreadable is a MISS, never a crash: the file is
+ *  machine state (a naked clone — CI's repo face — carries none), and
+ *  the tier's own law is skip-loud, so an ENOENT here would red the
+ *  whole tier on a machine the arms were never runnable on. */
 export function estateVenvPython(): string {
-  const facts = JSON.parse(
-    readFileSync(join(REPO_ROOT, "data", "inference.local.json"), "utf8"),
-  ) as { engines?: { comfyui?: { live_root?: string } } };
+  let facts: { engines?: { comfyui?: { live_root?: string } } };
+  try {
+    facts = JSON.parse(readFileSync(join(REPO_ROOT, "data", "inference.local.json"), "utf8"));
+  } catch {
+    return "";
+  }
   const liveRoot = facts.engines?.comfyui?.live_root ?? "";
   if (liveRoot === "") return "";
   // live_root is the ENGINE root; the estate venv rides inside it

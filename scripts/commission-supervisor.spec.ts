@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
-const SCRIPT = join(ROOT, 'scripts', 'commission-supervisor.sh')
+const SCRIPT = join(ROOT, 'scripts', 'commission-supervisor.mjs')
 
 /** Tonight's verbatim transient body (attempt034 receipt). */
 const TRANSIENT_ERR = 'dsh: RATE_LIMIT: OpenAI API error (429): {"code":"rate_limit_exceeded","message":"Rate limit exceeded. Please retry after a brief wait.","param":null,"type":"rate_limit_error"}'
@@ -91,7 +91,7 @@ function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
 
 function run(dir: string, prompt: string, prefix: string, extra: Record<string, string> = {}): number {
   try {
-    execFileSync('bash', [SCRIPT, prompt, prefix], {
+    execFileSync('node', [SCRIPT, prompt, prefix], {
       env: {
         ...process.env,
         SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
@@ -129,7 +129,7 @@ function run(dir: string, prompt: string, prefix: string, extra: Record<string, 
 
 function runWithoutDoneMarker(dir: string, prompt: string, prefix: string): number {
   try {
-    execFileSync('bash', [SCRIPT, prompt, prefix], {
+    execFileSync('node', [SCRIPT, prompt, prefix], {
       env: {
         ...process.env,
         SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
@@ -157,10 +157,10 @@ function attemptLogs(prefix: string): string[] {
     .sort()
 }
 
-describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered)', () => {
+describe('commission-supervisor.mjs — the transient-vs-quota law (§25 answered)', () => {
   it('a MISSING SUPERVISOR_PROFILE dies loud — no default lane exists (HEADLESS IS DSH\'S)', () => {
     const { dir, prompt, prefix } = stage(['ok'])
-    const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
+    const r = spawnSync('node', [SCRIPT, prompt, prefix], {
       env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0' },
       timeout: 30_000, encoding: 'utf8',
     })
@@ -286,7 +286,7 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
 
 describe('commission-supervisor — the done-marker glob (the mismatchint fix, 2026-09-26)', () => {
   function runGlob(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
-    const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
+    const r = spawnSync('node', [SCRIPT, prompt, prefix], {
       env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '0', SUPERVISOR_PROFILE: 'estate', ...env },
       timeout: 30_000, encoding: 'utf8',
     })
@@ -331,7 +331,7 @@ const r = runGlob(dir, prompt, prefix, { SUPERVISOR_DONE_GLOB: join(dir, 'transc
 
 describe('commission-supervisor — the queue-lock turn-wait (two makers, one queue)', () => {
   function runLock(dir: string, prompt: string, prefix: string, env: Record<string, string>): { code: number, stderr: string } {
-    const r = spawnSync('bash', [SCRIPT, prompt, prefix], {
+    const r = spawnSync('node', [SCRIPT, prompt, prefix], {
       env: { ...process.env, SUPERVISOR_DSH_BIN: join(dir, 'seq.js'), SUPERVISOR_BACKOFF_S: '0', SUPERVISOR_MAX_ATTEMPTS: '3', SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'), SUPERVISOR_LOCK_WAIT_S: '0', SUPERVISOR_PROFILE: 'estate', ...env },
       timeout: 30_000, encoding: 'utf8',
     })
@@ -395,7 +395,7 @@ describe('commission-supervisor — the cross-roots estate overlay (J12)', () =>
       'require("node:fs").writeFileSync(__dirname + "/transcript.md", "ok\\n");\n'
       + 'process.exit(0);\n')
     try {
-      execFileSync('bash', [SCRIPT, prompt, prefix], {
+      execFileSync('node', [SCRIPT, prompt, prefix], {
         env: {
           ...process.env,
           SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),

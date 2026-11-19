@@ -214,7 +214,7 @@ const PACKAGES = typecheckPackages();
 // THE TSC NET (2026-10-02): the loop ran one package at a time —
 // spawnSync per package, ~100s of the pre-push battery's ~190s on a
 // 24-core machine with sixteen cores idle. The net is now a bounded
-// pool at width 8: the SAME width scripts/ship-lane.sh uses for this
+// pool at width 8: the SAME width scripts/ship-lane.mjs uses for this
 // net, and the same width tests/walls/ts/suites/typecheck-gate.spec.ts
 // runs its package sweep at, so one number governs all three seats.
 // The stage boundary keeps it safe — the net runs BEFORE vitest, so no

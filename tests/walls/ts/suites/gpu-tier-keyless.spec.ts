@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync } from "node:fs";
+import { delimiter } from "node:path";
 import net from "node:net";
 
 // THE GPU TIER'S KEYLESS CONTRACT (dev_docs/plans/gpu-playwright-tier-
@@ -31,20 +32,32 @@ import net from "node:net";
 
 const CARD_VIEW = join(import.meta.dirname, "..", "..", "..", "..", "packages", "web", "melite-card-view");
 const REPO = join(import.meta.dirname, "..", "..", "..", "..");
-const LANE = join(REPO, "scripts", "e2e-gpu-lane.sh");
+const LANE = join(REPO, "scripts", "e2e-gpu-lane.mjs");
 
 // THE PREREQUISITE ORDER (the 2026-11-09 CI cure): the lane script's
-// skip laws run in order — port, dsh-on-PATH (scripts/e2e-gpu-lane.sh
+// skip laws run in order — port, dsh-on-PATH (scripts/e2e-gpu-lane.mjs
 // "no dsh binary on PATH"), THEN the engine probe. A runner without
 // the dsh binary skips BEFORE the engine gate, so the arm's subject
 // (the gate's engine skip/loud voices) never executes. The arm rides
 // the same prerequisite: dsh present, else skip LOUD naming it — the
 // gate contract keeps its judge on every seat that can reach the
 // gate (dev boxes, GPU runners).
-const DSH_ON_PATH = spawnSync(
-  "bash",
-  ["-c", `command -v ${(process.env.DSH_BIN ?? "dsh").replace(/'/g, "")} >/dev/null 2>&1`],
-).status === 0;
+// THE NODE PORT (operator 2026-11-19: the shell scripts are ruled
+// out): the probe is the lane's own resolveCommand — a PATH walk with
+// the executable check, never a `command -v` through bash.
+function resolveCommand(name: string): boolean {
+  const candidates = name.includes("/")
+    ? [name]
+    : (process.env.PATH ?? "").split(delimiter).filter((d) => d !== "").map((d) => join(d, name));
+  for (const p of candidates) {
+    try {
+      accessSync(p, constants.X_OK);
+      return true;
+    } catch { /* not here */ }
+  }
+  return false;
+}
+const DSH_ON_PATH = resolveCommand(process.env.DSH_BIN ?? "dsh");
 
 // THE PNPM SEAT (class B R7, 2026-10-31): the arms spawned `pnpm`
 // bare — on windows the PATH shim is pnpm.cmd and Node refuses to
@@ -190,7 +203,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     expect(tile).toMatch(/'data-stage-status':\s*row\.status/);
   });
 
-  it.skipIf(process.platform === "win32" || !DSH_ON_PATH)("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE (skipped on win32: the launcher is the linux GPU lane's bash machinery — the gate contract rides the ubuntu/macos legs; skipped when no dsh binary is on PATH — CI: the script's skip laws stop at dsh before the engine gate)", async () => {
+  it.skipIf(process.platform === "win32" || !DSH_ON_PATH)("the launcher's ENGINE GATE: dead engine skips keyless, FAILS LOUD under REQUIRE (skipped on win32: the launcher is the linux GPU lane's node port — its POSIX seats, /tmp roots and a bare pnpm spawn, ride the ubuntu/macos legs; skipped when no dsh binary is on PATH — CI: the script's skip laws stop at dsh before the engine gate)", async () => {
     // Arm 4, both edges: the gate probes the engine before any home
     // is built or host booted (fast, side-effect-free — the script
     // exits at the gate). E2E_GPU_PORT names a port this wall chose
@@ -199,7 +212,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     // owns.
     const port = String(await aFreePort());
     const dead = { E2E_GPU_ENGINE: "http://127.0.0.1:9", E2E_GPU_PORT: port };
-    const skip = spawnSync("bash", [LANE], { // census-allow: the linux GPU lane is a bash artifact (win32-skipped arm)
+    const skip = spawnSync(process.execPath, [LANE], { // the node port: the lane boots through node, never a shell (win32-skipped arm)
       cwd: REPO,
       encoding: "utf8",
       env: { ...process.env, ...dead },
@@ -209,7 +222,7 @@ describe("THE GPU TIER'S KEYLESS CONTRACT (the both-angles tier)", () => {
     expect(skip.status, `the keyless dead-engine lane skips (exit 0): ${skipOut.slice(0, 300)}`).toBe(0);
     expect(skipOut, "the skip names the engine as the reason").toContain("engine at http://127.0.0.1:9 unreachable");
 
-    const loud = spawnSync("bash", [LANE], { // census-allow: the linux GPU lane is a bash artifact (win32-skipped arm)
+    const loud = spawnSync(process.execPath, [LANE], { // the node port: the lane boots through node, never a shell (win32-skipped arm)
       cwd: REPO,
       encoding: "utf8",
       env: { ...process.env, ...dead, E2E_GPU_REQUIRE: "1" },

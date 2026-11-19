@@ -12,7 +12,7 @@
  *     mounts with a real canvas (WebGL), and the image tombstone
  *     never appears. Screenshot for the operator.
  *
- * Keyless law: runs ONLY through scripts/e2e-gpu-lane.sh
+ * Keyless law: runs ONLY through scripts/e2e-gpu-lane.mjs
  * (E2E_GPU=1). This proof never presses Run — the whole point is
  * the face BEFORE any run.
  */
@@ -21,7 +21,7 @@ import { callBench, collectPageErrors, expectNoPageErrors, openAConversation, se
 
 test.skip(
   !STUDIO_URL || process.env.E2E_GPU !== '1',
-  'the pre-run proofs need E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.sh)',
+  'the pre-run proofs need E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.mjs)',
 )
 
 test('the live lane: one qwen model row, and anny opens on the body pre-run', async ({ page }) => {

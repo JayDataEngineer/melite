@@ -618,7 +618,7 @@ for (const profile of ["melite-test", "estate"]) {
 }
 
 // SEED ⊇ BASE (the "no test caught it" autopsy, 2026-10-18): the
-// browser e2e lane (e2e-studio-lane.sh) boots its own committed
+// browser e2e lane (e2e-studio-lane.mjs) boots its own committed
 // seed profile, NOT the provisioner's melite-test render — and the
 // seed already carried @melite/three-client while the base did not.
 // Green battery, green browser wall, dead operator lane: the wall

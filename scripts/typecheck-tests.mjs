@@ -12,7 +12,7 @@
 //
 // This script is ONE implementation with two callers: the wall
 // (tests/walls/ts/suites/typecheck-gate.spec.ts) and the ship
-// (scripts/ship-lane.sh). Per package it synthesizes a config that
+// (scripts/ship-lane.mjs). Per package it synthesizes a config that
 // extends the package's own tsconfig and adds the test dirs, then
 // runs tsc --noEmit. The synthesis is on the fly (nothing
 // materialized to rot); the package's own compiler settings hold.

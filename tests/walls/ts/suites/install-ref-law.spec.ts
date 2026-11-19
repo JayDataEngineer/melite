@@ -21,10 +21,15 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
+// OPERATOR RULING 2026-11-19: the push lane's cold-start is NOT an
+// install face — it seats the COMMIT (tools/cold-start-proof.mjs
+// --repo-face "$GITHUB_SHA"), never a published tag, so tests.yml
+// names no github: pin by design. The install faces are the human
+// doors: the README, the install guide, and the proof tool's own
+// consumer-seat example (the release lane's --container-only face).
 const GITHUB_FACES = [
   "README.md",
   "docs/guide/install.md",
-  ".github/workflows/tests.yml",
   "tools/cold-start-proof.mjs",
 ];
 const REF_RE = /github:JayDataEngineer\/melite#([A-Za-z0-9._-]+)/gu;

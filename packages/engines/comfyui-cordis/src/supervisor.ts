@@ -32,7 +32,7 @@
 // PROCESS LIFECYCLE (operator order 2026-11-06) is explicitly NOT
 // this supervisor's job — "we spawn nothing" above stands for the
 // supervisor's exhaustion behavior. The explicit process owner is
-// scripts/comfy-engine.sh (status/up/down, config-driven off the
+// scripts/comfy-engine.mjs (status/up/down, config-driven off the
 // endpoint config's url + boot_cmd, pidfile under the repo's
 // untracked data tree; down refuses a busy engine unless
 // --force). Reachability here, process there — one home per fact.

@@ -456,7 +456,7 @@ function sdCells(): Cell[] {
     },
     {
       id: 'SD-8 keyframe-vs-audio lane asymmetry (diamonds on one thin lane vs 3 audio lanes)', status: 'W', sd: 'SD-8',
-      wall: 'packages/web-kit/timeline/test/timelineLaneParity.spec.tsx',
+      wall: 'packages/web-kit/timeline/tests/timelineLaneParity.spec.tsx',
       anchor: 'EVERY LANE HEAD RENDERS THE SAME SHELL — the gutter\'s four heads share one LaneHead anatomy (glyph/dot slot, label, door slot, height), no bespoke grammar survives',
       note: 'row cards-lane-parity (kit arms: same-shell / height-mirror derived / "AN EMPTY KEYFRAME LANE CARRIES ITS OWN HINT" / opt-out byte-identity; tenant studio-strip-pane: "THE KEYFRAMES LANE SPEAKS THE AUDIO LANES\' LANGUAGE" + "THE KEYFRAMES LANE\'S EMPTY FACE IS A WELL, NOT A WHISPER"; the h3 tenant opts into kfLaneCards — the audioClipCards precedent)',
     },

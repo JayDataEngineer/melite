@@ -190,7 +190,7 @@ beforeAll(async () => {
     // cardTools: true — THE MAKER FACE (operator law 2026-09-21):
     // this wall proves the card faces EXECUTE + RENDER over the live
     // composition, so it opts in; the agent lane default (BASE only)
-    // is pinned in melite-tools/test/index.spec.ts
+    // is pinned in melite-tools/tests/index.spec.ts
     { cardTools: true },
   );
 }, 60_000);
@@ -382,7 +382,7 @@ describe("the melite tool faces answer over the live composition", () => {
   // 2026-10-15): the tool's action list + schema must expose
   // lora_list/lora_install — an agent manages LoRAs the way it
   // calls search_models today. The refusal VOICES are pinned in the
-  // package spec (melite-tools/test/comfy-manage.spec.ts) against
+  // package spec (melite-tools/tests/comfy-manage.spec.ts) against
   // the stubbed estate leg; this wall pins the LIVE composition's
   // own tool face.
   it("comfy_manage's schema carries the lora doors through the live composition", async () => {

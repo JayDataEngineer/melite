@@ -30,8 +30,8 @@ describe('testing tiers exist (contract regression)', () => {
       'tests/e2e/estate-smoke.e2e.ts',
       'tests/expected/smoke.expected.e2e.ts',
       'benchmarks/session-open.bench.ts',
-      'snapshots/session/hello/hello.snapshot.ts',
-      'snapshots/web/hello/hello.snapshot.ts',
+      'tests/snapshots/session/hello/hello.snapshot.ts',
+      'tests/snapshots/web/hello/hello.snapshot.ts',
       'tests/harness.ts',
       'tests/helpers/launch.ts',
     ]) {

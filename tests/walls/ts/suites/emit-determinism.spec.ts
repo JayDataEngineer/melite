@@ -52,7 +52,7 @@ function fixtureTree(): string {
   return dir;
 }
 
-/** The shell oracle, verbatim (scripts/ship-lane.sh stamp_src): the
+/** The shell oracle, verbatim (the retired ship-lane.sh stamp_src recipe): the
  *  recipe the native derivation must stay byte-identical to. */
 function shellStamp(pkgDir: string): string {
   return execFileSync(

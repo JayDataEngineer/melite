@@ -326,7 +326,7 @@ jobs:
   # engine arms stay opt-in locally (tests/coldstart) — CI never
   # downloads a weight.
   cold-start-proof:
-    name: 'cold-start proof (container face — seat from nothing)'
+    name: 'cold-start proof (repo face — seat the commit from nothing)'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -337,8 +337,15 @@ jobs:
         # ARM 2/4 red on every run with an empty tag list. Tags are repo state
         # the wall judges — fetch them.
           fetch-tags: true
-      - name: Container seat proof
-        run: 'node tools/cold-start-proof.mjs --container-only --remote "github:JayDataEngineer/melite#v0.3.0-alpha"'
+      - name: Cold-start proof (the commit, never the registry)
+        # OPERATOR RULING 2026-11-19: the push lane's cold-start is NOT
+        # tied to npm — "it will always fail unless it is a package" is
+        # a release-lane truth. A naked container clones THIS SHA,
+        # installs the workspace frozen (every @melite/* a lockfile
+        # workspace link — zero melite registry reads), builds, and
+        # runs the estate arms. The npm consumer door stays in the
+        # release lane (release-publish.yml's cold-consumer rehearsal).
+        run: 'node tools/cold-start-proof.mjs --repo-face "$GITHUB_SHA"'
 
   # No walls job: the wall suites run inside `unit` (root vitest
   # node project). Live GPU inference stays opt-in locally — it needs

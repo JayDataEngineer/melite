@@ -10,7 +10,7 @@
 //     gpu seat's own, never re-run here.
 //   - The DEFAULT playwright config keeps ignoring e2e/gpu/
 //     entirely (the keyless law): this config is reachable only
-//     through scripts/e2e-h3-gpu-lane.sh, which boots the host,
+//     through scripts/e2e-h3-gpu-lane.mjs, which boots the host,
 //     gates the engine + the h3 weights, and exports the gates
 //     (E2E_STUDIO_URL + E2E_GPU=1 + E2E_H3=1). Every spec
 //     self-skips without all three — a bare `playwright test -c

@@ -10,7 +10,7 @@
 // frame. Screenshots at every stage (data/runtime, gitignored).
 //
 // Keyless law: self-skips without E2E_STUDIO_URL (the studio lane
-// owns the boot — scripts/e2e-studio-lane.sh). The mint law: the
+// owns the boot — scripts/e2e-studio-lane.mjs). The mint law: the
 // seat's open is an ACTUAL AI CALL — self-skips without the opt-in
 // (e2e-ai-opt-in.spec.ts's derived census reads this guard).
 import { expect, test } from '@playwright/test'

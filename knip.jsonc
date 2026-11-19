@@ -123,7 +123,7 @@
   //    the root and its type-only `import type { UserConfig } from
   //    'tsdown'` reads as an unlisted root import. The per-package rows
   //    are the builder binary itself, spawned per package by the lane
-  //    scripts (scripts/lane-rebuild.sh, ship-lane.sh, lane-dev.sh --
+  //    scripts (scripts/lane-rebuild.mjs, ship-lane.mjs, lane-dev.mjs --
   //    `./node_modules/.bin/tsdown`), a seam knip cannot trace. The root
   //    fallback covers every workspace's tsdown row the same way.
   // 4. @deepseek-ai/cosmokit -- the vendored cordis plugins

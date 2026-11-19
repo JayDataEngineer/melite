@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { execFile, execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
+import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
@@ -228,7 +229,7 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
   }, 240_000);
 
   it("the ship playbook typechecks what it does not compile (no five-package list)", () => {
-    const script = readFileSync(join(REPO, "scripts", "ship-lane.sh"), "utf8");
+    const script = readFileSync(join(REPO, "scripts", "ship-lane.mjs"), "utf8");
     // The playbook must DISCOVER packages, not name five. The old
     // COMPILED list is fine for ./lib building; a typecheck that
     // only visits those is the hole the ReferenceError walked
@@ -236,29 +237,27 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
     // vocabulary match is not a net): the loop must actually RUN
     // tsc --noEmit per discovered tsconfig and REFUSE the ship on
     // red (an exit-1 that never fires is a check that says ok).
-    expect(script).toMatch(/find .*tsconfig\.json.*-printf '%h\\n'/s);
+    expect(script).toContain("export function discoverTsconfigDirs");
+    expect(script).toContain("discoverTsconfigDirs(REPO)");
     // DUAL-FACE (the DSH layout law): the worker judges LEAVES, never
     // the vacuous solution-only root — a `-p tsconfig.json` literal
     // here would sail seven green overs over red programs.
-    expect(script).toMatch(/tsconfig\.host\.json.*faces=.*tsconfig\.host\.json tsconfig\.client\.json/s);
-    expect(script).toMatch(/\$TSC.*--noEmit.*-p "\$face"/s);
-    expect(script).toMatch(/TCFAIL=1/s);
-    expect(script).toMatch(/TCFAIL.*-ne 0[\s\S]*?exit 1/s);
+    expect(script).toMatch(/tsconfig\.host\.json.*tsconfig\.client\.json/s);
+    expect(script).toMatch(/"--noEmit", "-p", face/);
+    expect(script).toMatch(/TCFAIL = 1/s);
+    expect(script).toMatch(/TCFAIL !== 0[\s\S]*?process\.exit\(1\)/s);
   });
 
-  it("F-M5: the discovery command EXECUTES (a fixture tree proves the find's own law)", () => {
+  it("F-M5: the discovery EXECUTES (a fixture tree proves the walk's own law)", async () => {
     // The arms above are substring regexes — the claim is
-    // behavioural: the pipeline DISCOVERS tsconfig dirs while
-    // skipping node_modules. The SHIPPED command is extracted from
-    // the script text (never retyped here — one derivation) and run
+    // behavioural: the discovery FINDS tsconfig dirs while skipping
+    // node_modules. The node port EXPORTS its discovery (one
+    // derivation — the wall imports the shipped function instead of
+    // extracting a find command from the script text) and runs it
     // against a fixture tree containing every trap: a real package,
     // a NESTED package, a tsconfig inside node_modules (must be
-    // skipped), and a dot-dir (skipped by the repo walk's own law
-    // only if the command says so — here we pin the command's raw
-    // behaviour and the ship loop's `*/packages/*` guard).
-    const script = readFileSync(join(REPO, "scripts", "ship-lane.sh"), "utf8");
-    const m = script.match(/find "[^"]*" -name tsconfig[.]json -not -path '[*][/]node_modules[/][*]' -printf '%h.n'/);
-    expect(m, "the shipped find command is extractable (one derivation — a retype here would drift)").not.toBeNull();
+    // skipped), and one outside packages/ (not this net's plane).
+    const shipMod = await import(pathToFileURL(join(REPO, "scripts", "ship-lane.mjs")).href);
     const fixture = mkdtempSync(join(tmpdir(), "tc-gate-fixture-"));
     const mk = (rel: string): string => {
       mkdirSync(join(fixture, rel), { recursive: true });
@@ -269,11 +268,10 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
     const nested = mk("packages/group/beta");
     mk("packages/alpha/node_modules/trap"); // must NOT be discovered
     writeFileSync(join(fixture, "tsconfig.json"), "{}\n"); // outside packages/ — not discovered
-    const cmd = m![0].replace('find "$REPO/packages"', `find "${fixture}/packages"`);
-    const out = execFileSync("/usr/bin/env", ["bash", "-c", cmd], { encoding: "utf8" });
-    const found = out.trim().split("\n").filter(Boolean)
-      .map((l) => l.replace(`${fixture}/`, "")).sort();
-    expect(found).toEqual([real, nested].sort());
+    const found = (shipMod.discoverTsconfigDirs(fixture) as string[])
+      .map((d) => d.replace(`${fixture}/`, "")).sort();
+    expect(found, "the shipped discovery, run for real").toEqual([real, nested].sort());
+    rmSync(fixture, { recursive: true, force: true });
   });
 
   it("THE TEST TIER rides both gates (spec files are a plane — one implementation, two callers)", () => {
@@ -289,8 +287,8 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
     expect(script).toMatch(/--showConfig/);
     expect(script).toMatch(/noEmit/);
     expect(script).toMatch(/rootDir/); // the flatten's one deletion
-    const ship = readFileSync(join(REPO, "scripts", "ship-lane.sh"), "utf8");
-    expect(ship).toMatch(/typecheck-tests\.mjs[\s\S]*?exit 1/s);
+    const ship = readFileSync(join(REPO, "scripts", "ship-lane.mjs"), "utf8");
+    expect(ship).toMatch(/typecheck-tests\.mjs[\s\S]*?process\.exit\(1\)/s);
     // F-L4 (the wall audit, 2026-09-28): the last line read THIS
     // FILE and matched its own text — a wall grepping itself proves
     // nothing (delete the runner call and the assertion still

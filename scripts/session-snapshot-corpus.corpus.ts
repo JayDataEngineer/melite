@@ -18,7 +18,7 @@ import {
   selectGeneration,
 } from '../tests/snapshot-support/storage.ts'
 
-const SNAPSHOTS = resolve(import.meta.dirname, '..', 'snapshots')
+const SNAPSHOTS = resolve(import.meta.dirname, '..', 'tests', 'snapshots')
 
 const profiles = ['session', 'web'] as const
 

@@ -65,8 +65,8 @@ import { meliteDiscover } from "../../../../packages/harness/melite-tools/src/to
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 import { meliteConstruct } from "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts";
 import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
-import { fakeEstate, fakeEstateRecorded } from "../../../../packages/harness/melite-tools/test/fake-estate.ts";
-import { fakeExec } from "../../../../packages/harness/melite-tools/test/fake-exec.ts";
+import { fakeEstate, fakeEstateRecorded } from "../../../../packages/harness/melite-tools/tests/fake-estate.ts";
+import { fakeExec } from "../../../../packages/harness/melite-tools/tests/fake-exec.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 

@@ -101,16 +101,16 @@ describe('THE D.TS REWRITER (audit finding 1, 2026-11-06): tested + wired', () =
   });
 
   it('THE WIRING PIN: the ship lane runs the pass after every compiled emit (the repeat wedge dies)', () => {
-    const lane = readFileSync(join(ROOT, 'scripts', 'ship-lane.sh'), 'utf8');
-    const compiledLoop = lane.slice(lane.indexOf('for p in "${COMPILED[@]}"; do'));
+    const lane = readFileSync(join(ROOT, 'scripts', 'ship-lane.mjs'), 'utf8');
+    const compiledLoop = lane.slice(lane.indexOf('for (const p of COMPILED)'));
     assert.ok(compiledLoop.includes('rewrite-dts-specifiers.mjs'),
       'the compiled build loop invokes the rewrite pass');
-    const buildAt = compiledLoop.indexOf('tsconfig.json >');
+    const buildAt = compiledLoop.indexOf('"-p", "tsconfig.json"');
     const rewriteAt = compiledLoop.indexOf('rewrite-dts-specifiers.mjs');
-    const stampAt = compiledLoop.indexOf('write_stamp "$p"');
+    const stampAt = compiledLoop.indexOf('writeStamp(p)');
     assert.ok(buildAt >= 0 && rewriteAt > buildAt && stampAt > rewriteAt,
       'the order is emit → rewrite → stamp (a stamp over un-rewritten d.ts lies)');
-    assert.ok(lane.includes('"$REPO/scripts/rewrite-dts-specifiers.mjs" "$p"'),
+    assert.ok(lane.includes('join(REPO, "scripts", "rewrite-dts-specifiers.mjs"), p'),
       'the lane passes the repo-relative package dir (the run-from-root law)');
   });
 

@@ -127,7 +127,7 @@ describe("run-door single resolve + strict resurrect (purge §7 P7)", () => {
   // id, and the reset target (the R-S9 quarantine precedent). Reds
   // today (silent reset); greens on the voiced reset. The VALUE half
   // (reset to default) is already walled at
-  // timeline/test/timelineStorePersist.spec.ts ("resets models..."),
+  // timeline/tests/timelineStorePersist.spec.ts ("resets models..."),
   // and the cold-catalog silence at R-E2 — witnesses, not duplicated.
   it("a catalog-miss model reset voices itself (segment id, persisted id, reset target)", async () => {
     const lsData = new Map<string, string>();

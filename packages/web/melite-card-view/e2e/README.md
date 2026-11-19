@@ -8,7 +8,7 @@ plane — the only wall that catches it.
 
 ## The lane (infrastructure, never booted by the spec)
 
-**The recipe lives in `scripts/e2e-studio-lane.sh`** (roadmap §9's
+**The recipe lives in `scripts/e2e-studio-lane.mjs`** (roadmap §9's
 CI seat — ONE source of truth; this README documents the LAWS, the
 script owns the commands). Boot, seed, run, teardown:
 

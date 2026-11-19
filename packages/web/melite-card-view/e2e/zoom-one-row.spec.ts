@@ -5,7 +5,7 @@
  * specField class because every consumer bundle inlined its own
  * compiled copy of the @melite/card-base atoms).
  *
- * The unit wall (packages/harness/melite-tools/test/
+ * The unit wall (packages/harness/melite-tools/tests/
  * card-one-row.spec.ts) pins the BUNDLES — one registration, zero
  * inlined atoms per consumer. This wall pins what the operator
  * actually saw: the RENDERED zoom. A drill can only show one hash

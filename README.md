@@ -38,8 +38,8 @@ The install lines below pin the Melite tag.
   `vendor/comfyui_extensions/`. Foreign packs are declared and installed by
   the provisioning path.
 
-The agent and developer contract is [`AGENTS.md`](AGENTS.md). Read it before
-changing the harness or composing media.
+The developer contract is [`AGENTS.md`](AGENTS.md). Read it before
+changing the harness.
 
 ## Install
 
@@ -79,16 +79,7 @@ dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.3.0-alpha"
 Installs are pinned to the release tag — they never move on their own.
 To upgrade, run the same command with the newer tag, then restart the
 runner. `#main` tracks the unreviewed tip and is not the install door.
-The pin names the newest tag with minted release assets: a release is
-the tag plus its asset bundle on the GitHub release, and a bare tag is
-not an install door — the ledger of tags cut without mints is
-`tools/seat-census.json`. The seat must also carry a root manifest
-package name — pnpm refuses a `github:` ref whose manifest has none
-(`ERR_PNPM_MISSING_PACKAGE_NAME`), which is why `v0.2.0-alpha` — cut
-before that field existed — is not the seat ref.
-
-An estate job server exists as a separate profile (`estate`); one-shot headless agents
-are DSH's own surface (`dsh headless "task brief"`), not a melite profile.
+The pin names the newest tag with minted release assets.
 
 ## Quick start
 
@@ -106,13 +97,13 @@ dsh --profile melite
 
 The boot binds a port itself and prints the entry token URL; pass `--port` only when a fixed port
 is required. The agent seats need one LLM driver — configure it
-with DSH's provider mechanism (the DSH documentation owns the row format); until then the studio
+with DSH's provider mechanism; until then the studio
 runs and the agent tools report themselves unseated.
 
 3. Compose: ask the agent for media, or open a card in the studio — the contract is the next
 section.
 
-4. Acquire on missing — no shell step, ever. Missing models and packs install into YOUR engine:
+4. Acquire on missing — no shell step, ever. Missing models and packs install into the existing comfyui engine:
 in-app pack installs ride your own ComfyUI-Manager's git-url door, weights land on your engine's
 own model folders, and when the estate's store should join the engine's view the attach door
 writes `extra_model_paths.yaml` into the engine tree (a restart applies it). The endpoint is
@@ -130,7 +121,7 @@ upstream licenses; this repository's license covers the code.
 
 ## Composing and running
 
-The browser/chat compose contract is progressive disclosure:
+The browser/chat compose contract is progressive disclosure in order to minimize tool context:
 
 ```text
 melite_discover → melite_load → melite_construct

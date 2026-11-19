@@ -10,7 +10,7 @@
  *              pass.
  *
  *   commission launch a REAL maker on the 3088 lane for the
- *              chosen path(s) through scripts/commission-supervisor.sh
+ *              chosen path(s) through scripts/commission-supervisor.mjs
  *              (minutes long; spends provider quota), then analyse
  *              what it left behind. `--dry` mints the brief + launch
  *              prompt and prints them without launching anything.

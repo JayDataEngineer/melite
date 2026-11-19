@@ -4,7 +4,7 @@
  *
  * The runbook's ONE-CALL LAUNCH, as a callable: write the brief, write
  * the complete launch prompt, invoke
- * `scripts/commission-supervisor.sh`, and hand the result to the
+ * `scripts/commission-supervisor.mjs`, and hand the result to the
  * analyst. Everything the runbook insists on is here, because each
  * one was paid for in a failed commission:
  *
@@ -35,7 +35,7 @@ import type { PathName } from './analysis.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 export const REPO_ROOT = resolve(HERE, '..', '..')
-export const SUPERVISOR = join(REPO_ROOT, 'scripts/commission-supervisor.sh')
+export const SUPERVISOR = join(REPO_ROOT, 'scripts/commission-supervisor.mjs')
 
 /** THE PATH TABLE — what each path's receipt IS, so a brief can ask
  *  for the deliverable in human words and the analyst can name what
@@ -376,7 +376,9 @@ export async function commission(opts: CommissionOptions): Promise<CommissionRes
   }
 
   const result = await new Promise<{ code: number | null; output: string }>((resolvePromise) => {
-    const child = spawn('bash', [SUPERVISOR, promptPath, logPrefix], { env, cwd: stateRoot })
+    // the node port: the supervisor boots through node — argv[2] is
+    // the prompt file, argv[3] the out-prefix (its own usage law)
+    const child = spawn(process.execPath, [SUPERVISOR, promptPath, logPrefix], { env, cwd: stateRoot })
     let output = ''
     child.stdout.on('data', (chunk: Buffer) => {
       output += chunk.toString()

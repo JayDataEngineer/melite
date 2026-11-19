@@ -106,7 +106,7 @@ export default defineConfig({
     setupFiles: [PROXY_SETUP, path.join(CARD_VIEW, 'tests/setup.ts')],
     globals: true,
     css: false,
-    include: ['snapshots/web/**/*.snapshot.ts', 'packages/web/tests/expected/**/*.spec.ts'],
+    include: ['tests/snapshots/web/**/*.snapshot.ts', 'packages/web/tests/expected/**/*.spec.ts'],
     testTimeout: 180_000,
     hookTimeout: 120_000,
     // Serial like DSH's web lane: workspace-mutating scenarios must not

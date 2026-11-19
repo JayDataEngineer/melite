@@ -39,7 +39,7 @@ const PINNED_SESSION = process.env.MELITE_E2E_V2V_SESSION ?? ''
  *  set, else the tab's OWN watched conversation (dsh.sessions.current
  *  — the operator lane's reopened scratch conversation), else 'main'
  *  (a fresh lane's headless fallback, whose bench the lane seeds at
- *  boot — scripts/e2e-studio-lane.sh). The 11-09 pin hard-coded the
+ *  boot — scripts/e2e-studio-lane.mjs). The 11-09 pin hard-coded the
  *  reopened key and passed on host history the tour law forbids: a
  *  fresh lane carries no conversation, bench/get refuses not-found,
  *  and all three arms red before their first pixel (2026-11-17). */

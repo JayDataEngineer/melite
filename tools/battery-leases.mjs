@@ -107,9 +107,9 @@ export const TIER_INPUTS = {
   // an edit there ride a green carry. Wider never narrower.
   e2e: ["tests/e2e/**", "tests/lane/**", "packages/**/tests/**", "vitest.e2e.config.ts", "vitest.shared.ts", "packages/**/src/**", "packages/engines/**/*.yaml"],
   // The browser tier runs BOTH playwright legs (view + deck, root
-  // package.json test:web:browser) and the lane scripts source
-  // scripts/lib/*.sh — all four trees hash here now.
-  browser: ["packages/web/melite-card-view/e2e/**", "packages/web/melite-card-deck/e2e/**", "packages/web/**/src/**", "packages/web/melite-card-view/playwright*.ts", "packages/web/melite-card-deck/playwright*.ts", "scripts/e2e-studio-lane.sh", "scripts/lib/*.sh", "packages/web/melite-card-view/package.json", "packages/web/melite-card-deck/package.json"],
+  // package.json test:web:browser) and the lane script + its lib are
+  // node now — all four trees hash here now.
+  browser: ["packages/web/melite-card-view/e2e/**", "packages/web/melite-card-deck/e2e/**", "packages/web/**/src/**", "packages/web/melite-card-view/playwright*.ts", "packages/web/melite-card-deck/playwright*.ts", "scripts/e2e-studio-lane.mjs", "scripts/lib/*.mjs", "packages/web/melite-card-view/package.json", "packages/web/melite-card-deck/package.json"],
 };
 
 /** The self-input law: the battery's own logic + the lockfile key every

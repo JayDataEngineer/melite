@@ -3,6 +3,7 @@ import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import { ComposeRefusal } from "@melite/comfyui-card-kit/errors";
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
+import { pathToFileURL } from "node:url";
 import { spawnSync, execFileSync } from "node:child_process";
 import { readCommittedBatch } from "../lib/committed-batch.ts";
 
@@ -170,19 +171,19 @@ describe("THE REPO TIER (tools/ + tests/ typed by nothing)", () => {
 });
 
 describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gates)", () => {
-  const ship = read("scripts/ship-lane.sh");
+  const ship = read("scripts/ship-lane.mjs");
 
   it("the typecheck net runs BEFORE the build guard, on every ship", () => {
     // THE WEDGE: the builds ran first (a red build still emitted —
     // no noEmitOnError), and --no-build skipped EVERY gate. The
     // order is the gate: the net's say must precede the DO_BUILD
     // conditional, and the build loop must live inside it.
-    const netAt = ship.indexOf('say "TYPECHECK every package');
-    const guardAt = ship.indexOf('if [ "$DO_BUILD" -eq 1 ]; then');
+    const netAt = ship.indexOf('say("TYPECHECK every package');
+    const guardAt = ship.indexOf("if (DO_BUILD === 1)");
     expect(netAt).toBeGreaterThan(-1);
     expect(guardAt).toBeGreaterThan(-1);
     expect(netAt, "the net must judge the tree before any emit").toBeLessThan(guardAt);
-    const buildSay = ship.indexOf('say "BUILD the compiled-lib packages');
+    const buildSay = ship.indexOf('say("BUILD the compiled-lib packages');
     expect(buildSay).toBeGreaterThan(guardAt);
   });
 
@@ -190,25 +191,26 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     const tierAt = ship.indexOf("TYPECHECK the test tier + the repo tier");
     expect(tierAt).toBeGreaterThan(-1);
     expect(tierAt, "a restart-only ship must still typecheck the tiers").toBeLessThan(
-      ship.indexOf('if [ "$DO_BUILD" -eq 1 ]; then'),
+      ship.indexOf("if (DO_BUILD === 1)"),
     );
   });
 
   it("the ship's refusals are BEHAVIOURAL (a bogus --unit exits 2, prints FAIL, refuses before any gate)", () => {
     // THE M9 KILL: this arm judged the playbook by substring — four
-    // regexes over ship-lane.sh's text — while the script's own
+    // regexes over the ship script's text — while the script's own
     // refusal path had never been executed by anything but the
     // operator. The first behavioural probe caught a live bug every
-    // regex blessed: the --unit refusal called bad() before bash had
-    // defined it, so the console said "bad: command not found" where
-    // the FAIL line belonged. Behaviour is the receipt now.
-    // POSIX-BY-AUDIENCE: the ship lane IS a bash script — its syntax
-    // check runs bash, deliberately.
-    const syntax = spawnSync("bash", ["-n", join(REPO, "scripts/ship-lane.sh")]); // census-allow
-    expect(syntax.status, "ship-lane.sh must stay syntactically whole").toBe(0);
+    // regex blessed: the --unit refusal called bad() before it was
+    // defined, so the console said "command not found" where the
+    // FAIL line belonged. Behaviour is the receipt now.
+    // NODE-BY-RULING (operator 2026-11-19: "THIS IS NPM AND PYTHON,
+    // NOT SHELL SCRIPT"): the playbook is a node script — its syntax
+    // check is node's own, and the refusal probe spawns node.
+    const syntax = spawnSync(process.execPath, ["--check", join(REPO, "scripts/ship-lane.mjs")]); // census-allow
+    expect(syntax.status, "ship-lane.mjs must stay syntactically whole").toBe(0);
     const res = spawnSync(
-      "bash",
-      [join(REPO, "scripts/ship-lane.sh"), "--unit", "bogus.service"],
+      process.execPath,
+      [join(REPO, "scripts/ship-lane.mjs"), "--unit", "bogus.service"],
       { encoding: "utf8", timeout: 15000 },
     );
     expect(res.status, "an unsanctioned --unit must refuse (exit 2)").toBe(2);
@@ -218,31 +220,37 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     expect(out, "the refusal is EARLY — no gate section may run first").not.toMatch(/== /);
   });
 
-  it("every compiled package carries noEmitOnError (a red build must not emit)", () => {
+  it("the lane-rebuild patch gate refuses a MISSING patch as RENDER REFUSED, never a stack trace", () => {
+    // THE PORT-ERA HOLE (port-crew-lane finding, 2026-11-19): the .sh
+    // read its patch with a clean "cat: no such file" refusal voice;
+    // the first .mjs port read it bare — a missing cordis.patch.yml
+    // crashed node with ERR_MODULE-era stack noise instead of the
+    // RENDER REFUSED line. A launcher's refusal must stay refusal-
+    // shaped. Depth is a source pin + parse check: the script is a
+    // GPU-seat launcher and never runs inside a wall.
+    const src = readFileSync(join(REPO, "scripts/lane-rebuild.mjs"), "utf8");
+    const syntax = spawnSync(process.execPath, ["--check", join(REPO, "scripts/lane-rebuild.mjs")]); // census-allow
+    expect(syntax.status, "lane-rebuild.mjs must stay syntactically whole").toBe(0);
+    expect(
+      src.includes("fs.existsSync(PATCH) ? fs.readFileSync(PATCH") ,
+      "the patch read lost its existsSync guard — a missing cordis.patch.yml crashes with a stack trace instead of the RENDER REFUSED exit-1 refusal",
+    ).toBe(true);
+  });
+
+  it("every compiled package carries noEmitOnError (a red build must not emit)", async () => {
     // THE WEDGE: without noEmitOnError the build's failure exit came
     // AFTER the stale lib was already on disk — the ship failed and
     // the damage shipped anyway on the next restart.
     // THE ROSTER IS DERIVED (2026-10-13, the ship audit): the ship
     // script no longer hand-lists COMPILED — a package is compiled iff
     // the host imports it from lib/, decided by its own manifest. This
-    // wall asks the SAME question the way the ship does, by running
-    // the ship script's own derivation, so a new compiled package is
-    // judged the moment it joins the set.
-    // THE SPAWN IS PORTABLE (class B, 2026-10-31): the arm used to
-    // replay the derivation through `bash -c "source <(sed …)"` —
-    // process substitution cmd.exe cannot parse. The ship's
-    // derivation is ALREADY node (derive_compiled shells `node -e`),
-    // so the arm lifts that exact body out of the pinned script and
-    // runs it under this node — the ship's own code, one portable
-    // spawn, zero second implementation to drift. A reshaped recipe
-    // (or a body that grows a single quote) reds the extraction below
-    // instead of passing vacuously.
-    const shipGate = read("scripts/ship-lane.sh");
-    const body = /derive_compiled\(\) \{\n  node -e '([\s\S]*?)'\n\}/u.exec(shipGate)?.[1];
-    expect(body, "derive_compiled still carries the node derivation the ship runs").toBeDefined();
-    const derived = spawnSync(process.execPath, ["-e", body!], { cwd: REPO, encoding: "utf8" });
-    expect(derived.status, `the ship's own derivation refused: ${derived.stderr}`).toBe(0);
-    const pkgs = (derived.stdout ?? "").trim().split(/\s+/).filter(Boolean);
+    // wall asks the SAME question the way the ship does, by RUNNING
+    // the ship's own derivation (imported from the port — the node era
+    // exports it, zero second implementations to drift), so a new
+    // compiled package is judged the moment it joins the set.
+    const shipMod = await import(pathToFileURL(join(REPO, "scripts/ship-lane.mjs")).href);
+    const pkgs = shipMod.deriveCompiled(REPO).map((p: string) => relative(REPO, p));
+    expect(pkgs.length, "the derivation returned a roster").toBeGreaterThan(0);
     // The estate's compiled half must never empty out: a derivation
     // that silently returns nothing would ship a host with no lib.
     for (const p of pkgs) {
@@ -339,7 +347,7 @@ describe("THE DANGLING STORE PATH (round-6, 2026-10-13)", () => {
     expect(existsSync(join(REPO, "tools", "tsc-path.mjs")), "tools/tsc-path.mjs exists").toBe(true);
     const helper = read("tools/tsc-path.mjs");
     expect(helper, "the helper follows the workspace's own resolution").toContain("workspaceTally");
-    for (const seat of ["scripts/typecheck-tests.mjs", "scripts/ship-lane.sh"]) {
+    for (const seat of ["scripts/typecheck-tests.mjs", "scripts/ship-lane.mjs"]) {
       expect(read(seat), `${seat} resolves the compiler through the helper`).toContain("tsc-path.mjs");
     }
   });
@@ -424,18 +432,18 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
   // the old code (the assertWiringAtSubmit era). The receipt is a
   // CONTENT STAMP now: src hashed at build time, re-verified on
   // every ship, --no-build included.
-  const ship = read("scripts/ship-lane.sh");
+  const ship = read("scripts/ship-lane.mjs");
 
   it("writes the src stamp in BOTH build loops", () => {
-    expect(ship).toMatch(/write_stamp "\$p"\n\s+ok "\$p"/);
-    expect(ship).toMatch(/write_stamp "\$p"\n\s+ok "\$p client bundle"/);
+    expect(ship).toMatch(/writeStamp\(p\);\n\s+ok\(p\);/);
+    expect(ship).toMatch(/writeStamp\(p\);\n\s+ok\(p \+ " client bundle"\);/);
   });
 
   it("verifies the stamps OUTSIDE the DO_BUILD guard (--no-build keeps the gate)", () => {
     // the verify call must sit AFTER the build section's last line —
-    // outside the `if DO_BUILD` block, so --no-build runs it too
+    // outside the `if (DO_BUILD === 1)` block, so --no-build runs it too
     const buildEnd = ship.indexOf("no client bundle carries a removed face");
-    const verifyAt = ship.indexOf("verify_stamps || exit 1");
+    const verifyAt = ship.indexOf("verifyStamps(COMPILED, CLIENT_BUNDLES) !== 0");
     expect(buildEnd).toBeGreaterThan(-1);
     expect(verifyAt).toBeGreaterThan(buildEnd);
   });
@@ -452,26 +460,21 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     // never reach the gate. The extraction, the census floor, and
     // the all-bundles loop are all pinned now, and the extraction is
     // EXECUTED here against the live helper so a helper shape the
-    // sed cannot parse reds in the suite, not silently at ship time.
-    expect(ship).toContain("sed -n 's#^  /\\(.*\\)/i\\?,$#\\1#p'");
+    // port's parser cannot parse reds in the suite, not silently at
+    // ship time. (NODE PORT, 2026-11-19: the sed|paste pipeline is
+    // now an in-process line.match — same BRE semantics, `i?` the
+    // optional i, line must END in `/i?,` with no trailing space.)
+    expect(ship).toContain('const m = line.match(/^  \\/(.*)\\/i?,$/);');
     expect(ship).toContain("tests/walls/helpers/stale-tab-vocabulary.ts");
-    expect(ship).toContain("tr -cd '|' | wc -c");
-    expect(ship).toContain('if [ "$(printf \'%s\' "$STALE_RE" | tr -cd \'|\' | wc -c)" -lt 4 ]');
-    expect(ship).toContain('for p in "${CLIENT_BUNDLES[@]}"; do');
-    expect(ship).toContain('if grep -Eiq "$STALE_RE"');
+    expect(ship).toContain('STALE_RE.split("|").length - 1 < 4');
+    expect(ship).toContain("for (const p of CLIENT_BUNDLES)");
+    expect(ship).toContain('new RegExp(STALE_RE, "i")');
     // the derivation is REAL: replay the gate's own extraction and
-    // compare against the helper's declared bodies. The replay is
-    // node-native now (class B R2, 2026-10-31: the execSync'd
-    // `sed | paste` pipeline died under cmd.exe — single quotes are
-    // not quotes and the pipe splits anywhere) and models the pinned
-    // sed program's EXACT semantics, strictness included: a line
-    // substitutes only when it ENDS in `/i?,` — no trailing
-    // whitespace (the JS `declared` regex allows \s*$, the sed does
-    // not; that strictness is the ship-time parse gate), and a
-    // matched line always prints. BRE `i\?` is the OPTIONAL i, so
-    // the JS spelling is `i?` — a literal "?" never matches. A
-    // helper shape the ship's sed cannot parse still reds here,
-    // never silently at ship time.
+    // compare against the helper's declared bodies — byte-for-byte
+    // the port's parser, strictness included: a line substitutes
+    // only when it ENDS in `/i?,` — no trailing whitespace (a
+    // looser JS `declared` regex would let the ship gate and this
+    // replay diverge on a sloppy helper line).
     const helper = read("tests/walls/helpers/stale-tab-vocabulary.ts");
     const declared = [...helper.matchAll(/^  \/(.+)\/i?,\s*$/gm)].map((m) => m[1]);
     expect(declared.length, "the helper still declares the five faces").toBeGreaterThanOrEqual(5);
@@ -487,10 +490,10 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     // The stale-lib wedge again, at the DOOR: the lane booted green
     // while the host silently skipped a capability behind a
     // "Cannot find module" line. Playwright's verdict alone cannot
-    // see the host's own log; the lane greps it and refuses.
-    const lane = read("scripts/e2e-studio-lane.sh");
-    expect(lane, "the lane owns the studio host door").toContain("e2e-studio-lane.sh");
-    expect(lane, "the host-log verdict greps the failure class").toContain('grep -q "Cannot find module"');
+    // see the host's own log; the lane scans it and refuses.
+    const lane = read("scripts/e2e-studio-lane.mjs");
+    expect(lane, "the lane owns the studio host door").toContain("e2e-studio-lane.mjs");
+    expect(lane, "the host-log verdict scans the failure class").toContain('logContains(LOG, "Cannot find module")');
   });
 
   it("the studio lane refuses a host whose boot carried activation failures", () => {
@@ -499,39 +502,57 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     // that taught this burned 1.1h starving thirteen specs on a
     // half-dead host (the dead estate/tools entries emptied the
     // catalog API). A boot diagnostic is never benign here either.
-    const lane = read("scripts/e2e-studio-lane.sh");
-    expect(lane, "the boot verdict greps the activation-failure class").toContain('grep -q "did not activate"');
-    expect(lane, "the refusal names the dead entries, not just the count").toContain('grep -nE "did not activate|failed to import"');
+    const lane = read("scripts/e2e-studio-lane.mjs");
+    expect(lane, "the boot verdict scans the activation-failure class").toContain('logContains(LOG, "did not activate")');
+    expect(lane, "the refusal names the dead entries, not just the count").toContain("/did not activate|failed to import/");
   });
 
-  it("THE SET-U LAW — every E2E_* env seat in the lane is defaulted or script-exported (run 44498457238)", () => {
+  it("THE SET-U LAW — every E2E_* env seat in the lane is defaulted or guard-read (run 44498457238)", () => {
     // 2026-11-19: the CI studio step (`E2E_STUDIO_REQUIRE=1 pnpm run
     // test:e2e:studio`) had its suite GREEN — 9 passed | 33 skipped —
     // when the job died: `scripts/e2e-studio-lane.sh: line 504:
-    // E2E_STUDIO_DECK: unbound variable`. The script runs `set -euo
+    // E2E_STUDIO_DECK: unbound variable`. The script ran `set -euo
     // pipefail`; the deck leg referenced `$E2E_STUDIO_DECK` bare
-    // while every other optional seat uses `${VAR:-}`. A green suite
+    // while every other optional seat used `${VAR:-}`. A green suite
     // killed by teardown is the worst red class: nothing to read in
     // the test log. This arm derives the whole contract — every
     // E2E_* reference in the script must either carry a `:-` default
-    // or name a variable the script itself exports.
-    const lane = read("scripts/e2e-studio-lane.sh");
+    // or name a variable the script itself exports. (Node port
+    // 2026-11-19: node has no `set -u` — an unset read yields
+    // `undefined`, never a crash — so the law rides the port's own
+    // idiom: every E2E_* seat the lane reads carries an explicit
+    // default (`process.env.X ??/|| default`) or is consumed only
+    // through a truthiness guard (`if (process.env.X)` — the port's
+    // `${VAR:-}`), and a bare use is legal only downstream of an
+    // assignment (the token URL: the lane sets it after the boot,
+    // reads it after the suite). An unset var can then never crash
+    // the lane after its suite verdict.)
+    const lane = read("scripts/e2e-studio-lane.mjs");
     const referenced = new Set<string>();
-    for (const m of lane.matchAll(/\$\{?(E2E_[A-Z_]+)/g)) referenced.add(m[1]!);
+    for (const m of lane.matchAll(/process\.env\.(E2E_[A-Z_]+)/g)) referenced.add(m[1]!);
     expect(referenced.size, "the sweep must find env seats — a vacuous pass is the hole this arm closes").toBeGreaterThan(0);
-    const exported = new Set([...lane.matchAll(/^export (E2E_[A-Z_]+)/gm)].map((m) => m[1]!));
+    // classification is ^-anchored at each occurrence's own text — a
+    // defaulted seat elsewhere in the file cannot launder a bare use.
+    const ridesDefault = (at: number, name: string) =>
+      new RegExp(`^process\\.env\\.${name}(?![A-Z_])\\s*(\\?\\?|\\|\\|)`).test(lane.slice(at));
+    const isLvalue = (at: number, name: string) =>
+      new RegExp(`^process\\.env\\.${name}(?![A-Z_])\\s*=(?!=)`).test(lane.slice(at));
+    const setBefore = (at: number, name: string) =>
+      new RegExp(`process\\.env\\.${name}(?![A-Z_])\\s*=(?!=)`).test(lane.slice(0, at));
+    const guardRead = (at: number) =>
+      /if \(!?$/.test(lane.slice(Math.max(0, at - 12), at));
     const bare = [...referenced].filter((name) => {
-      if (exported.has(name)) return false;
-      // defaulted seat: every reference is `${NAME:-…}` (the last
-      // `${NAME` before the reference decides; a bare `$NAME` has
-      // no brace to carry the default).
-      const refs = [...lane.matchAll(new RegExp(`\\$\\{${name}(?![A-Z_])`, "g"))].length;
-      const bareRefs = [...lane.matchAll(new RegExp(`\\$${name}(?![A-Z_}])`, "g"))].length;
-      return bareRefs > 0 || refs === 0;
+      for (const m of lane.matchAll(new RegExp(`process\\.env\\.${name}(?![A-Z_])`, "g"))) {
+        const at = m.index!;
+        if (ridesDefault(at, name) || isLvalue(at, name)) continue;
+        if (setBefore(at, name) || guardRead(at)) continue;
+        return true; // a bare read: the deck-class this arm exists for
+      }
+      return false;
     });
     expect(
       bare,
-      `E2E_* env seats in e2e-studio-lane.sh are neither defaulted (\${NAME:-}) nor exported by the script — under set -u any unset one kills the lane AFTER its suite verdict:\n  ${bare.join("\n  ")}`,
+      `E2E_* env seats in e2e-studio-lane.mjs are neither defaulted (process.env.X ?? default) nor guard-read (if (process.env.X)) — an unset one must never crash the lane AFTER its suite verdict:\n  ${bare.join("\n  ")}`,
     ).toEqual([]);
   });
 
@@ -543,7 +564,7 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     // spec ran. The seed tile needs a servable <img>, not that
     // screenshot: the lane prefers the fresh AI artifact when the
     // keyed lane produced one, else the tracked static fallback.
-    const lane = read("scripts/e2e-studio-lane.sh");
+    const lane = read("scripts/e2e-studio-lane.mjs");
     expect(lane, "the lane falls back to the tracked seed preview").toContain("laneseed-preview.png");
     const asset = "packages/web/melite-card-view/e2e/assets/laneseed-preview.png";
     const tracked = execFileSync("git", ["ls-files", "--", asset], { cwd: REPO, encoding: "utf8" }).trim();
@@ -929,7 +950,7 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
 });
 
 describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
-  const ship = read("scripts/ship-lane.sh");
+  const ship = read("scripts/ship-lane.mjs");
 
   /** Every manifest under packages/ carrying a ./client export row. */
   function discoveredRows(): Array<{ pkg: string; target: string; built: boolean }> {
@@ -968,7 +989,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // web ones — but a hand list omitted all three, so a film UI edit
     // "shipped green" while the operator ran yesterday's bytes. The
     // list is now derived from the export map itself.
-    expect(ship).toContain('(data.get("exports") or {}).get("./client")');
+    expect(ship).toContain('(data.exports ?? {})["./client"]');
     // C-M11 (the wall audit, 2026-09-28): the arm named THREE of the
     // packages the export map carries — a fourth built bundle would
     // have joined the ship while this arm watched three. The set is
@@ -1218,59 +1239,61 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // read, and the missing-directory branch must NAME the failure
     // and exit non-zero (a `continue` or a bare test would ship a
     // 404ing bundle).
-    const loopAt = ship.indexOf('for p in "${CLIENT_BUNDLES[@]}"; do');
+    const loopAt = ship.indexOf("for (const p of CLIENT_BUNDLES) {");
     expect(loopAt, "the client-bundle loop exists").toBeGreaterThan(-1);
     const loop = ship.slice(loopAt);
     // the branch is the lines between the loop head and the build
     // step that follows it (read by shape, not by a fixed offset)
-    const buildAt = loop.indexOf("node node_modules/tsdown");
+    const buildAt = loop.indexOf("node_modules/tsdown/dist/run.mjs");
     expect(buildAt, "the client build step follows the existence check").toBeGreaterThan(-1);
     const branch = loop.slice(0, loop.lastIndexOf("\n", buildAt));
-    expect(branch, "the loop's missing-directory branch is present").toContain('[ ! -d "$REPO/$p" ]');
-    expect(branch, "a missing client bundle is named and FAILS the ship").toMatch(/bad\s+"[^"]*"/);
-    expect(branch, "the branch exits non-zero (never continues past a 404ing bundle)").toMatch(/exit 1/);
+    expect(branch, "the loop's missing-package branch is present").toContain("!existsSync(join(REPO, p))");
+    expect(branch, "a missing client bundle is named and FAILS the ship").toMatch(/bad\(p \+ "/);
+    expect(branch, "the branch exits non-zero (never continues past a 404ing bundle)").toMatch(/process\.exit\(1\)/);
   });
 
   it("every probe is FATAL — a gate that cannot fail is a log line", () => {
     // the model board and both declaration checks printed FAIL and
     // the script still printed SHIPPED: a fail-open model board, a
     // gateless form and a blind agent face all shipped green.
-    const probeBlock = ship.slice(ship.indexOf('say "PROVE the lane runs this tree'));
+    const probeBlock = ship.slice(ship.indexOf('say("PROVE the lane runs this tree'));
     // C-L17 (the wall audit, 2026-09-28): the scan looked 400
     // CHARACTERS ahead — an `exit 1` written 401 chars later (or
     // after a long message) read as a fail-open gate, and a long
     // message wrote the same gate both fatal and non-fatal
     // depending on the day. The scan is now STRUCTURAL: each `bad`
-    // line's own branch is its indentation span (from the line to
+    // call's own branch is its indentation span (from the line to
     // the next line at the same-or-lower indent), and the branch
     // must carry the exit. The one exemption — the cleanup warning
     // that says the operator must act by hand — is matched on the
-    // MESSAGE ITSELF, wherever the line wraps it.
+    // MESSAGE ITSELF, wherever the line wraps it. (NODE PORT: the
+    // call shape is `bad("…")` and the exit is `process.exit(1)` —
+    // often on the bad line itself.)
     const lines = probeBlock.split("\n");
     const badLines = lines
       .map((line, i) => ({ line, i }))
-      .filter(({ line }) => /^\s*bad "/.test(line));
+      .filter(({ line }) => /^\s*bad\(/.test(line));
     expect(badLines.length, "the prove section has gates to judge").toBeGreaterThan(0);
     const EXEMPT = "could not remove the probe stage";
     const nonFatal: string[] = [];
     for (const { line, i } of badLines) {
       if (line.includes(EXEMPT)) continue; // named exemption: the operator acts by hand
+      if (/process\.exit/.test(line)) continue; // the fatal exit rides the bad line itself
       const indent = line.length - line.trimStart().length;
       let exit = false;
       for (let j = i + 1; j < lines.length; j += 1) {
         const next = lines[j] ?? "";
         const trimmed = next.trim();
         if (trimmed === "") continue;
-        // a `then` BLOCK's body shares the `bad` line's indent, so
+        // a block's body shares the `bad` line's indent, so
         // same-indent lines are still inside the branch; the branch
-        // ends at its own closer (`fi` / `done` / `}` / `;;`) or at
-        // a line indented LESS than the gate.
+        // ends at its own closer (`}`) or at a line indented LESS
+        // than the gate.
         const nextIndent = next.length - next.trimStart().length;
-        const isCloser = ["fi", "done", "esac", "}", ";;", ")"].includes(trimmed)
-          || trimmed.startsWith("fi ") || trimmed.startsWith("done ");
-        if (isCloser) break;
+        const isCloser = trimmed.startsWith("}");
+        if (isCloser && nextIndent <= indent) break;
         if (nextIndent < indent) break;
-        if (/\bexit\b/.test(next)) { exit = true; break }
+        if (/process\.exit/.test(next)) { exit = true; break }
       }
       if (!exit) nonFatal.push(line.trim().slice(0, 90));
     }
@@ -1283,8 +1306,13 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
 
   it("--unit and --origin are bound (a ship that restarts one lane and proves another certifies nothing)", () => {
     expect(ship).toContain("A ship that restarts one lane and proves another certifies nothing");
-    expect(ship).toMatch(/UNIT_OVERRIDE/);
-    expect(ship).toMatch(/ORIGIN_OVERRIDE/);
+    // NODE PORT: the lane moves by FLAGS over SANCTIONED_* defaults
+    // (no env override exists to forget) — the binding law is the
+    // seeded constants plus the parse that rebinds them together.
+    expect(ship).toContain('const SANCTIONED_UNIT = "dsh-melite-test.service";');
+    expect(ship).toContain('const SANCTIONED_ORIGIN = "http://127.0.0.1:3088";');
+    expect(ship).toMatch(/let UNIT = SANCTIONED_UNIT;/);
+    expect(ship).toMatch(/let ORIGIN = SANCTIONED_ORIGIN;/);
   });
 
   it("the net re-runs AFTER the emit (the pre-build net judged stale .d.ts files)", () => {
@@ -1296,9 +1324,14 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
   });
 
   it("a missing lib/ FAILS the stamp verification (the skip let an absent build walk past)", () => {
-    const verify = ship.slice(ship.indexOf("verify_stamps() {"), ship.indexOf("if [ \"$DO_BUILD\" -eq 1 ]; then"));
-    expect(verify).toContain("no lib/ to verify");
-    expect(verify).not.toMatch(/\[ -d "\$REPO\/\$p\/lib" \] \|\| continue/);
+    const verify = ship.slice(ship.indexOf("function verifyStamps("), ship.indexOf("return failed;"));
+    expect(verify, "the verifyStamps function is present").toBeTruthy();
+    // the cure, pinned POSITIVELY (a negative regex cannot see a
+    // reintroduced skip written differently): the missing-lib branch
+    // must NAME the failure and set failed=1 BEFORE any continue —
+    // the `.sh` era's `[ -d lib ] || continue` walked absent builds
+    // past the very gate that proves the lane runs this tree.
+    expect(verify).toMatch(/!existsSync[\s\S]*?no lib\/ to verify[\s\S]*?failed = 1;\s*\n\s*continue;/);
   });
 });
 

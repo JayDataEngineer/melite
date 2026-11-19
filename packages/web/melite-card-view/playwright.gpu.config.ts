@@ -9,7 +9,7 @@ import { defineConfig, devices } from '@playwright/test'
  * Keyless law: the DEFAULT studio config (playwright.config.ts)
  * ignores e2e/gpu/ entirely — the studio lane stays GPUless and
  * CI-true; this config is the only door that runs them, and
- * scripts/e2e-gpu-lane.sh (test:e2e:gpu) is the only sanctioned
+ * scripts/e2e-gpu-lane.mjs (test:e2e:gpu) is the only sanctioned
  * boot (engine gate + cuda check + throwaway home + bench seed).
  * Every spec here additionally self-skips without E2E_GPU=1 (the
  * launcher's own export — a stray manual run against any other

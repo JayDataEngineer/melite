@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
-const SCRIPT = join(ROOT, 'scripts', 'headless-resume.sh')
+const SCRIPT = join(ROOT, 'scripts', 'headless-resume.mjs')
 
 const STUBS: Record<string, { code: number, out: string, err: string }> = {
   quota: { code: 1, out: 'my last words\n', err: 'quota 429 RESOURCE_EXHAUSTED reset 2026-09-23 08:26:21\ntool melite_discover\n' },
@@ -38,7 +38,7 @@ function stage(name: 'quota' | 'ok' | 'boom'): { dir: string, stub: string, brie
 
 function run(stub: string, brief: string, prefix: string): number {
   try {
-    execFileSync('bash', [SCRIPT, brief, prefix, '60'], {
+    execFileSync('node', [SCRIPT, brief, prefix, '60'], {
       env: { ...process.env, HEADLESS_DSH_BIN: stub },
       timeout: 25_000,
       stdio: 'pipe',
@@ -50,7 +50,7 @@ function run(stub: string, brief: string, prefix: string): number {
   }
 }
 
-describe('headless-resume.sh — the quota-stop wrapper (§25)', () => {
+describe('headless-resume.mjs — the quota-stop wrapper (§25)', () => {
   it('quota-death exits 75 with a token naming brief, transcript, reset, and resume', () => {
     const { stub, brief, prefix } = stage('quota')
     assert.equal(run(stub, brief, prefix), 75)

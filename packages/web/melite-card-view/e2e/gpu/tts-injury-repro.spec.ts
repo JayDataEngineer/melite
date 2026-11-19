@@ -24,7 +24,7 @@ import { callBench, collectPageErrors, expectNoPageErrors, openAConversation, se
 
 test.skip(
   !STUDIO_URL || process.env.E2E_GPU !== '1',
-  'the injury repro needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.sh)',
+  'the injury repro needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.mjs)',
 )
 
 /** Seed a fresh conversation's bench with the injury-shaped stage

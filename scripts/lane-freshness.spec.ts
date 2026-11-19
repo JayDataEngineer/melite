@@ -4,15 +4,15 @@
  * silently"; the 2026-10-13 and 2026-10-26 outages were exactly
  * this class).
  *
- * The gate is ONE function (scripts/lib/lane-freshness.sh
- * check_lane_freshness) seated at TWO doors: this wall exercises it
- * against fixture trees, and the lane (e2e-studio-lane.sh) sources
+ * The gate is ONE function (scripts/lib/lane-freshness.mjs
+ * checkLaneFreshness) seated at TWO doors: this wall exercises it
+ * against fixture trees, and the lane (e2e-studio-lane.mjs) imports
  * it BEFORE any boot. Arms:
  *   A. FRESH PASS — a fixture tree whose stamps equal its src
  *      passes (the gate never refuses a true tree).
  *   B. STALE REFUSE — the same tree with one package's stamp
  *      drifted reds with the package NAMED and the cure voiced.
- *   C. THE WIRING — e2e-studio-lane.sh actually sources and calls
+ *   C. THE WIRING — e2e-studio-lane.mjs actually imports and calls
  *      the gate before its host boot; a lane that drops the gate
  *      is the silent class again.
  *   D. THE RECIPE — the gate's hash is the builder's own
@@ -26,17 +26,16 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const GATE = join(ROOT, 'scripts', 'lib', 'lane-freshness.sh')
-const LANE = readFileSync(join(ROOT, 'scripts', 'e2e-studio-lane.sh'), 'utf8')
+const GATE = join(ROOT, 'scripts', 'lib', 'lane-freshness.mjs')
+const LANE = readFileSync(join(ROOT, 'scripts', 'e2e-studio-lane.mjs'), 'utf8')
 
-/** Run the gate against a tree; returns { exit, output }. */
+/** Run the gate CLI against a tree; returns { exit, output }. */
 function runGate(tree: string): { exit: number; output: string } {
   try {
-    const out = execFileSync(
-      '/bin/bash',
-      ['-c', `source ${JSON.stringify(GATE)} && check_lane_freshness ${JSON.stringify(tree)}`],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-    )
+    const out = execFileSync(process.execPath, [GATE, tree], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
     return { exit: 0, output: out }
   } catch (e) {
     const err = e as { status?: number, stdout?: string, stderr?: string }
@@ -87,18 +86,21 @@ describe('the F1 lane-freshness gate', () => {
     }
   })
 
-  it('C: the lane script sources and calls the gate BEFORE any host boot', () => {
+  it('C: the lane script imports and calls the gate BEFORE any host boot', () => {
     // THE WIRING LAW: the gate call must precede the host boot
     // (a stale lane must never START, let alone receipt).
-    const gateCall = LANE.indexOf('check_lane_freshness "$REPO_ROOT"')
+    const gateCall = LANE.indexOf('checkLaneFreshness(repoRoot)')
     expect(gateCall, 'the lane calls the gate').toBeGreaterThan(-1)
-    expect(LANE.slice(0, gateCall), 'the gate is sourced first').toContain('lane-freshness.sh')
-    // THE LAUNCH VERB: the lane boots the host via setsid "$DSH_BIN"
-    // (line ~340 of e2e-studio-lane.sh). A stale plane must never
+    expect(LANE.slice(0, gateCall), 'the gate is imported first').toContain('lib/lane-freshness.mjs')
+    // THE LAUNCH VERB: the lane boots the host via
+    // spawn(DSH_BIN, …, { detached: true }) (line ~737 of
+    // e2e-studio-lane.mjs; detached:true is the setsid seat — the
+    // child leads its own process group). A stale plane must never
     // reach it — the refusal precedes the host.
-    const launch = LANE.indexOf('setsid "$DSH_BIN"')
+    const launch = LANE.indexOf('const host = spawn(')
     expect(launch, 'the lane has a launch verb to guard').toBeGreaterThan(-1)
     expect(gateCall, 'the gate fires before the host launch').toBeLessThan(launch)
+    expect(LANE.slice(launch), 'the launch keeps the setsid seat').toContain('detached: true')
   })
 
   it('D: the gate recipe equals the builder\'s own — recomputed against a real package', () => {

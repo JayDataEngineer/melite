@@ -18,15 +18,17 @@ import { join } from 'node:path'
 import assert from 'node:assert/strict'
 
 const ROOT = process.cwd()
-const SCRIPT = join(ROOT, 'scripts', 'e2e-studio-lane.sh')
+const SCRIPT = join(ROOT, 'scripts', 'e2e-studio-lane.mjs')
 const SEED = join(ROOT, 'packages', 'web', 'melite-card-view', 'e2e', 'profile-seed')
 const text = readFileSync(SCRIPT, 'utf8')
 
 function runLane(env: Record<string, string>, expectFail = false): string {
-  // A STUB PATH: nothing on it resolves (no dsh, no pnpm, no curl)
-  // except bash builtins — the skip laws fire before any boot.
+  // A STUB PATH: nothing on it resolves (no dsh, no pnpm, no curl) —
+  // the skip laws fire before any boot. node itself rides
+  // process.execPath (an absolute path), so the launcher always
+  // starts; every engine binary the lane would reach is absent.
   try {
-    return execFileSync('/bin/bash', [SCRIPT], {
+    return execFileSync(process.execPath, [SCRIPT], {
       cwd: ROOT,
       env: { ...process.env, ...env },
       timeout: 30_000,
@@ -41,7 +43,7 @@ function runLane(env: Record<string, string>, expectFail = false): string {
   }
 }
 
-describe('the browser-wall CI seat (scripts/e2e-studio-lane.sh)', () => {
+describe('the browser-wall CI seat (scripts/e2e-studio-lane.mjs)', () => {
   it('THE REQUIRE MODE: a missing prerequisite refuses loudly instead of self-skipping', () => {
     // no dsh binary on a PATH of stubs only → the skip law fires;
     // REQUIRE turns it into exit 1 naming the prerequisite
@@ -93,11 +95,20 @@ describe('the browser-wall CI seat (scripts/e2e-studio-lane.sh)', () => {
     // asserts STABLE serving: committed seed-only profile, never the
     // runtime one. Operator pins ride settings.yaml, not the profile.
     assert.doesNotMatch(text, /PROFILE_SRC/, 'no runtime-profile preference remains')
-    assert.match(text, /if \[ -d "\$TRACKED_SEED" \]; then\n\s+SEED_DIR="\$TRACKED_SEED"/)
-    assert.match(text, /os\.path\.isabs\(ref\[5:\]\)/, 'the boot rewrites relative links to machine-absolute')
+    assert.match(text, /if \(isDir\(TRACKED_SEED\)\) \{\n\s+SEED_DIR = TRACKED_SEED;/)
+    // the boot rewrites the seed copy's RELATIVE link: targets to
+    // machine-absolute (repo-rooted) BEFORE the install — the seed on
+    // disk stays portable, the throwaway home is machine-local
+    assert.match(text, /!path\.isAbsolute\(ref\.slice\(5\)\)/, 'only relative link: targets are rewritten')
+    assert.match(text, /path\.join\(seed, ref\.slice\(5\)\)/, 'the rewrite resolves against the tracked seed, machine-absolute')
     // the workspace row is REPO_ROOT-derived, never a machine hardcode
-    assert.doesNotMatch(text, /"path": "\/home\//, 'no absolute machine path in the workspace seed')
+    assert.doesNotMatch(text, /path: "\/home\//, 'no absolute machine path in the workspace seed')
     assert.match(text, /__REPO_ROOT__/)
+    assert.match(
+      text,
+      /process\.cwd\(\)\.split\(path\.sep\)\.join\("\/"\)/,
+      'the marker is stamped machine-absolute from the repo root at boot',
+    )
   })
 
   it('the CI seat wires the lane in REQUIRE mode (a self-skip can never green CI)', () => {

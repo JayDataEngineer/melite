@@ -137,7 +137,7 @@ describe.skipIf(!ROWS_PRESENT || !existsSync(LANE_PATCH))("THE RENDERED-BYTES AR
       .map(([, v]) => v);
     expect(
       early.length === 0 && patchMarkers >= rowsMarkers,
-      `~/.dsh-dev/profiles/melite-test/cordis.patch.yml is stale against the rows file (early ratios: ${early.join(", ") || "none"}; generated compaction markers patch=${patchMarkers} rows=${rowsMarkers}) — re-run the render (node packages/harness/provisioner/bin/infer-provision.mjs profile melite-test --dsh-home ~/.dsh-dev --estate-agent-route zai/glm-5.3-flash --profile-rows dev_docs/deployment/studio-lane-rows.yml), then lane-rebuild.sh`,
+      `~/.dsh-dev/profiles/melite-test/cordis.patch.yml is stale against the rows file (early ratios: ${early.join(", ") || "none"}; generated compaction markers patch=${patchMarkers} rows=${rowsMarkers}) — re-run the render (node packages/harness/provisioner/bin/infer-provision.mjs profile melite-test --dsh-home ~/.dsh-dev --estate-agent-route zai/glm-5.3-flash --profile-rows dev_docs/deployment/studio-lane-rows.yml), then lane-rebuild.mjs`,
     ).toBe(true);
   });
 });

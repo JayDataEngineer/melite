@@ -154,7 +154,7 @@ export const DOM_SPEC_TREES = [
   // stroke 2026-09-17: FilmPlayer moved from h3's kit — its spec
   // rides the dom lane beside it; the package's other specs are
   // plain .ts and stay in the node lane via test/**/*.spec.ts).
-  `${rootPath('packages/web-kit/timeline')}/test/**/*.spec.tsx`,
+  `${rootPath('packages/web-kit/timeline')}/tests/**/*.spec.tsx`,
 ].map(treeRow)
 // The gallery's own tree — React 18, the universe the DSH shell hosts.
 export const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`].map(treeRow)
@@ -165,7 +165,7 @@ export const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`].map(tr
 // built by 19 rendered by 18), so the deck gets its own universe like
 // the gallery. The deck's specs live under test/ (singular — the
 // item-8 verifier caught the old plural glob collecting nothing).
-export const DECK_SPEC_TREES = [`${DECK}/test/**/*.spec.{ts,tsx}`].map(treeRow)
+export const DECK_SPEC_TREES = [`${DECK}/tests/**/*.spec.{ts,tsx}`].map(treeRow)
 const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includes(t))
 
 // THE /TMP OWNERSHIP NET (stroke 13, 2026-09-14): suites mkdtemp
@@ -243,7 +243,7 @@ export default defineConfig({
           include: [
             'packages/*/*/tests/**/*.spec.ts',
             // Singular test/ dirs (melite-tools, card-deck host-routes).
-            'packages/*/*/test/**/*.spec.ts',
+            'packages/*/*/tests/**/*.spec.ts',
             'tests/unit/**/*.spec.ts',
             'scripts/**/*.spec.ts',
             'tests/walls/ts/suites/**/*.spec.ts',
@@ -634,7 +634,7 @@ export default defineConfig({
           execArgv: vitestExecArgv,
           // the deck's DOM-observer seat: jsdom ships no matchMedia and
           // the DSH Tooltip/Menu hover gates read it (2026-11-19).
-          setupFiles: [PROXY_SETUP, path.join(DECK, 'test/setup.ts')],
+          setupFiles: [PROXY_SETUP, path.join(DECK, 'tests/setup.ts')],
           css: false,
           include: DECK_SPEC_TREES,
           exclude: ['**/*.e2e.ts', '**/*.expected.e2e.ts', '**/*.snapshot.ts'],

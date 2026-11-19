@@ -79,7 +79,7 @@ export default defineConfig({
       // Repository-wide corpus ownership/storage gate (DSH names the
       // same file class first in their include).
       'scripts/session-snapshot-corpus.corpus.ts',
-      'snapshots/**/*.snapshot.ts',
+      'tests/snapshots/**/*.snapshot.ts',
     ],
     // Replay never writes committed outputs and every scenario owns its
     // mutable runtime state, so replay runs the snapshot files in

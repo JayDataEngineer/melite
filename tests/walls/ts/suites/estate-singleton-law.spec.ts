@@ -46,7 +46,7 @@ import { deriveSrcStamp } from "../../../../tools/src-stamp.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-/** ship-lane's own recipe (scripts/ship-lane.sh stamp_src), derived
+/** ship-lane's own recipe (scripts/ship-lane.mjs stampSrc), derived
  * node-native: the LC_ALL=C-sorted src/*.ts(x) sha256 chain, first
  * 16 hex chars — tools/src-stamp.mjs deriveSrcStamp, byte-identical
  * to the shell pipeline it replaced (no bash spawn: on windows the

@@ -113,7 +113,7 @@
     "release:rehearse": "node tools/release-rehearsal.mjs",
     "release:verify": "node tools/release-artifacts.mjs verify",
     "release:bump": "node scripts/bump-release-version.mjs",
-    "lane:promote-prod": "bash scripts/promote-prod.sh",
+    "lane:promote-prod": "node scripts/promote-prod.mjs",
     "probe:fresh-clone": "node tools/fresh-clone-probe.mjs",
     "proof:cold-start": "node tools/cold-start-proof.mjs",
     "rehearse:first-image": "node tools/first-image-rehearsal.mjs",
@@ -123,8 +123,8 @@
     "test:coverage": "node scripts/run-walker-safe.mjs --coverage-shared vitest run --coverage && node scripts/coverage-rows-tripwire.mjs",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:coldstart": "vitest run --config vitest.coldstart.config.ts",
-    "test:e2e:studio": "bash scripts/e2e-studio-lane.sh",
-    "test:e2e:gpu": "bash scripts/e2e-gpu-lane.sh",
+    "test:e2e:studio": "node scripts/e2e-studio-lane.mjs",
+    "test:e2e:gpu": "node scripts/e2e-gpu-lane.mjs",
     "test:expected": "vitest run --config vitest.expected.config.ts",
     "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
     "test:lane": "vitest run --config vitest.e2e.config.ts tests/lane/3088-lane.e2e.ts",
@@ -136,7 +136,7 @@
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
     "test:web": "vitest run --config vitest.web.config.ts",
     "test:combinations": "pnpm --filter @melite-plugin/dsh-card-deck exec playwright test e2e/combinations-sweep.spec.ts",
-    "test:web:browser": "E2E_STUDIO_DECK=1 bash scripts/e2e-studio-lane.sh",
+    "test:web:browser": "E2E_STUDIO_DECK=1 node scripts/e2e-studio-lane.mjs",
     "test:web:mesh": "pnpm --filter @melite-plugin/dsh-gallery run build:mesh-door && pnpm --filter @melite-plugin/dsh-gallery exec playwright test",
     "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts"
   },
@@ -157,9 +157,6 @@
       "@deepseek-ai/cordis-plugin-include": "workspace:*",
       "@deepseek-ai/cordis-plugin-timer": "workspace:*",
       "@deepseek-ai/cordis-plugin-group": "workspace:*"
-    },
-    "patchedDependencies": {
-      "@stable-canvas/comfyui-client@1.5.9": "patches/@stable-canvas__comfyui-client@1.5.9.patch"
     }
   },
   "keywords": [

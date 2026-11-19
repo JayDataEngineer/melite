@@ -13,7 +13,7 @@
  *  ONE implementation: tools/build-plane.mjs writeSrcStamp and the
  *  stamp walls (client-bundle-freshness, estate-singleton-law,
  *  emit-determinism) all consume deriveSrcStamp().
- *  scripts/ship-lane.sh stamp_src and scripts/lib/lane-freshness.sh
+ *  scripts/ship-lane.mjs stampSrc and scripts/lib/lane-freshness.mjs
  *  stay the shell oracles by design (shell-native seats) — the parity
  *  arm in emit-determinism.spec.ts keeps node === shell honest, so a
  *  recipe drift reds there instead of degrading a stamp silently.
@@ -76,8 +76,8 @@ export function deriveSrcStamp(pkgDir) {
 }
 
 /** CLI seat (the census R1 shape): `node tools/src-stamp.mjs
- *  <pkgDir>` prints the stamp — the day a shell seat (ship-lane.sh,
- *  lane-freshness.sh) wants ONE implementation it calls here. The
+ *  <pkgDir>` prints the stamp — the day a seat (ship-lane.mjs,
+ *  lane-freshness.mjs) wants ONE implementation it calls here. The
  *  direct-run probe compares argv[1] against this module's own path,
  *  so importing the module never fires the CLI. */
 const invoked = (() => {

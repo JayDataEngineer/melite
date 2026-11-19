@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test:smoke": "node test/smoke.mjs",
+    "test:smoke": "node tests/smoke.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dsh": {

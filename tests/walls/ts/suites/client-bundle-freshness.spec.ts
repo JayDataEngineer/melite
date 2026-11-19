@@ -156,7 +156,7 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
   // could never pass. The recipe is node-native now
   // (tools/src-stamp.mjs deriveSrcStamp — in-process crypto over the
   // deterministic input set, byte-identical to the LC_ALL=C shell
-  // recipe it replaced; ship-lane.sh stamp_src stays the shell
+  // recipe it replaced; ship-lane.mjs stampSrc stays the
   // oracle and emit-determinism.spec.ts proves node === shell); this
   // arm recomputes every tracked lib/.src-stamp through the native
   // derivation and refuses on mismatch — a stale stamp OR a

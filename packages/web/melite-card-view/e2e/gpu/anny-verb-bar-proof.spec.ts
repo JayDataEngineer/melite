@@ -26,7 +26,7 @@
  * The estate never evicts on the run path — this is the operator's
  * own manage gesture, driven once as prep.
  *
- * Keyless law: runs ONLY through scripts/e2e-gpu-lane.sh
+ * Keyless law: runs ONLY through scripts/e2e-gpu-lane.mjs
  * (E2E_GPU=1). The mint burns one model turn (MELITE_E2E_AI=1) —
  * on the keyless lane the turn itself fails HONESTLY
  * (MISSING_CREDENTIAL in chat) while the session key still rides
@@ -39,7 +39,7 @@ import { callBench, collectPageErrors, expectNoPageErrors, openAConversation, se
 
 test.skip(
   !STUDIO_URL || process.env.E2E_GPU !== '1',
-  'the verb-bar proof needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.sh)',
+  'the verb-bar proof needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.mjs)',
 )
 
 /** The estimator's photo — a portrait from the estate's own input

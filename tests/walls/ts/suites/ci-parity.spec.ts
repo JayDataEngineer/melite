@@ -95,7 +95,7 @@ const PARITY: Record<string, {
     ],
   },
   "tests.yml:cold-start-proof": {
-    ci_only: "the container face seats a naked node container against the PUBLIC remote tag (the release lane's consumer truth — docker + a published tag; tools/cold-start-proof.mjs runs locally on demand with --container-only).",
+    ci_only: "OPERATOR RULING 2026-11-19: the push lane's cold-start is NOT tied to npm (a registry-bound proof is structurally red between releases). The job seats the COMMIT — a naked node container clones $GITHUB_SHA, installs the workspace frozen (every @melite/* a lockfile workspace link — zero melite registry reads), builds, and runs the estate tier (tools/cold-start-proof.mjs --repo-face): real arms on a machine holding the estate venv, SKIP-LOUD with the stated miss on a naked clone (CI never downloads a weight — the standing law). The npm consumer door stays in the release lane (release-publish.yml's cold-consumer rehearsal against the published tag).",
   },
   "secrets-scan.yml:gitleaks": {
     seat: "the lefthook gitleaks job: same binary, same .gitleaks.toml, same push-range shape as gitleaks-action's push event. FAIL-LOUD when the binary is absent — a skip here is the exact gap that burned the operator.",

@@ -48,7 +48,7 @@ tests/
     analysis.spec.ts       its walls — real films/meshes as fixtures,
                            no GPU and no engine
     commission.ts          the commissioner: brief + launch prompt
-                           through scripts/commission-supervisor.sh
+                           through scripts/commission-supervisor.mjs
     commission.spec.ts     its walls — a stubbed MAKER, never a real one
     3088-lane.e2e.ts       the live gate (engine-gated; writes
                            data/lane-harness/verdict.json)
@@ -66,7 +66,7 @@ Package behavior specs live beside their owners under `packages/*/*/tests/`
 or `packages/*/*/test/`. The current H3 timeline specs, for example, live at
 `packages/video/h3-timeline/tests/`; queue and management specs live under
 `packages/harness/estate-queue/tests/` and
-`packages/harness/melite-tools/test/`.
+`packages/harness/melite-tools/tests/`.
 
 The editor's former Python and node:test test planes are not part of the
 current runner. See [`dev_docs/testing/index.md`](../dev_docs/testing/index.md) for
@@ -79,7 +79,7 @@ for focused failure/recovery commands.
 node_modules/.bin/vitest run tests/walls/ts/suites/flows-wiring.spec.ts
 node_modules/.bin/vitest run packages/harness/estate-queue/tests/queue-core.spec.ts
 node_modules/.bin/vitest run packages/harness/estate-queue/tests/queue-lock-sweep.spec.ts
-node_modules/.bin/vitest run packages/harness/melite-tools/test/doors-errors.spec.ts
+node_modules/.bin/vitest run packages/harness/melite-tools/tests/doors-errors.spec.ts
 node_modules/.bin/vitest run packages/estate/provisioning/tests
 ```
 
@@ -112,7 +112,7 @@ required, and keep the overall receipt open until that class of proof runs.
 ## The 3088 lane harness
 
 `tests/lane/` is the harness for the 3088 media maker lane: it
-COMMISSIONS a real maker through `scripts/commission-supervisor.sh`
+COMMISSIONS a real maker through `scripts/commission-supervisor.mjs`
 (the runbook's one-call launch, with the transcript's collision-law done-GLOB
 and the queue-lock turn-wait) and ANALYZES what the commission left behind —
 the run tree, the run's own sidecars, and the artifact bytes themselves.

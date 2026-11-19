@@ -321,7 +321,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    "test/**/*.ts",
-    "test/**/*.tsx"
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
   ]
 }

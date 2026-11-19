@@ -20,10 +20,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV COMFYUI_DIR=/root/ComfyUI
 
 RUN apt-get update && apt-get install -y \
-    git curl ffmpeg libgl1 libglib2.0-0 \
+    git curl ffmpeg libgl1 libglib2.0-0 nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir comfy-cli
+# node + pnpm carry the provisioner (the engine boot is npm + python
+# only — operator law 2026-11-19, no shell scripts anywhere)
+RUN npm install -g pnpm@10.33.2
 
 # Workspace: stock ComfyUI core, pinned — core is NEVER patched on this
 # machine (the H3 lane ships its nodes as custom-node packs). Version
@@ -31,8 +34,11 @@ RUN pip install --no-cache-dir comfy-cli
 # comfy install lands the matching tag — audit 005/E1, 2026-10-22).
 RUN comfy install --version 0.38.0 /root/ComfyUI
 
-# The orchestrator + declarations + patches arrive via the bind mount
+# The orchestrator + declarations arrive via the bind mount
 # (compose: . -> /opt/inference-src:ro); nothing is baked into the image.
 EXPOSE 18465
+ENV COMFYUI_LISTEN=0.0.0.0 COMFYUI_PORT=18465
 
-ENTRYPOINT ["bash", "/opt/inference-src/infra/comfyui/entrypoint.sh"]
+# The ONE boot launcher, cross-platform node — the same file Windows,
+# macOS, and Linux run natively (infra/comfyui/boot-engine.mjs).
+ENTRYPOINT ["node", "/opt/inference-src/infra/comfyui/boot-engine.mjs"]

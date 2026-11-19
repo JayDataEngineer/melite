@@ -742,7 +742,7 @@ export function buildOne(pkgDir) {
   // lib/.src-stamp records the src hash this lib was built from. The
   // ship recomputes and refuses on mismatch — a --no-build ship can no
   // longer run a stale build of this tree. Same recipe as
-  // scripts/ship-lane.sh stamp_src (16 hex chars).
+  // scripts/ship-lane.mjs stampSrc (16 hex chars).
   if (code === 0 && existsSync(join(pkgDir, 'src'))) {
     writeSrcStamp(pkgDir)
   }
@@ -751,7 +751,7 @@ export function buildOne(pkgDir) {
 
 // The stamp recipe is node-native (tools/src-stamp.mjs
 // deriveSrcStamp, in-process crypto over the deterministic input
-// set) and byte-identical to ship-lane.sh stamp_src — the shell
+// set) and byte-identical to ship-lane.mjs stampSrc — the node
 // recipe it replaced shelled `bash -c "find src ... | LC_ALL=C
 // sort | xargs sha256sum ..."` per package, which degraded on
 // windows (cmd.exe parse death, windows find.exe, LC_ALL=C not a

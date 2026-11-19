@@ -34,14 +34,14 @@
  *   8. Zero page errors / console errors across the whole tour.
  *
  * The keyless law: this spec runs ONLY through
- * scripts/e2e-gpu-lane.sh (test:e2e:gpu) — E2E_GPU=1 is that
+ * scripts/e2e-gpu-lane.mjs (test:e2e:gpu) — E2E_GPU=1 is that
  * launcher's own export, and the default studio config ignores
  * e2e/gpu/ entirely. Self-skips without either gate.
  */
 import { expect, test, type Page } from '@playwright/test'
 import { callBench, collectPageErrors, expectNoPageErrors, openAConversation, settle, STUDIO_URL } from '../tour.ts'
 
-test.skip(!STUDIO_URL || process.env.E2E_GPU !== '1', 'the GPU tier needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.sh — test:e2e:gpu)')
+test.skip(!STUDIO_URL || process.env.E2E_GPU !== '1', 'the GPU tier needs E2E_STUDIO_URL (the gpu lane) AND E2E_GPU=1 (e2e-gpu-lane.mjs — test:e2e:gpu)')
 
 /** The open-conversation composer (the mint flips the placeholder
  * from the empty-state 'Describe what you want to build' to
