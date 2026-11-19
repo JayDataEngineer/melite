@@ -11,11 +11,26 @@ import { ComfyError } from "./comfyui-types.ts";
  *  drop — the SDK owns connection state; nothing is cached here. */
 export function sdkClient(server: string): Client {
   const url: URL = new URL(server);
-  return new Client({
+  const client = new Client({
     api_host: url.host,
     api_base: url.pathname.replace(/\/+$/, ""),
     ssl: url.protocol === "https:",
   });
+  // UPSTREAM 1.5.9 DEFECT, cured at this seat (2026-11-19): the
+  // SDK's socket-error handler leaves the dead WebSocket object in
+  // `socket`, and every reconnect path guards on `!socket` — the
+  // dangling object blocks reconnection forever. Clear it here and
+  // force the socket's close so the close-driven retry can run.
+  // This listener replaces the former whole-dist pnpm patch
+  // (patches/@stable-canvas__comfyui-client@1.5.9.patch, whose
+  // entire payload was this one clearing) — the cure lives in
+  // reviewed source, not a minified-artifact swap.
+  client.on("connection_error", () => {
+    const dead = client.socket;
+    client.socket = null;
+    dead?.close();
+  });
+  return client;
 }
 
 /** The live node-definitions doc (/object_info) via the SDK,

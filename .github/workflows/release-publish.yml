@@ -234,7 +234,11 @@ jobs:
               echo "permanent publish failure (exit 1) — stopping the chain for a human"; exit 1
             fi
             if [ "$last" -eq 4 ]; then
-              echo "batch boundary (exit 4) — handing off to the next walk"; exit 4
+              # A batch boundary is PACING, not failure (operator
+              # 2026-11-19: eight designed handoffs rendered as a wall
+              # of red X's). The step stays green; .publish-exit=4 is
+              # the re-arm's marker below.
+              echo "batch boundary (exit 4) — handing off to the next walk"; exit 0
             fi
             if [ "$i" -lt 4 ]; then
               gap=${ladder[$((i-1))]}
@@ -244,17 +248,24 @@ jobs:
           done
           echo "publish walk still window-blocked after 3 passes — handing off (exit 3)"
           echo 3 > .publish-exit
-          exit 3
+          exit 0
 
       - name: Re-arm the walk (the set is still incomplete)
-        if: ${{ failure() && inputs.attempts > 1 }}
+        if: ${{ always() && inputs.attempts > 1 }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # A permanent tool failure (exit 1) stops the chain instead of
           # looping — that failure needs a human, and a red run with no
           # successor is the alarm.
-          if [ -f .publish-exit ] && [ "$(cat .publish-exit)" = "1" ]; then
+          if [ ! -f .publish-exit ]; then
+            echo "no publish exit recorded — nothing to re-arm"; exit 0
+          fi
+          last="$(cat .publish-exit)"
+          if [ "$last" = "0" ]; then
+            echo "the set is complete — no re-arm"; exit 0
+          fi
+          if [ "$last" = "1" ]; then
             echo "last publish exit was 1 (permanent) — refusing to re-arm"; exit 1
           fi
           # The ${{ inputs.attempts }} substitution must sit INSIDE the
@@ -265,3 +276,18 @@ jobs:
             -f attempts=$((${{ inputs.attempts }} - 1)) \
             -f limit="${{ inputs.limit }}"
           echo "re-armed: $((${{ inputs.attempts }} - 1)) walks left"
+
+      - name: The walk's end-state alarm (out of attempts, set incomplete)
+        # The pacing handoffs render green now (operator 2026-11-19),
+        # so the one condition that still needs a human must carry
+        # its own red: the last allowed walk ended at a batch or
+        # window boundary with the set STILL incomplete — the chain
+        # stops here and nobody re-arms.
+        if: ${{ always() && inputs.attempts <= 1 && !cancelled() }}
+        run: |
+          if [ ! -f .publish-exit ]; then exit 0; fi
+          last="$(cat .publish-exit)"
+          if [ "$last" = "4" ] || [ "$last" = "3" ]; then
+            echo "the walk ran out of attempts with the set incomplete (last exit $last) — dispatch release-publish.yml with more attempts"
+            exit 1
+          fi
