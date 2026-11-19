@@ -849,6 +849,23 @@ export async function listRuns(stateRoot, limit, hasDraft, filter) {
  *  count stays the scan total, and the limit slices the FILTERED
  *  order, never the scan's. */
 export async function listRunsAcross(roots, limit, hasDraft, filter) {
+    // THE DISTINCT-DRAFT LAW (operator 2026-11-19: "restoring from
+    // image is lagging again"): one bench session mints hundreds of
+    // runs that all name THE SAME draft — the overlay probed
+    // hasDraft PER ROW, so a 500-run window paid 500 serial
+    // drafts/get round trips (~2s) on every gallery load and every
+    // wand refresh. One list probes each DISTINCT draft exactly
+    // once; a draft deleted mid-list keeps the probe's own answer
+    // for the whole list (the rows of one answer never disagree).
+    const probed = new Map();
+    const probeOnce = async (draftId) => {
+        const seated = probed.get(draftId);
+        if (seated !== undefined)
+            return seated;
+        const answer = await hasDraft(draftId);
+        probed.set(draftId, answer);
+        return answer;
+    };
     const ents = [];
     for (const root of roots)
         ents.push(...scanRunsRoot(root));
@@ -874,7 +891,7 @@ export async function listRunsAcross(roots, limit, hasDraft, filter) {
         if (seen.has(ent.dir))
             continue; // first manifest root wins
         seen.add(ent.dir);
-        const row = await buildRunCard(join(ent.root, ent.seat), ent, hasDraft);
+        const row = await buildRunCard(join(ent.root, ent.seat), ent, probeOnce);
         if (row === null)
             continue; // RESILIENCE LAW: loud skip
         if (filtered && !runsFilterServes(row, filter))

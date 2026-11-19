@@ -660,6 +660,39 @@ describe("listRuns envelope", () => {
     });
   });
 
+  it("THE DISTINCT-DRAFT LAW: one list probes each distinct draft exactly once (the 500-run lag cure, 2026-11-19)", async () => {
+    // One bench session mints hundreds of runs naming the SAME
+    // draft — the overlay used to probe hasDraft PER ROW (500
+    // serial drafts/get round trips, ~2s on every gallery load and
+    // every wand refresh). The memo is per-list: every row of one
+    // draft carries the same probe answer, and distinct drafts
+    // each pay their own single probe.
+    const state = tmp();
+    const out = join(state, "output");
+    const drafts = ["bench-session-one", "bench-session-two"];
+    for (let i = 0; i < 12; i++) {
+      const draft = drafts[i % 2] as string;
+      mkdirSync(join(out, "run-lag-" + i), { recursive: true });
+      writeFileSync(join(out, "run-lag-" + i, "_flow.json"), JSON.stringify({
+        status: "completed", pipeline: "flow_inline", seed: i,
+        created_at: 1000 + i, draft_id: draft,
+      }));
+      writeFileSync(join(out, "run-lag-" + i, "i" + i + ".png"), "img");
+    }
+    const probes: string[] = [];
+    const { runs } = await listRuns(state, 50, async (d) => {
+      probes.push(d);
+      return true;
+    });
+    assert.equal(runs.length, 12, "every row listed");
+    assert.deepEqual([...new Set(probes)].sort(), [...drafts].sort(),
+      "each distinct draft probed");
+    assert.equal(probes.length, 2,
+      "ONE probe per distinct draft per list — the per-row probe is the lag (got " + probes.length + ")");
+    for (const row of runs) assert.ok(String(row["draft_id"] ?? "").startsWith("bench-session-"),
+      "the overlay kept every row's draft_id");
+  });
+
   it("carries export stamps when the sidecar declares them", async () => {
     const state = tmp();
     const dir = join(state, "output", "run-export");
