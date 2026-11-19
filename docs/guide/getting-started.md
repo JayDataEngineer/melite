@@ -35,7 +35,11 @@ Missing models and packs install into your engine, in-app:
 
 Packs install through your ComfyUI-Manager's git-url door; weights
 land on your engine's own model folders; the estate verifies every
-downloaded file against its declared sha256.
+downloaded file against its declared sha256. Every declared pack —
+melite's own included — installs from its own public git repository
+at a pinned ref (the declaration lives in the seated
+`extension-manifest.json`); nothing is fetched from this repository's
+development tree.
 
 ## Your own LoRAs — upload once, they ride with a skill
 

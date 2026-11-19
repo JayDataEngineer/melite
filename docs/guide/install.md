@@ -23,7 +23,7 @@ ledger of tags cut without mints is `tools/seat-census.json`. The
 seat must also carry a root manifest package name: pnpm refuses a
 `github:` ref whose manifest has none
 (`ERR_PNPM_MISSING_PACKAGE_NAME`), and the `v0.2.0-alpha` tag
-predates that field (CI run 42016860068). Tags are immutable; moving
+predates that field. Tags are immutable; moving
 forward means cutting a new one.
 Restart an already-running runner after seating; a fresh boot needs
 nothing extra. The estate job server exists as its own profile
