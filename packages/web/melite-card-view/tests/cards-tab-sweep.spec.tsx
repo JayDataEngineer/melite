@@ -573,9 +573,12 @@ describe("the Play start — the first card mints and the pass rides", () => {
     await waitFor(() => {
       expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     }, { timeout: 5000 });
-    // the pass is in flight (Play disarms while a card runs)
+    // the pass is in flight (Play BECOMES Stop while a card runs —
+    // the pass-stop door, 2026-11-19: the disarm face is the stop
+    // button, not a disabled Play)
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Play/ }).hasAttribute("disabled")).toBe(true);
+      expect(screen.queryByRole("button", { name: /Play/ })).toBeNull();
+      expect(document.querySelector('[data-testid="pass-stop"]')).not.toBeNull();
     }, { timeout: 5000 });
   });
 });

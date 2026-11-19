@@ -116,8 +116,10 @@ describe('THE S7 CLASS-4 WALL · card-view · TIP GRAMMAR', () => {
     // channels (TrajectoryToolbar.tsx:60,92,105 — the reference's
     // toolbar buttons carry visible text AND title=): bench run/clear/
     // undo/save (4), run-rescue install/download verbs (3), the
-    // draft restore verb (1).
-    expect(count(seats, 'bench-view.tsx', 'component'), 'bench-view.tsx').toBe(4)
+    // draft restore verb (1). The pass-stop door (2026-11-19) adds
+    // the bench stop-pass hover — the same rest-channel pattern on
+    // the running pass's only kill (5).
+    expect(count(seats, 'bench-view.tsx', 'component'), 'bench-view.tsx').toBe(5)
     expect(count(seats, 'run-rescue.tsx', 'component'), 'run-rescue.tsx').toBe(3)
     expect(count(seats, 'draft-run-views.tsx', 'component'), 'draft-run-views.tsx').toBe(1)
     // the verb bar's local-only hover (1): a disabled verb button
