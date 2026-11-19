@@ -324,8 +324,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "e2e/**/*.ts",
-    "test/*.ts",
-    "test/*.tsx",
+    "tests/*.ts",
+    "tests/*.tsx",
     "vitest.config.ts",
     "playwright.config.ts"
   ],
