@@ -501,7 +501,14 @@ done
 # The two E2E_DECK_URL specs (comfy-manager, estate-lane-sidebar)
 # self-skip lawfully: they tour the LIVE deck estate host
 # (dsh-deck.service — machine infrastructure, never booted here).
-if [ -n "$E2E_STUDIO_DECK" ]; then
+# THE SET-U LAW (run 44498457238, 2026-11-19): CI's studio step runs
+# `E2E_STUDIO_REQUIRE=1 pnpm run test:e2e:studio` — no deck flag. The
+# suite had already passed (9 passed | 33 skipped) when this test
+# killed the whole job: `E2E_STUDIO_DECK: unbound variable` under
+# `set -u`. The script's own idiom is `${VAR:-}` at every optional
+# seat (see E2E_STUDIO_URL above); the deck leg forgot it. Off is the
+# honest default — the leg is the battery's browser tier's to ask for.
+if [ -n "${E2E_STUDIO_DECK:-}" ]; then
   DECK_EXIT=0
   PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
     SWEEP_LANE_URL="$E2E_STUDIO_URL" \

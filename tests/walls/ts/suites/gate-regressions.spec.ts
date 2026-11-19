@@ -504,6 +504,37 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     expect(lane, "the refusal names the dead entries, not just the count").toContain('grep -nE "did not activate|failed to import"');
   });
 
+  it("THE SET-U LAW — every E2E_* env seat in the lane is defaulted or script-exported (run 44498457238)", () => {
+    // 2026-11-19: the CI studio step (`E2E_STUDIO_REQUIRE=1 pnpm run
+    // test:e2e:studio`) had its suite GREEN — 9 passed | 33 skipped —
+    // when the job died: `scripts/e2e-studio-lane.sh: line 504:
+    // E2E_STUDIO_DECK: unbound variable`. The script runs `set -euo
+    // pipefail`; the deck leg referenced `$E2E_STUDIO_DECK` bare
+    // while every other optional seat uses `${VAR:-}`. A green suite
+    // killed by teardown is the worst red class: nothing to read in
+    // the test log. This arm derives the whole contract — every
+    // E2E_* reference in the script must either carry a `:-` default
+    // or name a variable the script itself exports.
+    const lane = read("scripts/e2e-studio-lane.sh");
+    const referenced = new Set<string>();
+    for (const m of lane.matchAll(/\$\{?(E2E_[A-Z_]+)/g)) referenced.add(m[1]!);
+    expect(referenced.size, "the sweep must find env seats — a vacuous pass is the hole this arm closes").toBeGreaterThan(0);
+    const exported = new Set([...lane.matchAll(/^export (E2E_[A-Z_]+)/gm)].map((m) => m[1]!));
+    const bare = [...referenced].filter((name) => {
+      if (exported.has(name)) return false;
+      // defaulted seat: every reference is `${NAME:-…}` (the last
+      // `${NAME` before the reference decides; a bare `$NAME` has
+      // no brace to carry the default).
+      const refs = [...lane.matchAll(new RegExp(`\\$\\{${name}(?![A-Z_])`, "g"))].length;
+      const bareRefs = [...lane.matchAll(new RegExp(`\\$${name}(?![A-Z_}])`, "g"))].length;
+      return bareRefs > 0 || refs === 0;
+    });
+    expect(
+      bare,
+      `E2E_* env seats in e2e-studio-lane.sh are neither defaulted (\${NAME:-}) nor exported by the script — under set -u any unset one kills the lane AFTER its suite verdict:\n  ${bare.join("\n  ")}`,
+    ).toEqual([]);
+  });
+
   it("the studio lane seeds its preview from a tracked asset when the AI screenshot is absent", () => {
     // 2026-10-30: the lane unconditionally cp'd the AI-gated
     // overflow screenshot (rail-overflow.png — written by

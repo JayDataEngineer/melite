@@ -43,13 +43,22 @@
  *      prose. The 2026-11-14 burn: the seat's body was four lines of
  *      internal ticket codes (W-1, F3-05, D3-02) — zero consumer
  *      meaning on the one page every install follows.
+ *   9. ROSTER PROVISION (2026-11-19, run 44498457238) — the CI
+ *      checkout's push-event fetch carries NO tags refspec
+ *      (`fetch-tags: true` widens nothing at depth 1), so the local
+ *      roster arms above refused a census the API arms proved true.
+ *      tagList() now provisions the roster (one depth-1 tags fetch)
+ *      under GITHUB_ACTIONS; this arm reproduces the checkout shape
+ *      from a scratch bare repo, no network, and proves the fetch
+ *      fills the empty roster.
  *
  * Run: npx vitest run tests/walls/ts/suites/readme-seat-pin.spec.ts
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -67,10 +76,35 @@ function seatRefs(doc: string): string[] {
 }
 
 function tagList(): string[] {
-  return execFileSync("git", ["tag", "-l"], { cwd: ROOT, encoding: "utf8" })
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const roster = (): string[] =>
+    execFileSync("git", ["tag", "-l"], { cwd: ROOT, encoding: "utf8" })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const tags = roster();
+  if (tags.length > 0) return tags;
+  // THE CI CHECKOUT PITFALL (run 44498457238, 2026-11-19): the
+  // runner's ACTUAL fetch command on a push event is
+  //   git fetch --prune --no-recurse-submodules --depth=1 \
+  //     origin +<sha>:refs/remotes/origin/main
+  // — `fetch-tags: true` on a shallow push-event checkout carries NO
+  // tags refspec (the flag only widens the fetch at fetch-depth 0),
+  // so `git tag -l` here is [] and the roster arms below refused a
+  // census the API arms had just proven true on the remote. The wall
+  // provisions its own roster where that checkout shape seats it:
+  // one depth-1 tags fetch (each tag's tip only — 9 tags today),
+  // loud on failure, never on a dev clone (whose roster pre-exists).
+  // ARM 9 reproduces the checkout shape from a scratch bare repo and
+  // proves this exact fetch fills the roster.
+  if (process.env.GITHUB_ACTIONS === "true") {
+    execFileSync(
+      "git",
+      ["fetch", "--depth=1", "--prune", "--no-recurse-submodules", "origin", "+refs/tags/*:refs/tags/*"],
+      { cwd: ROOT, encoding: "utf8" },
+    );
+    return roster();
+  }
+  return tags;
 }
 
 /** Root-manifest package name at a tag, or null (tag absent or nameless). */
@@ -266,5 +300,61 @@ describe("the seat pin (README + install guide + census)", () => {
       body.length,
       `the seat's release body is ${body.length} chars — real notes, not a stub`,
     ).toBeGreaterThanOrEqual(400);
+  });
+
+  it("ARM 9 — THE ROSTER PROVISION: the CI checkout shape (SHA-only shallow fetch, no tags) is filled by the wall's own tags fetch", () => {
+    // Run 44498457238 (2026-11-19): every unit leg's checkout carried
+    // `fetch-tags: true` yet `git tag -l` was [], because the actual
+    // push-event fetch names only the SHA refspec. This arm REBUILDS
+    // that exact shape from a scratch bare repo (no network): a
+    // commit, a tag, then `git init` + explicit-SHA fetch — verbatim
+    // the runner's command — and asserts the roster is empty. The
+    // provisioning fetch (+refs/tags/*:refs/tags/* --depth=1, the
+    // same command tagList() runs under GITHUB_ACTIONS) must then
+    // fill it. If the provisioning line is ever deleted, this arm
+    // reds — and on CI the roster arms above red with it, which is
+    // how the burn announced itself.
+    const scratch = mkdtempSync(join(tmpdir(), "seat-pin-roster-"));
+    try {
+      const git = (args: string[], cwd: string): string =>
+        execFileSync("git", args, { cwd, encoding: "utf8" });
+      git(["-c", "user.email=t@t", "-c", "user.name=t", "init", "--bare", "-q", join(scratch, "bare.git")], scratch);
+      git(["-c", "user.email=t@t", "-c", "user.name=t", "init", "-q", join(scratch, "work")], scratch);
+      writeFileSync(join(scratch, "work", "package.json"), '{"name":"t"}\n');
+      git(["add", "."], join(scratch, "work"));
+      git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "tagged base"], join(scratch, "work"));
+      // The tag rides an OLDER commit, outside the depth-1 slice the
+      // runner fetches — the real roster's shape (rc.4 sits below
+      // main's tip). A tag AT the tip would ride git's auto-follow
+      // into any fetch and the fixture would prove nothing.
+      git(["tag", "v9.9.9-test"], join(scratch, "work"));
+      writeFileSync(join(scratch, "work", "later.txt"), "tip\n");
+      git(["add", "."], join(scratch, "work"));
+      git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "untagged tip"], join(scratch, "work"));
+      git(["branch", "-M", "main"], join(scratch, "work"));
+      const sha = git(["rev-parse", "HEAD"], join(scratch, "work")).trim();
+      git(["push", "-q", join(scratch, "bare.git"), "main"], join(scratch, "work"));
+      git(["push", "-q", join(scratch, "bare.git"), "v9.9.9-test"], join(scratch, "work"));
+      // The runner's shape: init + remote + explicit-SHA shallow
+      // fetch, exactly as actions/checkout performed it in the log.
+      git(["init", "-q", join(scratch, "clone")], scratch);
+      git(["remote", "add", "origin", join(scratch, "bare.git")], join(scratch, "clone"));
+      git(
+        ["-c", "protocol.version=2", "fetch", "--prune", "--no-recurse-submodules", "--depth=1", "origin", `+${sha}:refs/remotes/origin/main`],
+        join(scratch, "clone"),
+      );
+      expect(
+        git(["tag", "-l"], join(scratch, "clone")).trim(),
+        "the checkout shape must carry NO tags — if this goes green the fixture lost the burn shape",
+      ).toBe("");
+      // The provisioning (verbatim tagList()'s CI branch):
+      git(
+        ["fetch", "--depth=1", "--prune", "--no-recurse-submodules", "origin", "+refs/tags/*:refs/tags/*"],
+        join(scratch, "clone"),
+      );
+      expect(git(["tag", "-l"], join(scratch, "clone")).trim(), "the tags fetch must fill the roster the checkout left empty").toContain("v9.9.9-test");
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 });
