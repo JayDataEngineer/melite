@@ -1,0 +1,180 @@
+/**
+ * ledger_tail - work off the file ledger: the append-only activity
+ * journal (output/_ledger.jsonl) the gateway maintains for EVERY
+ * material event - run.queued, run.<status>, run.resurrected,
+ * run.swept, server.lock_stolen, skill.read. This tool tails it
+ * (GET /v1/ledger), oldest -> newest within the tail, so the agent
+ * can answer "what happened here", resume interrupted work, and
+ * audit its own skill usage without asking the user or trusting
+ * memory.
+ *
+ * THE VOCABULARY LAW (U4, 2026-10-31): every event class named here
+ * is emitted by its owner seat (the estate-queue appendLedger sites
+ * the ledger-tail wall censuses) — a filter naming an event nothing
+ * emits is dead surface, retired, never documented. The boot,
+ * registered, state, and provision classes named no emitter and are
+ * gone; the bare provision prefix never matched a row and is gone
+ * with them.
+ */
+import { defineTool } from '@deepseek-ai/dsh-tools';
+import { jsonClean } from "../json-clean.js";
+const LEDGER_TIMEOUT_MS = 15_000;
+export function ledgerTail(estate) {
+    // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
+    // seat for the invalid face): the presenter rides defineTool
+    // validation, and defineTool's soft gate OWNS invalid args
+    // (invalid → undefined, never throw). The pre-purge re-attach over
+    // that gate (a second, ungated seat rendering the generic card for
+    // junk) is deleted — conversion invariance (presentCall output must
+    // not change) now reads against the gated face. execute validation
+    // (ToolArgsError/INVALID_ARGS) is unaffected.
+    const presentCall = (args) => {
+        const a = (typeof args === "object" && args !== null ? args : {});
+        return {
+            card: 'generic',
+            title: 'Ledger tail',
+            kind: 'read',
+            rawInput: { limit: a.limit, event: a.event },
+        };
+    };
+    // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+    // registry gains schema compilation + input validation
+    // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+    // never had as a raw registration.
+    const def = defineTool({
+        name: 'ledger_tail',
+        description: 'Tail the gateway file ledger (append-only journal of runs, lock-steals, and skill reads). '
+            + 'Use to answer "what happened / what ran", to resume interrupted '
+            + 'work after a restart, or to audit activity. Entries come back oldest -> newest within the '
+            + 'tail; to resume interrupted work, take the run id from a run.* row and poll it with '
+            + 'run_status (the exact error string and artifacts come back), or re-open the card with '
+            + 'melite_load and stage it again. '
+            + 'Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. "run." '
+            + 'or "skill.").',
+        // ParameterSchemaSpec grammar: the map IS the implicit object root
+        // (no type/properties wrapper) — both filters are optional.
+        parameters: {
+            limit: {
+                type: 'number',
+                description: 'How many entries to return (default 50, max 500).',
+            },
+            event: {
+                type: 'string',
+                description: 'Optional event-name prefix filter, e.g. "run.", "server.", "skill.".',
+            },
+        },
+        presentCall,
+        output: {
+            schema: {
+                type: 'object',
+                additionalProperties: true,
+                properties: {
+                    shown: { type: 'number', description: 'Entries returned.', required: true },
+                    matched: { type: 'number', description: 'Total entries matching the filter.', required: true },
+                    entries: {
+                        type: 'array',
+                        description: 'Ledger rows: {ts, event, data}, oldest -> newest.',
+                        required: true,
+                    },
+                    error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
+                },
+            },
+            // THE BODIES LAW (a live 3088 commission's finding, 2026-09-26):
+            // this render printed only COUNTS — "8 of 3688 entries" — so a
+            // maker auditing a commission's history got a number and no
+            // history, and fell back to run_status/melite_read to
+            // reconstruct what the ledger already held. The rows ride here
+            // now, one compact line each, byte-capped (an unbounded tail is
+            // its own context hazard), with the full rows still in the
+            // structured result for a caller that wants them whole.
+            render: (_args, value) => {
+                const v = value;
+                const lines = [
+                    'ledger_tail: ' + String(v.shown ?? 0) + ' of ' + String(v.matched ?? 0) + ' entries',
+                ];
+                const rows = Array.isArray(v.entries) ? v.entries : [];
+                const ROWS_SHOWN = 20;
+                const CHAR_CAP = 6000;
+                // THE DIAGNOSTIC FAMILY (promgen A3, 2026-11-17): the 60-char
+                // member cap amputated run.failed's error at the class name —
+                // "error=ComfyError: ComfyUI run failed: IndexError: list
+                // index…" — while the operator's evidence (the node trace,
+                // "N nodes executed before the failure") lived past the cut.
+                // The ledger PERSISTS whole (verified: _ledger.jsonl and
+                // _flow.json carry both lines verbatim); this render's text
+                // face is what agents read. The diagnostic keys ride a
+                // 400-char bound — compact members stay compact, the why
+                // arrives with them.
+                const DIAGNOSTIC_KEYS = ['error', 'why', 'note', 'reason'];
+                const memberCap = (k) => (DIAGNOSTIC_KEYS.includes(k) ? 400 : 60);
+                let used = lines[0].length;
+                for (const row of rows.slice(0, ROWS_SHOWN)) {
+                    const ts = typeof row['ts'] === 'string' || typeof row['ts'] === 'number' ? String(row['ts']) : '?';
+                    const event = typeof row['event'] === 'string' ? row['event'] : '(no event)';
+                    const data = row['data'];
+                    let detail = '';
+                    if (data !== null && typeof data === 'object' && !Array.isArray(data)) {
+                        const parts = [];
+                        for (const [k, val] of Object.entries(data).slice(0, 6)) {
+                            if (val === null || val === undefined)
+                                continue;
+                            // ONE ROW, ONE LINE: an embedded newline in a member
+                            // value (the engine's two-line verdicts) would split
+                            // the render's row — flattened to a visible ⏎, the
+                            // text rides WHOLE on one line (the hostile-row law).
+                            const text = (typeof val === 'object' ? JSON.stringify(val) : String(val)).replace(/\s*\n\s*/g, ' ⏎ ');
+                            const cap = memberCap(k);
+                            parts.push(k + '=' + (text.length > cap ? text.slice(0, cap - 3) + '…' : text));
+                        }
+                        detail = parts.length > 0 ? ' — ' + parts.join(', ') : '';
+                    }
+                    else if (data !== undefined) {
+                        const text = typeof data === 'string' ? data : JSON.stringify(data);
+                        detail = ' — ' + (text.length > 80 ? text.slice(0, 77) + '…' : text);
+                    }
+                    const line = ts + ' ' + event + detail;
+                    if (used + line.length + 1 > CHAR_CAP) {
+                        lines.push('… row cap reached (the full rows ride the structured result)');
+                        break;
+                    }
+                    used += line.length + 1;
+                    lines.push(line);
+                }
+                if (rows.length > ROWS_SHOWN) {
+                    lines.push('… ' + String(rows.length - ROWS_SHOWN) + ' more row(s) in the structured result');
+                }
+                return [{ type: 'text', text: lines.join('\n') }];
+            },
+        },
+        async execute(args, exec) {
+            // defineTool input validation runs in the wrapper BEFORE the body
+            // (invalid args throw ToolArgsError there) — args is always a
+            // defined object here (2026-09-12).
+            const a = args;
+            // limit is schema-typed number: the wrapper gate rejects strings
+            // before the body (a string limit throws ToolArgsError there), so
+            // no string arm rides — the old one was gate-dead (2026-09-12).
+            // The seat reads defaulted strings ('50' / '') — the query
+            // string's own defaults (the router parsed them the same way).
+            const limit = typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0
+                ? String(Math.floor(a.limit))
+                : '50';
+            const event = typeof a.event === 'string' && a.event.length > 0 ? a.event : '';
+            const res = await estate.ledgerTail(limit, event, exec.signal, LEDGER_TIMEOUT_MS);
+            const entries = Array.isArray(res.entries) ? res.entries : [];
+            return jsonClean({
+                shown: typeof res.shown === 'number' ? res.shown : entries.length,
+                matched: typeof res.matched === 'number' ? res.matched : entries.length,
+                entries,
+                // §23 CROSS-ROOTS: the seat names the manifest roots whose
+                // journals merged (absent on the legacy single-root call).
+                ...(Array.isArray(res.searched) ? { searched: res.searched } : {}),
+            });
+        },
+    });
+    // (§7 P7: the presenter rides defineTool validation — no second,
+    // ungated seat over the gate. The tool-presentation wall pins the
+    // gated face.)
+    return def;
+}
+//# sourceMappingURL=ledger-tail.js.map

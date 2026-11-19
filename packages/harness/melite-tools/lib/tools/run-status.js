@@ -1,0 +1,447 @@
+/**
+ * run_status — the run monitor.
+ *
+ * Poll ONE run through its lifecycle: GET {gateway}/v1/flows/
+ * status/<run_id> → status, per-stage stages[].status, artifacts (the
+ * bytes that landed), error (the EXACT failure string — RESILIENCE
+ * LAW: never a bare "failed") and queue_position while waiting.
+ *
+ * Terminal states: completed | error | stopped | failed. The stop door
+ * (/v1/flows/stop/<id>) stays operator-ordered — this tool only
+ * READS.
+ *
+ * Registered by the /melite-runs delegation: the user's toggle seats
+ * it, and a boot whose persisted record reads ON seats it (see
+ * runsDelegation.ts).
+ */
+import { defineTool } from '@deepseek-ai/dsh-tools';
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
+import { foldThrownValue } from '@melite/estate-queue';
+import { statusOrPendingOf } from '@melite/contracts/stageView';
+import { jsonClean } from "../json-clean.js";
+import { isTerminalStatus } from '@melite/contracts/stageView';
+const TIMEOUT_MS = 15_000;
+// THE WAIT PRIMITIVE (efficiency review, prong (a) fix 5,
+// 2026-09-22): the attempt005 census counted 20 sleep calls —
+// polling was the only wait shape, and each wake re-read multi-KB
+// log tails from byte zero. wait_s turns N poll turns into ONE:
+// the tool re-fetches server-side on a flat 5s cadence (each fetch
+// ~200 bytes of context — the row, never the log) until the run is
+// terminal or the budget expires. The tool def's own timeoutMs
+// rises to cover the full budget + one fetch's slack; wait_s=0
+// keeps the historical single-shot read.
+const WAIT_MAX_S = 300;
+const WAIT_POLL_S = 5;
+/** Abortable sleep — resolves after ms, rejects immediately when
+ * the caller's signal aborts (a cancelled wait never lingers).
+ * Rejecting is this loop's contract: DSH's exported sleep
+ * (references/deepseek-harness/packages/api/job-controller/src/
+ * wake.ts:49) settles on abort by RESOLVING, and this poll has no
+ * abort check around the await, so resolving would spin it to the
+ * deadline. No Context reaches a tool body, so ctx.timeout is not a
+ * seat here either. DECIDED per-plane (the dry-sweep's J5,
+ * recorded): melite-flow.ts's sleepAbort resolves-on-abort for the
+ * mirror reason — its observer loop re-checks after every tick;
+ * the two contracts are genuinely different, not drift. */
+function sleepAbortable(ms, signal) {
+    return new Promise((resolve, reject) => {
+        const t = setTimeout(() => {
+            signal.removeEventListener('abort', onAbort);
+            resolve();
+        }, ms);
+        function onAbort() {
+            clearTimeout(t);
+            reject(signal.reason ?? new Error('aborted'));
+        }
+        if (signal.aborted) {
+            onAbort();
+            return;
+        }
+        signal.addEventListener('abort', onAbort, { once: true });
+    });
+}
+const TERMINAL = { has: (s) => isTerminalStatus(s) };
+export function runStatus(estate) {
+    // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
+    // seat for the invalid face): the presenter rides defineTool
+    // validation, and defineTool's soft gate OWNS invalid args
+    // (invalid → undefined, never throw). The pre-purge re-attach over
+    // that gate (a second, ungated seat rendering the generic card for
+    // junk) is deleted — conversion invariance (presentCall output must
+    // not change) now reads against the gated face. execute validation
+    // (ToolArgsError/INVALID_ARGS) is unaffected.
+    const presentCall = (args) => {
+        const a = (typeof args === "object" && args !== null ? args : {});
+        return {
+            card: 'generic',
+            title: `Run status: ${String(a.runId ?? '?')}`,
+            kind: 'read',
+            rawInput: String(a.runId ?? '?'),
+        };
+    };
+    // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+    // registry gains schema compilation + input validation
+    // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+    // never had as a raw registration.
+    const def = defineTool({
+        name: 'run_status',
+        description: 'Poll a queue run: status (the estate\u2019s run-status words — queued|running|completed|error|stopped|failed, '
+            + 'plus interrupted/succeeded/success/unknown on their legacy seats), per-stage '
+            + 'progress, artifacts (landed bytes with paths) and the EXACT error string on failure. '
+            + 'SWEPT RUNS (D3-01): a run lost to an engine/host restart answers failed with a '
+            + '`sweep` note naming the truth (never executed — resubmit), or queued with a D-8 '
+            + 'replay hold (`sweep_holds`, bounded boots then failed loud) — never a bare pending. '
+            + 'Args: runId — from melite_flow when the run doors are seated; otherwise from '
+            + 'melite_construct read\u2019s last_run or a ledger_tail run.* row. Includes queue_position while waiting on '
+            + 'the serial GPU lane. Read-only — the stop door is operator-ordered.',
+        // ParameterSchemaSpec grammar: the map IS the implicit object root
+        // (no type/properties wrapper), per-property `required: true`.
+        parameters: {
+            runId: {
+                type: 'string',
+                description: 'The run id — from melite_flow when the run doors are seated; otherwise from melite_construct read\u2019s last_run or a ledger_tail run.* row.',
+                required: true,
+            },
+            wait_s: {
+                type: 'number',
+                description: 'Long-poll budget in seconds as a JSON number (300, not "300"; 0-300, default 0 = single read; clamped at execute). '
+                    + 'The tool re-fetches internally every 5s until the run is terminal — '
+                    + 'ONE result row instead of a sleep-and-repoll turn loop (efficiency '
+                    + 'review fix 5). On budget expiry the row carries wait_expired: true.',
+            },
+        },
+        // The wait budget runs INSIDE one execute — the def's own
+        // timeout must cover it (WAIT_MAX_S + one fetch's slack).
+        timeoutMs: (WAIT_MAX_S + 20) * 1000,
+        presentCall,
+        output: {
+            schema: {
+                type: 'object',
+                additionalProperties: true,
+                properties: {
+                    run_id: { type: 'string', required: true },
+                    status: { type: 'string' },
+                    stages: { type: 'array', description: 'Per-stage rows: id/name, status, error, declared output channels in [brackets] when present.' },
+                    artifacts: { type: 'array', description: 'Landed artifact rows (path, bytes). Empty until completed.' },
+                    error: { type: 'string', description: 'The EXACT failure string when status is error/failed, or the refusal text when the fetch refused.' },
+                    sweep: { type: 'string', description: 'D3-01: the sweep\'s own note when the run was swept (engine/host restart under the queue, or a stale sidecar at read) — names never-executed vs resubmit, or the D-8 replay hold. Absent on clean runs.' },
+                    sweep_holds: { type: 'number', description: 'The D-8 hold count when a swept-queued run is held for the next boot\'s replay (bounded; past the bound the row settles failed loud).' },
+                    queue_position: { type: 'number', description: '0 = active; >0 = waiting in the FIFO.' },
+                    sweep_runs: { type: 'array', description: 'The seed-sweep family\u2019s run ids in seed order — present when this run was minted by a `seeds: [...]` card-press fan-out (shared run-id prefix, -s<k> seats); poll each id the same way.' },
+                    planned_stages: { type: 'array', description: 'The registered plan (id/engine per stage) — present when a live row has no stage rows yet.' },
+                    card: { type: 'string', description: 'The card (or pipeline) the run was born from.' },
+                    run_age_s: { type: 'number', description: 'Seconds since registration — the heartbeat for long renders.' },
+                    wait_expired: { type: 'boolean', description: 'True when wait_s expired before the run reached a terminal state — wait again.' },
+                    waited_s: { type: 'number', description: 'Seconds actually waited when the run reached terminal inside the budget.' },
+                    variant: { type: 'string', description: 'The lane the run rode (e.g. voicedesign vs customvoice) — present when the submitted body named one. A design run and a performing run on the same pipeline read apart here.' },
+                },
+                // Ledger row 11 (2026-09-10): the refusal shape carries
+                // {run_id, error} (no status) — required is the intersection.
+            },
+            render: (args, value) => {
+                const v = value;
+                if (v && v.error) {
+                    return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }];
+                }
+                const stages = v.stages ?? [];
+                const artifacts = v.artifacts ?? [];
+                // the done count reads the owner's fold (2026-10-01, the vocab
+                // law): the raw === 'completed' compare silently read every
+                // file-era done word (succeeded, success) as not-yet-done.
+                // The view-side read (2026-10-12): the run-level word passed
+                // readRunStatus's door, the per-stage words did not — an
+                // unreadable stage counts as not done, never kills the answer.
+                const done = stages.filter(s => s && statusOrPendingOf(typeof s.status === 'string' ? s.status : '') === 'done').length;
+                const total = stages.length;
+                const pos = typeof v.queue_position === 'number' && v.queue_position > 0
+                    ? ' (queue #' + v.queue_position + ')' : '';
+                // THE LIVE-ROW PLAN (efficiency review 002, Fix 2): a live row
+                // with no stage rows yet renders its registered plan + age —
+                // never the bare "0/0" that sent agents to tail logs with bash.
+                const plan = total === 0 && Array.isArray(v.planned_stages) && v.planned_stages.length > 0
+                    ? ' · plan: ' + v.planned_stages.length + ' stage(s)' +
+                        (typeof v.card === 'string' && v.card ? ' (' + v.card + ')' : '')
+                    : '';
+                // THE RECEIPT-PATH LAW (022's self-critique #1, 2026-09-24):
+                // a completed row that names only COUNTS forces the agent to
+                // `ls output/<run_id>` for the actual paths — the exact
+                // glob-output detour the efficiency law forbids. Terminal
+                // rows render their artifact paths (up to 4, as served) and
+                // per-stage status rows; live rows stay one-line (counts +
+                // plan + age — nothing to receipt yet). THE OWNER DECIDES
+                // (2026-10-01): the hand-spelled triple below this comment
+                // kept 'error' and 'unknown' runs rendering "live · age Ns"
+                // forever in the file that already imports the owner — the
+                // exact disagreement the 2026-10-13 unification was written
+                // to kill.
+                const terminal = typeof v.status === 'string' && isTerminalStatus(v.status);
+                // THE LIVE-AGE VOICE (§36.6's progress-UX): every live row —
+                // planned OR staged — renders its age, the honest liveness
+                // signal (a 10-minute h3 render reads "running · age 612s",
+                // never a bare 0/1 that looks stuck).
+                const age = !terminal && typeof v.run_age_s === 'number'
+                    ? ' · age ' + v.run_age_s + 's'
+                    : '';
+                const stageVoice = terminal && stages.length
+                    ? '\nstages: ' + stages.map((s) => {
+                        const row = s;
+                        const id = typeof row.id === 'string' ? row.id : (typeof row.name === 'string' ? row.name : '?');
+                        const st = typeof s?.status === 'string' ? s.status : '?';
+                        const err = typeof row.error === 'string' && row.error !== '' ? ' ! ' + row.error : '';
+                        // THE CHANNEL DOOR (commission 020's self-critique,
+                        // 2026-09-25): the stage row has always carried its
+                        // declared `outputs` (channel -> kind) — the render never
+                        // said it, so the maker had no door to enumerate what a
+                        // run publishes without reading the sidecar raw.
+                        const outs = row.outputs !== null && typeof row.outputs === 'object' && !Array.isArray(row.outputs)
+                            ? Object.keys(row.outputs)
+                            : [];
+                        return id + ':' + st + err + (outs.length > 0 ? ' [' + outs.join(',') + ']' : '');
+                    }).join(', ')
+                    : '';
+                // D-40 (defect board 2026-11-18): every artifact prints —
+                // the 4-row cap hid the film behind "(+N more)" and the
+                // bytes were reachable only as melite_view's diagnostic side
+                // effect. No slice: the run's whole artifact set is the
+                // receipt (a run's set is small; the cap guarded nothing).
+                const artPaths = terminal ? artifacts.map((a) => {
+                    const p = typeof a === 'string' ? a
+                        : (typeof a?.path === 'string' ? a.path : '');
+                    // THE CANONICAL RECEIPT PATH (023's self-critique #3,
+                    // 2026-09-24): the live row serves route-relative
+                    // `<run-id>/<rel>` while disk rows serve absolute — the
+                    // form changes across restarts, and neither joins blindly.
+                    // The receipt canonicalizes to a directly-usable
+                    // filesystem path: absolute stays; `./` strips; a row-led
+                    // `<run-id>/…` gains its out root (test runs live under
+                    // test-output/). The wire keeps the browser's spelling —
+                    // the canonical form lives only in this agent-facing text.
+                    if (p.startsWith('/'))
+                        return p;
+                    const bare = p.startsWith('./') ? p.slice(2) : p;
+                    const rid = typeof v.run_id === 'string' ? v.run_id : '';
+                    // THE LEGACY-DOUBLE COLLAPSE (024's self-critique #2):
+                    // rows served before the run-dir-relative fix (or by an
+                    // older worker) spell `<run-id>/<run-id>/…` — collapse
+                    // the stencil before prefixing the out root.
+                    const single = rid !== '' && bare.startsWith(rid + '/' + rid + '/')
+                        ? rid + bare.slice((rid + '/' + rid).length) : bare;
+                    if (rid !== '' && (single === rid || single.startsWith(rid + '/'))) {
+                        return (v.test === true ? 'test-output/' : 'output/') + single;
+                    }
+                    return single;
+                }).filter(Boolean) : [];
+                const artVoice = artPaths.length
+                    // THE RESOLVING-ROOT VOICE (commission 17 finding 9): the
+                    // canonicalized paths are estate-rooted — `output/` (or
+                    // `test-output/`) hangs off the estate's run-output tree,
+                    // the one a card serves artifacts from. The column says so:
+                    // the maker's shell cwd is NOT that root, and the bare
+                    // string used to float with no tree named at all.
+                    ? '\nartifacts (rooted at the estate output tree, not your cwd): ' + artPaths.join('\n  ')
+                        // THE SHARE DOOR (operator 2026-11-12: in-thread media
+                        // sharing rides the HARNESS present toolcall — melite
+                        // mints no share verb; the GUI's melite media-preview
+                        // rows render video/audio in the sidebar the delivery
+                        // card opens). Same pointer line as the flow's host arm.
+                        + '\nshare an artifact in-thread: present these paths (the harness present toolcall — the thread\'s only legal media seat)'
+                    : '';
+                // THE EXPORT-NAME VOICE (023's self-critique #4/#6): a
+                // design/export lane's receipt names the mint — the
+                // deliverable .qvoice (collision-numbered) rides no artifact
+                // list. One line kills the voices-dir timestamp correlation.
+                // (2026-09-24: the preview flac now carries the REAL design
+                // sample — the 1-sample stub died with BRIEF4's cosmetic
+                // defect fix — so the line sells the sample, not the hole.)
+                // THE EXPORT-PATH VOICE (roadmap OWED 2026-09-24 — the
+                // export FULL PATH, transcript-026 #4): when the engine's
+                // harvest carried the minted file's ABSOLUTE path, print IT
+                // — the maker feeds the exact collision-numbered file to
+                // load lanes with zero voices-dir listing. The newest-match
+                // hint stays the fallback for pre-path rows.
+                const exportVoice = terminal && typeof v.export_name === 'string' && v.export_name !== ''
+                    ? `\nexport: '${v.export_name}' — preview audio is the design sample; the deliverable .qvoice is ${typeof v.export_path === 'string' && v.export_path !== '' ? v.export_path : `the newest ${v.export_name}_*.qvoice under the voices root`}`
+                    : '';
+                // THE VARIANT VOICE (commission 033's self-critique #5,
+                // 2026-09-24): the lane rides the FIRST line — a design run
+                // and a performing run on one pipeline read apart at a
+                // glance (033's ledger named both qwen3-tts-voicedesign;
+                // only sources: 1 hinted the difference). Live rows voice
+                // it too — the lane is known at birth, not at settle.
+                const variantVoice = typeof v.variant === 'string' && v.variant !== ''
+                    ? ' · variant ' + v.variant
+                    : '';
+                // THE LOUDNESS CHIP (roadmap OWED 2026-09-26 — transcript-0034
+                // #2): the meter's reading rode the sidecar only; the
+                // compact terminal line now carries it (BS.1770-4 integrated
+                // + true peak, 2 decimals) so the receipt is visible without
+                // melite_read. Absent on unmetered runs.
+                const loud = v.loudness;
+                const loudVoice = terminal && loud !== null && typeof loud === 'object'
+                    && typeof loud.loudness_lufs === 'number' && Number.isFinite(loud.loudness_lufs)
+                    && typeof loud.peak_db === 'number' && Number.isFinite(loud.peak_db)
+                    ? ` · ${loud.loudness_lufs.toFixed(2)} LUFS / ${loud.peak_db.toFixed(2)} dBTP`
+                    : '';
+                // THE FRESHNESS VOICE (the loudness sibling): the voice-mint
+                // receipt — which .qvoice won and whether it predates the
+                // run (the single-tenant voice-name law's only signal).
+                const fresh = v.voice_freshness;
+                const freshVoice = terminal && fresh !== null && typeof fresh === 'object'
+                    && typeof fresh.reused_existing === 'boolean' && typeof fresh.voice_file === 'string'
+                    ? ` · voice ${fresh.voice_file}${fresh.reused_existing ? ' (REUSED — a stale name won; mint a fresh one)' : ' (fresh mint)'}`
+                    : '';
+                // THE STAMP-MISS VOICE (F3 D3-07, the 15 s bound's third
+                // burn): a COMPLETED run whose cards-tab stamp died at the
+                // bench plane answers bare "completed" no longer — the run
+                // row's attribution mark names the miss and the lever
+                // (artifacts are fine, only the stamp died; re-stamp to
+                // show it). The teacher the runbook owes: a green run
+                // missing from the cards tab reads HERE, never as silence.
+                const missVoice = terminal && v.attribution === 'missed'
+                    ? ' — NOT shown on the user\u2019s cards tab (stamp missed; artifacts are fine — re-stamp to show it)'
+                    : '';
+                // D3-01 — THE SWEPT VOICE: the sweep's note prints whole on
+                // its own line (boot sweep, read-time sweep, or a D-8 replay
+                // hold — the note itself names never-executed vs resubmit);
+                // the hold count rides beside it when the row is held. The
+                // burn: a swept run polled as bare pending across three
+                // sanctioned doors while the truth sat in ledger_tail.
+                const sweepNote = typeof v.sweep === 'string' && v.sweep !== '' ? v.sweep : undefined;
+                const sweepVoice = sweepNote !== undefined
+                    ? '\nswept: ' + sweepNote
+                        + (typeof v.sweep_holds === 'number' ? ` (hold ${v.sweep_holds}/3 — the next boot replays it if the request still answers)` : '')
+                    : '';
+                return [{
+                        type: 'text',
+                        text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
+                            + ' — ' + done + '/' + total + ' stage(s)' + plan + age
+                            // hoisted above: the consequent's second ?? could never see
+                            // nullish (length-truthy implies defined) — same text (2026-09-12).
+                            + (artifacts.length ? ' · ' + artifacts.length + ' artifact(s)' : '')
+                            // The wait primitive's two receipts (fix 5): expiry asks for
+                            // another wait; waited_s proves the single call absorbed the poll.
+                            + (v.wait_expired ? ' · wait expired (budget spent, not terminal — wait again)' : '')
+                            + (typeof v.waited_s === 'number' ? ' · waited ' + v.waited_s + 's' : '')
+                            + variantVoice + loudVoice + freshVoice + missVoice
+                            + stageVoice + artVoice + exportVoice + sweepVoice,
+                    }];
+            },
+        },
+        async execute(args, exec) {
+            // defineTool input validation runs in the wrapper BEFORE the body
+            // (invalid args throw ToolArgsError there) — args is always a
+            // defined object and runId a required string here, so honest casts
+            // ride instead of gate-dead typeof fallbacks (2026-09-12).
+            const a = args;
+            const runId = a.runId;
+            if (!runId)
+                return jsonClean({ error: 'runId is required' });
+            // The wait budget (fix 5): clamp defensively — the schema gate
+            // already enforces 0..WAIT_MAX_S; this arm only guards a
+            // non-numeric arrival (coerced below) never escaping the cap.
+            const waitRaw = typeof a.wait_s === 'number' ? a.wait_s : Number(a.wait_s);
+            const waitS = Number.isFinite(waitRaw)
+                ? Math.min(Math.max(waitRaw, 0), WAIT_MAX_S)
+                : 0;
+            const deadline = Date.now() + waitS * 1000;
+            let res;
+            let waitExpired = false;
+            // THE LONG-POLL LOOP: fetch → terminal? return : budget left?
+            // sleep 5s (abortable) : mark expiry and return the last row.
+            // Every fetch is the same cheap seat read (~200 B of context);
+            // the poll loop never touches logs.
+            for (;;) {
+                try {
+                    res = await estate.runsStatus(runId, false, exec.signal, TIMEOUT_MS);
+                }
+                catch (e) {
+                    // The seats era (REBUILD-15): status refusals arrive as
+                    // RemoteErrors — the code+message IS the refusal voice.
+                    const re = remoteErrorOf(e);
+                    if (re !== null && re !== undefined) {
+                        return jsonClean({ run_id: runId, error: `${re.code}: ${re.message}` });
+                    }
+                    // THE THROWN-OBJECT FOLD (promgen B1, 2026-11-17): a seat
+                    // that rejects with a plain object (the consumer lane's
+                    // "Error: [object Object]" — every run_status call dead)
+                    // used to ride `throw e` up to the harness, whose wrapper
+                    // stringifies non-Errors into the vacuous literal. The
+                    // tool's own contract answers instead: the thrown value
+                    // folds by its own words (the same law the ledger tier's
+                    // foldThrownValue seats, qa8 F38 — never String()).
+                    if (!(e instanceof Error)) {
+                        return jsonClean({ run_id: runId, error: 'runs/status: ' + foldThrownValue(e) });
+                    }
+                    throw e;
+                }
+                const status = typeof res?.['status'] === 'string' ? res['status'] : '';
+                if (TERMINAL.has(status))
+                    break;
+                if (Date.now() >= deadline) {
+                    waitExpired = waitS > 0;
+                    break;
+                }
+                await sleepAbortable(WAIT_POLL_S * 1000, exec.signal);
+            }
+            // THE EMPTY-ERROR TRAP (021's self-critique receipt, 2026-09-24):
+            // the registry writes `error: ""` on SUCCESS — a bare typeof
+            // string check read that as the refusal shape and returned
+            // {run_id, error:""}, which the render voices as "? — 0/0
+            // stage(s)" on a COMPLETED run (all four 021 stages). Only a
+            // NON-EMPTY error on a row that names NO status is a refusal;
+            // a STATUS-BEARING row with an error is a failed run's own
+            // truth (D3-01, the swept-run law: a boot-swept queued run
+            // answers `failed` + "never executed" — folding that into the
+            // refusal shape hid the status and sold the burn's
+            // `generate:pending` mystery). The rich path below threads
+            // the error as a field.
+            if (res && typeof res.error === 'string' && res.error !== ''
+                && !(typeof res.status === 'string' && res.status !== '')) {
+                return jsonClean({ run_id: runId, error: res.error });
+            }
+            // D3-01 — THE SWEPT TRUTH (F3 R-1): the sweep's own note rides
+            // the sidecar (`sweep`, and `sweep_holds` on a D-8 replay hold)
+            // and the status door serves both — the tool threads them so a
+            // swept row reads `failed — swept: host restarted …` or
+            // `queued — swept: held for the next boot's replay (hold 1/3)`,
+            // never a bare pending the agent polls forever.
+            const swept = typeof res.sweep === 'string' && res.sweep !== '' ? res.sweep : undefined;
+            const waitedRow = waitExpired
+                ? { wait_expired: true, wait_budget_s: waitS }
+                : (waitS > 0 ? { waited_s: Math.round(waitS - Math.max(0, deadline - Date.now()) / 1000) } : {});
+            return jsonClean({
+                ...waitedRow,
+                run_id: typeof res.run_id === 'string' ? res.run_id : runId,
+                status: typeof res.status === 'string' ? res.status : 'unknown',
+                stages: Array.isArray(res.stages) ? res.stages : [],
+                artifacts: Array.isArray(res.artifacts) ? res.artifacts : [],
+                // D3-01: a status-bearing row keeps its error as a FIELD (the
+                // render's failure line reads it whole — W-11's exact-string
+                // law rides this seat now, not the refusal fold).
+                error: typeof res.error === 'string' && res.error !== '' ? res.error : undefined,
+                // D3-01 — the swept truth rides the rich row (absent on clean
+                // runs; jsonClean drops the undefined).
+                sweep: swept,
+                sweep_holds: typeof res.sweep_holds === 'number' ? res.sweep_holds : undefined,
+                queue_position: typeof res.queue_position === 'number' ? res.queue_position : 0,
+                // THE LIVE-ROW PLAN (Fix 2): projected through verbatim — the
+                // render voices it, older consumers ignore it (additive).
+                planned_stages: Array.isArray(res.planned_stages) ? res.planned_stages : undefined,
+                card: typeof res.card === 'string' ? res.card : undefined,
+                run_age_s: typeof res.run_age_s === 'number' ? res.run_age_s : undefined,
+                // THE EXPORT NAME, THREADED (023's self-critique #4/#6) +
+                // the test flag (the canonical receipt path needs the out
+                // root). Additive — older consumers ignore both. The export
+                // PATH rides the same additive law (the FULL-mint voice).
+                export_name: typeof res.export_name === 'string' ? res.export_name : undefined,
+                export_path: typeof res.export_path === 'string' ? res.export_path : undefined,
+                test: typeof res.test === 'boolean' ? res.test : undefined,
+            });
+        },
+    });
+    // (§7 P7: the presenter rides defineTool validation — no second,
+    // ungated seat over the gate. The tool-presentation wall pins the
+    // gated face.)
+    return def;
+}
+//# sourceMappingURL=run-status.js.map
