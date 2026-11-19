@@ -1,7 +1,7 @@
 // no-shell-seat.spec.ts — THE SHELL-FREE ESTATE (operator ruling,
-// 2026-11-19: "WHY IS THIS PROJECT TIED TO FUCKING LINUX. YOU
-// LITERALLY USE PYTHON, NOTHING SHOULD BE TIED TO ANY FUCKING SH
-// SCRIPTS AT ALL. THIS IS NPM AND PYTHON, NOT SHELL SCRIPT."). The
+// 2026-11-19, quoted with the heat redacted: the project uses npm
+// and python — NOTHING may be tied to shell scripts; no OS may be
+// implied by a .sh seat). The
 // 14 tracked shell seats (the lane playbook, the lane sync/rebuild
 // pair, the four e2e GPU launchers, the commission supervisor, the
 // promote door, the engine boot, the profile installers, the resume

@@ -151,7 +151,7 @@ function driveIdLists(): Array<{ script: string; kind: "card" | "model"; ids: st
   for (const name of ["drive-3d.mjs", "estate-drive.mjs", "agent-drive.mjs", "craft-drive.mjs", "cold-start-drive.mjs"]) {
     let text = "";
     try {
-      text = readFileSync(join(REPO_ROOT, "test", name), "utf8");
+      text = readFileSync(join(REPO_ROOT, "tests", "drives", name), "utf8");
     } catch {
       continue;
     }

@@ -52,7 +52,7 @@ describe('testing tiers exist (contract regression)', () => {
     void readdirSync
   })
 
-  it('THE LAYOUT LAW: no root test/ directory, and tests/ root carries ONLY the README (operator 2026-11-19: the test/tests split + "random files fucking loose")', async () => {
+  it('THE LAYOUT LAW: no root test/ directory, and tests/ root carries ONLY the README (operator 2026-11-19: the test/tests split and the loose-files burn)', async () => {
     const { execFileSync } = await import('node:child_process')
     // (a) the dual-folder burn: a tracked test/ directory must never
     // return — the split was half-done once and 7 drive scripts

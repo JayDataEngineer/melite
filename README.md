@@ -79,7 +79,10 @@ dsh plugin --profile melite add "github:JayDataEngineer/melite#v0.3.0-alpha"
 Installs are pinned to the release tag — they never move on their own.
 To upgrade, run the same command with the newer tag, then restart the
 runner. `#main` tracks the unreviewed tip and is not the install door.
-The pin names the newest tag with minted release assets.
+The pin names the newest tag with minted release assets: a release is
+the tag plus its asset bundle on the GitHub release, and a bare tag is
+not an install door. The ledger of tags cut without mints is
+`tools/seat-census.json`.
 
 ## Quick start
 
