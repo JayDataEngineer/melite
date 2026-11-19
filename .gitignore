@@ -234,3 +234,11 @@ data/runtime/real-install-tarballs/
 # debugging only — never landed) ===
 data/runtime/coldstart-*/
 *.heapsnapshot
+
+# THE TSC-TWIN FENCE (the b2bf57958 re-sweep, 2026-11-19): in-place
+# tsc emits .js twins beside drafts' .ts sources; `git add -A` swept
+# them back into the tree once and bench.js tripped the llm-keystore
+# entropy rule. spec.js stays tracked — seven wall suites judge its
+# emitted face — so the negation keeps it versioned.
+packages/estate/drafts/src/*.js
+!packages/estate/drafts/src/spec.js

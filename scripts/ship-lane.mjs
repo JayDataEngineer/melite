@@ -288,7 +288,10 @@ export function stampSrc(repo, pkgRel) {
 
 function writeStamp(pkgRel) {
   try {
-    writeFileSync(join(REPO, pkgRel, "lib", ".src-stamp"), stampSrc(REPO, pkgRel));
+    // trailing newline: build-plane.mjs's stamp writer law — a bare
+    // stamp here left all 82 .src-stamp files one byte dirty after
+    // every full ship, hounding the next commit's scope.
+    writeFileSync(join(REPO, pkgRel, "lib", ".src-stamp"), stampSrc(REPO, pkgRel) + "\n");
   } catch { /* a package with no lib/ fails at verify, not here */ }
 }
 
