@@ -47,7 +47,9 @@ const FACTS_PATH = join(
 const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const ENGINE_RIG = join(ROOT, "tests", "test_h3_refine_handoff_strip.py");
+// the layout law (e348ad58a, 2026-11-19): ONE tests/ tree, tier dirs
+// only — the python rigs live under tests/py/
+const ENGINE_RIG = join(ROOT, "tests", "py", "test_h3_refine_handoff_strip.py");
 /** The walls tier runs on boxes whose python may lack pytest (CI runs
  * the rig in its own pytest seat); locally and on the battery the
  * exec arm judges it live. */
