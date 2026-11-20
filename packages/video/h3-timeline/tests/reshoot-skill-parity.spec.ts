@@ -40,7 +40,7 @@ beforeAll(async () => {
   assert.ok(reshootKind, "the served card carries the reshoot mod kind");
 });
 
-type FieldRow = { name: string; default: unknown; min?: number; max?: number };
+type FieldRow = { name: string; type?: string; default: unknown; min?: number; max?: number };
 const fields = (): Map<string, FieldRow> =>
   new Map(
     ((reshootKind.fields as FieldRow[] | undefined) ?? []).map((f) => [f.name, f]),

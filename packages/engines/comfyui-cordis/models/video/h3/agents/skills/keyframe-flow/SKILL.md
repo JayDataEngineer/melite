@@ -41,7 +41,7 @@ window re-conditions on rendered frames, not re-imagined text.
 qwen-img-edit-21:  model qwen-img-edit-21, prompt, input_images /abs/base.png (first slot), seed 7
 h3:                model h3, prompt, image /abs/frame.png, seed 7
 
-All three recipes (standard / draft / final) share one lora bag —
+All three recipes share one lora bag —
 the pick changes geometry and the finishing rail, not the speed.
 Same seed family across a shot re-rolls; change seed for variation.
 

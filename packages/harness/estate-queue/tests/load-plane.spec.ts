@@ -609,19 +609,33 @@ describe("loadFlow", () => {
 
 describe("toolRowFor — the mods projection (stroke 79)", () => {
   it("serves the declared kinds beside params_schema (the agent contract — verbatim, leaf_face never rides)", () => {
+    // THE M-T4 WHOLE-ROW SERVE (the timeline brief, 2026-11-20): the
+    // names-only array that stood here taught the agent the dial's
+    // name but not its band, so every press learned the bounds by
+    // refusal. An agent that writes VALUES needs the whole row —
+    // exactly like the form-spec face — and a row that cannot say
+    // what it is (name/label/type) refuses at the serve boundary.
     const def = DEF({
       mods: [
         { kind: "sam3", label: "SAM3", param_key: "sam3", cardinality: "list", category: "standalone", leaf_face: "bbox-canvas",
-          fields: [{ name: "prompt" }, { name: "bbox_x" }] },
+          fields: [
+            { name: "prompt", label: "Prompt", type: "string", default: "" },
+            { name: "bbox_x", label: "Bbox X", type: "number", min: 0, max: 1, step: 0.01 },
+          ] },
         { kind: "draw", label: "Draw", param_key: "draw", cardinality: "list", category: "ordered", leaf_face: "paint-canvas",
-          fields: [{ name: "payload" }] },
+          fields: [{ name: "payload", label: "Payload", type: "string" }] },
       ] as never,
     });
     const out = toolRowFor("c", def, toolBaseRows(new Map([["c", def]])));
     assert.deepEqual(out["modifiers"], [
-      { kind: "sam3", param_key: "sam3", category: "standalone", cardinality: "list", fields: ["prompt", "bbox_x"] },
-      { kind: "draw", param_key: "draw", category: "ordered", cardinality: "list", fields: ["payload"] },
-    ], "verbatim kinds; leaf_face stays a UI concern (never rides)");
+      { kind: "sam3", param_key: "sam3", category: "standalone", cardinality: "list", fields: [
+        { name: "prompt", label: "Prompt", type: "string", default: "" },
+        { name: "bbox_x", label: "Bbox X", type: "number", min: 0, max: 1, step: 0.01 },
+      ] },
+      { kind: "draw", param_key: "draw", category: "ordered", cardinality: "list", fields: [
+        { name: "payload", label: "Payload", type: "string" },
+      ] },
+    ], "verbatim kinds, whole field rows; leaf_face stays a UI concern (never rides)");
   });
 
   it("a kindless card serves NO modifiers key (never an empty array)", () => {
@@ -629,19 +643,24 @@ describe("toolRowFor — the mods projection (stroke 79)", () => {
     assert.equal("modifiers" in out, false);
   });
 
-  it("a category-less kind omits the category (ordered is the default, never spelled)", () => {
+  it("a category-less kind omits the category (ordered is the default, never spelled); a row that cannot say what it is refuses", () => {
     const def = DEF({
       mods: [{ kind: "loras", label: "L", param_key: "loras", cardinality: "list" }] as never,
     });
     const out = toolRowFor("c", def, toolBaseRows(new Map([["c", def]])));
+    assert.deepEqual(out["modifiers"], [{ kind: "loras", param_key: "loras", cardinality: "list", fields: [] }]);
+    // THE M-T4 GUARD: the old nameless-degrade ('' for an unnamed
+    // row) served an unaddressable key the compose door could never
+    // bind — the agent wrote to a field that does not exist. A row
+    // without string name/label/type refuses LOUD at the serve
+    // boundary (the same law the form-spec face holds).
     const nameless = DEF({
       mods: [{ kind: "loras", label: "L", param_key: "loras", cardinality: "list", fields: [{}, { name: "strength" }] }] as never,
     });
-    assert.deepEqual(out["modifiers"], [{ kind: "loras", param_key: "loras", cardinality: "list", fields: [] }]);
-    assert.deepEqual(
-      (toolRowFor("c", nameless, toolBaseRows(new Map([["c", nameless]])))["modifiers"] as Array<{ fields: string[] }>)[0]["fields"],
-      ["", "strength"],
-      "a nameless field row degrades to '' (never a crash, never a drop)",
+    assert.throws(
+      () => toolRowFor("c", nameless, toolBaseRows(new Map([["c", nameless]]))),
+      /mod kind loras field 0 must carry string name\/label\/type/,
+      "a nameless field row refuses loud (never a crash mid-serve, never a silent drop)",
     );
   });
 });

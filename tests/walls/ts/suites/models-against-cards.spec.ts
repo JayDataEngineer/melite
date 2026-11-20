@@ -525,7 +525,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // the ONE deliberate text field (born on its own 'naming' tab,
     // folded under General the same day — the tab-room ask; the
     // census count never moved).
-    assert.equal(walked, 490,
+    // 490 -> 492 (2026-11-20, the timeline brief): h3's draft +
+    // speech_language rows join the judged face — doc-plane
+    // authoring inputs (M-T6/M-T2), hidden on the card face,
+    // tool-face served; both carry zod defaults, so neither starves.
+    assert.equal(walked, 492,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility

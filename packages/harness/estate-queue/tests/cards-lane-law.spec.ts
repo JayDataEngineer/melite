@@ -710,13 +710,19 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     }
     expect(judged, "at least one card binds against declaring families (else this wall is vacuous)").toBeGreaterThan(0);
     // THE EXEMPT ROSTER (deliberate edits touch THIS list): the h3
-    // hidden last_frame alias. The size door surfaced the edit
-    // deliverable pair (visible_when under the match toggle, ON the
-    // lanes' surfaces as run params), so the claim loop above
-    // sanctions width/height — no roster, no carve: served, surfaced,
-    // claimed.
+    // hidden last_frame alias, and the timeline brief's doc-plane
+    // authoring inputs (2026-11-20) — draft (the M-T6 draft pin) and
+    // speech_language (the M-T2 stamp tag): both hidden on the card
+    // face (hidden:true), tool-face served, zod-defaulted — the
+    // calls-precedent class, never lane vocabulary the door reads.
+    // The size door surfaced the edit deliverable pair (visible_when
+    // under the match toggle, ON the lanes' surfaces as run params),
+    // so the claim loop above sanctions width/height — no roster, no
+    // carve: served, surfaced, claimed.
     expect(exempted.sort()).toEqual([
+      "h3-timeline:draft",
       "h3-timeline:last_frame",
+      "h3-timeline:speech_language",
     ]);
   });
 

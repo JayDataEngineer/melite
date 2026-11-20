@@ -44,9 +44,13 @@ describe("THE H3 WINDOW PROJECTION SEAM — carrier, served envelope, and film r
     // last_frame: the legacy FL2VA end anchor — a hidden validation
     // key for old drafts (the any-frame setup retired the face; pins
     // ride params.keyframes), kept so an old doc still walks.
+    // draft + speech_language (the timeline brief M-T6/M-T2,
+    // 2026-11-20): doc-plane authoring inputs the TOOL face serves
+    // (the calls precedent — the agent plane owns them) while the
+    // card face hides them; compose reads both.
     assert.deepEqual(
       spec.carrierInternal,
-      ["fps", "fps_seconds", "image_name", "interp_switch", "k", "last_frame", "length", "noise_seed", "sharpen_switch", "sla_switch"],
+      ["draft", "fps", "fps_seconds", "image_name", "interp_switch", "k", "last_frame", "length", "noise_seed", "sharpen_switch", "sla_switch", "speech_language"],
     );
     for (const k of spec.carrierInternal) {
       const field = (paramSchema.dict as Record<string, { meta?: { extra?: Record<string, unknown> } }>)[k];

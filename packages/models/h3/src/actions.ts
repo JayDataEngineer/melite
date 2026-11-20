@@ -555,7 +555,7 @@ function renderH3Film(
   // The notices ride the run's admission warns (filmAdmissionNotices
   // reads the SAME pass — one law, one home); the authored doc keeps
   // its own coordinates, the manifest and the stanza book these.
-  const admittedSpans = admitCallSpans(calls as unknown as Array<Record<string, unknown>>, transitionOverlap)
+  const admittedSpans = admitCallSpans(calls, transitionOverlap)
   for (let i = 0; i < spans.length; i++) {
     spans[i] = { ...spans[i]!, start: admittedSpans.spans[i]!.start, end: admittedSpans.spans[i]!.end }
   }
@@ -2993,8 +2993,8 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     // schema stamp derived from these same calls — reading it here
     // demoted multi-window docs to one window and burned the
     // operator's timing (bench-session-2d6af763, variant:'timeline').
-    const docCalls = Array.isArray(p.calls) ? p.calls : null
-    const isFilm = docCalls !== null && (docCalls as unknown[]).length > 1 && p.k === undefined
+    const docCalls = Array.isArray(p.calls) ? (p.calls as Array<Record<string, unknown>>) : null
+    const isFilm = docCalls !== null && docCalls.length > 1 && p.k === undefined
     if (isFilm) return renderH3Film(p, g, facts, model, runId)
     // THE CLIPS-STITCH LAW (2026-09-21; re-voiced by the
     // timeline-agent brief M-T1, 2026-11-20): the Music row's mix is
@@ -3009,7 +3009,7 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     const clipsPresent = clips.some((c) => c !== null && typeof c === 'object'
       && typeof (c as Record<string, unknown>).src === 'string' && ((c as Record<string, unknown>).src as string).trim() !== '')
     if (clipsPresent) {
-      if (p.k !== undefined || docCalls === null || (docCalls as unknown[]).length === 0) {
+      if (p.k !== undefined || docCalls === null || docCalls.length === 0) {
         throw new Error(
           'h3-timeline: audio clips ride the FILM path — this frozen single-window doc has clips but no film to mix over ' +
           '(author the doc as calls — one call plus clips promotes to the film path on its own — or clear the Music row)',
@@ -3021,10 +3021,10 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
       // can invent a line (the M-T2 hazard). The text is the
       // dictionary-clean constant; the promotion notice is the card's
       // admission warn (one pure helper, both consumers).
-      const sole = (docCalls as Array<Record<string, unknown>>)[0]!
+      const sole = docCalls[0]!
       const soleEnd = typeof sole.end_frame === 'number' && Number.isFinite(sole.end_frame) ? sole.end_frame : null
       if (soleEnd !== null) {
-        (docCalls as Array<Record<string, unknown>>).push({
+        docCalls.push({
           text: SILENT_TAIL_TEXT,
           start_frame: soleEnd,
           end_frame: soleEnd + SILENT_TAIL_FRAMES,

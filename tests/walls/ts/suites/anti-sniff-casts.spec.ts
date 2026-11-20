@@ -215,7 +215,7 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/harness/melite-tools/src/tools/melite-construct.ts': 1,
   'packages/harness/melite-tools/src/tools/melite-flow.ts': 4,
   'packages/harness/melite-tools/src/tools/melite-view.ts': 8,
-  'packages/models/h3/src/actions.ts': 3,
+  'packages/models/h3/src/actions.ts': 2, // 3→2 2026-11-20: the docCalls plane is typed once at its Array.isArray narrow (Array<Record<string, unknown>> | null) — the promotion block and the film-grammar read lost their casts; the remaining pair rides the pre-existing unknown[] length arms.
   'packages/models/yue2/src/actions.ts': 1,
   'packages/motion/motion/src/ui/studio/motionDoc.ts': 2,
   'packages/video/h3-timeline/src/tool.ts': 1,
