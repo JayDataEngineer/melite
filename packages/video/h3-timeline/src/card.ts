@@ -1025,7 +1025,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // compose door refused 'unknown param(s): prompt_waivers' on
     // every press the gate itself was designed to waive. Wire
     // vocabulary the door sanctions, never lane vocabulary.
-    admits: ['ctx_*', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'prompt_waivers', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'upscale', 'variant'],
+    // `draft` + `speech_language` JOINED THIS LIST (2026-11-20, the
+    // same two-door parity cure, the timeline brief M-T6/M-T2): the
+    // doc-plane authoring inputs compose READS (the draft pin's 480p
+    // tier, the dialogue stamp's language tag) ride the schema
+    // carrier hidden:true (the calls precedent — the TOOL face
+    // serves them, no card lane ever will), so the write door admits
+    // any doc carrying them while the compose mirror bannered them
+    // 'fires nothing on this lane'. cards-mirror-door-parity reds on
+    // exactly that drift; the admission declares the truth.
+    admits: ['ctx_*', 'draft', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'prompt_waivers', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'speech_language', 'upscale', 'variant'],
     // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
     // features.modifiers channel): the swap + repair + extend arms.
     // The mask card's sam3/sam2/draw precedent — one kind per arm,

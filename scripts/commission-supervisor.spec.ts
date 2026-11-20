@@ -353,7 +353,18 @@ describe('commission-supervisor — the queue-lock turn-wait (two makers, one qu
 
   it('a DEAD pid in the lock is not a holder — the launch is immediate (the steal is the queue\'s own law)', () => {
     const { dir, prompt, prefix } = stage(['ok'])
-    writeFileSync(join(dir, 'gateway.lock'), '4000000')
+    // THE DEAD-PID PICK (2026-11-20): a hardcoded pid is a live
+    // process on some machines (this box's pid_max is 4194304 and
+    // 4000000 was allocated — the supervisor lawfully waited and the
+    // arm red). Scan down from the ceiling for a real hole; the hole
+    // is the arm's own dead holder on every machine.
+    const pidMax = Number(readFileSync('/proc/sys/kernel/pid_max', 'utf8').trim())
+    let deadPid: number | null = null
+    for (let p = pidMax - 1; p > pidMax - 500; p--) {
+      if (!existsSync(`/proc/${p}`)) { deadPid = p; break }
+    }
+    assert.ok(deadPid !== null, 'no dead pid near the ceiling — the arm cannot stage its holder')
+    writeFileSync(join(dir, 'gateway.lock'), String(deadPid))
     const t0 = Date.now()
     const r = runLock(dir, prompt, prefix, { SUPERVISOR_STATE_ROOT: dir, SUPERVISOR_LOCK_WAIT_S: '7' })
     const took = Date.now() - t0
