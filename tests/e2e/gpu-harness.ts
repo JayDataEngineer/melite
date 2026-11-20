@@ -29,6 +29,7 @@ import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entri
 import { cardRegistryProvider } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { QueueService } from '../../packages/harness/estate-queue/src/service.ts'
+import { partitionQueue, queueEntryPromptId } from './queue-ownership.ts'
 import { lanePresenceMiss } from '../../packages/harness/estate-queue/src/cardsLanes.ts'
 import { mintSandbox } from '../helpers/harness.ts'
 
@@ -262,20 +263,59 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
       // leftover item is a true orphan: clear it (serial battery —
       // our row is the queue's content), re-interrupt, and keep the
       // assert's teeth: anything surviving both still reds.
+      //
+      // THE QUEUE OWNERSHIP LAW (the operator's-bench burn,
+      // 2026-11-20): the blind `clear: true` + interrupt wiped the
+      // OPERATOR'S pending bench items and killed their running
+      // render the night their bench shared the engine — the serial
+      // assumption licensed a whole-queue wipe. The settled run's
+      // sidecar receipt carries the ENGINE-SIDE prompt_id
+      // (graph_receipt.prompt_id — minted at POST /prompt), so
+      // ownership is exact: partition by id, clear only OURS,
+      // interrupt only while the RUNNING item is ours, and name
+      // foreign work without touching it — the anny teeth narrow to
+      // our own prompt and survive it.
+      const flowOwned = JSON.parse(readFileSync(sidecar, 'utf8')) as {
+        graph_receipt?: { prompt_id?: string }
+      }
+      const oursId = typeof flowOwned.graph_receipt?.prompt_id === 'string'
+        ? flowOwned.graph_receipt.prompt_id
+        : ''
+      if (oursId === '') {
+        throw new Error(tag
+          + ': the settled run never carried a graph_receipt.prompt_id — the queue\u2019s ownership cannot be judged, so nothing will be cleared (a whole-queue wipe here is the operator\u2019s-burn class)')
+      }
       let cleared = 0
       for (let i = 0; i < 60; i++) {
         const queue = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`).then((r) => r.json() as Promise<{ queue_running?: unknown[], queue_pending?: unknown[] }>).catch(() => null)
-        if (queue !== null && (queue.queue_running?.length ?? 0) + (queue.queue_pending?.length ?? 0) === 0) break
-        if (i === 15) {
-          cleared = (queue?.queue_pending?.length ?? 0) + (queue?.queue_running?.length ?? 0)
-          await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ clear: true }) }).catch(() => { /* the assert below owns the failure */ })
-          await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/interrupt`, { method: 'POST' }).catch(() => { /* same */ })
-          console.log(`[${tag}] drain: cleared ${cleared} queue item(s) left behind by the settled run — serial battery, our row is the queue`)
+        if (queue !== null) {
+          const running = partitionQueue(queue.queue_running ?? [], oursId)
+          const pending = partitionQueue(queue.queue_pending ?? [], oursId)
+          const oursLeft = running.ours.length + pending.ours.length
+          if (oursLeft === 0) {
+            const foreign = running.foreign + pending.foreign
+            if (foreign > 0) {
+              console.log(`[${tag}] drain: ${foreign} foreign queue item(s) live — the operator\u2019s work, never touched; our prompt ${oursId} owns none`)
+            }
+            break
+          }
+          if (i === 15) {
+            // delete names OUR prompt ids (the engine drops pending
+            // ones; a running id is a server-side no-op) and the
+            // interrupt flies ONLY while the executing item is ours
+            cleared = oursLeft
+            const ids = [...running.ours, ...pending.ours].map((e) => JSON.stringify(queueEntryPromptId(e)))
+            await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: `{"delete":[${ids.join(',')}]}` }).catch(() => { /* the assert below owns the failure */ })
+            if (running.ours.length > 0) {
+              await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/interrupt`, { method: 'POST' }).catch(() => { /* same */ })
+            }
+            console.log(`[${tag}] drain: cleared ${cleared} of OUR queue item(s) left behind by the settled run (prompt ${oursId})`)
+          }
+          if (i === 59) throw new Error(tag + ': our prompt ' + oursId + ' survived the owned clear + interrupt — an orphaned render would eat the next rows\u2019 VRAM budgets (the anny burn class)')
         }
-        if (i === 59) throw new Error(tag + ': the stop left the engine queue non-empty after 60s — an orphaned render would eat the next rows\' VRAM budgets (the anny burn class)')
         await new Promise((r) => setTimeout(r, 1000))
       }
-      if (cleared > 0) console.log(`[${tag}] drain: queue empty after clearing ${cleared} orphan(s)`)
+      if (cleared > 0) console.log(`[${tag}] drain: queue clear of our items after clearing ${cleared} orphan(s)`)
       return { runId: ans.run_id, workflow: wf as Queued['workflow'] }
     }
     await new Promise((r) => setTimeout(r, 500))
