@@ -337,8 +337,17 @@ function iteratorFor(input: ArtifactInput): AsyncIterator<Uint8Array> {
     const stream = input as ReadableStream<Uint8Array>;
     if (typeof stream.getReader === "function") {
       const reader = stream.getReader();
+      // THE READ MAPPING (the DOM-lib drift, 2026-11-20): TS 5.7's
+      // ReadableStreamReadDoneResult leaves `value` optional, which no
+      // longer assigns to IteratorReturnResult — the read result is
+      // mapped explicitly, one shape per branch.
       return {
-        next: (): Promise<IteratorResult<Uint8Array>> => reader.read(),
+        next: async (): Promise<IteratorResult<Uint8Array>> => {
+          const r = await reader.read();
+          return r.done === true
+            ? { done: true, value: undefined as never }
+            : { done: false, value: r.value };
+        },
         return: async (): Promise<IteratorResult<Uint8Array>> => {
           await reader.cancel();
           return { done: true, value: undefined };

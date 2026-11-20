@@ -207,8 +207,17 @@ function iteratorFor(input) {
         const stream = input;
         if (typeof stream.getReader === "function") {
             const reader = stream.getReader();
+            // THE READ MAPPING (the DOM-lib drift, 2026-11-20): TS 5.7's
+            // ReadableStreamReadDoneResult leaves `value` optional, which no
+            // longer assigns to IteratorReturnResult — the read result is
+            // mapped explicitly, one shape per branch.
             return {
-                next: () => reader.read(),
+                next: async () => {
+                    const r = await reader.read();
+                    return r.done === true
+                        ? { done: true, value: undefined }
+                        : { done: false, value: r.value };
+                },
                 return: async () => {
                     await reader.cancel();
                     return { done: true, value: undefined };
