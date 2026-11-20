@@ -149,6 +149,30 @@ const ADOPT_PROBE_TIMEOUT_MS = 10_000
  *  spent budget — a re-press after pending must first read
  *  run_status (the doubled-queue trap the board names). */
 const PRESS_BUDGET_MS = 110_000
+/** THE BENCH-SCALED PRESS WINDOW (operator 2026-11-20: "it can only
+ * do 9 at a time instead of the full bench"): D-7's 110 s window is
+ * sized for ONE render's press — a bench pass spent it in ~9 fast
+ * rows and returned pending with the tail never sent, so the
+ * operator's 12-stage bench took a press per 9 and a 99-stage
+ * restore could never drain. The bench window scales with the
+ * stages THE PRESS will press (the per-stage {stage} press rides
+ * the single-stage shape): a per-stage share on top of the base,
+ * ceilinged at the observation budget's own 900 s — the number
+ * this file calls "above every legitimate render observed". The
+ * ceiling keeps D-7's law a bench law too: past the window the
+ * receipt is pending and the unpressed tail is never sent into an
+ * aborter's window — the receipt names how many remain. */
+const PRESS_STAGE_SHARE_MS = 90_000
+const PRESS_CEILING_MS = OBSERVE_MAX_MS
+/** The whole-press window: the D-7 base for a single pressed stage,
+ * base + a share per additional bench row, never past the ceiling.
+ * @param pressing the stage count this press will press (1 for the
+ *  single-stage and {stage} arms).
+ * @returns the press window in ms. */
+export const pressBudgetMs = (pressing: number): number =>
+  pressing <= 1
+    ? PRESS_BUDGET_MS
+    : Math.min(PRESS_BUDGET_MS + PRESS_STAGE_SHARE_MS * (pressing - 1), PRESS_CEILING_MS)
 /** THE STAMP-BACK TAKES (F3 D3-07, the 15 s bound's third burn —
  *  F2 D-07 → D3-05 → s_94): the terminal attribution PATCH takes
  *  this many swipes at the drafts door, each with its own fresh
@@ -506,8 +530,11 @@ async function runBench(
   }
   // THE PRESS DEADLINE (D-7): one budget for the WHOLE press — the
   // loop starts the clock at the first pressed stage, and every
-  // stage's observation spends only what remains.
-  const pressDeadline = Date.now() + PRESS_BUDGET_MS
+  // stage's observation spends only what remains. The window is
+  // BENCH-SCALED (the 9-at-a-time burn above): the base covers one
+  // stage; each additional row this pass will press adds its share,
+  // ceilinged — the {stage} press rides the single-stage shape.
+  const pressDeadline = Date.now() + pressBudgetMs(only !== undefined ? 1 : rows.length)
   /** THE SHARED OBSERVE-SETTLE TAIL (the adopt law's extraction,
    * 2026-11-18): one law for a fresh press and an adopted run alike —
    * the D-7 budget check, the observation, the pass row, and the
@@ -521,16 +548,25 @@ async function runBench(
     currentInputs: Record<string, string> | undefined,
     extras: { stale?: string; warning?: string; adopted?: boolean } = {},
   ): Promise<Record<string, unknown> | undefined> => {
-    const pendingReceipt = (): Record<string, unknown> => ({ mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass })
+    // THE REMAINDER (the 9-at-a-time burn's receipt half): the
+    // pending face names how many bench rows this press never
+    // reached — "pending" alone read as still-working and the agent
+    // never re-pressed; "remaining: 90" is the continuation
+    // contract the note's re-press instruction rides.
+    const remainingAfter = rows.length - rowIndex - 1
+    const pendingReceipt = (): Record<string, unknown> => ({ mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, remaining: remainingAfter, ...(intent !== '' ? { intent } : {}), ...(only !== undefined ? { stage: only } : {}), ...pressCensus(), pass })
     // D-7 — THE PRESS BUDGET: this stage's observation spends only
     // what remains of the whole press's window. Budget spent → the
     // pending receipt NOW (the run is durable, run_id carried); the
     // remaining stages are never observed into an aborter's window.
+    const remainNote = remainingAfter > 0
+      ? ' (' + String(remainingAfter) + ' stage(s) remain)'
+      : ''
     const remainMs = pressDeadline - Date.now()
     if (remainMs <= 0) {
       pass.push({ stage: stageId, card, run_id: runId, status: 'queued',
         ...(extras.adopted === true ? { adopted: true } : {}),
-        note: 'the press budget spent — the run is durable on the queue; re-press to drain the tail: a live run is adopted (never re-sent), settled stages skip' })
+        note: 'the press budget spent — the run is durable on the queue; re-press to drain the tail' + remainNote + ': a live run is adopted (never re-sent), settled stages skip' })
       return pendingReceipt()
     }
     let outcome: Awaited<ReturnType<typeof observeAndAttribute>>
@@ -580,7 +616,9 @@ async function runBench(
     }
     return undefined
   }
+  let rowIndex = -1
   for (const row of rows) {
+    rowIndex += 1
     const stageId = row['id'] as string
     // THE PER-STAGE PRESS (W-8): the named row alone rides the
     // compose/wire-resolution/attribution path below — every sibling

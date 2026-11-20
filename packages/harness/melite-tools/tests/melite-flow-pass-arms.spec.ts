@@ -7,7 +7,7 @@
 import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import { meliteFlow } from '../src/tools/melite-flow.ts'
+import { meliteFlow, pressBudgetMs } from '../src/tools/melite-flow.ts'
 import { fakeEstateStatus } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
@@ -643,13 +643,15 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       const tool = meliteFlow(fake.estate)
       const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
       const runP = tool.execute({ bench: true }, exec) as Promise<Record<string, unknown>>
-      // one full poll cadence past the 110 s budget: the deadline
+      // one full poll cadence past the SCALED window (D-7 base 110 s
+      // + one share for the sibling row = 200 s): the deadline
       // check rides the tick AFTER the budget boundary
-      await vi.advanceTimersByTimeAsync(111_600)
+      await vi.advanceTimersByTimeAsync(201_600)
       const out = await runP
       assert.equal(out.status, 'pending')
       assert.equal(out.run_id, 'r_slow')
       assert.equal(out.stoppedAt, 's_0')
+      assert.equal(out.remaining, 1, 'the receipt names the unpressed tail — the re-press contract')
       assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, "the sibling was never pressed — the budget is the press's, not the stage's")
       const pass = out.pass as Array<Record<string, unknown>>
       assert.equal(pass[0]!['status'], 'queued')
@@ -835,7 +837,11 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
           }
           if (lane === 'runsStatus') {
             polls += 1
-            if (polls < 73) return { status: 200, body: { status: 'running', stages: [] } }
+            // 132 poll cadences (198 s) hold s_0 live; the completed
+            // poll + its stamp takes land the terminal stamp past the
+            // SCALED 2-row window (200 s), before s_1's pre-observe
+            // check spends what remains.
+            if (polls < 133) return { status: 200, body: { status: 'running', stages: [] } }
             return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'done.png' }] } }
           }
           if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: false, reason: 'tab closed' } }
@@ -850,7 +856,7 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       // 72 poll cadences (108 s) + the completed poll's stamp takes
       // (two 1.2 s refusals) land the terminal stamp at ~111.9 s —
       // past the 110 s press budget, before s_1's pre-observe check.
-      await vi.advanceTimersByTimeAsync(115_000)
+      await vi.advanceTimersByTimeAsync(210_000)
       const out = await runP
       assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 2, 's_1\u2019s start flew before the check — the run is durable')
       return out
@@ -867,7 +873,8 @@ describe('melite_flow bench — the abort faces (D-7, defect board 2026-11-18: f
       assert.equal(pass[0]!['status'], 'done', 's_0 observed to its end before the budget died')
       assert.equal(pass[1]!['status'], 'queued')
       assert.equal(pass[1]!['note'], 'the press budget spent — the run is durable on the queue; re-press to drain the tail: a live run is adopted (never re-sent), settled stages skip',
-        'the queued note names the budget and the drain verb, never a failure')
+        'the queued note names the budget and the drain verb, never a failure — s_1 IS the tail, so no remainder clause')
+      assert.equal(withIntent.remaining, 0, 'the receipt names the unpressed tail: zero rows behind the last one')
       const noIntent = await press(undefined)
       assert.equal(noIntent.status, 'pending')
       assert.equal(noIntent.intent, undefined, 'a bench with no intent rides no intent key — the word is the bench\u2019s')
@@ -1687,8 +1694,9 @@ describe('melite_flow bench — THE ADOPT LAW (a row owning a run is adopted, ne
             // the probe answers — and the wall clock the budget
             // reads has moved past the deadline while the first
             // stage's observation ran: the adoption is honest, the
-            // window to observe it is gone
-            vi.setSystemTime(Date.now() + 120_000)
+            // window to observe it is gone (210 s: past the SCALED
+            // 2-row window of 200 s)
+            vi.setSystemTime(Date.now() + 210_000)
             return { status: 200, body: { status: 'running', stages: [] } }
           }
           return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/first.png' }] } }
@@ -1960,5 +1968,111 @@ describe('melite_flow bench — THE ADOPT LAW (a row owning a run is adopted, ne
     const pass = out.pass as Array<Record<string, unknown>>
     assert.match(String(pass[0]!['aborted']), /lane teardown/, 'a bare-string reason rides verbatim, never mangled')
     assert.equal(pass[0]!['adopted'], true)
+  })
+
+  test('THE BENCH-SCALED WINDOW (the 9-at-a-time burn, 2026-11-20): the press window grows with the bench and ceilings at the observe budget', () => {
+    // Operator: "it can only do 9 at a time instead of the full
+    // bench" — D-7's 110 s window was sized for ONE render; a bench
+    // pass spent it in ~9 fast rows. The unit law: one pressed
+    // stage rides the D-7 base UNCHANGED; each additional row adds
+    // its share; the ceiling is the observation budget's own number.
+    assert.equal(pressBudgetMs(1), 110_000, 'a single pressed stage keeps D-7\u2019s exact shape')
+    assert.equal(pressBudgetMs(2), 200_000, 'one share per additional row')
+    assert.equal(pressBudgetMs(6), 560_000, 'the share scales linearly inside the ceiling')
+    assert.equal(pressBudgetMs(9), 830_000, 'nine rows: the last full share before the ceiling')
+    assert.equal(pressBudgetMs(10), 900_000, 'the ceiling holds — the window never exceeds the observe budget')
+    assert.equal(pressBudgetMs(99), 900_000, 'a restored 99-stage bench rides the ceiling, and the pending receipt drains the tail')
+  })
+
+  test('THE BENCH-SCALED WINDOW, behavioral: a 6-row bench holds its observe 560 s — the 110 s cutoff is gone, the tail never sent past it', async () => {
+    // The D-7 sibling law under the SCALED window: the fake clock
+    // walks past the OLD 110 s boundary once, mid-press — the press
+    // must STILL be observing (under the flat window it died pending
+    // at s_1 here) — and the whole 6-row bench drains in one press.
+    let runsStatusCalls = 0
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: benchWith([
+            { id: 's_0', card: 'image-gen', params: {} },
+            { id: 's_1', card: 'image-gen', params: {} },
+            { id: 's_2', card: 'image-gen', params: {} },
+            { id: 's_3', card: 'image-gen', params: {} },
+            { id: 's_4', card: 'image-gen', params: {} },
+            { id: 's_5', card: 'image-gen', params: {} },
+          ]) }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_six', status: 'queued' } }
+        if (lane === 'runsStatus') {
+          // ONE bump on the FIRST poll: the clock lands BETWEEN the
+          // windows — 150 s, past D-7's flat 110 s cutoff, deep
+          // inside the scaled 560 s window. Under the flat window
+          // the pass died pending at s_1 here; under the scaled law
+          // every row completes — the wall's discriminating arm.
+          if (runsStatusCalls++ === 0) vi.setSystemTime(Date.now() + 150_000)
+          return { status: 200, body: { status: 'completed', stages: [{ id: 's_0', url: 'out/zero.png' }] } }
+        }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
+    vi.useFakeTimers()
+    try {
+      const runP = tool.execute({ bench: true }, exec) as Promise<Record<string, unknown>>
+      await vi.advanceTimersByTimeAsync(60_000)
+      const out = await runP
+      assert.equal(out.status, 'done', 'the whole bench drained in one press — the 110 s cutoff that stopped it at nine rows is gone')
+      assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 6, 'every row started — none stranded by the old flat window')
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass.length, 6)
+      assert.equal(pass[0]!['status'], 'done', 's_0 settled inside the scaled window')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('THE BENCH-SCALED WINDOW, spent: past the scaled window the pending face names the tail — the D-7 law still holds at the ceiling', async () => {
+    // The OTHER half of the law: the scaled window is still a
+    // window. A 6-row bench whose rows never settle spends 560 s,
+    // then the receipt is pending with the tail named and never
+    // sent — D-7's shape, ceilinged.
+    const lanes: Array<(lane: string, args: unknown[]) => { status: number; body: unknown } | undefined> = [
+      (lane: string) => {
+        if (lane === 'benchGet') {
+          return { status: 200, body: benchWith([
+            { id: 's_0', card: 'image-gen', params: {} },
+            { id: 's_1', card: 'image-gen', params: {} },
+            { id: 's_2', card: 'image-gen', params: {} },
+            { id: 's_3', card: 'image-gen', params: {} },
+            { id: 's_4', card: 'image-gen', params: {} },
+            { id: 's_5', card: 'image-gen', params: {} },
+          ]) }
+        }
+        if (lane === 'runsStart') return { status: 202, body: { run_id: 'r_six_live', status: 'queued' } }
+        if (lane === 'runsStatus') return { status: 200, body: { status: 'running', stages: [] } }
+        if (lane === 'draftsStagePatch') return { status: 200, body: { delivered: true } }
+        return undefined
+      },
+    ]
+    const fake = fakeEstateStatus(lanes)
+    const tool = meliteFlow(fake.estate)
+    const exec = fakeExec(new AbortController().signal, { agent: { id: 'session-chat7' } })
+    vi.useFakeTimers()
+    try {
+      const runP = tool.execute({ bench: true }, exec) as Promise<Record<string, unknown>>
+      await vi.advanceTimersByTimeAsync(561_600)
+      const out = await runP
+      assert.equal(out.status, 'pending')
+      assert.equal(out.stoppedAt, 's_0')
+      assert.equal(out.remaining, 5, 'the five-row tail is named — the re-press contract at the ceiling')
+      assert.equal(fake.calls.filter((c) => c.lane === 'runsStart').length, 1, 'the tail was never sent past the window')
+      const pass = out.pass as Array<Record<string, unknown>>
+      assert.equal(pass[0]!['status'], 'queued')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

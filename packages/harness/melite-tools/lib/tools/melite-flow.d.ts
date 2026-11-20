@@ -1,6 +1,12 @@
 import { type DraftId } from '@melite/contracts/benchStage';
 import type { Estate } from '../estate.js';
 import type { ToolDefinition } from '../types.js';
+/** The whole-press window: the D-7 base for a single pressed stage,
+ * base + a share per additional bench row, never past the ceiling.
+ * @param pressing the stage count this press will press (1 for the
+ *  single-stage and {stage} arms).
+ * @returns the press window in ms. */
+export declare const pressBudgetMs: (pressing: number) => number;
 /** THE OUTCOME OBSERVER, agent-side (observeRunOutcome's law, the
  *  attribution half): poll the run to terminal, writing every flip
  *  onto the stage row (runStatus + result) through the DRAFTS
