@@ -282,8 +282,17 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
         ? flowOwned.graph_receipt.prompt_id
         : ''
       if (oursId === '') {
-        throw new Error(tag
-          + ': the settled run never carried a graph_receipt.prompt_id — the queue\u2019s ownership cannot be judged, so nothing will be cleared (a whole-queue wipe here is the operator\u2019s-burn class)')
+        // THE NEVER-SUBMITTED FACE (the receipt's own law: prompt_id
+        // is "absent until the run has submitted"): a GPU-diet row
+        // whose stop wins the race against the engine POST settles
+        // with no id — nothing of ours is on the queue BY
+        // CONSTRUCTION (we sent nothing), so the serial proof is
+        // satisfied by the absence itself. The queue content is
+        // foreign-only; name it, never touch it.
+        const probe = await fetch(`http://${ENGINE_HOST}:${ENGINE_PORT}/queue`).then((r) => r.json() as Promise<{ queue_running?: unknown[], queue_pending?: unknown[] }>).catch(() => null as { queue_running?: unknown[], queue_pending?: unknown[] } | null)
+        const foreign = (probe?.queue_running?.length ?? 0) + (probe?.queue_pending?.length ?? 0)
+        console.log(`[${tag}] drain: our run settled without ever submitting (no prompt_id) — nothing of ours can be on the queue; ${foreign} foreign item(s) live, untouched`)
+        return { runId: ans.run_id, workflow: wf as Queued['workflow'] }
       }
       let cleared = 0
       for (let i = 0; i < 60; i++) {

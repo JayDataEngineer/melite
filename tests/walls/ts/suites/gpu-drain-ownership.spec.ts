@@ -48,10 +48,14 @@ describe('THE QUEUE OWNERSHIP LAW (the drain clears only its own prompt — the 
     assert.equal(foreign, 3)
   })
 
-  it('an unjudgable run (no owned id) partitions to zero ours — the drain\u2019s fail-closed face reds instead of clearing', () => {
-    // the drain refuses to judge the queue at all when its own run
-    // carries no prompt id (gpu-harness\u2019s empty-id throw); the
-    // partition itself must agree: nothing is ours without the id
+  it('an unjudgable run (no owned id) partitions to zero ours — the never-submitted face passes, the wipe path stays unreachable', () => {
+    // the receipt's own law: prompt_id is "absent until the run has
+    // submitted" — a GPU-diet row stopped before the engine POST
+    // settles with no id, and nothing of ours can be on the queue
+    // by construction. The partition must agree: nothing is ours
+    // without the id, so the drain's whole-queue wipe is unreachable
+    // on this face (gpu-harness passes it with the never-submitted
+    // voice instead of judging the queue).
     const queue = [objectFace('r_ours')]
     const { ours, foreign } = partitionQueue(queue, '')
     assert.equal(ours.length, 0, 'an empty owned id matches NOTHING — the wipe path is unreachable')
