@@ -3,7 +3,7 @@ import {
   PROXY_SETUP,
   resolutionFacade,
   positiveIntFromEnv,
-  standardDecoratorPlugin,
+  vitestPlugins,
   tryLoadEnvFile,
   vitestExecArgv,
 } from './vitest.shared.ts'
@@ -17,7 +17,7 @@ const DEFAULT_E2E_MAX_WORKERS = 4
 const e2eMaxWorkers = positiveIntFromEnv('DSH_E2E_MAX_WORKERS', DEFAULT_E2E_MAX_WORKERS)
 
 export default defineConfig({
-  plugins: [standardDecoratorPlugin()],
+  plugins: vitestPlugins(),
   resolve: {
     alias: { ...resolutionFacade() },
   },

@@ -5,7 +5,7 @@ import {
   PROXY_SETUP,
   resolutionFacade,
   rootPath,
-  standardDecoratorPlugin,
+  vitestPlugins,
   tryLoadEnvFile,
   vitestExecArgv,
 } from './vitest.shared.ts'
@@ -22,7 +22,7 @@ tryLoadEnvFile()
 const CARD_VIEW = rootPath('packages/web/melite-card-view')
 
 export default defineConfig({
-  plugins: [standardDecoratorPlugin()],
+  plugins: vitestPlugins(),
   resolve: {
     alias: {
       ...resolutionFacade(),

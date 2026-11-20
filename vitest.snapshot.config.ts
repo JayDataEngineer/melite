@@ -6,7 +6,7 @@ import {
   resolutionFacade,
   positiveIntFromEnv,
   rootPath,
-  standardDecoratorPlugin,
+  vitestPlugins,
   vitestExecArgv,
 } from './vitest.shared.ts'
 
@@ -32,7 +32,7 @@ if (process.env.DSH_SNAPSHOT === 'record') {
 }
 
 export default defineConfig({
-  plugins: [standardDecoratorPlugin()],
+  plugins: vitestPlugins(),
   resolve: {
     alias: {
       ...resolutionFacade(),

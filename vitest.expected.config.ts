@@ -3,13 +3,13 @@ import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
   resolutionFacade,
-  standardDecoratorPlugin,
+  vitestPlugins,
   vitestExecArgv,
 } from './vitest.shared.ts'
 
 /** Owner-local expected output (DSH tier 4): keyless assembled CLI/process expectations without a recorded-session round trip. Drivers use *.expected.e2e.ts beside tests/expected/. CI runs built exports. */
 export default defineConfig({
-  plugins: [standardDecoratorPlugin()],
+  plugins: vitestPlugins(),
   resolve: {
     alias: { ...resolutionFacade() },
   },

@@ -137,6 +137,47 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   '@melite/infer-gallery': path.join(import.meta.dirname, 'packages/web/infer-gallery/src/index.ts'),
 }
 
+/**
+ * THE DRAFTS TWIN SOURCE PLANE (the 0/8-coverage ghost, 2026-11-20).
+ * Drafts' own source imports name "./spec.js" (NodeNext style — the
+ * lib build's Node ESM faces need the .js), and the twin file is the
+ * tsc-twin fence's TRACKED artifact: seven wall suites byte-judge its
+ * emitted face, never its execution. Vite resolves a relative literal
+ * .js to the on-disk twin FIRST (alias rows can't help — they match
+ * the specifier, and a relative specifier never carries the absolute
+ * path), so the whole drafts domain ran on the twin in every vitest
+ * tier: spec.ts collected ghost arithmetic (7/8, 0/8 — its draftIdOk
+ * body never executed as source) and the coverage ratchet red on a
+ * line the tree's own tests DO exercise. This plugin redirects any
+ * specifier that RESOLVES to the twin onto its source face; the twin
+ * stays tracked and judged, never executed. The estate-lib-sync law's
+ * "bench executes lib, walls judge src — never again" class.
+ */
+export function draftsTwinSourcePlugin() {
+  const twin = path.join(import.meta.dirname, 'packages/estate/drafts/src/spec.js')
+  const source = path.join(import.meta.dirname, 'packages/estate/drafts/src/spec.ts')
+  return {
+    name: 'melite-drafts-twin-source-plane',
+    enforce: 'pre' as const,
+    resolveId(specifier: string, importer: string | undefined) {
+      if (specifier === twin) return source
+      if (specifier.startsWith('.') && importer !== undefined) {
+        const candidate = path.resolve(path.dirname(importer.split('?', 1)[0]!), specifier)
+        if (candidate === twin) return source
+      }
+      return null
+    },
+  }
+}
+
+/**
+ * THE SINGLE SPREAD POINT for every vitest config's plugin array: the
+ * decorator lowering plus the source-plane doors, so a new door needs
+ * one edit here, not one per project. */
+export function vitestPlugins() {
+  return [standardDecoratorPlugin(), draftsTwinSourcePlugin()]
+}
+
 /** Resolve a repository-relative path from the root, for config-local alias groups. */
 export function rootPath(p: string): string {
   return path.join(import.meta.dirname, p)

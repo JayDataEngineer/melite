@@ -9,7 +9,7 @@ import {
   PROXY_SETUP,
   resolutionFacade,
   rootPath,
-  standardDecoratorPlugin,
+  vitestPlugins,
   vitestExecArgv,
 } from './vitest.shared.ts'
 
@@ -208,7 +208,7 @@ export default defineConfig({
   test: {
     projects: [
       {
-        plugins: [standardDecoratorPlugin()],
+        plugins: vitestPlugins(),
         ...BOOT_BUDGET,
         resolve: {
           alias: { ...resolutionFacade() },
@@ -297,7 +297,7 @@ export default defineConfig({
         // with --coverage — coverage invocations stay serial; two
         // concurrent coverage runs share coverage/.tmp and the
         // second deletes the first's tmp tree mid-merge).
-        plugins: [standardDecoratorPlugin()],
+        plugins: vitestPlugins(),
         ...BOOT_BUDGET,
         resolve: {
           alias: { ...resolutionFacade() },
@@ -348,7 +348,7 @@ export default defineConfig({
         // is where the first offender is re-homed — named here and
         // moved to an isolated include, exactly as the typecheck
         // pair was — never left in the pool.
-        plugins: [standardDecoratorPlugin()],
+        plugins: vitestPlugins(),
         ...BOOT_BUDGET,
         resolve: {
           alias: { ...resolutionFacade() },
@@ -394,7 +394,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [standardDecoratorPlugin()],
+        plugins: vitestPlugins(),
         ...BOOT_BUDGET,
         resolve: {
           alias: {
@@ -526,7 +526,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [standardDecoratorPlugin()],
+        plugins: vitestPlugins(),
         ...BOOT_BUDGET,
         resolve: {
           alias: {
@@ -611,7 +611,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [standardDecoratorPlugin()],
+        plugins: vitestPlugins(),
         ...BOOT_BUDGET,
         resolve: {
           alias: {
