@@ -1,4 +1,4 @@
-import type { RegistryFlow } from "./flowsData.js";
+import type { RegistryFlow } from "./flowsData.ts";
 /** The families seat's read shape (structural — the models
  * service's allDecls() rows, action arrays intact). */
 export type FamilyDeclRow = {

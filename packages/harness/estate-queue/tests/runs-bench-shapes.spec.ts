@@ -4,6 +4,7 @@
 // and a self-wired bench whose census walks junk rows, junk input
 // refs and a wire with no output.
 import { describe, it, expect, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -56,7 +57,7 @@ const seat = (
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot: state };
   new ModelsSeatFake(ctx);
   // draftReadFails models the draft vanishing BETWEEN the door's
   // existence probe and the bench read: the probe answers, the read

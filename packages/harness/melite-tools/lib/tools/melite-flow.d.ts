@@ -1,12 +1,28 @@
 import { type DraftId } from '@melite/contracts/benchStage';
-import type { Estate } from '../estate.js';
-import type { ToolDefinition } from '../types.js';
+import type { Estate } from '../estate.ts';
+import type { ToolDefinition } from '../types.ts';
+/** The configurable press window (the 2026-11-20 conventions-sweep
+ *  cure: the press timings are deployment-varying tunables — validated
+ *  Config fields on the plugin (index.ts), never bare constants; the
+ *  constants below are the schema DEFAULTS, the config wins when
+ *  set). All fields optional; every consumer resolves them through
+ *  {@link pressBudgetMs}. */
+export interface PressWindow {
+    /** The D-7 single-stage base window. */
+    baseMs?: number;
+    /** The per-additional-bench-row share. */
+    stageShareMs?: number;
+    /** The never-past ceiling (default: the observation budget). */
+    ceilingMs?: number;
+}
 /** The whole-press window: the D-7 base for a single pressed stage,
  * base + a share per additional bench row, never past the ceiling.
  * @param pressing the stage count this press will press (1 for the
  *  single-stage and {stage} arms).
+ * @param press the config-resolved window (schema defaults when
+ *  absent — the pre-config law, byte-for-byte).
  * @returns the press window in ms. */
-export declare const pressBudgetMs: (pressing: number) => number;
+export declare const pressBudgetMs: (pressing: number, press?: PressWindow) => number;
 /** THE OUTCOME OBSERVER, agent-side (observeRunOutcome's law, the
  *  attribution half): poll the run to terminal, writing every flip
  *  onto the stage row (runStatus + result) through the DRAFTS
@@ -35,5 +51,5 @@ export declare function observeAndAttribute(estate: Estate, draftId: DraftId, st
     stamp_note?: string;
     attribution?: string;
 }>;
-export declare function meliteFlow(estate: Estate): ToolDefinition;
+export declare function meliteFlow(estate: Estate, press?: PressWindow): ToolDefinition;
 //# sourceMappingURL=melite-flow.d.ts.map

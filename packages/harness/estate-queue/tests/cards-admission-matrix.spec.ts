@@ -36,6 +36,7 @@
 // SIMPLE, no mocks: the real boot (loadCardDefs — flavors register
 // LOUD), the real registry seat, the real facts file.
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 // THE OPERATOR-STATE FIREWALL (2026-11-15): d5Door composes the
 // REAL mod plane — without this the operator's rows file and engine
 // shelf leak machine state into the catalog premises (the T7 burn
@@ -65,6 +66,7 @@ beforeAll(async () => {
   const bootCtx = new Context();
   new FlowsSeatService(bootCtx);
   (bootCtx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "cards-matrix-")),
     stateRoots: [] as string[],
   };

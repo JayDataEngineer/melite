@@ -2,6 +2,7 @@
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
@@ -50,7 +51,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state, stateRoots: [state] };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot: state, stateRoots: [state] };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return {};

@@ -6,6 +6,7 @@
 // rides this package (vocab.ts), and the draft-id law comes from
 // `@melite/estate-drafts` (the law's one address).
 import type { Context, Plugin } from "@deepseek-ai/cordis";
+import Schema from "@deepseek-ai/schemastery";
 import { QueueService } from "./service.ts";
 import type { QueueConfig } from "./service.ts";
 import { RunsRuntimeService } from "./runsRegistry.ts";
@@ -26,6 +27,21 @@ import { FlowsSeatService } from "./flowsData.ts";
 
 export const name = "estate-queue";
 export const inject = ["timer"];
+
+/** The validator twin of {@link QueueConfig} — the plugin-law Config
+ *  every Cordis plugin must export (cordis-tutorial/05-config.md:
+ *  config is a declared schema, validated before apply, settable
+ *  from cordis.yml; the 2026-11-20 cordis-waterfall audit's F1 —
+ *  this seat shipped config fields with no schema, so a typo'd
+ *  cordis.yml row passed silently as absent). Every field optional:
+ *  the seat's own law is `config = {}`, the service resolves
+ *  defaults (service.ts documents each field's resolution). */
+export const Config: Schema<QueueConfig> = Schema.object({
+  repoRoot: Schema.string(),
+  stateRoot: Schema.string(),
+  stateRoots: Schema.array(Schema.string()),
+  executeCeilMs: Schema.number(),
+});
 
 export function apply(ctx: Context, config: QueueConfig = {}): void {
   // THE FLOWS SEAT MOUNTS FIRST (plugin-law J4, 2026-10-18): the

@@ -23,7 +23,7 @@
     "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
@@ -37,7 +37,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0"
+    "@deepseek-ai/cordis": "~4.1.0"
   },
   "description": "Krea 2 text-to-image family — the 8-step Turbo and 52-step Raw checkpoints behind one declared t2i lane, with a twelve-row operator LoRA board.",
   "repository": {

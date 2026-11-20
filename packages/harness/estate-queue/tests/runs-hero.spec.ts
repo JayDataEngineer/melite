@@ -6,6 +6,7 @@
 // match moves first. Pure arms only (declaredPrimaryFirst); the
 // runOne glue reads the run's cardId against the cached defs.
 import { describe, it, vi } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
@@ -137,7 +138,7 @@ describe("runOne declared-card artifact ordering", () => {
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => ({
       stages: {
@@ -160,7 +161,7 @@ describe("runOne declared-card artifact ordering", () => {
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => ({
       stages: {
@@ -196,7 +197,7 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     // arm the doc WITHOUT the run's class_type ("X")
     const wiring = new ComfyUIWiringService(ctx);
     wiring.arm(new Set(["KSampler"]), new Map());
@@ -226,7 +227,7 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const wiring = new ComfyUIWiringService(ctx);
     wiring.arm(new Set(["X"]), new Map());
     const engine = new FakeEngine(ctx);
@@ -246,7 +247,7 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     let submitted = 0;
     engine.onFlow = async () => {
@@ -286,7 +287,7 @@ describe("runOne's wiring fence on the SEAT path (production's path)", () => {
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const seat = new EnginesService(ctx);
     const calls = { n: 0 };
     seat.register("comfyui", {
@@ -490,7 +491,7 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const seat = new EnginesService(ctx);
     const seen: EngineStageRow[] = [];
     seat.register("comfyui", {
@@ -511,7 +512,7 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     let seen: MergeRow[] = [];
     engine.onFlow = async (rows) => {
@@ -536,7 +537,7 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     let seen: MergeRow[] = [];
     engine.onFlow = async (rows) => {
@@ -592,7 +593,7 @@ describe("runOne's card-label chain (the stage's own card, the empty stage card)
     // J12: the engine submit threads the queue seat's stateRoots
     // manifest (config-named call data — no env seam); the hero rig
     // pins an empty manifest (no chained refs ride these runs).
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     // armed WITHOUT the run's class ("X") — the fence refuses, and the
     // refusal names whoever composed the graph
     const wiring = new ComfyUIWiringService(ctx);
@@ -635,7 +636,7 @@ describe("runOne's hung-run fuse (executeCeilMs)", () => {
   ): Promise<Context> => {
     const { EnginesService } = await import("@melite/engine-contract");
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[], executeCeilMs };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[], executeCeilMs };
     const seat = new EnginesService(ctx);
     seat.register("comfyui", { executor: { executeStages: executor } });
     return ctx;
@@ -728,7 +729,7 @@ describe("runOne's hung-run fuse (executeCeilMs)", () => {
 describe("runOne's replay stamp (D11)", () => {
   const legacyCtx = (): { ctx: Context; engine: FakeEngine } => {
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     return { ctx, engine: new FakeEngine(ctx) };
   };
 
@@ -741,7 +742,7 @@ describe("runOne's replay stamp (D11)", () => {
   ): Promise<{ ctx: Context; calls: { n: number } }> => {
     const { EnginesService } = await import("@melite/engine-contract");
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const seat = new EnginesService(ctx);
     const calls = { n: 0 };
     seat.register("comfyui", {

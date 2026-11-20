@@ -10,6 +10,7 @@
 // no-stem silence, the name's immobility, the param's seat beside
 // (never inside) the graph, and the sidecar carry.
 import { describe, it } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
@@ -85,7 +86,7 @@ const twoArtifacts = (): FlowResult => ({
 describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
   it("a spelled stem labels every gallery row: the hero wears it bare, the rest wear `stem · 2…n`", async () => {
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => twoArtifacts();
     const run = runWithParams([
@@ -103,7 +104,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
 
   it("a single artifact wears the bare stem alone (never `stem · 2` on an only child)", async () => {
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => ({
       stages: { s: { outputs: {}, artifacts: ["/tmp/run-outname/only.mp4"] } },
@@ -120,7 +121,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
   it("THE NO-STEM SILENCE: absent, empty, whitespace, or non-string stems mint NO label key at all", async () => {
     for (const bad of [undefined, "", "   ", 42, null]) {
       const ctx = new Context();
-      (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+      (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
       const engine = new FakeEngine(ctx);
       engine.onFlow = async () => twoArtifacts();
       const params: Record<string, EngineJson> = { workflow: { "1": { class_type: "X", inputs: {} } } };
@@ -137,7 +138,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
   it("THE NAME NEVER MOVES: the label rides BESIDE the file name — with a stem and without, the names are identical", async () => {
     const namesFor = async (outputName: string | undefined): Promise<string[]> => {
       const ctx = new Context();
-      (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+      (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
       const engine = new FakeEngine(ctx);
       engine.onFlow = async () => twoArtifacts();
       const params: Record<string, EngineJson> = { workflow: { "1": { class_type: "X", inputs: {} } } };
@@ -155,7 +156,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
 
   it("THE PARAM RIDES BESIDE THE GRAPH: the engine's row carries output_name in its params bag, never inside the workflow", async () => {
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => twoArtifacts();
     const run = runWithParams([
@@ -177,7 +178,7 @@ describe("THE OUTPUT-LABEL MINT (queue 12 — the settle seam)", () => {
 
   it("THE SIDECAR CARRY: the minted labels ride the sidecar's gallery beside their file names", async () => {
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
     const engine = new FakeEngine(ctx);
     engine.onFlow = async () => twoArtifacts();
     const run = runWithParams([

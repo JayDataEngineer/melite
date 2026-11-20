@@ -8,6 +8,7 @@
 // mount the bare catalog provider, the seat held zero families,
 // and every family stage refused "registered: none".
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -51,7 +52,7 @@ const laneSeat = async (
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: TMP };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot: TMP };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return {};

@@ -162,15 +162,27 @@ const PRESS_BUDGET_MS = 110_000;
  * receipt is pending and the unpressed tail is never sent into an
  * aborter's window — the receipt names how many remain. */
 const PRESS_STAGE_SHARE_MS = 90_000;
+/** The press ceiling's DEFAULT: the observation budget's own 900 s —
+ *  the number this file calls "above every legitimate render
+ *  observed" (the ceiling itself is a Config field since the
+ *  2026-11-20 conventions-sweep cure; this constant is the schema
+ *  default, OBSERVE_MAX_MS stays the observation plane's law). */
 const PRESS_CEILING_MS = OBSERVE_MAX_MS;
 /** The whole-press window: the D-7 base for a single pressed stage,
  * base + a share per additional bench row, never past the ceiling.
  * @param pressing the stage count this press will press (1 for the
  *  single-stage and {stage} arms).
+ * @param press the config-resolved window (schema defaults when
+ *  absent — the pre-config law, byte-for-byte).
  * @returns the press window in ms. */
-export const pressBudgetMs = (pressing) => pressing <= 1
-    ? PRESS_BUDGET_MS
-    : Math.min(PRESS_BUDGET_MS + PRESS_STAGE_SHARE_MS * (pressing - 1), PRESS_CEILING_MS);
+export const pressBudgetMs = (pressing, press) => {
+    const base = press?.baseMs ?? PRESS_BUDGET_MS;
+    const share = press?.stageShareMs ?? PRESS_STAGE_SHARE_MS;
+    const ceiling = press?.ceilingMs ?? PRESS_CEILING_MS;
+    return pressing <= 1
+        ? base
+        : Math.min(base + share * (pressing - 1), ceiling);
+};
 /** THE STAMP-BACK TAKES (F3 D3-07, the 15 s bound's third burn —
  *  F2 D-07 → D3-05 → s_94): the terminal attribution PATCH takes
  *  this many swipes at the drafts door, each with its own fresh
@@ -411,7 +423,7 @@ function freshLandingOf(row) {
  *  done row skips only while its recorded input_runs snapshot still
  *  names the run identities its wires resolve to now — an upstream
  *  that re-ran breaks the match and the row runs. */
-async function runBench(estate, a, signal, only) {
+async function runBench(estate, a, signal, only, press) {
     const empty = { mode: 'bench', target: benchDraftIdOf(a.bench), error: 'the bench is empty — construct stages first (melite_construct)' };
     let b;
     try {
@@ -518,7 +530,7 @@ async function runBench(estate, a, signal, only) {
     // BENCH-SCALED (the 9-at-a-time burn above): the base covers one
     // stage; each additional row this pass will press adds its share,
     // ceilinged — the {stage} press rides the single-stage shape.
-    const pressDeadline = Date.now() + pressBudgetMs(only !== undefined ? 1 : rows.length);
+    const pressDeadline = Date.now() + pressBudgetMs(only !== undefined ? 1 : rows.length, press);
     /** THE SHARED OBSERVE-SETTLE TAIL (the adopt law's extraction,
      * 2026-11-18): one law for a fresh press and an adopted run alike —
      * the D-7 budget check, the observation, the pass row, and the
@@ -1027,8 +1039,8 @@ async function runBench(estate, a, signal, only) {
  *  the bench intent stay byte-identical; the receipt names the pressed
  *  row (`stage`). Mode stays 'bench': the per-stage press is the bench
  *  pass with a one-row filter, never a fifth composition. */
-async function runStage(estate, a, signal) {
-    return runBench(estate, { test: a.test, bench: a.bench }, signal, a.stage);
+async function runStage(estate, a, signal, press) {
+    return runBench(estate, { test: a.test, bench: a.bench }, signal, a.stage, press);
 }
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
  *  cadence, 1500ms). DECIDED per-plane (the dry-sweep's J5, recorded
@@ -1706,7 +1718,7 @@ a, signal) {
         ...started,
     };
 }
-export function meliteFlow(estate) {
+export function meliteFlow(estate, press) {
     // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
     // seat for the invalid face): the presenter rides defineTool
     // validation, and defineTool's soft gate OWNS invalid args
@@ -2094,10 +2106,10 @@ export function meliteFlow(estate) {
                 if (hasStage) {
                     return jsonClean(await runStage(estate, {
                         stage: a.stage, test, bench,
-                    }, exec.signal));
+                    }, exec.signal, press));
                 }
                 if (hasBench) {
-                    return jsonClean(await runBench(estate, { test, bench }, exec.signal));
+                    return jsonClean(await runBench(estate, { test, bench }, exec.signal, undefined, press));
                 }
                 if (hasFlow) {
                     return jsonClean(await runTemplate(estate, {

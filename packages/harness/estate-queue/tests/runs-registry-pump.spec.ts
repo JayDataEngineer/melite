@@ -2,6 +2,7 @@
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
 import { describe, it, afterEach, vi } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 
 // THE CLAIM-PERSIST GATE (audit N-S7's wall): the fence only
 // fires when a pump scaffold hop ESCAPES — every real hop
@@ -76,6 +77,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
   new FlowsSeatService(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     core,
     stateRoot: state,
     // the roots manifest the durable-row walks probe (the doors

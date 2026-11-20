@@ -93,7 +93,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/schemastery": "^3.19.0",
     "@melite/contracts": "workspace:*",
     "@melite/engine-contract": "workspace:*"

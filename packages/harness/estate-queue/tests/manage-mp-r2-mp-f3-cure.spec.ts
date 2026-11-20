@@ -17,7 +17,7 @@
 // provisioning arms ride the REAL seat, mirroring
 // provisioning/tests/weight-acquire.spec.ts. Fetch is routed per
 // test, state roots are temp dirs.
-import { describe, it, afterEach, vi } from "vitest";
+import { describe, it, afterEach, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -28,7 +28,7 @@ import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx, ManageEnvelope } from "../src/managePlane.ts";
 import { resolveStateRoot } from "../src/queueLock.ts";
 import { rootsManifest } from "../src/rootsManifest.ts";
-import { holdLifecycle, lifecycleInFlight } from "../src/lifecycleLatch.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { ProvisioningService } from "../../../estate/provisioning/src/index.ts";
 import type {
   ProvisionPlan,
@@ -105,7 +105,7 @@ afterEach(async () => {
   for (const context of contexts.splice(0)) await context.fiber.dispose();
   for (const d of TMPS.splice(0)) rmSync(d, { recursive: true, force: true });
   // A leaked hold blocks every later press — fail LOUD, never carry it.
-  assert.equal(lifecycleInFlight(), null, "latch leaked across tests");
+  assert.equal(LATCH.inFlight(), null, "latch leaked across tests");
 });
 
 const json = (v: unknown, status = 200): Response =>
@@ -118,9 +118,14 @@ const route = (fn: Route): void => {
 };
 
 // ── manage harness (mirrors manage-lifecycle-latch.spec.ts) ──────────
+let LATCH = new LifecycleLatch();
+beforeEach(() => {
+  LATCH = new LifecycleLatch();
+});
 let ROOT = "";
 const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
+    latch: LATCH,
     repoRoot: ROOT,
     stateRoots: rootsManifest(resolveStateRoot({ repoRoot: ROOT }), []),
     comfyUnit: "estate-comfyui.service",
@@ -195,11 +200,11 @@ describe("MP-R2 (b): abort inside recordEngineBoot still drops", () => {
       false,
       "the receipt write itself never landed (abort delivered mid-write)",
     );
-    assert.equal(lifecycleInFlight(), null, "the abort path released the latch");
-    // holdLifecycle itself is untouched — the unit arm still holds.
-    const release = holdLifecycle("restart");
+    assert.equal(LATCH.inFlight(), null, "the abort path released the latch");
+    // the latch class itself is untouched — the unit arm still holds.
+    const release = LATCH.hold("restart");
     try {
-      assert.equal(lifecycleInFlight(), "restart");
+      assert.equal(LATCH.inFlight(), "restart");
     } finally {
       release();
     }
@@ -264,7 +269,7 @@ describe("MP-F3 (c): guardLifecycle refuses while a provisioning fetch is in fli
     assert.match(env.detail, new RegExp(id), "the refusal names the in-flight operation (sidecar voice)");
     assert.match(env.detail, /force=true/);
     assert.equal(env.next_action, "status");
-    assert.equal(lifecycleInFlight(), null, "a guard refusal takes no latch");
+    assert.equal(LATCH.inFlight(), null, "a guard refusal takes no latch");
 
     const [forceCode, forceEnv] = await dispatchManage({ action: "free", force: true }, CTX({ provisioning: service })) as [
       number,

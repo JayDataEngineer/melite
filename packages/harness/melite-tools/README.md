@@ -30,6 +30,14 @@ its own shipped profile); melite carries no parallel mode.
   probe, never a re-send); a budget-spent or aborted observation
   returns a pending receipt carrying `run_id` and the re-press
   drain counsel (`pass[]` rows carry `adopted: true`).
+- Config (decl schema): `cardTools` (default false — the
+  card-abstraction law), `adhocTools`, and the press window
+  `pressBaseMs`/`pressStageShareMs`/`pressCeilingMs` (defaults
+  110000/90000/900000 — D-7's single-stage window, the bench law's
+  per-row share, and the observation ceiling; a single-stage press
+  keeps EXACTLY the base, a bench press scales
+  `base + share × (rows − 1)` clamped at the ceiling, and a
+  budget-spent receipt reports how many stages remain).
 - Doors: `/melite-tools/catalog` (live tool schemas + llm route list) and
   `/melite-tools/enhance` (the editor door; one execution core shared with
   everything else).

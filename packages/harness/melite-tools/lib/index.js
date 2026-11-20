@@ -72,6 +72,9 @@ export const inject = ['tools'];
 export const Config = Schema.object({
     adhocTools: Schema.union([Schema.string(), Schema.array(Schema.string())]),
     cardTools: Schema.boolean().default(false),
+    pressBaseMs: Schema.number().default(110_000),
+    pressStageShareMs: Schema.number().default(90_000),
+    pressCeilingMs: Schema.number().default(900_000),
 });
 /** EAGER — the compose loop, the only melite schemas in a session's
  * first request (progressive disclosure, operator 2026-10-08: three
@@ -267,7 +270,15 @@ export async function apply(ctx, config = {}) {
     const seatRunDoors = () => {
         if (runDoorSeats.length > 0)
             return;
-        runDoorSeats.push(c.tools.register(meliteFlow(estate)), c.tools.register(runStatus(estate)));
+        // THE PRESS WINDOW (2026-11-20 conventions-sweep cure): the D-7
+        // timings are Config fields, threaded once here — cordis.yml
+        // tunes the bench window; absent rows resolve the schema
+        // defaults inside pressBudgetMs (the pre-config law).
+        runDoorSeats.push(c.tools.register(meliteFlow(estate, {
+            baseMs: config.pressBaseMs,
+            stageShareMs: config.pressStageShareMs,
+            ceilingMs: config.pressCeilingMs,
+        })), c.tools.register(runStatus(estate)));
     };
     const unseatRunDoors = () => {
         for (const dispose of runDoorSeats.splice(0))

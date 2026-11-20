@@ -30,7 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
@@ -40,7 +40,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0"
+    "@deepseek-ai/cordis": "~4.1.0"
   },
   "description": "The MCP engine provider — registers mcp:<server> engines whose stages execute as tool calls on the host ToolRuntime, with run-dir-contained artifact collection.",
   "repository": {

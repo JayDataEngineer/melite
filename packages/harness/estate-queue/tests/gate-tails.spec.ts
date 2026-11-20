@@ -6,6 +6,7 @@
 // the inline stage-edge nullish coerce, the start refusal's
 // scalar-doc label, and settleReplayRefusal's torn-identity floor.
 import { describe, it, expect } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -479,7 +480,7 @@ describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's 
   const ctxWith = (Seat: new (ctx: Context) => Service): Context => {
     const ctx = new Context();
     new FlowsSeatService(ctx);
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: state, stateRoots: [state] };
     // the shim refuses before the inline compile; the registry is
     // here only so the seat is the shape the door documents.
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
@@ -559,7 +560,7 @@ describe("the {flow:} shim rides the params door (round-21 flows audit F1)", () 
   const ctxWith = (decls: Record<string, unknown>): Context => {
     const ctx = new Context();
     new FlowsSeatService(ctx).register(probeFlow());
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: state, stateRoots: [state] };
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       cardDecls: () => decls,
       defsSync: (): unknown => new Map(),
@@ -610,7 +611,7 @@ describe("the {flow:} shim rides the params door (round-21 flows audit F1)", () 
     // throw folds to runs/invalid-request naming the missing file.
     const ctx = new Context();
     new FlowsSeatService(ctx).register(probeFlow());
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: state, stateRoots: [state] };
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       cardDecls: (): Record<string, unknown> => {
         throw new Error("ENOENT: no such file or directory, open 'model-facts.json'");
@@ -684,7 +685,7 @@ describe("the overlay and compose gates answer in the start door's order (round-
   const ctxWith = (): Context => {
     const ctx = new Context();
     new FlowsSeatService(ctx).register(familyProbe());
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state, stateRoots: [state] };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: state, stateRoots: [state] };
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       cardDecls: (): Record<string, unknown> => ({}),
       defsSync: (): unknown => new Map(),

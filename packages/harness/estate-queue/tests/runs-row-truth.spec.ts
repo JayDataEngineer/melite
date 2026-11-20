@@ -31,6 +31,7 @@
 // greens only on the per-row stamp (runsExecute.stampUnansweredRows)
 // and the own-voice mirror.
 import { describe, it } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIWiringService, ComfyUIHostService } from "@melite/comfyui-cordis";
@@ -104,7 +105,7 @@ const ctxWithQueue = (): Context => {
   const ctx = new Context();
   // J12: the engine submit threads the queue seat's stateRoots
   // manifest (config-named call data); the wall pins an empty one.
-  (ctx as unknown as { queue: unknown }).queue = { stateRoots: [] as string[] };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoots: [] as string[] };
   return ctx;
 };
 

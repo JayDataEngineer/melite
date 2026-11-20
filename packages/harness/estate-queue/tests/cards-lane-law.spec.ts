@@ -17,6 +17,7 @@
 // nothing the card cannot carry. The words live at
 // @melite/contracts/laneRelations; these walls pin the judgment.
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -50,6 +51,7 @@ beforeAll(async () => {
   // stateRoots manifest (config-named call data — no env seam); the
   // boot stub pins a temp tree so the sweep never touches real runs.
   (bootCtx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "cards-boot-")),
     stateRoots: [] as string[],
   };

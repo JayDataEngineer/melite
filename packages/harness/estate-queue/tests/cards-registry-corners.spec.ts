@@ -5,6 +5,7 @@
 // seat's non-string model address, and the prepare refusal riding
 // the validate door's Refusal shape.
 import { assertHermeticPrime } from "../../../../tests/helpers/hermetic-engine.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { Context } from "@deepseek-ai/cordis";
@@ -29,6 +30,7 @@ beforeAll(async () => {
   // stateRoots manifest (config-named call data — no env seam); the
   // boot stub pins a temp tree so the sweep never touches real runs.
   (bootCtx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "cards-boot-")),
     stateRoots: [] as string[],
   };

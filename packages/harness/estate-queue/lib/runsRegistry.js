@@ -36,7 +36,6 @@ import { graphReceiptOf, graphReceiptStageOf } from "./queueSidecar.js";
 import { attributionPersist, galleryLabelPersist } from "./runsTypes.js";
 import { sweepRunIds } from "./queueCore.js";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.js";
-import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { lanePresenceRefusal } from "./cardsLanes.js";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.js";
 import { coerceSnapshotBody } from "./runsValidateStages.js";
@@ -1178,7 +1177,7 @@ export class RunsRuntimeService extends Service {
         // refuses the press BEFORE the replay, the reserve and the mint —
         // a run born now would tear mid-render. Named code, and the
         // replay cannot launder it (the check sits above the replay).
-        const lifecycleHeld = lifecycleInFlight();
+        const lifecycleHeld = this.ctx.queue.lifecycleLatch.inFlight();
         if (lifecycleHeld !== null) {
             throw toRemoteError(refusal(409, "refused: lifecycle " + lifecycleHeld + " in flight — retry the press when it settles (the teardown holds the run gate until it completes)", "lifecycle_inflight"));
         }
@@ -1811,6 +1810,7 @@ export class RunsRuntimeService extends Service {
             const cardReceiptRow = graphReceiptStageOf(skeleton, graphReceiptOf(cardRequestBody, { workflow: composed.graph }));
             const reg = await registerCompiledRun({
                 compiled: { stages: [cardStage] },
+                lifecycleLatch: this.ctx.queue.lifecycleLatch,
                 testFlag: checked.testFlag,
                 executeCeilMs: checked.ceilMs,
                 // the {model:} door always carries a draft_id (CARD BIRTH
@@ -2263,6 +2263,7 @@ export class RunsRuntimeService extends Service {
         }
         const reg = await registerCompiledRun({
             compiled,
+            lifecycleLatch: this.ctx.queue.lifecycleLatch,
             testFlag: checked.testFlag,
             executeCeilMs: checked.ceilMs,
             // the flow arms may run doc-less (the flow-doc exemption): the

@@ -28,6 +28,7 @@
 //              the draft door's own law and this cure does not
 //              touch it.
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -95,6 +96,7 @@ const seat = (): { svc: RunsRuntimeService, core: QueueCore, state: string } => 
   new ModelsSeatFake(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     core,
     stateRoot: state,
     get stateRoots(): string[] { return [state]; },

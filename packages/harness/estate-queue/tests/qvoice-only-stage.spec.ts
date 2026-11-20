@@ -13,6 +13,7 @@
 //      engine-side as `preview_voice: no such file: qvoice-01` — the
 //      node's load branch reads the input dir or a host path only.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -44,6 +45,7 @@ beforeAll(async () => {
   ctx = new Context();
   new FlowsSeatService(ctx);
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "qvoice-only-")),
     stateRoots: [] as string[],
   };

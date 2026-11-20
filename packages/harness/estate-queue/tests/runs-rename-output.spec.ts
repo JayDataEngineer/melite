@@ -11,6 +11,7 @@
 // a run still executing, an empty/whitespace label, an out-of-range
 // stage or gallery index.
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -60,6 +61,7 @@ const seat = (): Seat => {
   const ctx = new Context();
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     core,
     stateRoot: state,
     get stateRoots(): string[] { return [state]; },
@@ -152,6 +154,7 @@ describe("THE OUTPUT-RENAME DOOR (queue 12 Phase B — the post-run label patch)
     // carries the patched label
     const freshCtx = new Context();
     (freshCtx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
       core: new QueueCore(),
       stateRoot: s.state,
       get stateRoots(): string[] { return [s.state]; },

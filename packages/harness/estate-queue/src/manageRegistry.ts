@@ -97,6 +97,7 @@ export class ManageGatewayService extends Service {
   async act(doc: unknown, signal: AbortSignal): Promise<ManageEnvelope> {
     signal.throwIfAborted();
     const mctx: ManageCtx = {
+      latch: this.ctx.queue.lifecycleLatch,
       repoRoot: resolveRepoRoot(),
       stateRoots: this.ctx.queue.stateRoots,
       comfyUnit: this.comfyUnit,

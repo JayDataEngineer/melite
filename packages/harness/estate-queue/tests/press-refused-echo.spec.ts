@@ -8,6 +8,7 @@
 // it die" is one grep away forever.
 // @contract gates-press-refused-echo
 import { describe, it, expect, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -48,7 +49,7 @@ const seat = (): { svc: RunsRuntimeService; stateRoot: string } => {
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot };
   new ModelsSeatFake(ctx);
   // the draft seat: every probe answers not-found (the presses in
   // these arms all die at the draft gate — the wall judges the

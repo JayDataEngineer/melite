@@ -57,6 +57,7 @@ vi.mock("../src/queueLock.ts", async (importOriginal) => {
 
 import { dispatchManage, Refused } from "../src/managePlane.ts";
 import type { ManageCtx, ManageEnvelope } from "../src/managePlane.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { loadShippedExtensionManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 
 const realFetch = globalThis.fetch;
@@ -163,6 +164,7 @@ const provisioning: Provisioning = {
 };
 const models = { allDecls: () => [] } as unknown as ManageCtx["models"];
 const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
+  latch: new LifecycleLatch(),
   repoRoot: root,
   // J12: the manifest rides the ctx (config-named call data) — the
   // census reads the fixture's own tree, never the repo's runs.

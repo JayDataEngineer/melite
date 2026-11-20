@@ -31,25 +31,25 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
-import { type EstateCall } from './estate.js';
-import type { ToolDefinition } from './types.js';
-import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.js';
+import { type EstateCall } from './estate.ts';
+import type { ToolDefinition } from './types.ts';
+import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts';
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
-export { makeEstate, makeEstateRequest } from './estate.js';
-export { bootFactsArm } from './discovery.js';
-export type { EstateRequest, Estate, BenchVerb } from './estate.js';
-export { runStatus } from './tools/run-status.js';
-export { meliteDiscover } from './tools/melite-discover.js';
-export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.js';
-export { meliteFlow } from './tools/melite-flow.js';
-export { comfyManage } from './tools/comfy-manage.js';
-export { meliteLoad } from './tools/melite-load.js';
-export { meliteView } from './tools/melite-view.js';
-export { meliteContactSheet } from './tools/contact-sheet.js';
-export { meliteRead, readRunText } from './tools/melite-read.js';
-export { skillRead } from './tools/skill-read.js';
-export { skillWrite } from './tools/skill-write.js';
-export { ledgerTail } from './tools/ledger-tail.js';
+export { makeEstate, makeEstateRequest } from './estate.ts';
+export { bootFactsArm } from './discovery.ts';
+export type { EstateRequest, Estate, BenchVerb } from './estate.ts';
+export { runStatus } from './tools/run-status.ts';
+export { meliteDiscover } from './tools/melite-discover.ts';
+export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.ts';
+export { meliteFlow } from './tools/melite-flow.ts';
+export { comfyManage } from './tools/comfy-manage.ts';
+export { meliteLoad } from './tools/melite-load.ts';
+export { meliteView } from './tools/melite-view.ts';
+export { meliteContactSheet } from './tools/contact-sheet.ts';
+export { meliteRead, readRunText } from './tools/melite-read.ts';
+export { skillRead } from './tools/skill-read.ts';
+export { skillWrite } from './tools/skill-write.ts';
+export { ledgerTail } from './tools/ledger-tail.ts';
 /** Cordis plugin name used by loader diagnostics. */
 export declare const name = "melite-tools";
 /**
@@ -78,6 +78,21 @@ export interface Config {
      *  failure mode one lane over). Maker/studio faces (the web
      *  profile) opt in explicitly. */
     cardTools?: boolean;
+    /** THE PRESS WINDOW (D-7's law, configurable since the 2026-11-20
+     *  conventions-sweep cure — a hardcoded tunable is not
+     *  configurability): single-stage presses keep EXACTLY this base
+     *  window; past it the receipt is the pending face (run_id
+     *  carried) and the unpressed tail is never sent. Default 110000
+     *  — the four-burn D-7 settlement. */
+    pressBaseMs?: number;
+    /** The bench-scaled window's per-additional-row share (the
+     *  2026-11-20 bench law: 110 s fit ~9 fast rows — the share
+     *  lets ONE press drain the whole bench). Default 90000. */
+    pressStageShareMs?: number;
+    /** The press window's never-past ceiling (default: the
+     *  observation budget, 900000 — "above every legitimate render
+     *  observed"). The ceiling keeps D-7's law a bench law too. */
+    pressCeilingMs?: number;
 }
 /** The validator twin of {@link Config} (the loader applies defaults;
  *  direct apply calls resolve undefined as the documented default). */

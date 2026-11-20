@@ -1,7 +1,8 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import { QueueCore } from "./queue.js";
-import type { LedgerTailAnswer } from "./ledgerTail.js";
+import { QueueCore } from "./queue.ts";
+import type { LedgerTailAnswer } from "./ledgerTail.ts";
+import { LifecycleLatch } from "./lifecycleLatch.ts";
 /** Provider config: where the estate's run state lives. */
 export interface QueueConfig {
     /** Repo root for the default `data/runs` state root. */
@@ -46,6 +47,13 @@ export declare class QueueService extends Service {
     readonly executeCeilMs: number;
     /** The in-memory serial registry (runs + FIFO order + active). */
     readonly core: QueueCore;
+    /** THE LIFECYCLE LATCH (MP-R1, owned since the 2026-11-20
+     *  cordis-waterfall F3 cure): the reservation half of the
+     *  lifecycle guard, owned by the queue seat — the manage doors
+     *  hold it across destructive vendor calls, the run press reads
+     *  it before minting a run. Instance state, never a module
+     *  global: the seat owns the one latch both planes share. */
+    readonly lifecycleLatch: LifecycleLatch;
     constructor(ctx: Context, config?: QueueConfig);
     /** The journal path under this service's root (readers + the
      *  runs remote's list arm). */

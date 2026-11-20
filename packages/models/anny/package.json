@@ -21,7 +21,7 @@
     "@melite/contracts": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
@@ -35,7 +35,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0"
+    "@deepseek-ai/cordis": "~4.1.0"
   },
   "description": "Anny 3D character-assembly family, identity-slider body baking and sub-action verbs.",
   "repository": {

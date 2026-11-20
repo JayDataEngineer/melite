@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx, ManageEnvelope } from "../src/managePlane.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { activeRuns } from "../src/manageProbe.ts";
 
 // manage-settle-stale.spec.ts — THE TTS NEW-2 WALL (2026-11-12):
@@ -24,6 +25,7 @@ afterEach(() => {
 
 let root = "";
 const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
+  latch: new LifecycleLatch(),
   repoRoot: root,
   stateRoots: root === "" ? [] : [root],
   comfyUnit: "melite-comfyui.service",

@@ -23,7 +23,7 @@
     "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
@@ -37,7 +37,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0"
+    "@deepseek-ai/cordis": "~4.1.0"
   },
   "description": "Qwen Image 2.1 — one base checkpoint serving text-to-image here and reference-cached editing in the sibling edit package.",
   "repository": {

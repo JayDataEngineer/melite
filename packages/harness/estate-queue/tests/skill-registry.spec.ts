@@ -1,6 +1,7 @@
 // skill-registry.spec.ts — the skills seat: the index serves the
 // repo, reads return docs / throw the door's voice, aborts refuse.
 import "../../../../tests/helpers/boot-models.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { describe, it, afterEach } from "vitest";
 
 import assert from "node:assert/strict";
@@ -25,7 +26,7 @@ afterEach(() => {
 const seat = (): SkillDirectoryService => {
   state = mkdtempSync(join(tmpdir(), "skills-seat-"));
   const ctx = new Context();
-  (ctx as unknown as { queue: unknown }).queue = { stateRoot: state };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: state };
   skillProvider.apply(ctx);
   const svc = (ctx as unknown as { meliteSkills: SkillDirectoryService }).meliteSkills;
   assert.ok(svc instanceof SkillDirectoryService);

@@ -40,6 +40,7 @@
 // refused on melite-audio-nodes the wall never judged — the FIRST
 // import hermeticizes the file onto the tracked boot double).
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
 import { describe, it, afterEach, beforeAll, afterAll, vi } from "vitest";
 import assert from "node:assert/strict";
@@ -94,7 +95,7 @@ beforeAll(async () => {
   const ctx = new Context();
   new FlowsSeatService(ctx);
   core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: tmp(), stateRoots: [] as string[] };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot: tmp(), stateRoots: [] as string[] };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (_id: string, _signal: AbortSignal): Promise<unknown> => ({}),
   };

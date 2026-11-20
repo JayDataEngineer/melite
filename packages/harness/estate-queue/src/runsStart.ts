@@ -36,7 +36,7 @@ import {
 } from "./runsGates.ts";
 import { appendLedger, graphReceiptFoldOf, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.ts";
 import type { GraphReceiptStageRow, QueueRefusal } from "./queue.ts";
-import { lifecycleInFlight } from "./lifecycleLatch.ts";
+import type { LifecycleLatch } from "./lifecycleLatch.ts";
 import { toRemoteError } from "./runsRefusalVoices.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside
@@ -520,6 +520,10 @@ export function selectSubmitDoor(
  *  Returns the row and its queue position. */
 export async function registerCompiledRun(args: {
   compiled: { stages: CompiledStage[] };
+  /** The queue seat's lifecycle latch (owned 2026-11-20): read at
+   *  the enqueue gate below — a teardown that started since the
+   *  press's first read refuses the mint here. */
+  lifecycleLatch: LifecycleLatch;
   testFlag: boolean;
   /** The start body's own execute ceiling (the F8 burn; absent = the
    *  queue config decides). */
@@ -601,7 +605,7 @@ export async function registerCompiledRun(args: {
     graphReceipts?: Record<string, GraphReceiptStageRow>;
   };
 }): Promise<{ run: RunRecord; queuePosition: number } | StartRefusal> {
-  const { compiled, testFlag, executeCeilMs, draftId, stateRoot, enqueue, door } = args;
+  const { compiled, lifecycleLatch, testFlag, executeCeilMs, draftId, stateRoot, enqueue, door } = args;
   // THE ONE RUN ID (see the type above): the caller's. There is no
   // second producer here, and there cannot be one without failing the
   // compiler.
@@ -893,7 +897,7 @@ export async function registerCompiledRun(args: {
   // census, so any teardown from here on is refused by the guard —
   // the refused press removes the minted dir and answers the same
   // named code, having told the ledger nothing.
-  const heldLifecycle = lifecycleInFlight();
+  const heldLifecycle = lifecycleLatch.inFlight();
   if (heldLifecycle !== null) {
     // The unlink is best-effort: a failed removal must not replace the
     // named 409 (the client would lose the retry-hint code) — but the

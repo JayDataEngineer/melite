@@ -7,6 +7,7 @@
 // standing to refuse); the NEVER face — a booted table answering a
 // real store miss — is pinned in runs-registry-doors.spec.ts.
 import assert from "node:assert/strict";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -51,6 +52,7 @@ it("THE RE-PROBE'S YET FACE: an unbooted model table throws the table's own refu
     new FlowsSeatService(ctx);
     const core = new QueueCore();
     (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
       core,
       stateRoot: state,
       get stateRoots(): string[] {

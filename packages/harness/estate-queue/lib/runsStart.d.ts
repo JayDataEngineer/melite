@@ -1,10 +1,11 @@
 import { type DraftId } from "@melite/contracts/benchStage";
 import type { EngineJson } from "@melite/comfyui-cordis";
-import type { FlowStageRow } from "./runsValidateShared.js";
-import type { GraphReceiptStageRow, QueueRefusal } from "./queue.js";
-export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
-import type { RunId } from "./queueCore.js";
-import type { RunRecord } from "./runsTypes.js";
+import type { FlowStageRow } from "./runsValidateShared.ts";
+import type { GraphReceiptStageRow, QueueRefusal } from "./queue.ts";
+import type { LifecycleLatch } from "./lifecycleLatch.ts";
+export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.ts";
+import type { RunId } from "./queueCore.ts";
+import type { RunRecord } from "./runsTypes.ts";
 /** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */
 export type StartRefusal = QueueRefusal;
@@ -88,6 +89,10 @@ export declare function registerCompiledRun(args: {
     compiled: {
         stages: CompiledStage[];
     };
+    /** The queue seat's lifecycle latch (owned 2026-11-20): read at
+     *  the enqueue gate below — a teardown that started since the
+     *  press's first read refuses the mint here. */
+    lifecycleLatch: LifecycleLatch;
     testFlag: boolean;
     /** The start body's own execute ceiling (the F8 burn; absent = the
      *  queue config decides). */

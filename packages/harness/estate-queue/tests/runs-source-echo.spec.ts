@@ -21,6 +21,7 @@ import { newRunId } from "../src/queueCore.ts";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { RunRecord } from "../src/runsTypes.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -61,11 +62,13 @@ const stageWith = (params: Record<string, EngineJson>): CompiledStage => ({
  *  a door when a caller does not — the id is still the caller's and
  *  the run registers under exactly it. */
 const mustRegister = async (
-  args: Omit<Parameters<typeof registerCompiledRun>[0], "door"> & {
+  args: Omit<Parameters<typeof registerCompiledRun>[0], "door" | "lifecycleLatch"> & {
     door?: Parameters<typeof registerCompiledRun>[0]["door"];
+    lifecycleLatch?: LifecycleLatch;
   },
 ): Promise<{ run: RunRecord; queuePosition: number }> => {
   const withDoor = {
+    lifecycleLatch: new LifecycleLatch(),
     ...args,
     door: args.door ?? { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
   };
@@ -299,6 +302,7 @@ describe("registerCompiledRun (the source-echo gate)", () => {
     const root = tmp();
     const seen: string[] = [];
     const out = await registerCompiledRun({
+      lifecycleLatch: new LifecycleLatch(),
       compiled: { stages: [stageWith({ ref_images: ["/melite-media/runs/run-aaaa1111-bb22cc33/edit/gone.png"] })] },
       testFlag: false,
       draftId: draftIdOf("d1"),

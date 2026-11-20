@@ -39,6 +39,7 @@
 //      from the gate keeps its identity (rethrown, never swallowed
 //      into a refusal row): the fold narrows to the miss class only.
 import "../../../../tests/helpers/boot-models.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { afterAll, beforeAll, describe, it, expect, vi } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -84,6 +85,7 @@ beforeAll(async () => {
   ctx = new Context();
   new FlowsSeatService(ctx);
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "lane-validate-fold-")),
     stateRoots: [] as string[],
   };

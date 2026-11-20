@@ -163,16 +163,41 @@ const PRESS_BUDGET_MS = 110_000
  * receipt is pending and the unpressed tail is never sent into an
  * aborter's window — the receipt names how many remain. */
 const PRESS_STAGE_SHARE_MS = 90_000
+/** The press ceiling's DEFAULT: the observation budget's own 900 s —
+ *  the number this file calls "above every legitimate render
+ *  observed" (the ceiling itself is a Config field since the
+ *  2026-11-20 conventions-sweep cure; this constant is the schema
+ *  default, OBSERVE_MAX_MS stays the observation plane's law). */
 const PRESS_CEILING_MS = OBSERVE_MAX_MS
+/** The configurable press window (the 2026-11-20 conventions-sweep
+ *  cure: the press timings are deployment-varying tunables — validated
+ *  Config fields on the plugin (index.ts), never bare constants; the
+ *  constants below are the schema DEFAULTS, the config wins when
+ *  set). All fields optional; every consumer resolves them through
+ *  {@link pressBudgetMs}. */
+export interface PressWindow {
+  /** The D-7 single-stage base window. */
+  baseMs?: number
+  /** The per-additional-bench-row share. */
+  stageShareMs?: number
+  /** The never-past ceiling (default: the observation budget). */
+  ceilingMs?: number
+}
 /** The whole-press window: the D-7 base for a single pressed stage,
  * base + a share per additional bench row, never past the ceiling.
  * @param pressing the stage count this press will press (1 for the
  *  single-stage and {stage} arms).
+ * @param press the config-resolved window (schema defaults when
+ *  absent — the pre-config law, byte-for-byte).
  * @returns the press window in ms. */
-export const pressBudgetMs = (pressing: number): number =>
-  pressing <= 1
-    ? PRESS_BUDGET_MS
-    : Math.min(PRESS_BUDGET_MS + PRESS_STAGE_SHARE_MS * (pressing - 1), PRESS_CEILING_MS)
+export const pressBudgetMs = (pressing: number, press?: PressWindow): number => {
+  const base = press?.baseMs ?? PRESS_BUDGET_MS
+  const share = press?.stageShareMs ?? PRESS_STAGE_SHARE_MS
+  const ceiling = press?.ceilingMs ?? PRESS_CEILING_MS
+  return pressing <= 1
+    ? base
+    : Math.min(base + share * (pressing - 1), ceiling)
+}
 /** THE STAMP-BACK TAKES (F3 D3-07, the 15 s bound's third burn —
  *  F2 D-07 → D3-05 → s_94): the terminal attribution PATCH takes
  *  this many swipes at the drafts door, each with its own fresh
@@ -431,6 +456,7 @@ async function runBench(
   a: { test?: boolean; bench: string },
   signal: AbortSignal,
   only?: string,
+  press?: PressWindow,
 ): Promise<Record<string, unknown>> {
   const empty = { mode: 'bench', target: benchDraftIdOf(a.bench), error: 'the bench is empty — construct stages first (melite_construct)' }
   let b: Record<string, unknown>
@@ -534,7 +560,7 @@ async function runBench(
   // BENCH-SCALED (the 9-at-a-time burn above): the base covers one
   // stage; each additional row this pass will press adds its share,
   // ceilinged — the {stage} press rides the single-stage shape.
-  const pressDeadline = Date.now() + pressBudgetMs(only !== undefined ? 1 : rows.length)
+  const pressDeadline = Date.now() + pressBudgetMs(only !== undefined ? 1 : rows.length, press)
   /** THE SHARED OBSERVE-SETTLE TAIL (the adopt law's extraction,
    * 2026-11-18): one law for a fresh press and an adopted run alike —
    * the D-7 budget check, the observation, the pass row, and the
@@ -1040,8 +1066,9 @@ async function runStage(
   estate: Estate,
   a: { stage: string; test?: boolean; bench: string },
   signal: AbortSignal,
+  press?: PressWindow,
 ): Promise<Record<string, unknown>> {
-  return runBench(estate, { test: a.test, bench: a.bench }, signal, a.stage)
+  return runBench(estate, { test: a.test, bench: a.bench }, signal, a.stage, press)
 }
 
 /** Signal-honoring sleep — the observer's poll cadence (the run-wire
@@ -1731,7 +1758,7 @@ type FlowResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteFlow(estate: Estate): ToolDefinition {
+export function meliteFlow(estate: Estate, press?: PressWindow): ToolDefinition {
   // PRESENTATION SEAT (§7 P7, the tool-presentation wall — one
   // seat for the invalid face): the presenter rides defineTool
   // validation, and defineTool's soft gate OWNS invalid args
@@ -2122,10 +2149,10 @@ export function meliteFlow(estate: Estate): ToolDefinition {
         if (hasStage) {
           return jsonClean(await runStage(estate, {
             stage: a.stage as string, test, bench,
-          }, exec.signal)) as FlowResult;
+          }, exec.signal, press)) as FlowResult;
         }
         if (hasBench) {
-          return jsonClean(await runBench(estate, { test, bench }, exec.signal)) as FlowResult;
+          return jsonClean(await runBench(estate, { test, bench }, exec.signal, undefined, press)) as FlowResult;
         }
         if (hasFlow) {
           return jsonClean(await runTemplate(estate, {

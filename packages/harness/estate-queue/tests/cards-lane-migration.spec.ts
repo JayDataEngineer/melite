@@ -18,6 +18,7 @@
 // refusal that must SURVIVE the cure, and the same-lane patch that
 // must judge exactly as it always did.
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -37,6 +38,7 @@ beforeAll(async () => {
   bootCtx = new Context();
   new FlowsSeatService(bootCtx);
   (bootCtx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "cards-migrate-")),
     stateRoots: [] as string[],
   };

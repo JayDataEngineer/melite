@@ -24,7 +24,7 @@
     "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
@@ -34,7 +34,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0"
+    "@deepseek-ai/cordis": "~4.1.0"
   },
   "description": "The craft loop engine — one stage loops act, capture, critique, decide against a named image-capable critic route until a done verdict or the circuit breaker.",
   "repository": {

@@ -31,7 +31,7 @@
     "@melite/comfyui-card-kit": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   },
@@ -45,7 +45,7 @@
     "lib/**/*.d.ts"
   ],
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0"
+    "@deepseek-ai/cordis": "~4.1.0"
   },
   "description": "Z-Image family — fast Z-Image and Z-Image Turbo text-to-image with LoRA, ControlNet, and IP-Adapter flavor packs, on the ComfyUI engine.",
   "repository": {

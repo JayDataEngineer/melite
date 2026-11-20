@@ -9,6 +9,7 @@
 // (pure move — zero test-content change; the queue core is real,
 // the card registry rides a structural fake).
 import { describe, it, afterEach, beforeEach, beforeAll, vi } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
@@ -107,6 +108,7 @@ const seat = (
   // first, then whatever extras the withMaker rig arms below (the
   // retired MELITE_STATE_ROOTS env seam's stand-in).
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     core,
     stateRoot: state,
     get stateRoots(): string[] { return [state, ...MAKER_EXTRAS]; },

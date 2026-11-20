@@ -51,7 +51,6 @@ import type { GraphReceiptStageRow } from "./queueSidecar.ts";
 import type { RunId } from "./queueCore.ts";
 import { sweepRunIds } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
-import { lifecycleInFlight } from "./lifecycleLatch.ts";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
@@ -1341,7 +1340,7 @@ export class RunsRuntimeService extends Service {
     // refuses the press BEFORE the replay, the reserve and the mint —
     // a run born now would tear mid-render. Named code, and the
     // replay cannot launder it (the check sits above the replay).
-    const lifecycleHeld = lifecycleInFlight();
+    const lifecycleHeld = this.ctx.queue.lifecycleLatch.inFlight();
     if (lifecycleHeld !== null) {
       throw toRemoteError(
         refusal(
@@ -2022,6 +2021,7 @@ export class RunsRuntimeService extends Service {
       );
       const reg = await registerCompiledRun({
         compiled: { stages: [cardStage] },
+        lifecycleLatch: this.ctx.queue.lifecycleLatch,
         testFlag: checked.testFlag,
       executeCeilMs: checked.ceilMs,
         // the {model:} door always carries a draft_id (CARD BIRTH
@@ -2522,6 +2522,7 @@ export class RunsRuntimeService extends Service {
     }
     const reg = await registerCompiledRun({
       compiled,
+      lifecycleLatch: this.ctx.queue.lifecycleLatch,
       testFlag: checked.testFlag,
       executeCeilMs: checked.ceilMs,
       // the flow arms may run doc-less (the flow-doc exemption): the

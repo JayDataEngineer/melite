@@ -24,6 +24,7 @@
 // between retry and re-claim rides the D-8 hold and never
 // double-retries).
 import { describe, it } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -91,7 +92,7 @@ describe("THE COLD-LOAD RETRY WALL (the door re-presses the eviction race once, 
     core.enqueue(run);
     assert.ok(core.tryDequeue() !== null, "the pump claimed the run");
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot, stateRoots: [] as string[], core };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot, stateRoots: [] as string[], core };
     const engine = new FakeEngine(ctx);
     engine.failure = LANE_FAILURE;
     let settles = 0;
@@ -133,7 +134,7 @@ describe("THE COLD-LOAD RETRY WALL (the door re-presses the eviction race once, 
     core.enqueue(run);
     core.tryDequeue();
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot, stateRoots: [] as string[], core };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot, stateRoots: [] as string[], core };
     const engine = new FakeEngine(ctx);
     engine.failure = LANE_FAILURE;
     let settles = 0;
@@ -162,7 +163,7 @@ describe("THE COLD-LOAD RETRY WALL (the door re-presses the eviction race once, 
     core.enqueue(run);
     core.tryDequeue();
     const ctx = new Context();
-    (ctx as unknown as { queue: unknown }).queue = { stateRoot, stateRoots: [] as string[], core };
+    (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot, stateRoots: [] as string[], core };
     const engine = new FakeEngine(ctx);
     // an execution_error that is NOT the eviction race (a custom
     // node's own TypeError) — mid-execution marker but wrong type

@@ -55,7 +55,7 @@
     "@melite/video-h3-timeline": "0.3.0-rc.1"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/dsh-api-gateway": "0.2.2-rc.5",
     "@deepseek-ai/dsh-brand": "0.2.2-rc.5",
     "@melite/estate-drafts": "workspace:*",
@@ -148,7 +148,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@deepseek-ai/cordis": "^4.1.0",
+      "@deepseek-ai/cordis": "~4.1.0",
       "@deepseek-ai/cosmokit": "1.8.5",
       "@deepseek-ai/dsh": "0.2.2-rc.5",
       "@deepseek-ai/dsh-*": "0.2.2-rc.5",

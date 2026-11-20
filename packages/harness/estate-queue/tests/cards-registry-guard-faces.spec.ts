@@ -7,6 +7,7 @@
 // address skips lane presence exactly as the run press composes it.
 // The specs describe what each seat does, not that it is safe.
 import { assertHermeticRode } from "../../../../tests/helpers/hermetic-engine.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 
 const composeOnce = vi.hoisted(() =>
@@ -70,6 +71,7 @@ describe("the familyless lane-presence skip", () => {
     new FlowsSeatService(ctx);
     // J12: the dangling sweep's call data (config-named, no env seam)
     (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
       stateRoot: mkdtempSync(join(tmpdir(), "guard-faces-")),
       stateRoots: [] as string[],
     };

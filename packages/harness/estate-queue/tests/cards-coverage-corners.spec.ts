@@ -6,6 +6,7 @@
 // cache-miss face (cardDefsNow null at the derive). All ride the
 // same hermetic boot as cards-registry.spec's arms.
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -55,6 +56,7 @@ beforeAll(async () => {
   const ctx = new Context();
   new FlowsSeatService(ctx);
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "cards-corners-")),
     stateRoots: [] as string[],
   };
@@ -112,6 +114,7 @@ describe("the family-law collection dedups across cards boarding one family", ()
       const ctx = new Context();
       new FlowsSeatService(ctx);
       (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
         stateRoot: mkdtempSync(join(tmpdir(), "cards-twin-")),
         stateRoots: [] as string[],
       };

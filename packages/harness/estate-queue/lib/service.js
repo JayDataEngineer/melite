@@ -16,6 +16,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import { QueueCore, bootGate, ledgerPathFor, releaseLock, resolveStateRoot, } from "./queue.js";
 import { tailLedgerAcross } from "./ledgerTail.js";
+import { LifecycleLatch } from "./lifecycleLatch.js";
 import { rootsManifest } from "./rootsManifest.js";
 /** The serial-GPU queue seat: `ctx.queue`. */
 export class QueueService extends Service {
@@ -34,6 +35,13 @@ export class QueueService extends Service {
     executeCeilMs;
     /** The in-memory serial registry (runs + FIFO order + active). */
     core = new QueueCore();
+    /** THE LIFECYCLE LATCH (MP-R1, owned since the 2026-11-20
+     *  cordis-waterfall F3 cure): the reservation half of the
+     *  lifecycle guard, owned by the queue seat — the manage doors
+     *  hold it across destructive vendor calls, the run press reads
+     *  it before minting a run. Instance state, never a module
+     *  global: the seat owns the one latch both planes share. */
+    lifecycleLatch = new LifecycleLatch();
     #released = false;
     constructor(ctx, config = {}) {
         super(ctx, "queue");

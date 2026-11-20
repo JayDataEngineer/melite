@@ -28,6 +28,7 @@
 // TS-private plain properties (the pump spec's FakeEngine predates
 // the trap with public ones).
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -65,7 +66,7 @@ const seat = (): Seat => {
   const ctx = new Context();
   new FlowsSeatService(ctx);
   const core = new QueueCore();
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot: state };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (): Promise<unknown> => ({}),
   };

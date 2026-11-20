@@ -54,7 +54,7 @@ import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStal
 import type { EngineUnitCensus } from "./manageProbe.ts";
 import { runPreflight, preflightLine } from "./managePreflight.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
-import { holdLifecycle } from "./lifecycleLatch.ts";
+import type { LifecycleLatch } from "./lifecycleLatch.ts";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { artifactFileName } from "@melite/contracts/benchResult";
@@ -182,6 +182,11 @@ export interface ManageEnvelope {
 }
 
 export interface ManageCtx {
+  /** THE LIFECYCLE LATCH (MP-R1, owned 2026-11-20): the queue
+   *  seat's own latch instance — every destructive door holds it
+   *  across its vendor call (threaded here by manageRegistry from
+   *  ctx.queue, carried through linkCallerSignal by spread). */
+  latch: LifecycleLatch;
   /** File-anchored repo root (routing, catalog, runs scan anchor). */
   repoRoot: string;
   /** The §23 cross-roots manifest (own state root first, then the
@@ -2225,7 +2230,7 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
   estateOnly(req, cfg);
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
   // call so a run pressed mid-reboot refuses instead of tearing.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
      // MP-R2 (round 19, 2026-10-10): the reboot is ISSUED past this
@@ -2266,7 +2271,7 @@ async function hStop(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   estateOnly(req, ctx.endpoint());
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the
   // systemctl call so a run pressed mid-stop refuses.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);
   } finally {
@@ -2284,7 +2289,7 @@ async function hLaunch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   // rides the lifecycle latch like every sibling teardown, so the
   // re-arm actually re-arms: the seat re-binds to the launch action
   // across the call and releases on settle.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     return await systemctl(req, "start", ctx.comfyUnit, ctx.signal);
   } finally {
@@ -2301,7 +2306,7 @@ async function hUpdate(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   estateOnly(req, cfg);
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
   // calls so a run pressed mid-update refuses instead of tearing.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     await managerPost(base(ctx), "/manager/queue/update_comfyui", {}, { ctx, timeoutMs: 10_000 });
     await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
@@ -2334,7 +2339,7 @@ async function hSwitchVersion(req: Req, ctx: ManageCtx): Promise<[number, Manage
   estateOnly(req, cfg);
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the read +
   // switch so a run pressed mid-switch refuses instead of tearing.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     const doc = await managerGet(base(ctx), "/comfyui_manager/comfyui_versions", {
       ctx, timeoutMs: 30_000,
@@ -2364,7 +2369,7 @@ async function hFree(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   if (b === "") throw planeUnavailable(b, "no endpoint url");
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the free
   // call so a run pressed mid-free refuses instead of tearing.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   // THE WARMED-SEAT COUNT, ANSWERED (qa8 F42): the envelope carries
   // what the chain released — never the silent no-op face the burn
   // served ("free issued" while 8.35 GB stayed resident).
@@ -2671,7 +2676,7 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
   estateOnly(req, cfg);
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the restore
   // call so a run pressed mid-restore refuses instead of tearing.
-  const releaseLifecycle = holdLifecycle(req.action);
+  const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     await managerPost(base(ctx), "/snapshot/restore", { target: req.snapshot }, { ctx, timeoutMs: 30_000 });
   } catch (e) {

@@ -36,7 +36,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/dsh-client-connection": "0.2.2-rc.5",
     "@deepseek-ai/dsh-client-resources": "0.2.2-rc.5",
     "@deepseek-ai/dsh-client-ui-chat": "0.2.2-rc.5",
@@ -68,7 +68,7 @@
     "typescript": "~6.0.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/dsh": ">=0.2.2-rc.5 <0.3.0",
     "react": "^19.2.6"
   },

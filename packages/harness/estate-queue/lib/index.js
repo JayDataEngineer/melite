@@ -1,3 +1,4 @@
+import Schema from "@deepseek-ai/schemastery";
 import { QueueService } from "./service.js";
 import { RunsRuntimeService } from "./runsRegistry.js";
 export { QueueService } from "./service.js";
@@ -14,6 +15,20 @@ export * from "./queue.js";
 import { FlowsSeatService } from "./flowsData.js";
 export const name = "estate-queue";
 export const inject = ["timer"];
+/** The validator twin of {@link QueueConfig} — the plugin-law Config
+ *  every Cordis plugin must export (cordis-tutorial/05-config.md:
+ *  config is a declared schema, validated before apply, settable
+ *  from cordis.yml; the 2026-11-20 cordis-waterfall audit's F1 —
+ *  this seat shipped config fields with no schema, so a typo'd
+ *  cordis.yml row passed silently as absent). Every field optional:
+ *  the seat's own law is `config = {}`, the service resolves
+ *  defaults (service.ts documents each field's resolution). */
+export const Config = Schema.object({
+    repoRoot: Schema.string(),
+    stateRoot: Schema.string(),
+    stateRoots: Schema.array(Schema.string()),
+    executeCeilMs: Schema.number(),
+});
 export function apply(ctx, config = {}) {
     // THE FLOWS SEAT MOUNTS FIRST (plugin-law J4, 2026-10-18): the
     // registry's live table is service instance state, its seed rows

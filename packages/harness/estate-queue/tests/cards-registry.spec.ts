@@ -6,6 +6,7 @@
 // provider prime. composeOnce rides a seam fake (the engine graph
 // compose has its own seat elsewhere).
 import { describe, it, expect, vi, afterAll, beforeAll } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 // THE FILE-LEVEL ENGINE MOCK (gate-37 flake cure): this file
 // sequences one-shot census events (mockResolvedValueOnce /
 // mockRejectedOnce) for primeObjectInfo's degrade + re-arm arms,
@@ -98,6 +99,7 @@ beforeAll(async () => {
   // stateRoots manifest (config-named call data — no env seam); the
   // boot stub pins a temp tree so the sweep never touches real runs.
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "cards-reg-")),
     stateRoots: [] as string[],
   };
@@ -1166,7 +1168,7 @@ describe.skipIf(!ESTATE_STORE_SEATED)("phase1Card + phase2Card (the two phases, 
     writeFileSync(join(gen, "f308-wall.mp4"), craftTimedMp4(928, 1344, 90));
     const c2 = new Context();
     new FlowsSeatService(c2);
-    (c2 as unknown as { queue: unknown }).queue = { stateRoot: root, stateRoots: [root] as string[] };
+    (c2 as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: root, stateRoots: [root] as string[] };
     const svc2 = new CardRegistryService(c2);
     await svc2.prime();
     const produced = `${runId}/gen/f308-wall.mp4`;
@@ -1200,7 +1202,7 @@ describe.skipIf(!ESTATE_STORE_SEATED)("phase1Card + phase2Card (the two phases, 
     const root = mkdtempSync(join(tmpdir(), "trim-belt-"));
     const c2 = new Context();
     new FlowsSeatService(c2);
-    (c2 as unknown as { queue: unknown }).queue = { stateRoot: root, stateRoots: [root] as string[] };
+    (c2 as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), stateRoot: root, stateRoots: [root] as string[] };
     const svc2 = new CardRegistryService(c2);
     await svc2.prime();
     const noTrimVoice = async (bagBody: Record<string, unknown>): Promise<void> => {
@@ -1793,6 +1795,7 @@ describe("the singleton re-arm (a weight landing reaches the serving surfaces wi
       freshCtx = new Context();
       new FlowsSeatService(freshCtx);
       (freshCtx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
         stateRoot: mkdtempSync(join(tmpdir(), "cards-rearm-")),
         stateRoots: [] as string[],
       };

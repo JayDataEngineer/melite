@@ -24,14 +24,17 @@ import { newRunId } from "../src/queueCore.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 
 /** registerCompiledRun now returns a refusal union (the source-echo
  *  gate) — these walls register sourceless stages, so a refusal is
  *  itself the failure. */
 const mustRegister = async (
-  args: Parameters<typeof registerCompiledRun>[0],
+  args: Omit<Parameters<typeof registerCompiledRun>[0], "lifecycleLatch"> & {
+    lifecycleLatch?: LifecycleLatch;
+  },
 ): Promise<{ run: RunRecord; queuePosition: number }> => {
-  const out = await registerCompiledRun(args);
+  const out = await registerCompiledRun({ lifecycleLatch: new LifecycleLatch(), ...args });
   if ("payload" in out) throw new Error("unexpected refusal: " + JSON.stringify(out.payload));
   return out;
 };

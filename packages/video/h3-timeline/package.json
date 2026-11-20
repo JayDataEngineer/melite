@@ -42,7 +42,7 @@
     "react": "^19.3.1"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/dsh-agent": "0.2.2-rc.5",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -68,7 +68,7 @@
   },
   "sideEffects": true,
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/dsh": ">=0.2.2-rc.5 <0.3.0"
   },
   "files": [

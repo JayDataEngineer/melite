@@ -19,9 +19,17 @@ runs-registry row mounts after queue, drafts, and card registry.
   bootSweep), `ctx.runs` (RunsRuntimeService — start/status/stop/list/
   validate, onRunChange), `ctx.manage` (ManageGatewayService), and
   `ctx.meliteFlows` (the flows seat, mounted first in the row).
-- Config: `{ repoRoot? }` for the default `data/runs` state root;
-  `MELITE_STATE_ROOT` overrides it, and `MELITE_STATE_ROOTS`
-  (colon-separated) declares the cross-roots manifest, own root first.
+- Config (declared schema, validated before apply — the 2026-11-20
+  config-law cure): `{ repoRoot? }` for the default `data/runs`
+  state root; `stateRoot?` (absolute) overrides it and wins over
+  repoRoot; `stateRoots?` declares the cross-roots manifest extras,
+  own root first (the retired `MELITE_STATE_ROOT`/`MELITE_STATE_ROOTS`
+  env seams' config twins); `executeCeilMs?` is the one-run engine
+  execution ceiling (`<= 0` disables — the hung-run fuse).
+- The lifecycle latch (MP-R1) is instance state on the queue seat:
+  the manage doors hold `ctx.queue.lifecycleLatch` across destructive
+  vendor calls; the run press reads it and refuses with
+  `runs/lifecycle-inflight` while a teardown is in flight.
 - The submit vocabulary lives here: draft-id law (re-exported from
   estate-drafts), run gates, refusals, validation, ledger tail. The skill
   plane serves skills over the same storage melite_load reads.

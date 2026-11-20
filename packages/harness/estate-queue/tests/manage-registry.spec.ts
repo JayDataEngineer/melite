@@ -2,6 +2,7 @@
 // envelopes throw RemoteError (the lane's value-shape), ok envelopes
 // return, and the provider row mounts.
 import "../../../../tests/helpers/boot-models.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -25,6 +26,7 @@ const seat = (): { ctx: Context; svc: ManageGatewayService } => {
   // J12: the manage seat's ctx folds the queue seat's stateRoots
   // manifest (config-named call data — no env seam).
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: mkdtempSync(join(tmpdir(), "manage-reg-")),
     stateRoots: [],
   };

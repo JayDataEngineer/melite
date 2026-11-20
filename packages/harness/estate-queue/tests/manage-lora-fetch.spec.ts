@@ -28,6 +28,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 
 // THE RECEIPT-WRITE ABORT SEAM (managePlane.ts 1984-1991, 1993-2007,
 // 1402-1403: the lora_fetch restart chain): the atomic receipt writer
@@ -134,6 +135,7 @@ const seatless: ManageCtx["provisioning"] = undefined as unknown as ManageCtx["p
  *  arm — the process-global memo the invalidation must drop). */
 const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
+    latch: new LifecycleLatch(),
     repoRoot: tempRoot("lora-fetch-ctx-"),
     endpoint: () => ({ provision: "managed", url: "http://engine.invalid:8188", model_base_path: "/models" }),
     models: { allDecls: () => [] } as unknown as ManageCtx["models"],

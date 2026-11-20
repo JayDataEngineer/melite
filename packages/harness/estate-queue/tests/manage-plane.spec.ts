@@ -2,7 +2,7 @@
 // the parse law, the lifecycle guard, every handler's happy + refusal
 // arms, and the envelope mapping. Fetch is routed per test, systemctl
 // / journalctl ride a tmpbin, state roots are temp dirs.
-import { describe, it, afterEach, vi } from "vitest";
+import { describe, it, afterEach, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -29,7 +29,7 @@ import type {
 import { Context } from "@deepseek-ai/cordis";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
-import { lifecycleInFlight } from "../src/lifecycleLatch.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import { resolveStateRoot } from "../src/queueLock.ts";
 import { rootsManifest } from "../src/rootsManifest.ts";
 
@@ -42,6 +42,10 @@ const text = (v: string, status = 200): Response =>
   new Response(v, { status });
 
 // ── harness ─────────────────────────────────────────────────────────
+let LATCH = new LifecycleLatch();
+beforeEach(() => {
+  LATCH = new LifecycleLatch();
+});
 let ROOT = "";
 type ModelRef = Extract<ResourceRef, { kind: "model" }>;
 type ExtensionRef = Extract<ResourceRef, { kind: "extension" }>;
@@ -233,6 +237,7 @@ afterEach(() => {
 
 const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
+    latch: LATCH,
     repoRoot: ROOT,
     // THE ROOTS UNIFICATION (2026-09-25), J12 spelling: the manifest
     // rides the ctx (config-named roots, never an env seam) — own
@@ -747,18 +752,18 @@ describe("lifecycle guard + orchestration", () => {
       writeFileSync(join(bin, "systemctl"), "#!/bin/sh\nsleep 30\n", "utf8");
       chmodSync(join(bin, "systemctl"), 0o755);
       process.env.PATH = bin + ":" + realPath;
-      assert.equal(lifecycleInFlight(), null, "no teardown in flight before the press");
+      assert.equal(LATCH.inFlight(), null, "no teardown in flight before the press");
       const controller = new AbortController();
       const pending = manage({ action: "launch", force: true }, CTX({ signal: controller.signal }));
       let seen: string | null = null;
       for (let i = 0; i < 200 && seen === null; i++) {
-        seen = lifecycleInFlight();
+        seen = LATCH.inFlight();
         if (seen === null) await new Promise((r) => setTimeout(r, 10));
       }
       assert.equal(seen, "launch", "the re-arm actually re-arms: launch holds the guard across the start call");
       controller.abort();
       await assert.rejects(pending, "the aborted start propagates");
-      assert.equal(lifecycleInFlight(), null, "the hold lifts on settle — no leaked seat");
+      assert.equal(LATCH.inFlight(), null, "the hold lifts on settle — no leaked seat");
     } finally {
       rmSync(bin, { recursive: true, force: true });
       rmRoot();

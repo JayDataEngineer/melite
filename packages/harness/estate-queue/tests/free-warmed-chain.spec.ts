@@ -25,6 +25,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -34,6 +35,7 @@ afterEach(() => {
 const json = (value: unknown, status = 200): Response => new Response(JSON.stringify(value), { status });
 const ctx = (): ManageCtx =>
   ({
+    latch: new LifecycleLatch(),
     repoRoot: "",
     stateRoots: [],
     comfyUnit: "melite-comfyui.service",

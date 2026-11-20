@@ -28,6 +28,7 @@
 //                      spelling reads ABSENT (the parse_qs blank
 //                      law), never as a match against the empty id.
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -105,6 +106,7 @@ const seat = (docs: Record<string, Record<string, unknown>> = {}): Seat => {
   new ModelsSeatFake(ctx);
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = {
+    lifecycleLatch: new LifecycleLatch(),
     core,
     stateRoot: state,
     get stateRoots(): string[] { return [state]; },

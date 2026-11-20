@@ -1,9 +1,9 @@
-export * from "./queueLock.js";
-export * from "./queueSubmit.js";
-export * from "./queueLifecycle.js";
-export * from "./queueCore.js";
-export * from "./queueRetry.js";
-export * from "./queueSidecar.js";
-export * from "./queueSweep.js";
-export * from "./queueResurrect.js";
+export * from "./queueLock.ts";
+export * from "./queueSubmit.ts";
+export * from "./queueLifecycle.ts";
+export * from "./queueCore.ts";
+export * from "./queueRetry.ts";
+export * from "./queueSidecar.ts";
+export * from "./queueSweep.ts";
+export * from "./queueResurrect.ts";
 //# sourceMappingURL=queue.d.ts.map

@@ -127,6 +127,21 @@ export interface Config {
    *  failure mode one lane over). Maker/studio faces (the web
    *  profile) opt in explicitly. */
   cardTools?: boolean
+  /** THE PRESS WINDOW (D-7's law, configurable since the 2026-11-20
+   *  conventions-sweep cure — a hardcoded tunable is not
+   *  configurability): single-stage presses keep EXACTLY this base
+   *  window; past it the receipt is the pending face (run_id
+   *  carried) and the unpressed tail is never sent. Default 110000
+   *  — the four-burn D-7 settlement. */
+  pressBaseMs?: number
+  /** The bench-scaled window's per-additional-row share (the
+   *  2026-11-20 bench law: 110 s fit ~9 fast rows — the share
+   *  lets ONE press drain the whole bench). Default 90000. */
+  pressStageShareMs?: number
+  /** The press window's never-past ceiling (default: the
+   *  observation budget, 900000 — "above every legitimate render
+   *  observed"). The ceiling keeps D-7's law a bench law too. */
+  pressCeilingMs?: number
 }
 
 /** The validator twin of {@link Config} (the loader applies defaults;
@@ -134,6 +149,9 @@ export interface Config {
 export const Config: Schema<Config> = Schema.object({
   adhocTools: Schema.union([Schema.string(), Schema.array(Schema.string())]),
   cardTools: Schema.boolean().default(false),
+  pressBaseMs: Schema.number().default(110_000),
+  pressStageShareMs: Schema.number().default(90_000),
+  pressCeilingMs: Schema.number().default(900_000),
 })
 
 /** EAGER — the compose loop, the only melite schemas in a session's
@@ -365,7 +383,18 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   let runDoorSeats: Array<() => void> = []
   const seatRunDoors = (): void => {
     if (runDoorSeats.length > 0) return
-    runDoorSeats.push(c.tools.register(meliteFlow(estate)), c.tools.register(runStatus(estate)))
+    // THE PRESS WINDOW (2026-11-20 conventions-sweep cure): the D-7
+    // timings are Config fields, threaded once here — cordis.yml
+    // tunes the bench window; absent rows resolve the schema
+    // defaults inside pressBudgetMs (the pre-config law).
+    runDoorSeats.push(
+      c.tools.register(meliteFlow(estate, {
+        baseMs: config.pressBaseMs,
+        stageShareMs: config.pressStageShareMs,
+        ceilingMs: config.pressCeilingMs,
+      })),
+      c.tools.register(runStatus(estate)),
+    )
   }
   const unseatRunDoors = (): void => {
     for (const dispose of runDoorSeats.splice(0)) dispose()

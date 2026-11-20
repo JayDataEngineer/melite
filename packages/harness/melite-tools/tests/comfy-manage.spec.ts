@@ -42,6 +42,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 }
 import { dispatchManage } from '../../estate-queue/src/managePlane.ts'
 import type { ManageCtx } from '../../estate-queue/src/managePlane.ts'
+import { LifecycleLatch } from '../../estate-queue/src/lifecycleLatch.ts'
 
 /** The typed-lane mock (F-1, 2026-11-05): the tool plane's tests
  * stub the ESTATE seam, never a URL transport. `seen` records the
@@ -332,6 +333,7 @@ describe('comfy_manage execute — the manage lane', () => {
   // of managePlane's ACTIONS.
   test('the SSOT carries the refmods listing door (the closed vocabulary names it)', async () => {
     const ctx: ManageCtx = {
+      latch: new LifecycleLatch(),
       repoRoot: process.cwd(),
       stateRoots: [],
       comfyUnit: 'melite-comfyui.service',
@@ -389,6 +391,7 @@ describe('comfy_manage execute — the manage lane', () => {
     }) as typeof fetch
     try {
       const ctx: ManageCtx = {
+        latch: new LifecycleLatch(),
         repoRoot: process.cwd(),
         // J12: the census manifest rides the ctx (config-named)
         stateRoots: [],
@@ -623,6 +626,7 @@ describe('comfy_manage contract projection matrix', () => {
   // rename at either seat reds it.
   test('AUDIT V2: census_partial flows producer->face through the real seam — no hand-set key', async () => {
     const ctx: ManageCtx = {
+      latch: new LifecycleLatch(),
       repoRoot: process.cwd(),
       stateRoots: [],
       comfyUnit: 'melite-comfyui.service',
@@ -951,6 +955,7 @@ describe('comfy_manage settle_stale + provision_runtime — the cure verbs ride 
     globalThis.fetch = (async () => { throw new Error('engine down') }) as typeof fetch
     try {
       const ctx = {
+        latch: new LifecycleLatch(),
         repoRoot: process.cwd(),
         stateRoots: [],
         endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),

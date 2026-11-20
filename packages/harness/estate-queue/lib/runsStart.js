@@ -20,7 +20,6 @@ import { FlowError } from "./runsValidateShared.js";
 import { AGENT_ENGINE_ID, CRAFT_ENGINE_ID, COMFYUI_ENGINE_ID, engineIdOk, } from "@melite/engine-contract";
 import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop, checkFlowStage, } from "./runsGates.js";
 import { appendLedger, graphReceiptFoldOf, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
-import { lifecycleInFlight } from "./lifecycleLatch.js";
 import { toRemoteError } from "./runsRefusalVoices.js";
 import { rootsManifest } from "./rootsManifest.js";
 // the envelope-refusal SSOT lives in queueSubmit.ts (beside
@@ -402,7 +401,7 @@ export function selectSubmitDoor(body, opts = {}) {
  *  (the remote) enqueues it on the queue core + kicks the pump.
  *  Returns the row and its queue position. */
 export async function registerCompiledRun(args) {
-    const { compiled, testFlag, executeCeilMs, draftId, stateRoot, enqueue, door } = args;
+    const { compiled, lifecycleLatch, testFlag, executeCeilMs, draftId, stateRoot, enqueue, door } = args;
     // THE ONE RUN ID (see the type above): the caller's. There is no
     // second producer here, and there cannot be one without failing the
     // compiler.
@@ -687,7 +686,7 @@ export async function registerCompiledRun(args) {
     // census, so any teardown from here on is refused by the guard —
     // the refused press removes the minted dir and answers the same
     // named code, having told the ledger nothing.
-    const heldLifecycle = lifecycleInFlight();
+    const heldLifecycle = lifecycleLatch.inFlight();
     if (heldLifecycle !== null) {
         // The unlink is best-effort: a failed removal must not replace the
         // named 409 (the client would lose the retry-hint code) — but the

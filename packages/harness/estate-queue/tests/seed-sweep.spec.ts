@@ -27,6 +27,7 @@
 // downstream (registration, enqueue, the pump, the engine gate) is
 // REAL, mirroring runs-registry-two-press.spec.ts's harness.
 import { describe, it, afterEach } from "vitest";
+import { LifecycleLatch } from "../src/lifecycleLatch.ts";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -76,7 +77,7 @@ const seat = (): Seat => {
   new FlowsSeatService(ctx);
   const core = new QueueCore();
   const gate: { failAtSeed?: number } = {};
-  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  (ctx as unknown as { queue: unknown }).queue = { lifecycleLatch: new LifecycleLatch(), core, stateRoot: state };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (): Promise<unknown> => ({}),
   };
