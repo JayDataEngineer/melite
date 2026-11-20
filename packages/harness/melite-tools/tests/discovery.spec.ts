@@ -443,7 +443,16 @@ describe('live door arms', () => {
       ['draw', 'ordered'],
     ])
     const sam3 = (mask['modifiers'] as Array<Record<string, unknown>>)[0]!
-    assert.ok((sam3['fields'] as string[]).includes('prompt'), 'the field names ride')
+    // M-T4 (the timeline-agent brief, 2026-11-20): modifiers serve
+    // the FULL field rows — the agent plane needs the band, not
+    // just the name (a press learned every bound by refusal before).
+    const sam3Rows = sam3['fields'] as Array<Record<string, unknown>>
+    assert.ok(sam3Rows.some((f) => typeof f === 'object' && f !== null && f['name'] === 'prompt'), 'the field names ride')
+    const prompt = sam3Rows.find((f) => typeof f === 'object' && f !== null && f['name'] === 'prompt')!
+    assert.equal(prompt['label'], 'Prompt', 'the label rides')
+    assert.equal(prompt['type'], 'string', 'the type rides')
+    assert.ok(typeof prompt['tooltip'] === 'string' && prompt['tooltip'].length > 0, 'the tooltip rides — the unit/band counsel the agent carries')
+    assert.equal(typeof prompt['default'] === 'string' || 'default' in prompt, true, 'the default seat rides')
     assert.equal('leaf_face' in sam3, false, 'leaf_face is a UI concern — never rides')
     // kindless cards serve NO modifiers key (never an empty array)
     const tts = tools.find((t) => t['name'] === 'tts')!

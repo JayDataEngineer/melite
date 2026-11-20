@@ -75,10 +75,20 @@ export function parseFrameEdit(v: unknown): number | undefined {
 /** Nearest legal authored length for the window's shape. */
 export function snapCallLength(length: number, carried: boolean): number {
   if (carried) {
-    const k = Math.max(1, Math.round(length / GRID_STEP_FRAMES))
+    // CEIL, the admission law's own voice (timelineContract
+    // admitSpanGrid, M-T3 2026-11-20): an off-grid authored length
+    // renders to the rung AT OR AFTER it — the compose's snap floor
+    // rounds the span's END UP, so the strip's preview mirrors what
+    // will render (round could promise a shorter window than the
+    // run delivers).
+    const k = Math.max(1, Math.ceil(length / GRID_STEP_FRAMES))
     return Math.min(GRID_MAX_FRAMES - SEAM_OVERLAP_FRAMES, GRID_STEP_FRAMES * k)
   }
-  return gridSnap(Math.max(GRID_BASE_FRAMES, length))
+  // first/cut: the SAME ceil law on the 22+17k family — one
+  // admission, no shape split (gridSnap's round is the "nearest
+  // legal" the refusals quote, not what a press renders).
+  const k = Math.max(0, Math.ceil((length - GRID_BASE_FRAMES) / GRID_STEP_FRAMES))
+  return Math.min(GRID_MAX_FRAMES, GRID_BASE_FRAMES + GRID_STEP_FRAMES * k)
 }
 
 /** Snap a CUT drag's delta onto the 17-frame lattice (operator

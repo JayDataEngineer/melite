@@ -26,7 +26,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { gridSnap } from "@melite/models-h3/timelineContract";
+import { filmAdmissionNotices, gridSnap } from "@melite/models-h3/timelineContract";
 import {
   axisPickPatch, type FormSpecDoc, type FormVariantRow,
 } from "@melite/card-base/client";
@@ -633,57 +633,114 @@ describe("the render grid gate (roadmap §26 — zero-GPU refusal, never a sampl
     assert.equal(scoped(out, "window2_", "MiniMaxH3FiniteSegmentFinalize")[0]![1].inputs.overlap_frames, 22);
   });
 
-  it("an illegal carried multi-call span refuses at schema with the exact range and neighbors", () => {
-    assert.throws(
-      () => def.schema({
-        calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 282 })],
-      }),
-      /calls\[1\]: authored range 124→282 cannot land on the 22\+17k carried grid; generated snapped range 102→277; legal neighboring end frames 277 and 294/,
+  it("an off-grid carried multi-call span ADMITS at the schema and snaps at the compose with the re-tiled clock (M-T3, 2026-11-20)", () => {
+    // THE SNAP-ADMISSION LAW replaced the off-grid refusal: 158f
+    // carried is above the 24f floor, so the walk admits it and the
+    // compose's whole-doc admit pass lands its end UP on the next
+    // rung (17·10 = 170 → 124→294) — reported, never silent, and the
+    // doc keeps its authored coordinates.
+    const walked = def.schema({
+      calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 282 })],
+    }) as Record<string, unknown>;
+    const authored = (walked.calls as Array<Record<string, unknown>>)[1]!;
+    assert.equal(authored.end_frame, 282, "the walk keeps the authored end frame, unsnapped");
+    assert.doesNotThrow(() => def.compose(walked, model, new GraphBuilder(), "run_grid_snap_carried"));
+    const notices = filmAdmissionNotices(walked);
+    assert.ok(
+      notices.some((w) => w.includes("calls[1]: authored 124→282 snapped to rendered 124→294 (carried 17k grid)")),
+      "the snap notice names authored and rendered with the grid family: " + notices.join(" | "),
     );
   });
 
-  it("the renderer repeats the carried-grid refusal when a walked document is stale", () => {
+  it("a sub-floor carried span still REFUSES at the walk — under 24f is a trim, not a call (M-T3)", () => {
+    assert.throws(
+      () => def.schema({
+        calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 139 })],
+      }),
+      /calls\[1\]: authored range 124→139 has length 15f, shorter than the 24f snap floor/,
+    );
+  });
+
+  it("the renderer re-rides the admit pass when a walked document is stale (a snap replaces the old refusal)", () => {
     const walked = def.schema({
       calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 })],
     }) as Record<string, unknown>;
     ((walked.calls as Array<Record<string, unknown>>)[1]!.end_frame) = 282;
-    assert.throws(
-      () => def.compose(walked, model, new GraphBuilder(), "run_grid_illegal_carried"),
-      /h3-timeline window 2: authored range 124→282 cannot land on the 22\+17k carried grid; generated snapped range 102→277; legal neighboring end frames 277 and 294/,
+    assert.doesNotThrow(() => def.compose(walked, model, new GraphBuilder(), "run_grid_stale_snap"));
+    const notices = filmAdmissionNotices(walked);
+    assert.ok(
+      notices.some((w) => w.includes("calls[1]: authored 124→282 snapped to rendered 124→294")),
+      "the stale off-grid span snaps at the compose floor with the notice: " + notices.join(" | "),
     );
   });
 
-  it("the uniform span gate: single and cut windows refuse off-grid spans like carried ones", () => {
-    // THE TWO-LAW GAP, CLOSED: 282f was silently snapped to 277f for a
-    // first/cut window while a carried window refused. One law now.
-    assert.throws(
-      () => def.schema({ calls: [SHOT({ start_frame: 0, end_frame: 282 })] }),
-      /calls\[0\]: authored range 0→282 has length 282f, which cannot land on the 22\+17k grid \(nearest legal: 277f\)/,
+  it("the uniform span law: first and cut windows snap like carried ones — one admission, no shape split (M-T3)", () => {
+    // THE TWO-LAW GAP stayed closed under the snap: 282f first and
+    // 144f cut both snap on their own 22+17k family, verbatim-
+    // admitting every legal length between.
+    const first = def.schema({ calls: [SHOT({ start_frame: 0, end_frame: 282 })] }) as Record<string, unknown>;
+    const firstNotices = filmAdmissionNotices(first);
+    assert.ok(
+      firstNotices.some((w) => w.includes("calls[0]: authored 0→282 snapped to rendered 0→294 (first/cut 22+17k grid)")),
+      "the first window snaps on its own family: " + firstNotices.join(" | "),
     );
     const onGrid = def.schema({ calls: [SHOT({ start_frame: 0, end_frame: 277 })] }) as Record<string, unknown>;
     assert.equal(onGrid.length, 277, "an admitted single window keeps its authored length, unsnapped");
+    assert.deepEqual(
+      filmAdmissionNotices(onGrid).filter((w) => w.includes("snapped")),
+      [],
+      "a legal span never snap-warns (the silent-window speech map is its own arm)",
+    );
     const cut = def.schema({
       calls: [SHOT({ end_frame: 124 }), SHOT({ start_frame: 124, end_frame: 282, transition: "cut" })],
     }) as Record<string, unknown>;
     assert.equal(cut.variant, "t4_chain");
-    // the cut span 158f IS 22+17k, so the refusal above was about the
-    // single window's 282f span, not about cut geometry
-    assert.throws(
-      () => def.schema({
-        calls: [SHOT({ end_frame: 124 }), SHOT({ start_frame: 124, end_frame: 268, transition: "cut" })],
-      }),
-      /calls\[1\]: authored range 124→268 has length 144f, which cannot land on the 22\+17k grid/,
+    // the cut span 158f IS 22+17k, so it admits verbatim — the
+    // refusal above was about the single window's 282f span
+    assert.deepEqual(
+      filmAdmissionNotices(cut).filter((w) => w.includes("snapped")),
+      [],
+      "the legal cut span never warns",
+    );
+    const offCut = def.schema({
+      calls: [SHOT({ end_frame: 124 }), SHOT({ start_frame: 124, end_frame: 268, transition: "cut" })],
+    }) as Record<string, unknown>;
+    assert.ok(
+      filmAdmissionNotices(offCut).some((w) => w.includes("calls[1]: authored 124→268 snapped to rendered 124→282 (first/cut 22+17k grid)")),
+      "an off-grid cut span snaps on the 22+17k family",
     );
   });
 
-  it("the compose carrier repeats the uniform span refusal for a stale opener", () => {
-    // the film door re-rides the same law the walk admitted under:
-    // a mutated opener span refuses before any node is built
+  it("a snapped predecessor RE-TILES the tail: later windows keep their lengths and slide (M-T3's re-tile law)", () => {
+    // The measured workflow: a 39f tail after 124 renders 124→175.
+    // The window AFTER the snap keeps its authored LENGTH (119f,
+    // 17·7 — already legal) and slides with the clock — the film
+    // tiles on rendered coordinates, and the notice names the slide.
+    const walked = def.schema({
+      calls: [
+        SHOT({ end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 163 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 163, end_frame: 282 }),
+      ],
+    }) as Record<string, unknown>;
+    const notices = filmAdmissionNotices(walked);
+    assert.ok(
+      notices.some((w) => w.includes("calls[1]: authored 124→163 snapped to rendered 124→175")),
+      "the 39f tail snaps to the 175 rung: " + notices.join(" | "),
+    );
+    assert.ok(
+      notices.some((w) => w.includes("calls[2]: authored 163→282 slid to rendered 175→294")),
+      "the successor keeps its 119f length and slides to the rendered clock: " + notices.join(" | "),
+    );
+    assert.doesNotThrow(() => def.compose(walked, model, new GraphBuilder(), "run_grid_retile"));
+  });
+
+  it("the compose carrier still refuses a sub-floor stale span past the walk (zero GPU)", () => {
     const walked = def.schema({ calls: [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })] }) as Record<string, unknown>;
-    ((walked.calls as Array<Record<string, unknown>>)[0]!).end_frame = 68;
+    ((walked.calls as Array<Record<string, unknown>>)[1]!.end_frame) = 60;
     assert.throws(
       () => def.compose(walked, model, new GraphBuilder(), "run_grid_illegal_opener"),
-      /h3-timeline window 1: authored range 0→68 has length 68f, which cannot land on the 22\+17k grid/,
+      /calls\[1\]: authored range 56→60 has length 4f, shorter than the 24f snap floor/,
     );
   });
 
@@ -1600,17 +1657,24 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     );
   });
 
-  it("a SINGLE-WINDOW doc with clips REFUSES loud (the mix is a film-path consumer — never a silent skip)", () => {
+  it("a SINGLE-CALL doc with clips PROMOTES to the film path (M-T1, 2026-11-20 — the card mints the silent tail itself)", () => {
+    // The old law (refuse a clips-carrying single-window doc) died
+    // with the promoted silent tail: one call plus clips IS a film
+    // of one window + the card's 51 f faceless tail, composed on
+    // the film chain (the mix rides it). The FROZEN no-calls shape
+    // still refuses — that arm lives in the models/h3 door suite.
     const g = new GraphBuilder();
-    assert.throws(
-      () => def.compose(
-        def.schema({
-          calls: [SHOT()],
-          audio_clips: [CLIP({ start_frame: 0 })],
-        }),
-        model, g, "run_clips_single",
-      ),
-      /audio clips ride the FILM path/,
+    const walked = def.schema({
+      calls: [SHOT()],
+      audio_clips: [CLIP({ start_frame: 0 })],
+    }) as Record<string, unknown>;
+    assert.doesNotThrow(() => def.compose(walked, model, g, "run_clips_single"));
+    const calls = walked.calls as Array<Record<string, unknown>>;
+    assert.equal(calls.length, 2, "the promotion appends the silent tail call");
+    assert.equal(
+      (calls[1]!.end_frame as number) - (calls[1]!.start_frame as number),
+      51,
+      "the tail is the 51 f grid-legal carried window",
     );
   });
 });

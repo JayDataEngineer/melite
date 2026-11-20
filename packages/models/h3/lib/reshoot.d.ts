@@ -109,6 +109,34 @@ export declare function readReshootKnobs(p: Record<string, unknown>): ReshootKno
  *  film. Absent or empty bag = the compose never sees the chain
  *  (byte-stable graphs). */
 export declare function reshootArmed(p: Record<string, unknown>): boolean;
+/** THE REGION-AIM SEAT (M-T5, 2026-11-20 brief): a named subject the
+ *  camera aims at. Without it the warp's auto pivot is the central
+ *  region's median 3D point — a scene-level aim; an orbit circles
+ *  the frame's middle, and a subject off-centre slides out of the
+ *  re-shot. With `region_prompt` the chain tracks the named subject
+ *  (SAM3, per-frame, the edit verb's own five-node posture) and the
+ *  pivot becomes the SUBJECT's own median 3D point — the orbit
+ *  circles it, the push-in lands it framed. Rides the auto pivot
+ *  (`pivot_override: false`, the official posture); the vendored
+ *  warp's `aim_mask` input owns the swap. Empty prompt = no seat
+ *  (the graph stays byte-stable without it). */
+export interface ReshootAim {
+    /** The SAM3 text-detection prompt — the subject to hold framed
+     *  ("the woman in the red coat", not a camera move). */
+    readonly prompt: string;
+    /** The SAM3 detection score threshold (the edit verb's own seat,
+     *  same default 0.5 — lower finds more, noisier; higher only the
+     *  confident). */
+    readonly detectionThreshold: number;
+}
+/**
+ * Reads the bag's optional region-aim seat.
+ *
+ * @param p the walked doc params (the reshoot bag's entry, loose)
+ * @returns the aim when `region_prompt` names a subject, undefined
+ *   when the seat is absent or blank (no chain delta)
+ */
+export declare function readReshootAim(p: Record<string, unknown>): ReshootAim | undefined;
 /** The r2v prompt seat under the arm: the trigger word leads (the
  *  official graph's prompt is exactly `crossview.` — the LoRA fires
  *  on the word's presence, the estate's own motion prose follows). */

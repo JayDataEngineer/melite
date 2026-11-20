@@ -95,6 +95,19 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
     }
   });
 
+  it("ARM 2b — the region-aim seats are documented and served (M-T5): the subject, the threshold, the empty default", () => {
+    // The aim seat is a string, never a bounded dial (ARM 1's dial
+    // walk skips it by construction): judged against the SERVED row
+    // and the skill prose, never a band.
+    const md = readSkill("reshoot");
+    const served = fields();
+    assert.match(md, /`region_prompt`/, "SKILL.md documents the aim seat");
+    assert.match(md, /`detection_threshold`/, "SKILL.md documents the threshold");
+    assert.equal(served.get("region_prompt")?.type, "string", "the aim seat is a string row");
+    assert.equal(served.get("region_prompt")?.default, "", "the empty-unset default rides the graph unchanged");
+    assert.equal(served.get("detection_threshold")?.default, 0.5, "the served threshold matches the edit verb's own seat");
+  });
+
   it("ARM 3 — both bag skills name the ONE surviving pair and the five alias names, derived from the card's armed kinds", () => {
     // the armed bags are the card's own list — a door is every armed
     // kind except the co-arming adapter bag (GAPS-19: the refine door

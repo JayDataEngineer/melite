@@ -10,6 +10,26 @@ export const GRID_BASE_FRAMES = 22
 export const GRID_STEP_FRAMES = 17
 /** The window grid's ceiling: no window renders more than 362 frames. */
 export const GRID_MAX_FRAMES = 362
+/** The snap-admission floor (the timeline-agent brief M-T3, 2026-11-20):
+ *  an authored span of at least this many frames is SNAPPED UP to the
+ *  next legal rung and the snap is reported; below it the span is too
+ *  short to be a window at all and still refuses. The floor sits two
+ *  frames above BASE so the smallest authored-and-snapped window is the
+ *  first full rung — the round-2026-11-20 measured workflow: a 39 f
+ *  tail after a 124 f call renders 124→175, never a refusal. */
+export const SNAP_FLOOR_FRAMES = 24
+
+/** THE PROMOTED SILENT TAIL (timeline-agent brief M-T1, 2026-11-20):
+ *  the frames the card appends after a single-call doc's sole call
+ *  to unlock the film path for its audio_clips — 51 = 17·3, the
+ *  smallest grid-legal carried span whose generated length (73) is
+ *  one rung above the seam. The tail is faceless and silent by
+ *  construction: no guide, no refs, no clip starts inside it. */
+export const SILENT_TAIL_FRAMES = 51
+/** The promoted tail's prompt — a dictionary-clean room-tone line
+ *  that names no person and no speech (the M-T2 hazard: a face
+ *  held silent too long invents a line; the tail holds no face). */
+export const SILENT_TAIL_TEXT = 'a quiet wide interior holds still, ambient room tone only, no people, no movement beyond the air'
 /** The generated-length residue: a carried window renders 17k + 22 ≡ 5
  *  (mod 17) frames — the "% 17 == 5" the engine's own refusals name. */
 export const GRID_REMAINDER = 5
@@ -361,6 +381,142 @@ export function assertCarriedSpanGrid(span: TimelineSpan, where: string, carry =
     )
   }
   return grid.length
+}
+
+/** A span admitted onto the grid — the snap-admission answer (the
+ *  timeline-agent brief M-T3, 2026-11-20): the authored span, the
+ *  rendered span the film clock books, and whether a snap moved the
+ *  end frame. */
+export interface AdmittedSpan {
+  /** The window's generated length in frames (grid-legal). */
+  readonly length: number
+  /** The authored span, verbatim. */
+  readonly authored: TimelineSpan
+  /** The rendered span the film books — authored unless a snap moved
+   *  the end frame up to the next legal rung. */
+  readonly rendered: TimelineSpan
+  /** True when the rendered end frame is not the authored one. */
+  readonly snapped: boolean
+}
+
+/** THE SNAP-ADMISSION LAW (brief M-T3/L4, 2026-11-20): an authored
+ *  span of at least SNAP_FLOOR_FRAMES lands on the grid by snapping
+ *  its end UP to the next legal rung for the call's position — a
+ *  carried window's span rounds up to 17k, a first/cut window's to
+ *  22+17k — and the snap is REPORTED, never silent. Below the floor
+ *  (or past the grid's ceiling once snapped) the span still refuses.
+ *  This replaces the old off-grid refusal: a client never does
+ *  modular arithmetic to append a tail.
+ * @param span the authored window
+ * @param where the refusal's voice (the calling door's name)
+ * @param carry the seam overlap (0 for first/cut; >0 rides the carried math)
+ * @returns the AdmittedSpan — rendered span and generated length */
+export function admitSpanGrid(span: TimelineSpan, where: string, carry = 0): AdmittedSpan {
+  const authoredLength = span.end - span.start
+  // A legal span admits verbatim at ANY grid size — 17f carried and
+  // 22f first/cut windows are lawful film rows and never meet the
+  // snap floor. The floor governs only the off-grid span a client
+  // authors by eye (brief M-T3): short of it, nothing snaps.
+  if (carry > 0) {
+    if (authoredLength % GRID_STEP_FRAMES === 0 && authoredLength + carry <= GRID_MAX_FRAMES) {
+      return { length: authoredLength + carry, authored: span, rendered: span, snapped: false }
+    }
+  } else if (isGridLength(authoredLength)) {
+    return { length: authoredLength, authored: span, rendered: span, snapped: false }
+  }
+  if (authoredLength < SNAP_FLOOR_FRAMES) {
+    throw new Error(
+      `${where}: authored range ${span.start}→${span.end} has length ${authoredLength}f, ` +
+      `shorter than the ${SNAP_FLOOR_FRAMES}f snap floor — a window this small is a trim, not a call ` +
+      `(the floor snaps every legal span up; nothing below it can be)`,
+    )
+  }
+  if (carry > 0) {
+    const grid = carriedSpanGrid(span, carry)
+    const renderedEnd = Math.max(grid.upperEnd, span.end)
+    const length = renderedEnd - span.start + carry
+    if (length > GRID_MAX_FRAMES) {
+      throw new Error(
+        `${where}: authored range ${span.start}→${span.end} snaps to ${renderedEnd} (carried ${length}f generated), ` +
+        `past the grid's ${GRID_MAX_FRAMES}f ceiling — cut the window or move it earlier`,
+      )
+    }
+    return { length, authored: span, rendered: { start: span.start, end: renderedEnd }, snapped: renderedEnd !== span.end }
+  }
+  const k = Math.ceil((authoredLength - GRID_BASE_FRAMES) / GRID_STEP_FRAMES)
+  const length = GRID_BASE_FRAMES + GRID_STEP_FRAMES * k
+  if (length > GRID_MAX_FRAMES) {
+    throw new Error(
+      `${where}: authored range ${span.start}→${span.end} snaps to ${length}f generated, ` +
+      `past the grid's ${GRID_MAX_FRAMES}f ceiling — cut the window`,
+    )
+  }
+  return {
+    length,
+    authored: span,
+    rendered: { start: span.start, end: span.start + length },
+    snapped: length !== authoredLength,
+  }
+}
+
+/** THE WHOLE-DOC ADMIT PASS (brief M-T3, 2026-11-20): every call's
+ *  span admitted in ONE walk that owns the re-tiling — a snapped end
+ *  becomes the next window's start, and every later span keeps its
+ *  authored LENGTH while sliding with the tail. One law, one pass:
+ *  the compose's span rows, the studio's heal, and the run-status
+ *  notices all read this, never per-window arithmetic (a snap that
+ *  moved only its own end would leave the next authored start
+ *  behind it — an overlap the mix would double-book).
+ * @param calls the doc's calls, any spelling (int spans pinned by
+ *   the walk; a non-int span stays verbatim and the compose's own
+ *   missing-value refusals own it)
+ * @param overlapOf the seam word's overlap reader (transitionOverlap
+ *   — injected so the contract module owns no import cycle)
+ * @returns the rendered spans (one per call, tiled) + the per-call
+ *   snap notices (empty when every span admitted verbatim)
+ */
+export function admitCallSpans(
+  calls: readonly Record<string, unknown>[],
+  overlapOf: (transition: string | undefined) => number,
+): { spans: Array<{ start: number; end: number }>; notices: string[] } {
+  const spans: Array<{ start: number; end: number }> = []
+  const notices: string[] = []
+  let cursor: number | null = null
+  for (let i = 0; i < calls.length; i++) {
+    const c = calls[i]!
+    const rawStart = c['start_frame']
+    const rawEnd = c['end_frame']
+    if (typeof rawStart !== 'number' || typeof rawEnd !== 'number' || !Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) {
+      // not this pass's law — the walk's own missing-value refusal owns it
+      spans.push({ start: typeof rawStart === 'number' ? rawStart : 0, end: typeof rawEnd === 'number' ? rawEnd : 0 })
+      cursor = null
+      continue
+    }
+    const length = rawEnd - rawStart
+    // the retile: window 1 keeps its authored start; every later
+    // window starts where the RENDERED film now ends (a snapped
+    // predecessor slides the tail, lengths held)
+    const start = i === 0 || cursor === null ? rawStart : cursor
+    const end = start + length
+    const carry = i > 0 ? overlapOf(typeof c['transition'] === 'string' ? c['transition'] : undefined) : 0
+    const admitted = admitSpanGrid({ start, end }, `calls[${i}]`, carry)
+    spans.push({ start: admitted.rendered.start, end: admitted.rendered.end })
+    if (admitted.snapped) {
+      notices.push(
+        `calls[${i}]: authored ${rawStart}→${rawEnd} snapped to rendered ${admitted.rendered.start}→${admitted.rendered.end} ` +
+        `(${carry > 0 ? `carried 17k grid` : `first/cut 22+17k grid`})`,
+      )
+    } else if (admitted.rendered.start !== rawStart) {
+      // the window's own length is legal but a predecessor's snap
+      // re-tiled the clock — the slide is reported too (never silent)
+      notices.push(
+        `calls[${i}]: authored ${rawStart}→${rawEnd} slid to rendered ${admitted.rendered.start}→${admitted.rendered.end} ` +
+        `(a predecessor's snap re-tiled the clock; the length is held)`,
+      )
+    }
+    cursor = admitted.rendered.end
+  }
+  return { spans, notices }
 }
 
 /** The booked render clock, one home: the seconds seat rounds its
@@ -889,7 +1045,7 @@ export const SECOND_PASS_KNOBS: ReadonlySet<string> = new Set([
  *  the studio drops legacy rows at hydration with a named warn. */
 export const CALL_KEYS: ReadonlySet<string> = new Set([
   'text', 'start_frame', 'end_frame', 'image',
-  'transition', 'knobs', 'refs',
+  'transition', 'knobs', 'refs', 'resolution',
   'ref_image', 'image_name', 'ref_images', 'ref_videos', 'ref_audios',
   'beats', 'last_frame', 'first_frame_prev_sec', 'seam_carry',
 ])
@@ -934,4 +1090,70 @@ export const LEGACY_KNOB_KEY = {
  * @returns the current knob key */
 export function migrateCallKnobKey(key: string): string {
   return (LEGACY_KNOB_KEY as Record<string, string>)[key] ?? key
+}
+
+/** THE SILENT-WINDOW WARN FLOOR (timeline-agent brief M-T2,
+ *  2026-11-20): the consumer's measured number — a window with a
+ *  face held silent longer than this many frames invents a line
+ *  (run-db6f18b873c8, 153 f; run-22efe605a42f-fa09730b, 124 f —
+ *  both spoke, in Japanese). Compose cannot know a window holds a
+ *  face (no doc seat states it), so the number warns, never
+ *  refuses: a silent window at least this long gets a notice naming
+ *  the invented-line hazard and the cures. */
+export const SILENT_WINDOW_WARN_FRAMES = 68
+
+/** The card's admission notices for a film doc (brief M-T1/M-T2/M-T3,
+ *  2026-11-20): the pure recomputation the run record reports — the
+ *  promoted silent tail, each call's authored-vs-rendered span when
+ *  the snap moved its end frame, and each window's speech state with
+ *  the silent-window hazard warn. One law-adjacent home: the
+ *  admission-warns hook and the compose re-ride the same helpers,
+ *  so the notice cannot disagree with the film that renders.
+ * @param doc the admitted card doc (calls + audio_clips rows)
+ * @returns the notice lines, in call order — empty when nothing to say */
+export function filmAdmissionNotices(doc: Record<string, unknown>): readonly string[] {
+  const notices: string[] = []
+  const calls = Array.isArray(doc.calls) ? (doc.calls as Array<Record<string, unknown>>) : []
+  const clips = Array.isArray(doc.audio_clips) ? (doc.audio_clips as Array<Record<string, unknown>>) : []
+  const clipsPresent = clips.some((c) => typeof c?.src === 'string' && c.src.trim() !== '')
+  // M-T1: the promotion the compose performs (single-call doc with
+  // clips gains the 51 f silent tail and rides the film path).
+  // Detected on the PROMOTED shape (the compose mutates the doc
+  // before the warn stamps: sole call + the constant tail), and on
+  // the unpromoted shape for direct readers (an agent previewing a
+  // doc it has not pressed yet).
+  const last = calls[calls.length - 1]
+  const promotedShape = clipsPresent && calls.length >= 2
+    && typeof last?.text === 'string' && last.text === SILENT_TAIL_TEXT
+  if (clipsPresent && (calls.length === 1 || promotedShape)) {
+    const soleEnd = calls[0]?.end_frame
+    if (typeof soleEnd === 'number') {
+      notices.push(`promoted: appended 51 f silent tail after calls[0] — audio clips ride the film path, and one call is a film of one window`)
+    }
+  }
+  // M-T3: the whole-doc admit pass owns the snap notices — the same
+  // pass the compose's span rows ride (one law, one home).
+  const admitted = admitCallSpans(calls, transitionOverlap)
+  notices.push(...admitted.notices)
+  // M-T2: the speech map, shown when it matters — a silent window
+  // at least SILENT_WINDOW_WARN_FRAMES long trips the hazard warn
+  // and the full per-window map rides with it (the listener is no
+  // longer the first to know). Ownership is the honest
+  // compose-time predicate: a clip that STARTS inside the window
+  // owns its speech (the stamps' lane law keys on the same start).
+  // The map books the RENDERED spans (the admit pass's own rows):
+  // the warn judges the film that renders, not the one authored.
+  const states = calls.map((c, i): string => {
+    const sf = admitted.spans[i]?.start
+    const ef = admitted.spans[i]?.end
+    if (sf === undefined || ef === undefined || ef <= sf) return `${i}:?`
+    const ownedRow = clips.find((clip) => typeof clip?.start_frame === 'number'
+      && clip.start_frame >= sf && clip.start_frame < ef)
+    if (ownedRow !== undefined) return `${i}:row`
+    return ef - sf >= SILENT_WINDOW_WARN_FRAMES ? `${i}:silent ${ef - sf}f` : `${i}:silent`
+  })
+  if (states.some((s) => /silent \d+f$/.test(s))) {
+    notices.push(`windows: [${states.join(', ')}] — a face held silent past ${SILENT_WINDOW_WARN_FRAMES}f can invent a line (add a row, cut the window, or state speech_language)`)
+  }
+  return notices
 }

@@ -1,4 +1,4 @@
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
 /** The structured lane-miss evidence a lane_input_missing refusal
  *  carries beside its prose (the missing-model popup's payload,
  *  operator 2026-10-22): the wire code names the class, these fields

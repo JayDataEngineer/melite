@@ -53,11 +53,13 @@ describe("the rail reads the document out", () => {
     studio(TWO)
     const readout = screen.getByTestId("tl-doc-readout").textContent!
     assert.ok(readout.includes("2 calls"))
-    // (re-pin 2026-11-06, the heal law) TWO's spans [0-80]+[80-168]
-    // are OFF-GRID (the engine renders 22+17k) — the doc heals on
-    // load (ce79f052a: "legacy off-grid docs heal on load") and the
-    // readout speaks the HEALED total, never the raw 168f/7.0s.
-    assert.ok(readout.includes("6.6s"), `the healed total rides (${readout})`)
+    // (re-pin 2026-11-06, the heal law; re-pinned 2026-11-20 on the
+    // CEIL admission law M-T3) TWO's spans [0-80]+[80-168] are
+    // OFF-GRID (the engine renders 22+17k / 17k) — the doc heals on
+    // load (ce79f052a: "legacy off-grid docs heal on load") on the
+    // ceil family (80→90, 88→102 = 192f) and the readout speaks the
+    // HEALED total, never the raw 168f/7.0s.
+    assert.ok(readout.includes("8.0s"), `the healed total rides (${readout})`)
     assert.ok(readout.includes("1 guide"))
     assert.ok(readout.includes("1 call with knobs"))
     assert.ok(document.body.textContent!.includes("1 keyframe source unwired"))

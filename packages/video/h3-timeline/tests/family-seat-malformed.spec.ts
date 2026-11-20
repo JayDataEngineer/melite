@@ -14,6 +14,7 @@ vi.doMock('@melite/models-h3', () => ({
   renderH3Edit: () => ({}),
   reshootArmed: () => ({}),
   assertOverlayGated: () => {},
+  filmAdmissionNotices: () => [],
   SEAM_OVERLAP_FRAMES: 12,
   REFINE_DEFAULT_CLIP_SECONDS: 5,
 }))

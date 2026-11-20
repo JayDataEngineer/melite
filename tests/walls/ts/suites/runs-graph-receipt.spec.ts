@@ -123,6 +123,7 @@ import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../helpe
 import { LOADED_WAIT } from "../../../helpers/loaded-wait.ts";
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
+import { LifecycleLatch } from "../../../../packages/harness/estate-queue/src/lifecycleLatch.ts";
 import { outRootFor } from "../../../../packages/harness/estate-queue/src/queueLock.ts";
 import { QueueCore } from "../../../../packages/harness/estate-queue/src/queueCore.ts";
 import type { RunRecord } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
@@ -173,6 +174,7 @@ const rig = (doc: SynthDoc): Rig => {
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = {
     core,
+    lifecycleLatch: new LifecycleLatch(),
     stateRoot: state,
     stateRoots: [state],
   };

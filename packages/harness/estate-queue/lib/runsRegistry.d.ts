@@ -1,10 +1,10 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import type { RunId } from "./queueCore.ts";
-export { toRemoteError } from "./runsRefusalVoices.ts";
-import { type Phase1Card } from "./cardsRegistry.ts";
-import type { FlowsValidateAnswer } from "./runsValidate.ts";
-import type { RunRecord } from "./runsTypes.ts";
+import type { RunId } from "./queueCore.js";
+export { toRemoteError } from "./runsRefusalVoices.js";
+import { type Phase1Card } from "./cardsRegistry.js";
+import type { FlowsValidateAnswer } from "./runsValidate.js";
+import type { RunRecord } from "./runsTypes.js";
 /** THE START SUMMARY (the door's answer face): what start() and the
  *  concurrent-press reservation both answer with. `sweep_runs` rides
  *  ONLY a seed-sweep press (friction #9): every run id the one

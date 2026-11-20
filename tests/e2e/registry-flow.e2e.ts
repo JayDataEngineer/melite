@@ -33,6 +33,7 @@ import { ComfyUIHostService } from '../../packages/engines/comfyui-cordis/src/co
 import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entries/comfyui-engine.ts'
 import modelsFamiliesProvider from '../../packages/engines/comfyui-cordis/src/entries/catalog-registry.ts'
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
+import { LifecycleLatch } from '../../packages/harness/estate-queue/src/lifecycleLatch.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { mintSandbox } from '../helpers/harness.ts'
@@ -130,6 +131,7 @@ describe.skipIf(!ENGINE_FREE || !HAS_PHOTO || !HAS_ESTIMATOR)(
         const core = new QueueCore()
         ;(ctx as unknown as { queue: unknown }).queue = {
           core,
+          lifecycleLatch: new LifecycleLatch(),
           stateRoot: join(sandbox.root, 'state'),
         }
         ;(ctx as unknown as { draftsRemote: unknown }).draftsRemote = {

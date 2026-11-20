@@ -64,9 +64,13 @@
       # siblings — read as base64 by the entropy heuristic.
       '''packages/web/three-client/lib/client\.js$''',
       # engine + harness specs: node class names, fixture ids, and
-      # pack-resolution pin SHAs.
+      # pack-resolution pin SHAs (2026-11-20: the conformance sweep's
+      # receipt spec names slash-joined receipt helpers,
+      # graphReceiptOf/graphReceiptFoldOf — the same identifier-pair
+      # class, now seated for estate-queue too).
       '''packages/engines/comfyui-(card-kit|cordis)/tests/''',
       '''packages/harness/melite-tools/tests/''',
+      '''packages/harness/estate-queue/tests/''',
       # the node ports (2026-11-19, the shell-free wave): the ported
       # lane scripts carry the mise install path
       # ('.local/share/mise/installs/node/24.21.0/bin') and

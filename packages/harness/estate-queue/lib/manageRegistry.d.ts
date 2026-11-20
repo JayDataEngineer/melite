@@ -1,7 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import Schema from "@deepseek-ai/schemastery";
-import type { ManageEnvelope } from "./managePlane.ts";
+import type { ManageEnvelope } from "./managePlane.js";
 declare module "@deepseek-ai/dsh-typert-protocol" {
     interface RemoteErrorDetailsMap {
         /** A refused manage envelope — the details CARRY the envelope

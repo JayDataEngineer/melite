@@ -16,7 +16,7 @@
 import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { meliteConstruct } from '../src/tools/melite-construct.ts'
-import { assertSpanGrid, transitionOverlap } from '@melite/models-h3/timelineContract'
+import { admitSpanGrid, transitionOverlap } from '@melite/models-h3/timelineContract'
 import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
@@ -92,7 +92,7 @@ describe('THE CUTS VERB — the agent\'s door into the one storage', () => {
     // start without its end authored an illegal carried span).
     rows.forEach((r, i) => {
       const carry = i > 0 ? transitionOverlap(r.transition) : 0
-      assertSpanGrid({ start: r.start_frame, end: r.end_frame }, `calls[${i}]`, carry)
+      admitSpanGrid({ start: r.start_frame, end: r.end_frame }, `calls[${i}]`, carry)
     })
     // the tiling law survives the reflow (end of i = start of i+1)
     for (let i = 1; i < rows.length; i++) {

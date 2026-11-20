@@ -100,11 +100,13 @@ describe("THE DSH VERSION WALL (operator 2026-11-06: ONE version of DSH, not mul
     const census = pinCensus();
     expect(census.size).toBeGreaterThan(20);
     // the lane version moves with the dsh family's lockstep (the
-    // 2026-11-19 bump: the 0.2.2-rc.5 line, cordis ^4.1.0 — the dsh
+    // 2026-11-19 bump: the 0.2.2-rc.5 line, cordis ~4.1.0 — the dsh
     // rc.5 family peers cordis ~4.1.0; 4.0.5 split Impl identity and
-    // the internal/update listener arity) — the literal IS the SSOT
-    // pin this wall judges the manifests against.
-    expect(census.get("@deepseek-ai/cordis")?.get("dependencies")?.has("^4.1.0")).toBe(true);
+    // the internal/update listener arity; the 2026-11-20 conformance
+    // sweep moved every @deepseek-ai/cordis pin from ^ to ~ —
+    // upstream dsh pins workspace:~ which PUBLISHES as tilde) — the
+    // literal IS the SSOT pin this wall judges the manifests against.
+    expect(census.get("@deepseek-ai/cordis")?.get("dependencies")?.has("~4.1.0")).toBe(true);
   });
 
   it("the resolution plane: every @deepseek-ai/* name resolves to exactly ONE installed version", () => {

@@ -35,6 +35,7 @@
 //     executor's own rows merge the boundary ARMED. The compose-plane
 //     hop ARM 5's stand-in rows never crossed.
 import { beforeEach, describe, expect, it } from "vitest";
+import { LifecycleLatch } from "../../../../packages/harness/estate-queue/src/lifecycleLatch.ts";
 import { planMerge } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
 import type { MergeRow } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
 import {
@@ -358,6 +359,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       mkdirSync(state, { recursive: true });
       (ctx as unknown as { queue: unknown }).queue = {
         core,
+        lifecycleLatch: new LifecycleLatch(),
         stateRoot: state,
         get stateRoots(): string[] {
           return [state];

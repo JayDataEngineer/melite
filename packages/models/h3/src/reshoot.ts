@@ -41,6 +41,7 @@
 // ComfyUI-KJNodes ColorToMask) died with the rework.
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { SAM3_CKPT } from './edit.js'
 import { outputNameTailOf } from './schema.js'
 
 /** The pack's clip-normalization node (the official chain's first
@@ -279,6 +280,45 @@ export function reshootArmed(p: Record<string, unknown>): boolean {
   return Array.isArray(bag) && bag.length > 0
 }
 
+/** THE REGION-AIM SEAT (M-T5, 2026-11-20 brief): a named subject the
+ *  camera aims at. Without it the warp's auto pivot is the central
+ *  region's median 3D point — a scene-level aim; an orbit circles
+ *  the frame's middle, and a subject off-centre slides out of the
+ *  re-shot. With `region_prompt` the chain tracks the named subject
+ *  (SAM3, per-frame, the edit verb's own five-node posture) and the
+ *  pivot becomes the SUBJECT's own median 3D point — the orbit
+ *  circles it, the push-in lands it framed. Rides the auto pivot
+ *  (`pivot_override: false`, the official posture); the vendored
+ *  warp's `aim_mask` input owns the swap. Empty prompt = no seat
+ *  (the graph stays byte-stable without it). */
+export interface ReshootAim {
+  /** The SAM3 text-detection prompt — the subject to hold framed
+   *  ("the woman in the red coat", not a camera move). */
+  readonly prompt: string
+  /** The SAM3 detection score threshold (the edit verb's own seat,
+   *  same default 0.5 — lower finds more, noisier; higher only the
+   *  confident). */
+  readonly detectionThreshold: number
+}
+
+/**
+ * Reads the bag's optional region-aim seat.
+ *
+ * @param p the walked doc params (the reshoot bag's entry, loose)
+ * @returns the aim when `region_prompt` names a subject, undefined
+ *   when the seat is absent or blank (no chain delta)
+ */
+export function readReshootAim(p: Record<string, unknown>): ReshootAim | undefined {
+  const e = bagEntry(p)
+  const prompt = typeof e?.region_prompt === 'string' ? e.region_prompt.trim() : ''
+  if (prompt === '') return undefined
+  const raw = e?.detection_threshold
+  return {
+    prompt,
+    detectionThreshold: typeof raw === 'number' && Number.isFinite(raw) ? raw : 0.5,
+  }
+}
+
 /** The r2v prompt seat under the arm: the trigger word leads (the
  *  official graph's prompt is exactly `crossview.` — the LoRA fires
  *  on the word's presence, the estate's own motion prose follows). */
@@ -412,8 +452,44 @@ export function buildH3Reshoot(
     apply_mask: true,
     refine_steps: 3,
   }).out(0)
+  // THE REGION-AIM CHAIN (M-T5): when the bag names a subject, SAM3
+  // tracks it per-frame on the PREP clip (the edit verb's own
+  // five-node posture, same ckpt, same 1008 working size, same
+  // detect_interval 1), then the track lands on the warp's
+  // `aim_mask` at the prep's OWN shape (MaskToImage first — a MASK
+  // becomes an IMAGE — then core ImageScale, the exact-fit IMAGE→
+  // IMAGE resize D-16/D-21 name; nearest-exact keeps a binary mask
+  // crisp). The guide length is the SHORTEST window's own frames —
+  // ≤ the 362f grid ceiling, so the measured SAM3 whole-clip band
+  // (362f green / 481f OOM, refine.ts) is satisfied by construction.
+  const aim = readReshootAim(p)
+  let aimMask: OutputHandle | undefined
+  if (aim !== undefined) {
+    const scaled = g.node('ImageScaleToMaxDimension', {
+      image: prep.out(0), upscale_method: 'area', largest_size: 1008,
+    }).out(0)
+    const sam = g.node('CheckpointLoaderSimple', { ckpt_name: SAM3_CKPT })
+    const aimCond = g.node('CLIPTextEncode', {
+      text: aim.prompt, clip: sam.out(1),
+    }).out(0)
+    const track = g.node('SAM3_VideoTrack', {
+      images: scaled, model: sam.out(0), conditioning: aimCond,
+      detection_threshold: aim.detectionThreshold,
+      max_objects: 0, detect_interval: 1,
+    }).out(0)
+    const trackMask = g.node('SAM3_TrackToMask', {
+      track_data: track, object_indices: '',
+    }).out(0)
+    const asImage = g.node('MaskToImage', { mask: trackMask }).out(0)
+    aimMask = g.node('ImageScale', {
+      image: asImage, width: prep.out(1), height: prep.out(2),
+      upscale_method: 'nearest-exact', crop: 'disabled',
+    }).out(0)
+  }
   // the warp — every literal below is the official graph's own
-  // (pose dials from the bag, the rest the verified posture)
+  // (pose dials from the bag, the rest the verified posture); the
+  // aim mask rides ONLY when the bag names a subject (byte-stable
+  // graphs without it)
   const warpNode = g.node(CROSSVIEW_WARP_NODE, {
     frames: prep.out(0),
     moge_geometry: geometry,
@@ -438,6 +514,9 @@ export function buildH3Reshoot(
     keep_source_aim: true,
     preview_size: 384,
     frame_index: 1,
+    // the region-aim seat's one wire (optional on the node; the
+    // spread keeps the no-aim graph byte-stable)
+    ...(aimMask !== undefined ? { aim_mask: aimMask } : {}),
   })
   // THE TWO SEATS ARE THE OFFICIAL APP'S OWN (Comfy-Org/comfy-reshoot,
   // workflows/generate.api.json @ 2026-10-30 — read line for line):

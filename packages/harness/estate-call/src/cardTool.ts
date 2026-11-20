@@ -189,13 +189,32 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
       const rawModel = resolveModelArg(a)
       const model = spec.resolveModel !== undefined ? spec.resolveModel(rawModel) : rawModel
       const params: Record<string, unknown> = {}
-      for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
+      // `dry_run` is the TOOL seat, never a card param — stripped
+      // here so the compose body never carries it (a card that does
+      // not declare it never sees the key arrive at all).
+      for (const [k, v] of Object.entries(a)) if (k !== 'model' && k !== 'dry_run') params[k] = v
       const normalizedParams = normalizeJsonArrayParams(params, spec.jsonArrayParams)
       // Declared JSON arrays and the per-card transform ride BEFORE
       // both doors; the draft params and start lift see the same body.
       const preparedParams = normalizedParams
       spec.prepare?.(preparedParams)
       try {
+        // DOOR ZERO (dry-run, M-T7 2026-11-20 timeline brief): a
+        // press with dry_run rides the VALIDATE arm — the SAME
+        // compose ladder the start door rides (schema walk, prompt
+        // gate, band judges, t4r guards), the composed graph dropped
+        // at the far end. Zero GPU, zero mint: DOOR ONE never opens,
+        // so a dry press leaves no draft on the bench. The answer is
+        // the envelope's own two arms — status 'validated' green,
+        // the refusal string verbatim red (an authoring agent drafts
+        // whole shot lists this way before one frame is paid for).
+        if (a.dry_run === true) {
+          await gw('POST', '/v1/flows/validate', {
+            ...preparedParams,
+            model,
+          }, exec?.signal, timeoutMs)
+          return { flow: FLOW, model: rawModel, status: 'validated' }
+        }
         // DOOR ONE (compose — CARD BIRTH LAW): the stage doc names
         // the model as the stage's service; the params carry the
         // card's own surface.

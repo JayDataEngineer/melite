@@ -6,7 +6,7 @@ import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from '.
 import { resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES, solveWindowComposition } from './timelineContract.js';
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */
-const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors';
+export const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors';
 /** The near-full-denoise floor of the identity-safety refusal. */
 export const EDIT_IDENTITY_BOIL_FLOOR = 0.8;
 /** NO FALLBACK READS (the silent-error law): a string seat stated

@@ -203,14 +203,63 @@ describe("the h3 film action oracle (the interlock)", () => {
     assert.ok(typeof minted[0] === "number" && Number.isInteger(minted[0]!) && minted[0]! >= 0, "a real minted int");
   });
 
-  it("the clips law refuses on a single-window doc", () => {
+  it("the clips law PROMOTES a single-call doc (M-T1): the silent tail unlocks the film path, the frozen mark refuses", () => {
+    // M-T1 (2026-11-20): a one-shot + music doc IS a film — the
+    // card mints the 51f faceless tail after the sole call at
+    // COMPOSE-time (not at the schema gate — the schema walks the
+    // authored row; the family action appends the tail and reroutes
+    // to the film chain, mutating the walked doc in place — the
+    // card-gap suite pins the same shape) and the frozen shape
+    // (k-marked) still refuses (a frozen window can never grow a
+    // film). The tail carries the call's own end as its start
+    // (tiling holds) and no refs/guide/face seats.
+    const walked = def.schema({
+      calls: [SHOT()],
+      length: 56,
+      audio_clips: [{ src: "/bench/vocal.mp3", start_frame: 12, dur_sec: 1.5, class: "dialogue" }],
+    }) as Record<string, unknown>;
+    const g = new GraphBuilder();
+    def.compose(walked as never, h3, g, "oracle");
+    const promoted = (walked.calls as Array<Record<string, unknown>>);
+    assert.equal(promoted.length, 2, "the dispatch appends the silent tail call");
+    assert.equal(promoted[1]!.start_frame, 56, "the tail starts at the sole call's end");
+    assert.equal((promoted[1]!.end_frame as number) - (promoted[1]!.start_frame as number), 51, "the tail is 51f — 17·3, grid-legal carried");
+    const graph = g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+    assert.ok(Object.values(graph).some((n) => n.class_type === "MeliteFilmAudioMix"), "the promoted film composes the film-path mix");
     const msg = refuses({
       calls: [SHOT()],
       k: 1,
       length: 56,
       audio_clips: [{ src: "/bench/vocal.mp3", start_frame: 12, dur_sec: 1.5, class: "dialogue" }],
     });
-    assert.match(msg, /audio clips ride the FILM path/);
+    assert.match(msg, /audio clips ride the FILM path/, "the frozen single-window mark still refuses");
+  });
+
+  it("THE PER-CALL RESOLUTION (M-T6): a call's resolution pins that window's head shape through the stanza's __call_shape", () => {
+    // The draft tier is a PER-WINDOW property: the call stating
+    // resolution:'480p' renders its window at the engine's own
+    // plan-tier math (planTierShape over the 1344×768 doc tier by
+    // the 480 short edge: 832×480 — the engine's math verbatim,
+    // never a hand literal), while the knobless sibling keeps the
+    // doc tier. The head stamps __call_shape, one channel per
+    // stanza, never a doc-wide resize.
+    const graph = oneWay({
+      calls: [
+        SHOT({ knobs: {} }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, resolution: "480p" }),
+      ],
+      length: 124,
+    });
+    const widthOf = (scope: string) => {
+      const entry = Object.entries(graph).find(([id, n]) =>
+        id.startsWith(`${scope}_`) && n.class_type === "MiniMaxH3ReferenceToVideo");
+      assert.ok(entry, `the ${scope} window composes its own r2v lane`);
+      return entry![1].inputs;
+    };
+    assert.equal(widthOf("window1")!.width, 1344, "the unstated window keeps the doc tier");
+    assert.equal(widthOf("window2")!.width, 832,
+      `the 480p window pins its own head width (saw ${String(widthOf("window2")!.width)} — the doc tier leaked: the stanza's __call_shape never reached the head)`);
+    assert.equal(widthOf("window2")!.height, 480, "the 480p window pins its own head height");
   });
 
   it("the guideless t4r window (no refs, no anchor) refuses", () => {

@@ -120,9 +120,11 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     const fields = new Map(
       ((kind.fields as Array<Record<string, unknown>>) ?? []).map((f) => [f.name as string, f]),
     );
-    // the clip + the nine dials, exactly (no missing seat, no ghost)
+    // the clip, the two region-aim seats (M-T5, 2026-11-20), + the
+    // nine dials, exactly (no missing seat, no ghost)
     expect([...fields.keys()]).toEqual([
-      "source_clip", "orbit", "tilt", "dolly", "zoom", "pan",
+      "source_clip", "region_prompt", "detection_threshold",
+      "orbit", "tilt", "dolly", "zoom", "pan",
       "strength", "depth_ratio", "smooth_depth", "invert_depth",
     ]);
     // the clip seat claims the VIDEO square (the picker law)
@@ -131,6 +133,12 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     // the official LoRA band on the served row (the reference app's
     // own default)
     assert.equal(fields.get("strength")!.default, 0.8, "the served strength default is the official 0.8");
+    // THE REGION-AIM SEATS (M-T5, 2026-11-20): the empty-unset aim
+    // (region_prompt '') keeps the old pivot posture byte-stable;
+    // the threshold rides the edit verb's own seat (0.5)
+    assert.equal(fields.get("region_prompt")!.type, "string");
+    assert.equal(fields.get("region_prompt")!.default, "", "the aim seat is empty-unset — the pivot dials' own behavior rides the graph");
+    assert.equal(fields.get("detection_threshold")!.default, 0.5, "the aim tracker matches the edit verb's own threshold seat");
     // THE 1:1 BAND AGREEMENT: every dial the emission bounds is a
     // served field with the same band, and every bounded served
     // field is an emission band — neither home can drift alone
@@ -385,6 +393,54 @@ describe("the h3 camera re-shoot wall (the fourth mod bag, official rework)", ()
     expect(ofClass(out, "MiniMaxH3ChainAssemble")).toHaveLength(0);
     const flow = resolveCardFlowOutputs(def, def.schema(ARMED) as Record<string, unknown>, out);
     expect(out[flow.outputNodes.default!]!.class_type).toBe("SaveVideo");
+  });
+
+  it("ARM 4a — THE EMPTY AIM (byte-stability): without region_prompt the graph carries NO SAM3 subgraph and the warp has NO aim wire", () => {
+    // The aim seat defaults empty: an armed doc with no aim word
+    // composes byte-equal to what it composed before the seat
+    // existed (the toggle-proof: state region_prompt and this arm
+    // reds — the SAM3 classes appear and aim_mask wires; clear it
+    // and they are gone).
+    const out = compose(ARMED);
+    for (const cls of ["CheckpointLoaderSimple", "CLIPTextEncode", "SAM3_VideoTrack", "SAM3_TrackToMask", "MaskToImage"]) {
+      expect(ofClass(out, cls), `${cls} is an aim-seat class — absent without region_prompt`).toHaveLength(0);
+    }
+    const w = ofClass(out, "CrossViewWarp")[0]![1].inputs;
+    assert.equal(w.aim_mask, undefined, "no aim word states no aim wire");
+  });
+
+  it("ARM 4b — THE REGION AIM (M-T5, 2026-11-20): a stated region_prompt tracks the subject per-frame and pivots the warp on its mask", () => {
+    // The edit verb's own five-node posture rides the prep clip:
+    // scale-down → SAM3 ckpt → text encode → per-frame track
+    // (detect_interval 1) → mask; the mask converts to the IMAGE
+    // plane and fits the PREP's own shape (core ImageScale,
+    // exact-fit — run the conversion last), and the warp reads it
+    // on aim_mask with the official posture otherwise unchanged
+    // (pivot_override still OFF — the aim swaps the AUTO pivot's
+    // source, never the explicit dials).
+    const AIMED = { ...BASE, reshoot: [{ source_clip: "sources/take3.mp4", region_prompt: "the woman in the red coat" }] };
+    const out = compose(AIMED);
+    const track = ofClass(out, "SAM3_VideoTrack");
+    expect(track).toHaveLength(1);
+    expect(track[0]![1].inputs.detection_threshold).toBe(0.5);
+    expect(track[0]![1].inputs.detect_interval).toBe(1);
+    expect(ofClass(out, "CheckpointLoaderSimple")).toHaveLength(1);
+    expect(ofClass(out, "SAM3_TrackToMask")).toHaveLength(1);
+    const w = ofClass(out, "CrossViewWarp")[0]![1].inputs;
+    expect(w.pivot_override).toBe(false);
+    // the wire serializes as the FITTING node's id (OutputHandles
+    // cross node inputs by node id, never class name — the same law
+    // the r2v prompt asserts above); the id is class-namespaced, so
+    // the class prefix names what fits.
+    const aimWire = String(w.aim_mask);
+    assert.ok(
+      /^[A-Za-z0-9_]+\.\d+,\d+$/.test(aimWire) && aimWire.startsWith("ImageScale."),
+      `the warp's aim_mask rides the prep-fitted mask wire, got ${aimWire}`,
+    );
+    const fitted = Object.keys(out).find((id) => `${id},0` === aimWire);
+    assert.ok(fitted !== undefined && out[fitted]!.class_type === "ImageScale",
+      `the aim wire sources the prep-fitting ImageScale node, got ${String(fitted)}`);
+    expect(out[fitted!]!.inputs.upscale_method).toBe("nearest-exact");
   });
 
   // THE PACK-PRESENT GATE (2026-11-13 rework): the warp pack is

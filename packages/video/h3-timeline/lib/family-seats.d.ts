@@ -42,6 +42,12 @@ export type H3FamilySeat = {
     /** THE SEAM LAW constant (timelineContract's SEAM_OVERLAP_FRAMES,
      *  re-exported on the main face) — the tool face's calls prose. */
     seamOverlapFrames: number;
+    /** THE FILM ADMISSION NOTICES (timelineContract's
+     *  filmAdmissionNotices, re-exported on the main face — the M-T
+     *  cures' warn arm: the promoted silent tail, the span snaps, the
+     *  speech map). ADVISORY: an absent family degrades to the card's
+     *  own prompt warns, never a refusal. */
+    filmAdmissionNotices: (doc: Record<string, unknown>) => readonly string[];
     /** The legacy refine arm's declared design default window
      *  (refine.ts's REFINE_DEFAULT_CLIP_SECONDS) — read only when a
      *  legacy doc omits clip_seconds; a SAFETY-ADJACENT limit, so an

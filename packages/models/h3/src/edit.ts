@@ -38,7 +38,7 @@ import { assertGridLength, resolveCarryOverlap, entryCarries, isGridLength, grid
 
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */
-const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors'
+export const SAM3_CKPT = 'sam3.1_multiplex_fp16.safetensors'
 
 /** The near-full-denoise floor of the identity-safety refusal. */
 export const EDIT_IDENTITY_BOIL_FLOOR = 0.8

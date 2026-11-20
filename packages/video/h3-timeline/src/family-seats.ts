@@ -94,6 +94,12 @@ export type H3FamilySeat = {
   /** THE SEAM LAW constant (timelineContract's SEAM_OVERLAP_FRAMES,
    *  re-exported on the main face) — the tool face's calls prose. */
   seamOverlapFrames: number
+  /** THE FILM ADMISSION NOTICES (timelineContract's
+   *  filmAdmissionNotices, re-exported on the main face — the M-T
+   *  cures' warn arm: the promoted silent tail, the span snaps, the
+   *  speech map). ADVISORY: an absent family degrades to the card's
+   *  own prompt warns, never a refusal. */
+  filmAdmissionNotices: (doc: Record<string, unknown>) => readonly string[]
   /** The legacy refine arm's declared design default window
    *  (refine.ts's REFINE_DEFAULT_CLIP_SECONDS) — read only when a
    *  legacy doc omits clip_seconds; a SAFETY-ADJACENT limit, so an
@@ -108,6 +114,7 @@ type H3MainModule = {
   renderH3Edit?: H3FamilySeat['renderEdit']
   reshootArmed?: H3FamilySeat['reshootArmed']
   assertOverlayGated?: H3FamilySeat['assertOverlayGated']
+  filmAdmissionNotices?: H3FamilySeat['filmAdmissionNotices']
   SEAM_OVERLAP_FRAMES?: number
   REFINE_DEFAULT_CLIP_SECONDS?: number
 }
@@ -145,6 +152,7 @@ export const primeFamilySeats = (): Promise<void> => {
         typeof main.renderH3Edit !== 'function' ||
         typeof main.reshootArmed !== 'function' ||
         typeof main.assertOverlayGated !== 'function' ||
+        typeof main.filmAdmissionNotices !== 'function' ||
         typeof main.SEAM_OVERLAP_FRAMES !== 'number' ||
         typeof main.REFINE_DEFAULT_CLIP_SECONDS !== 'number' ||
         !Array.isArray(loras?.H3_LORA_ROWS) ||
@@ -164,6 +172,7 @@ export const primeFamilySeats = (): Promise<void> => {
         renderEdit: main.renderH3Edit,
         reshootArmed: main.reshootArmed,
         assertOverlayGated: main.assertOverlayGated,
+        filmAdmissionNotices: main.filmAdmissionNotices,
         parseFacts: actions.parseH3Facts,
         paramSchema: schema.paramSchema,
         schema: schema.schema,

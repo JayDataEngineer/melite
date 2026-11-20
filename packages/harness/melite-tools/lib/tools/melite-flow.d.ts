@@ -1,6 +1,6 @@
 import { type DraftId } from '@melite/contracts/benchStage';
-import type { Estate } from '../estate.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { Estate } from '../estate.js';
+import type { ToolDefinition } from '../types.js';
 /** The configurable press window (the 2026-11-20 conventions-sweep
  *  cure: the press timings are deployment-varying tunables — validated
  *  Config fields on the plugin (index.ts), never bare constants; the

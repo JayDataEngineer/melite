@@ -1,5 +1,5 @@
-export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
-import { executeCeilOf, type ExecuteCeilVerdict } from "./queueSubmit.ts";
+export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.js";
+import { executeCeilOf, type ExecuteCeilVerdict } from "./queueSubmit.js";
 export { executeCeilOf, type ExecuteCeilVerdict };
 import { STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
 import { FLOW_ID_RE } from "@melite/contracts";

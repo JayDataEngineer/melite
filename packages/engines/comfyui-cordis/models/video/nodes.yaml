@@ -52,16 +52,17 @@ extensions:
     pip:
       - av
 - name: ComfyUI-CrossViewWarp
-  url: https://github.com/comfyrob/ComfyUI-CrossViewWarp
-  # 2026-11-13 — re-pinned from cseti007@3266a83a84eaa6833a9ebc38ac
-  # dd8789e44f5b to Comfy-Org's official comfyrob fork at the exact
-  # revision comfy-reshoot's build/model-files.md pins: the fork
-  # carries CrossViewPrepareClip (the clip-normalization stage the
-  # official chain leads with) alongside CrossViewWarp. The
-  # 2026-11-13 official reshoot rework rides this revision. The VDA
-  # depth row below died with the rework (MoGe core nodes replaced
-  # the depth half).
-  ref: fbb1e93c7193329ff3ce7c17f95166b539687876
+  url: https://github.com/JayDataEngineer/ComfyUI-CrossViewWarp
+  # 2026-11-20 — re-pinned from comfyrob@fbb1e93c7193329ff3ce7
+  # c17f95166b539687876 to the estate fork's melite-region-aim at
+  # b600a593da8fbb93dd49a02c763adba2d03a748a: fbb1e93 is the
+  # official comfy-reshoot revision (CrossViewPrepareClip +
+  # CrossViewWarp) and the aim commit adds the optional aim_mask
+  # input the h3 reshoot region-aim seat (M-T5) wires — the masked
+  # subject's median 3D point becomes the orbit pivot. Upstream has
+  # no seat for it (403 on push to comfyrob), so the estate fork
+  # carries the delta; re-vendor if upstream ever seats aim.
+  ref: b600a593da8fbb93dd49a02c763adba2d03a748a
   required: true
   desc: >-
     CrossViewWarp (Apache-2.0, the comfyrob fork at the official

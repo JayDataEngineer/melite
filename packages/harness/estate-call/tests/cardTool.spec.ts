@@ -172,6 +172,48 @@ describe("the card-tool builder", () => {
     assert.equal(out3.error, "estate 502")
   })
 
+  it("dry_run rides the validate arm and never opens DOOR ONE (M-T7, the timeline-agent brief)", async () => {
+    // A dry press runs the FULL compose ladder and drops the graph:
+    // the suite fakes the lane — a validate POST answers 200 —
+    // and the builder must NEVER touch drafts (no mint, no bench
+    // draft). dry_run is the TOOL's seat, never a card param.
+    let paths: string[] = []
+    const vcall: EstateCall = async (method, path, body) => {
+      paths.push(path)
+      if (path === "/v1/flows/validate") return { ok: true }
+      throw new Error(`unexpected path ${path}`)
+    }
+    const vtool = defineCardTool(vcall, {
+      name: "music", flow: "music", label: "Music", description: "d",
+      parameters: { prompt: { type: "string", required: true } } as never,
+      defaultModel: "music3",
+      previewField: "prompt",
+    })
+    const out = await vtool.execute({ prompt: "p", dry_run: true }, runCtx()) as Record<string, unknown>
+    assert.deepEqual(paths, ["/v1/flows/validate"], "DOOR ONE never opens — the dry press validates only")
+    assert.deepEqual(out, { flow: "music", model: "music3", status: "validated" })
+  })
+
+  it("dry_run carries the params beside the model and answers the named refusal verbatim", async () => {
+    let validateBody: Record<string, unknown> = {}
+    const vcall: EstateCall = async (method, path, body) => {
+      if (path === "/v1/flows/validate") {
+        validateBody = body as Record<string, unknown>
+        throw new GatewayError(400, "gateway 400: bad", "duration out of bounds")
+      }
+      throw new Error(`unexpected path ${path}`)
+    }
+    const vtool = defineCardTool(vcall, {
+      name: "music", flow: "music", label: "Music", description: "d",
+      parameters: { prompt: { type: "string", required: true } } as never,
+      defaultModel: "music3",
+      previewField: "prompt",
+    })
+    const out = await vtool.execute({ model: "music3", prompt: "p", dry_run: true }, runCtx()) as Record<string, unknown>
+    assert.deepEqual(validateBody, { prompt: "p", model: "music3" }, "dry_run rides the body; the seat itself never wires")
+    assert.deepEqual(out, { flow: "music", model: "music3", error: "duration out of bounds" })
+  })
+
   it("a pre-aborted signal propagates raw (never a refusal value)", async () => {
     // jsonLane wraps LANE faults into GatewayError — the only raw
     // propagate path is the pre-abort throw BEFORE the lane dials.

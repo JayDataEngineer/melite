@@ -45,6 +45,8 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
     fps: z<number, number, "defined">;
+    speech_language: z<string, string, "defined">;
+    draft: z<boolean, boolean, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;
@@ -115,6 +117,8 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
     fps: z<number, number, "defined">;
+    speech_language: z<string, string, "defined">;
+    draft: z<boolean, boolean, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;
@@ -240,6 +244,8 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
     fps: z<number, number, "defined">;
+    speech_language: z<string, string, "defined">;
+    draft: z<boolean, boolean, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;
@@ -310,6 +316,8 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     height: z<number, number, "defined">;
     length: z<number, number, "defined">;
     fps: z<number, number, "defined">;
+    speech_language: z<string, string, "defined">;
+    draft: z<boolean, boolean, "defined">;
     steps: z<number, number, "defined">;
     second_pass_enabled: z<boolean, boolean, "defined">;
     sharpen_enabled: z<boolean, boolean, "defined">;

@@ -4,6 +4,11 @@ import type { ComfyActionSpec } from '@melite/comfyui-card-kit';
 /** The absent-bag default's catalog id (F34's chip half, 2026-11-13;
  *  the silveroxides merge takes the seat 2026-11-01). */
 export declare const H3_DEFAULT_LORA_ID = "h3_silver_dareties";
+/** THE PROMOTED SILENT TAIL (timeline-agent brief M-T1, 2026-11-20)
+ *  lives in timelineContract.ts (the law's home) — re-exported here
+ *  for the compose's own reads; see the contract module for the
+ *  provenance. */
+export { SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT } from './timelineContract.js';
 /** The absent-bag default as a RESOLVED ROW — the same catalog row the
  *  compose default builds, exposed so the card can serve it as the
  *  ghost chip: the face then shows the adapter the film will actually

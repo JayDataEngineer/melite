@@ -183,6 +183,8 @@ const RESHOOT_MOD: DeclaredModifierKind = {
     // The seat TYPES (the picker law, the siblings' own): the video
     // seat is `file` + media 'video'; the dials are numbers.
     { name: 'source_clip', label: 'Source clip', type: 'file', media: 'video', default: '', tooltip: 'The clip whose scene the new camera views. Binds ONE staged leaf (the engine\'s core video loader reads it by staged name, hands the WHOLE video to the clip-prepare node — the official chain\'s own loader posture). Its frames rebuild the scene; its soundtrack does not carry over.' },
+    { name: 'region_prompt', label: 'Aim at a subject', type: 'string', default: '', tooltip: 'A free-text SAM3 detection prompt naming the subject the camera move anchors to (e.g. "her face", "the clock"). When stated, the card tracks the subject across the clip (the edit door\'s own region machinery — per-frame by construction, detect_interval 1, so the aim follows a moving subject with no frame to pick) and the warp pivots on it: the orbit circles the subject, a push-in lands it framed. A close-up is a press, not a pan guess. Empty (default) keeps the explicit pivot dials\' behavior.' },
+    { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.5, min: 0, max: 1, step: 0.01, tooltip: 'The SAM3 text-detection score threshold for the aim track (rides only when "Aim at a subject" is stated — the edit door\'s own seat, same default 0.5). Lower finds more, noisier masks; higher only the confident ones. Tune down when the subject is thin or partially occluded, up when the track latches onto the background.' },
     { name: 'orbit', label: 'Orbit', type: 'number', default: -30, min: -180, max: 180, step: 1, tooltip: 'Orbit the camera left/right around the subject, in degrees. Negative orbits left, positive right. The official comfy-reshoot app opens at -30°; ±45° is the tested range and past 90° the hidden side is invented. A near-zero pose (|orbit| and |tilt| both under 5°) is refused before the engine runs: the CrossView pack documents that warp as the one its LoRA misbehaves on.' },
     { name: 'tilt', label: 'Tilt', type: 'number', default: 20, min: -90, max: 90, step: 1, tooltip: 'Raise or lower the camera, in degrees. Positive looks down from above the subject, negative looks up from below. The official comfy-reshoot app opens at +20°. Looking up is the weak direction — keep above about -20°.' },
     { name: 'dolly', label: 'Dolly', type: 'number', default: 1, min: 0.1, max: 3, step: 0.05, tooltip: 'Camera distance where 1.0 keeps the source distance. Below 1 dollies in; above 1 pulls back — pulling back reveals area the source never framed, so more of the shot is invented.' },
@@ -1096,8 +1098,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     // NAMED waiver — as admission-warn lines the start door stamps on
     // the run record (served on run_status): a waived rule or a craft
     // miss is never silent. A function like schema/compose (never
-    // serialized).
-    admissionWarns: promptAdmissionWarns,
+    // serialized). THE FILM NOTICES (timeline-agent brief,
+    // 2026-11-20) ride the same receipt: the promoted silent tail,
+    // each call's authored-vs-rendered snap, and the speech map —
+    // the pure recomputation of the same laws the compose runs, so
+    // the run record cannot disagree with the film that renders.
+    // ADVISORY + SEATED (the plugin law): the notices ride the
+    // family seat lazily — the callback fires at stamp time (after
+    // a compose that already needed the seat), and an absent family
+    // degrades to the prompt warns alone, never a refusal.
+    admissionWarns: (p) => [
+      ...promptAdmissionWarns(p),
+      ...(seatOf('h3')?.filmAdmissionNotices(p) ?? []),
+    ],
     compose(p, model, g, runId) {
       // THE FAMILY GATE (the plugin law, 2026-11-16): the compose
       // door's every judge face — the wire law, the carrier walk,

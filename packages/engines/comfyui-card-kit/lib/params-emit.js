@@ -278,7 +278,17 @@ export const emitParamsSchema = (schemaCarrier, boarded, semantic) => {
  *  whose complexity lives in mods, and an agent that never learns
  *  the kinds hits compose's loud refusals blind. Verbatim off the
  *  card's own declared rows; leaf_face is a UI concern and never
- *  rides (the agent composes VALUES, never faces). */
+ *  rides (the agent composes VALUES, never faces).
+ *
+ *  THE FULL FIELD ROWS (M-T4, 2026-11-20 timeline brief): `fields`
+ *  serves the whole declared row — name, label, type, default, the
+ *  min/max/step band, the unit-laden tooltip — the SAME shape the
+ *  form-spec face serves (discovery's servedFields narrow: internal
+ *  rows filtered, string name/label/type required at the serve
+ *  boundary). The names-only array that stood here taught the
+ *  agent the dial's name but not its band, so every press learned
+ *  the bounds by refusal. An agent that writes VALUES needs the
+ *  whole row, exactly like the form. */
 export const emitModifierKinds = (mods) => (mods ?? []).map((k) => ({
     kind: k.kind,
     // THE BAG KEY (friction-report #2, 2026-10-28): the agent plane
@@ -293,6 +303,19 @@ export const emitModifierKinds = (mods) => (mods ?? []).map((k) => ({
     ...(k.max_stack !== undefined ? { max_stack: k.max_stack } : {}),
     ...(k.category !== undefined ? { category: k.category } : {}),
     cardinality: k.cardinality,
-    fields: (k.fields ?? []).map((f) => String(f['name'] ?? '')),
+    fields: (k.fields ?? [])
+        // INTERNAL ROWS stay admitted at the compose door but are
+        // never served (defect board row 5's one-home law — the
+        // discovery face filters at the same seam).
+        .filter((f) => f['internal'] !== true)
+        .map((f, i) => {
+        const name = f['name'];
+        const label = f['label'];
+        const type = f['type'];
+        if (typeof name !== 'string' || typeof label !== 'string' || typeof type !== 'string') {
+            throw new Error(`params-emit: mod kind ${k.kind} field ${i} must carry string name/label/type — ${JSON.stringify(f).slice(0, 120)}`);
+        }
+        return { ...f, name, label, type };
+    }),
 }));
 //# sourceMappingURL=params-emit.js.map

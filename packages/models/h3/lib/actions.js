@@ -1,3 +1,27 @@
+// The h3 family's declared action (the atom vocabulary, stroke 3,
+// the video leg — the LAST family): the film renderer. ONE family
+// owns the whole surface (the one-model law): the multi-window
+// film and the frozen single-window shape are both THIS action's
+// build — the action is the SINGLE SEAT of the renderer body; the
+// card dispatches here and refuses any undeclared family loud
+// (card.ts: no declared action → throw, never a legacy fallback),
+// so there is no second copy to keep true.
+//
+// THE SEAM (the stroke's law): the card's schema plane (paramSchema
+// + the wire-law gate + the single-call lift + its overlay
+// re-check) runs CARD-side before dispatch — the action receives
+// the GATED, LIFTED doc and owns everything lane-true from there:
+// the t4r guide admission, the film dispatch (the clips law, the
+// lora steps), and both renderers. No seed mint rides this family
+// (the schema's own default 42 fills; video is deterministic
+// unless the operator words a seed).
+//
+// THE ONE DRIFT from the card's module-scope copies: both renderers
+// RETURN their final SaveVideo handle (the card's void originals
+// discard it — the card's compose is void; the action spec's build
+// hands its caller the delivered artifact's wire). Graph bytes are
+// untouched by the change.
+import { planTierShape, RESOLUTION_SHORT_EDGE } from './chainEdit.js';
 import { fireControlNets } from '@melite/comfyui-card-kit/guard';
 import { saveAudio } from '@melite/comfyui-card-kit';
 import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT, outputNameTailOf } from './schema.js';
@@ -6,7 +30,7 @@ import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/voc
 import { chooseLaneClips, computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
 import { SECOND_PASS_WINDOW } from './secondPass.js';
 import { mountRefModBake } from './refmodBake.js';
-import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, assertGridLength, assertSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
 import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from './reshoot.js';
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
@@ -30,6 +54,11 @@ import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, 
 /** The absent-bag default's catalog id (F34's chip half, 2026-11-13;
  *  the silveroxides merge takes the seat 2026-11-01). */
 export const H3_DEFAULT_LORA_ID = 'h3_silver_dareties';
+/** THE PROMOTED SILENT TAIL (timeline-agent brief M-T1, 2026-11-20)
+ *  lives in timelineContract.ts (the law's home) — re-exported here
+ *  for the compose's own reads; see the contract module for the
+ *  provenance. */
+export { SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT } from './timelineContract.js';
 /** The absent-bag default as a RESOLVED ROW — the same catalog row the
  *  compose default builds, exposed so the card can serve it as the
  *  ghost chip: the face then shows the adapter the film will actually
@@ -454,6 +483,19 @@ function renderH3Film(p, g, facts, model, runId) {
         // including absent IS extend); no card-side re-encoding
         transition: str(c.transition),
     }));
+    // THE WHOLE-DOC ADMIT PASS (brief M-T3/L4, 2026-11-20) rides the
+    // clock's own rows ONCE, before any window math: legal spans admit
+    // verbatim, an off-grid span above the snap floor lands its end UP
+    // on the next legal rung, and the RETILE slides every later window
+    // (lengths held) so the rendered film tiles — a snap that moved
+    // only its own end would leave the next authored start behind it.
+    // The notices ride the run's admission warns (filmAdmissionNotices
+    // reads the SAME pass — one law, one home); the authored doc keeps
+    // its own coordinates, the manifest and the stanza book these.
+    const admittedSpans = admitCallSpans(calls, transitionOverlap);
+    for (let i = 0; i < spans.length; i++) {
+        spans[i] = { ...spans[i], start: admittedSpans.spans[i].start, end: admittedSpans.spans[i].end };
+    }
     // THE RE-SHOOT CHAIN, BUILT ONCE (feature 024): an armed re-shoot
     // builds its depth → warp → mask subgraph ONCE on the run's graph
     // (never per window — a multi-window film pays for the depth model
@@ -598,8 +640,18 @@ function renderH3Film(p, g, facts, model, runId) {
         const declaredRefCount = wireList(p.ref_images).length + wireList(p.ref_videos).length + wireList(p.ref_audios).length;
         const hasRefs = declaredRefCount + wireList(rb.images).length + wireList(rb.videos).length + wireList(rb.audios).length > 0;
         const chainLike = i > 0 && overlap > 0;
-        const sf = num(call.start_frame);
-        const ef = num(call.end_frame);
+        let sf = num(call.start_frame);
+        let ef = num(call.end_frame);
+        // THE ADMITTED ROW (brief M-T3/L4, 2026-11-20): the whole-doc
+        // admit pass above owns the rendered coordinates — the loop
+        // books the ADMITTED span, never its own arithmetic (the
+        // re-tile slid this row when a predecessor snapped; a legal row
+        // rides verbatim). A malformed row (sf/ef null) keeps the
+        // loop's own missing-value law below.
+        if (sf !== null && ef !== null && ef > sf && spans[i] !== undefined) {
+            sf = spans[i].start;
+            ef = spans[i].end;
+        }
         const stamps = {};
         if (sf !== null && ef !== null && Number.isFinite(sf) && Number.isFinite(ef) && ef > sf) {
             const carry = i > 0 ? overlap : 0;
@@ -670,12 +722,33 @@ function renderH3Film(p, g, facts, model, runId) {
         // law trims a doubled clock off ONE text, never across lanes).
         const soundscapeSentences = [];
         if (stamps.dialogue !== undefined && stamps.dialogue.text !== '') {
+            // THE ROW-OWNS-THE-WORDS LAW (brief L1, 2026-11-20 — the
+            // heard-twice burn run-cba5d49f4131-f9f58337: the row's line
+            // at 2.67 s, the model's own reading 3.1–9.9 s, a duck that
+            // changed nothing): a window whose dialogue row owns the lane
+            // must not ALSO speak the words in its own text — the <d>
+            // spoken form in that window doubles the line. Refuse loud,
+            // naming the window and the cure; the spoken form belongs to
+            // films with NO row for the line (the dictionary's own
+            // advice, hardened at the door that knows the ownership).
+            if (/<d>\[[A-Za-z -]+\][^<]*<\/d>/.test(text)) {
+                throw new Error(`h3-timeline window ${k}: the call text carries a <d> spoken line while an audio_clips row owns this window's dialogue — ` +
+                    `the line would be heard twice (the row places the take; the model reads the text). ` +
+                    `Keep the call free of dialogue: the row is the only voice (SPOKEN-FORM's own advice, refused here where ownership is known)`);
+            }
             const t = stampClock(stamps.dialogue.delay_seconds);
             // SPEAKER-NEUTRAL (attempt-019 maker finding): the stamp once
             // hard-coded "She says" — a plainly male harbourmaster got a
             // female pronoun in his own mouth. The speaker is whoever the
             // window shows; the stamp never genders them.
-            soundscapeSentences.push(`At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[English] ${stamps.dialogue.text}</d>`);
+            // SPEECH LANGUAGE (brief M-T2): the tag's bracket names the
+            // take's language — the doc's speech_language when stated,
+            // English otherwise. An unintended line at least lands in
+            // the named language, never a surprise one.
+            const speechLang = typeof p.speech_language === 'string' && p.speech_language.trim() !== ''
+                ? p.speech_language.trim()
+                : 'English';
+            soundscapeSentences.push(`At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[${speechLang}] ${stamps.dialogue.text}</d>`);
         }
         if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
             // THE ONE-CLOCK LAW (2026-09-24): an authored sfx text that already
@@ -712,6 +785,22 @@ function renderH3Film(p, g, facts, model, runId) {
                 '\n\noverall_soundscape:\nNo speech or dialogue in this shot — ambient and effects only; nobody speaks on screen and there is no voice-over.';
         }
         const stanza = { ...p, ...knobs, prompt: text, k };
+        // PER-CALL RESOLUTION (brief M-T6, 2026-11-20): a call that
+        // states a tier renders at it; a draft-pinned doc renders every
+        // unstated call at 480p; otherwise the doc's own geometry. The
+        // shape rides the `__` internal channel to the window head —
+        // the edit door's planTierShape math verbatim (one owner,
+        // cited), so a 2 s close-up stops paying the 15 s wide shot's
+        // tier and the draft press pays the draft price.
+        const callTier = typeof call.resolution === 'string' && call.resolution !== '' && call.resolution !== 'auto'
+            ? call.resolution
+            : (p.draft === true ? '480p' : '');
+        if (callTier !== '' && RESOLUTION_SHORT_EDGE[callTier] !== undefined) {
+            const tw = typeof p.width === 'number' ? p.width : 1344;
+            const th = typeof p.height === 'number' ? p.height : 768;
+            const shape = planTierShape(tw, th, RESOLUTION_SHORT_EDGE[callTier]);
+            stanza.__call_shape = shape;
+        }
         // THE SEAT UNION (2026-10-26, the no-drop law): a call may state
         // its media lanes DIRECTLY — last_frame / ref_images /
         // ref_videos / ref_audios on the call row — and the schema
@@ -788,11 +877,9 @@ function renderH3Film(p, g, facts, model, runId) {
             throw new Error(`h3-timeline window ${k}: reversed span (end_frame ${String(ef)} <= start_frame ${String(sf)}) — a stated family bypasses the walk's span laws, never the compose's`);
         }
         if (sf !== null && ef !== null && ef > sf) {
-            // THE UNIFORM SPAN GATE, second door: a stale or hand-built
-            // document re-rides the same law the walk admitted under, so
-            // the compose carrier refuses an off-grid span before any node
-            // is built (zero GPU) instead of trusting the render snap.
-            assertSpanGrid(spans[i], `h3-timeline window ${k}`, chainLike ? overlap : 0);
+            // (the snap-admission itself ran at the loop's head, before
+            // the stamps — see the SPAN SNAP block above; this late arm
+            // no longer re-judges: one law, one admit, one clock)
         }
         // per-window length: the span rider law, unless the call's knobs pin one
         if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
@@ -1170,8 +1257,13 @@ function renderH3Window(p, g, facts, model, runId) {
     // 2× the stated grid. Route off = the same stated geometry (ARM
     // 41's byte-stable plain pass — the arm touches nothing but the
     // handoff's mount).
-    const headW = p.width;
-    const headH = p.height;
+    // PER-CALL RESOLUTION (brief M-T6): the film loop stamps
+    // __call_shape when the call stated a tier or the doc pins
+    // draft — the window head consumes it or falls to the doc's own
+    // geometry (the historical default).
+    const callShape = (p.__call_shape ?? null);
+    const headW = callShape !== null ? callShape.width : p.width;
+    const headH = callShape !== null ? callShape.height : p.height;
     // (M5, the fallback audit — judged LAWFUL and now documented: this
     // is the fresh-card admission, not a fallback crime. The window
     // shape's text face is p.prompt (declared required=True, "optional
@@ -2752,17 +2844,42 @@ export const film = {
         const isFilm = docCalls !== null && docCalls.length > 1 && p.k === undefined;
         if (isFilm)
             return renderH3Film(p, g, facts, model, runId);
-        // THE CLIPS-STITCH LAW (2026-09-21): the Music row's mix is a
-        // FILM-path consumer (it rides the accumulated film audio).
-        // On the frozen single-window shape it would be a silent
-        // skip — the crime class this estate refuses. Loud, with the
-        // fix in the message (the studio's own doc always carries
-        // calls; a second short call unlocks the film path).
+        // THE CLIPS-STITCH LAW (2026-09-21; re-voiced by the
+        // timeline-agent brief M-T1, 2026-11-20): the Music row's mix is
+        // a FILM-path consumer (it rides the accumulated film audio).
+        // A re-shot slot IS one call — the card promotes it itself now:
+        // a single-call doc carrying clips gains a card-minted 51 f
+        // faceless silent tail (the smallest grid-legal carried window)
+        // and rides the film path, the promotion reported on the run
+        // record. The refusal survives only for the FROZEN k-marked
+        // stanza shape, where no film can be authored at all.
         const clips = (p.audio_clips ?? []);
-        if (clips.some((c) => c !== null && typeof c === 'object'
-            && typeof c.src === 'string' && c.src.trim() !== '')) {
-            throw new Error('h3-timeline: audio clips ride the FILM path — this single-window doc has clips but no film to mix over ' +
-                '(add a second call to author a film, or clear the Music row)');
+        const clipsPresent = clips.some((c) => c !== null && typeof c === 'object'
+            && typeof c.src === 'string' && c.src.trim() !== '');
+        if (clipsPresent) {
+            if (p.k !== undefined || docCalls === null || docCalls.length === 0) {
+                throw new Error('h3-timeline: audio clips ride the FILM path — this frozen single-window doc has clips but no film to mix over ' +
+                    '(author the doc as calls — one call plus clips promotes to the film path on its own — or clear the Music row)');
+            }
+            // THE PROMOTION (brief M-T1): append the silent tail after the
+            // sole call — 51 f is 17·3, grid-legal as a carried span, and
+            // the tail carries no guide/refs/face seats so nothing in it
+            // can invent a line (the M-T2 hazard). The text is the
+            // dictionary-clean constant; the promotion notice is the card's
+            // admission warn (one pure helper, both consumers).
+            const sole = docCalls[0];
+            const soleEnd = typeof sole.end_frame === 'number' && Number.isFinite(sole.end_frame) ? sole.end_frame : null;
+            if (soleEnd !== null) {
+                docCalls.push({
+                    text: SILENT_TAIL_TEXT,
+                    start_frame: soleEnd,
+                    end_frame: soleEnd + SILENT_TAIL_FRAMES,
+                });
+                p.calls = docCalls;
+                return renderH3Film(p, g, facts, model, runId);
+            }
+            throw new Error('h3-timeline: the sole call states no end_frame — the promoted silent tail cannot tile after it ' +
+                '(state end_frame, or author the doc as calls)');
         }
         // LORA STEPS APPLIED (2026-09-18): the single-window shape
         // honors the distill bag's steps — ONE STEPS LAW for both

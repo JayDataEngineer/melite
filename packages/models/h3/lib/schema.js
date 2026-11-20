@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { samplingExtra } from '@melite/comfyui-card-kit/fields';
 import { bag } from '@melite/contracts/extraKeys';
 import { coerceWireArrays } from '@melite/comfyui-card-kit';
-import { CALL_KEYS, CALL_TRANSITIONS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, assertSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
+import { CALL_KEYS, CALL_TRANSITIONS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, admitSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
 export const FAMILIES = ['t4r', 't4_open', 't4_chain'];
@@ -195,6 +195,15 @@ export const paramSchema = z.object({
     // in the compose). The old hardcoded 24 in both render arms played
     // a 90-frame window at 3.75s under a 5.6s bar.
     fps: z.number().description("Playback fps").min(FPS_RAIL_MIN).max(FPS_RAIL_MAX).default(DOC_FPS_DEFAULT).extra('extra', bag({ hidden: true })),
+    // SPEECH LANGUAGE (timeline-agent brief M-T2, 2026-11-20): the
+    // bracket language the dialogue stamp tags its placed line with —
+    // 'English' default. An unintended invented line at least lands
+    // in the NAMED language, never a surprise one.
+    speech_language: z.string().description("Speech language tag").max(24).default('English').extra('extra', bag({ hidden: true })),
+    // DRAFT PIN (brief M-T6): true pins every call that states no
+    // resolution of its own to the 480p draft tier — draft first,
+    // final last; a close-up stops paying the wide shot's tier.
+    draft: z.boolean().description("Draft pin").default(false).extra('extra', bag({ hidden: true })),
     steps: z.number().description("Steps").min(4).max(30).default(6).extra('extra', samplingExtra('steps', { tooltip: "6 for draft — the engine kernel's own calibrated count (its H3SLAAttention tooltip: use 6 steps rather than lowering sparsity; PARITY-pinned with plaguekind v7 — the 12 carried no receipt and matched neither his v7=6 nor v9=8; regolded by the 2026-10-16 upstream-parity audit); 30 standard; a boarded distill lora applies its own steps (edit them on the lora entry)" })),
     // THE SECOND-PASS MASTER (2026-09-22, operator: "Second Pass also
     // needs an on/off switch, it is very unclear if it is on or off"):
@@ -719,11 +728,15 @@ export function schema(v) {
             if (cknobs.length !== undefined && cknobs.length !== null) {
                 assertGridLength(cknobs.length, `calls[${i}].knobs.length`);
             }
-            // THE UNIFORM SPAN GATE: one grid law for every window shape —
-            // carried windows (i>0, non-cut) generate span+22, first/cut
-            // windows generate their span, and an off-grid authored span is
-            // refused at admission instead of silently snapped.
-            assertSpanGrid({
+            // THE UNIFORM SPAN GATE (snap-admission voice, brief M-T3
+            // 2026-11-20): one grid law for every window shape — carried
+            // windows (i>0, non-cut) generate span+22, first/cut windows
+            // generate their span; a legal span admits verbatim at any
+            // size, an off-grid span of at least the snap floor admits by
+            // snapping its end UP to the next legal rung (reported by the
+            // card's admission notices, recomputed from this same law),
+            // and only sub-floor or past-ceiling spans refuse here.
+            admitSpanGrid({
                 start: c.start_frame,
                 end: c.end_frame,
             }, `calls[${i}]`, i > 0 ? transitionOverlap(transition) : 0);

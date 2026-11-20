@@ -1,4 +1,4 @@
-import type { JsonValue, ToolDefinition } from '../types.ts';
+import type { JsonValue, ToolDefinition } from '../types.js';
 /** The text vocabulary this door answers. A run's own sidecars are
  *  json/jsonl/md/txt/yaml/log; anything else is media (melite_view),
  *  a checkpoint (never read into a context window), or a refusal. */

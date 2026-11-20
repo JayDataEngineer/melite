@@ -1,4 +1,4 @@
-import type { Edge, StageSkip } from "./runsValidateShared.ts";
+import type { Edge, StageSkip } from "./runsValidateShared.js";
 export declare function edgeRef(e: Edge): string;
 export declare function inlineKind(where: string, value: unknown): string;
 export declare function inlineEdge(where: string, value: unknown): Edge;

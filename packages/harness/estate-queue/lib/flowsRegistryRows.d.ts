@@ -1,4 +1,4 @@
-import type { RegistryFlow } from "./flowsData.ts";
+import type { RegistryFlow } from "./flowsData.js";
 export declare const ANNY_HMR_ESTIMATOR: RegistryFlow;
 export declare const ANNY_PARAMS: RegistryFlow;
 export declare const FIT_SEAT: RegistryFlow;

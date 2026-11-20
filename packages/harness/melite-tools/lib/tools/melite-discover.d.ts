@@ -1,5 +1,5 @@
-import type { ToolDefinition } from '../types.ts';
-import type { Estate } from '../estate.ts';
+import type { ToolDefinition } from '../types.js';
+import type { Estate } from '../estate.js';
 /** Flow summary line (the discover tier — routes, never bodies). */
 export interface DiscoverFlowLine {
     name: string;

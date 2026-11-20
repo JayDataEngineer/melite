@@ -1,6 +1,6 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
-import type { CardArmError } from "./cardsArmError.ts";
-import type { QueueRefusal } from "./queue.ts";
+import type { CardArmError } from "./cardsArmError.js";
+import type { QueueRefusal } from "./queue.js";
 export declare function cardRefusal(err: CardArmError): QueueRefusal;
 /** Fold a door refusal into the protocol's one error class. */
 export declare function toRemoteError(r: QueueRefusal): RemoteError;

@@ -31,25 +31,25 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
-import { type EstateCall } from './estate.ts';
-import type { ToolDefinition } from './types.ts';
-import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts';
+import { type EstateCall } from './estate.js';
+import type { ToolDefinition } from './types.js';
+import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.js';
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName };
-export { makeEstate, makeEstateRequest } from './estate.ts';
-export { bootFactsArm } from './discovery.ts';
-export type { EstateRequest, Estate, BenchVerb } from './estate.ts';
-export { runStatus } from './tools/run-status.ts';
-export { meliteDiscover } from './tools/melite-discover.ts';
-export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.ts';
-export { meliteFlow } from './tools/melite-flow.ts';
-export { comfyManage } from './tools/comfy-manage.ts';
-export { meliteLoad } from './tools/melite-load.ts';
-export { meliteView } from './tools/melite-view.ts';
-export { meliteContactSheet } from './tools/contact-sheet.ts';
-export { meliteRead, readRunText } from './tools/melite-read.ts';
-export { skillRead } from './tools/skill-read.ts';
-export { skillWrite } from './tools/skill-write.ts';
-export { ledgerTail } from './tools/ledger-tail.ts';
+export { makeEstate, makeEstateRequest } from './estate.js';
+export { bootFactsArm } from './discovery.js';
+export type { EstateRequest, Estate, BenchVerb } from './estate.js';
+export { runStatus } from './tools/run-status.js';
+export { meliteDiscover } from './tools/melite-discover.js';
+export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.js';
+export { meliteFlow } from './tools/melite-flow.js';
+export { comfyManage } from './tools/comfy-manage.js';
+export { meliteLoad } from './tools/melite-load.js';
+export { meliteView } from './tools/melite-view.js';
+export { meliteContactSheet } from './tools/contact-sheet.js';
+export { meliteRead, readRunText } from './tools/melite-read.js';
+export { skillRead } from './tools/skill-read.js';
+export { skillWrite } from './tools/skill-write.js';
+export { ledgerTail } from './tools/ledger-tail.js';
 /** Cordis plugin name used by loader diagnostics. */
 export declare const name = "melite-tools";
 /**

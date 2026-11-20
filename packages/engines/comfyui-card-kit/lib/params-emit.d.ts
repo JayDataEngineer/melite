@@ -159,6 +159,16 @@ export declare const emitParamsSchema: (schemaCarrier: Schema, boarded: readonly
  *  whose complexity lives in mods, and an agent that never learns
  *  the kinds hits compose's loud refusals blind. Verbatim off the
  *  card's own declared rows; leaf_face is a UI concern and never
- *  rides (the agent composes VALUES, never faces). */
+ *  rides (the agent composes VALUES, never faces).
+ *
+ *  THE FULL FIELD ROWS (M-T4, 2026-11-20 timeline brief): `fields`
+ *  serves the whole declared row — name, label, type, default, the
+ *  min/max/step band, the unit-laden tooltip — the SAME shape the
+ *  form-spec face serves (discovery's servedFields narrow: internal
+ *  rows filtered, string name/label/type required at the serve
+ *  boundary). The names-only array that stood here taught the
+ *  agent the dial's name but not its band, so every press learned
+ *  the bounds by refusal. An agent that writes VALUES needs the
+ *  whole row, exactly like the form. */
 export declare const emitModifierKinds: (mods: readonly DeclaredModifierKind[] | undefined) => Array<Record<string, unknown>>;
 //# sourceMappingURL=params-emit.d.ts.map

@@ -14,10 +14,10 @@
 // wins it.
 
   /** Longest-prefix-wins over the prefix table after an exact-table miss. */
-  private match(pathname: string): WebRoute | undefined {
+  private match(pathname: string): WebRoute | WebResourceRoute | undefined {
     const exact = this.exact.get(pathname)
     if (exact !== undefined) return exact
-    let best: WebRoute | undefined
+    let best: WebRoute | WebResourceRoute | undefined
     for (const [prefix, route] of this.prefixes) {
       if (pathname !== prefix && !pathname.startsWith(`${prefix}/`)) continue
       if (best === undefined || prefix.length > best.path.length) best = route

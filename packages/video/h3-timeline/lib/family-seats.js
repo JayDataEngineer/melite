@@ -41,6 +41,7 @@ export const primeFamilySeats = () => {
             typeof main.renderH3Edit !== 'function' ||
             typeof main.reshootArmed !== 'function' ||
             typeof main.assertOverlayGated !== 'function' ||
+            typeof main.filmAdmissionNotices !== 'function' ||
             typeof main.SEAM_OVERLAP_FRAMES !== 'number' ||
             typeof main.REFINE_DEFAULT_CLIP_SECONDS !== 'number' ||
             !Array.isArray(loras?.H3_LORA_ROWS) ||
@@ -59,6 +60,7 @@ export const primeFamilySeats = () => {
             renderEdit: main.renderH3Edit,
             reshootArmed: main.reshootArmed,
             assertOverlayGated: main.assertOverlayGated,
+            filmAdmissionNotices: main.filmAdmissionNotices,
             parseFacts: actions.parseH3Facts,
             paramSchema: schema.paramSchema,
             schema: schema.schema,

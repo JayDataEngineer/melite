@@ -74,6 +74,16 @@ before, byte-identical.)
    disarms.
 3. **Set ONE camera intent.** The entry fields (the card's served
    ranges, tested guidance):
+   - `region_prompt` ("", empty = no aim) — the free-text SAM3
+     subject the camera anchors to ("her face", "the clock"). Stated,
+     the card tracks it across the clip and the orbit circles
+     IT (a push-in lands it framed) — a close-up is a press, not a
+     pan guess. The default empty seat keeps the explicit-pivot
+     posture (no tracking subgraph, byte-identical graph).
+   - `detection_threshold` (0–1, 0.5) — the SAM3 aim-tracker
+     threshold (the edit verb's own seat): lower finds more,
+     noisier; higher only the confident. Tune down for thin or
+     occluded subjects.
    - `orbit` (±180, −30) — orbit left/right. The default is the
      official comfy-reshoot app's own slider value; ±45° tested, past
      90° the hidden side is invented.

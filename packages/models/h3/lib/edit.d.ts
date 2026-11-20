@@ -29,6 +29,9 @@
  * PNG's own shape). */
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { H3Facts } from './actions.js';
+/** SAM3's checkpoint row — repair.ts's own spelling (the family's
+ * one tracked-mask door; the card's constant cites the same file). */
+export declare const SAM3_CKPT = "sam3.1_multiplex_fp16.safetensors";
 /** The near-full-denoise floor of the identity-safety refusal. */
 export declare const EDIT_IDENTITY_BOIL_FLOOR = 0.8;
 /** THE MASK DIAL — where the edit happens.

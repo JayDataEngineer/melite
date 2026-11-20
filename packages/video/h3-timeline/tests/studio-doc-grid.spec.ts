@@ -73,9 +73,11 @@ describe("snapCallLength", () => {
 describe("snapCallEnd", () => {
   it("keeps the operator's start and snaps the length", () => {
     assert.equal(snapCallEnd(A, 0, 120), 124)
-    assert.equal(snapCallEnd(B, 1, 200), 56 + 136)
-    // a cut window snaps the plain family
-    assert.equal(snapCallEnd({ ...B, transition: "cut" }, 1, 200), 56 + 141)
+    // CEIL (the admission law M-T3): 200-56 = 144 snaps to 153
+    // (17×9) — the strip previews the rendered rung, never less
+    assert.equal(snapCallEnd(B, 1, 200), 56 + 153)
+    // a cut window snaps the plain family on the same ceil law
+    assert.equal(snapCallEnd({ ...B, transition: "cut" }, 1, 200), 56 + 158)
   })
 })
 
@@ -139,8 +141,9 @@ describe("the grid heal (a doc never refuses the run)", () => {
       { text: "a", start_frame: 0, end_frame: 57 },
       { text: "b", start_frame: 57, end_frame: 119 },
     ])
-    // 57 → 56 (22+17k), the follower rebases onto the healed cut
-    assert.equal(healed[0]!.end_frame - healed[0]!.start_frame, 56)
+    // CEIL heal (M-T3): 57f snaps UP to 73 (22+17·3) — the heal
+    // previews the rendered rung — and the follower rebases onto it
+    assert.equal(healed[0]!.end_frame - healed[0]!.start_frame, 73)
     assert.equal(healed[1]!.start_frame, healed[0]!.end_frame)
     for (const [i, c] of healed.entries()) {
       assert.ok(isLegalCallLength(c.end_frame - c.start_frame, isCarriedShape(i, c)), `window ${i} legal after heal`)

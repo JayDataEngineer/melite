@@ -1,4 +1,4 @@
-import type { RunId } from "./queueCore.ts";
+import type { RunId } from "./queueCore.js";
 export interface SweepResult {
     readonly touched: boolean;
     readonly wasQueued: boolean;

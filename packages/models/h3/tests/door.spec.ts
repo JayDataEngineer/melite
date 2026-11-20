@@ -4,7 +4,9 @@
 // instantiate — never a silent route to a stock lane.
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { FILM_AUDIO_RATE, film, h3DefaultLoraEntry, parseH3Facts } from "../src/actions.ts";
+import assert from "node:assert";
+import { FILM_AUDIO_RATE, film, h3DefaultLoraEntry, parseH3Facts, SILENT_TAIL_TEXT } from "../src/actions.ts";
+import { filmAdmissionNotices } from "../src/timelineContract.ts";
 import { schema as h3schema } from "../src/schema.ts";
 import { DOC_FPS_DEFAULT, deriveWindowFamily } from "../src/timelineContract.ts";
 import { RESOLUTION_SHORT_EDGE, planTierShape } from "../src/chainEdit.ts";
@@ -876,12 +878,13 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     )).toThrow(/h3-timeline window 2: knobs\.interp_multiplier = 3 states a ×3 member against the film's ×2 clock.*move the pin to the film level \(interp_multiplier\)/s);
   });
 
-  it("THE CLIPS-STITCH LAW (single-window face): audio clips ride the FILM path — a clips-carrying single-window doc refuses LOUD", () => {
-    // A single-window doc has no film to mix over: the clips would
-    // stitch nothing, so the build refuses at the door — naming the
-    // repair (a second call unlocks the film path, or clear Music).
-    // Blank-src rows (a cleared Music row's residue) pass the door:
-    // the law judges only rows that name a source.
+  it("THE CLIPS-STITCH LAW (frozen single-window face): audio clips ride the FILM path — a clips-carrying FROZEN doc refuses LOUD", () => {
+    // A frozen (no-calls) doc has no film to mix over and no sole
+    // call to promote: the clips would stitch nothing, so the build
+    // refuses at the door — naming the repair (M-T1, 2026-11-20:
+    // one call plus clips promotes itself; the frozen shape stays
+    // refused). Blank-src rows (a cleared Music row's residue) pass
+    // the door: the law judges only rows that name a source.
     const g = new GraphBuilder();
     expect(() => instantiateAction(
       film,
@@ -891,7 +894,47 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
         audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
       },
       WINDOW_MODEL, g, "run_clips_stitch_single",
-    )).toThrow(/audio clips ride the FILM path.*add a second call to author a film/s);
+    )).toThrow(/audio clips ride the FILM path.*one call plus clips promotes to the film path on its own/s);
+  });
+
+  it("THE PROMOTED SILENT TAIL (M-T1, 2026-11-20): a single-call doc carrying clips rides the FILM path — the card appends the silent tail itself", () => {
+    // The timeline-agent brief's first cure: a one-shot doc with a
+    // Music row is a FILM (the mix needs the film path), and the
+    // promotion is the card's own work — a 51 f faceless silent
+    // tail window (17·3, grid-legal carried) minted after the sole
+    // call. The consumer agent deletes its client-side tail stub.
+    const g = new GraphBuilder();
+    const doc = {
+      variant: "timeline", seed: 42, loras: BAG,
+      calls: [{ text: "a wide interior holds", start_frame: 0, end_frame: 124 }],
+      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+    } as Record<string, unknown>;
+    expect(() => instantiateAction(film, doc, WINDOW_MODEL, g, "run_promoted_tail")).not.toThrow();
+    // the promotion mutated the doc's calls: sole call + the silent
+    // tail, tiling at the sole call's end.
+    const calls = doc.calls as Array<{ text: string; start_frame: number; end_frame: number }>;
+    assert.equal(calls.length, 2, "the promotion appends exactly one silent tail call");
+    assert.equal(calls[1]!.start_frame, 124, "the tail starts at the sole call's end");
+    assert.equal(calls[1]!.end_frame - calls[1]!.start_frame, 51, "the tail is 51 f — 17·3, grid-legal carried");
+    assert.equal(calls[1]!.text, SILENT_TAIL_TEXT, "the tail text is the dictionary-clean constant");
+    // and the film admission notices report the promotion (the
+    // run-status warn arm).
+    const warns = filmAdmissionNotices(doc);
+    assert.ok(warns.some((w) => w.includes("silent") && w.includes("promoted")),
+      "the promotion notice names what was appended: " + warns.join(" | "));
+  });
+
+  it("THE PROMOTION REFUSES A SOLE CALL WITH NO end_frame (M-T1): no silent tail can tile after an unbounded call", () => {
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "timeline", seed: 42, loras: BAG,
+        calls: [{ text: "a wide interior holds", start_frame: 0 }],
+        audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+      },
+      WINDOW_MODEL, g, "run_promoted_no_end",
+    )).toThrow(/end_frame/);
   });
 
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {

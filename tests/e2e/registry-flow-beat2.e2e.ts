@@ -44,6 +44,7 @@ import { ComfyUIHostService } from '../../packages/engines/comfyui-cordis/src/co
 import { comfyuiExecutor } from '../../packages/engines/comfyui-cordis/src/entries/comfyui-engine.ts'
 import modelsFamiliesProvider from '../../packages/engines/comfyui-cordis/src/entries/catalog-registry.ts'
 import { QueueCore } from '../../packages/harness/estate-queue/src/queue.ts'
+import { LifecycleLatch } from '../../packages/harness/estate-queue/src/lifecycleLatch.ts'
 import { CardRegistryService } from '../../packages/harness/estate-queue/src/cardsRegistry.ts'
 import { FlowsSeatService } from '../../packages/harness/estate-queue/src/flowsData.ts'
 import { RunsRuntimeService } from '../../packages/harness/estate-queue/src/runsRegistry.ts'
@@ -79,6 +80,7 @@ describe.skipIf(!ENGINE_FREE || !HAS_BODY)(
         const core = new QueueCore()
         ;(ctx as unknown as { queue: unknown }).queue = {
           core,
+          lifecycleLatch: new LifecycleLatch(),
           stateRoot: join(sandbox.root, 'state'),
           // the dangling-ref sweep reads the roots list (the real
           // queue seat's face — the wall's own mount carries it)

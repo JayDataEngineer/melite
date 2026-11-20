@@ -237,8 +237,8 @@
   },
   {
     "name": "ComfyUI-CrossViewWarp",
-    "url": "https://github.com/comfyrob/ComfyUI-CrossViewWarp",
-    "ref": "fbb1e93c7193329ff3ce7c17f95166b539687876",
+    "url": "https://github.com/JayDataEngineer/ComfyUI-CrossViewWarp",
+    "ref": "b600a593da8fbb93dd49a02c763adba2d03a748a",
     "required": true,
     "desc": "CrossViewWarp (Apache-2.0, the comfyrob fork at the official comfy-reshoot revision) — CrossViewPrepareClip (24 fps resample, H3 17k+5 frame-grid snap, aspect/pixel-budget normalize) + CrossViewWarp (metric-geometry reprojection under a moved camera). Declared on the video plane for camera-move compositions; addressed by the h3-timeline re-shoot chain (feature 024, reworked 2026-11-13 onto Comfy-Org's comfy-reshoot reference chain: prepare -> MoGe metric geometry -> one warp; the retired VDA depth chain + Fun ControlNet apply seat died with the rework). Pip: nothing beyond the ComfyUI base env.",
     "pip": [],

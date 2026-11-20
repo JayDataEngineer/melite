@@ -5728,10 +5728,11 @@ window.__ModuleLoader__.load({
 		/** Nearest legal authored length for the window's shape. */
 		function snapCallLength(length, carried) {
 			if (carried) {
-				const k = Math.max(1, Math.round(length / 17));
+				const k = Math.max(1, Math.ceil(length / 17));
 				return Math.min(340, 17 * k);
 			}
-			return gridSnap(Math.max(22, length));
+			const k = Math.max(0, Math.ceil((length - 22) / 17));
+			return Math.min(362, 22 + 17 * k);
 		}
 		/** Snap a CUT drag's delta onto the 17-frame lattice (operator
 		*  2026-11-05: "I can't even run defaults" — a bar drag landing a cut

@@ -1,5 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
-import type { RunId } from "./queueCore.ts";
+import type { RunId } from "./queueCore.js";
 type RunChangeListener = (runId: RunId) => void;
 /** The event seam this pure-domain spine reaches the bus through
  *  (the bench seam's law, verbatim: the writers own no Context, the

@@ -44,8 +44,10 @@ describe("handleExtend", () => {
     assert.equal(result.current.calls[0]!.end_frame, 124)
     const carried = harness([A, B])
     act(() => { carried.result.current.handleExtend(200) })
-    // B is carried → 17k: 200 - 56 = 144 snaps to 136 (17×8)
-    assert.equal(carried.result.current.calls[1]!.end_frame, 56 + 136)
+    // B is carried → 17k, and the snap is CEIL (the admission law's
+    // own voice, M-T3): 200 - 56 = 144 snaps to 153 (17×9) — the
+    // strip previews the window the run will render, never less
+    assert.equal(carried.result.current.calls[1]!.end_frame, 56 + 153)
   })
 
   it("empty docs and shrinks no-op (never a new array)", () => {
@@ -441,8 +443,8 @@ describe("setCallSpan", () => {
     assert.equal(result.current.calls[0]!.end_frame, 73)
     assert.equal(result.current.calls[1]!.start_frame, 73)
     act(() => { result.current.setCallSpan(1, "end", 200) })
-    // B is carried: 200 - 73 = 127 snaps to 119 (17×7)
-    assert.equal(result.current.calls[1]!.end_frame, 73 + 119)
+    // B is carried → 17k, CEIL: 200 - 73 = 127 snaps to 136 (17×8)
+    assert.equal(result.current.calls[1]!.end_frame, 73 + 136)
   })
 
   it("end floors at the shortest legal span; no-op writes keep identity; ranges guard", () => {

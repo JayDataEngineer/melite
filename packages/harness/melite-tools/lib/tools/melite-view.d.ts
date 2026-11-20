@@ -1,11 +1,11 @@
 import type { EngineJson } from '@melite/comfyui-cordis';
 import type { Context } from '@deepseek-ai/cordis';
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment';
-import type { ProbedStream } from './mp4Probe.ts';
-import type { MeshSummary } from './glbSummary.ts';
+import type { ProbedStream } from './mp4Probe.js';
+import type { MeshSummary } from './glbSummary.js';
 import type { MediaListRow } from '@melite/estate-media';
-import type { VisionQuestionKind, VisionRoute } from './vision-route.ts';
-import type { ToolDefinition } from '../types.ts';
+import type { VisionQuestionKind, VisionRoute } from './vision-route.js';
+import type { ToolDefinition } from '../types.js';
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
  *  manifest in order — own root first, then the extras (the queue
  *  seat's stateRoots config). First root holding the run serves (own

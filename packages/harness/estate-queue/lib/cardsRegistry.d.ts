@@ -2,20 +2,20 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { CardDefinition } from '@melite/comfyui-card-kit/card-definition';
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
-export { CardArmError } from "./cardsArmError.ts";
-import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.ts";
+import { RUNS_ERROR_CODES } from "./runsErrorCodes.js";
+export { CardArmError } from "./cardsArmError.js";
+import type { CardDeclRow, ModelFactsRow } from "./cardsFacts.js";
 import { type FamilyLaw } from "@melite/contracts/familyLane";
-export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
-export type { VariantSelection } from "./cardsVariant.ts";
-export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.ts";
+export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.js";
+export type { VariantSelection } from "./cardsVariant.js";
+export type { CardDeclRow, ModelFactsRow, VariantCellRow, ResolvedVariantRow } from "./cardsFacts.js";
 /** The card-envelope keys: SELECT the graph, never ride it —
  *  re-exported from the vocabulary's own home (vocab.ts) so the
  *  compose door and the graph receipt's scope gate read the ONE
  *  list (D-11: envelope keys are never knobs; the receipt never
  *  judges them). The list's derivation law and its reasons live
  *  beside the list. */
-export { CARD_ENVELOPE_KEYS } from "./vocab.ts";
+export { CARD_ENVELOPE_KEYS } from "./vocab.js";
 /** The card-lane refusal: status + the _refusal envelope shape
  *  (error, code, then loc/expected/got) — the door maps it through
  *  the local refusal path. */

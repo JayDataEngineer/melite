@@ -108,9 +108,10 @@ describe("the reshoot kind (the fourth mod bag, official rework)", () => {
     const fields = (reshoot.fields as Array<Record<string, unknown>>) ?? [];
     const names = fields.map((f) => f.name);
     assert.deepEqual(names, [
-      'source_clip', 'orbit', 'tilt', 'dolly', 'zoom', 'pan',
+      'source_clip', 'region_prompt', 'detection_threshold',
+      'orbit', 'tilt', 'dolly', 'zoom', 'pan',
       'strength', 'depth_ratio', 'smooth_depth', 'invert_depth',
-    ], "the entry carries the clip + the nine camera dials, exactly");
+    ], "the entry carries the clip, the two region-aim seats (M-T5, 2026-11-20 — the SAM3 subject the camera orbits), and the nine camera dials, exactly");
   });
 
   it("the strength dial serves the official LoRA band and admits NOTHING under it (0.8–1, default 0.8) on the card's own field row", () => {
