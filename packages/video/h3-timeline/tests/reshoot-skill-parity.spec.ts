@@ -22,7 +22,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
-import { RESHOOT_DIAL_BOUNDS } from "../../../models/h3/src/reshoot.ts";
+import { RESHOOT_DIAL_BOUNDS, readReshootAim } from "../../../models/h3/src/reshoot.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILLS = join(HERE, "..", "src", "agents", "skills");
@@ -178,5 +178,24 @@ describe("the re-shoot skill's dial table agrees with the code's own homes", () 
       "reshoot/SKILL.md cites no receipt path");
     assert.doesNotMatch(md, /run-[0-9a-f]{8,}/,
       "reshoot/SKILL.md cites no run id");
+  });
+
+  it("THE AIM SEAT'S DIAL LAW: readReshootAim passes the stated threshold verbatim and defaults the absent one to 0.5", () => {
+    // The region-aim seat's threshold is the detection dial the
+    // skill's table documents: a stated number rides VERBATIM (the
+    // skill tunes detection; the code never clamps or re-derives
+    // it), an absent one lands the served default 0.5, and a blank
+    // seat is no chain delta at all (undefined — the door arms
+    // nothing). Each arm rides readReshootAim's own return, never a
+    // hand literal.
+    assert.equal(readReshootAim({}), undefined, "no bag at all — the seat is absent");
+    assert.equal(readReshootAim({ reshoot: [{ region_prompt: "   " }] }), undefined,
+      "a blank region_prompt arms nothing (no chain delta)");
+    const stated = readReshootAim({ reshoot: [{ region_prompt: "the brass latch", detection_threshold: 0.8 }] });
+    assert.ok(stated, "a named subject arms the aim seat");
+    assert.equal(stated!.prompt, "the brass latch", "the prompt rides trimmed verbatim");
+    assert.equal(stated!.detectionThreshold, 0.8, "a stated threshold rides verbatim — never clamped");
+    const defaulted = readReshootAim({ reshoot: [{ region_prompt: "the brass latch" }] });
+    assert.equal(defaulted!.detectionThreshold, 0.5, "the absent threshold lands the served default");
   });
 });

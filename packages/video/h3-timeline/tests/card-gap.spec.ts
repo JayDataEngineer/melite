@@ -28,6 +28,9 @@ import {
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { filmAdmissionNotices, gridSnap } from "@melite/models-h3/timelineContract";
 import {
+  admitSpanGrid, admitCallSpans, assertSpanGrid, transitionOverlap,
+} from "../../../models/h3/src/timelineContract.ts";
+import {
   axisPickPatch, type FormSpecDoc, type FormVariantRow,
 } from "@melite/card-base/client";
 import { DECL as h3decl } from "../../../models/h3/src/index.ts";
@@ -2202,5 +2205,73 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     const w2Loads = scoped(out, "window2_", "LoadAudio")
       .filter(([, n]) => String(n.inputs.audio) === "a.mp3" || String(n.inputs.audio) === "b.mp3");
     assert.equal(w2Loads.length, 0, "the user audios stand down on the pinned window (the stanza declared them; the guard stripped them)");
+  });
+});
+
+// THE CONTRACT'S OWN DOORS (the M-T3 tails, 2026-11-20): the admit
+// pass's ceiling refusals, its malformed-row skip, and the legacy
+// assertSpanGrid voice ride the REAL walk (or the exported contract
+// function directly, where the walk cannot reach the branch — the
+// carry-90 class the engine's extend overlap names). A refusal that
+// fires must have its red arm; a law branch nobody reaches is a lie
+// the coverage gate prices.
+describe("the grid ceiling + the contract's exported doors (M-T3 tails)", () => {
+  it("a first/cut authored span whose snap passes the 362f ceiling REFUSES (the walk's own voice)", () => {
+    // 380f authored: k = ceil((380−22)/17) = 22 → 396f generated —
+    // past the ceiling. The snap never lands an over-ceiling window.
+    assert.throws(
+      () => def.schema({ calls: [SHOT({ end_frame: 380 })] }),
+      /calls\[0\]: authored range 0→380 snaps to 396f generated, past the grid's 362f ceiling — cut the window/,
+    );
+  });
+
+  it("the carried ceiling holds at any carry, not just the 22f seam (the extend-overlap class rides the exported contract)", () => {
+    // The walk's carried family rides SEAM_OVERLAP_FRAMES, whose cap
+    // can never pass the ceiling (17·20+22 = 362 exactly) — the
+    // branch is reachable only at a larger carry. The engine's own
+    // extend-overlap context (90f, the AV continuity class) is that
+    // caller: admitSpanGrid is the contract's home, so ITS ceiling
+    // holds for every carry a door may bring.
+    assert.throws(
+      () => admitSpanGrid({ start: 124, end: 600 }, "calls[1]", 90),
+      /authored range 124→600 snaps to 600 \(carried 566f generated\), past the grid's 362f ceiling — cut the window or move it earlier/,
+    );
+  });
+
+  it("an authored carried end that already lands on the rung admits verbatim (snapped false, never a phantom move)", () => {
+    // 124→464 carried: requested 362 = the exact ceiling rung — the
+    // upper rung IS the authored end, so the admit records no snap.
+    const out = admitSpanGrid({ start: 124, end: 464 }, "calls[1]", 22);
+    assert.equal(out.rendered.end, 464, "the rung-verbatim end renders itself");
+    assert.equal(out.snapped, false, "no snap — the authored end already sat on the rung");
+  });
+
+  it("the admit walk SKIPS a malformed row (not this pass's law — the walk's own refusal owns it) and tiles the lawful tail", () => {
+    // A non-numeric start leaves the span {0,0} and resets the
+    // cursor: the next lawful row is treated as a fresh first window
+    // (its own 22+17k family), never spliced after a ghost position.
+    const out = admitCallSpans(
+      [
+        { text: "bad", start_frame: "x", end_frame: "y" },
+        { text: LAWFUL_TEXT, start_frame: 0, end_frame: 56 },
+      ],
+      transitionOverlap,
+    );
+    assert.deepEqual(out.spans[0], { start: 0, end: 0 }, "the malformed row collapses to the empty span");
+    assert.deepEqual(out.spans[1], { start: 0, end: 68 }, "the lawful row starts fresh from the reset cursor (its own grid family)");
+    assert.deepEqual(
+      out.notices,
+      ["calls[1]: authored 0→56 snapped to rendered 0→68 (carried 17k grid)"],
+      "the fresh family's snap is reported, never silent",
+    );
+  });
+
+  it("the legacy assertSpanGrid voice still refuses off-grid and delegates the carried family (the retired spelling stays armed)", () => {
+    assert.equal(assertSpanGrid({ start: 0, end: 124 }, "window1"), 124, "the grid-legal span returns its length");
+    assert.throws(
+      () => assertSpanGrid({ start: 0, end: 136 }, "window1"),
+      /window1: authored range 0→136 has length 136f, which cannot land on the 22\+17k grid.*nearest legal: 141f/,
+    );
+    assert.equal(assertSpanGrid({ start: 0, end: 136 }, "window2", 22), 158, "the carried family delegates to its own grid");
   });
 });

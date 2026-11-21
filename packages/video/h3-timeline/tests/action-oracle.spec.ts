@@ -19,6 +19,7 @@ import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import { getModel, registryIds, registryModel } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
+import { planTierShape, RESOLUTION_SHORT_EDGE } from "../../../models/h3/src/chainEdit.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -265,6 +266,50 @@ describe("the h3 film action oracle (the interlock)", () => {
   it("the guideless t4r window (no refs, no anchor) refuses", () => {
     const msg = refuses({ variant: "t4r", length: 56 } as Record<string, unknown>);
     assert.match(msg, /without a staged guide image/);
+  });
+
+  it("THE PER-CALL TIER, STATED NON-DRAFT (M-T6): a 1080p call rides the engine's own plan math — never a hand literal", () => {
+    const graph = oneWay({
+      calls: [
+        SHOT({ knobs: {} }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, resolution: "1080p" }),
+      ],
+      length: 124,
+    });
+    const shape = planTierShape(1344, 768, RESOLUTION_SHORT_EDGE["1080p"]!);
+    const head = Object.entries(graph).find(([id, n]) =>
+      id.startsWith("window2_") && n.class_type === "MiniMaxH3ReferenceToVideo")![1].inputs!;
+    assert.equal(head.width, shape.width, "the 1080p window's width is the engine math's own output");
+    assert.equal(head.height, shape.height, "the 1080p window's height is the engine math's own output");
+  });
+
+  it("THE PER-CALL TIER, 'auto' (M-T6): the reserved word falls through to the doc tier (no per-call shape stamps)", () => {
+    const graph = oneWay({
+      calls: [
+        SHOT({ knobs: {} }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124, resolution: "auto" }),
+      ],
+      length: 124,
+    });
+    const head = Object.entries(graph).find(([id, n]) =>
+      id.startsWith("window2_") && n.class_type === "MiniMaxH3ReferenceToVideo")![1].inputs!;
+    assert.equal(head.width, 1344, "'auto' keeps the doc tier (the reserved word is not a tier)");
+    assert.equal("__call_shape" in head, false, "'auto' stamps no per-call shape");
+  });
+
+  it("L1 THE HEARD-TWICE REFUSAL: a clips row owning a window refuses a call text that also carries the spoken form", () => {
+    // The row places the take; the model reading the same words is
+    // the line heard twice — refused where ownership is known.
+    const msg = refuses({
+      calls: [
+        SHOT({ text: LAWFUL_TEXT + " <d>[English]hello there</d>", end_frame: 124 }),
+        SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 }),
+      ],
+      audio_clips: [{ src: "/bench/line.mp3", text: "hello there", start_frame: 10, dur_frames: 96, class: "dialogue" }],
+      length: 277,
+    });
+    assert.match(msg, /heard twice/);
+    assert.match(msg, /the row places the take; the model reads the text/);
   });
 
   it("THE INTERLOCK: a family the card boards but does not bind REFUSES at the dispatch", () => {
