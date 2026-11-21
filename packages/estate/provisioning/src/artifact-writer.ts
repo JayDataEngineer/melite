@@ -345,7 +345,7 @@ function iteratorFor(input: ArtifactInput): AsyncIterator<Uint8Array> {
         next: async (): Promise<IteratorResult<Uint8Array>> => {
           const r = await reader.read();
           return r.done === true
-            ? { done: true, value: undefined as never }
+            ? { done: true, value: undefined }
             : { done: false, value: r.value };
         },
         return: async (): Promise<IteratorResult<Uint8Array>> => {
