@@ -205,12 +205,21 @@ describe("artifact source and landing behavior", () => {
       }),
     };
     await writeVerifiedArtifact({ root: store, relativePath: "sync-no-return.bin", operationId: "op-sync-no-return", source: noReturnIterable });
+    // READER'S OWN CLOCK (2026-11-20): the reader-only arm once
+    // shared the outer index counter — already consumed by the sync
+    // arm above — so its FIRST read returned done:true and the
+    // reader adapter never carried a chunk. Its own counter makes
+    // the arm stream one real chunk then close: both faces of the
+    // read mapping (done:false carries the chunk; done:true closes)
+    // run, and the landed file proves the bytes rode the reader.
+    let readerIndex = 0;
     const reader = {
-      read: vi.fn(async (): Promise<IteratorResult<Uint8Array>> => index++ === 0 ? { done: false, value: bytes } : { done: true, value: undefined }),
+      read: vi.fn(async (): Promise<IteratorResult<Uint8Array>> => readerIndex++ === 0 ? { done: false, value: bytes } : { done: true, value: undefined }),
       cancel: vi.fn(async (): Promise<void> => undefined),
     };
     const readerOnly = { getReader: () => reader } as unknown as ArtifactInput;
-    await writeVerifiedArtifact({ root: store, relativePath: "reader.bin", operationId: "op-reader", source: readerOnly });
+    const landed = await writeVerifiedArtifact({ root: store, relativePath: "reader.bin", operationId: "op-reader", source: readerOnly });
+    assert.deepEqual(readFileSync(landed.path), bytes, "the reader-only stream lands its chunk byte-for-byte");
     assert.equal(reader.cancel.mock.calls.length, 1);
   });
 
