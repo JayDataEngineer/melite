@@ -2274,4 +2274,36 @@ describe("the grid ceiling + the contract's exported doors (M-T3 tails)", () => 
     );
     assert.equal(assertSpanGrid({ start: 0, end: 136 }, "window2", 22), 158, "the carried family delegates to its own grid");
   });
+
+  it("the speech map's malformed span reads `?` — a row with no numeric clock maps to no window (M-T2's map over the admit pass's own rows)", () => {
+    // admitCallSpans books {0, 0} for a row with no numeric frames
+    // (the walk's own refusal owns the doc) — the map renders that
+    // row as `i:?` instead of inventing a window, and the healthy
+    // sibling still maps its silent span with the warn clock.
+    const notices = filmAdmissionNotices({
+      calls: [
+        { text: LAWFUL_TEXT, start_frame: "0", end_frame: "124" },
+        { text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 },
+      ],
+    } as unknown as Record<string, unknown>);
+    assert.ok(notices.some((w) => w.includes("0:?")),
+      "the malformed row maps to no clock: " + notices.join(" | "));
+    assert.ok(notices.some((w) => w.includes("1:silent 153f")),
+      "the healthy row maps with its warn clock: " + notices.join(" | "));
+  });
+
+  it("a clips film with two plain calls reads NO promotion notice — the append is the sole-call door only (M-T1's shape law)", () => {
+    // clipsPresent with a multi-call doc takes the if's false arm:
+    // no silent tail is appended (the promotion is the sole-call
+    // film's own door), and the speech map still reads the row's
+    // ownership window by window.
+    const notices = filmAdmissionNotices({
+      calls: [SHOT({ end_frame: 124 }), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 124, end_frame: 277 })],
+      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+    } as Record<string, unknown>);
+    assert.equal(notices.some((w) => w.includes("promoted")), false,
+      "a two-call clips film promotes nothing: " + notices.join(" | "));
+    assert.ok(notices.some((w) => w.includes("0:row")),
+      "the row-owned window maps row: " + notices.join(" | "));
+  });
 });
