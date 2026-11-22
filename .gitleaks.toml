@@ -23,6 +23,11 @@
     description = "coverage tables, manifests, pins, and judge output carry references, not keys"
     paths = [
       '''scripts/coverage-baseline\.ts''',
+      # the battery's ratchet table (tools/coverage-baseline.json):
+      # per-file glob keys whose basenames run past 32 chars in the
+      # base64 class — coverage debt references, never keys. The TS
+      # seed above is the same table's source home.
+      '''tools/coverage-baseline\.json$''',
       '''tests/walls/ts/suites/coverage-baseline-ratchet\.spec\.ts''',
       '''(^|/)package\.json$''',
       '''packages/engines/comfyui-cordis/models/(.*/)?nodes\.yaml$''',
