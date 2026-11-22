@@ -34,8 +34,8 @@
       "libHash": "89d89d49de91e486da32c09595dc6626384f7148d86276df2da381742f77603e"
     },
     "h3": {
-      "srcHash": "f8c708be043a6a2b42e6a921fad70ebf0a028372677d89c8b2ce63825aa3e6f4",
-      "libHash": "a7772be05d97bd6d8ffdc9431685c47bc8fa37db992ddcf2b6372a717d79e292"
+      "srcHash": "971b8a1f1404f956d3480a93682cb1150881b79f8e1ed40326b5b6156bc5da32",
+      "libHash": "abb8e79255bcc0868aa77abf68aae63123c3e56eadd2f50355bf4c111d7df6f5"
     },
     "h3-image": {
       "srcHash": "45aae5486d681485acfa3c016632e818cf5117b886f4fca2ccb3250b5e69b147",
@@ -102,8 +102,8 @@
       "libHash": "6c7d12140532cab666bd8c25e351df9793c6d1c31ed76e3e24b08db2c109083d"
     },
     "seedvr2-ema": {
-      "srcHash": "3d2fa238fb98f70b8d35e8e04e898fc6835fbe9797597a87c0e088ec2750514c",
-      "libHash": "22663484810f5f02be9dbc5e1d0a24a9e4357690e88025e751f68913f20bcdf1"
+      "srcHash": "47afe97f3191e418436657fa7e6bcb2a97eea41cf40b9c5a9980e436a33866c1",
+      "libHash": "79b7d3cb8bb25aaf20444a87c0e865eac074293d75c8f6a783ecd2685ac71268"
     },
     "skin": {
       "srcHash": "477ca914f7e95cc45e5141ba6ef0b14559e288ef83efad4abb675950bde795b6",

@@ -103,7 +103,7 @@ describe("the input surface: the schema owns the wire form", () => {
       "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
       "upscale_route", "upscale_model",
       "sharpen_enabled", "sharpen_strength", "sharpen_method", "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
-      "sr_switch", "sr_resolution", "sr_model",
+      "sr_switch", "sr_resolution", "sr_model", "sr_color_correction",
     ].sort(), "every post-pass field rides the second_pass group");
     // the attention arm + the ref conditioning knob ride SAMPLING —
     // they shape the generation pass, not a second pass
