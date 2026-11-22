@@ -19,6 +19,12 @@ export const DECL: ModelDecl = {
   "engine": "comfyui",
   "defaults": {
     "batch_size": 1,
+    // THE OFFICIAL FLOOR (2026-11-22, the seedvr2-native-chain cure):
+    // the official native chain's SeedVR2PostProcessing runs
+    // color_correction "none"; the pack node's engine default is
+    // "lab". Melite serves the official default — a lab/wavelet/…
+    // grade is an explicit pick on the card, never a silent one.
+    "color_correction": "none",
     "max_resolution": 4096,
     "resolution": 1080
   },

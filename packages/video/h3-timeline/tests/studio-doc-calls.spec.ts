@@ -26,7 +26,7 @@ import {
 } from "../src/ui/studio/docCalls.ts"
 import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
-import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT } from "@melite/contracts/timelineContract"
 
 // (re-pin 2026-11-06, the heal law ce79f052a) hydrateCalls ends
 // healOffGridCalls — the engine renders 22+17k frames, so a 48f

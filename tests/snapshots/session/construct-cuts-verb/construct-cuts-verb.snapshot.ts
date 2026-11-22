@@ -4,7 +4,7 @@
 // session owning one melite_construct cuts press, replayed through
 // the conversation card. The tool executes for REAL against the
 // stubbed estate (keyless): the stated verb expands through THE ONE
-// SPLIT LAW (@melite/models-h3/timelineContract — the same bytes the
+// SPLIT LAW (@melite/contracts/timelineContract — the same bytes the
 // strip's mutations ride), the wire patch carries rewritten calls
 // rows and never the verb's spelling, and the settled block's bench
 // meta opens the card link. The wall-spec arms
@@ -22,7 +22,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { meliteConstruct } from '../../../../packages/harness/melite-tools/src/tools/melite-construct.ts'
 import { ConstructCard } from '../../../../packages/web/melite-card-view/src/client/construct-card.tsx'
-import { assertSpanGrid, transitionOverlap } from '@melite/models-h3/timelineContract'
+import { assertSpanGrid, transitionOverlap } from '@melite/contracts/timelineContract'
 import { parseSnapshotManifest, selectGeneration } from '../../../../tests/snapshot-support/storage.ts'
 import type { ToolCallBlockView } from '../../../../packages/web/melite-card-view/src/client/types.ts'
 

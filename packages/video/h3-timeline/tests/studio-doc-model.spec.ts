@@ -7,7 +7,7 @@
  * the serializers rely on (CALL_KNOB_KEYS ∩ KNOB_ORDER, the option
  * lists, the starter doc, the track table).
  */
-import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
+import { DOC_FPS_DEFAULT } from '@melite/contracts/timelineContract'
 import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
 import {

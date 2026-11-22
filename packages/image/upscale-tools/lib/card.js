@@ -4,6 +4,7 @@ import z from '@deepseek-ai/schemastery';
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit';
 import { resolveLinkedInput, runMediaPrefix } from '@melite/comfyui-card-kit/linked';
 import { bag } from '@melite/contracts/extraKeys';
+import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { primeFamilySeats, seatOf } from "./family-seats.js";
 import { inputImageExtra, seedExtra } from '@melite/comfyui-card-kit/fields';
 import { callableSchema, gatedResolve } from '@melite/comfyui-card-kit/admission';
@@ -40,6 +41,12 @@ const schema = z.object({
     resolution: z.number().description("Target short side").min(256).max(2160).step(2).extra('extra', bag({ order: 0, group: "target", columns: 2, width: 1, tooltip: "1080 = FHD rail. SeedVR2 redraws detail at this size.", wtype: 'number' })),
     max_resolution: z.number().description("Max resolution").min(512).max(4096).step(64).extra('extra', bag({ order: 1, group: "target", columns: 2, width: 1, tooltip: "The hard ceiling — inputs already past it pass through.", wtype: 'number' })),
     batch_size: z.number().description("Batch size").min(1).max(16).step(1).extra('extra', bag({ order: 0, group: "run", width: 1, tooltip: "Video frames ride batches; images are batch 1.", wtype: 'number' })),
+    // RIDE-THE-MODEL (2026-11-22, the seedvr2-native-chain cure): no
+    // schema default — the DECL owns the floor ("none", the official
+    // native chain's PostProcessing default; the pack engine's own
+    // default is "lab"). HINT-ONLY enum: the pick rides the compose
+    // cascade like every ride-key.
+    color_correction: vocabulary(["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"]).description("Color correction").extra('extra', bag({ order: 2, group: "target", columns: 3, width: 1, tooltip: "The SeedVR2 post-grade. none = the official native chain's default (no grade); lab is the pack engine's own default — pick it only when the lab grade is wanted.", wtype: 'select' })),
     seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag(seedExtra({ order: 1, group: 'run', width: 1 }))),
     // NO dit_model/vae_model (card declares no such knobs — the
     // weights ride lane_inputs.unet/vae; old drafts naming them still

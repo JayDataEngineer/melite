@@ -22,7 +22,7 @@
  */
 import { useRef, useState } from "react"
 import type { DocCall, LayerA } from "./docModel.ts"
-import { DOC_FPS_DEFAULT, DOC_LENGTH_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT, DOC_LENGTH_DEFAULT } from "@melite/contracts/timelineContract"
 
 /** Selection shared with the bar clips (tenant §2). */
 export interface TimelineSelection {

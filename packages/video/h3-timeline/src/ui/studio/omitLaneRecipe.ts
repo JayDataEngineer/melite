@@ -1,5 +1,5 @@
 import { axisPickPatch, type FormSpecDoc } from "@melite/card-base/client"
-import { FILM_ONLY_KEYS } from "@melite/models-h3/timelineContract"
+import { FILM_ONLY_KEYS } from "@melite/contracts/timelineContract"
 
 /**
  * THE FILM-ONLY ROW GATE (2026-11-15, the lane-law retirement's

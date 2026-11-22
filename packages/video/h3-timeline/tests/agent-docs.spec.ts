@@ -165,7 +165,7 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     // throw, so a reworded throw or an unquoted doc reds here. A
     // hand-copied literal would pass while the engine's law drifted.
     const mixSrc = readFileSync(
-      join(__dirname, "..", "..", "..", "models", "h3", "src", "filmMix.ts"),
+      join(__dirname, "..", "..", "..", "..", "packages", "web-kit", "contracts", "src", "filmMix.ts"),
       "utf-8",
     );
     const thrown = /throw new Error\(\s*'audio_clips:\s*(a positioned clip row[^']*)'\s*\)/.exec(mixSrc);

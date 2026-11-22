@@ -18,7 +18,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
-import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
+import { DOC_FPS_DEFAULT } from '@melite/contracts/timelineContract'
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base/client"
 import { emitParamsSpec } from "@melite/comfyui-card-kit/params-emit"

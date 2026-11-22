@@ -66,7 +66,7 @@ import { ESTATE_NAMING_ROW } from "../../../../packages/web-kit/contracts/src/fo
 // — the arm drives THE module it imports, and a second hand-serializer
 // tenant reds the dispatch assert until it teaches this judge.
 import { serializeLayerA, hydrateLayerA } from "../../../../packages/video/h3-timeline/src/ui/studio/docHydrate.ts";
-import { deriveWindowFamily } from "@melite/models-h3/timelineContract";
+import { deriveWindowFamily } from "@melite/contracts/timelineContract";
 import { benchDraftIdOf } from "@melite/contracts/benchStage";
 import { deriveFamilyLane, reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 // SD-3's door rig (the commit seam OUTSIDE studio commits): the real

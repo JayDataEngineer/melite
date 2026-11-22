@@ -26,7 +26,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { filmAdmissionNotices, gridSnap } from "@melite/models-h3/timelineContract";
+import { filmAdmissionNotices, gridSnap } from "@melite/contracts/timelineContract";
 import {
   admitSpanGrid, admitCallSpans, assertSpanGrid, transitionOverlap,
 } from "../../../models/h3/src/timelineContract.ts";
@@ -36,7 +36,7 @@ import {
 import { DECL as h3decl } from "../../../models/h3/src/index.ts";
 import { H3_LORA_ROWS } from "../../../models/h3/mods/loras.ts";
 import { film } from "../../../models/h3/src/actions.ts";
-import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
+import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/contracts/filmMix';
 import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED, LAWFUL_TEXT_QUIET } from "./lawfulText.ts";
 
 const FACTS_PATH = join(

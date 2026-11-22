@@ -11,7 +11,7 @@
  *  harness-no-static-card-imports wall. */
 export type H3ModelLane = typeof import('@melite/models-h3');
 export type H3TimelineCardLane = typeof import('@melite/video-h3-timeline/card');
-export type H3TimelineContractLane = typeof import('@melite/models-h3/timelineContract');
+export type H3TimelineContractLane = typeof import('@melite/contracts/timelineContract');
 /** The models-h3 family seat (admitCrossRegimeJoin) — null when
  *  the family package is not installed. */
 export declare const h3ModelSeat: () => Promise<H3ModelLane | null>;

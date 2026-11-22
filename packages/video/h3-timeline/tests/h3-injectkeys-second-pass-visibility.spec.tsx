@@ -33,7 +33,7 @@ import type { FormSpecDoc } from "@melite/card-base/client"
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 import { mergeDocLayers } from "../src/ui/studio/docModel.ts"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
-import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { deriveWindowFamily } from "@melite/contracts/timelineContract"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
 
 /** THE BURN'S FOUR, in the operator's sorted spelling. */

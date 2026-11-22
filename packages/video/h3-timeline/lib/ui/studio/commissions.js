@@ -27,7 +27,7 @@
  * open→save by the bench's merge-patch — so the rail projects the
  * durable row and holds no state of its own.
  */
-import { assertGridLength, CONTEXT_OVERLAP_FRAMES, entryCarries, GRID_MAX_FRAMES, solveWindowComposition, } from '@melite/models-h3/timelineContract';
+import { assertGridLength, CONTEXT_OVERLAP_FRAMES, entryCarries, GRID_MAX_FRAMES, solveWindowComposition, } from '@melite/contracts/timelineContract';
 import { editRailSeats } from "../../editDecl.js";
 import { STARTER_CALLS } from "./docModel.js";
 /** Every mod bag the rail projects, in the card's own declaration

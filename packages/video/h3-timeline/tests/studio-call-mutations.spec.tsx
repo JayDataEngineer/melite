@@ -21,7 +21,7 @@ import { act, renderHook } from "@testing-library/react"
 import { useState } from "react"
 import { useCallMutations } from "../src/ui/studio/useCallMutations.ts"
 import { snapCallLength, snapSplitFrame } from "../src/ui/studio/docGrid.ts"
-import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT } from "@melite/contracts/timelineContract"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 
 function harness(initial: DocCall[], fps = 24) {

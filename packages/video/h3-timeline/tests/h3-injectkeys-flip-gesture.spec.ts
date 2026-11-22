@@ -42,7 +42,7 @@ import {
   type FormVariantRow,
 } from "@melite/card-base/client"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { deriveWindowFamily } from "@melite/contracts/timelineContract"
 import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 /** THE BURN'S FOUR (the operator's (g) refusal named them sorted). */

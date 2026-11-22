@@ -14,7 +14,7 @@ import { nextSelectionAfterDelete, useViewSelection } from "../src/ui/studio/use
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import type { TimelineSelection } from "../src/ui/studio/useViewSelection.ts"
 import { hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
-import { DOC_FPS_DEFAULT, DOC_LENGTH_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT, DOC_LENGTH_DEFAULT } from "@melite/contracts/timelineContract"
 
 const CALLS: DocCall[] = [
   { text: "a", start_frame: 0, end_frame: 48 },

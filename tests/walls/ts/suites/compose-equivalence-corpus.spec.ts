@@ -95,7 +95,7 @@ import { mergeDocLayers } from "../../../../packages/video/h3-timeline/src/ui/st
 import { hydrateCalls, serializeCalls, hydrateKeyframes, serializeKeyframes } from "../../../../packages/video/h3-timeline/src/ui/studio/docCalls.ts"
 import { film } from "@melite/models-h3/actions"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { FILM_ONLY_KEYS, deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { FILM_ONLY_KEYS, deriveWindowFamily } from "@melite/contracts/timelineContract"
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph"
 import { instantiateAction } from "@melite/comfyui-card-kit"
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts"

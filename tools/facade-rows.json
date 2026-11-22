@@ -644,6 +644,12 @@
   "@melite/contracts/familyLane": [
     "./packages/web-kit/contracts/src/familyLane.ts"
   ],
+  "@melite/contracts/timelineContract": [
+    "./packages/web-kit/contracts/src/timelineContract.ts"
+  ],
+  "@melite/contracts/filmMix": [
+    "./packages/web-kit/contracts/src/filmMix.ts"
+  ],
   "@melite/contracts/loraTypes": [
     "./packages/web-kit/contracts/src/loraTypes.ts"
   ],

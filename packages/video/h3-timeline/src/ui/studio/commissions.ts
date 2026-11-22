@@ -29,7 +29,7 @@
  */
 import {
   assertGridLength, CONTEXT_OVERLAP_FRAMES, entryCarries, GRID_MAX_FRAMES, solveWindowComposition, type WindowComposition,
-} from '@melite/models-h3/timelineContract'
+} from '@melite/contracts/timelineContract'
 import { editRailSeats } from '../../editDecl.ts'
 import { STARTER_CALLS } from './docModel.ts'
 

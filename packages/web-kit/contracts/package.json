@@ -42,6 +42,14 @@
       "types": "./lib/familyLane.d.ts",
       "default": "./lib/familyLane.js"
     },
+    "./timelineContract": {
+      "types": "./lib/timelineContract.d.ts",
+      "default": "./lib/timelineContract.js"
+    },
+    "./filmMix": {
+      "types": "./lib/filmMix.d.ts",
+      "default": "./lib/filmMix.js"
+    },
     "./loraTypes": {
       "types": "./lib/loraTypes.d.ts",
       "default": "./lib/loraTypes.js"

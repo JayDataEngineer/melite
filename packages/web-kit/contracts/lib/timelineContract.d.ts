@@ -1,0 +1,607 @@
+/** The frames of generated context a carried seam contributes — the
+ *  generation head a non-cut join rides (a carried window's authored
+ *  span excludes it; its render includes it). */
+export declare const SEAM_OVERLAP_FRAMES = 22;
+/** The window grid's floor and first rung: every legal length is BASE + STEP·k. */
+export declare const GRID_BASE_FRAMES = 22;
+/** The window grid's rung spacing: legal lengths advance 17 frames per step. */
+export declare const GRID_STEP_FRAMES = 17;
+/** The window grid's ceiling: no window renders more than 362 frames. */
+export declare const GRID_MAX_FRAMES = 362;
+/** The snap-admission floor (the timeline-agent brief M-T3, 2026-11-20):
+ *  an authored span of at least this many frames is SNAPPED UP to the
+ *  next legal rung and the snap is reported; below it the span is too
+ *  short to be a window at all and still refuses. The floor sits two
+ *  frames above BASE so the smallest authored-and-snapped window is the
+ *  first full rung — the round-2026-11-20 measured workflow: a 39 f
+ *  tail after a 124 f call renders 124→175, never a refusal. */
+export declare const SNAP_FLOOR_FRAMES = 24;
+/** THE PROMOTED SILENT TAIL (timeline-agent brief M-T1, 2026-11-20):
+ *  the frames the card appends after a single-call doc's sole call
+ *  to unlock the film path for its audio_clips — 51 = 17·3, the
+ *  smallest grid-legal carried span whose generated length (73) is
+ *  one rung above the seam. The tail is faceless and silent by
+ *  construction: no guide, no refs, no clip starts inside it. */
+export declare const SILENT_TAIL_FRAMES = 51;
+/** The promoted tail's prompt — a dictionary-clean room-tone line
+ *  that names no person and no speech (the M-T2 hazard: a face
+ *  held silent too long invents a line; the tail holds no face). */
+export declare const SILENT_TAIL_TEXT = "a quiet wide interior holds still, ambient room tone only, no people, no movement beyond the air";
+/** The generated-length residue: a carried window renders 17k + 22 ≡ 5
+ *  (mod 17) frames — the "% 17 == 5" the engine's own refusals name. */
+export declare const GRID_REMAINDER = 5;
+/** The conditioning image bus's slot count (bundle inputs 3–9). */
+export declare const IMAGE_BUS_SLOTS = 9;
+/** The family's LAST-FRAME PICK spelling (one home, both readers —
+ *  extend.ts's anchor and the seam's keyframe carry): a positive
+ *  out-of-band batch index the engine clamps onto the clip's FINAL
+ *  row (min(shape−1, index)) under every build; the negative
+ *  spelling slices empty on the live estate and is banned
+ *  family-wide. */
+export declare const LAST_FRAME_BATCH_INDEX = 16384;
+/** Per-media reference caps — the max stack each declared ref lane admits. */
+export declare const REF_CAPS: {
+    readonly images: 8;
+    readonly videos: 3;
+    readonly audios: 3;
+    readonly refmods: 8;
+};
+/** THE AV-CONTINUITY LAW, one TS home (defect board row 4, the
+ * "derive the carry value" rider). The engine's own vocabulary is
+ * AV_TRANSITION_CONTEXT_LENGTHS = (39, 90, 141, 192, 243)
+ * (vendor/comfyui_extensions/ComfyUI-MiniMaxH3-Context-Loop/
+ * contracts_v05.py:55); on a generated-audio carry join (the edit
+ * chain's own mode — context > 0) any other positive boundary
+ * refuses AT THE NODE, eight graphs deep
+ * (run-1f91718b7cde: "H3 AV generated-audio continuity requires an
+ * exact shared video/audio boundary: 39, 90, 141, 192, or 243
+ * context frames"). The compose door judges THIS vocabulary at zero
+ * GPU so no agent ever discovers it by a burned run; 0 (the cut
+ * join, carry: false — the engine's own "cut / independent" preset,
+ * contracts_v05.py:158-162) is the one legal value outside it. */
+export declare const AV_CONTINUITY_OVERLAPS: readonly [39, 90, 141, 192, 243];
+/** The derived carry join (defect board row 4: "join with the same
+ * overlap" — the smallest legal boundary, the least context spent;
+ * the engine's own reference value and the chain's historical
+ * default, now DERIVED instead of typed). */
+export declare const CARRY_JOIN_OVERLAP = 39;
+/** The carry statement's admission (defect board row 4: "expose
+ * exactly one new concept — carry: true"). ABSENT = carry, THE
+ * DEFAULT — the gen seam's own law (docModel.ts: "'extend'
+ * (ABSENT = carry, THE DEFAULT)"): the film splits on its own
+ * timeline and every segment continues from the last frame of the
+ * previous. Stated false = the cut join (each segment stands
+ * alone; the engine's cut preset, context 0).
+ * @param entry the edit-bag entry carrying the carry seat
+ * @returns true when segments join with context carry */
+export declare function entryCarries(entry: Record<string, unknown>): boolean;
+/** THE CARRY-OVERLAP RESOLVER (defect board row 4 — the door the
+ * operator asked for five times): the join boundary is DERIVED from
+ * the engine's AV-continuity vocabulary, never hand-typed. Unstated
+ * → the derived 39 (carry on) or 0 (carry: false); an explicitly
+ * stated overlap_frames — the expert override, served on AUTHORED
+ * seams' context_length (the plan head itself carries only the
+ * AV-legal 39; see chainEdit's planOverlapFeed) — must be 0 or one
+ * of the five legal boundaries and REFUSES HERE, at the compose
+ * door, quoting the engine's law and naming the stated value, so
+ * the run-1f91718b7cde class (a boundary typed legal-looking,
+ * refused eight nodes deep) is dead at zero GPU.
+ * @param entry the edit-bag entry (overlap_frames / carry seats)
+ * @returns the join boundary in frames: 0, 39, 90, 141, 192 or 243 */
+export declare function resolveCarryOverlap(entry: Record<string, unknown>): number;
+/** One authored window in film frames: half-open [start, end), with
+ *  the seam its join carries (undefined = the carry default). */
+export interface TimelineSpan {
+    readonly start: number;
+    readonly end: number;
+    readonly transition?: string;
+}
+/** The calls-row spelling of a window: start/end_frame plus the seam. */
+export interface TimelineCallSpan {
+    readonly start_frame: number;
+    readonly end_frame: number;
+    readonly transition?: string;
+}
+/** THE MEDIA-SHAPE PREDICATE (the guide seats' admission law, one
+ *  owner for every door that judges it): a guide value names MEDIA —
+ *  a $spell, a data: URI, a path/URL (slash), or an extension — never
+ *  a bare word. A bare word is a stage/card label (the UI picker's
+ *  run-899a8448 crime); it would compose a Load* the engine cannot
+ *  resolve. The schema's per-call guide gate and the keyframe pin
+ *  gate (actions.ts) share THIS predicate — one law, every guide
+ *  spelling.
+ * @param v the guide seat's trimmed value
+ * @returns true when the value names media a Load* can resolve */
+export declare function isMediaRef(v: string): boolean;
+/** The context frames a seam carries: 0 for the cut join, the
+ *  SEAM_OVERLAP_FRAMES generation head for any other transition
+ *  (unstated included — carry is the default).
+ * @param transition the seam a call states (undefined = carry)
+ * @returns the join's context overlap in frames */
+export declare function transitionOverlap(transition?: string): number;
+/** (2026-11-06, journey audit AUDIO-2 — the three-clock split; ONE
+ *  HOME since audit 013 cure 5, 2026-11-12) THE DOC CLOCK'S DEFAULT,
+ *  one owner: THIS const. The schema row fps derives it (schema.ts
+ *  defaults the walk's fill from here), so the served default and
+ *  every frames↔seconds seat agree by construction, never by
+ *  matching literals. Before this const the estate spoke three clocks
+ *  for one unstated-fps doc — the studio's readers fell to
+ *  DEFAULT_SEGMENT_PARAMS.fps (16, the timeline vocabulary's own
+ *  default), the schema walk filled 24, and the film mix's
+ *  seconds math hardcoded /24 — so the UI booked a 64-frame clip
+ *  at 4.0s while the compose stamped it at 2.67s (audio drift,
+ *  the audit's worst burn). Every frames↔seconds seat falls to
+ *  THIS value: the mix's stanzaSecs/owner map (filmMix.ts), the
+ *  stamps' ms() (actions.ts), and the studio's readers
+ *  (stemToClip, docCalls' clock, useViewSelection). The derived
+ *  wall pins it to the walk's fill — h3schema({}).fps and the
+ *  carrier row's declared default — so no second literal can
+ *  drift beside it. */
+export declare const DOC_FPS_DEFAULT: 24;
+/** The doc's LENGTH row default — the schema row's own (56f, the
+ *  engine grid's design window 22+17·2), the same seed the walk
+ *  fills for span-less calls. One owner, the same law as
+ *  DOC_FPS_DEFAULT: the studio's axis fallback reads THIS, never a
+ *  second literal (the D-19 cure retired the `: 1` collapse — an
+ *  empty-calls axis books the doc's own plan floor, never a
+ *  1-frame sliver strip). */
+export declare const DOC_LENGTH_DEFAULT: 56;
+/** THE LANE-LAW RETIREMENT (2026-11-15, the operator's gate-11 burn:
+ *  "WHY DO I SEE THIS BUG … I. NEVER. WANT. TO SEE. THE TESTS GO ALL
+ *  GREEN. AND THIS ERROR TO EVER APPEAR AGAIN") — THE DEAD-KEY LAW IS
+ *  GONE. This module used to export `T4_ONLY_KEYS` (the 26 post-pass
+ *  keys a derived-t4r doc was REFUSED for stating) and
+ *  `t4rInjectRefusal` (the voiced spine every door spoke), because
+ *  the t4r render arm wired NO post chain: it went straight from the
+ *  decode to CreateVideo, so a doc that stated a finish knob composed
+ *  it into no node. Keeping the operator's lawful state had required
+ *  the studio to strip the keys, the rail to hide the fields, the
+ *  recipe rows to withhold Final Cut, and every write door to refuse
+ *  the stranded residue — four courts enforcing an engine omission.
+ *  The engine now mounts the chain on every arm (actions.ts
+ *  renderH3Window: the post block sits ABOVE the family branch; the
+ *  t4r mux consumes its output), so EVERY one of those keys fires on
+ *  EVERY lane and NO lane refuses any key: FAMILY_LAW.deadKeys is
+ *  empty, and the second-pass group renders wherever the doc derives.
+ *  A future key that genuinely cannot fire on a lane must be cured by
+ *  making it fire (or by the FILM_ONLY gate's precedent: a walk gate
+ *  whose repair is a different doc shape, never a lane's dead letter).
+ */
+/** The knobs only the FILM shape can honor (2026-10-16, audit
+ *  3f0b7c1a ui-truth-gap #4; the walk leg closed B6,
+ *  timeline-calls-burn §CURES-OWED 5). `duck_depth_db` is read in
+ *  exactly one place — computeFilmMix's manifest, inside the
+ *  multi-window film boundary (actions.ts) — so on a single-window doc
+ *  (t4_open, t4r) the row rendered, persisted and composed into NO
+ *  node: the operator set a duck depth the mix desk never saw. TWO
+ *  judges read THIS set (one home): the schema walk refuses it loud
+ *  on a non-film family (`film-only inject keys`, the t4r gate's
+ *  sibling), and the studio's served surface omits it unless the doc
+ *  derives t4_chain (the same one-spelling family derivation the t4r
+ *  gate uses). */
+export declare const FILM_ONLY_KEYS: readonly ["duck_depth_db"];
+/** THE FAMILY-LAW DATA (the ERROR g/h cure, 2026-11-08): the
+ *  family-conditional key law in the SERVED spelling — the shape
+ *  FormSpecDoc.familyLaw carries so the GENERIC seats (the
+ *  composeValidate gate, the studio rail's omit) can judge the
+ *  family WITHOUT importing this module. THE ONE-SEAT MIGRATION
+ *  (2026-11-12): this const IS the derivation — deriveWindowFamily
+ *  delegates to the shared evaluator over this data
+ *  (@melite/contracts familyLane.ts), so a data copy CANNOT drift
+ *  from the walk (the doc-level guide aliases image/image_name/
+ *  ref_image are DECLARED here, closing the probe-cell gap where
+ *  the walk read seats the data did not name). The lanes spell
+ *  deriveWindowFamily's own derivation as data (minCalls →
+ *  t4_chain, guideKeys → t4r, the trailing lane is the
+ *  fallthrough); deadKeys would name keys a lane's renderer could
+ *  not honor (empty for h3 since the 2026-11-15 retirement — the
+ *  post chain mounts on every arm). `guideKeys` reads the doc level (the keyframe pin
+ *  channel, the last_frame string, the ref surface, the doc-level
+ *  guide aliases — presence, never count: a non-empty-after-trim
+ *  string or a non-empty array), `callGuideKeys` reads inside each
+ *  calls row (the per-call guide fields the derivation's hasGuide
+ *  arm names). The evaluator's presence grammar mirrors
+ *  normalizeDeclaredRefs's counting law closely enough that the
+ *  probe arm pins the agreement on the blank/empty edges (a
+ *  whitespace ref_images is ZERO refs on both spellings). */
+export declare const FAMILY_LAW: {
+    readonly lanes: readonly [{
+        readonly lane: "t4_chain";
+        readonly minCalls: 2;
+    }, {
+        readonly lane: "t4r";
+        readonly guideKeys: readonly ["keyframes", "last_frame", "ref_images", "ref_videos", "ref_audios", "image", "image_name", "ref_image"];
+        readonly callGuideKeys: readonly ["image", "ref_images", "ref_image", "image_name"];
+    }, {
+        readonly lane: "t4_open";
+    }];
+    readonly deadKeys: {};
+};
+/** THE FAMILY-RESEAT MATH — DEAD SPINE, one spelling (the one-seat
+ *  migration, 2026-11-12): the settlement math lives in
+ *  @melite/contracts familyLane.ts (reseatDeadKeys), driven by the
+ *  FAMILY_LAW data above. Every caller — the registry's reseat
+ *  seat, the studio's pick settlement — rides that spelling. This
+ *  module keeps only the family's own face: deriveWindowFamily
+ *  (the typed derivation over the same data). */
+/** (2026-11-06, the family-reseat cure) the doc-level window family
+ *  derivation, ONE spelling for every door that needs the family
+ *  BEFORE the walk refuses: the walk derives the composed doc's
+ *  family; the studio rail gates the second-pass group on the t4r
+ *  lane; the reseat heal unstated post keys a family edit stranded
+ *  (the live brick: a film legally stamped sr_switch lost its
+ *  second call, derived t4r, and EVERY compose refused). Reads
+ *  exactly the seats the walk reads — the guide-key union, the pin
+ *  channel, the declared input surface (a private spelling elsewhere
+ *  is the run-899a8448 disease: one seat missed, the family lies).
+ *  @param raw the doc-shaped record (calls/keyframes/ref surface)
+ *  @returns the derived window family */
+export declare function deriveWindowFamily(raw: Record<string, unknown>): 't4r' | 't4_open' | 't4_chain';
+/** A span's join overlap — transitionOverlap over the span's own seam.
+ * @param span the authored window
+ * @returns the window's context overlap in frames */
+export declare function spanOverlap(span: TimelineSpan): number;
+/** The window's render length on the engine grid: the span plus its
+ *  carry, snapped to 22+17k inside [22,362]. Off-grid spans snap;
+ *  doors that must refuse use assertSpanGrid instead.
+ * @param span the authored window
+ * @param carry the seam overlap the window rides (0 for first/cut)
+ * @returns the grid-legal generated length in frames */
+export declare function spanStanzaFrames(span: TimelineSpan, carry?: number): number;
+/** A carried window's grid geometry: the generated start (span.start −
+ *  carry), the snapped generated length, and the two neighboring legal
+ *  end frames a refusal names.
+ * @param span the authored carried window (span = 17k content frames)
+ * @param carry the seam overlap (the SEAM_OVERLAP_FRAMES default)
+ * @returns the snapped geometry — never a legality verdict */
+export interface CarriedSpanGrid {
+    readonly generatedStart: number;
+    readonly generatedEnd: number;
+    readonly length: number;
+    readonly lowerEnd: number;
+    readonly upperEnd: number;
+}
+/** Compute a carried window's grid geometry without judging it: the
+ *  generated start, the snapped length, and the neighboring legal ends.
+ * @param span the authored carried window
+ * @param carry the seam overlap (the SEAM_OVERLAP_FRAMES default)
+ * @returns the CarriedSpanGrid for the window */
+export declare function carriedSpanGrid(span: TimelineSpan, carry?: number): CarriedSpanGrid;
+/** The carried window's admission gate: the snapped grid length must
+ *  equal the requested span+carry exactly; anything else refuses loud
+ *  naming the authored range, the snapped range, and the legal
+ *  neighboring end frames.
+ * @param span the authored carried window
+ * @param where the refusal's voice (the calling door's name)
+ * @param carry the seam overlap (the SEAM_OVERLAP_FRAMES default)
+ * @returns the grid-legal generated length in frames */
+export declare function assertCarriedSpanGrid(span: TimelineSpan, where: string, carry?: number): number;
+/** A span admitted onto the grid — the snap-admission answer (the
+ *  timeline-agent brief M-T3, 2026-11-20): the authored span, the
+ *  rendered span the film clock books, and whether a snap moved the
+ *  end frame. */
+export interface AdmittedSpan {
+    /** The window's generated length in frames (grid-legal). */
+    readonly length: number;
+    /** The authored span, verbatim. */
+    readonly authored: TimelineSpan;
+    /** The rendered span the film books — authored unless a snap moved
+     *  the end frame up to the next legal rung. */
+    readonly rendered: TimelineSpan;
+    /** True when the rendered end frame is not the authored one. */
+    readonly snapped: boolean;
+}
+/** THE SNAP-ADMISSION LAW (brief M-T3/L4, 2026-11-20): an authored
+ *  span of at least SNAP_FLOOR_FRAMES lands on the grid by snapping
+ *  its end UP to the next legal rung for the call's position — a
+ *  carried window's span rounds up to 17k, a first/cut window's to
+ *  22+17k — and the snap is REPORTED, never silent. Below the floor
+ *  (or past the grid's ceiling once snapped) the span still refuses.
+ *  This replaces the old off-grid refusal: a client never does
+ *  modular arithmetic to append a tail.
+ * @param span the authored window
+ * @param where the refusal's voice (the calling door's name)
+ * @param carry the seam overlap (0 for first/cut; >0 rides the carried math)
+ * @returns the AdmittedSpan — rendered span and generated length */
+export declare function admitSpanGrid(span: TimelineSpan, where: string, carry?: number): AdmittedSpan;
+/** THE WHOLE-DOC ADMIT PASS (brief M-T3, 2026-11-20): every call's
+ *  span admitted in ONE walk that owns the re-tiling — a snapped end
+ *  becomes the next window's start, and every later span keeps its
+ *  authored LENGTH while sliding with the tail. One law, one pass:
+ *  the compose's span rows, the studio's heal, and the run-status
+ *  notices all read this, never per-window arithmetic (a snap that
+ *  moved only its own end would leave the next authored start
+ *  behind it — an overlap the mix would double-book).
+ * @param calls the doc's calls, any spelling (int spans pinned by
+ *   the walk; a non-int span stays verbatim and the compose's own
+ *   missing-value refusals own it)
+ * @param overlapOf the seam word's overlap reader (transitionOverlap
+ *   — injected so the contract module owns no import cycle)
+ * @returns the rendered spans (one per call, tiled) + the per-call
+ *   snap notices (empty when every span admitted verbatim)
+ */
+export declare function admitCallSpans(calls: readonly Record<string, unknown>[], overlapOf: (transition: string | undefined) => number): {
+    spans: Array<{
+        start: number;
+        end: number;
+    }>;
+    notices: string[];
+};
+/** The booked render clock, one home: the seconds seat rounds its
+ *  quotient to milliseconds before it rides the wire, so every
+ *  consumer that needs the value the graph will actually carry (the
+ *  schema's own rail bounds, the mix ledger) books through here —
+ *  never a second copy of the rounding.
+ * @param lengthFrames the window's generated length
+ * @param fps the doc's playback clock
+ * @returns the length in seconds, rounded to milliseconds */
+export declare function bookSeconds(lengthFrames: number, fps: number): number;
+/** The nearest legal 22+17k length (round to the rung, clamp into
+ *  [22,362]) — the "nearest legal" value refusal voices quote.
+ * @param length the requested length in frames
+ * @returns the nearest grid-legal length */
+export declare function gridSnap(length: number): number;
+/** THE GRID PREDICATE, one owner: a length the engine can render is
+ *  22+17k inside [22,362]. Every refusal door asks this question, so
+ *  knob pins, single windows, cut windows, and carried windows cannot
+ *  drift into different laws.
+ * @param length the candidate length in frames
+ * @returns true when length is 22+17k inside [22,362] */
+export declare function isGridLength(length: number): boolean;
+/** The grid admission gate: a non-number or off-grid length refuses
+ *  naming the nearest legal value; a legal length passes verbatim.
+ * @param length the value under admission (a number is required)
+ * @param where the refusal's voice (the calling door's name)
+ * @returns the length, verbatim */
+export declare function assertGridLength(length: unknown, where: string): number;
+/** The chain policy's masked_av context — the overlap every composed
+ *  seam after the first carries (the swap's clip law, shared with the
+ *  extend's window composition). */
+export declare const CONTEXT_OVERLAP_FRAMES = 39;
+/** The three carry states a split seat states (§0.9's vocabulary,
+ *  the same three the call card's seam seat and the strip head's
+ *  carry menu serve). */
+export type SplitCarry = 'cut' | 'extend' | 'carry+keyframe';
+/** THE GRID'S TWO VIEWS (encoded 2026-11-10 from the lane burn —
+ *  never re-derive this from a refusal string again). The window
+ *  grid is ONE law seen from two doors:
+ *  - AUTHORED SPAN (the calls rows, this module's law): a first or
+ *    cut window authors 22+17k frames (56, 73, 90 … in [22,362]);
+ *    a carried window authors 17k frames (17, 34, 51 …) because its
+ *    22f seam is the generation head, not the span.
+ *  - GENERATED LENGTH (the engine's own gate): the frames a carried
+ *    window RENDERS are span + 22, and 17k + 22 ≡ 5 (mod 17) —
+ *    which is why the engine's refusal reads "length % 17 == 5" and
+ *    names a span five off the authored one. The refusal prints the
+ *    GENERATED length; the calls row carries the AUTHORED span.
+ *  A calculator in front of this law authored 141f as [0,90)+[90,141)
+ *  (a 51f carried span the chain refused as generated 73) and a doc
+ *  nearly ossified a "two grids" theory from one error string. There
+ *  are not two grids. There is one grid and two views; this comment
+ *  is the map. */
+/** Is this window's seam a carried join? Index-aware — index 0 is
+ *  always a first window (no carry), and a 'cut' seam never
+ *  carries.
+ * @param index the window's position in the calls array (0-based)
+ * @param call the window's own row (its transition seat)
+ * @returns true when the seam rides the carry join */
+export declare function isCarriedShape(index: number, call: Pick<TimelineCallSpan, 'transition'>): boolean;
+/** Is this authored LENGTH legal for the window's shape? A carried
+ *  window rides the 17k step (content + 22f carry head ≤ 362); a
+ *  first/cut window rides the 22+17k grid.
+ * @param length the authored length in frames
+ * @param carried true when the window is a carried join
+ * @returns true when the shape's own grid admits the length */
+export declare function isLegalCallLength(length: number, carried: boolean): boolean;
+/** The splice frame for a split where BOTH halves must be legal —
+ *  the gesture's frame when it already qualifies, else the nearest
+ *  one that does. NULL when no interior frame qualifies (the §0.5
+ *  fence): a window at its shape's floor has no legal split at all
+ *  — the caller refuses loud, never repairs.
+ * @param start the containing window's first frame
+ * @param end the containing window's end frame
+ * @param leftCarried whether the left half keeps the carried shape
+ * @param rightCarried whether the right half takes the carried shape
+ * @param gesture the frame the split was asked at
+ * @returns the legal frame nearest the gesture, or null */
+export declare function snapSplitFrame(start: number, end: number, leftCarried: boolean, rightCarried: boolean, gesture: number): number | null;
+/** The seam toggle's re-frame: the 22-frame carry moves from the
+ *  generation head to (or from) the authored span. A first window
+ *  has no carry either way, so its toggle never moves frames.
+ * @param call the window row the toggle re-frames
+ * @param index the window's position in the calls array (0-based)
+ * @param next the seam state after the toggle
+ * @returns the window's re-framed end frame */
+export declare function reflowSeamSpan(call: Pick<TimelineCallSpan, 'start_frame' | 'end_frame' | 'transition'>, index: number, next: 'extend' | 'cut' | 'carry+keyframe'): number;
+/** Split the doc's calls at a gesture frame with a selected carry —
+ *  §0.5's split, verbatim: the gesture frame snaps to the authoring
+ *  lattice, one window becomes its own two halves (the row carries
+ *  whole into both; the seam the split births states CUT), everything
+ *  downstream rebases, and a selected carry mode re-frames the NEW
+ *  seam. A gesture with no legal split frame REFUSES (null): the doc
+ *  keeps its identity. Generic over the row: the rest of the call
+ *  (text, refs, knobs, anchors) carries whole by construction.
+ * @param calls the doc's own windows (the calls rows)
+ * @param gestureFrame the frame the split is asked at (doc space)
+ * @param carry the seam state the NEW split births after the stock
+ *  cut ("cut" keeps the split's own default seam)
+ * @returns the next calls array, or null when no legal split exists. */
+export declare function splitCallsAt<T extends TimelineCallSpan>(calls: T[], gestureFrame: number, carry: SplitCarry): T[] | null;
+/** THE CUTS VERB'S OUTCOME — the rows, or the loud refusal (never a
+ *  silent drop, never a repair behind the caller's back). */
+export type CutsResult<T extends TimelineCallSpan> = {
+    ok: true;
+    calls: T[];
+} | {
+    ok: false;
+    refusal: string;
+};
+/** THE CUTS VERB (the agent's door into the one storage): seconds,
+ *  never frame math (the run-e79f3b304e4b law — hand-typed frames
+ *  repaired 90 of 243 frames once). "2.5, 5" splits the containing
+ *  windows at those seconds — each fold rides splitCallsAt, so the
+ *  verb IS the split law, not a second arithmetic. The seconds
+ *  spelling never persists: every write door expands it into the
+ *  calls rows and drops it (ONE storage; a lingering cuts key on a
+ *  doc is a bug, refused by the walk).
+ * @param calls the doc's own windows the verb splits
+ * @param cuts the comma-separated seconds ("2.5, 5")
+ * @param carry the seam state every new seam births
+ * @returns the next calls array, or the refusal naming the cure. */
+export declare function expandCuts<T extends TimelineCallSpan>(calls: T[], cuts: string, carry?: SplitCarry): CutsResult<T>;
+/** The plan's scene cap (chain_nodes: a 32-scene cap refuses
+ *  mis-authored loops) — the composition solver's window ceiling. */
+export declare const MAX_COMPOSED_WINDOWS = 32;
+/** One legal composition of a stated extension. */
+export interface WindowComposition {
+    readonly windows: number;
+    readonly windowFrames: number;
+    readonly deliveredFrames: number;
+}
+/** THE COMPOSITION SOLVER (pure; the door's whole law beyond one
+ *  window): across every legal window count, the grid lengths on
+ *  both sides of the exact requirement — the smallest that delivers
+ *  ≥ stated (ceil) and the largest that delivers ≤ stated (floor) —
+ *  looking for an EXACT delivery; else a loud refusal naming the
+ *  neighboring compositions (max under, min over).
+ *
+ *  It lives HERE, on the client-safe contract face, because TWO
+ *  consumers ask the same question: the extend renderer (what to
+ *  compose) and the studio's commission rail (what to DRAW — the
+ *  multiwindow unification audit's §9: the operator could not see
+ *  the N windows an agent had strung together).
+ * @param totalFrames the stated extension, frames at the film clock
+ * @param where the refusal's voice ('h3-timeline extend')
+ * @param overlap the per-seam context overlap (the policy's 39)
+ * @returns the exact composition */
+export declare function solveWindowComposition(totalFrames: number, where: string, overlap?: number): WindowComposition;
+/** THE UNIFORM SPAN GATE: one refusal for every window shape. A
+ *  carried window generates span+carry frames, so its authored span
+ *  must be 17k; a first or cut window generates its span verbatim, so
+ *  it must be 22+17k. Both are the same engine grid — a carried span
+ *  used to be the only shape that refused, while single/cut spans
+ *  were silently snapped (the old two-law gap, closed 2026-09-25).
+ *  `spanStanzaFrames` stays the render/film clock and is a no-op
+ *  identity for admitted spans.
+ * @param span the authored window
+ * @param where the refusal's voice (the calling door's name)
+ * @param carry the seam overlap (0 for first/cut; >0 rides the carried gate)
+ * @returns the window's generated length in frames */
+export declare function assertSpanGrid(span: TimelineSpan, where: string, carry?: number): number;
+/** The frames a window contributes to the delivered film: a first or
+ *  cut window contributes its span verbatim; a carried window nets
+ *  out the SEAM_OVERLAP_FRAMES it shares with the previous window.
+ * @param call the window row
+ * @param index the window's position in the calls array (0-based)
+ * @returns the delivered frame count (never negative) */
+export declare function deliveredFrames(call: TimelineCallSpan, index: number): number;
+/** The image-bus seats available to loose references: a last-frame
+ *  pin spends one of the REF_CAPS.images seats when it is set.
+ * @param hasLastFrame whether a last-frame pin occupies the bus
+ * @returns the maximum reference-image stack */
+export declare function imageReferenceCap(hasLastFrame: boolean): number;
+/** Split a comma-separated reference string into entries, trimming
+ *  separators and surrounding spaces; a data: URI's mime comma does
+ *  not split its entry.
+ * @param value the wire spelling (undefined = no refs)
+ * @returns the entries, in order, without empties */
+export declare function splitRefList(value: string | undefined): string[];
+/** A declared ref seat's entries, either wire spelling: an array
+ *  passes its non-empty strings; a comma string rides splitRefList;
+ *  any other value is zero refs.
+ * @param value the ref seat's raw value
+ * @returns the reference entries, in order */
+export declare function normalizeDeclaredRefs(value: unknown): string[];
+/** The inverse wire spelling: entries join into one ", "-separated
+ *  string; empty input yields undefined (no seat, never an empty string).
+ * @param value an array of entries, a string, or absent
+ * @returns the joined string, or undefined when nothing is stated */
+export declare function joinRefList(value: unknown): string | undefined;
+/** A reference's media genre: the engine's video_w* naming first (its
+ *  _last_frame/_prev faces are images), else the extension of the name
+ *  or the URL's path (?path= decoded wins), else 'other'.
+ * @param name the entry's file name
+ * @param url the entry's URL, when one rides
+ * @returns 'image' | 'video' | 'audio' | 'other' */
+export declare function refGenreOf(name: string, url?: string): 'image' | 'video' | 'audio' | 'other';
+/** The per-call knob vocabulary in serve order — the studio renders a
+ *  call's knob rows in this order; KnobKey and CALL_KNOB_KEYS derive
+ *  from it. */
+export declare const KNOB_ORDER: readonly ["steps", "denoise", "sampler_name", "sched_name", "shift_video", "shift_audio", "sla_sparsity", "sla_block_size", "sla_min_seq_len", "sla_dense_last_steps", "sla_protect_audio", "sla_stabilize_motion", "sla_reference_protection", "sla_dense_backend", "sla_dense_steps", "sla_disable_fp16_accum", "sharpen_enabled", "sharpen_method", "sharpen_strength", "sharpen_radius", "sharpen_threshold", "sharpen_iterations", "interpolate_enabled", "interp_model", "interp_multiplier", "length"];
+/** One per-call knob key — a member of KNOB_ORDER. */
+export type KnobKey = (typeof KNOB_ORDER)[number];
+/** The admitted per-call knob keys — KNOB_ORDER as a membership set. */
+export declare const CALL_KNOB_KEYS: ReadonlySet<string>;
+/** The master-gated nine (calls-stanza audit #3, 2026-10-16): these
+ *  knobs' ONLY read seats live inside the post chain, whose only
+ *  door is the DOC-level second_pass_enabled master — a switch the
+ *  call plane cannot state. With the master off (the default) a
+ *  per-call pin here composes to nothing, silently; the UI fold
+ *  gates its rows on this set so a dead knob is never offered. */
+export declare const SECOND_PASS_KNOBS: ReadonlySet<string>;
+/** The per-call vocabulary the schema's call walk admits. `clip` and
+ *  `audio` LEFT THIS SET (2026-10-16, audit 3f0b7c1a ui-truth-gap
+ *  #3): no compose arm reads either — a per-call clip or audio guide
+ *  was UI truth over an engine-deaf wire (the studio hydrated them
+ *  and painted a speaker dot, the walk admitted them, no node ever
+ *  consumed one). A doc stating them now refuses LOUD here
+ *  ('unknown per-call key(s)') instead of round-tripping a phantom;
+ *  the studio drops legacy rows at hydration with a named warn. */
+export declare const CALL_KEYS: ReadonlySet<string>;
+/** THE SEAM VOCABULARY (one home): the three transitions a call
+ *  may state — 'cut' (context 0), 'extend' (the carry join), and
+ *  'carry+keyframe' (the carry join + a gen-side image anchor).
+ *  `transitionOverlap` treats ANY non-'cut' string as carry, so
+ *  the schema's walk judges every stated transition against THIS
+ *  roster — a typo'd seam never composes as carry in silence.
+ *  THE SEAM LAW (operator 2026-11-17): 'cut' stays in the roster
+ *  for legacy rows and the operator's manual stock seat only — the
+ *  agent authors omit (carry, THE DEFAULT) or 'carry+keyframe',
+ *  never 'cut'; H3 hard-cuts on its own when a shot must start
+ *  fresh. Every authoring default (expandCuts, the construct cuts
+ *  verb, the studio split control) seats carry. */
+export declare const CALL_TRANSITIONS: readonly ["cut", "extend", "carry+keyframe"];
+/** Legacy knob spellings → their current knob keys (a stored row
+ *  carrying the left column reads under the right). */
+export declare const LEGACY_KNOB_KEY: {
+    readonly sampling_steps: "steps";
+    readonly sampler: "sampler_name";
+    readonly scheduler: "sched_name";
+    readonly h3_sla_sparsity: "sla_sparsity";
+    readonly h3_sla_block_size: "sla_block_size";
+    readonly h3_sla_min_seq_len: "sla_min_seq_len";
+    readonly h3_sla_dense_last_steps: "sla_dense_last_steps";
+    readonly h3_sla_protect_audio: "sla_protect_audio";
+    readonly h3_sla_stabilize_motion: "sla_stabilize_motion";
+    readonly h3_sla_reference_protection: "sla_reference_protection";
+    readonly h3_sla_dense_backend: "sla_dense_backend";
+    readonly h3_sla_dense_steps: "sla_dense_steps";
+    readonly h3_sla_disable_fp16_accum: "sla_disable_fp16_accum";
+    readonly interpolate_model: "interp_model";
+    readonly interpolate_multiplier: "interp_multiplier";
+};
+/** Map a legacy knob spelling to its current knob key; an unknown key
+ *  passes through verbatim.
+ * @param key the stored or stated knob key
+ * @returns the current knob key */
+export declare function migrateCallKnobKey(key: string): string;
+/** THE SILENT-WINDOW WARN FLOOR (timeline-agent brief M-T2,
+ *  2026-11-20): the consumer's measured number — a window with a
+ *  face held silent longer than this many frames invents a line
+ *  (run-db6f18b873c8, 153 f; run-22efe605a42f-fa09730b, 124 f —
+ *  both spoke, in Japanese). Compose cannot know a window holds a
+ *  face (no doc seat states it), so the number warns, never
+ *  refuses: a silent window at least this long gets a notice naming
+ *  the invented-line hazard and the cures. */
+export declare const SILENT_WINDOW_WARN_FRAMES = 68;
+/** The card's admission notices for a film doc (brief M-T1/M-T2/M-T3,
+ *  2026-11-20): the pure recomputation the run record reports — the
+ *  promoted silent tail, each call's authored-vs-rendered span when
+ *  the snap moved its end frame, and each window's speech state with
+ *  the silent-window hazard warn. One law-adjacent home: the
+ *  admission-warns hook and the compose re-ride the same helpers,
+ *  so the notice cannot disagree with the film that renders.
+ * @param doc the admitted card doc (calls + audio_clips rows)
+ * @returns the notice lines, in call order — empty when nothing to say */
+export declare function filmAdmissionNotices(doc: Record<string, unknown>): readonly string[];
+//# sourceMappingURL=timelineContract.d.ts.map

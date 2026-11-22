@@ -4,9 +4,9 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { TimelineTrack } from "@melite-plugin/timeline/ui/timeline";
-import { type KnobKey } from '@melite/models-h3/timelineContract';
-export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/models-h3/timelineContract';
-export type { KnobKey } from '@melite/models-h3/timelineContract';
+import { type KnobKey } from '@melite/contracts/timelineContract';
+export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/contracts/timelineContract';
+export type { KnobKey } from '@melite/contracts/timelineContract';
 /** One contiguous model call — ONE video generation invocation (the
  * timeline's Layer B entity: the strip card, the window, the render).
  * `end_frame` is EXCLUSIVE; the prompt is `text` (one textarea —

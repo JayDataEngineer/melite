@@ -63,7 +63,7 @@ const BASELINE: Record<string, number> = {
   "src/chainUpscale.ts": 1,
   "src/edit.ts": 1,
   "src/extend.ts": 1,
-  "src/filmMix.ts": 4,
+  "src/filmMix.ts": 0, // 2026-11-22: the module moved home to @melite/contracts/filmMix (the L3 debt's cure); this subpath is a pure re-export — zero undocumented exports, and the contracts plane's own ratchet owns the moved file
   "src/finalize.ts": 1,
   "src/refine.ts": 2,
   "src/repair.ts": 1,

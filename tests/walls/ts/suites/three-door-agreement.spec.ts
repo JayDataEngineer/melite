@@ -65,7 +65,7 @@ import { flowFromBody } from "../../../../packages/harness/estate-queue/src/runs
 import type { CardRegistryLike } from "../../../../packages/harness/estate-queue/src/runsValidateShared.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { composeValidate } from "../../../../packages/web/card-base/src/spec.ts";
-import { FAMILY_LAW, deriveWindowFamily } from "@melite/models-h3/timelineContract";
+import { FAMILY_LAW, deriveWindowFamily } from "@melite/contracts/timelineContract";
 import { familyAdmissionOf } from "../../../../packages/estate/drafts/src/remote.ts";
 import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "../../../../packages/video/h3-timeline/tests/lawfulText.ts";
 

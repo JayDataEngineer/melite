@@ -25,7 +25,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { serializeLayerA, hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import { schema as h3schemaFn } from "@melite/models-h3/schema"
-import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { deriveWindowFamily } from "@melite/contracts/timelineContract"
 
 /** THE BENCH MERGE-PATCH LAW (drafts door, bench.ts:969-985 — per
  *  key, null deletes), SETTLED THROUGH THE FAMILY RESEAT (the ERROR

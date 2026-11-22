@@ -12,7 +12,7 @@
 
 export type H3ModelLane = typeof import('@melite/models-h3')
 export type H3TimelineCardLane = typeof import('@melite/video-h3-timeline/card')
-export type H3TimelineContractLane = typeof import('@melite/models-h3/timelineContract')
+export type H3TimelineContractLane = typeof import('@melite/contracts/timelineContract')
 
 let modelSeat: Promise<H3ModelLane | null> | null = null
 let cardSeat: Promise<H3TimelineCardLane | null> | null = null
@@ -35,6 +35,6 @@ export const h3CardSeat = (): Promise<H3TimelineCardLane | null> => {
 /** The h3 timeline contract seat (expandCuts — the one split law)
  *  — null when the family package is not installed. */
 export const h3TimelineContractSeat = (): Promise<H3TimelineContractLane | null> => {
-  contractSeat ??= import('@melite/models-h3/timelineContract').then((mod) => mod, () => null)
+  contractSeat ??= import('@melite/contracts/timelineContract').then((mod) => mod, () => null)
   return contractSeat
 }

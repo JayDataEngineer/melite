@@ -10,11 +10,11 @@ import {
   KNOB_ORDER,
   LEGACY_KNOB_KEY,
   type KnobKey,
-} from '@melite/models-h3/timelineContract'
+} from '@melite/contracts/timelineContract'
 import { studioCopy } from "./studioCopy.ts"
 
-export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/models-h3/timelineContract'
-export type { KnobKey } from '@melite/models-h3/timelineContract'
+export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/contracts/timelineContract'
+export type { KnobKey } from '@melite/contracts/timelineContract'
 
 // ── The document types (the builder SCHEMA's shapes, client-side) ─────────
 

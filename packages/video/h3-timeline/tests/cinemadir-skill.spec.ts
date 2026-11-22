@@ -34,7 +34,7 @@ import {
   GRID_STEP_FRAMES,
   REF_CAPS,
   SEAM_OVERLAP_FRAMES,
-} from "@melite/models-h3/timelineContract";
+} from "@melite/contracts/timelineContract";
 
 const ROOT = join(__dirname, "..");
 const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf-8");

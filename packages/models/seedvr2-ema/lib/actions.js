@@ -24,6 +24,7 @@ export const upscale = {
         { name: "resolution", type: "number", bounds: [256, 2160] },
         { name: "max_resolution", type: "number", bounds: [512, 4096] },
         { name: "batch_size", type: "number", bounds: [1, 16] },
+        { name: "color_correction", type: "enum", options: ["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"] },
         { name: "seed", type: "number", rule: "seed-sentinel" },
     ],
     facts: parseUpscaleFacts,
@@ -54,11 +55,15 @@ export const upscale = {
             batch_size: p.batch_size,
             uniform_batch_size: true,
             // the engine declares color_correction REQUIRED (a combo over
-            // lab/wavelet/wavelet_adaptive/hsv/adain/none, default lab) —
-            // the h3 sr arm wires the same default (actions.ts:1828); an
-            // unwired required input is a run the engine refuses (the
-            // value judge caught this compose stale, 2026-11-09).
-            color_correction: "lab",
+            // lab/wavelet/wavelet_adaptive/hsv/adain/none, engine default
+            // lab) — an unwired required input is a run the engine refuses
+            // (the value judge caught this compose stale, 2026-11-09). The
+            // knob is DECLARED (2026-11-22, the seedvr2-native-chain cure)
+            // and the DECL owns the floor: the OFFICIAL native chain's
+            // SeedVR2PostProcessing default is "none" — the pack's "lab"
+            // engine default was the divergence, so the served default is
+            // none and lab is an explicit pick, never a silent grade.
+            color_correction: p.color_correction,
         }).out();
         return g.node("SaveImage", { images: up, filename_prefix: `${runId}/gen` }).out();
     },

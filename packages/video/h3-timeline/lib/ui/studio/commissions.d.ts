@@ -27,7 +27,7 @@
  * open→save by the bench's merge-patch — so the rail projects the
  * durable row and holds no state of its own.
  */
-import { type WindowComposition } from '@melite/models-h3/timelineContract';
+import { type WindowComposition } from '@melite/contracts/timelineContract';
 /** Every mod bag the rail projects, in the card's own declaration
  *  order. The LoRAs joined on 2026-10-30 (F29): the bag reached the
  *  graph but no rail row existed, so the operator could not see the

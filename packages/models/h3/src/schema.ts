@@ -345,6 +345,12 @@ export const paramSchema = z.object({
   // schema door, never as a ComfyUI 400). Gated behind sr_switch like
   // every other post leaf.
   sr_model: vocabulary(["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"]).description("Super-Res model").default("seedvr2_ema_3b_fp8_e4m3fn.safetensors").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "SeedVR2 weights (models/upscale_models/): fp8_e4m3fn 3B default (the leaner row — a 24GB card cannot hold the fp16 3B model beside a 90-frame 1080p decode), fp16 for cards with more headroom." })),
+  // THE SR GRADE KNOB (2026-11-22, the seedvr2-native-chain cure):
+  // the sr limb hardcoded color_correction 'lab' — the pack engine's
+  // own default and a silent grade on every super-res pass. The
+  // official native chain's PostProcessing default is 'none'; the
+  // knob serves that floor and lab becomes an explicit pick.
+  sr_color_correction: vocabulary(["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"]).description("Super-Res color correction").default("none").extra('extra', bag({ order: null, group: 'second_pass', visible_when: "second_pass_enabled=true&sr_switch=true", wtype: 'select', tooltip: "The SeedVR2 post-grade on the super-res pass. none = the official native chain's default; lab is the pack engine's own default." })),
   // the R2V COMBO size mode — the engine's own vocabulary is the
   // truth (F-10 live probe, 2026-10-27: POST /prompt with
   // ref_image_size "704x1280" against comfy_extras.nodes_minimax_h3

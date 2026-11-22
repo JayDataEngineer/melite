@@ -33,7 +33,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition"
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts"
-import { solveWindowComposition } from "@melite/models-h3/timelineContract"
+import { solveWindowComposition } from "@melite/contracts/timelineContract"
 import {
   CALLS_READING_KINDS, COMMISSION_KINDS, callsLaneFace, deriveCommissions,
   isStarterCallText, type CommissionKind,

@@ -29,7 +29,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition"
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { SEAM_OVERLAP_FRAMES, transitionOverlap } from "@melite/models-h3/timelineContract"
+import { SEAM_OVERLAP_FRAMES, transitionOverlap } from "@melite/contracts/timelineContract"
 import { useCallMutations } from "../src/ui/studio/useCallMutations.ts"
 import { serializeCalls } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"

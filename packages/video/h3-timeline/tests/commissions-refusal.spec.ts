@@ -11,8 +11,8 @@ import { describe, expect, it, vi } from "vitest"
 
 const thrower = vi.hoisted(() => ({ thrown: undefined as unknown }))
 
-vi.mock("@melite/models-h3/timelineContract", async (importOriginal) => {
-  const real = await importOriginal<typeof import("@melite/models-h3/timelineContract")>()
+vi.mock("@melite/contracts/timelineContract", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@melite/contracts/timelineContract")>()
   return {
     ...real,
     solveWindowComposition: () => { throw thrower.thrown },

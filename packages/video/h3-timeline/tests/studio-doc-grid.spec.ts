@@ -172,14 +172,14 @@ describe("the grid heal (a doc never refuses the run)", () => {
 
 // ── THE ONE-LAW IDENTITY ARM (the one-bench cure, operator
 // 2026-11-10: "THE AGENT, AND THE USER UI. SHARE ONE BENCH. ONE.")
-// ── The split law moved to @melite/models-h3/timelineContract so
+// ── The split law moved to @melite/contracts/timelineContract so
 // three doors (the strip's mutations, the leaf form, the agent's
 // cuts verb) ride ONE implementation. This arm judges IDENTITY, not
 // behavior: the studio's re-exports ARE the contract's functions —
 // a copy pasted back into studio code (the exact drift class that
 // once authored 141f as [0,90)+[90,141) on a mis-copied grid) fails
 // here as a different function object.
-import * as contract from "@melite/models-h3/timelineContract"
+import * as contract from "@melite/contracts/timelineContract"
 import { splitCallsAt } from "./../src/ui/studio/v2vSplit.ts"
 
 describe("THE ONE LAW — the studio rides the contract's bytes, never a copy", () => {

@@ -67,6 +67,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sr_switch: z<boolean, boolean, "defined">;
     sr_resolution: z<number, number, "defined">;
     sr_model: z<string, string, "defined">;
+    sr_color_correction: z<string, string, "defined">;
     ref_image_size: z<string, string, "defined">;
     shift_video: z<number, number, "defined">;
     shift_audio: z<number, number, "defined">;
@@ -139,6 +140,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     sr_switch: z<boolean, boolean, "defined">;
     sr_resolution: z<number, number, "defined">;
     sr_model: z<string, string, "defined">;
+    sr_color_correction: z<string, string, "defined">;
     ref_image_size: z<string, string, "defined">;
     shift_video: z<number, number, "defined">;
     shift_audio: z<number, number, "defined">;
@@ -266,6 +268,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sr_switch: z<boolean, boolean, "defined">;
     sr_resolution: z<number, number, "defined">;
     sr_model: z<string, string, "defined">;
+    sr_color_correction: z<string, string, "defined">;
     ref_image_size: z<string, string, "defined">;
     shift_video: z<number, number, "defined">;
     shift_audio: z<number, number, "defined">;
@@ -338,6 +341,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     sr_switch: z<boolean, boolean, "defined">;
     sr_resolution: z<number, number, "defined">;
     sr_model: z<string, string, "defined">;
+    sr_color_correction: z<string, string, "defined">;
     ref_image_size: z<string, string, "defined">;
     shift_video: z<number, number, "defined">;
     shift_audio: z<number, number, "defined">;

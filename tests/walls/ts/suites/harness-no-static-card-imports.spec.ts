@@ -91,26 +91,26 @@ test('the harness plane holds zero static card/family imports', () => {
  *  families ONLY through guarded dynamic seats (image-gen
  *  src/family-seats.ts is the pattern).
  *
- *  THE NAMED DEBT: the lazy surgery has landed on the image-gen
- *  exemplar alone; the remaining cards ride the L3 debt row
- *  (plugin-family-isolation, §4). Each debt card below MUST still
- *  hold a live violation (a cured card that forgets to leave the
- *  ledger reds this wall — the debt cannot rot), and a violation
- *  outside the ledger reds immediately. */
+ *  THE NAMED DEBT: the lazy surgery landed estate-wide (the L3 wave
+ *  `eda297f44`, then the h3 studio tree's contract imports moved home
+ *  to @melite/contracts 2026-11-22 — the ledger's last row left).
+ *  The ledger below is empty by design: a cured card MUST leave it
+ *  (a stale row reds this wall), and a violation outside the ledger
+ *  reds immediately — the debt cannot rot, and it cannot return. */
 const GENRES = ['3d', 'audio', 'image', 'motion', 'video'] as const
 const FAMILY_SCOPE = /^@melite\/models-/
 const L3_DEBT_CARDS = [
-  // video/h3-timeline: the compose plane is cured (card.ts/tool.ts
-  // seat @melite/models-h3); the STUDIO tree's contract imports
-  // (ui/studio, timelineContract + filmMix — pure contract utilities
-  // that live in the family package) are named debt: dropping them
-  // needs an async-seated contract access layer across the studio's
-  // module-scope re-export hubs (a product rewrite, not a
-  // conversion; rides the L3 debt row's next stroke)
-  'video/h3-timeline',
+  // video/h3-timeline LEFT THE LEDGER 2026-11-22: the studio tree's
+  // contract imports (ui/studio — timelineContract + filmMix) were
+  // pure contract utilities seated in the family package; they moved
+  // home to @melite/contracts (timelineContract + filmMix subpaths,
+  // the family package re-exports them for its own compose plane),
+  // so the card holds ZERO static family imports. The empty ledger
+  // is the honest end state: arm (2) below demands every dropped row
+  // leave, and arm (1) keeps the estate at zero violations.
 ] as const
 
-test('the card plane holds zero static family imports (every card seated; h3 studio tree is named debt)', () => {
+test('the card plane holds zero static family imports (every card seated; the L3 ledger is empty)', () => {
   const byCard = new Map<string, string[]>()
   for (const genre of GENRES) {
     const genreDir = join(import.meta.dirname, '..', '..', '..', '..', 'packages', genre)

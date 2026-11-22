@@ -529,7 +529,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // speech_language rows join the judged face — doc-plane
     // authoring inputs (M-T6/M-T2), hidden on the card face,
     // tool-face served; both carry zod defaults, so neither starves.
-    assert.equal(walked, 492,
+    // 492 -> 494 (2026-11-22, the seedvr2-native-chain cure): the
+    // color_correction knob joins both homes — the upscale-tools
+    // ride-key (DECL floor "none", the official native chain's
+    // PostProcessing default) + the h3 sr twin (schema-defaulted
+    // "none" behind sr_switch); neither starves (DECL default +
+    // schema default respectively).
+    assert.equal(walked, 494,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     // judged 8 -> 6 (2026-11-08, the latent law): the image-edit
     // card's width/height leave the params zone (hidden compatibility
@@ -2035,7 +2041,7 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // and the h3 schema declares it — one agreeing pair per boarding
     // card (three carry the h3 family); a string row owns no bounds
     // or enum, so offenders stay empty.
-    assert.equal(pairs, 808, "the shared-name pair census changed — update this pin deliberately"); // 799→808 2026-11-17: the voice-change card's nine knob rows join both homes (steps/speed/cfg/f0/auto-f0/pitch/unload + the two audio paths). (800→799 2026-11-11 (later the same day): the phantom-port law restored — h3-image's reference_images row leaves the action ParamSpec (the seat fires on qwen-img-21 alone); the card-side row stays, unpaired. 777→800 2026-11-11: the H3-Image pair lands — the t2i twin's 8 shared rows + the edit twin's 7 (prompt/seed/steps/cfg/sampler/scheduler + the list seats) join both homes. (791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
+    assert.equal(pairs, 809, "the shared-name pair census changed — update this pin deliberately"); // 808→809 2026-11-22: the seedvr2 color_correction pair joins both homes (the card ride-key select + the action ParamSpec enum row — the seedvr2-native-chain cure). 799→808 2026-11-17: the voice-change card's nine knob rows join both homes (steps/speed/cfg/f0/auto-f0/pitch/unload + the two audio paths). (800→799 2026-11-11 (later the same day): the phantom-port law restored — h3-image's reference_images row leaves the action ParamSpec (the seat fires on qwen-img-21 alone); the card-side row stays, unpaired. 777→800 2026-11-11: the H3-Image pair lands — the t2i twin's 8 shared rows + the edit twin's 7 (prompt/seed/steps/cfg/sampler/scheduler + the list seats) join both homes. (791→774 2026-11-09: the retired edit family leaves both homes together — its schema rows and action ParamSpec rows die with the package. 829→796 2026-11-12 (§8): the eleven flat reshoot_* knobs retire from the h3 schema AND its three action ParamSpec faces — 11 × 3 shared-name pairs leave both homes together
     // 796→791 2026-11-01 (the blender-lane removal): the rig card's fbx/decimate/species knobs and gem-soma's two export knobs leave both homes together
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });

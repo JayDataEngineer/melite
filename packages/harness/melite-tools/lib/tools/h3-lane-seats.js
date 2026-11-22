@@ -27,7 +27,7 @@ export const h3CardSeat = () => {
 /** The h3 timeline contract seat (expandCuts — the one split law)
  *  — null when the family package is not installed. */
 export const h3TimelineContractSeat = () => {
-    contractSeat ??= import('@melite/models-h3/timelineContract').then((mod) => mod, () => null);
+    contractSeat ??= import('@melite/contracts/timelineContract').then((mod) => mod, () => null);
     return contractSeat;
 };
 //# sourceMappingURL=h3-lane-seats.js.map

@@ -2299,7 +2299,7 @@ function renderH3Window(p, g, facts, model, runId) {
             }).out(),
             seed: 42, resolution: srRes,
             max_resolution: 0, batch_size: 5, uniform_batch_size: false,
-            color_correction: 'lab',
+            color_correction: p.sr_color_correction,
         }).out();
         postImage = sr;
     }

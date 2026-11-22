@@ -2,6 +2,8 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/models-h3/timelineContract": ["./../../models/h3/src/timelineContract.ts"],
+        "@melite/models-h3/filmMix": ["./../../models/h3/src/filmMix.ts"],
         "@melite/catalog/familyAuthorship": ["./../../web-kit/catalog/src/familyAuthorship.ts"],
         "@melite/audio-voice-change": ["./../voice-change/src/card.ts"],
         "@melite/audio-voice-change/card": ["./../voice-change/src/card.ts"],
@@ -202,8 +204,8 @@
         "@melite/models-gem-soma": ["./../../models/gem-soma/src/index.ts"],
         "@melite/models-h3": ["./../../models/h3/src/index.ts"],
         "@melite/models-h3/mods/loras": ["./../../models/h3/mods/loras.ts"],
-        "@melite/models-h3/timelineContract": ["./../../models/h3/src/timelineContract.ts"],
-        "@melite/models-h3/filmMix": ["./../../models/h3/src/filmMix.ts"],
+        "@melite/contracts/timelineContract": ["./../../web-kit/contracts/src/timelineContract.ts"],
+        "@melite/contracts/filmMix": ["./../../web-kit/contracts/src/filmMix.ts"],
         "@melite/models-h3/actions": ["./../../models/h3/src/actions.ts"],
         "@melite/models-h3/schema": ["./../../models/h3/src/schema.ts"],
         "@melite/models-input": ["./../../models/input/src/index.ts"],

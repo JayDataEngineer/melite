@@ -39,7 +39,7 @@
       "max_resolution": 2048,
       "batch_size": 4,
       "uniform_batch_size": true,
-      "color_correction": "lab"
+      "color_correction": "none"
     }
   },
   "SaveImage.0": {

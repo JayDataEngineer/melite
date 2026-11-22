@@ -6,9 +6,9 @@
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel.ts"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, STARTER_CALLS } from "./docModel.ts"
-import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
+import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/contracts/timelineContract'
 import { healOffGridCalls } from "./docGrid.ts"
-import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT } from "@melite/contracts/timelineContract"
 import { isImageUrl } from '@melite/card-base/client'
 import { studioCopy } from "./studioCopy.ts"
 

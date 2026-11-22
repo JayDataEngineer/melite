@@ -41,7 +41,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import type {} from "../../../../packages/harness/estate-queue/src/service.ts";
 import { seedFlowsSeat } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
-import { FILM_ONLY_KEYS } from "@melite/models-h3/timelineContract";
+import { FILM_ONLY_KEYS } from "@melite/contracts/timelineContract";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import type { SchemaEnvelope, SchemaRef } from "@melite/contracts/formSpec";
 

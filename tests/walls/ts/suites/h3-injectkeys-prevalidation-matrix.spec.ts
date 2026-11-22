@@ -62,7 +62,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schema as h3schemaFn } from "@melite/models-h3/schema";
-import { deriveWindowFamily, FAMILY_LAW } from "@melite/models-h3/timelineContract";
+import { deriveWindowFamily, FAMILY_LAW } from "@melite/contracts/timelineContract";
 import { axisPickPatch, composeValidate } from "@melite/card-base/client";
 import type { FormSpecDoc, FormVariantRow } from "@melite/card-base/client";
 import { omitFilmOnlyField, omitFilmRecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitLaneRecipe.ts";

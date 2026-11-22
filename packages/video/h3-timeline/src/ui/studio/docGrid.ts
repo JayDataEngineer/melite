@@ -35,13 +35,13 @@ import {
   isGridLength,
   reflowSeamSpan,
   snapSplitFrame,
-} from '@melite/models-h3/timelineContract'
+} from '@melite/contracts/timelineContract'
 // THE SPLIT LAW MOVED (2026-11-10, the one-bench cure): these four
 // names now have ONE home — the contract module — so the agent's
 // write door (melite-construct) and both UI doors ride the same
 // bytes. Re-exported here so every studio importer keeps its home;
 // the byte-for-byte parity is walled contract-side.
-export { isCarriedShape, isLegalCallLength, reflowSeamSpan, snapSplitFrame } from '@melite/models-h3/timelineContract'
+export { isCarriedShape, isLegalCallLength, reflowSeamSpan, snapSplitFrame } from '@melite/contracts/timelineContract'
 import type { DocCall } from "./docModel.ts"
 
 /** The span editors' string→number parse: SpecAtom hands the RAW

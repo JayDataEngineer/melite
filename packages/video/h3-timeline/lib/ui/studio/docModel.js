@@ -1,6 +1,6 @@
-import { DOC_FPS_DEFAULT, LEGACY_KNOB_KEY, } from '@melite/models-h3/timelineContract';
+import { DOC_FPS_DEFAULT, LEGACY_KNOB_KEY, } from '@melite/contracts/timelineContract';
 import { studioCopy } from "./studioCopy.js";
-export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/models-h3/timelineContract';
+export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY, SECOND_PASS_KNOBS } from '@melite/contracts/timelineContract';
 /** The knob fold's faces — locale-owned since the copy cure
  *  (2026-11-05): the words ride studioCopy (one home), this record
  *  keeps the KnobKey shape the fold reads. */

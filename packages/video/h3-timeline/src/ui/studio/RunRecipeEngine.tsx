@@ -31,8 +31,8 @@ import { resolvePickVerdictDoc } from "./pickVerdict.ts"
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react"
 import s from "./studio.module.css"
-import { DOC_FPS_DEFAULT } from '@melite/models-h3/timelineContract'
-import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT } from '@melite/contracts/timelineContract'
+import { deriveWindowFamily } from "@melite/contracts/timelineContract"
 import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import { mergeDocLayers } from "./docModel.ts"
 import { parseSpecNumber } from "./docGrid.ts"

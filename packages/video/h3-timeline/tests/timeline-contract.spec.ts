@@ -24,7 +24,7 @@ import {
   spanStanzaFrames,
   splitRefList,
   transitionOverlap,
-} from '@melite/models-h3/timelineContract'
+} from '@melite/contracts/timelineContract'
 
 const span = (start: number, end: number, transition?: string) =>
   transition === undefined ? { start, end } : { start, end, transition }

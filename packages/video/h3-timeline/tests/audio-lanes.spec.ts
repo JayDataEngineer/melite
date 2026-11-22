@@ -19,7 +19,7 @@ import { CardDefinition } from '@melite/comfyui-card-kit/card-definition'
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
+import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/contracts/filmMix';
 import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";
 
 const FACTS_PATH = join(

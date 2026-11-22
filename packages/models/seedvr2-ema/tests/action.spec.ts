@@ -37,6 +37,11 @@ const PARAMS = {
   resolution: 1080,
   max_resolution: 4096,
   batch_size: 1,
+  // what the real door's cascade stamps: the DECL's official floor
+  // (2026-11-22, the seedvr2-native-chain cure) — the action trusts
+  // the cascade like its sibling ride-keys, so the direct drive
+  // states it too.
+  color_correction: "none",
 };
 
 const upscalerOf = (g: GraphBuilder): { inputs: Record<string, unknown> } =>
@@ -67,6 +72,13 @@ describe("the upscale action — byte-stability (the compatibility law)", () => 
     instantiateAction(upscale, { ...p }, FACTS, action, "probe-knobs");
     assertGraphGolden(golden("the-golden-holds-with-re-stated-knobs-the-resolution-caps"), graphOf(action), "the golden holds with re-stated knobs (the resolution caps)");
     assert.equal(upscalerOf(action).inputs.resolution, 2160, "the target rides");
+  });
+
+  it("an explicit color_correction pick rides verbatim (the knob's own arm — the DECL floor is only the absent-case)", () => {
+    const p = { ...PARAMS, color_correction: "lab" };
+    const action = new GraphBuilder({});
+    instantiateAction(upscale, { ...p }, FACTS, action, "probe-grade");
+    assert.equal(upscalerOf(action).inputs.color_correction, "lab", "the explicit grade rides — never re-defaulted in the action");
   });
 
   it("the golden holds on the wired spell (a '$name' image rides verbatim, no loader)", () => {

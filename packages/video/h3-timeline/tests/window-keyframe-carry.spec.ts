@@ -27,7 +27,7 @@ import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition"
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { LAST_FRAME_BATCH_INDEX } from "@melite/models-h3/timelineContract"
+import { LAST_FRAME_BATCH_INDEX } from "@melite/contracts/timelineContract"
 import { serializeCalls } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { LAWFUL_TEXT, LAWFUL_TEXT_CARRIED } from "./lawfulText.ts";

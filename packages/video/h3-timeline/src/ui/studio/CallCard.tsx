@@ -26,7 +26,7 @@ import {
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
-} from "@melite/models-h3/timelineContract"
+} from "@melite/contracts/timelineContract"
 import type { CallCardDeps } from "./CallCardsPanel.tsx"
 import { studioCopy } from "./studioCopy.ts"
 

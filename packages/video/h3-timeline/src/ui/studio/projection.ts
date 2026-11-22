@@ -15,7 +15,7 @@ import {
   type CardStage,
   type StageViewOwnerProps,
 } from '@melite/contracts'
-import { refGenreOf } from '@melite/models-h3/timelineContract'
+import { refGenreOf } from '@melite/contracts/timelineContract'
 
 type H3HistoryRow = {
   runId?: string

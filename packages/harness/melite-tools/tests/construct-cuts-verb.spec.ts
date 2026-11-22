@@ -7,7 +7,7 @@
 // the card UI showed the truth: one window). This wall pins the
 // cure's whole journey at the patch arm:
 //   agent states {cuts: "seconds"} → the door expands them through
-//   the ONE split law (@melite/models-h3/timelineContract — the same
+//   the ONE split law (@melite/contracts/timelineContract — the same
 //   bytes the strip's mutations ride) → the wire patch carries the
 //   rewritten calls rows and NO cuts key (the verb never persists —
 //   ONE storage, zero second spellings) → the answer names the
@@ -16,7 +16,7 @@
 import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { meliteConstruct } from '../src/tools/melite-construct.ts'
-import { admitSpanGrid, transitionOverlap } from '@melite/models-h3/timelineContract'
+import { admitSpanGrid, transitionOverlap } from '@melite/contracts/timelineContract'
 import { fakeEstate } from './fake-estate.ts'
 import { fakeExec } from './fake-exec.ts'
 

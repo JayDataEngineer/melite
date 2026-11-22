@@ -2022,7 +2022,7 @@ export function meliteConstruct(
           // overlap_frames — one accepted by accident, the card UI
           // showing the truth: ONE window). `cuts` is a VERB, never
           // stored state: seconds ("2.5, 5"), expanded through the
-          // ONE split law (@melite/models-h3/timelineContract — the
+          // ONE split law (@melite/contracts/timelineContract — the
           // same bytes the strip's mutations and the leaf form ride,
           // byte-for-byte walled) into the row's own calls rows,
           // then dropped from the patch. Frames are never typed

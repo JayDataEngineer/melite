@@ -17,7 +17,7 @@ import { CallCardsPanel } from "../src/ui/studio/CallCardsPanel.tsx"
 import { useBeatMutations } from "../src/ui/studio/useBeatMutations.ts"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
-import { DOC_FPS_DEFAULT } from "@melite/models-h3/timelineContract"
+import { DOC_FPS_DEFAULT } from "@melite/contracts/timelineContract"
 import { carrier } from "@melite/models-h3/schema"
 
 // THE SERVED WALK (hour 22): the fold's schema truth, keyed by wire name.

@@ -8,7 +8,7 @@ import { describe, it } from "vitest"
 import assert from "node:assert/strict"
 import { resolvePickVerdictDoc } from "../src/ui/studio/pickVerdict.ts"
 import { schema as h3schema } from "@melite/models-h3/schema"
-import { deriveWindowFamily } from "@melite/models-h3/timelineContract"
+import { deriveWindowFamily } from "@melite/contracts/timelineContract"
 
 describe("resolvePickVerdictDoc — the pick judges truth-in-hand", () => {
   it("absent user keys yield to the held row (the sparse shown layer)", () => {
