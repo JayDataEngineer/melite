@@ -192,7 +192,7 @@ export function decodeMediaFiles(json: unknown): MediaFilesPage {
    * partial face over a malformed answer. */
   const files: MediaFileRow[] = []
   for (const raw of row<unknown>(d.files)) {
-    const e = (raw ?? {}) as { path?: unknown; kind?: unknown; size?: unknown; mtime?: unknown }
+    const e = (raw ?? {}) as { path?: unknown; kind?: unknown; size?: unknown; mtime?: unknown; prompt?: unknown }
     if (typeof e.path !== 'string' || e.path === '') continue
     if (e.kind !== 'image' && e.kind !== 'video' && e.kind !== 'audio' && e.kind !== 'model' && e.kind !== 'text') continue
     files.push({

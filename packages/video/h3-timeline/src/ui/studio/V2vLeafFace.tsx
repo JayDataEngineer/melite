@@ -84,6 +84,9 @@ const WINDOW: CSSProperties = {
   overflowWrap: 'anywhere',
 }
 const SPLIT_SEAT: CSSProperties = { display: 'flex', alignItems: 'center', gap: 4, padding: '2px 2px 0', flexWrap: 'wrap' }
+/** the caption's one-line law (see the render site): the span head
+ *  leads, the authored prose ellipsizes — never wraps the row. */
+const ROW_CAPTION: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }
 /** the segmented three-state (split seat + per-seam rows share the
  *  recipe — inline, the face's own appearance law above). */
 const SEGMENT: CSSProperties = { display: 'inline-flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }
@@ -166,7 +169,14 @@ export function V2vLeafFace(props: { value: { calls: V2vWindowView[]; fps: numbe
         : <ol style={WINDOWS} data-v2v-windows={true}>
             {calls.map((c, i) => (
               <li key={i} style={WINDOW} data-v2v-window={i}>
-                {studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', isStarterCallText(c.text ?? '') ? '' : (c.text ?? ''))}
+                {/* THE ONE-LINE CAPTION (2026-11-22, the gate-lawful
+                 *  seed's exposure): authored call text is real prose
+                 *  — 90+ words rides the gate's density floor — so the
+                 *  caption ellipsizes on ONE line instead of wrapping
+                 *  the leaf past its own viewport (the readable face:
+                 *  the span head stays visible, the full text lives in
+                 *  the strip's calls section). */}
+                <div style={ROW_CAPTION} data-v2v-caption={i}>{studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? (c.transition ?? 'extend') : '', isStarterCallText(c.text ?? '') ? '' : (c.text ?? ''))}</div>
                 <div style={ROW_SPLIT} data-v2v-row-split={i}>
                   <Input
                     type="number"

@@ -21730,6 +21730,14 @@ window.__ModuleLoader__.load({
 			padding: "2px 2px 0",
 			flexWrap: "wrap"
 		};
+		/** the caption's one-line law (see the render site): the span head
+		*  leads, the authored prose ellipsizes — never wraps the row. */
+		const ROW_CAPTION = {
+			whiteSpace: "nowrap",
+			overflow: "hidden",
+			textOverflow: "ellipsis",
+			minWidth: 0
+		};
 		/** the segmented three-state (split seat + per-seam rows share the
 		*  recipe — inline, the face's own appearance law above). */
 		const SEGMENT = {
@@ -21854,7 +21862,11 @@ window.__ModuleLoader__.load({
 							style: WINDOW,
 							"data-v2v-window": i,
 							children: [
-								studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", isStarterCallText(c.text ?? "") ? "" : c.text ?? ""),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									style: ROW_CAPTION,
+									"data-v2v-caption": i,
+									children: studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", isStarterCallText(c.text ?? "") ? "" : c.text ?? "")
+								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									style: ROW_SPLIT,
 									"data-v2v-row-split": i,

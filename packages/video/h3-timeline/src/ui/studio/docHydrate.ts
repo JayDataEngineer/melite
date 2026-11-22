@@ -192,8 +192,8 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
       ? raw.sr_model : undefined,
     sr_resolution: optNum("sr_resolution"),
-    sr_color_correction: typeof raw?.sr_color_correction === "string" && ["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"].includes(raw.sr_color_correction)
-      ? raw.sr_color_correction : undefined,
+    sr_color_correction: (["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"] as const).includes(raw?.sr_color_correction as "none")
+      ? raw?.sr_color_correction as LayerA["sr_color_correction"] : undefined,
     // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14):
     // the RefMod extract's fidelity dials — the panel owns them, the
     // doc carries the STATED override only (absent = the declared

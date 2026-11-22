@@ -6413,6 +6413,14 @@ window.__ModuleLoader__.load({
 			padding: "2px 2px 0",
 			flexWrap: "wrap"
 		};
+		/** the caption's one-line law (see the render site): the span head
+		*  leads, the authored prose ellipsizes — never wraps the row. */
+		const ROW_CAPTION = {
+			whiteSpace: "nowrap",
+			overflow: "hidden",
+			textOverflow: "ellipsis",
+			minWidth: 0
+		};
 		/** the segmented three-state (split seat + per-seam rows share the
 		*  recipe — inline, the face's own appearance law above). */
 		const SEGMENT = {
@@ -6537,7 +6545,11 @@ window.__ModuleLoader__.load({
 							style: WINDOW,
 							"data-v2v-window": i,
 							children: [
-								studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", isStarterCallText(c.text ?? "") ? "" : c.text ?? ""),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									style: ROW_CAPTION,
+									"data-v2v-caption": i,
+									children: studioCopy.v2vWindowRow(i + 1, secs(c.start_frame), secs(c.end_frame), i > 0 ? c.transition ?? "extend" : "", isStarterCallText(c.text ?? "") ? "" : c.text ?? "")
+								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									style: ROW_SPLIT,
 									"data-v2v-row-split": i,
@@ -8132,14 +8144,14 @@ window.__ModuleLoader__.load({
 				sr_switch: raw?.sr_switch === true,
 				sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors" ? raw.sr_model : void 0,
 				sr_resolution: optNum("sr_resolution"),
-				sr_color_correction: typeof raw?.sr_color_correction === "string" && [
+				sr_color_correction: [
 					"none",
 					"lab",
 					"wavelet",
 					"wavelet_adaptive",
 					"hsv",
 					"adain"
-				].includes(raw.sr_color_correction) ? raw.sr_color_correction : void 0,
+				].includes(raw?.sr_color_correction) ? raw?.sr_color_correction : void 0,
 				refmod_mode: raw?.refmod_mode === "Full Reference" ? "Full Reference" : void 0,
 				refmod_pool: optNum("refmod_pool"),
 				refmod_identity: optNum("refmod_identity"),

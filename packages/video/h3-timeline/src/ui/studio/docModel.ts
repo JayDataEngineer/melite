@@ -300,6 +300,11 @@ export interface LayerA {
   sr_switch?: boolean
   sr_model?: "seedvr2_ema_3b_fp16.safetensors" | "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
   sr_resolution?: number
+  /** THE SR POST-GRADE (2026-11-22, the SeedVR2 color_correction knob):
+   *  the select rides sr_switch (the schema's visible_when) with the
+   *  six-member vocabulary (none = the native chain's floor). The
+   *  serializer true-gates it under sr_switch; absent = none. */
+  sr_color_correction?: "none" | "lab" | "wavelet" | "wavelet_adaptive" | "hsv" | "adain"
   /** THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14,
    *  2026-10-19): the RefMod extract's fidelity dials — the engine
    *  executed identity 500 / pool 16×16 while nothing named them.
