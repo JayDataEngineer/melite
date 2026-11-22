@@ -17,7 +17,7 @@ pnpm run test:e2e:studio
 ```
 
 The script self-skips (exit 0) when it cannot own the lane: port
-3907 busy, no dsh binary, no lane home to copy, or E2E_STUDIO_URL
+3907 busy, no dsh binary, no tracked profile seed, or E2E_STUDIO_URL
 already exported (a host is up; it reuses that). Teardown ALWAYS
 runs (host process-group kill + throwaway home removal) — the port
 is free after every run.
@@ -44,10 +44,11 @@ The LAWS the script encodes (why each step exists):
 - **The bench seed** rides the host's own /api wire (cookie from
   the token redirect): `bench/ensure` + `bench/add-stage` card
   `h3-timeline`. The spec itself is read-only against the bench.
-- **The studio bundle must be REBUILT before the run** (`npx
-  tsdown` in `packages/video/h3-timeline`): a lane host booted
-  against a stale `lib/client.js` serves the generic form — the
-  2026-09-12 regression this wall was born from, and the 2026-09-21
+- **The studio bundle is FRESHNESS-GATED before boot**: a lane booted
+  against a stale `lib/` build serves the generic form — the 2026-09-12
+  regression this wall was born from. The F1 freshness gate refuses
+  to boot on a stale lib plane and names the cure (`node
+  tools/build-plane.mjs build <pkg>`, then re-drive); the 2026-09-21
   CI-seat repair caught it live within three runs.
 
 - **THE COLD HOST IS NOT SERVED YET** (2026-10-11): the shell paints
@@ -202,5 +203,7 @@ E2E_STUDIO_URL='http://127.0.0.1:3907/?token=<TOKEN>' \
 Self-skips without `E2E_STUDIO_URL` (the repo's keyless-gate law);
 minting specs additionally self-skip without `MELITE_E2E_AI=1` (see
 THE AI OPT-IN above).
-The spec is read-only against the bench — the stage is seeded once
-by the script, never by the spec itself.
+The seeded-bench specs are read-only against the bench — the stage is
+seeded once by the script, never by the spec itself. (The open-studio
+spec above is the exception: it writes the bench itself, exactly as
+the agent does.)

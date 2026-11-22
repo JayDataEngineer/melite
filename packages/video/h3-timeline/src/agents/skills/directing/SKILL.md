@@ -80,8 +80,10 @@ never ride a display name or an invented placeholder.
   or overlap is refused (`calls[i].start_frame` must equal
   `calls[i-1].end_frame`).
 - One span grid covers every window shape: first and `cut` calls author
-  `22+17k` frames in `[22,362]`, carried calls `17k` frames. Off-grid
-  spans are refused with the nearest legal frame named.
+  `22+17k` frames in `[22,362]`, carried calls `17k` frames. Legal spans
+  admit verbatim; an off-grid span of 24 frames or more snaps its end UP
+  to the next rung (reported on run status, later windows re-tile), while
+  a sub-floor span or one whose snap passes 362 refuses.
 - Unknown per-call keys may be retained for compatibility and are not a
   reliable way to add behavior. Use only fields returned by `melite_load`.
 - There is no live seam-keyframe/context field. Do not send retired fields

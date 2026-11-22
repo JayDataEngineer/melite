@@ -17,8 +17,11 @@ runs-registry row mounts after queue, drafts, and card registry.
 
 - Seats mounted: `ctx.queue` (QueueService — lock, ledger, sidecars,
   bootSweep), `ctx.runs` (RunsRuntimeService — start/status/stop/list/
-  validate, onRunChange), `ctx.manage` (ManageGatewayService), and
-  `ctx.meliteFlows` (the flows seat, mounted first in the row).
+  validate/renameOutput, onRunChange), `ctx.manage`
+  (ManageGatewayService), `ctx.meliteFlows` (the flows seat, mounted
+  first in the row), `ctx.cardRegistry` (cards/lanes), `ctx.disclose`
+  (disclosure), `ctx.load` (bundle serving), and `ctx.meliteSkills`
+  (the skill plane).
 - Config (declared schema, validated before apply — the 2026-11-20
   config-law cure): `{ repoRoot? }` for the default `data/runs`
   state root; `stateRoot?` (absolute) overrides it and wins over
@@ -59,5 +62,5 @@ Independent — no conversation state.
 
 - **One serial queue per fiber** — the lock is the fiber's; two fibers mean
   two queues with no cross-fiber ordering promise.
-- **MELITE_STATE_ROOTS is colon-separated** — a root path containing a
-  colon cannot be declared; relocate such a root instead.
+- **Cross-roots are a config array** — `stateRoots` takes each root
+  verbatim, so a colon-bearing path declares fine.

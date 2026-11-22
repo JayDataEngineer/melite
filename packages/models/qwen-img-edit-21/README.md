@@ -9,13 +9,13 @@ qwen-img-edit-21 registers Qwen Image Edit 2.1 (form `form_edit`, label "Qwen Im
 
 ## Params and law
 
-Declared surface: `input_images`, `image1`, `image2`, `image3`, `reference_images`, `input_mask` (validation-only aliases the lane admits as wire keys), `prompt`, `negative_prompt`, `width`, `height`, `seed`, `steps`, `cfg`, `sampler`, `scheduler`. Laws: `width` and `height` ride together — an EmptyLatentImage takes both axes or neither, bounds 256–1536; `prompt` is required (the instruction, not a description of the image); an anchor is required — the ordered `input_images` list or a legacy spelling (`image1` / `image2` / `image3` / `reference_images`). The image cap is 16 total, anchor included (`max_images`).
+Declared surface: `input_images`, `image1`, `image2`, `image3`, `reference_images`, `input_mask` (validation-only aliases the lane admits as wire keys), `prompt`, `negative_prompt`, `width`, `height`, `seed`, `steps`, `cfg`, `sampler`, `scheduler`. Laws: `width` and `height` ride together — a stated pair sizes the render at w×h (no geometry prefills); `prompt` is required (the instruction, not a description of the image); an anchor is required — the ordered `input_images` list or a legacy spelling (`image1` / `image2` / `image3` / `reference_images`). The image cap is 16 total, anchor included (`max_images`).
 
-Defaults: 25 steps, `euler` / `simple`, cfg 1, 1024×1024. Variants: `int8` (about 7.3 GB unet, about 24 GB VRAM, DEFAULT — provisioning required; without the 2.1 files the engine refuses loud) and `bf16` (about 14.2 GB, about 48 GB). Recipes: `remove_background` (the official template's canned prompt verbatim), `upstream_solvers`, `default`.
+Defaults: family solver pair `euler` / `simple`; the Turbo variant (DEFAULT, declared first) resolves 8 steps / cfg 1, the Base variant resolves 25 steps / cfg 1; no geometry prefills. Variants: `turbo` (the 8-step distilled lane, DEFAULT) and `base` (25 steps), each spanning `int8_convrot` / `bf16` quant cells. Recipes: `remove-background` (the official template's canned prompt verbatim), `drift-lock` (the first-party Consistency LoRA — stamps `qwen21_consistency`), `upstream-solvers`, `default`.
 
 ## Mod surface
 
-The DECL boards `mask` only: the bare flavor whose region contract rides the crop_stitch detailer over the cached model; automatic inpainting with a named field refuses on every lane — no lane inpaints in place. `./mods/loras` is the seam with an empty row set (no first-party 2.1 adapters); nothing is fetched from either subpath.
+The DECL boards `mask` and `loras`: the bare mask flavor whose region contract rides the crop_stitch detailer over the cached model; automatic inpainting with a named field refuses on every lane — no lane inpaints in place. `./mods/loras` carries one first-party row (`qwen21_consistency`, fetched from ausboss/Qwen-Image-2.1-Consistency-LoRA); user files ride the pack's bag beside it.
 
 ## Model Experience
 
@@ -39,7 +39,7 @@ Within a run, the cache is the lane's point: QwenImage21Cache prefixes reference
 
 - **16-image ceiling** — beyond `max_images` the kit refuses loud; larger reference sets need trimming.
 - **Resolution pair rides together** — a lone width or height is refused (the range rule made law).
-- **No LoRA rows** — the `./mods/loras` seam is empty until first-party adapters land.
+- **One first-party LoRA row** — `qwen21_consistency`, stamped by the `drift-lock` recipe; switch it off for movement edits.
 - **Live behavior unobserved** — not verified against the running model.
 
 Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.

@@ -14,12 +14,15 @@ short guide.
 ## Current grid
 
 Every window lands on the shared generated-frame grid — ONE uniform gate
-(`assertSpanGrid` / `assertGridLength`, `models/h3/src/timelineContract.ts`):
+(`admitSpanGrid` / `assertGridLength`, `models/h3/src/timelineContract.ts`):
 a FIRST or CUT window's authored span must be `22 + 17k` (e.g. 22, 39, 56,
 73, … 124), and a CARRIED window's span must be `17k` (its 22-frame seam is
 the generation head the previous window carries). Both are the same engine
-grid, both refuse at the compose door with the nearest legal value named,
-and there is no snapping path that silently accepts an off-grid span.
+grid — and admission SNAPS: a legal span admits verbatim, while an off-grid
+span of `SNAP_FLOOR_FRAMES` (24) or more lands its end UP on the next legal
+rung and every later window re-tiles after it (lengths held). Nothing is
+silently re-framed — each snap is reported on the run's status with the
+authored and rendered numbers, and the authored doc keeps its coordinates.
 
 THE CAP: `GRID_MAX_FRAMES = 362` (22 + 17 × 20) — the largest single window.
 A longer film is joined from uniform windows under the 39 f context overlap,
@@ -32,16 +35,24 @@ by that carry. So a carried window's authored span is `17k`, and its
 CONTRIBUTION to the film is `span − 22` frames. Author `90` for a carried
 window and you get a 22 f seam you never asked for.
 
-THE REFUSAL, verbatim (`assertGridLength`):
+THE TWO REFUSALS, verbatim (`admitSpanGrid`) — a span too small to snap,
+and a span whose snap overshoots the cap:
 
 ```
-length <N>f is off-grid — the engine renders 22+17k frames in [22,362]
-(nearest legal: <M>f); the doc-proven geometry is 0→124→243→362
+<where>: authored range 124→139 has length 15f, shorter than the 24f
+snap floor — a window this small is a trim, not a call (the floor snaps
+every legal span up; nothing below it can be)
 ```
 
-It names the nearest legal value; there is no silent snap. Read the number
-and re-author the span — never retry the same value hoping the door absorbs
-it.
+```
+<where>: authored range 0→380 snaps to 396f generated,
+past the grid's 362f ceiling — cut the window
+```
+
+Everything else admits — snapping up when off-grid, with the run's
+status naming both numbers. Read the notice and re-author the span when
+the rendered end is not the film you meant; never retry a sub-floor
+span hoping the door absorbs it.
 
 ## Intended call layout
 

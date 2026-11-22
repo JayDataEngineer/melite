@@ -17,7 +17,7 @@ kind: package-library
 ## Gates
 
 ```sh
-pnpm --filter @melite/audio-music exec vitest run
+pnpm run test
 ```
 
 ## Model Experience

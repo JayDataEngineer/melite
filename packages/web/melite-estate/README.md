@@ -5,13 +5,15 @@ kind: package-bundle
 
 # melite-estate
 
-`@melite-plugin/dsh-estate` is the one bundle row that seats melite's server side inside the DSH host. Its plugin mounts the composition as child plugins through `ctx.plugin`: the local subprocess seat, the engines tier (the `engines` registry, the ComfyUI adapter, the optional MCP engine lane, the craft critic, the agent engine), the drafts service, the serial run queue with its disclosure, skills, and runs seats, and the manage, runs, media, and models remotes plus the provisioning composition. A consumer row, never a provider: the storage stack belongs to dsh-base in profiles.
+`@melite-plugin/dsh-estate` is the one bundle row that seats melite's server side inside the DSH host. Its plugin mounts the composition as child plugins through `ctx.plugin`: the local subprocess seat, the engines tier (the `engines` registry, the ComfyUI adapter, the optional MCP engine lane, the craft critic, the agent engine), the drafts service, the serial run queue with its disclosure, skills, and runs seats, and the manage and runs remotes plus the media and models route plugins and the provisioning composition. A consumer row, never a provider: the storage stack belongs to dsh-base in profiles.
 
 ## Contract
 
 The manifest declares `dsh.bundle.patch: ./cordis.patch.yml`, inserting the single `melite-estate` row, and the standard `./package.json` re-export. Config face, pinned by the profile's `cordis.yml` row — every env seam is gone:
 
 - `repoRoot` — pins the runs state tree; the queue refuses unpinned boots.
+- `stateRoot` — the runs state root, named absolute; wins over `repoRoot`'s default.
+- `stateRoots` — cross-roots manifest extras, in search order after the own root; a string is colon-split, a list passes through.
 - `allowGuttedLane` — serve degraded (recorded on the `meliteLaneHealth` service) instead of refusing the boot when required bundles are absent.
 - `mcpEngines` — MCP engine ids to seat; default none, announced loud, optional and experimental.
 - `criticRoute` and `agentRoute` — named `"provider/model"` routes for the craft critic and the agent brain; unset means the auto route for the critic and a loud refusal at the door for the agent.

@@ -27,9 +27,16 @@ spellings:
 | B. perform | `"qwen3-tts"` (head, pool-first) or `"qwen3-tts-voicedesign"` (explicit route) | `"customvoice"` | 1.7B CustomVoice |
 | small cell (rare, deliberate) | `"qwen3-tts"` + `quant: "0_6b"` | `"customvoice"` | 0.6B CustomVoice — no style control |
 
-If a style instruction ever refuses with "fires nothing on this lane",
-you are on a cell without instruction control — check what resolved,
-not what you stated.
+If a style instruction ever refuses with "fires nothing on the …", you
+stated it on a surface without instruction control — check what
+resolved, not what you stated.
+
+The Recipe group carries three one-click rows that stamp sampling
+picks onto the draft: **Steady Read** (`steady-read`) stamps
+`temperature: 0.05` (the schema floor), **Expressive Read**
+(`expressive-read`) stamps `temperature: 2` (the schema ceiling), and
+**Default** stamps nothing. You can also state `temperature` directly —
+the recipes are the one-click spellings of the same dials.
 
 ## PHASE A — make the voice (once per character)
 
@@ -120,7 +127,9 @@ Direction is honoured faithfully — write the delivery physically
 | `params 'voice' and 'qvoice' fire together` | ONE voice performs — and the refusal fires only when YOU stated a preset: remove the `voice` key. Stating nothing is correct beside a qvoice — the overlay skips/releases its own 'ryan' stamp when a persona arrives (the derived-stamp release). |
 | `$.voice expected "ryan" | "serena" | …` | the `voice` seat takes the NINE PRESETS ONLY — a saved persona never rides it. Ride the persona in the **qvoice MOD BAG**: `qvoice: [{ qvoice: "kunoichi_v3", voice_strength: 1 }]` — the bag is what the studio's mods bar renders, so the operator sees the take and the strength handle. A bare-string `qvoice` and the bag both land in the bag (the F49 write-seat promotion) — either spelling renders in the studio. |
 | save writes `voice-run-<runid>.qvoice` | The export lands `<voice_name>.qvoice` at `/mnt/data/models/audio/voices/` and the run receipt prints the deliverable path. No hand-copy. |
-| `'style_instruction' fires nothing on this lane` | the resolved cell has no instruction control — the 0.6B cell (or a lane mismatch); check the address law above |
+| `param 'style_instruction' fires nothing on the resolved TTS lane` | the resolved size cell has no instruction control (the 0.6B cell) — check the address law above |
+| `param 'style_instruction' fires nothing on the VoiceDesign lane` | emotion styling rides the CustomVoice lane — the design lane's instruct IS the persona description; drop the style |
+| `params 'style_instruction'/'design_prompt' fire nothing on the tts card's Base variant` | the Base lane clones a reference — style control styles the CustomVoice persona, the persona description designs on VoiceDesign; switch variants or drop them |
 | `'design_prompt' missing or empty` | Phase A requires the description — state it |
 | `preview_voice: not a .qvoice file` | the path is not a saved persona (check the magic bytes) |
 | `'qvoice' is the 'qvoice' mod field of family …` | the field belongs to another family's lane — state `params.model` on the named family |

@@ -9,7 +9,7 @@ kind: package-library
 
 ## Declaration
 
-One checkpoint carries model, clip, and VAE (`yue2_3b_int8_convrot.safetensors`, provisioned from Comfy-Org at ~3.96 GB, sha256-pinned; the INT8 ConvRot cell declares an ~8 GB VRAM peak). Variant recipes: `short_sting` stamps `duration` 5 (the schema floor) and `full_length` stamps 360 (the ceiling); `Default` stamps nothing. The `compose` action's params: `prompt` (required — every music lane states what the song is), `lyrics`, `mode` (`full` / `melody` / `off`), `duration` (bounds 5–360), `n_diffusion_steps` (1–200), and a seed-sentinel `seed`. The build plans ABC with `YuE2GenerateABC` (mode `off` composes no planner), sizes the latent from `YuE2GenerateMusic`'s seconds output, samples with KSampler dpm_2 / sgm_uniform at cfg 1, and saves mp3 V0 under `<run>/music`.
+One checkpoint carries model, clip, and VAE (`yue2_3b_int8_convrot.safetensors`, provisioned from Comfy-Org at ~3.96 GB, sha256-pinned; the INT8 ConvRot cell declares an ~8 GB VRAM peak). Variant recipes: `short-sting` stamps `duration` 5 (the schema floor) and `full-length` stamps 360 (the ceiling); `Default` stamps nothing. The `compose` action's params: `prompt` (required — every music lane states what the song is), `lyrics`, `mode` (`full` / `melody` / `off`), `duration` (bounds 5–360), `n_diffusion_steps` (1–200), and a seed-sentinel `seed`. The build plans ABC with `YuE2GenerateABC` (mode `off` composes no planner), sizes the latent from `YuE2GenerateMusic`'s seconds output, samples with KSampler dpm_2 / sgm_uniform at cfg 1, and saves mp3 V0 under `<run>/music`.
 
 ```
 .

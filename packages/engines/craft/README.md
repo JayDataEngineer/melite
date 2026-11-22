@@ -19,11 +19,10 @@ engine-contract.
   `agent_prompt` (the brief), `command` (`{engine, params}` as JSON),
   `model` (empty = lane default), `max_iterations` (default unlimited; hard
   cap `CRAFT_MAX_ITERATIONS_HARD_CAP` = 1000).
-- Critic route: config `{ provider, model }` names it;
-  `craftEngineAutoRoute` at the composition site picks the first
-  image-capable route, with the `MELITE_CRITIC_ROUTE` (`provider/model`)
-  preference beating the enumeration. A lane with no image-capable route
-  seats no critic, loud.
+- Critic route: the estate's `criticRoute` config (`"provider/model"`)
+  names it; `craftEngineAutoRoute` at the composition site picks the first
+  image-capable route, with the named preference beating the enumeration.
+  A lane with no image-capable route seats no critic, loud.
 - A refine verdict walks the same command gate as the stage's own command.
 - Declared exports: `.` (barrel), `./craft-engine` (executor, critic
   builder, auto-route), `./package.json`.

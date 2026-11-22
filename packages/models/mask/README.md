@@ -9,7 +9,7 @@ mask registers the model family `mask-select` (label "Mask", genre `image`): the
 
 ## Weights
 
-The three weights are the action's own constants (`MASK_WEIGHTS`, the LANE_FILES pattern): `sam3.1_multiplex_fp16.safetensors` (the SAM3 multiplex checkpoint), `rt_detr_v4-x-hgnet_fp32.safetensors` (the RT-DETR detector), and `sam2.1_hiera_large.pt` (the SAM2 arm). No variant swaps them and no row names them; the mask card's provisions declare the downloads, and a card spec pins the agreement between lane constants and provision rows.
+The three weights are the action's own constants (`MASK_WEIGHTS`, the LANE_FILES pattern): `sam3.1_multiplex_fp16.safetensors` (the SAM3 multiplex checkpoint), `rt_detr_v4-x-hgnet_fp32.safetensors` (the RT-DETR detector), and `sam2.1_hiera_large.pt` (the SAM2 arm). No variant swaps them and no row names them; the FAMILY owns the downloads (the DECL's own provisions rows) and the card serves them, and a card spec pins the agreement between lane constants and provision rows.
 
 ## The select action
 

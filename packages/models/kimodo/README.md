@@ -9,7 +9,7 @@ kimodo registers the NVIDIA Kimodo-SOMA family (form `form_motion_kimodo`, genre
 
 ## The compose action
 
-`compose` outputs two handles: `motion_npz` (kind MOTION) and `animated_glb` (kind GLB). The build wires KimodoLoader → KimodoTextToPose, then — when chained motion inputs or a rigged GLB are present — RaySomaxBake at 30 fps.
+`compose` outputs two handles: `motion_npz` (kind MOTION) and `animated_glb` (kind GLB). The build wires KimodoLoader → KimodoTextToPose, then — when a rigged GLB (`preview_glb`) is present — RaySomaxBake at 30 fps.
 
 Params: `prompt` (required — the family's one relation), `duration_sec` [1, 10] (default 5), `diffusion_steps` [10, 200] (default 25), `num_samples` [1, 4] (default 1), `num_transition_frames` [0, 60] (default 10), `cfg_type` (`separated` / `regular` / `nocfg`; default `separated`), `cfg_weight_a` and `cfg_weight_b` [0, 15] (defaults 2.5 and 5), the chaining inputs `motion_npz`, `motion_prompts`, `motion_constraints`, `preview_glb`, and `seed` (seed-sentinel rule; default 42).
 

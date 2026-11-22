@@ -9,10 +9,10 @@ kind: package-bundle
 
 ## Contract
 
-- `./card` — the card definition. `BOARDED` is the `h3` checkpoint; `VARIANT_ADDRESSES` (`h3-timeline`, `h3-fl2va`, `h3-ref2va`, `h3-timeline-ref`, `h3-keyframe`) keep the retired h3 and h3-keyframe family packages alive as variant routes, resolving old drafts migration-free. The schema declares the card's own fields; the window families (t4r/t4_open/t4_chain), the motion-context chaining rail, and the SLA/SR/interp leaves are renderer vocabulary riding the compose door's explicit-params overlay. Node creation order is serialized id order (t4r creates fps before seconds; the reference resizer precedes the geometry resizer — kept verbatim). The autofill strip rides the h3 family's `finalizeH3`; t4r strips nothing. The span-grid contract (`assertCarriedSpanGrid`, `assertGridLength`, `assertSpanGrid`, `gridSnap`) re-exports from `@melite/models-h3` alongside the `carrier`, `JSON_ARRAY_PARAMS`, and `schema` modules.
-- `./tool` — `buildH3TimelineTool` (name `h3_timeline`). Params: `calls` — the shots tiling law: each call's `start_frame` equals the previous call's `end_frame`; first calls and `"transition": "cut"` calls author 22+17-frame spans, carried later calls author 17-frame spans (the seam overlap comes from the generation head). `audio_clips` — dialogue, sfx, and music clips; dialogue text rides the window prompt as a timed tag (the lip-sync law), sfx text rides the overall soundscape, music text rides non-diegetic music, and generated voice ducks -14 dB under conditioned clips. A clip `src` may be a `$spell` naming a wired stage input: the spelled soundtrack rides the graph in every run form — overlay-only clips seat on the film mix's `wired_audio_1..4` AUDIO seats, a clip that conditions a window slices through the pack's `MeliteAudioTensorSlice` typed AUDIO seat (the merge lands the producer's link in both seats), and a path keeps the staged-file handoff.
+- `./card` — the card definition. `BOARDED` is the `h3` checkpoint; `VARIANT_ADDRESSES` (`h3-timeline`, `h3-fl2va`, `h3-ref2va`, `h3-timeline-ref`, `h3-keyframe`) keep the retired h3 and h3-keyframe family packages alive as variant routes, resolving old drafts migration-free. The schema declares the card's own fields; the window families (t4r/t4_open/t4_chain), the motion-context chaining rail, and SLA/SR/interp leaves are renderer vocabulary on the compose door's explicit-params overlay. Node creation order is serialized id order (t4r creates fps before seconds; the reference resizer precedes the geometry resizer — kept verbatim). The autofill strip rides the h3 family's `finalizeH3`; t4r strips nothing. The span-grid contract (`assertCarriedSpanGrid`, `assertGridLength`, `assertSpanGrid`, `gridSnap`) re-exports from `@melite/models-h3` alongside the `carrier`, `JSON_ARRAY_PARAMS`, and `schema` modules.
+- `./tool` — `buildH3TimelineTool` (name `h3_timeline`). Params: `calls` — the shots tiling law: each call's `start_frame` equals the previous call's `end_frame`; first calls and `"transition": "cut"` calls author 22+17-frame spans, carried later calls author 17-frame spans (the seam overlap comes from the generation head). `audio_clips` — dialogue, sfx, and music clips; dialogue text rides the window prompt as a timed tag (the lip-sync law), sfx text rides the overall soundscape, music text rides non-diegetic music, and generated voice ducks -14 dB under conditioned clips. A clip `src` may be a `$spell` naming a wired stage input: the spelled soundtrack rides the graph in every run form — overlay-only clips seat on the film mix's `wired_audio_1..4` AUDIO seats, a clip that conditions a window slices through the pack's `MeliteAudioTensorSlice` typed AUDIO seat, and a path keeps the staged-file handoff.
 - `./client` — the bench studio registration (browser half, materialized from `lib/client.js`).
-- `./v2v-face` — the v2v windows face's host-delivery leaf (the mask-studio leaf law): the studio tree never roots an emit, so this root file re-exports `V2vLeafFace` for other cards to import through a subpath; its transitive closure stays the PURE plane — copy dict, split law, doc model, no CSS, no tenant editor — so a host inlining the leaf stays light.
+- `./v2v-face` — the v2v windows face's host-delivery leaf (the mask-studio leaf law): the studio tree never roots an emit, so this root file re-exports `V2vLeafFace` for other cards to import through a subpath; its transitive closure stays the PURE plane — copy dict, split law, doc model, no CSS, no tenant editor — keeping inlining hosts light.
 - `.` — the row-mounted host face; it registers nothing.
 - `./package.json` — the manifest.
 
@@ -24,7 +24,7 @@ The `h3_timeline` tool fires an agent request when called; the card conditions a
 
 #### What the model sees
 
-Each H3 window receives its prompt, reference frames, and the audio classes stamped onto it; the agent sees the tool's two long-form JSON schemas and the caller's calls and clips.
+Each H3 window receives its prompt, reference frames, and stamped audio classes; the agent sees the two long-form JSON schemas and the caller's calls and clips.
 
 #### Token effect
 
@@ -36,6 +36,6 @@ append-only — tool-call turns append messages; earlier turns stay byte-identic
 
 ## Known Limitations and Deferred Work
 
-- **Off-grid frames refuse** — the tiling law has no flex; a miscounted call stops at the nearest legal frame, by design.
+- **Off-grid spans snap** — a legal span admits verbatim; an off-grid span of 24 frames or more snaps its end UP to the next rung (later windows re-tile, every snap reported on run status); under 24 frames or past the 362 cap refuses.
 - **One audio lane per class per window** — a clip crossing a seam stamps both windows; a second same-class clip in one window refuses.
 - **No per-call audio** — audio authoring lives in `audio_clips`; a `calls`-level audio field is not declared.

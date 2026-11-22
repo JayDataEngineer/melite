@@ -5,7 +5,7 @@ kind: package-library
 
 # @melite/audio-voice-change
 
-`@melite/audio-voice-change` is the voice-change card (sidebar key `audio`). One family boards: `seed-vc`, and the card owns only dispatch — the convert segment lives in the family package (`@melite/models-seed-vc` `actions.ts`), resolved through the guarded dynamic seat in `./src/family-seats.ts` (the plugin law: a missing family package costs its own seat, never this card's load). The schema is upstream 1:1 The schema is upstream 1:1 (SeedVCRun's own INPUT_TYPES): `source_audio` + `ref_audio` (both required paths), `steps` 30, `speed` 1, `inference_cfg_rate` 0.7, `pitch_shift` 0, `f0_condition` false, `auto_f0_adjust` true, `unload_model` true. `f0_condition=true` is the singing lane (the 44.1k base-f0 DiT + RMVPE pitch tracking); false is the speech lane (the 22.05k small-wavenet DiT) — a params stamp, never a second route.
+`@melite/audio-voice-change` is the voice-change card (sidebar key `audio`). One family boards: `seed-vc`, and the card owns only dispatch — the convert segment lives in the family package (`@melite/models-seed-vc` `actions.ts`), resolved through the guarded dynamic seat in `./src/family-seats.ts` (the plugin law: a missing family package costs its own seat, never this card's load). The schema is upstream 1:1 (SeedVCRun's own INPUT_TYPES): `source_audio` + `ref_audio` (both required paths), `steps` 30, `speed` 1, `inference_cfg_rate` 0.7, `pitch_shift` 0, `f0_condition` false, `auto_f0_adjust` true, `unload_model` true. `f0_condition=true` is the singing lane (the 44.1k base-f0 DiT + RMVPE pitch tracking); false is the speech lane (the 22.05k small-wavenet DiT) — a params stamp, never a second route.
 
 ## Contract
 
@@ -15,7 +15,7 @@ kind: package-library
 ## Gates
 
 ```sh
-pnpm --filter @melite/audio-voice-change exec vitest run
+pnpm run test
 node tools/check-package-readmes.mjs --only audio/voice-change
 ```
 

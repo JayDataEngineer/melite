@@ -40,12 +40,12 @@ Cordis is the sole framework and architecture of layer A, any deviation from thi
 ```sh
 pnpm install            # pnpm workspaces
 pnpm run test           # unit (vitest, all projects)
-pnpm run test:coverage  # CI coverage gate: per-file FLOORS from scripts/coverage-baseline.ts (owned debt priced per file; regen via coverage-regen.mjs) + the coverage-ratchet lines judge — a change adds zero new uncovered lines
+pnpm run test:coverage  # CI coverage gate: per-file FLOORS from scripts/coverage-baseline.ts (owned debt priced per file; regen via coverage-regen.mjs) + the coverage-rows tripwire (a change adds zero new uncovered lines). The full ratchet (tools/coverage-ratchet.mjs) rides the pre-push battery (hook-full-battery.mjs), never CI.
 pnpm run test:e2e       # real-API e2e; mixed gating (per-suite env/engine/lane/FILM_E2E conditions — see tests/README.md)
 pnpm run test:expected  # owner-local process expectations
 pnpm run test:bench     # performance benchmarks
 pnpm run test:snapshot  # keyless recorded-session replay
-pnpm run test:web       # web browser snapshot (replay); test:web:browser owns playwright
+pnpm run test:web       # web snapshot (happy-dom replay); real-browser evidence is test:web:browser (playwright)
 ```
 
 Testing policy — `references/deepseek-harness/docs/testing.md`. Every

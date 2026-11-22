@@ -9,7 +9,7 @@ kind: package-library
 
 ## Declaration
 
-Variants: `3b` (3B FP16, ~7 GB VRAM, the default), `7b` (7B FP8, about 3x slower), and a hidden `vae-fp16` row folded into the family. Recipe rows `preview_256`, `fhd_1080`, and `uhd_2160` stamp resolution picks, plus the empty `Default`. Family defaults: `resolution` 1080, `max_resolution` 4096, `batch_size` 1, `seed` 0. The `upscale` action's declared params: `input_image` (string, accepts a `$`-spelled upstream tensor reference or a loader name), `resolution` (bounds 256–2160), `max_resolution` (512–4096), `batch_size` (1–16), and a seed-sentinel `seed`. The build wires `SeedVR2LoadDiTModel` + `SeedVR2LoadVAEModel` from the lane's `unet`/`vae` facts and saves under `<run>/gen`.
+Variants: `3b` (3B, the default — an FP16 cell and an FP8 cell at ~3.4 GB) and a hidden `vae-fp16` row folded into the family (the 7B row died 2026-11-12). Recipe rows `preview-256`, `fhd-1080`, and `uhd-2160` stamp resolution picks, plus the empty `Default`. Family defaults: `resolution` 1080, `max_resolution` 4096, `batch_size` 1 (no seed default — the seed is seed-sentinel). The `upscale` action's declared params: `input_image` (string, accepts a `$`-spelled upstream tensor reference or a loader name), `resolution` (bounds 256–2160), `max_resolution` (512–4096), `batch_size` (1–16), and a seed-sentinel `seed`. The build wires `SeedVR2LoadDiTModel` + `SeedVR2LoadVAEModel` from the lane's `unet`/`vae` facts and saves under `<run>/gen`.
 
 `relations.required` names `input_image`: an upscale needs its source — the request states the image to upscale.
 

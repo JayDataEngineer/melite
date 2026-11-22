@@ -37,4 +37,4 @@ starts at the user's Run press.
 The progress rides the card (the user watches it run).
 
 ## Deliver
-WAV/FLAC -> `data/delivery/unity/audio/vo/<character>/`, manifest rows.
+FLAC -> `data/delivery/unity/audio/vo/<character>/`, manifest rows.

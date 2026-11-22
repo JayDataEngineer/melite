@@ -7,9 +7,9 @@ kind: package-library
 
 The Anima family — anime and illustration text-to-image on the comfyui engine, built on the Cosmos-Predict2 base with Danbooru-style prompting. The package owns the declaration, the lane's weight facts, and the t2i action; the image-gen card binds the action and owns the compose surface around it.
 
-The lane pins its weights in lane_inputs: unet `anima-base-v1.0.safetensors`, text encoder `qwen_3_06b_base.safetensors`, VAE `qwen_image_vae.safetensors`, clip type `stable_diffusion`, stock `EmptyLatentImage` latent. Three provisions rows download them (circlestone-labs/Anima, Qwen/Qwen3-0.6B-Base, Comfy-Org/Qwen-Image_ComfyUI). Defaults are 1024×1024, 30 steps, er_sde over simple, cfg 4; the recipes are draft (8 steps) and detailed (30 steps); the single F32 cell peaks at 20 GB. The prompt field is required — a draft without one refuses, because every image lane states what the picture is.
+The lane pins its weights in lane_inputs: unet `anima-base-v1.0-int8convrot.safetensors` (the int8convrot default; the bf16 cell spells `anima-base-v1.0.safetensors`), text encoder `qwen_3_06b_base.safetensors`, VAE `qwen_image_vae.safetensors`, clip type `stable_diffusion`, stock `EmptyLatentImage` latent. Three provisions rows download them (circlestone-labs/Anima, Qwen/Qwen3-0.6B-Base, Comfy-Org/Qwen-Image_ComfyUI). Defaults are 1024×1024, 52 steps, er_sde over simple, cfg 4; the recipes are draft (8 steps), detailed (52 steps), settled-negative, and default; three variant rows (base, turbo, aesthetic) each span the int8convrot/bf16 quant cells (the single-F32 row died 2026-10-24). The prompt field is required — a draft without one refuses, because every image lane states what the picture is.
 
-The family's action is t2i: the stock diffuse topology — CLIPTextEncode pair, EmptyLatentImage at card resolution, KSampler, decode and save under `<run>/gen`. The facts door reads the resolved lane_inputs into the closed T2IFacts shape; a drifted latent class refuses rather than silently rerouting. The DECL boards two mods: `./mods/mask` is the bare-flavor mask boarding — the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at the firing gate — and `./mods/loras` is the flavor seed with no first-party rows, user-provided files riding the pack's bag. Controlnet and ip-adapter bags still refuse loud, never silently drop.
+The family's action is t2i: the stock diffuse topology — CLIPTextEncode pair, EmptyLatentImage at card resolution, KSampler, decode and save under `<run>/gen`. The facts door reads the resolved lane_inputs into the closed T2IFacts shape; a drifted latent class refuses rather than silently rerouting. The DECL boards two mods: `./mods/mask` is the bare-flavor mask boarding — the pack contract owns the region fields, and a stated region rides the crop_stitch DetailerForEach arm; region-without-crop_stitch refuses at the card gate — and `./mods/loras` is the flavor seed with no first-party rows, user-provided files riding the pack's bag. Controlnet and ip-adapter bags still refuse loud, never silently drop.
 
 ## Declaration
 
@@ -32,7 +32,7 @@ Independent — the package contributes no persistent prompt prefix, so register
 ## Known Limitations and Deferred Work
 
 - **Required prompt** — the relations row makes prompt mandatory; a textless draft refuses at the family door instead of composing an undefined image.
-- **F32 only** — one cell, 20 GB peak; no quantized variants ride the DECL.
+- **Two quant cells** — int8convrot (the 12 GB default tier) and bf16 (20 GB); the single-F32 row died with the variant matrix.
 - **No adapter rows** — the boarded `./mods/loras` flavor carries no first-party rows (user files ride the pack's bag), and no controlnet or ip-adapter pack boards; a stated adapter bag refuses loud, so adapter-driven styling is out of scope here.
 
 Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.

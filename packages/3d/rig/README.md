@@ -35,4 +35,3 @@ independent — nothing here appends to or reshapes a session cache.
 ## Known Limitations and Deferred Work
 
 - **The dead lanes stay dead** — skintokens died in the 2026-10-12 operator kill; the species lane died with the blender lane (2026-11-01, operator: melite carries no blender); the card ships auto/copy, period.
-- **fbx is the engine-facing export** — GLB is the interchange default; fbx exists for Unity import and is not validated further here.

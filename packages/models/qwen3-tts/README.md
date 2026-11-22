@@ -9,7 +9,7 @@ kind: package-library
 
 ## Declaration
 
-Two variants on one `Variant` group. `customvoice` (default) performs text through a `PRESET_SPEAKERS` persona (nine named voices; `none` clears the persona) or through a saved `.qvoice` embedding loaded by the `qvoice` mod. `base` is the three-second voice-clone lane: the reference pair (`ref_audio` + `ref_text`) or a `.qvoice` persona, one complete source. The `export` action writes a persona embedding (`qvoice: AUDIO` output); it requires `voice_name` + `design_prompt` together and conflicts with `ref_audio`, `style_instruction`, and a stated `.qvoice`. The declared surface carries the sampling knobs (`temperature` 0.05–2, `top_p` 0–1, `top_k` 0–1000, `speed` 0.5–2, `repetition_penalty` 0.8–2) plus `seed`; `speak` mints its seed branch-locally under the voice-lock law, and only the export row carries the seed-sentinel rule.
+Three variants on one `Variant` group. `customvoice` (default) performs text through a `PRESET_SPEAKERS` persona (nine named voices; an unstated voice on this lane stamps `ryan`) or through a saved `.qvoice` embedding loaded by the `qvoice` mod. `voicedesign` designs a voice from a description (1.7B only); `base` is the three-second voice-clone lane: the reference pair (`ref_audio` + `ref_text`) or a `.qvoice` persona, one complete source. The `export` action writes a persona embedding (`qvoice: AUDIO` output); the save is the `qvoice_save` mod's boolean and the mint names itself — the old `voice_name` + `design_prompt` pair is dead. The declared surface carries the sampling knobs (`temperature` 0.05–2, `top_p` 0–1, `top_k` 0–1000, `speed` 0.5–2, `repetition_penalty` 0.8–2) plus `seed`; `speak` mints its seed branch-locally under the voice-lock law, and only the export row carries the seed-sentinel rule.
 
 ```
 .
@@ -44,7 +44,7 @@ Independent — each synthesis is its own engine request; the package contribute
 
 ## Known Limitations and Deferred Work
 
-- **No instruction control on 0.6B** — `LANE_TOPOLOGY` marks both lanes `instruction_control: false`; style steering belongs to the 1.7B VoiceDesign variant of this one family.
+- **No instruction control on 0.6B** — `LANE_TOPOLOGY` marks both lanes `instruction_control: false`; style steering belongs to the 1.7B `customvoice` cell of this one family.
 - **Hand-merged CustomVoice weight** — the `customvoice` lane cannot run on a fresh estate until the operator merges the checkpoint; nothing here fetches it.
 - **Unstated seeds mint at compose** — identical requests can yield different takes unless the seed is stated.
 - **Persona quality** — voice similarity and export fidelity are not verified against the running model.

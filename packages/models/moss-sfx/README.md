@@ -1,5 +1,5 @@
 ---
-description: MOSS-SFX v2 sound-effect generation — text-to-SFX on the ComfyUI engine, hand-placed weights, durations from 0.5 to 300 seconds.
+description: MOSS-SFX v2 sound-effect generation — text-to-SFX on the ComfyUI engine, hand-placed weights, durations from 0.5 to 30 seconds.
 kind: package-library
 ---
 
@@ -11,11 +11,11 @@ moss-sfx registers the MOSS-SFX v2 family (form `form_sound`, label "MOSS-SFX v2
 
 `sfx` composes a three-node chain: LoadAudiocore → AudiocoreTTS (mode `tts`, the `AUDIACORE_TTS_AUTOFILL` pin) → SaveAudio under `<run>/sfx`.
 
-Params: `prompt` (required — the family's one relation, with the describe-the-sound cure), `duration` [0.5, 300] seconds, `guidance_scale` [0, 20], `n_diffusion_steps` [1, 500], `seed` (seed-sentinel rule).
+Params: `prompt` (required — the family's one relation, with the describe-the-sound cure), `duration` [0.5, 30] seconds, `guidance_scale` [0, 20], `n_diffusion_steps` [1, 500], `seed` (seed-sentinel rule).
 
 ## Variants and recipes
 
-One variant (`standard`, native route `moss-sfx`). Recipes stamp duration: `one_shot` (0.5 s — the card-schema floor), `ambience_bed` (300 s — the ceiling), and the no-op `default`.
+One variant (`standard`, native route `moss-sfx`). Recipes stamp duration: `one-shot` (0.5 s — the card-schema floor), `ambience-bed` (30 s — the engine `max_inference_seconds` ceiling), and the no-op `default`.
 
 ## Model Experience
 
@@ -38,7 +38,7 @@ Independent: each run is self-contained.
 ## Known Limitations and Deferred Work
 
 - **Hand-placed weights** — no provision row exists; a missing `MOSS-SoundEffect-v2.0-src` tree fails at engine validation, loudly but late.
-- **Duration extremes are recipe-flavored** — 0.5 s and 300 s are the declared bounds; quality at the extremes is not verified against the running model.
-- **One architecture** — this family is SFX v2 only; the MOSS TTS and VoiceGenerator checkpoints are the moss package's routes.
+- **Duration extremes are recipe-flavored** — 0.5 s and 30 s are the declared bounds; quality at the extremes is not verified against the running model.
+- **One architecture** — this family is SFX v2 only (no MOSS TTS or VoiceGenerator lane rides this package).
 
 Exports: the plugin root, `./package.json`.

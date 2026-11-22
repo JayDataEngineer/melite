@@ -9,7 +9,7 @@ kind: package-library
 
 ## Contract
 
-- `.` — the card definition and registration (`id` per sidebar key `audio`): the root module carries `inject = ['comfyui']` and registers the card. Schema: `prompt` (required — describe the SOUND, not the scene), `guidance_scale` (0..20, default 4), `n_diffusion_steps` (1..500, default 100 — declared 1:1 with the upstream node; the pipeline's declared 100/4.0 defaults are the 2026-09-23 alignment), `duration` (0.5..300 s, default 10), and `seed` (−1).
+- `.` — the card definition and registration (`id` per sidebar key `audio`): the root module carries `inject = ['comfyui']` and registers the card. Schema: `prompt` (required — describe the SOUND, not the scene), `guidance_scale` (0..20, default 4), `n_diffusion_steps` (1..500, default 100 — declared 1:1 with the upstream node; the pipeline's declared 100/4.0 defaults are the 2026-09-23 alignment), `duration` (0.5..30 s, default 10 — the 30 s ceiling is the engine's `max_inference_seconds`; a longer draft refuses at the schema), and `seed` (−1).
 - `./card` — the same card module as the root face, re-exported as the explicit named door (one file, two specifiers).
 - `./package.json` — the manifest.
 

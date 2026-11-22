@@ -9,8 +9,8 @@ The image-generation card package: one `image-gen` card plus the `image_gen` age
 
 ## Contract
 
-- `./card` — the card definition (`id: 'image-gen'`, stage row `generate`, sidebar key `image`). Boards seven families from their DECLs: krea-2, z-image, anima, qwen-img-2.1, flux-klein, moss-image, and h3-image (`SEMANTIC_MODELS`, derived from the present family seats — a missing family package costs its own seat, never the card). Flow seats: `prompt` as text in, `image` out; a model is required. The schema carries the sampler/scheduler vocabulary (`media.comfyui.sampler_vocab`); presets are the families' Recipe rows, with no card-level preset knob. Modifier riders bind per family: loras ride every boarded family (each family's own flavor rows; families with no first-party rows serve empty and take user files). The region/inpaint vocabulary (`mask` bag or flat riders, `mask_mode: 'crop_stitch'`) composes the gen detailer arm on EVERY boarded family (ANY model can inpaint); the pair law (a base `input_image` needs `input_mask` or a detector) refuses loud for every family. `finalizeImageGen` strips family leaks post-compose.
-- `./tool` — `buildImageGenTool`, the agent tool face; default model `SEMANTIC_MODELS[0]`, preview field `prompt`.
+- `./card` — the card definition (`id: 'image-gen'`, stage row `generate`, sidebar key `image`). Boards seven families from their DECLs: krea-2, z-image, anima, qwen-img-2.1, flux-klein, moss-image, and h3-image (`semanticModels()`, derived at call time from the present family seats — a missing family package costs its own seat, never the card). Flow seats: `prompt` as text in, `image` out; a model is required. The schema carries the sampler/scheduler vocabulary (`media.comfyui.sampler_vocab`); presets are the families' Recipe rows, with no card-level preset knob. Modifier riders bind per family: loras ride every boarded family (each family's own flavor rows; families with no first-party rows serve empty and take user files). The region/inpaint vocabulary (`mask` bag or flat riders, `mask_mode: 'crop_stitch'`) composes the gen detailer arm on EVERY boarded family (ANY model can inpaint); the pair law (a base `input_image` needs `input_mask` or a detector) refuses loud for every family. `finalizeImageGen` strips family leaks post-compose.
+- `./tool` — `buildImageGenTool`, the agent tool face; default model `semanticModels()[0]`, preview field `prompt`.
 - `./wire` — browser-safe wire facts: `TOOL_NAME = 'image_gen'` (the tool plane; the registry row plane is `image_gen_card`).
 - `.` — the composition marker; `packages/engines/comfyui-cordis/src/cardDefs.ts` composes the card from `./card`.
 - `./package.json` — the manifest.
@@ -20,7 +20,7 @@ Admission refuses unknown parameters, unboarded families, and missing required p
 ## Gates
 
 ```sh
-pnpm --filter @melite/image-image-gen exec vitest run
+pnpm run test
 ```
 
 When the user-visible schema or tool output changes, update the recorded-session fixture in the same change.

@@ -7,7 +7,7 @@ kind: package-library
 
 The JoyCaption family — stylized natural-language image captioning on JoyCaption beta-one (the 8B VLM), with descriptive, SD-prompt, MJ, and booru-list templates for recreating an image in FLUX, Ideogram, or an image-edit lane. Defaults pin `fancyfeast/llama-joycaption-beta-one-hf-llava`, the Descriptive template, long length, and no extra option.
 
-One Standard variant rides the DECL, deliberately: the upstream loader takes any repo id or local path — there is no closed set to enumerate — so the family default stamps beta-one and custom paths ride explicit checkpoint params; a variant per checkpoint would be a lie of closedness. The single F32 cell peaks at 20 GB.
+Weights ride `snapshot_provisions` (the whole beta-one repo pinned at a revision with its 13-file load set). One Standard variant rides the DECL, deliberately: the upstream loader takes any repo id or local path — there is no closed set to enumerate — so the family default stamps beta-one and custom paths ride explicit checkpoint params; a variant per checkpoint would be a lie of closedness. The single F32 cell peaks at 20 GB.
 
 The tagger card binds the tag action: LoadImage (or the wired spell), `JJC_DownloadAndLoadJoyCaptionModel` (memory mode Default), `JJC_JoyCaption` on the stated template, SaveText under `<run>/tags`. The generation constants — max_new_tokens 512, temperature 0.6, top_p 0.9 — are fixed in the build. The `input_image` field is required, carrying the same tagger cure as the other tagger family. The package re-serves the card kit's weightless parser under the old Tag names (parseTagFacts) for the family's consumers.
 

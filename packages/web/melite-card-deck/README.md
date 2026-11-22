@@ -11,7 +11,7 @@ kind: package-bundle
 
 The manifest declares `dsh.bundle.patch: ./cordis.patch.yml`, inserting the deck row.
 
-- `.` (host) — a prefix route on `/v1/llm` answering canned typed bodies: `keys` returns an empty list, `keys/active` and unknown lanes return 404 `llm_lane_disabled`, `health` reports `connected: false` with reason `dsh_owns_the_assistant`. The stub stays a stub deliberately: without it the shell fallback would answer these lanes with 200 plus HTML, which the studio would misparse as keystore JSON.
+- `.` (host) — a prefix route on `/v1/llm` answering canned typed bodies: `keys` returns an empty list, `keys/active` returns 404 `no_active_key`, unknown lanes return 404 `llm_lane_disabled`, `health` reports `connected: false` with reason `dsh_owns_the_assistant`, and `/v1/llm/providers` stubs `200 { providers: [] }`. The stub stays a stub deliberately: without it the shell fallback would answer these lanes with 200 plus HTML, which the studio would misparse as keystore JSON.
 - `./client` (browser) — injects `slots`, `sidebarRightTabs`, `remote`, and `remote.manage`, and registers the native manager tab (assets over the `manage` namespace). The panel carries no transport of its own; the estate remotes are mounted by dsh-card-view's client. An apply claim keeps the tab from double-mounting.
 
 The manifest also declares the standard `./package.json` re-export.

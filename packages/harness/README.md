@@ -9,7 +9,7 @@ bench/estate seats, the serial queue, and the profile provisioner.
 | `estate-queue` | queue, runs, card registry, disclosure, skills, load, and management seats |
 | `estate-call` | shared card-tool envelope and JSON-array transport helpers |
 | `provisioner` | vanilla-DSH bundle and profile renderer |
-| `estate-drafts` / `estate-runs` / `estate-media` / `estate-models` | DSH-native domain remotes and serving surfaces |
+| `estate-drafts` / `estate-runs` / `estate-media` / `estate-models` | DSH-native domain remotes and serving surfaces (seated under `packages/estate/*`) |
 
 ## Current composition
 
@@ -23,8 +23,9 @@ The tool vocabulary and interface split are declared in
 `packages/harness/melite-tools/src/index.ts`:
 
 - base: `melite_discover`, `melite_load`, `melite_construct`;
-- deferred: `melite_view`, `melite_read`, `comfy_manage`,
-  `melite_skill_read`, `ledger_tail`;
+- deferred: `melite_view`, `melite_contact_sheet`, `melite_read`,
+  `comfy_manage`, `melite_skill_read`, `melite_skill_write`,
+  `ledger_tail`;
 - run doors: `melite_flow`, `run_status` — seated by the home's persisted
   `/melite-runs` record (HEADLESS IS DSH'S: `dsh headless "task"` is DSH's
   own shipped profile; melite renders no parallel headless mount).
@@ -51,7 +52,8 @@ manifest and its Cordis patch rows.
 
 ## Queue and state
 
-`estate-queue` requires an explicit `repoRoot` or `MELITE_STATE_ROOT`. It owns
+`estate-queue` requires explicit config: `repoRoot` (state lands under
+`data/runs`) or `stateRoot` (absolute, wins). It owns
 the state-root lock, FIFO, run records, journal, card registry, and
 cross-root read manifest. A consumer must not guess a root from its current
 working directory.

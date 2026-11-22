@@ -28,16 +28,17 @@ name.
   ComposeRefusal), `./comfyui-engine` (the engines-seat adapter),
   `./comfyui-host` (host provider row), `./comfyui-wiring` (wiring doc row),
   `./catalog-registry` (catalog door row), `./models-service` (models boot),
-  `./model-contract` (family DECL types), `./envelope-laws` (registration
-  law suite), `./linked` (linked-input spelling), `./params-emit` (served
-  params_schema emitter), `./semanticModelKnob` (served style enum),
-  `./user-loras` (user LoRA plane), `./provisioning-manifest` (strict
-  nodes.yaml reader plus the shipped extension-manifest read — the
-  declaration plane's runtime source is the committed
-  `data/extension-manifest.json`, derived by `regen:extension-manifest`,
-  shipped via the `files` `data/**` set; a missing or malformed file
-  refuses loud, never a silent empty manifest), `./cli` (the admission
-  CLI), `./package.json`.
+  `./envelope-laws` (registration law suite), `./user-loras` (user
+  LoRA plane), `./provisioning-manifest` (strict nodes.yaml reader plus
+  the shipped extension-manifest read — the declaration plane's runtime
+  source is the committed `data/extension-manifest.json`, derived by
+  `regen:extension-manifest`, shipped via the `files` `data/**` set; a
+  missing or malformed file refuses loud, never a silent empty
+  manifest), `./cli` (the admission CLI), `./package.json`. The family
+  DECL types, linked-input spelling, params_schema emitter, and served
+  style enum live in `@melite/comfyui-card-kit` (`./model-contract`,
+  `./linked`, `./params-emit`, `./semanticModelKnob`), re-exported here
+  by package name.
 
 ## Model Experience
 

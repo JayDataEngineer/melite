@@ -19,7 +19,7 @@ flux-klein registers FLUX.2 Klein 4B (form `form_generate`, label "FLUX.2 Klein 
 
 ## Mods
 
-The DECL boards `mask` and `loras`. `./mods/mask` is the bare-flavor mask boarding: the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at admission. `./mods/loras` is the flavor seed with no first-party rows — user-provided files ride the pack's bag; rows land the day a first-party Klein adapter exists. A stated ip-adapter entry refuses loud (`refuseIPAdapterFiring`).
+The DECL boards `mask` and `loras`. `./mods/mask` is the bare-flavor mask boarding: the pack contract owns the region fields, and a stated region rides the crop_stitch DetailerForEach arm — a stated photo base is the canvas the detailer reworks (nothing generates), otherwise the render feeds the arm; region-without-crop_stitch still refuses at the card gate. `./mods/loras` is the flavor seed with no first-party rows — user-provided files ride the pack's bag; rows land the day a first-party Klein adapter exists. A stated ip-adapter entry refuses loud (`refuseIPAdapterFiring`).
 
 Exports: the plugin root, `./package.json`, `./mods/loras`, `./mods/mask`.
 

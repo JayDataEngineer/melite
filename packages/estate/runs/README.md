@@ -14,9 +14,9 @@ The package builds with tsc because decorators are not erasable syntax.
 
 ## Contract
 
-- Endpoints: `start`, `status` (optional log tail), `stop`, `list`
-  (limit-parsed), `validate`, plus the run-row change subscription for push
-  surfaces.
+- Endpoints: `start`, `status`, `stop`, `list` (limit-parsed),
+  `validate`, `renameOutput` (post-run gallery label patch), plus the
+  run-row change subscription for push surfaces.
 - The adapters add nothing: they never catch or wrap; failures arrive as
   the protocol's ONE RemoteError with the queue's `runs/*` codes.
 - The seat boundary is structural: no imports of the queue package's
@@ -46,5 +46,4 @@ Independent — no conversation state.
 - **The seat face is structural** — the adapters see the registry's
   adapter-facing slice only; a new registry verb needs an explicit face
   update here to become reachable.
-- **Log tails are pull-only** — run-log content rides the status call's
-  optional tail; there is no streaming log face.
+- **Run logs are pull-only** — there is no streaming log face.

@@ -9,7 +9,7 @@ kind: package-library
 
 ## Declaration
 
-The variant rail IS the checkpoint picker: one variant per live `WD14Tagger|pysssss` model name, pinned off the engine's `object_info` — unknown names are refused at selection time, and `wd-v1-4-moat-tagger-v2` rides first as the family default (its cell carries the measured ~4 GB VRAM peak; the other backbones are unmeasured and omit the figure). Family defaults: `threshold` 0.35, `character_threshold` 0.85, empty `exclude_tags`, underscores kept, no trailing comma. The `tag` action requires `input_image` — a tagger inverts an image, and nothing to tag is a refusal. The build loads the image (or a `$`-spelled upstream tensor), runs `WD14Tagger|pysssss`, and saves the text under `<run>/tags`. First run downloads the selected checkpoint's weights.
+The variant rail IS the checkpoint picker: one variant per live `WD14Tagger|pysssss` model name, pinned off the engine's `object_info` — unknown names are refused at selection time, and `wd-v1-4-moat-tagger-v2` rides first as the family default (its cell carries the measured ~4 GB VRAM peak; the other backbones are unmeasured and omit the figure). Family defaults: `threshold` 0.35, `character_threshold` 0.85, empty `exclude_tags`, underscores kept, no trailing comma. The `tag` action requires `input_image` — a tagger inverts an image, and nothing to tag is a refusal. The build loads the image (or a `$`-spelled upstream tensor), runs `WD14Tagger|pysssss`, and saves the text under `<run>/tags`. Weights provision per variant (onnx + selected_tags.csv pairs).
 
 ```
 .
@@ -26,6 +26,7 @@ The variant rail IS the checkpoint picker: one variant per live `WD14Tagger|pyss
 - **checkpoint** — the variant-stamped backbone name (admitted, never rendered).
 - **threshold / character_threshold** — the general and character confidence floors.
 - **exclude_tags / replace_underscore / trailing_comma** — output shaping flags.
+- **caption knobs** — `add_tag` / `remove_tag` (vocabulary hints), `caption_task` / `caption_type` / `caption_length` / `extra_option` (caption vocabulary; the served action carries the seven core knobs above).
 
 #### Token effect
 
@@ -37,6 +38,6 @@ Independent — each tagging run is its own engine request; no shared prefix.
 
 ## Known Limitations and Deferred Work
 
-- **Weights not provisioned** — no provisions block; the first run fetches the checkpoint itself, so an offline estate tags nothing.
+
 - **One measured VRAM figure** — only moat carries a peak number; the rest of the rail is unmeasured by declaration.
 - **Tag vocabulary** — output is Danbooru-style tags; quality on non-anime images is not verified against the running engine.

@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, sep} from "node:path";
 import { describe, expect, it } from "vitest";
+import { RESOLUTION_SHORT_EDGE } from "../../../models/h3/src/chainEdit.ts";
 
 const ROOT = join(__dirname, "..", "src");
 const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf-8");
@@ -31,7 +32,10 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/two same-class rows starting/);
     expect(md).toMatch(/CONTINUES the same line across both/);
     expect(md).toMatch(/DUCKS under a conditioned row at `duck_depth_db`/);
-    expect(md).toMatch(/two or more calls/);
+    // (re-voiced 2026-11-21, the M-T1 promotion): a sole call plus
+    // clips IS a film — the card mints the 51f silent tail itself.
+    expect(md).toMatch(/including a single-call/);
+    expect(md).toMatch(/silent 51-frame tail/);
   });
 
   it("the directing skill teaches clip rows + text, never the retired per-call law", () => {
@@ -190,6 +194,28 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(src).toMatch(/text = THE SPOKEN WORDS/);
     expect(src).toMatch(/lip-sync law/);
     expect(src).toMatch(/There is NO per-call audio/);
+  });
+
+  it("the served tier list equals the engine's own rungs — derived from RESOLUTION_SHORT_EDGE, never a hand copy (docs audit 2026-11-21)", () => {
+    // The served calls description once taught "720p" — a key that
+    // does not exist (RESOLUTION_SHORT_EDGE carries 736p/768p
+    // instead), so a stated 720p silently fell through to the doc
+    // tier while the two working rungs went untaught. The wall
+    // derives the lawful list from the engine's own map: every key
+    // appears in the served prose, and no invented tier does.
+    const src = read("../src/tool.ts");
+    const calls = /description: `Shots —[^`]*`/.exec(src)?.[0] ?? "";
+    const tiers = Object.keys(RESOLUTION_SHORT_EDGE);
+    for (const tier of tiers) {
+      expect(calls, `the served tier list names ${tier}`).toContain(tier);
+    }
+    // the invented tier is gone, and the fall-through law is taught
+    expect(calls).not.toContain("720p");
+    expect(calls).toContain("an unknown tier falls through");
+    // the list is exhaustive: nothing between 480p and 1080p that
+    // the map does not carry
+    const taught = /resolution = ([^(]+)\(/.exec(calls)?.[1]?.split("|").map((t) => t.trim()) ?? [];
+    expect([...taught].sort()).toEqual([...tiers].sort());
   });
 });
 

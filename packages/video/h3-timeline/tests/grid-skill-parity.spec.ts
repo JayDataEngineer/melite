@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES,
+  GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, SNAP_FLOOR_FRAMES,
 } from "../../../models/h3/src/timelineContract.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -52,10 +52,22 @@ describe("the grid skill is derived from the contract's own exports", () => {
       "the doc no longer hedges where the contract is uniform");
   });
 
-  it("ARM 3 — the refusal's own words ride the doc (an agent can recognise the door's voice)", () => {
-    assert.match(md, /off-grid — the engine renders 22\+17k frames in \[22,362\]/,
-      "the doc quotes the refusal");
-    assert.match(md, /nearest legal/, "and the nearest-legal clause");
-    assert.match(md, /no silent snap|no snapping path/, "and the no-snap law");
+  it("ARM 3 — the snap law's own words ride the doc (an agent can recognise the door's voice)", () => {
+    // (re-voiced 2026-11-21 — the brief's snap admission: off-grid
+    // spans >= 24f admit UP onto the next rung with a reported
+    // notice; only sub-floor spans or snaps past the cap refuse.)
+    // THE DERIVED LAW: the floor comes from the engine's own
+    // constant and the snap verbs from the door's voice below.
+    assert.match(md, new RegExp(`authored range`, "i"), "the doc speaks of authored ranges");
+    assert.match(md, /lands? (its|the) end UP|snaps .* end UP/i, "the doc teaches the snap-up");
+    assert.match(md, /reported on (the )?run('|’)s status/i, "the snap notice rides run status, never silence");
+    assert.match(md, new RegExp(`${SNAP_FLOOR_FRAMES}f\\s+snap floor|${SNAP_FLOOR_FRAMES} frames or more snaps?`, "i"),
+      "the doc names the engine's own snap floor");
+    assert.match(md, new RegExp(`${GRID_MAX_FRAMES}`, "i"), "the doc names the grid's ceiling");
+    assert.match(md, /refuses?/, "the doc still names where refusal lives (sub-floor, past-cap)");
+    assert.doesNotMatch(md, /there is no snapping path that silently accepts an off-grid span/,
+      "the retired no-snap clause is gone");
+    assert.doesNotMatch(md, /there is no silent snap/,
+      "the retired no-snap voice is gone");
   });
 });

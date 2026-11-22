@@ -20,8 +20,9 @@ the degeneration this package absorbed.
   JSON-record contract; a pre-aborted call never dials).
 - `./cardTool` — `defineCardTool(call, spec)`: owns the `CARD_TOOL_OUTPUT`
   envelope (flow, model, run_id, draft_id, status, error), declared
-  JSON-array param normalization, the two-door execute (drafts, then start
-  with the `{model:}` lift), refusal mapping, and the presentation
+  JSON-array param normalization, the execute doors (door zero: the
+  `dry_run` validate; then drafts, then start with the `{model:}`
+  lift), refusal mapping, and the presentation
   projections. The card still owns its tool-plane name, flow id, identity
   prose, emitted params spec, and default model.
 - `./executorHarness` — `executorHarness` + `registerExecutorBattery`: the

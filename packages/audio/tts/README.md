@@ -9,7 +9,7 @@ kind: package-library
 
 ## Contract
 
-- `./card` — the card definition. Schema: `text` (required — the words to speak), `voice` (one of nine preset speakers, default `ryan`; the literal `"none"` means no preset, which hands timbre to a `.qvoice` persona and refuses loudly when none is loaded), `style_instruction` ("Emotion & Delivery Style" — the 1.7B CustomVoice lanes only; the 0.6B refuses), and `design_prompt` ("Voice Persona & Timbre" — the VoiceDesign lane). Lane topology is declared per family and variant, and the qvoice riders (`QVOICE_RIDERS`, `QVOICE_SAVE_RIDERS`) scope the persona pack to the active lane.
+- `./card` — the card definition. Schema: `text` (required — the words to speak), `voice` (one of nine preset speakers — CustomVoice has no non-speaker; the no-preset path is a loaded `.qvoice` persona — the qvoice mod, which owns the timbre and never reads the speaker row — and an unstated voice rests on the lane's own speaker), `style_instruction` ("Emotion & Delivery Style" — the 1.7B CustomVoice lanes only; the 0.6B refuses), and `design_prompt` ("Voice Persona & Timbre" — the VoiceDesign lane). Lane topology is declared per family and variant, and the qvoice riders (`QVOICE_RIDERS`, `QVOICE_SAVE_RIDERS`) scope the persona pack to the active lane.
 - `./tool` — `buildTtsTool`, the `tts` tool face; preview field `text`; variant addresses ride the model enum so agents pick no matrix variant.
 - `.` — the row-mounted composition marker; it registers the card only when the `comfyui` seat exists, and never registers the tool.
 - `./package.json` — the manifest.
@@ -17,7 +17,7 @@ kind: package-library
 ## Gates
 
 ```sh
-pnpm --filter @melite/audio-tts exec vitest run
+pnpm run test
 ```
 
 ## Model Experience

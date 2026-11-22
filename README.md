@@ -10,11 +10,6 @@ estate validates the card, queues one run at a time, calls ComfyUI or another en
 engines contract, and serves the resulting artifacts. The architecture is DSH + Cordis +
 TypeScript; DSH is the only web host.
 
-<!-- TRAILER SEAT — drag /tmp/melite-trailer-8mb.mp4 (or docs/trailer master,
-     70 MB) into a GitHub issue draft, then replace this comment with the bare
-     https://github.com/user-attachments/assets/... URL on its own line;
-     GitHub renders it as the inline player. The video stays out of git. -->
-
 ## Tested versions
 
 | Component | Version |

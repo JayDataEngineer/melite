@@ -4,9 +4,10 @@ description: Survival theme music via music3 - three-section structured caption;
 ---
 
 ## Caption contract (90% of quality)
-Plain `Label: text` lines, exactly three sections:
-Genre (2-4 tags + era) / Vocal Details (or "instrumental, no vocals") /
-Arrangement (instrumentation timeline, bpm, key).
+Plain `Label: text` lines, exactly three sections (the card tooltip's
+own names): Global Metadata (genre, mood, BPM) / Vocal Details (gender,
+timbre, range — or "instrumental, no vocals") / Arrangement
+(instruments, structure).
 
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port).
@@ -30,7 +31,9 @@ model stops when they run out (blank or lone `[instrumental]` wraps
 - Arrangement names lead/rhythm instruments PER SECTION so the take
   doesn't loop or cut short.
 - `duration` rides at the max you'll allow — cap only, the roadmap
-  decides.
+  decides. Past ~2min a CUDA OOM is the known regime: state
+  `tiled_decode: true` on OOM (the card derives the decode tier
+  otherwise — the knob is default-less by design).
 Variations = same caption, new seeds.
 
 ## Gotcha

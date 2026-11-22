@@ -9,7 +9,7 @@ joytag registers one model family: a Danbooru-style image tagger (the JoyTag lin
 
 ## Weights and variants
 
-One variant, `standard` (group Variant, F32 cell, 4 GB VRAM peak), with a single provision: `model.safetensors` (366 MB, from the fancyfeast/joytag release). The action's facts door is deliberately weightless: the checkpoint name rides the variant rail's stamped weight, so there is nothing per-row to parse, and the family carries no recipe rows.
+One variant, `standard` (group Variant, F32 cell, 4 GB VRAM peak), with a single provision: `model.safetensors` (366 MB, from the fancyfeast/joytag release). The action's facts door is deliberately weightless: the checkpoint rides the family `lane_inputs` (stamped once beside the provisions, not per-variant), so there is nothing per-row to parse, and the family carries no recipe rows.
 
 ## The tag action
 

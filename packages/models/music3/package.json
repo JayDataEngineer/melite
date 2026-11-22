@@ -31,7 +31,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "~4.1.0"
   },
-  "description": "MiniMax Music 3 text-to-music — caption and lyrics conditioning over INT8 ConvRot weights, mp3 output under the run directory.",
+  "description": "MiniMax Music 3 text-to-music — caption and lyrics conditioning over fp16 weights (INT8 low-VRAM cell beside), mp3 output under the run directory.",
   "repository": {
     "type": "git",
     "url": "https://github.com/JayDataEngineer/melite.git",

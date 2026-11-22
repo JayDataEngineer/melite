@@ -14,8 +14,8 @@ and comfyui-cordis mount it by package name, never by an internal path.
 
 ## Contract
 
-Pure functions and frozen data; erasable-syntax TS under
-`node --experimental-strip-types`, no build step. Recipe law: creation order
+Erasable-syntax TS, tsc-built: `tsc -p tsconfig.build.json`
+ships `lib/` (`.` → `./lib/kit.js`). Recipe law: creation order
 is node-id order, so touching a recipe turns the compose wall red on purpose.
 
 - `.` — the kit face: render-kit re-exports, wire-array coercion, seeds,

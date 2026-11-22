@@ -9,13 +9,13 @@ pixal3d registers the Pixal3D family (form `form_img_to_mesh`, label "Pixal3D", 
 
 ## The mesh action
 
-`mesh` outputs one GLB. The declared surface is wide: `input_image`; `seed` (seed-sentinel rule); `resolution` (1024 / 1536 / 512); `steps`, `shape_steps`, `tex1_steps`, `tex2_steps` [4, 60]; `cfg`, `shape_cfg`, `tex1_cfg`, `tex2_cfg` [1, 15]; per-stage sampler and scheduler enums; `bg_removal`; `camera_fov`; the remesh block (`remesh_resolution` [128, 2048], `remesh_qef`, `remesh_drop_inverted`, `remesh_drop_enclosed`, `remesh_fix_poles`); `decimate_faces` [10000, 2000000]; `smooth_angle` [0, 180]; `atlas_size`, `ao_size`, `normal_size`; `sd3_shift` [1, 10]; `rescale_struct`, `rescale_shape` [0.1, 1]; `override_struct`, `override_shape` [0, 1].
+`mesh` outputs one GLB. The declared surface is wide: `input_image`; `seed` (seed-sentinel rule); `resolution` (1024 — one variant row; the 1536 tiers are recipe rows); `steps`, `shape_steps`, `tex1_steps`, `tex2_steps` [4, 60]; `cfg`, `shape_cfg`, `tex1_cfg`, `tex2_cfg` [1, 15]; per-stage sampler and scheduler enums; `bg_removal`; `camera_fov` (auto default); the remesh block (`remesh_resolution` [128, 2048], `remesh_qef`, `remesh_drop_inverted`, `remesh_drop_enclosed`, `remesh_fix_poles`); `decimate_faces` [10000, 2000000]; `smooth_angle` [0, 180]; `atlas_size`, `ao_size`, `normal_size`; `sd3_shift` [1, 10]; `rescale_struct`, `rescale_shape` [0.1, 1]; `override_struct`, `override_shape` [0, 1].
 
-Defaults sample the middle of that surface: resolution 1024, 12 steps at cfg 7.5, shape pass 20 steps / cfg 7.5, texture passes 12 each, remesh at 768, decimation to 700000 faces, 4096 atlas, 2048 normal map, shift 5, `camera_fov` auto, seed 42.
+Defaults sample the middle of that surface: resolution 1024, 12 steps at cfg 7.5, shape pass 20 steps / cfg 7.5, texture passes 12 each, remesh at 768, decimation to 700000 faces, 4096 atlas, 2048 normal map, shift 5, `camera_fov` auto, seed −1 (sentinel-minted).
 
 ## Weights
 
-`lane_inputs` pin five files: the unet (`pixal3d_int8_convrot.safetensors`), the TRELLIS.2 shape and texture VAEs (bf16), the CLIP vision tower (`dino_v3_L_naf_fp32.safetensors`), and BiRefNet (`birefnet.safetensors`) for background removal; MoGe's `moge_2_vitl_normal_fp16.safetensors` (geometry estimation) rides the provisions. Variants: `1024` (bf16 about 12 GB / int8 about 8 GB VRAM), `1536` (bf16 16 / int8 10 — the hero tier), `512` (fast).
+`lane_inputs` pin four files: the unet (`pixal3d_int8_convrot.safetensors`), the TRELLIS.2 shape and texture VAEs (bf16), and the CLIP vision tower (`dino_v3_L_naf_fp32.safetensors`); MoGe's `moge_2_vitl_normal_fp16.safetensors` (geometry estimation) rides the provisions — no BiRefNet leg is provisioned and no background-removal arm is composed. Variants: one row `1024` (int8 about 8 GB VRAM); the 1536 tiers are recipe rows, not variants.
 
 ## Model Experience
 

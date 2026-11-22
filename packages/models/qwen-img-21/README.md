@@ -9,15 +9,15 @@ qwen-img-21 registers Qwen Image 2.1 (form `form_generate`, label "Qwen Image 2.
 
 ## Defaults, variants, weights
 
-Defaults: 1024×1024, 25 steps, `euler` / `simple`, cfg 1. Variants: `int8` (INT8 ConvRot unet, about 7.3 GB artifact, about 24 GB VRAM peak — the official template pick, DEFAULT) and `bf16` (full-precision unet about 14.2 GB, about 48 GB VRAM; re-spells the lane's unet and text encoder to the bf16 files). Provisions: the 8B Qwen3VL text encoder in bf16 (about 17.5 GB) and INT8 ConvRot (about 9.35 GB), plus the 2.1 VAE (bf16, about 676 MB), all from Comfy-Org/Qwen-Image-2.1. Both variants require provisioning: the 2.1 files are not on the box by default, and engine validation refuses loud without them. Recipes: `upstream_solvers` (euler / simple — the official templates' own pair) and the no-op `default`.
+Defaults: 1024×1024, `euler` / `simple` (the official templates' own pair — no geometry or step-count defaults ride the family). Two variant rows, Base (`base`, 25 steps, the official template's own count — DEFAULT) and Turbo (`turbo`, 8 steps), each spanning both download tiers (`int8_convrot` / `bf16` quant cells). Provisions: the 8B Qwen3VL text encoder in bf16 (about 17.5 GB) and INT8 ConvRot (about 9.35 GB), plus the 2.1 VAE (bf16, about 676 MB), all from Comfy-Org/Qwen-Image-2.1. Both variants require provisioning: the 2.1 files are not on the box by default, and engine validation refuses loud without them. Recipes: `upstream-solvers` (euler / simple — the official templates' own pair) and the no-op `default`.
 
 ## The t2i action
 
-`t2i` builds the official template graph: ONE TextEncodeQwenImage21 node (positive on output 0, negative on output 1), EmptyLatentImage at the card's resolution, KSampler, decode and save under `<run>/gen`. Params: `prompt` (required — the one relation word) plus the sampling block. The DECL carries a prompt guide; for edit-style instructions on this lane: state the change and the anchor — what stays identical; one edit per instruction; keep CFG low (1.0).
+`t2i` builds the official template graph: ONE TextEncodeQwenImage21 node (positive on output 0, negative on output 1), EmptyLatentImage at the card's resolution, KSampler, decode and save under `<run>/gen`. Params: `prompt` (required — the one relation word) plus the sampling block and the `reference_images` seat (stated reference images ride the lane's own arm). This lane carries no prompt guide — it is a text-to-image lane, not an edit lane.
 
 ## Mod surface
 
-The DECL boards `mask` and `loras`. `./mods/loras` is the flavor seam with an empty row set — no first-party 2.1 adapters yet, nothing is fetched from it, and user-provided files ride the pack's bag. `./mods/mask` is the bare-flavor mask boarding: the pack contract owns the region fields, no gen lane builds a region arm, and a stated region refuses loud at admission.
+The DECL boards `mask` and `loras`. `./mods/loras` is the flavor seam with an empty row set — no first-party 2.1 adapters yet, nothing is fetched from it, and user-provided files ride the pack's bag. `./mods/mask` is the bare-flavor mask boarding: the pack contract owns the region fields, and a stated region rides the crop_stitch DetailerForEach arm — a stated photo base is the canvas the detailer reworks (nothing generates), otherwise the render feeds the arm; region-without-crop_stitch still refuses at the card gate.
 
 ## Model Experience
 

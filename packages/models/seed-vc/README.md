@@ -10,7 +10,7 @@ kind: package-library
 ## Contract
 
 - `.` — the DECL + the `convert` action (`lib/index.js`): two LoadAudio heads (source + reference; a spelled upstream output rides its slot verbatim), the SeedVCRun node, SaveAudio under `<run>/vc`. `required_defaults` are the two user-provided audio seats; no variant-class rows.
-- `./package.json` — the manifest (engine manifest carries the matching `@melite/models-seed-vc` dependency row).
+- `./package.json` — the manifest (the engine manifest's seed-vc entry is the upstream ComfyUI_Seed-VC extension pack, not a per-family dependency row).
 
 ## Gates
 
@@ -39,4 +39,4 @@ None — no agent-loop participation.
 
 ## Known Limitations and Deferred Work
 
-First run self-loads ~5GB (both DiT lanes, campplus, RMVPE, two BigVGANs, whisper-small); `unload_model=true` on the bound card frees it per run. The upstream extension pack is the engine's own seat (manager-installable); a fresh estate provisions the weights whole from the digest-pinned rows.
+First run self-loads ~3.5 GB (both DiT lanes, campplus, RMVPE, two BigVGANs, whisper-small); `unload_model=true` on the bound card frees it per run. The upstream extension pack is the engine's own seat (manager-installable); a fresh estate provisions the weights whole from the digest-pinned rows.

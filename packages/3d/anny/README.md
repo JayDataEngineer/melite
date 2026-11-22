@@ -9,7 +9,7 @@ kind: package-library
 
 ## Contract
 
-- `./card` — the card definition (`id: 'anny'`). Schema: eleven identity dimensions (gender, age, muscle, weight, height, proportions, cupsize, firmness, african, asian, caucasian — each 0..1, default 0.5), 254 morph sliders (labels from `@melite/comfyui-card-kit/morphs`), an optional `body_glb` reference body, `resolution` (256..2048, default 768), and `framing` (1..3). The card is parametric end to end: `AnnyParamsToGlb` bakes the GLB from the numbers alone. Compose emits an eight-view turnaround sheet as the figure preview (`identityModel: 'anny'`).
+- `./card` — the card definition (`id: 'anny'`). Schema: eleven identity dimensions (gender, age, muscle, weight, height, proportions, cupsize, firmness, african, asian, caucasian — each 0..1, default 0.5), 254 morph sliders (labels from `@melite/comfyui-card-kit/morphs`), an optional `body_glb` reference body, and an optional `body_image` body photo (a stated photo becomes the body via SAM-3D-Body estimation — image > glb > parametric bake). The card is parametric end to end: `AnnyParamsToGlb` bakes the GLB from the numbers alone. The figure preview is the native /poser shaped bind mesh (`identityModel: 'anny'`), rendered by the base form's mesh stage — the eight-view turnaround sheet died with the blender lane (2026-11-01).
 - `.` — the row-mounted host face; it registers nothing.
 - `./package.json` — the manifest.
 
@@ -21,7 +21,7 @@ A run conditions the anny graph only when the card composes; the package ships n
 
 #### What the model sees
 
-The graph receives the gated identity, morph, resolution, and framing values; `AnnyParamsToGlb` bakes the body from those numbers, optionally matched against `body_glb`.
+The graph receives the gated identity, morph, and body values; `AnnyParamsToGlb` bakes the body from those numbers, optionally matched against `body_glb` (a stated `body_image` photo makes the body the SAM-3D-Body estimate instead).
 
 #### Token effect
 
@@ -33,5 +33,5 @@ independent — nothing here appends to or reshapes a session cache.
 
 ## Known Limitations and Deferred Work
 
-- **Photo-to-body is not a card param** — an image drives the body only through the `hmr-estimate` verb; in-card photo intake is deferred.
+- **Person picking stays verb-side** — the `body_image` photo face rides the card (image > glb > sliders precedence); the `person_index` picker stays on the `hmr-estimate` verb.
 - **Morph labels are a fixed catalog** — the 254 names ride `@melite/comfyui-card-kit/morphs`; arbitrary morph targets refuse at the schema gate.

@@ -75,8 +75,10 @@ never ride a display name or an invented placeholder.
   strip, never a parameter.
 - One span grid, uniform: the first call authors `22+17k` frames in
   `[22,362]`; carried calls author `17k` frames (the carry's 22 frames come
-  from the generation head). Off-grid spans are refused at admission and
-  at the compose carrier, with the nearest legal frame named.
+  from the generation head). Legal spans admit verbatim; off-grid spans of
+  24 frames or more snap their end UP to the next rung (the run's status
+  reports authored and rendered, later windows re-tile); sub-floor spans or
+  snaps past 362 refuse.
 - The automatic continuation uses a fixed 22-frame overlap.
 - Calls tile, enforced at admission: a cross-call gap or overlap is refused
   (`calls[i].start_frame` must equal `calls[i-1].end_frame`).

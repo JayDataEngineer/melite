@@ -85,8 +85,10 @@ The span grid is the move's metronome: the first call authors a
 carried later call authors a `17k` span (17, 34, 51, 68 …). At the
 schema's 24 fps default, 56 frames ≈ 2.3 s, 124 ≈ 5.2 s,
 362 = 15 s — a slow push-in wants a long window, a whip-pan wants the
-short side of a cut. Off-grid spans are refused with the nearest legal
-frame named; do not send a move the grid cannot time.
+short side of a cut. Legal spans admit verbatim; off-grid spans of 24f
+or more snap their end UP to the next rung (reported on run status,
+later windows re-tile); a span under 24f or a snap past 362 refuses.
+Author the move by eye — the metronome flexes up to the next rung.
 
 ## Worked examples
 
@@ -263,6 +265,7 @@ judge it.
    reports compiles ✓ needs no second opinion. Run `melite_construct`
    with `verb: "validate"` only for a bench you did not just write or a
    patch that landed without a verdict.
-3. Read the exact refusal and repair only the named card field — a
-   span refusal names the nearest legal frame.
+3. Read the exact refusal and repair only the named card field — a span
+   notice names the authored and rendered ends; a refusal names the floor
+   or the cap.
 4. Leave the bench for the user's Run press.

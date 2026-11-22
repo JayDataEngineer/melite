@@ -63,9 +63,11 @@ the schema listing alone under-describes this card by design.
 - One span grid, uniform across every window shape: the first call
   authors a `22+17k` span (56, 73, 90, 107 …) inside `[22,362]`; a
   carried call authors a `17k` span (17, 34, 51 …) because its
-  22-frame overlap comes from the generation head. Off-grid spans are
-  refused at admission and again at the compose carrier, with the
-  nearest legal frame named.
+  22-frame overlap comes from the generation head. Legal spans admit
+  verbatim; an off-grid span of 24 frames or more snaps its end UP to
+  the next legal rung and every snap is reported on the run's status
+  (authored + rendered, both numbers); under 24 frames or past 362
+  refuses with the nearest legal span.
 - Do not send `context`, seam-keyframe, `bed_audio`, sampler/backend internals,
   or other undeclared fields. Top-level unknown fields are refused; some
   per-call compatibility keys may be retained but do not add behavior.
@@ -120,6 +122,23 @@ frames with ffmpeg select, and read those. Films deliver at the schema's
 own fps default, and a single-call film with no `audio_clips` still
 ships an AAC track (engine-observed, not a card law).
 
+**Cheap authoring passes and per-window faces.** Four knobs exist for
+fast iteration and per-shot control: (1) `dry_run: true` runs the FULL
+compose ladder (schema walk, prompt gate, band judges, span admission)
+and answers the verdict alone — green is `{status: "validated"}`, a
+refusal answers its string verbatim; author whole shot lists dry
+first. (2) A call with `resolution` renders that window at its own
+tier — the lawful rungs are `480p | 576p | 736p | 768p | 1080p`; an
+unknown tier (including `auto`) falls through to the doc's own tier.
+(3) `draft: true` pins a window to 480p without naming a tier — the
+cheap-pass seat. (4) `speech_language` names the take's language for
+synthesised lines (the bracket in the `<d>` tag; English when
+unstated). One interlock to know: a window whose `audio_clips` row
+owns the dialogue REFUSES call text that also carries a `<d>` spoken
+form — the line would be heard twice; keep the call free of dialogue
+when a row places the take. The span-snap and silent-tail notices
+ride the run's status after a real press.
+
 ## Audio clips
 
 Generate a spoken asset first, then place its returned artifact as an
@@ -158,8 +177,10 @@ mix laws:
 {"id":"bell-1","src":"<returned artifact>","start_frame":44,"dur_frames":12,"class":"sfx","text":"harbour bell, two strikes, wet tail"}
 ```
 
-Positioned audio belongs to a film with two or more calls; a single-call
-stage does not use the film clip path. The current H3 card has separate
+Positioned audio rides any clips-carrying film — including a single-call
+one: the card promotes a sole call with a silent 51-frame tail window and
+renders the film chain (the promotion warns on run status), so the strip and
+the film agree. The current H3 card has separate
 dialogue, SFX, and music lanes. Do not invent a film-wide bed parameter or
 duplicate a pinned lane in free-form prompt text. Read the loaded skill and
 card schema for the current caps and defaults.
