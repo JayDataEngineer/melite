@@ -1,0 +1,37 @@
+{
+  "id": "references-seed-pin",
+  "law": "THE SEEDED REFERENCES LAW — references/ is SEEDED, NEVER GIT-TRACKED (AGENTS.md Layer A, operator 2026-11-05). This file is the TRACKED pin the seed's stamp must name, so the next seed drift reds instead of hiding (the 0.2.1-alpha.4 -> 0.2.2-rc.5 drift sat silent for two generations until dev_docs/audits/2026-11-20-dsh-refs-drift-audit.md read the tree's own package.json). Reseeding moves BOTH: the tree to a newer tag, and this pin's expected_tag + tree_version.expected with it, then rewrites the stamp.",
+  "seed_root": "references/",
+  "stamp_path": "references/.seed-stamp.json",
+  "expected_tag": "dsh-v0.2.2-rc.5",
+  "tree_version": {
+    "file": "references/deepseek-harness/package.json",
+    "field": "version",
+    "expected": "0.2.2-rc.5",
+    "note": "the seed tree's own version marker — the door the drift audit actually read; a tree carried to a newer tag without the pin moving reds here, a stamp left behind reds on the stamp arm"
+  },
+  "source": {
+    "kind": "dsh-source-checkout",
+    "note": "the DSH source checkout at the pinned tag (on development machines typically the profile checkout under ~/.dsh/profiles/), never the npm @deepseek-ai/dsh package",
+    "npm_forbidden_because": "the npm package's files whitelist omits 491 law files melite's AGENTS.md cites by path (testing.md, AGENTS.md, defensive-patterns/, glossary.md, postmortem/, persistence-changes/, i18n/, ~20 subsystems/*.md) — dev_docs/audits/2026-11-20-dsh-refs-drift-audit.md action 1"
+  },
+  "layout": [
+    "cordis-paper.txt",
+    "deepseek-harness/docs/",
+    "deepseek-harness/docs/architecture.md",
+    "deepseek-harness/docs/cordis-tutorial/",
+    "deepseek-harness/docs/cordis-api/",
+    "deepseek-harness/docs/cookbook/"
+  ],
+  "history": [
+    {
+      "tag": "dsh-v0.2.1-alpha.4",
+      "note": "the original silent seed — drifted two generations before the refs-drift audit named the silence (2026-11-20)"
+    },
+    {
+      "tag": "dsh-v0.2.2-rc.5",
+      "date": "2026-11-20",
+      "note": "reseeded from the DSH source checkout at the live pin, per the refs-drift audit's action 2 (never node_modules)"
+    }
+  ]
+}

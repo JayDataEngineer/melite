@@ -36,11 +36,13 @@ export declare function fileKindRefusal(f: SpecField, file: File): string | null
 export declare function assetKindRefusal(f: SpecField, url: string): string | null;
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
- *  (the same media hint the picker rides); everything else keeps
- *  the image triad (the historic default). The provider's ONE
- *  hidden input re-targets imperatively at click time — the accept
- *  is a property of the field being picked, never of the provider
- *  instance. */
+ *  (the same media hint the picker rides); audio-hinted rows offer
+ *  the audio vocabulary; the dual seat offers both families; the
+ *  mod seat ('mod' — any media bakes) offers every family; everything
+ *  else keeps the image triad (the historic default). The provider's
+ *  ONE hidden input re-targets imperatively at click time — the
+ *  accept is a property of the field being picked, never of the
+ *  provider instance. */
 export declare function acceptOfField(f: SpecField | null): string;
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
  *  every slot-shaped field of a stage gets the same verbs — file
@@ -123,10 +125,16 @@ export interface SourceRowProps {
     loadMedia?: SquareWire['loadMedia'];
     /** The surface's own file law (From file + OS drops route here). */
     onFile?: (file: File) => void;
-    /** THE ROW'S PICKER FILTER — the OS dialog's accept. Audio/video
-     *  lanes pass their MIME family ('audio/*', 'video/*'); absent =
-     *  the image triad (the historic default, image rows). */
-    accept?: SquareWire['accept'];
+    /** THE REAL MEDIA HINT (the accept-prop→media-threading rework,
+     *  2026-11-18): the owning field's declared media kind rides INTO
+     *  the synthetic field, so acceptOfField derives the OS accept at
+     *  BOTH doors and seatFileKindOf, mediaKindForField, assetKindRefusal
+     *  judge from the same fact — 'video' | 'audio' | 'mod' | 'image+audio'
+     *  (the vocabulary the DECLs carry). The retired caller accept
+     *  strings set only the wire door's INERT resting attr: both doors
+     *  still fell to the image triad (the burn). Absent = the seat
+     *  derives from its type alone (image rows). */
+    media?: string;
     /** The seam claim (same grammar as the field wire). */
     renderSourcePick?: SquareWire['renderSourcePick'];
 }
@@ -228,12 +236,13 @@ export interface SquareWire {
      *  bespoke vocabularies (the studio's inline data:-URL cap) keep
      *  their semantics under the same three-entry grammar. */
     onFile?: (file: File) => void;
-    /** THE ROW'S PICKER FILTER (2026-09-18, the two-audio conviction:
-     *  "you literally can't even add two audios" — the hidden file
-     *  input hard-coded the image triad, so the OS dialog GRAYED OUT
-     *  every audio and video on file rows). Rows whose lane is not
-     *  images pass their MIME family here ('audio/*', 'video/*');
-     *  absent → the image triad stands (image rows, unchanged). */
+    /** THE HIDDEN INPUT'S RESTING ACCEPT for direct-wire hosts (the
+     *  strip pane's lane doors): the attr the provider's file input
+     *  mounts with. The click-time From-file retarget always answers
+     *  acceptOfField(FIELD) — a host whose fields carry no media hint
+     *  therefore derives the image triad at the click REGARDLESS of
+     *  this attr (the split-accept burn's mechanism); thread the media
+     *  kind into the field, never a bespoke string here. */
     accept?: string;
     /** THE SOURCE-PICK SEAM (2026-09-13, the operator's law: one
      *  system, no exceptions): the host may claim the picker modal's

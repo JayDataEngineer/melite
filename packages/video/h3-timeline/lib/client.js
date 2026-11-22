@@ -5861,7 +5861,8 @@ window.__ModuleLoader__.load({
 			const laneField = (lane) => ({
 				name: `audio:${lane}`,
 				label: lane,
-				type: "file"
+				type: "file",
+				media: "audio"
 			});
 			const { square, wireMenu } = (0, _melite_card_base_client.useSquareProvider)((name, v) => {
 				if (typeof v !== "string" || v === "") return;
@@ -5888,7 +5889,6 @@ window.__ModuleLoader__.load({
 					url
 				})),
 				loadMedia: loadAudioMedia,
-				accept: "audio/*",
 				onFile: (file) => {
 					setLaneErr(null);
 					if (refAudiosBlocked) {
@@ -5925,7 +5925,6 @@ window.__ModuleLoader__.load({
 					url
 				})),
 				loadMedia: loadImageMedia,
-				accept: "image/*",
 				onFile: (file) => {
 					setKfErr(null);
 					const refusal = refUploadError(file, "image");
@@ -7212,7 +7211,7 @@ window.__ModuleLoader__.load({
 		*  offset, custom count title, over-bus wording). The wall
 		*  (studio-call-buckets.spec.tsx) drives both seats through one
 		*  face; a second inline copy is a contract break. */
-		function RefsBucket({ label, kind, accept, cap, countOffset = 0, overWord = studioCopy.overCapTail, countTestId, countTitle, addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
+		function RefsBucket({ label, kind, cap, countOffset = 0, overWord = studioCopy.overCapTail, countTestId, countTitle, addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId }) {
 			const [fileError, setFileError] = (0, react.useState)(null);
 			const chips = splitRefList(value);
 			const overrides = chips.length > 0;
@@ -7306,7 +7305,7 @@ window.__ModuleLoader__.load({
 							shown.map(({ ch: chip, idx: ci }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : chip,
 								kind: kind === "image" ? "image" : "file",
-								accept,
+								media: kind === "image" ? void 0 : kind,
 								value: displaySource(chip, chipUrl),
 								onEdit: (v) => {
 									if (v === "") setChips(chips.filter((_, x) => x !== ci));
@@ -7326,7 +7325,7 @@ window.__ModuleLoader__.load({
 								ariaLabel: addLabel,
 								hideLabel: true,
 								kind: kind === "image" ? "image" : "file",
-								accept,
+								media: kind === "image" ? void 0 : kind,
 								value: null,
 								onEdit: (v) => {
 									if (v !== "" && commitChip(v)) {
@@ -7496,7 +7495,7 @@ window.__ModuleLoader__.load({
 							chips.map((chip, ci) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.SourceRow, {
 								label: chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip),
 								kind: "file",
-								accept: "image/*,video/*,audio/*",
+								media: "mod",
 								value: displaySource(chip, chipUrl),
 								onEdit: (v) => {
 									if (v === "") setChips(chips.filter((_, x) => x !== ci));
@@ -7515,7 +7514,7 @@ window.__ModuleLoader__.load({
 								label: `+ ${label.toLowerCase()}`,
 								ariaLabel: `+ ${label.toLowerCase()}`,
 								kind: "file",
-								accept: "image/*,video/*,audio/*",
+								media: "mod",
 								hideLabel: true,
 								candidates,
 								loadMedia: _melite_card_base_client.fetchMediaLibrary,
@@ -7676,7 +7675,6 @@ window.__ModuleLoader__.load({
 									label: studioCopy.refVideos,
 									addLabel: studioCopy.addRefVideo,
 									kind: "video",
-									accept: "video/*",
 									cap: REF_CAPS.videos,
 									value: c.refs?.videos,
 									artifacts: refArtifacts,
@@ -7688,7 +7686,6 @@ window.__ModuleLoader__.load({
 									label: studioCopy.refAudios,
 									addLabel: studioCopy.addRefAudio,
 									kind: "audio",
-									accept: "audio/*",
 									cap: REF_CAPS.audios,
 									value: c.refs?.audios,
 									artifacts: refArtifacts,
@@ -7840,7 +7837,6 @@ window.__ModuleLoader__.load({
 			}, {
 				candidates: flowRows,
 				loadMedia: loadImageMedia,
-				accept: "image/*",
 				onFile: (file) => {
 					const err = refUploadError(file, "image");
 					if (err !== null) {
@@ -7872,7 +7868,6 @@ window.__ModuleLoader__.load({
 			}, {
 				candidates: flowRows,
 				loadMedia: loadImageMedia,
-				accept: "image/*",
 				onFile: (file) => {
 					const i = pickRow.current;
 					const err = refUploadError(file, "image");

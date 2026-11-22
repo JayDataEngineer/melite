@@ -14,7 +14,7 @@ import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
 import { DOC_FPS_DEFAULT, deliveredFrames } from "@melite/models-h3/timelineContract"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
-import { bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField, ASSET_DRAG_MIME } from "@melite/card-base/client"
+import { acceptOfField, bindEstateRemote, fieldsOfEnvelope, unbindEstateRemote, type SpecField, ASSET_DRAG_MIME } from "@melite/card-base/client"
 import { carrier } from "@melite/models-h3/schema"
 
 // THE SERVED WALK (hour 22): the fold's schema truth — the carrier's
@@ -213,15 +213,33 @@ describe("span + guides", () => {
     assert.deepEqual(calls.trans, [])
   })
 
-  it("bus order + the picker filter (images \u2192 videos \u2192 audios; audio/video files not grayed out)", () => {
+  it("bus order + THE ONE ACCEPT LAW (images → videos → audios; each lane's OS dialog derives its own family)", async () => {
     const { d } = deps()
     render(<CallCard c={{ ...BASE }} i={1} deps={d} />)
     // the lanes render in the BUNDLE'S OWN wire order: images, videos, audios
     const buckets = screen.getAllByTestId("tl-call-ref-bucket")
     assert.equal(buckets.length, 3, "three lanes on the bus")
-    const files = buckets.map((b) => b.querySelector("input[type=file]")!.getAttribute("accept"))
-    assert.deepEqual(files, ["image/png,image/jpeg,image/webp", "video/*", "audio/*"],
-      "each lane's OS picker accepts its own MIME family (the two-audio fix)")
+    // THE DERIVED ACCEPT (the accept-prop→media-threading rework,
+    // 2026-11-18): the lane's media kind rides INTO SourceRow's
+    // synthetic field and the From-file click retargets the provider
+    // input to acceptOfField of that field. The retired arm asserted
+    // the RESTING attrs ("video/*", "audio/*") — an attr the click
+    // always overwrote, so both doors still fell to the image triad
+    // (the burn). Each family is judged on the door that opens.
+    for (const lane of [
+      { row: "+ image", field: { name: "ref_images", label: "+ image", type: "image" } },
+      { row: "+ video", field: { name: "ref_videos", label: "+ video", type: "file", media: "video" } },
+      { row: "+ audio", field: { name: "ref_audios", label: "+ audio", type: "file", media: "audio" } },
+    ] as const) {
+      const el = document.querySelector(`[data-source-row="${lane.row}"]`) as HTMLElement | null
+      assert.ok(el, "the add row for " + lane.row)
+      fireEvent.click(el.querySelector("[data-slot-square]")!)
+      fireEvent.click(await screen.findByText("From file"))
+      const inp = el.querySelector("input[type=file]") as HTMLInputElement | null
+      assert.ok(inp, "the provider file input for " + lane.row)
+      assert.equal(inp.getAttribute("accept"), acceptOfField(lane.field as SpecField),
+        `the ${lane.row} lane's OS dialog derives its own family at the click`)
+    }
     // (re-pin 2026-11-09) the bus is the card's last lane — the seam
     // face died with the strip chip (the call's join is authored at
     // the boundary on the strip, never in a lane between lanes)

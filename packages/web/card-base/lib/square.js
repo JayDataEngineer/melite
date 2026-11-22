@@ -150,6 +150,12 @@ export const AUDIO_SQUARE_ACCEPT = 'audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoi
  *  seat offers both families at the OS dialog — the image triad plus
  *  the audio vocabulary, the union of what the dual judge admits. */
 export const DUAL_SQUARE_ACCEPT = `${DEFAULT_SQUARE_ACCEPT},${AUDIO_SQUARE_ACCEPT}`;
+/** THE ANY-MEDIA SEAT (the mod stacks' any-media law, 2026-11-06):
+ *  a seat that bakes every media kind offers every family at the OS
+ *  dialog — the image triad plus the video and audio vocabularies,
+ *  the union of the three family accepts (the derived shape of the
+ *  retired hand-set 'image/*,video/*,audio/*' strings). */
+export const ANY_SQUARE_ACCEPT = `${DEFAULT_SQUARE_ACCEPT},${VIDEO_SQUARE_ACCEPT},${AUDIO_SQUARE_ACCEPT}`;
 /**
  * @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
  * @returns the square: thumb/empty face, the verbs' controls, and the caption.

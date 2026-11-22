@@ -109,6 +109,12 @@ export declare const AUDIO_SQUARE_ACCEPT = "audio/*,.wav,.flac,.mp3,.ogg,.m4a,.a
  *  seat offers both families at the OS dialog — the image triad plus
  *  the audio vocabulary, the union of what the dual judge admits. */
 export declare const DUAL_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp,audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoice";
+/** THE ANY-MEDIA SEAT (the mod stacks' any-media law, 2026-11-06):
+ *  a seat that bakes every media kind offers every family at the OS
+ *  dialog — the image triad plus the video and audio vocabularies,
+ *  the union of the three family accepts (the derived shape of the
+ *  retired hand-set 'image/*,video/*,audio/*' strings). */
+export declare const ANY_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime,audio/*,.wav,.flac,.mp3,.ogg,.m4a,.aac,.qvoice";
 export interface InputSquareProps extends InputSquareVerbs {
     /** Short field key shown under the square (e.g. "input_image").
      *  Empty string = NO caption (the owning section already names it

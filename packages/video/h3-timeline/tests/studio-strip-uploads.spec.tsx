@@ -18,10 +18,12 @@
  */
 import { describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { fireEvent, render, screen, act } from "@testing-library/react"
 import { StudioStripPane } from "../src/ui/studio/StudioStripPane.tsx"
 import { useFilmAudio } from "../src/ui/studio/useFilmAudio.ts"
-import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
+import { acceptOfField, bindEstateRemote, unbindEstateRemote, type SpecField } from "@melite/card-base/client"
 
 const P1 = { uuid: "p1", text: "hello", start_frame: 0, end_frame: 80, color: null }
 const CLIP = { id: "c1", name: "song.mp3", start_frame: 10, dur_frames: 48 }
@@ -178,6 +180,43 @@ describe("the strip's every-seat upload law (the pane face)", () => {
       assert.deepEqual(rec.addedClip, [], "no commit — the lock holds at the pick door too")
     } finally {
       unbindEstateRemote()
+    }
+  })
+
+  it("THE ONE ACCEPT LAW ON THE REAL DOOR (2026-11-18) — the lane-add From-file click derives the AUDIO vocabulary, never the image triad (the burn's third seat)", async () => {
+    // laneField threads media:"audio"; the provider's ONE hidden input
+    // retargets at the click. TOGGLE PROOF: drop the media hint from
+    // laneField and this arm reds — the click falls back to the image
+    // triad and the OS dialog grays every audio file (the retired
+    // two-audio burn's exact mechanism at the lane-add door).
+    strip()
+    fireEvent.click(screen.getByLabelText("Add Music clip"))
+    fireEvent.click(await screen.findByText("From file"))
+    const derived = acceptOfField({ name: "audio:music", label: "music", type: "file", media: "audio" } as SpecField)
+    assert.ok(derived.startsWith("audio/"), `the audio seat's derived accept carries the audio family: ${derived}`)
+    const inp = document.querySelector("input[type=file]") as HTMLInputElement | null
+    assert.ok(inp, "the provider's hidden file input")
+    assert.notEqual(inp.getAttribute("accept"), acceptOfField(null),
+      "the click did NOT fall back to the image triad")
+    assert.equal(inp.getAttribute("accept"), derived,
+      "the click-time retarget answers acceptOfField from the threaded media kind")
+  })
+
+  it("THE THREADING ARM (2026-11-18) — the lanes thread the real media kind; zero bespoke accept strings survive in the strip doors (comment-stripped)", () => {
+    // The count rides the COMMENT-STRIPPED text — a commented-out
+    // prop must not feed the census (the toggle proof comments the
+    // hint out and BOTH arms red). The real-door arm above rides the
+    // retarget; this arm guards the threading across BOTH studio
+    // hosts (the keyframe doors' image seats ride the absent-hint
+    // default — no bespoke string belongs there either).
+    const stripSrc = readFileSync(join(import.meta.dirname, "..", "src", "ui", "studio", "StudioStripPane.tsx"), "utf8")
+    const panelSrc = readFileSync(join(import.meta.dirname, "..", "src", "ui", "studio", "CallCardsPanel.tsx"), "utf8")
+    const stripped = (s: string): string => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    assert.ok(stripped(stripSrc).includes('media: "audio"'),
+      "the audio laneField threads the real media kind — acceptOfField derives at the click")
+    for (const [name, src] of [["StudioStripPane", stripSrc], ["CallCardsPanel", panelSrc]] as const) {
+      assert.ok(!/accept:\s*["'`]/.test(stripped(src)),
+        `${name} carries no bespoke wire accept string — the derivation owns both doors (the one accept law)`)
     }
   })
 })

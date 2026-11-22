@@ -13247,6 +13247,12 @@ window.__ModuleLoader__.load({
 		*  seat offers both families at the OS dialog — the image triad plus
 		*  the audio vocabulary, the union of what the dual judge admits. */
 		const DUAL_SQUARE_ACCEPT = `${DEFAULT_SQUARE_ACCEPT},${AUDIO_SQUARE_ACCEPT}`;
+		/** THE ANY-MEDIA SEAT (the mod stacks' any-media law, 2026-11-06):
+		*  a seat that bakes every media kind offers every family at the OS
+		*  dialog — the image triad plus the video and audio vocabularies,
+		*  the union of the three family accepts (the derived shape of the
+		*  retired hand-set 'image/*,video/*,audio/*' strings). */
+		const ANY_SQUARE_ACCEPT = `${DEFAULT_SQUARE_ACCEPT},${VIDEO_SQUARE_ACCEPT},${AUDIO_SQUARE_ACCEPT}`;
 		/**
 		* @param props - the field's label, attached value, verbs (pick/file/asset/clear), and optional chrome (badge, metric, emptyIcon, accept, showFileAction).
 		* @returns the square: thumb/empty face, the verbs' controls, and the caption.
@@ -14115,17 +14121,20 @@ window.__ModuleLoader__.load({
 		}
 		/** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
 		*  offer the GLB pair; video-hinted rows offer the video formats
-		*  (the same media hint the picker rides); everything else keeps
-		*  the image triad (the historic default). The provider's ONE
-		*  hidden input re-targets imperatively at click time — the accept
-		*  is a property of the field being picked, never of the provider
-		*  instance. */
+		*  (the same media hint the picker rides); audio-hinted rows offer
+		*  the audio vocabulary; the dual seat offers both families; the
+		*  mod seat ('mod' — any media bakes) offers every family; everything
+		*  else keeps the image triad (the historic default). The provider's
+		*  ONE hidden input re-targets imperatively at click time — the
+		*  accept is a property of the field being picked, never of the
+		*  provider instance. */
 		function acceptOfField(f) {
 			if (f === null) return DEFAULT_SQUARE_ACCEPT;
 			if (f.type === "mesh") return MESH_SQUARE_ACCEPT;
 			if (f.media === "video") return VIDEO_SQUARE_ACCEPT;
 			if (f.media === "audio") return AUDIO_SQUARE_ACCEPT;
 			if (f.media === "image+audio") return DUAL_SQUARE_ACCEPT;
+			if (f.media === "mod") return ANY_SQUARE_ACCEPT;
 			return DEFAULT_SQUARE_ACCEPT;
 		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
@@ -14540,7 +14549,8 @@ window.__ModuleLoader__.load({
 				name: props.name ?? "__source_row__",
 				label: props.label,
 				type: props.kind === "image" ? "image" : "file",
-				...props.admitsImageAudio === true ? { media: "image+audio" } : {}
+				...props.admitsImageAudio === true ? { media: "image+audio" } : {},
+				...props.media !== void 0 && props.media !== "" ? { media: props.media } : {}
 			};
 			const { square, wireMenu } = useSquareProvider((0, react.useCallback)((name, v) => {
 				props.onEdit(v);
@@ -14549,7 +14559,6 @@ window.__ModuleLoader__.load({
 				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
 				...props.onFile !== void 0 ? { onFile: props.onFile } : {},
-				...props.accept !== void 0 ? { accept: props.accept } : {},
 				...props.renderSourcePick !== void 0 ? { renderSourcePick: props.renderSourcePick } : {}
 			});
 			const host = square(field);
@@ -15660,7 +15669,7 @@ window.__ModuleLoader__.load({
 				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : void 0;
 				const over = cap !== void 0 && entries.length > cap;
 				const kind = f.media === "video" || f.media === "audio" || f.media === "mod" ? "file" : "image";
-				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : f.media === "mod" ? "image/png,image/jpeg,image/webp,video/*,audio/*" : void 0;
+				const media = f.media !== void 0 && f.media !== "" ? f.media : void 0;
 				return (0, react.createElement)("div", {
 					key: "stack-" + f.name,
 					className: card_module_css_default.specStack,
@@ -15687,7 +15696,7 @@ window.__ModuleLoader__.load({
 					kind,
 					value: entry,
 					name: f.name,
-					...accept !== void 0 ? { accept } : {},
+					...media !== void 0 ? { media } : {},
 					onEdit: (next) => {
 						const arr = [...entries];
 						if (next === "") arr.splice(i, 1);
@@ -15707,7 +15716,7 @@ window.__ModuleLoader__.load({
 					kind,
 					value: null,
 					name: f.name,
-					...accept !== void 0 ? { accept } : {},
+					...media !== void 0 ? { media } : {},
 					onEdit: (next) => {
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);
@@ -19310,6 +19319,7 @@ window.__ModuleLoader__.load({
 				useToastStore.getState().addToast(type, message, action);
 			});
 		}
+		exports.ANY_SQUARE_ACCEPT = ANY_SQUARE_ACCEPT;
 		exports.ASSET_DRAG_MIME = ASSET_DRAG_MIME;
 		exports.AUDIO_SQUARE_ACCEPT = AUDIO_SQUARE_ACCEPT;
 		exports.AudioLines = AudioLines;
@@ -19399,6 +19409,7 @@ window.__ModuleLoader__.load({
 		exports.WIRE_LIFECYCLE_INFLIGHT = WIRE_LIFECYCLE_INFLIGHT;
 		exports.WirePickerModal = WirePickerModal;
 		exports.abortableSleep = abortableSleep;
+		exports.acceptOfField = acceptOfField;
 		exports.acquireViewport = acquireViewport;
 		exports.activeRecipeId = activeRecipeId;
 		exports.activeRowId = activeRowId;

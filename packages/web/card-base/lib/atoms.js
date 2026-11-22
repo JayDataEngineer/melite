@@ -23,6 +23,15 @@ export function SourceRow(props) {
         // (kind) is untouched: the picker still asks the resting lane's
         // library; only the judges (drop, OS accept) widen.
         ...(props.admitsImageAudio === true ? { media: 'image+audio' } : {}),
+        // THE REAL MEDIA HINT (the accept-prop→media-threading rework,
+        // 2026-11-18): the owning field's declared kind rides INTO the
+        // synthetic field, so acceptOfField derives the OS accept at BOTH
+        // doors (the square's input and the provider's click-time
+        // retarget) — the retired caller accept strings set only the wire
+        // door's inert resting attr and both doors fell to the image
+        // triad. The dual arm above stays the deliberate widening; a
+        // caller passes one, never both.
+        ...(props.media !== undefined && props.media !== '' ? { media: props.media } : {}),
     };
     const onEditField = useCallback((name, v) => {
         void name;
@@ -38,7 +47,6 @@ export function SourceRow(props) {
         ...(props.candidatesFor !== undefined ? { candidatesFor: props.candidatesFor } : {}),
         ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
         ...(props.onFile !== undefined ? { onFile: props.onFile } : {}),
-        ...(props.accept !== undefined ? { accept: props.accept } : {}),
         ...(props.renderSourcePick !== undefined ? { renderSourcePick: props.renderSourcePick } : {}),
     });
     // NO HOST GUARD (the slot-shape proof): field.type is image|file

@@ -2,7 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
-import { AUDIO_SQUARE_ACCEPT, DUAL_SQUARE_ACCEPT, DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
+import { ANY_SQUARE_ACCEPT, AUDIO_SQUARE_ACCEPT, DUAL_SQUARE_ACCEPT, DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, VIDEO_SQUARE_ACCEPT, isImageUrl, isVideoUrl, } from "./square.js";
 import { readAsDataURL } from "./chrome.js";
 import { mediaKindOf } from '@melite/contracts/mediaKinds';
 import { menuAnchorProps } from "./menu-anchor.js";
@@ -145,11 +145,13 @@ export function assetKindRefusal(f, url) {
 }
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
- *  (the same media hint the picker rides); everything else keeps
- *  the image triad (the historic default). The provider's ONE
- *  hidden input re-targets imperatively at click time — the accept
- *  is a property of the field being picked, never of the provider
- *  instance. */
+ *  (the same media hint the picker rides); audio-hinted rows offer
+ *  the audio vocabulary; the dual seat offers both families; the
+ *  mod seat ('mod' — any media bakes) offers every family; everything
+ *  else keeps the image triad (the historic default). The provider's
+ *  ONE hidden input re-targets imperatively at click time — the
+ *  accept is a property of the field being picked, never of the
+ *  provider instance. */
 export function acceptOfField(f) {
     if (f === null)
         return DEFAULT_SQUARE_ACCEPT;
@@ -163,6 +165,10 @@ export function acceptOfField(f) {
     // source: the OS dialog filters nothing the seat admits).
     if (f.media === 'image+audio')
         return DUAL_SQUARE_ACCEPT;
+    // the mod seat (the h3 ref-mods stacks): every media family boards
+    // — the union accept, the same posture as the dual.
+    if (f.media === 'mod')
+        return ANY_SQUARE_ACCEPT;
     return DEFAULT_SQUARE_ACCEPT;
 }
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
@@ -513,7 +519,8 @@ export function useSquareProvider(onEdit, wire) {
         ref: fileRef,
         type: 'file',
         // the RESTING accept (the triad); the '__file__' branch re-targets
-        // per field at click time — wire.accept stays the bespoke override.
+        // per field at click time — wire.accept seats the resting attr for
+        // direct-wire hosts only (the SourceRow seam threads media instead).
         accept: wire.accept ?? acceptOfField(null),
         'aria-hidden': true,
         tabIndex: -1,

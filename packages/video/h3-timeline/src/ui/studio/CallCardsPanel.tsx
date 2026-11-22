@@ -167,7 +167,9 @@ export function CallCardsPanel({
     {
       candidates: flowRows,
       loadMedia: loadImageMedia,
-      accept: "image/*",
+      // From file: the keyframe seat is image-family — the absent-hint
+      // default derivation (the ONE ACCEPT LAW); no bespoke wire
+      // string.
       onFile: (file: File) => {
         const err = refUploadError(file, "image")
         if (err !== null) { setKfAddError(err); return }
@@ -205,7 +207,9 @@ export function CallCardsPanel({
     {
       candidates: flowRows,
       loadMedia: loadImageMedia,
-      accept: "image/*",
+      // From file: the keyframe seat is image-family — the absent-hint
+      // default derivation (the ONE ACCEPT LAW); no bespoke wire
+      // string.
       onFile: (file: File) => {
         const i = pickRow.current
         const err = refUploadError(file, "image")

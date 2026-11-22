@@ -164,16 +164,11 @@ function DeclaredChip({ url, kind, onRemove, removeLabel }: { url: string; kind:
  *  (studio-call-buckets.spec.tsx) drives both seats through one
  *  face; a second inline copy is a contract break. */
 function RefsBucket({
-  label, kind, accept, cap, countOffset = 0, overWord = studioCopy.overCapTail, countTestId, countTitle,
+  label, kind, cap, countOffset = 0, overWord = studioCopy.overCapTail, countTestId, countTitle,
   addLabel, anchorSlot, value, artifacts, onChange, disabled, disabledHint, declared, errorTestId,
 }: {
   label: string
   kind: "image" | "video" | "audio"
-  /** THE OS PICKER FILTER (2026-09-18, the two-audio fix): the lane's
-   *  MIME family — without it the hidden file input's IMAGE-ONLY
-   *  accept grays out every audio and video in the dialog (you
-   *  literally could not add even one from file). */
-  accept?: string
   /** Bundle cap (3 videos, 3 audios — the image lane owns the 9-slot
    * image bus: the reference lanes, one grammar each). */
   cap: number
@@ -340,7 +335,15 @@ function RefsBucket({
             key={`chip-${ci}`}
             label={chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : chip}
             kind={kind === "image" ? "image" : "file"}
-            accept={accept}
+            // THE ONE ACCEPT LAW (the accept-prop→media-threading
+            // rework, 2026-11-18): the lane's media kind rides INTO
+            // SourceRow's synthetic field and acceptOfField derives
+            // the OS accept at both doors (the square's input and the
+            // provider's click-time retarget). The retired accept
+            // strings ("video/*", "audio/*") set only the wire door's
+            // inert resting attr — both doors still fell to the image
+            // triad at the click.
+            media={kind === "image" ? undefined : kind}
             value={displaySource(chip, chipUrl)}
             onEdit={(v) => {
               if (v === "") setChips(chips.filter((_, x) => x !== ci))
@@ -360,7 +363,7 @@ function RefsBucket({
           // glyph alone; the label stays the accessible name.)
           hideLabel
           kind={kind === "image" ? "image" : "file"}
-          accept={accept}
+          media={kind === "image" ? undefined : kind}
           value={null}
           onEdit={(v) => { if (v !== "" && commitChip(v)) { setFileError(null); setChips([...chips, chipOf(v)]) } }}
           candidates={candidates}
@@ -611,7 +614,11 @@ function ModsBucket({
             key={`modchip-${ci}`}
             label={chip.startsWith("data:") ? studioCopy.uploadChipLabel(ci + 1) : declaredShortName(chip)}
             kind="file"
-            accept="image/*,video/*,audio/*"
+            // THE ONE ACCEPT LAW (2026-11-18 rework): the mod media
+            // kind rides the synthetic field; acceptOfField derives
+            // the any-media union at both doors. The hand-set string
+            // only ever set the wire door's inert resting attr.
+            media="mod"
             value={displaySource(chip, chipUrl)}
             onEdit={(v) => {
               if (v === "") setChips(chips.filter((_, x) => x !== ci))
@@ -634,7 +641,7 @@ function ModsBucket({
           label={`+ ${label.toLowerCase()}`}
           ariaLabel={`+ ${label.toLowerCase()}`}
           kind="file"
-          accept="image/*,video/*,audio/*"
+          media="mod"
           hideLabel
           candidates={candidates}
           loadMedia={fetchMediaLibrary}
@@ -845,7 +852,6 @@ export function CallCard({
           label={studioCopy.refVideos}
           addLabel={studioCopy.addRefVideo}
           kind="video"
-          accept="video/*"
           cap={REF_CAPS.videos}
           value={c.refs?.videos}
           artifacts={refArtifacts}
@@ -857,7 +863,6 @@ export function CallCard({
           label={studioCopy.refAudios}
           addLabel={studioCopy.addRefAudio}
           kind="audio"
-          accept="audio/*"
           cap={REF_CAPS.audios}
           value={c.refs?.audios}
           artifacts={refArtifacts}

@@ -40,8 +40,10 @@ export * from './spec.ts'
 // modleaf-add journey audit 2026-11-09): the helpers every tenant
 // wire threads — one derivation for the OS accept, the drop judge,
 // and candidatesFor. Selective re-export (not the barrel's *): the
-// provider's hook stays internal to the trio.
-export { assetKindRefusal, fileKindRefusal, seatFileKindOf, urlKindOf } from './square-provider.tsx'
+// provider's hook stays internal to the trio. acceptOfField is THE
+// ONE accept law itself (both doors answer it); exported so walls
+// and tenants assert the derivation, never a frozen accept literal.
+export { acceptOfField, assetKindRefusal, fileKindRefusal, seatFileKindOf, urlKindOf } from './square-provider.tsx'
 export * from './rejection-voice.ts'
 export * from './layout.tsx'
 export { WirePickerModal, type WirePickerModalProps } from './wirePicker.tsx'

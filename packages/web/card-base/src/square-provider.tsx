@@ -3,6 +3,7 @@
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
+  ANY_SQUARE_ACCEPT,
   AUDIO_SQUARE_ACCEPT,
   DUAL_SQUARE_ACCEPT,
   DEFAULT_SQUARE_ACCEPT,
@@ -147,11 +148,13 @@ export function assetKindRefusal(f: SpecField, url: string): string | null {
 
 /** THE OS-DIALOG ACCEPT, derived per field (primitive ③): mesh rows
  *  offer the GLB pair; video-hinted rows offer the video formats
- *  (the same media hint the picker rides); everything else keeps
- *  the image triad (the historic default). The provider's ONE
- *  hidden input re-targets imperatively at click time — the accept
- *  is a property of the field being picked, never of the provider
- *  instance. */
+ *  (the same media hint the picker rides); audio-hinted rows offer
+ *  the audio vocabulary; the dual seat offers both families; the
+ *  mod seat ('mod' — any media bakes) offers every family; everything
+ *  else keeps the image triad (the historic default). The provider's
+ *  ONE hidden input re-targets imperatively at click time — the
+ *  accept is a property of the field being picked, never of the
+ *  provider instance. */
 export function acceptOfField(f: SpecField | null): string {
   if (f === null) return DEFAULT_SQUARE_ACCEPT
   if (f.type === 'mesh') return MESH_SQUARE_ACCEPT
@@ -160,6 +163,9 @@ export function acceptOfField(f: SpecField | null): string {
   // the dual seat offers both families (input-prep's lane-agnostic
   // source: the OS dialog filters nothing the seat admits).
   if (f.media === 'image+audio') return DUAL_SQUARE_ACCEPT
+  // the mod seat (the h3 ref-mods stacks): every media family boards
+  // — the union accept, the same posture as the dual.
+  if (f.media === 'mod') return ANY_SQUARE_ACCEPT
   return DEFAULT_SQUARE_ACCEPT
 }
 
@@ -505,7 +511,8 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     ref: fileRef,
     type: 'file',
     // the RESTING accept (the triad); the '__file__' branch re-targets
-    // per field at click time — wire.accept stays the bespoke override.
+    // per field at click time — wire.accept seats the resting attr for
+    // direct-wire hosts only (the SourceRow seam threads media instead).
     accept: wire.accept ?? acceptOfField(null),
     'aria-hidden': true,
     tabIndex: -1,
@@ -592,10 +599,16 @@ export interface SourceRowProps {
   loadMedia?: SquareWire['loadMedia']
   /** The surface's own file law (From file + OS drops route here). */
   onFile?: (file: File) => void
-  /** THE ROW'S PICKER FILTER — the OS dialog's accept. Audio/video
-   *  lanes pass their MIME family ('audio/*', 'video/*'); absent =
-   *  the image triad (the historic default, image rows). */
-  accept?: SquareWire['accept']
+  /** THE REAL MEDIA HINT (the accept-prop→media-threading rework,
+   *  2026-11-18): the owning field's declared media kind rides INTO
+   *  the synthetic field, so acceptOfField derives the OS accept at
+   *  BOTH doors and seatFileKindOf, mediaKindForField, assetKindRefusal
+   *  judge from the same fact — 'video' | 'audio' | 'mod' | 'image+audio'
+   *  (the vocabulary the DECLs carry). The retired caller accept
+   *  strings set only the wire door's INERT resting attr: both doors
+   *  still fell to the image triad (the burn). Absent = the seat
+   *  derives from its type alone (image rows). */
+  media?: string
   /** The seam claim (same grammar as the field wire). */
   renderSourcePick?: SquareWire['renderSourcePick']
 }
@@ -685,12 +698,13 @@ export interface SquareWire {
    *  bespoke vocabularies (the studio's inline data:-URL cap) keep
    *  their semantics under the same three-entry grammar. */
   onFile?: (file: File) => void
-  /** THE ROW'S PICKER FILTER (2026-09-18, the two-audio conviction:
-   *  "you literally can't even add two audios" — the hidden file
-   *  input hard-coded the image triad, so the OS dialog GRAYED OUT
-   *  every audio and video on file rows). Rows whose lane is not
-   *  images pass their MIME family here ('audio/*', 'video/*');
-   *  absent → the image triad stands (image rows, unchanged). */
+  /** THE HIDDEN INPUT'S RESTING ACCEPT for direct-wire hosts (the
+   *  strip pane's lane doors): the attr the provider's file input
+   *  mounts with. The click-time From-file retarget always answers
+   *  acceptOfField(FIELD) — a host whose fields carry no media hint
+   *  therefore derives the image triad at the click REGARDLESS of
+   *  this attr (the split-accept burn's mechanism); thread the media
+   *  kind into the field, never a bespoke string here. */
   accept?: string
   /** THE SOURCE-PICK SEAM (2026-09-13, the operator's law: one
    *  system, no exceptions): the host may claim the picker modal's

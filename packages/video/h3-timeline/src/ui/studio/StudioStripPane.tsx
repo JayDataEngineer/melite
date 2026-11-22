@@ -143,7 +143,12 @@ export function StudioStripPane({
   // gesture. Same message vocabulary as the call card's lanes.
   const [laneErr, setLaneErr] = useState<string | null>(null)
   const laneField = (lane: LaneCls): SpecField =>
-    ({ name: `audio:${lane}`, label: lane, type: "file" })
+    // THE ONE ACCEPT LAW (the accept-prop→media-threading rework,
+    // 2026-11-18): the lane's family rides ON THE FIELD, so the
+    // provider's click-time retarget derives the audio vocabulary —
+    // the old media-less field answered the image triad at the
+    // From-file click (the OS dialog grayed every audio file).
+    ({ name: `audio:${lane}`, label: lane, type: "file", media: "audio" })
   const { square, wireMenu } = useSquareProvider(
     (name, v) => {
       // From flow / From media — v is the picked URL; the artifact
@@ -172,8 +177,9 @@ export function StudioStripPane({
       // rows only — the STABLE module-level wrapper (THE DEP LAW:
       // never an inline arrow here).
       loadMedia: loadAudioMedia,
-      // From file: the OS dialog, audio family — the clip verb.
-      accept: "audio/*",
+      // From file: the OS dialog — the retarget answers
+      // acceptOfField(audio:${lane}) (the ONE ACCEPT LAW); no
+      // bespoke wire string.
       onFile: (file: File) => {
         setLaneErr(null)
         if (refAudiosBlocked) { setLaneErr(studioCopy.laneBlockedMessage); return }
@@ -235,8 +241,9 @@ export function StudioStripPane({
       // rows only — the STABLE module-level wrapper (THE DEP LAW:
       // never an inline arrow here).
       loadMedia: loadImageMedia,
-      // From file: the OS dialog, image family — the atomic verb.
-      accept: "image/*",
+      // From file: the OS dialog — an image-family seat is the
+      // absent-hint default (the ONE ACCEPT LAW); no bespoke wire
+      // string.
       onFile: (file: File) => {
         setKfErr(null)
         const refusal = refUploadError(file, "image")

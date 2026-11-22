@@ -18,7 +18,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { studioCopy } from "../src/ui/studio/studioCopy.ts"
-import { fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
+import { acceptOfField, fieldsOfEnvelope, type SpecField, bindEstateRemote, unbindEstateRemote } from "@melite/card-base/client"
 import { carrier } from "@melite/models-h3/schema"
 
 const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()
@@ -112,6 +112,23 @@ describe("every media seat refuses a bad upload VISIBLY (the anchor's law, every
     fireEvent.change(inp, { target: { files: [big] } })
     const err = await screen.findByTestId("tl-call-ref-audios-error")
     assert.match(err.textContent!, /too large/i)
+  })
+
+  it("THE ONE ACCEPT LAW ON THE REAL DOOR (2026-11-18) — the mods seat's From-file click derives the ANY-MEDIA union, never the image triad", async () => {
+    // The derivation arm: the gesture retargets the provider input to
+    // acceptOfField of the field carrying the threaded media kind.
+    // TOGGLE PROOF: drop the mod media prop from ModsBucket's
+    // SourceRows and this arm reds — the click falls back to the
+    // image triad (the retired burn's exact mechanism).
+    card()
+    const inp = await fileGesture("+ ref mods")
+    const derived = acceptOfField({ name: "ref_mods", label: "Ref mods", type: "file", media: "mod" } as SpecField)
+    assert.ok(
+      derived.startsWith("image/png,image/jpeg,image/webp,") && derived.includes("video/") && derived.includes("audio/"),
+      `the mod seat's derived accept carries EVERY family: ${derived}`,
+    )
+    assert.equal(inp.getAttribute("accept"), derived,
+      "the click-time retarget answers acceptOfField from the threaded media kind")
   })
 
   it("the CHIP-REPLACE seat: an unreadable file refuses loud (the audit's M2 — the replace arm had no firing arm)", async () => {
@@ -284,7 +301,22 @@ describe("SOURCE — the slice-4 cures ride their atoms (the card's one grammar)
     assert.ok(mods.includes("hideLabel"), "the add door is a bare square (the caption hides; the aria names the seat)")
     assert.ok(mods.includes("ariaLabel={`+ ${label.toLowerCase()}`}"), "the hidden caption keeps its accessible name")
     assert.ok(mods.includes("loadMedia={fetchMediaLibrary}"), "the estate media door boards (any media kind is legal currency)")
-    assert.ok(mods.includes('accept="image/*,video/*,audio/*"'), "the OS picker hints EVERY media family (the any-media law)")
+    // THE ONE ACCEPT LAW (the accept-prop→media-threading rework,
+    // 2026-11-18): the any-media accept DERIVES — both mods seats
+    // (chip rows + add row) thread media="mod" into SourceRow's
+    // synthetic field and acceptOfField answers the union of the
+    // three family accepts at BOTH doors. The retired hand-set
+    // 'accept="image/*,video/*,audio/*"' set only the wire door's
+    // INERT resting attr: both doors still fell to the image triad
+    // at the click. The count rides the COMMENT-STRIPPED text — a
+    // commented-out prop must not feed the census (the toggle proof
+    // comments the props out and BOTH arms red). The derivation arm
+    // (the real door, first describe) rides the retarget; this arm
+    // guards the threading.
+    const stripped = mods.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")
+    assert.equal((stripped.match(/media="mod"/g) ?? []).length, 2,
+      "both mods SourceRows thread the real media kind — acceptOfField derives, never a hand-set accept")
+    assert.ok(!stripped.includes("accept="), "no hand-set accept literal survives in the mods seat (the one accept law)")
     assert.ok(mods.includes("modsNotMediaLine(f.name)"), "a non-media file refuses at the gesture with the seat's own face")
     // RE-PIN 2026-10-16: the read arm's signature carries the slot
     // index now (commitUpload(f, ci) / commitUpload(f, null)) — the

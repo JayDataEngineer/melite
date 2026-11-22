@@ -152,6 +152,46 @@ for (const group of readdirSync(packagesDir).sort()) {
       }
     }
 
+    // 5b — THE REVERSE LAW (2026-11-21, the docs audit's H1/H4 class):
+    // rule 5 judges manifest→README only, and the reverse drift — a
+    // README naming an export the manifest does not declare — landed
+    // green under it twice (estate/provisioning's phantom `./types`,
+    // comfyui-cordis crediting the card-kit's four doors as its own).
+    // In the canonical enumeration blocks ("Declared exports: …" and
+    // "the manifest exports …" prose), every path-shaped backticked
+    // token must exist in the exports map or on disk — `./package.json`
+    // exempt, real leaf files (patches, vendored faces) judged by
+    // existence.
+    {
+      const lines = text.split('\n')
+      for (let i = 0; i < lines.length; i++) {
+        if (!/declared exports|the manifest (also )?exports|exports include/i.test(lines[i])) continue
+        const block = []
+        for (let j = i; j < lines.length && lines[j].trim() !== ''; j++) block.push(lines[j])
+        const blockText = block.join(' ')
+        let cursor = 0
+        let foreign = false
+        for (const m of blockText.matchAll(/`(\.[A-Za-z0-9@/._-]*)`/g)) {
+          // ATTRIBUTION LAW: tokens introduced after a foreign package
+          // name (`@melite/<other>`) name THAT manifest's exports — the
+          // comfyui-cordis credit block is the shape ("live in
+          // `@melite/comfyui-card-kit` (`./model-contract`, …)").
+          const between = blockText.slice(cursor, m.index)
+          const foreignRef = between.match(/@melite\/([a-z0-9-]+)/)
+          if (foreignRef && foreignRef[1] !== manifest.name.replace(/^@melite\//, '')) foreign = true
+          cursor = m.index
+          const tok = m[1]
+          if (foreign || !tok.startsWith('./') || tok === './package.json') continue
+          const declared = exportsMap.includes(tok)
+          const onDisk = !declared && existsSync(join(groupDir, pkg, tok))
+          if (!declared && !onDisk) {
+            offenders.push(`${rel}: README names export ${tok} the manifest does not declare (the reverse drift class — declare it in package.json exports or fix the README)`)
+          }
+        }
+        i += block.length - 1
+      }
+    }
+
     // 6 — word budget (body, code fences stripped)
     const body = text.replace(/^---[\s\S]*?---\n/, '').replace(/```[\s\S]*?```/g, ' ')
     const words = body.split(/\s+/).filter(Boolean).length

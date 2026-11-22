@@ -373,14 +373,16 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         // MOD MEDIA (the ANY-MEDIA law, operator 2026-11-06): the mod
         // seat takes ANY media kind — stills, videos, audio — and the
         // system bakes the pack (compose wires the Create H3 RefMod
-        // node). The OS picker's accept hint lists every media family
-        // (the square's default is the image triad alone); the door
-        // itself boards any media kind.
+        // node). THE ONE ACCEPT LAW (the accept-prop→media-threading
+        // rework, 2026-11-18): the declared media hint rides INTO the
+        // SourceRow synthetic field and acceptOfField derives the OS
+        // accept at both doors (video seats the video formats, audio
+        // seats the audio vocabulary, mod seats every family, image
+        // stacks the triad) — the retired hand-set accept strings set
+        // only the wire door's inert resting attr, so video/audio seats
+        // still answered the image triad at the click.
         const kind = f.media === 'video' || f.media === 'audio' || f.media === 'mod' ? 'file' : 'image';
-        const accept = f.media === 'video' ? 'video/*'
-            : f.media === 'audio' ? 'audio/*'
-                : f.media === 'mod' ? 'image/png,image/jpeg,image/webp,video/*,audio/*'
-                    : undefined;
+        const media = f.media !== undefined && f.media !== '' ? f.media : undefined;
         return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) }, h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined }, h('span', { className: css.modTitle }, f.label), h('span', { className: css.modHint, ...(over ? { style: { color: 'var(--dsh-danger, #f44)' } } : {}) }, `${String(entries.length)}${cap !== undefined ? ' / ' + String(cap) : ''}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`)), 
         // THE OVER-CAP REFUSAL, INLINE (the schema-contract law: the
         // form states what the compose door would refuse — a draft
@@ -402,7 +404,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             // (reference_images: image_list accepts image
             // producers) — an input is an input, single or stack.
             name: f.name,
-            ...(accept !== undefined ? { accept } : {}),
+            ...(media !== undefined ? { media } : {}),
             onEdit: (next) => {
                 const arr = [...entries];
                 if (next === '')
@@ -420,7 +422,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
                 ariaLabel: chromeCopy.stackAddCell({ label: String(f.label) }),
                 kind, value: null,
                 name: f.name,
-                ...(accept !== undefined ? { accept } : {}),
+                ...(media !== undefined ? { media } : {}),
                 onEdit: (next) => {
                     // the add drill commits ONLY real picks — an empty
                     // verb (clear on the empty cell) adds nothing

@@ -296,8 +296,22 @@ const rowSrc = readFileSyncLane(resolveLane(__dirname, "../src/ui/studio/RunRefs
 if (!paneSrc.includes("useSquareProvider")) {
   throw new Error("THE LANE PICKER IS UNHOOKED: StudioStripPane must ride useSquareProvider (the estate's one From flow / From media / From file grammar)");
 }
-if (!paneSrc.includes('accept: "audio/*"')) {
-  throw new Error("THE LANE PICKER'S FILE FACE IS UNNARROWED: the provider wire must pass accept: 'audio/*'");
+// RE-PIN 2026-11-22 (the accept-prop→media-threading rework): the
+// old pin demanded the bespoke wire string 'accept: "audio/*"' —
+// the retired mechanism that set only the wire door's INERT resting
+// attr while BOTH doors still fell to the image triad at the click
+// (the split-accept burn's third seat: the lane-add dialog grayed
+// every audio file). The law — the lane-add dialog narrows to the
+// audio family — now rides the deeper derivation: laneField threads
+// media:"audio" and the provider's ONE input retargets to
+// acceptOfField at the click. The real-door + threading arms live
+// in studio-strip-uploads.spec.tsx; this arm keeps the cheap static
+// half (the hint is threaded, no bespoke string survives).
+if (!paneSrc.includes('media: "audio"')) {
+  throw new Error("THE LANE PICKER'S FILE FACE IS UNNARROWED: laneField must thread media:\"audio\" — acceptOfField derives the audio vocabulary at the From-file click (the one accept law)");
+}
+if (/accept:\s*["'`]/.test(paneSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""))) {
+  throw new Error("THE RETIRED STRING IS BACK: a bespoke wire accept in StudioStripPane — the derivation owns both doors; thread the media kind into the field");
 }
 if (rowSrc.includes("tl-audio-upload")) {
   throw new Error("DEAD DOOR: RunRefsClips still renders the bespoke upload button — the add door is the gutter icon");
