@@ -2380,7 +2380,8 @@ window.__ModuleLoader__.load({
 					path: e.path,
 					kind: e.kind,
 					size: typeof e.size === "number" ? e.size : 0,
-					mtime: typeof e.mtime === "number" ? e.mtime : 0
+					mtime: typeof e.mtime === "number" ? e.mtime : 0,
+					...typeof e.prompt === "string" && e.prompt !== "" ? { prompt: e.prompt } : {}
 				});
 			}
 			return {
@@ -2940,6 +2941,8 @@ window.__ModuleLoader__.load({
 		function mediaFileItemOf(f) {
 			const url = "/infer-gallery/artifact?path=" + encodeURIComponent(f.path);
 			const slash = f.path.indexOf("/");
+			const labelSrc = (f.prompt ?? "").trim();
+			const head = labelSrc !== "" ? "\"" + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? "… — " : " — ") + f.path + "\"" : "\"" + f.path + "\"";
 			return {
 				id: url,
 				kind: f.kind,
@@ -2947,7 +2950,7 @@ window.__ModuleLoader__.load({
 				face: url,
 				poster: f.kind === "image" ? url : "",
 				segment: false,
-				head: "\"" + f.path + "\"",
+				head,
 				final: false,
 				runId: slash > 0 ? f.path.slice(0, slash) : "",
 				draftId: draftIdOf$1(""),
@@ -3532,14 +3535,23 @@ window.__ModuleLoader__.load({
 			const [mediaError, setMediaError] = (0, react.useState)("");
 			const [mediaNonce, setMediaNonce] = (0, react.useState)(0);
 			const mediaWalk = (0, react.useRef)(0);
+			const [mediaQuery, setMediaQuery] = (0, react.useState)("");
+			(0, react.useEffect)(() => {
+				const t = setTimeout(() => {
+					setMediaQuery(search);
+				}, 250);
+				return () => clearTimeout(t);
+			}, [search]);
 			const loadMedia = (cursor) => {
 				const seq = cursor === 0 ? mediaWalk.current + 1 : mediaWalk.current;
 				if (cursor === 0) mediaWalk.current = seq;
 				setMediaLoading(true);
 				setMediaError("");
+				const wq = mediaQuery.trim().toLowerCase();
 				const walk = (at) => {
 					const params = ["limit=500"];
 					if (cat !== "all") params.push("kind=" + cat);
+					if (wq !== "") params.push("q=" + encodeURIComponent(wq));
 					if (at > 0) params.push("cursor=" + String(at));
 					fetch("/infer-gallery/media?" + params.join("&")).then(async (res) => {
 						if (!res.ok) throw new Error("HTTP " + String(res.status));
@@ -3568,7 +3580,8 @@ window.__ModuleLoader__.load({
 				tab,
 				scope,
 				cat,
-				mediaNonce
+				mediaNonce,
+				mediaQuery
 			]);
 			/** THE ITEMS SEAM: one MediaItem stream, two feeds — the runs
 			* window (recent scope) or the disk walk's rows (all-files scope).

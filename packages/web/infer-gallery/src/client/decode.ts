@@ -171,6 +171,10 @@ export interface MediaFileRow {
   size: number
   /** ms since epoch (the route serves stat mtimeMs). */
   mtime: number
+  /** the owning run's sidecar prompt, when one exists (the label
+   * law's source — absent on runs with no/promptless sidecar, never
+   * a guessed name). */
+  prompt?: string
 }
 
 /** One all-files answer — cursor-paginated with an honest total
@@ -196,6 +200,7 @@ export function decodeMediaFiles(json: unknown): MediaFilesPage {
       kind: e.kind,
       size: typeof e.size === 'number' ? e.size : 0,
       mtime: typeof e.mtime === 'number' ? e.mtime : 0,
+      ...(typeof e.prompt === 'string' && e.prompt !== '' ? { prompt: e.prompt } : {}),
     })
   }
   return {

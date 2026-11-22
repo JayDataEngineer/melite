@@ -241,6 +241,14 @@ function timeLabel(sec: unknown): string {
 function mediaFileItemOf(f: MediaFileRow): MediaItem {
   const url = '/infer-gallery/artifact?path=' + encodeURIComponent(f.path)
   const slash = f.path.indexOf('/')
+  // THE LABEL LAW (one spelling, the runs face's twin): the tile's
+  // quoted head reads the owning run's sidecar prompt when the walk
+  // carried one, else the path — the prompt-label arc (2026-11-22);
+  // same 48-char cap + ellipsis as headFor.
+  const labelSrc = (f.prompt ?? '').trim()
+  const head = labelSrc !== ''
+    ? '"' + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? '\u2026' + ' — ' : ' — ') + f.path + '"'
+    : '"' + f.path + '"'
   return {
     id: url,
     kind: f.kind,
@@ -248,7 +256,7 @@ function mediaFileItemOf(f: MediaFileRow): MediaItem {
     face: url,
     poster: f.kind === 'image' ? url : '',
     segment: false,
-    head: '"' + f.path + '"',
+    head,
     final: false,
     runId: slash > 0 ? f.path.slice(0, slash) : '',
     draftId: draftIdOf(''),
@@ -877,18 +885,32 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   // the walk's ownership token: a fresh scope/kind/refresh ask mints a
   // new one so a stale in-flight page can never append into the new feed
   const mediaWalk = useRef(0)
+  // the all-files scope's server-side search (the debounced box): the
+  // recent scope filters client-side (its rows arrive whole); the walk
+  // needs the window to prune the disk read itself
+  const [mediaQuery, setMediaQuery] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => { setMediaQuery(search) }, 250)
+    return () => clearTimeout(t)
+  }, [search])
 
   const loadMedia = (cursor: number): void => {
     const seq = cursor === 0 ? mediaWalk.current + 1 : mediaWalk.current
     if (cursor === 0) mediaWalk.current = seq
     setMediaLoading(true)
     setMediaError('')
+    // the search box rides the SERVER walk in the all-files scope
+    // (the client filter below stays for recent scope + the instant
+    // narrowing); `q` joins the ask re-walked on the DEBOUNCED value
+    // only (a walk per keystroke floods the disk)
+    const wq = mediaQuery.trim().toLowerCase()
     // "All files" means ALL files: a fresh ask walks EVERY cursor page
     // to nextCursor null (tiles render progressively as pages append);
     // the More verb remains only as the resume door after a dead page
     const walk = (at: number): void => {
       const params: string[] = ['limit=500']
       if (cat !== 'all') params.push('kind=' + cat)
+      if (wq !== '') params.push('q=' + encodeURIComponent(wq))
       if (at > 0) params.push('cursor=' + String(at))
       void fetch('/infer-gallery/media?' + params.join('&'))
         .then(async (res: Response): Promise<MediaFilesPage> => {
@@ -918,8 +940,10 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     loadMedia(0)
     // cat rides the deps: a kind chip re-asks the walk SERVER-SIDE
     // (the disk walk filters at the source); mediaNonce is the
-    // face's refresh verb
-  }, [tab, scope, cat, mediaNonce])
+    // face's refresh verb; search joins the same law (the all-files
+    // scope pushes `q` at the walk) — the box keystrokes re-walk on
+    // the DEBOUNCED value only (a walk per keystroke floods the disk)
+  }, [tab, scope, cat, mediaNonce, mediaQuery])
 
   /** THE ITEMS SEAM: one MediaItem stream, two feeds — the runs
    * window (recent scope) or the disk walk's rows (all-files scope).
@@ -1122,6 +1146,9 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       if (it.archived && !showArchived) return false
       if (cat !== 'all' && it.kind !== cat) return false
       if (q === '') return true
+      // the walk's rows are already server-pruned by the same q (the
+      // all-files scope pushes the search down) — this client filter
+      // stays for the recent scope and instant narrowing
       return (it.head + ' ' + it.file + ' ' + it.time).toLowerCase().includes(q)
     })
     if (sort === 'old') out.sort((a, b) => a.created - b.created)

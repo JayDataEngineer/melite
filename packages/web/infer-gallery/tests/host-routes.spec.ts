@@ -1264,6 +1264,43 @@ describe('GET /infer-gallery/media (the all-files face, 2026-11-18)', () => {
     expect(names).toHaveLength(5)
   })
 
+  it('q matches the FILE name or the owning run prompt; since/until bound the window; bad windows refuse loud', async () => {
+    mkdirSync(join(flowDir, 'run-0dd-1'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-0dd-1', 'frame.png'), 'x')
+    writeFileSync(join(flowDir, 'run-0dd-1', '_flow.json'), '{"prompt": "a mossy lighthouse at dawn"}')
+    mkdirSync(join(flowDir, 'run-2e9-2'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-2e9-2', 'other.png'), 'x')
+    writeFileSync(join(flowDir, 'run-2e9-2', '_flow.json'), '{"prompt": "krea portrait of a cat"}')
+    mkdirSync(join(flowDir, 'run-a11-3'), { recursive: true })
+    writeFileSync(join(flowDir, 'run-a11-3', 'nameless.png'), 'x')
+    const ctx = mount({ flowDir })
+    // file-name match: the promptless run answers by name alone
+    const byName = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?q=nameless')
+    expect((json(byName) as { files: { path: string }[] }).files.map((f) => f.path)).toEqual(['run-a11-3/nameless.png'])
+    // prompt match: the file's own name carries no "lighthouse", the run's prompt does
+    const byPrompt = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?q=lighthouse')
+    const lighthouse = json(byPrompt) as { files: { path: string; prompt?: string }[]; total: number }
+    expect(lighthouse.files.map((f) => f.path)).toEqual(['run-0dd-1/frame.png'])
+    expect(lighthouse.files[0]?.prompt).toBe('a mossy lighthouse at dawn')
+    expect(lighthouse.total).toBe(1)
+    // the row carries the prompt but is still a plain row (no date row shape)
+    expect(Object.keys(lighthouse.files[0] ?? {}).sort()).toEqual(['kind', 'mtime', 'path', 'prompt', 'size'])
+    // date window: everything written today, so since tomorrow answers nothing, until yesterday answers nothing
+    const tomorrow = Date.now() + 86400000
+    const none = await hit(ctx, '/infer-gallery/media', `/infer-gallery/media?since=${tomorrow}`)
+    expect((json(none) as { files: unknown[] }).files).toEqual([])
+    const yesterday = Date.now() - 86400000
+    const past = await hit(ctx, '/infer-gallery/media', `/infer-gallery/media?until=${yesterday}`)
+    expect((json(past) as { files: unknown[] }).files).toEqual([])
+    // malformed windows refuse loud, never guess a filter
+    const badSince = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?since=whenever')
+    expect(badSince.status).toBe(400)
+    expect(badSince.body.toString('utf8')).toContain('bad_window')
+    const badUntil = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media?until=soon')
+    expect(badUntil.status).toBe(400)
+    expect(badUntil.body.toString('utf8')).toContain('bad_window')
+  })
+
   it('cross-host answers the loud 502, never a synthesized stream', async () => {
     const ctx = mount({ flowDir, gatewayUrl: 'https://owner.example' })
     const saw = await hit(ctx, '/infer-gallery/media', '/infer-gallery/media')

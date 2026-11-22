@@ -157,6 +157,23 @@ describe('decodeMediaFiles — the all-files validation site', () => {
     expect(page.files).toEqual([{ path: 'kept.png', kind: 'image', size: 0, mtime: 0 }])
   })
 
+  it('THE PROMPT RIDES THE ROW WHEN THE WALK CARRIES ONE — a string prompt stays; an absent one is no key (never guessed), a non-string one is dropped', () => {
+    const page = decodeMediaFiles({
+      files: [
+        { path: 'a.png', kind: 'image', prompt: 'a mossy lighthouse' },
+        { path: 'b.png', kind: 'image' },
+        { path: 'c.png', kind: 'image', prompt: '' },
+        { path: 'd.png', kind: 'image', prompt: 42 },
+      ],
+    })
+    expect(page.files).toEqual([
+      { path: 'a.png', kind: 'image', size: 0, mtime: 0, prompt: 'a mossy lighthouse' },
+      { path: 'b.png', kind: 'image', size: 0, mtime: 0 },
+      { path: 'c.png', kind: 'image', size: 0, mtime: 0 },
+      { path: 'd.png', kind: 'image', size: 0, mtime: 0 },
+    ])
+  })
+
   it('THE FILE ROW NUMBERS FALL BACK TO ZERO — a non-number size or mtime is 0, the row still rides; a non-number total is the file count and a missing cursor is null', () => {
     expect(
       decodeMediaFiles({ files: [{ path: 'a.png', kind: 'image', size: 'big', mtime: false }], total: 'many' }),

@@ -320,4 +320,31 @@ describe('the all-files scope — EVERY media leaf, not the last 500 runs (opera
     fireEvent.click(screen.getByText('All files'))
     await waitFor(() => { expect(screen.getByText(/HTTP 502/)).toBeTruthy() })
   })
+
+  it('the search box re-asks the walk SERVER-SIDE — and a prompt-carried row tiles with its prompt head', async () => {
+    const calls: string[] = []
+    stub((url) => {
+      if (!url.startsWith('/infer-gallery/media')) return browsePage({ path: '', total: 0, nextCursor: null, entries: [] })
+      calls.push(url)
+      // the panel re-asks with q as the box changes (debounced):
+      // the stub answers rows whose path OR prompt matches the ask
+      if (url.includes('q=')) {
+        const q = decodeURIComponent(url.split('q=')[1]!.split('&')[0]!).toLowerCase()
+        const rows = [
+          { path: 'run-a/pic.png', kind: 'image', size: 9, mtime: 3, prompt: 'a mossy lighthouse at dawn' },
+          { path: 'run-b/shot.png', kind: 'image', size: 9, mtime: 2 },
+        ].filter((r) => r.path.toLowerCase().includes(q) || (r.prompt ?? '').toLowerCase().includes(q))
+        return mediaPage({ files: rows, total: rows.length, nextCursor: null })
+      }
+      return mediaPage({ files: [], total: 0, nextCursor: null })
+    })
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('0 runs · 0 artifacts')).toBeTruthy() })
+    fireEvent.click(screen.getByText('All files'))
+    // the search rides the SERVER walk (the debounced q joins the ask)
+    fireEvent.change(screen.getByPlaceholderText(/search prompt/), { target: { value: 'lighthouse' } })
+    await waitFor(() => { expect(calls.some((u) => u.includes('q=lighthouse'))).toBe(true) })
+    // the prompt-carried tile heads with the PROMPT, not the path
+    await waitFor(() => { expect(screen.getByText(/a mossy lighthouse at dawn/)).toBeTruthy() })
+  })
 })

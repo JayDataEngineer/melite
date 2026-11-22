@@ -1018,6 +1018,34 @@ export function apply(ctx, config = {}) {
                     fail(res, 400, 'bad_kind', { message: "kind must be one of image, video, audio, model, text, or empty for every kind", kind: kindParam });
                     return;
                 }
+                // THE PROMPT/DATE FILTERS (the fuller-library arc, 2026-11-22):
+                // `q` matches the file's basename OR the owning run's sidecar
+                // prompt (the label law's source — `_flow.json`, the same
+                // sidecarStr read buildRunCard rides; a run with no sidecar
+                // matches by name alone); `since`/`until` bound the file's
+                // mtime window (epoch ms, inclusive). Both refuse loud on a
+                // malformed value — the route never guesses a filter.
+                const q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+                const sinceRaw = url.searchParams.get('since') ?? '';
+                const untilRaw = url.searchParams.get('until') ?? '';
+                let since = -Infinity;
+                let until = Infinity;
+                if (sinceRaw !== '') {
+                    const n = Number(sinceRaw);
+                    if (!Number.isFinite(n)) {
+                        fail(res, 400, 'bad_window', { message: 'since must be epoch milliseconds', since: sinceRaw });
+                        return;
+                    }
+                    since = n;
+                }
+                if (untilRaw !== '') {
+                    const n = Number(untilRaw);
+                    if (!Number.isFinite(n)) {
+                        fail(res, 400, 'bad_window', { message: 'until must be epoch milliseconds', until: untilRaw });
+                        return;
+                    }
+                    until = n;
+                }
                 const cursor = Math.max(0, Number(url.searchParams.get('cursor') ?? '0') | 0);
                 const asked = Number(url.searchParams.get('limit') ?? '200') | 0;
                 const limit = Math.min(500, Math.max(1, Number.isFinite(asked) && asked > 0 ? asked : 200));
@@ -1026,11 +1054,30 @@ export function apply(ctx, config = {}) {
                 const trees = flowTrees();
                 const seen = new Set();
                 const rows = [];
+                // one sidecar read per run dir per walk: the prompt the filter
+                // matches and the rows carry (capped like buildRunCard reads,
+                // served at the label law's display length — bounded wire).
+                const promptCache = new Map();
+                const promptOf = async (runFull) => {
+                    const hit = promptCache.get(runFull);
+                    if (hit !== undefined)
+                        return hit;
+                    let prompt = '';
+                    try {
+                        const raw = JSON.parse((await fs.readFile(path.join(runFull, '_flow.json'), 'utf8')).slice(0, 8191)).prompt;
+                        prompt = raw !== undefined ? String(raw).replace(/\s+/g, ' ').trim().slice(0, 200) : '';
+                    }
+                    catch {
+                        prompt = ''; // no sidecar / unreadable: name-only matching, never a guess
+                    }
+                    promptCache.set(runFull, prompt);
+                    return prompt;
+                };
                 // ONE RUN DIR, WHOLE: depth-first over its children — `_`
                 // never descends (private records + the archive), a media
                 // leaf is a row, a plain dir keeps walking. The walk is
                 // bounded by the tree itself; the cursor bounds the ANSWER.
-                const walkRun = async (full, rel) => {
+                const walkRun = async (full, rel, runFull) => {
                     let dirents;
                     try {
                         dirents = await fs.readdir(full, { withFileTypes: true });
@@ -1044,7 +1091,7 @@ export function apply(ctx, config = {}) {
                         const childFull = path.join(full, d.name);
                         const childRel = rel === '' ? d.name : rel + '/' + d.name;
                         if (d.isDirectory()) {
-                            await walkRun(childFull, childRel);
+                            await walkRun(childFull, childRel, runFull);
                         }
                         else if (d.isFile()) {
                             const kind = mediaKindOf(d.name);
@@ -1053,7 +1100,14 @@ export function apply(ctx, config = {}) {
                             if (kindParam !== '' && kind !== kindParam)
                                 continue;
                             const st = await fs.stat(childFull);
-                            rows.push({ path: childRel, kind, size: st.size, mtime: st.mtimeMs });
+                            if (st.mtimeMs < since || st.mtimeMs > until)
+                                continue;
+                            // the run prompt reads ONCE per walk (the cache above);
+                            // a file matches by its own name OR its run's prompt
+                            const runPrompt = await promptOf(runFull);
+                            if (q !== '' && !d.name.toLowerCase().includes(q) && !runPrompt.toLowerCase().includes(q))
+                                continue;
+                            rows.push({ path: childRel, kind, size: st.size, mtime: st.mtimeMs, ...(runPrompt !== '' ? { prompt: runPrompt } : {}) });
                         }
                     }
                 };
@@ -1069,7 +1123,7 @@ export function apply(ctx, config = {}) {
                         if (!d.isDirectory() || !RUN_DIR.test(d.name) || seen.has(d.name))
                             continue;
                         seen.add(d.name);
-                        await walkRun(path.join(tree, d.name), d.name);
+                        await walkRun(path.join(tree, d.name), d.name, path.join(tree, d.name));
                     }
                 }
                 // NEWEST-FIRST, the grid's own scan order (the operator's
