@@ -1,10 +1,10 @@
 {
- "derived_at": "2026-11-17T16:02:22.822Z",
+ "derived_at": "2026-11-22T21:46:14.193Z",
  "tool": "scripts/regen-node-vocab.mjs --boot",
  "source": {
   "path": "data/tmp/object_info_prod.json",
-  "sha256": "0fe3d080cac96011929686575da2dd6af06b114ce3ac256f39daab542d2db293",
-  "mtime_ms": 1794931342544.6204,
+  "sha256": "5de9832eeab708d45d15f0fa260fc5103c55803fc0e1f7dc4b2686cb2ed3f2fd",
+  "mtime_ms": 1795383973091.6921,
   "class_count": 1889,
   "origin": "live"
  },
@@ -22,16 +22,11 @@
   "refused_rows": 0
  },
  "delta": {
-  "added": [
-   "SeedVCRun"
-  ],
+  "added": [],
   "pruned": [],
   "updated": [
-   "AudiocoreVoiceStudio",
-   "CreateVideo",
-   "MiniMaxH3RefModsLoader",
-   "UNETLoader",
-   "VAELoader"
+   "CrossViewWarp",
+   "MiniMaxH3RefModsLoader"
   ],
   "reordered_keys": 0
  }

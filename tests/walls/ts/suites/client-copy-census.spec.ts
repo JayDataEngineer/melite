@@ -629,7 +629,13 @@ const PINS: Record<string, number> = {
   // the kind filter speaks the contract's five or refuses). Same
   // wire-voice class — machine codes travel beside them; no
   // dictionary fork.
-  'packages/web/infer-gallery/src': 41,
+  // 41→43 (2026-11-22 re-pin; the media search face landed ed8a73ecd
+  // two commits before this row caught up): the search route's
+  // malformed-window wire voices — since/until must be epoch
+  // milliseconds (the 400 bad_window refusal spells its own bound at
+  // the door, machine code beside it). Same wire-voice class — the
+  // fetch caller reads the bound verbatim; no dictionary fork.
+  'packages/web/infer-gallery/src': 43,
   // action_cards: 0 — the pose stage, motion poster/viewer and poster
   // shell ride actionCopy.ts.
   'packages/engines/comfyui/src/action_cards': 0,

@@ -570,6 +570,12 @@ export const COVERAGE_BASELINE: Record<string, {
   // 200, 202, 238, 652).
   '**/packages/models/h3/src/actions.ts': { statements: 99.86, branches: 97.32, functions: 98.44, lines: 99.85 },
   '**/packages/models/h3/src/filmMix.ts': { statements: 99.14, branches: 99.06, functions: 93.33, lines: 98.98 },
+  // THE MOVE'S LEDGER (2026-11-22, the h3 timeline contract moves home
+  // 47515d7f6): the file MOVED BYTE-IDENTICAL to
+  // packages/web-kit/contracts/src/filmMix.ts — the floors travel with
+  // the bytes (the same measured face; the old-home key stays for the
+  // re-export shim, which remains a gated real file).
+  '**/packages/web-kit/contracts/src/filmMix.ts': { statements: 99.14, branches: 99.06, functions: 93.33, lines: 98.98 },
   '**/packages/models/h3/src/finalize.ts': { statements: 75, branches: 50, functions: 0, lines: 66.67 },
   '**/packages/models/h3/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   // openjutsu lane, feature 023: first seat at the MAX of two scoped
@@ -612,6 +618,12 @@ export const COVERAGE_BASELINE: Record<string, {
   // audit).
   '**/packages/models/h3/src/schema.ts': { statements: 98.17, branches: 96.91, functions: 91.67, lines: 98.02 },
   '**/packages/models/h3/src/timelineContract.ts': { statements: 99.28, branches: 99.38, functions: 97.56, lines: 99.15 },
+  // THE MOVE'S LEDGER (2026-11-22, same cure): the contract's
+  // implementation moved byte-identical to
+  // packages/web-kit/contracts/src/timelineContract.ts — floors travel
+  // with the bytes; the old-home key stays for the family's re-export
+  // shim (the battery's JSON ratchet row already moved with the file).
+  '**/packages/web-kit/contracts/src/timelineContract.ts': { statements: 99.28, branches: 99.38, functions: 97.56, lines: 99.15 },
   '**/packages/models/input/src/actions.ts': { statements: 97.62, branches: 97.56, functions: 50, lines: 97.62 },
   '**/packages/models/input/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/joycaption/src/actions.ts': { statements: 83.33, branches: 50, functions: 0, lines: 83.33 },
