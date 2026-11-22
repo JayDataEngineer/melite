@@ -1896,6 +1896,7 @@ const CENSUS_SECOND: CensusDoc = {
   second_pass_enabled: true,
   interpolate_enabled: true, interp_model: "rife47.pth", interp_multiplier: 4,
   sr_switch: true, sr_model: "seedvr2_ema_3b_fp8_e4m3fn.safetensors", sr_resolution: 1440,
+  sr_color_correction: "lab",
   sharpen_enabled: true, sharpen_method: "adaptive_usm", sharpen_radius: 2.5,
   sharpen_strength: 0.55, sharpen_threshold: 0.15, sharpen_iterations: 7,
   refine_lora: "h3_taomate_3step", refine_strength: 0.9, refine_steps: 3, refine_denoise: 0.3,
@@ -2036,6 +2037,7 @@ const CENSUS_ROWS: readonly CensusRow[] = [
   { kind: "gate", param: "sr_switch", on: "second", off: "no_sr", classes: ["SeedVR2VideoUpscaler"] },
   { kind: "at", param: "sr_resolution", doc: "second", cls: "SeedVR2VideoUpscaler", input: "resolution", value: 1440 },
   { kind: "at", param: "sr_model", doc: "second", cls: "SeedVR2LoadDiTModel", input: "model", value: "seedvr2_ema_3b_fp8_e4m3fn.safetensors" },
+  { kind: "at", param: "sr_color_correction", doc: "second", cls: "SeedVR2VideoUpscaler", input: "color_correction", value: "lab" },
   // ── the refine rider (ARMs 4/4b) ──────────────────────────────
   {
     kind: "judge", param: "refine_lora", doc: "second", why: "the rider's own loader stack names the resolved catalog file",

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { callBench, collectPageErrors, seedBenchH3, settle } from './tour.ts'
+import { callBench, collectPageErrors, LAWFUL_CRAFT, seedBenchH3, settle } from './tour.ts'
 
 /**
  * THE ADD-VIDEO-EDIT LEAF — the browser-plane proof of the
@@ -51,10 +51,20 @@ async function scratchSessionKey(page: Page): Promise<string> {
   })
   return current !== '' ? current : 'main'
 }
+// THE GATE-LAWFUL SEED (2026-11-22, the prompt-gate ×5): the scratch
+// stage's call rides the dictionary's own "good call passes" craft
+// (see tour.ts LAWFUL_CRAFT) — the old seed text WAS the studio's
+// starter placeholder verbatim, which needed the waiver the compose
+// body never carried. The span law keeps its shape: one call,
+// 0–175f @24fps = 0.00s–7.29s (SEED_SPAN below reads frames, not
+// text). The stand-down arm flips its face and grows teeth: the
+// starter INVITATION paints nowhere (the placeholder stands down
+// under real content), and the authored craft DOES paint (the row
+// shows the content the run books — authored prose is never hidden).
 const SEED_CALLS = [
-  { text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 },
+  { text: LAWFUL_CRAFT, start_frame: 0, end_frame: 175 },
 ]
-const SEED_LINE = 'A single shot — describe the action, camera, and mood.'
+const INVITATION = 'A single shot — describe the action, camera, and mood.'
 const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime'
 const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp'
 
@@ -81,11 +91,7 @@ async function resetScratchStage(page: Page, sessionKey: string): Promise<void> 
   if (!hit?.id) throw new Error('the scratch conversation carries no h3-timeline stage — seed it first (bench/add-stage)')
   await callBench(page, 'bench/patch', {
     sessionKey,
-    doc: { stage: hit.id, params: { ...(hit.params ?? {}), calls: SEED_CALLS,
-      // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): the scratch
-      // stage may predate the tour helper's waiver — state it here so
-      // every reset composes (recorded, never silent; see tour.ts).
-      prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'] }, expect_rev: rev, author: 'user' },
+    doc: { stage: hit.id, params: { ...(hit.params ?? {}), calls: SEED_CALLS }, expect_rev: rev, author: 'user' },
   })
 }
 
@@ -134,14 +140,15 @@ async function openEditLeaf(page: Page): Promise<void> {
 }
 
 /** THE BENCH GATE: the leaf's windows must be the seed doc's own —
- *  foreign content fails loud (never shot, never driven). THE SEED
+ *  foreign content fails loud (never shot, never driven). THE STARTER
  *  PROSE IS DEAD ON THIS FACE (the REPLACED law, operator 2026-11-16:
  *  "WHY DO I SEE THE DEFAULT CALL ON THE REPAIR VIDEO TO VIDEO. I
  *  SAID REPLACED" — the starter's invitation never paints on a v2v
  *  window row), so the gate rides the SPAN's own shape: W1 named,
- *  the seed's 0–175f window at 24fps = 0.00s–7.29s, and the seed
- *  line paints NOWHERE (its presence is itself the regression the
- *  wall arms red on). */
+ *  the seed's 0–175f window at 24fps = 0.00s–7.29s, the invitation
+ *  paints NOWHERE, and the authored craft paints (2026-11-22 — the
+ *  seed rides real gate-lawful text; the stand-down is for the
+ *  placeholder only, never operator content). */
 const SEED_SPAN = 'W1 · 0.00s–7.29s'
 async function gateLeafOnSeed(page: Page): Promise<number> {
   const windows = await page.evaluate(() =>
@@ -150,8 +157,15 @@ async function gateLeafOnSeed(page: Page): Promise<number> {
   expect(windows.length, 'the leaf lists the seed doc windows').toBeGreaterThan(0)
   const foreign = windows.filter((t) => !t.startsWith(SEED_SPAN))
   expect(foreign, `FOREIGN BENCH CONTENT in the leaf — the lane's scratch conversation is not the reopened one; refusing to judge or drive it: ${JSON.stringify(foreign)}`).toEqual([])
-  const prose = windows.filter((t) => t.includes(SEED_LINE))
-  expect(prose, `THE DEFAULT CALL PAINTS ON THE VID2VID FACE — the starter's invitation must stand down (the REPLACED law): ${JSON.stringify(prose)}`).toEqual([])
+  // THE STAND-DOWN, BOTH HALVES (2026-11-22, the gate-lawful seed):
+  // the starter INVITATION paints nowhere (the placeholder stands
+  // down under real content — the REPLACED law), and the authored
+  // craft DOES paint (the row shows what the run books; authored
+  // prose is never hidden — the strip's own stand-down law).
+  const starter = windows.filter((t) => t.includes(INVITATION))
+  expect(starter, `THE DEFAULT CALL PAINTS ON THE VID2VID FACE — the starter's invitation must stand down (the REPLACED law): ${JSON.stringify(starter)}`).toEqual([])
+  const craft = windows.filter((t) => t.includes(LAWFUL_CRAFT))
+  expect(craft.length, 'the authored call paints on its window row (authored prose is never hidden)').toBeGreaterThan(0)
   return windows.length
 }
 

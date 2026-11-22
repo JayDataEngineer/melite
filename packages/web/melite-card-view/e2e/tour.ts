@@ -39,6 +39,19 @@
  */
 import { expect, type Page } from '@playwright/test'
 
+/** THE GATE-LAWFUL SEED TEXT (2026-11-22, the prompt-gate ×5): every
+ *  h3 seed rides REAL craft — the prompt dictionary's own "good call
+ *  passes" acceptance case, the same string LAWFUL_TEXT self-verifies
+ *  against checkPress at load in the unit sweep. The 2026-11-14
+ *  stopgap seeded a marker sentence + prompt_waivers; the waivers
+ *  never reached the compose body (the gate judges the calls' text
+ *  alone), so the press stayed refused — the gate is law, the seeds
+ *  come up to it. The literal is pinned by the unit wall: if the
+ *  dictionary's case drifts, the unit sweep reds first and this
+ *  string follows it. */
+export const LAWFUL_CRAFT =
+  'Live-action, cinematic, shallow depth of field. She stands on wet sand at dusk in a pale blue bikini, hair loose and salt drying on her shoulders, both feet planted with her weight on the left, the right knee soft, arms low and open away from her sides. The camera pushes in with small amplitude at slow speed toward her face, holding as the light comes through the spray. Beyond her the waterline keeps its slow rhythm. Breakers roll behind her, wind moves the loose strands, and wet sand gives slightly under the balls of her feet.'
+
 export const STUDIO_URL = process.env.E2E_STUDIO_URL ?? ''
 
 /** THE AI OPT-IN (operator order 2026-10-17): openAConversation's
@@ -483,13 +496,7 @@ export async function seedBenchH3(page: Page, sessionKey: string): Promise<void>
     doc: {
       card: 'h3-timeline',
       engine: 'comfyui',
-      params: { variant: 'timeline', quant: 'int8', model: 'h3', calls: [{ text: 'A single shot — describe the action, camera, and mood.', start_frame: 0, end_frame: 175 }],
-        // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): this seed
-        // text is scaffolding, not craft — a marker the gate's
-        // DENSITY-FLOOR + CAMERA-VERB refuse at press. The waiver is
-        // the designed door (recorded, never silent); real craft rides
-        // LAWFUL_TEXT in the unit sweep, never this marker.
-        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'] },
+      params: { variant: 'timeline', quant: 'int8', model: 'h3', calls: [{ text: LAWFUL_CRAFT, start_frame: 0, end_frame: 175 }] },
       inputs: {},
       outputs: { default: 'image' },
       expect_rev: rev,

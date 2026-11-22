@@ -37,11 +37,17 @@
  * runs.
  */
 import { expect, test, type Page } from '@playwright/test'
-import { callBench, collectPageErrors, dismissMaskingDialogs, ensureRightSidebarOpen, expectNoPageErrors, settle, STUDIO_URL } from './tour.ts'
+import { callBench, collectPageErrors, dismissMaskingDialogs, ensureRightSidebarOpen, expectNoPageErrors, LAWFUL_CRAFT, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
 
-const WALL_TEXT = 'WALL — studio follows the agent (safe to delete)'
+// THE GATE-LAWFUL WALL TEXT (2026-11-22, the prompt-gate ×5): the
+// wall stage's call text rides the dictionary's own "good call
+// passes" craft (see tour.ts) — the old marker sentence needed the
+// waiver the compose body never carried. Authored prose paints
+// (the strip's stand-down hides only the starter placeholder), so
+// every getByText anchor below tracks this const.
+const WALL_TEXT = LAWFUL_CRAFT
 const WALL_CLIP = 'clips/wall-follow-a.mp4'
 /** The wall stage's durable fingerprint: the calls patch rewrites the
  *  call text, so cleanup may not rely on it alone — the seed key
@@ -130,9 +136,6 @@ test('an agent\'s bench writes redraw the open studio timeline', async ({ page }
         variant: 'timeline', quant: 'int8', model: 'h3',
         seed: WALL_SEED,
         calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
-        // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): WALL_TEXT
-        // is a cleanup marker, not craft — waived loud (see tour.ts).
-        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       },
       inputs: {},
       outputs: { default: 'video' },
@@ -308,9 +311,6 @@ test("the agent's settled run lands on the open timeline — no conversation, no
         variant: 'timeline', quant: 'int8', model: 'h3',
         seed: WALL_SEED,
         calls: [{ text: WALL_TEXT, start_frame: 0, end_frame: 175 }],
-        // THE MARKER WAIVER (2026-11-14, the prompt-gate x5): WALL_TEXT
-        // is a cleanup marker, not craft — waived loud (see tour.ts).
-        prompt_waivers: ['DENSITY-FLOOR', 'CAMERA-VERB'],
       },
       inputs: {},
       outputs: { default: 'video' },
