@@ -840,7 +840,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // (2026-11-18) 679 → 680: +1 — the detached-menu anchor seam
   // (packages/web/card-base/lib/menu-anchor.js, the popup-burn
   // cure). Zero deletions; add-minus-del verified against HEAD.
-  const LIB_CENSUS_PIN = 680;
+  // (2026-11-22) 680 → 682: +2 — the h3 timeline contract moves
+  // home (47515d7f6): packages/web-kit/contracts/lib/filmMix.js +
+  // lib/timelineContract.js join (the models/h3 originals stay as
+  // the family's re-export shim seats, already counted). Zero
+  // deletions; --diff-filter=A is exactly these two files.
+  const LIB_CENSUS_PIN = 682;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

@@ -233,6 +233,7 @@ function valueCells(): Cell[] {
     sr_switch: { anchor: 'ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master', note: 'topology-pinned switch owner' },
     sr_model: { anchor: 'ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master', note: 'model at SeedVR2LoadDiTModel' },
     sr_resolution: { anchor: 'ARM 17 — the interp + sr seats verbatim (model/multiplier at the FILM pair, resolution/DiT model at the SeedVR2 pair), both switches on under the master', note: 'resolution at SeedVR2VideoUpscaler' },
+    sr_color_correction: { anchor: 'param: "sr_color_correction", doc: "second", cls: "SeedVR2VideoUpscaler", input: "color_correction"', note: 'color_correction at SeedVR2VideoUpscaler — the CENSUS row IS the class arm (7de9b2224): its deletion reds the consumer-map census AND loses this anchor' },
     sharpen_enabled: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'topology-pinned switch owner' },
     sharpen_method: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'the option key on the base wire' },
     sharpen_strength: { anchor: 'ARM 18 — the stated sharpen leaves verbatim on the V3 combo wires', note: 'the method.strength dotted wire' },

@@ -237,7 +237,13 @@ describe('gpu diet law — minimum time taken, no dupes', () => {
   })
 
   it('every h3 RENDER row presses the grid-floor window — read from timelineContract, not a literal', () => {
-    const contract = readFileSync(join(ROOT, 'packages', 'models', 'h3', 'src', 'timelineContract.ts'), 'utf8')
+    // THE CONTRACT'S HOME (47515d7f6): the grid-floor literals moved
+    // to @melite/contracts — this wall reads the FILE TEXT (the
+    // lattice law is the literals' own spelling), so it reads the
+    // truthful home, not the models/h3 re-export shim (which carries
+    // no literals — reading it turned the floor NaN and red this arm
+    // on push7).
+    const contract = readFileSync(join(ROOT, 'packages', 'web-kit', 'contracts', 'src', 'timelineContract.ts'), 'utf8')
     const floor = Number(contract.match(/export const GRID_BASE_FRAMES = (\d+)/)?.[1])
     const step = Number(contract.match(/export const GRID_STEP_FRAMES = (\d+)/)?.[1])
     expect(Number.isFinite(floor)).toBe(true)

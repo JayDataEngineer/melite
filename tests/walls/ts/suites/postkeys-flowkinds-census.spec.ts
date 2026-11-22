@@ -183,6 +183,10 @@ const EDGELESS_JUDGMENT: Record<string, { channel: string; why: string }> = {
     channel: "schema knob (doc-level)",
     why: "post-chain leaf — a resolution enum, never a media rail",
   },
+  sr_color_correction: {
+    channel: "schema knob (doc-level; the family door declares the row — 292c1e8a0's knob joined film.params)",
+    why: "post-chain leaf — the SeedVR2 post-grade enum, never a media rail",
+  },
   // THE REFINE QUARTET (GAPS-17/F25 residual; the rider seats landed
   // 4b8b73990 2026-10-18 + the denoise window 77ad9eee0 2026-10-20):
   // the T3 refine rider's four seats, read only behind the

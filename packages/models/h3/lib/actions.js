@@ -2603,6 +2603,11 @@ export const film = {
         { name: "sr_switch", type: "boolean" },
         { name: "sr_resolution", type: "number", bounds: [768, 2160] },
         { name: "sr_model", type: "enum", options: ["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"] },
+        // THE SEEDVR2 POST-GRADE (292c1e8a0's knob, the family door's own
+        // row — h3-window-parity's undeclaredServed arm reds until the
+        // knob declares here like its sr siblings): the six-member
+        // vocabulary rides the schema row verbatim.
+        { name: "sr_color_correction", type: "enum", options: ["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"] },
         { name: "ref_image_size", type: "string" },
         { name: "shift_video", type: "number", bounds: [1, 20] },
         { name: "shift_audio", type: "number", bounds: [1, 10] },

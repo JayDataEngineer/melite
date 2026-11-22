@@ -84,6 +84,13 @@ const JOINED: Joined[] = [
   // the engine combo carries the whole shelf — card ⊆ engine).
   { site: "h3:upscale_model", join: "MinimaxH3LatentUpscaler3DRefineHandoff.model_name", values: inlineVocab("models/h3/src/schema.ts", "upscale_model") },
   { site: "h3:sr_model", join: "SeedVR2LoadDiTModel.model", values: inlineVocab("models/h3/src/schema.ts", "sr_model") },
+  // THE SEEDVR2 POST-GRADE (2026-11-22, the seedvr2-native-chain cure
+  // 47515d7f6): both faces join the pack engine's own Combo —
+  // SeedVR2VideoUpscaler.color_correction (the live engine serves
+  // [lab, wavelet, wavelet_adaptive, hsv, adain, none]; the card set
+  // is the same six, the official none-first order).
+  { site: "h3:sr_color_correction", join: "SeedVR2VideoUpscaler.color_correction", values: inlineVocab("models/h3/src/schema.ts", "sr_color_correction") },
+  { site: "upscale-tools:color_correction", join: "SeedVR2VideoUpscaler.color_correction", values: inlineVocab("image/upscale-tools/src/card.ts", "color_correction") },
   // THE REF-SIZE SUBSET (F-10 live probe, 2026-10-27): the engine's
   // core COMBO is ["match","max"]; the card serves the one-literal
   // subset ["match"] — max refuses at the schema gate by the spec's
@@ -276,7 +283,12 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
     expect(byFile, "the per-file site census drifted — re-point the registry's sites (a count-only match can hide a swapped file)").toEqual({
       // 10 -> 12 (2026-10-21, SOTA P2 LIMB 3): upscale_route (LOCAL)
       // + upscale_model (JOINED to the handoff's model_name combo).
-      "models/h3/src/schema.ts": 13,
+      // 13 -> 14 (2026-11-22, the seedvr2-native-chain cure): sr_color_correction
+      // joins — engine-joined to SeedVR2VideoUpscaler.color_correction.
+      "models/h3/src/schema.ts": 14,
+      // 0 -> 1 (2026-11-22, same cure): the upscale card's ride-key
+      // select — the same SeedVR2VideoUpscaler.color_correction combo.
+      "image/upscale-tools/src/card.ts": 1,
       "image/tagger/src/card.ts": 4,
       // the blender-lane removal (2026-11-01): anny's transparent row
       // and rig's file_format row are gone — no 3d card carries a
