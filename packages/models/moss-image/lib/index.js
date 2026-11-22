@@ -3,7 +3,7 @@ export const DECL = {
     "id": "moss-image",
     "form": "form_generate",
     "label": "MOSS-Image",
-    "description": "MOSS-Image — OpenMOSS's 5B DiT in the FLUX.2 latent space: a 50-step SFT lane (25-30 for fast iteration) at CFG 3, typography through line breaks and quoted text, layout through native JSON bboxes in the prompt. Apache-2.0 licensed (OpenMOSS's own release terms).",
+    "description": "MOSS-Image — OpenMOSS's 5B DiT in the FLUX.2 latent space: a 50-step SFT lane (25-30 for fast iteration) at CFG 3, typography through line breaks and quoted text, layout through native JSON bboxes in the prompt. Apache-2.0 licensed (OpenMOSS's own release terms). THE LATTICE NOTE (measured 2026-11-15, friction-2 §D-04): fine detail — hair, fabric, stone, wet surfaces — can render a repeating blob lattice on this lane; CFG 1.0 is the only measured lever and it costs guidance fidelity. Routing law: typography, flat and graphic work → moss; hair/fabric/stone/wet texture → krea-2. The 'Encoder INT8 ConvRot (audition)' cell swaps the text tower to the lattice suspect so it can be auditioned in one press.",
     "engine": "comfyui",
     // OpenMOSS's own t2i defaults (the template's comparison table):
     // 1024², 50 steps, CFG 3, er_sde, simple — the Comfy-Org template
@@ -122,6 +122,51 @@ export const DECL = {
                         "dest_root": "COMFYUI_ROOT",
                         "dest_sub": "diffusion_models",
                         "size_hint_gb": 10.2
+                    }
+                }
+            ]
+        },
+        // THE ENCODER AUDITION LANE (friction-2 §D-04, R5, 2026-11-22):
+        // the lattice escape hatch — the same sft unet and recipe, ONLY
+        // the text tower swaps (the w4a8_gptq tokenizer's int8_convrot
+        // sibling, the leading suspect for the repeating blob-lattice
+        // artifact on fine detail). It is a VARIANT, not an sft cell: the
+        // canon's one-tier-per-variant law (a quant coordinate names the
+        // cell's own encoding, never twice) leaves no second sft cell
+        // slot, and the swap changes which encoder FILE the lane loads —
+        // the route/lane_inputs axis. The artifact seats on pick (an
+        // audition, never a boot download) and is already on the store
+        // (sha verified 2026-11-22). The artifact itself is unadjudicated
+        // — the lane exists so the suspect is one knob away, not because
+        // it is innocent or guilty (the band-energy probe stays the judge).
+        {
+            "id": "enc-convrot",
+            "label": "Encoder ConvRot (audition)",
+            "hint": "The SFT lane with the text tower swapped to qwen3.5_9b_int8_convrot — the audition for the repeating blob-lattice suspect on fine detail (hair/fabric/stone/wet). Same unet, same 50/3 recipe; the encoder weights seat on pick.",
+            "group": "Variant",
+            "route": "moss-image-enc-convrot",
+            "order": 1,
+            "sampler_envelope": {
+                "steps": [25, 50],
+                "cfg": [1, 5]
+            },
+            "resolver_defaults": { "model": "moss-image-enc-convrot", "steps": 50, "cfg": 3 },
+            "lane_inputs": {
+                "unet": "moss_image_sft_int8_convrot.safetensors",
+                "text_encoder": "qwen3.5_9b_int8_convrot.safetensors"
+            },
+            "cells": [
+                {
+                    "quant": "int8_convrot",
+                    "label": "INT8 ConvRot",
+                    "route": "moss-image-enc-convrot",
+                    "artifact": {
+                        "source_url": "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_int8_convrot.safetensors",
+                        "size_bytes": 9748121532,
+                        "sha256": "32e3787472f708fa5f83624acbf5ef23f7fc89c439e05065ea57cfe5a97f025a",
+                        "dest_root": "COMFYUI_ROOT",
+                        "dest_sub": "text_encoders",
+                        "size_hint_gb": 9.7
                     }
                 }
             ]

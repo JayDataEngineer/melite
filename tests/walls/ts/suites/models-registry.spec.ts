@@ -292,6 +292,11 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   "kroma-int8",
   "moss-image",
   "moss-image-bf16",
+  // 2026-11-22, the encoder audition lane (friction-2 §D-04, R5): the
+  // sft lane with the text tower swapped to qwen3.5_9b_int8_convrot —
+  // the lattice suspect is one knob away; its own route address (the
+  // canon's one-tier-per-variant law made it a variant, not a cell).
+  "moss-image-enc-convrot",
   "moss-sfx",
   "pixal3d",
   // (removed 2026-10-26 machine, the quant cure: the phantom bf16 cells
@@ -524,7 +529,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // 64 -> 66 (2026-11-11, the H3-Image landing): both twins serve
     // their base variant row (int8_convrot_pruned / w4a8 / bf16 are
     // CELLS of the one row, not variants — the qwen 2.1 pair's shape).
-    assert.equal(variants, 67); // 66→67 2026-11-17: seed-vc's one serving variant (standard) joins
+    assert.equal(variants, 68); // 67→68 2026-11-22: moss-image's encoder audition lane (enc-convrot, friction-2 §D-04 R5) — one serving variant with one int8_convrot cell (66→67 2026-11-17: seed-vc's one serving variant (standard) joins)
     // 85 -> 84 (2026-10-13, the autoremesher excision): the family's
     // one cell left with the pack the owner removed.
     // 84 -> 86 (2026-10-23): the turbo cells join (turbo_int8_convrot + turbo_bf16).
@@ -560,6 +565,8 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // variant carries its three quant cells (int8_convrot_pruned,
     // w4a8, bf16) — six new cells on the pair.
     // 87 -> 88 (2026-11-17): seed-vc's standard variant carries its one native cell.
-    assert.equal(cells, 88);
+    // 88 -> 89 (2026-11-22): moss-image's encoder audition lane carries its one
+    // int8_convrot cell (the convrot encoder artifact seats on pick).
+    assert.equal(cells, 89);
   });
 });

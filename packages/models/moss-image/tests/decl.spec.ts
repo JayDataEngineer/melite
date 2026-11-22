@@ -51,6 +51,29 @@ describe("the moss-image model plugin (the FLUX.2-latent MOSS 5B lane)", () => {
     assert.equal(Object.keys(dflt.wire_defaults ?? {}).length, 0, "Default stamps nothing");
   });
 
+  it("carries the encoder audition lane — the convrot text tower's own variant (friction-2 §D-04, R5, 2026-11-22)", () => {
+    // The lattice escape hatch: the same sft unet, ONLY the text
+    // tower swapped — a VARIANT (the canon's one-tier-per-variant
+    // law leaves no second sft cell slot). The artifact seats on
+    // pick (an audition, never a boot download).
+    const enc = DECL.variants.find((v) => v.id === "enc-convrot")!;
+    assert.equal(enc.route, "moss-image-enc-convrot");
+    assert.deepEqual(enc.resolver_defaults, { model: "moss-image-enc-convrot", steps: 50, cfg: 3 });
+    assert.equal(enc.cells.length, 1, "one cell — the convrot text tower (the unet rides lane_inputs)");
+    const cell = enc.cells[0];
+    assert.equal(cell.quant, "int8_convrot");
+    assert.equal((cell.lane_inputs as Record<string, unknown> | undefined), undefined,
+      "the cell carries no lane stamps — the variant lane_inputs (unet + text_encoder) own the load");
+    const lane = (enc.lane_inputs ?? {}) as Record<string, unknown>;
+    assert.equal(lane.unet, "moss_image_sft_int8_convrot.safetensors", "same unet as the sft lane");
+    assert.equal(lane.text_encoder, "qwen3.5_9b_int8_convrot.safetensors");
+    const artifact = (cell as { artifact?: { source_url?: string; sha256?: string; size_bytes?: number; dest_sub?: string } }).artifact!;
+    assert.equal(artifact.source_url, "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_int8_convrot.safetensors");
+    assert.equal(artifact.sha256, "32e3787472f708fa5f83624acbf5ef23f7fc89c439e05065ea57cfe5a97f025a");
+    assert.equal(artifact.size_bytes, 9748121532);
+    assert.equal(artifact.dest_sub, "text_encoders");
+  });
+
   it("carries the sft variant — route, resolver defaults, the declared shift, per-quant cells", () => {
     const sft = DECL.variants.find((v) => v.id === "sft")!;
     assert.equal(sft.route, "moss-image");
@@ -125,6 +148,9 @@ const CELL_ARTIFACT_PINS: ReadonlyArray<
 > = [
   ["sft", "int8_convrot", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_int8_convrot.safetensors", "b4d1475bc7eeffd7b809e82ea13a1fba1fb85c4e18365af3813722faa5c0fe4f", 5413698958, "COMFYUI_ROOT", "diffusion_models"],
   ["sft", "bf16", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/diffusion_models/moss_image_sft_bf16.safetensors", "f96738d8116d78b7316b57c663d8c98591ddafab7488f48e3099b7655e34ab6f", 10164655808, "COMFYUI_ROOT", "diffusion_models"],
+  // the encoder audition lane (friction-2 §D-04, R5, 2026-11-22): the
+  // convrot text tower, sha-verified on the store the same day.
+  ["enc-convrot", "int8_convrot", "https://huggingface.co/Comfy-Org/MOSS-Image/resolve/main/text_encoders/qwen3.5_9b_int8_convrot.safetensors", "32e3787472f708fa5f83624acbf5ef23f7fc89c439e05065ea57cfe5a97f025a", 9748121532, "COMFYUI_ROOT", "text_encoders"],
 ];
 
 describe("the declared cell artifacts are pinned verbatim", () => {

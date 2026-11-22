@@ -63,7 +63,7 @@ import { describe, it } from "vitest";
 // route).
 // 67 -> 74 (2026-11-08, the third edit lane): fibo2-edit serves its
 // family route + two lanes × variant/cell routes (7 addresses).
-const SERVED_ADDR_CENSUS = 80 // 79→80 2026-11-17: seed-vc serves (the voice-change card) — the family's one route address joins (71→79 2026-11-11: the H3-Image pair lands — each twin serves its family route + base variant + 3 quant-cell routes (74→71 2026-11-09: the retired edit family removed whole — its route and quant-cell addresses die with the package. 75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route address dies with its only card; earlier: 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
+const SERVED_ADDR_CENSUS = 81 // 80→81 2026-11-22: moss-image's encoder audition lane (enc-convrot, friction-2 §D-04 R5) — the convrot text tower takes its own variant route address (79→80 2026-11-17: seed-vc serves (the voice-change card) — the family's one route address joins (71→79 2026-11-11: the H3-Image pair lands — each twin serves its family route + base variant + 3 quant-cell routes (74→71 2026-11-09: the retired edit family removed whole — its route and quant-cell addresses die with the package. 75→74 2026-11-12: the openjutsu lane deleted (operator order) — viggle-animate's route address dies with its only card; earlier: 74→75 2026-10-27: the openjutsu lane serves viggle-animate (feature 023) — the ref2va INT8 body's route address joins; 74→73 2026-11-12: seedvr2-ema-7b died (the 7B death — no cells, no provision); 73→74 2026-10-27: music3-int8 joins — the wave's music3 quant work (2164b71a3, audit 014 C5) serves the int8_convrot cell's own route address
 // 24 -> 25 (2026-10-22, audit 006/U1): flux-klein claims its own
 // atom (the family's routes resolve to its declared owners)
 // 25 -> 24 (2026-10-13, the autoremesher excision — the pack the owner removed from the system)
@@ -1160,7 +1160,7 @@ const PROVISION_ROW_COUNT = 120; // 101→120 2026-11-17: seed-vc provisions 19 
     // their 7 distinct upstream urls die with the families.
     // +1 (2026-10-26 machine, the quant cure): h3's 34 GB non-pruned
     // ConvRot tier boards as a per-cell artifact (the three-member offer).
-    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4 + 1 - 2 + 6; // +6 (2026-11-11, the H3-Image landing): the pair's six quant cells (int8_convrot_pruned / w4a8 / bf16 × both twins) each carry a Comfy-Org artifact // -2 (2026-11-09, the removal): the retired edit family's two turbo cells die with its package // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
+    const ARTIFACT_ROW_COUNT = 21 - 7 + 5 + 5 + 4 + 1 - 2 + 6 + 1; // +1 (2026-11-22, the moss encoder audition lane, friction-2 §D-04 R5): enc-convrot's one int8_convrot cell carries the convrot text-tower artifact // +6 (2026-11-11, the H3-Image landing): the pair's six quant cells (int8_convrot_pruned / w4a8 / bf16 × both twins) each carry a Comfy-Org artifact // -2 (2026-11-09, the removal): the retired edit family's two turbo cells die with its package // +2 (2026-10-23, the operator's turbo call): the qwen 2.1 turbo cells // +2 (2026-10-24, THE 2.1 MATRIX RESHAPE): the edit lane's turbo cells join with the fold // +5 (2026-10-16, the anima three checkpoints): three Bedovyy convrot + two official bf16 // +5 (2026-11-07, the operator's drop): kroma's two turbo quants + kroma-base's dtype-mapped cell, and moss-image's int8 + bf16 pair // +4 (2026-11-08, the third edit lane): fibo2-edit's dev + edit-turbo, each int8_convrot + bf16
     const artifacts: Array<{ id: string; url: string }> = [];
     for (const id of registryIds()) {
       const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
@@ -1243,7 +1243,10 @@ const PROVISION_ROW_COUNT = 120; // 101→120 2026-11-17: seed-vc provisions 19 
       // raw int8s + kroma's two turbo quants + the base tier),
       // moss-image's two quants.
       "krea-2": 5,
-      "moss-image": 2,
+      // 2026-11-22, the encoder audition lane (friction-2 §D-04 R5):
+      // enc-convrot's cell adds the convrot text-tower url (the two
+      // unet quants stay).
+      "moss-image": 3,
       "qwen-img-21": 4,
       "qwen-img-edit-21": 4,
     } as Record<string, number>,
@@ -1799,9 +1802,15 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     // their own 2048 so the widened shared surface never hands a
     // 4096 canvas to a checkpoint not tuned for it); each family
     // layer + its route ids carries the pair (33 layers).
-    assert.equal(judgedFamilies, 46,
+    // 46 -> 47 (2026-11-22, the moss encoder audition lane): the
+    // enc-convrot variant route joins the judged ids (the family's
+    // bounds rows judge across the new route address too).
+    assert.equal(judgedFamilies, 47,
       `the bounds census is EXACT: the edit lanes' solver span + the image-gen canvas rows (saw ${String(judgedFamilies)})`);
-    assert.equal(judged, 79,
+    // 79 -> 81 (2026-11-22, the moss encoder audition lane): the
+    // enc-convrot route serves the family's bounds rows as its own
+    // judged pair (lane layer + route layer).
+    assert.equal(judged, 81,
       `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
   });
 
