@@ -109,7 +109,7 @@ const LAYER_A_ALL_KEYS: string[] = [
   "sharpen_enabled", "sharpen_method", "sharpen_strength",
   "sharpen_radius", "sharpen_threshold", "sharpen_iterations",
   "interpolate_enabled", "interp_model", "interp_multiplier",
-  "sr_switch", "sr_model", "sr_resolution",
+  "sr_switch", "sr_model", "sr_resolution", "sr_color_correction",
   "ref_image_size", "model", "audio_stem", "loras", "audio_clips",
   // THE OPERATOR-AUTHORED MOD BAGS (the dead-Add cure, 2026-11-09):
   // writable Layer A seats — the modleaf journey's own wall owns
@@ -193,6 +193,7 @@ function populatedMax(): Record<string, unknown> {
     else if (key === "upscale_model") populated[key] = "minimax_h3_latent_upscaler_3d_bf16.safetensors"
     else if (key === "attention_backend") populated[key] = "pytorch attention"
     else if (key === "sr_model") populated[key] = "seedvr2_ema_3b_fp16.safetensors"
+    else if (key === "sr_color_correction") populated[key] = "lab"
     // THE OUTPUT-NAME FILE SEAT (queue 12's file plane): a REAL slug,
     // not a number — the string seat must ride the emit loop's
     // non-empty pole or the orphan arm reds by name (a served row

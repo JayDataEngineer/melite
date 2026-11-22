@@ -74,6 +74,7 @@ export const DECL: ModelDecl = {
       "sr_switch",
       "sr_model",
       "sr_resolution",
+      "sr_color_correction",
       "second_pass_enabled",
       "refine_lora",
       "refine_strength",
@@ -395,7 +396,7 @@ export const DECL: ModelDecl = {
     // surface ride beside the refine seats, witnessed at ARM 37.
     "upscale_route", "upscale_model",
     "attention_backend",
-    "sr_switch", "sr_resolution", "sr_model",
+    "sr_switch", "sr_resolution", "sr_model", "sr_color_correction",
     "ref_image_size",
     "shift_video", "shift_audio",
     "sla_enabled", "sla_sparsity", "sla_block_size", "sla_min_seq_len",

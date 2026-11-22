@@ -192,6 +192,8 @@ export function hydrateLayerA(rawDoc: Record<string, unknown> | undefined): Laye
     sr_model: raw?.sr_model === "seedvr2_ema_3b_fp16.safetensors" || raw?.sr_model === "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
       ? raw.sr_model : undefined,
     sr_resolution: optNum("sr_resolution"),
+    sr_color_correction: typeof raw?.sr_color_correction === "string" && ["none", "lab", "wavelet", "wavelet_adaptive", "hsv", "adain"].includes(raw.sr_color_correction)
+      ? raw.sr_color_correction : undefined,
     // THE BAKE'S STATED DIALS (study §5/§7.2; value-arms ARMs 13/14):
     // the RefMod extract's fidelity dials — the panel owns them, the
     // doc carries the STATED override only (absent = the declared
@@ -385,7 +387,7 @@ export const LAYERA_KEY_UNIVERSE: ReadonlySet<string> = new Set([
   "seed", "sla_protect_audio", "sla_stabilize_motion", "sla_disable_fp16_accum",
   "sharpen_enabled", "interpolate_enabled",
   // the true-gated switch riders + their stamps
-  "sr_switch", "sr_model", "sr_resolution",
+  "sr_switch", "sr_model", "sr_resolution", "sr_color_correction",
   "second_pass_enabled", "refine_lora", "refine_strength", "refine_steps", "refine_denoise",
   // the re-shoot master + its clip and dials (the stuck-switch cure,
   // 2026-11-12): the true-gated master riders the delete pole when
@@ -442,6 +444,7 @@ export function serializeLayerA(a: LayerA, base?: Record<string, unknown>): Reco
     out.sr_switch = true
     if (a.sr_model != null) out.sr_model = a.sr_model
     if (a.sr_resolution != null) out.sr_resolution = a.sr_resolution
+    if (a.sr_color_correction != null) out.sr_color_correction = a.sr_color_correction
   }
   // THE SECOND-PASS MASTER rides only when ON (absent = off — the
   // family default false; the same ride law as sr_switch). The

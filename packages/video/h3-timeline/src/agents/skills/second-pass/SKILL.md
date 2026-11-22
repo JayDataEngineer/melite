@@ -70,6 +70,7 @@ it is not free.
 | `sr_switch` | boolean, false | arms SeedVR2; needs the master |
 | `sr_resolution` | 768–2160, step 24, **1080** | the output HEIGHT in px |
 | `sr_model` | `seedvr2_ema_3b_fp16.safetensors` \| `seedvr2_ema_3b_fp8_e4m3fn.safetensors` | fp8 3B default (the leaner row — a 24GB card cannot hold the fp16 3B model beside a 90-frame 1080p decode); fp16 for cards with more headroom |
+| `sr_color_correction` | select, **none** | `none` \| `lab` \| `wavelet` \| `wavelet_adaptive` \| `hsv` \| `adain` — the SeedVR2 post-grade: none = the official native chain's default, lab is the pack engine's own default; the sr face's own twin (the h3 sr limb seats the same vocabulary) |
 
 A closed file surface: an off-set value fails at the schema door, never as
 an engine 400.

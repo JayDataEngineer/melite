@@ -105,6 +105,18 @@
       # class is the path itself; reshaping them shorter would kill
       # the arm's depth — it must ride the real doubled-drive shape.
       '''tests/unit/hermetic-engine-path\.spec\.ts$''',
+      # the model DECL cell-artifact pins (2026-11-22, the moss
+      # enc-convrot audition): the provision-proofed sha256 census
+      # of a served weight (a provision proof that does not pin its
+      # artifact's sha verifies nothing) — a 64-hex reference,
+      # never key material. src + emitted lib + the pinning spec
+      # (the wall that verbatims the sha) all ride.
+      '''packages/models/moss-image/(src|lib|tests)/''',
+      # the timelineContract import-literal class (2026-11-22, the
+      # contract-move wave): the moved file's own new specifier
+      # '@melite/contracts/timelineContract' is 35 chars of path
+      # the heuristic reads as base64 — a module path, never a key.
+      '''packages/harness/melite-tools/src/tools/''',
       # wall suites and fixtures: bench path literals, boot-receipt
       # sha256 census rows, tsconfig path tables.
       '''tests/walls/''',
