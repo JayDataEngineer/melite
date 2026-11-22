@@ -59,6 +59,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   stripPackedTarballs: (files: string[]) => void
   publishableTarballs: (files: string[]) => string[]
   overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
+  servedStackGaps: (setNames: string[], seedBundles: string[]) => string[]
   versionCoherenceOffender: (innerFiles: Map<string, { inner: { name: string, version: string } }>, tag: string) => string | null
   publintOffender: (tarName: string, f: string) => Promise<void>
   DSH_PEER_TRAIN: string
@@ -921,6 +922,31 @@ describe('G10 — the dsh host peer train', () => {
       expect(inner.peerDependencies['@deepseek-ai/dsh'], 'the packed bytes declare the floor the registry can satisfy').toBe(STAMPED)
       expect(inner.private, 'the same door still strips the workspace-only keys').toBeUndefined()
     } finally { rmSync(fx.dir, { recursive: true, force: true }); rmSync(out, { recursive: true, force: true }) }
+  })
+
+  it('the served-stack coverage law refuses a dist that predates the stack (receipt-10 dig, 2026-11-22)', () => {
+    // The 11-14 rehearsal red on ONE skip marker:
+    // `dsh: skipping profile bundle "@melite/media-preview"` — the
+    // seat joined profile-seed's bundle list AFTER the October dist
+    // it pointed at was minted; a served row with no tarball behind
+    // it cannot resolve, and the dump's warning-absence law only
+    // catches that after a full container boot. The cure is the
+    // coverage refusal BEFORE the container starts
+    // (tools/release-artifacts.mjs servedStackGaps, called by
+    // tools/release-rehearsal.mjs right after the set is verified).
+    // This arm judges the function on synthetic sets (the real dist
+    // is a local artifact — the law's home is the rehearsal run
+    // itself) and the wiring on the tool's own text.
+    const set = ['@melite/card-base', '@melite/three-client', '@melite/harness-tools']
+    expect(gates.servedStackGaps(set, ['@melite/card-base', '@melite/harness-tools']),
+      'a covered seed answers empty').toEqual([])
+    expect(gates.servedStackGaps(set, ['@melite/card-base', '@melite/media-preview']),
+      'a seed row with no tarball names the seat (the media-preview face)').toEqual(['@melite/media-preview'])
+    const rehearsal = readFileSync(join(ROOT, 'tools', 'release-rehearsal.mjs'), 'utf8')
+    expect(rehearsal, 'the refusal must ride the imported coverage function').toContain("from './release-artifacts.mjs'")
+    expect(rehearsal, 'the gate must be the CALL over the verified set + the seed rows — an unused import guards nothing')
+      .toMatch(/const stackGaps = servedStackGaps\(Object\.keys\(inners\), SEED_BUNDLES\)/)
+    expect(rehearsal, 'the refusal must die() before the container work, not warn after the dump').toMatch(/stackGaps\.length > 0[\s\S]{0,120}die\(/)
   })
 
   it('the consumer-proof toolchains ride the train floor (the v0.3.0-alpha rehearsal burn, 2026-11-19)', () => {

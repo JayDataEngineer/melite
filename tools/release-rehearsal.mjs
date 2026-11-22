@@ -30,6 +30,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 const SCRATCH = '/var/tmp/melite-scratch'
 import { join, resolve } from 'node:path'
 import { stripLeakageComments } from './strip-artifact-comments.mjs'
+import { servedStackGaps } from './release-artifacts.mjs'
 
 const CONTAINER = 'melite-rehearsal'
 const IMAGE = 'node:22-bookworm'
@@ -137,6 +138,17 @@ for (const row of pkgs) {
 }
 const rootPkg = versions['@melite/harness-tools']
 if (!rootPkg) die('manifest has no @melite/harness-tools row')
+
+// THE SERVED-STACK COVERAGE LAW (receipt-10 dig, 2026-11-22): the seed
+// stack IS the served stack (the PROFILE_SEED comment above); a seat
+// the seed names but this dist lacks cannot resolve, dsh skips it with
+// a warning, and the dump check reds only after a full boot. Refuse
+// here: the gap means the dist predates the seat joining the stack —
+// mint fresh. The media-preview class, caught at the door.
+const stackGaps = servedStackGaps(Object.keys(inners), SEED_BUNDLES)
+if (stackGaps.length > 0) {
+  die(`the dist set predates the served stack — no tarball for: ${stackGaps.join(', ')}; mint fresh`)
+}
 
 // publishConfig: every seat, not one — and `private` must not survive
 const notPublic = Object.values(inners).filter((p) =>

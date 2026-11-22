@@ -216,6 +216,24 @@ export function overlayNameOffender (packageName, overlay, packed) {
   return null
 }
 
+/** THE SERVED-STACK COVERAGE LAW (receipt-10 dig, 2026-11-22): a
+ *  dist set must carry every bundle row the served stack seeds.
+ *  The seed moves with the tree; a dist minted before a seat joined
+ *  cannot resolve it, dsh skips the row with a warning, and the
+ *  dump check only reds after a full container boot. The exact
+ *  receipt-10 face: @melite/media-preview joined profile-seed's
+ *  bundle list after the October dist was minted, and the 11-14
+ *  rehearsal pointed at that stale set. Pure: takes the set's
+ *  package names and the seed's bundle list, returns the uncovered
+ *  rows — empty means the set covers the stack.
+ * @param {string[]} setNames package names present in the dist set
+ * @param {string[]} seedBundles bundle rows the served stack seeds
+ * @returns {string[]} seed rows with no tarball behind them
+ */
+export function servedStackGaps (setNames, seedBundles) {
+  return seedBundles.filter((b) => !setNames.includes(b))
+}
+
 /** G4 — ENTRY CLASSIFICATION: no `.` row is importable-dead for a
  *  plain-Node consumer unless declared subpath-only with a reason.
  *  Pure: throws on violation, logs the declared pass. */
