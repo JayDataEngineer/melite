@@ -35,7 +35,14 @@ const REPO = join(import.meta.dirname, '..', '..', '..', '..')
  *  file → live `as unknown as {` count. A file whose source carries
  *  the pattern and is ABSENT here is itself a red. */
 const BASELINE: Record<string, number> = {
-  'packages/harness/melite-tools/src/tools/melite-view.ts': 7,
+  // 7→9 2026-11-22: the both-kinds film burn (melite_view served a run's
+  // newest debug SaveImage frame and refused every film name while the
+  // reshoot chain's SaveVideo film sat beside the intermediates) added
+  // two dispatch returns — the film-first default and the named-miss
+  // fallback — each riding the file's established protocol-cast shape
+  // (the defineTool generic demands the Record<string, JsonValue> face
+  // the four existing sites already hop to).
+  'packages/harness/melite-tools/src/tools/melite-view.ts': 9,
   'packages/harness/estate-call/src/executorHarness.ts': 3,
   'packages/harness/estate-queue/src/runsValidateStages.ts': 2,
   'packages/harness/estate-queue/src/manageRegistry.ts': 1,
@@ -214,7 +221,10 @@ const ALL_FORMS_BASELINE: Record<string, number> = {
   'packages/harness/melite-tools/src/doors.ts': 2,
   'packages/harness/melite-tools/src/tools/melite-construct.ts': 1,
   'packages/harness/melite-tools/src/tools/melite-flow.ts': 4,
-  'packages/harness/melite-tools/src/tools/melite-view.ts': 8,
+  // 8→10 2026-11-22: the same both-kinds film burn's two dispatch
+  // returns (film-first default + named-miss fallback) — see the
+  // `as unknown as {` census row above for the adjudication.
+  'packages/harness/melite-tools/src/tools/melite-view.ts': 10,
   'packages/models/h3/src/actions.ts': 2, // 3→2 2026-11-20: the docCalls plane is typed once at its Array.isArray narrow (Array<Record<string, unknown>> | null) — the promotion block and the film-grammar read lost their casts; the remaining pair rides the pre-existing unknown[] length arms.
   'packages/models/yue2/src/actions.ts': 1,
   'packages/motion/motion/src/ui/studio/motionDoc.ts': 2,

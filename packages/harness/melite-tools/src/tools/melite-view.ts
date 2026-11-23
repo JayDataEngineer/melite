@@ -1115,7 +1115,8 @@ export function meliteView(
     name: 'melite_view',
     description:
       'View one image artifact from a finished (or running) estate run — the model receives the image itself, '
-      + 'never a description of it. When the run holds no images but holds a film, the observe arm serves the film instead: '
+      + 'never a description of it. When the run holds a film, the observe arm serves the film — even beside debug '
+      + 'image frames (the film is the deliverable; intermediates stay reachable by name): '
       + 'a byte-parsed stream summary (duration, codecs, frame count; read from the container bytes — no ffprobe, no host binary, no subprocess) '
       + 'plus a contact-sheet image of frames across its span. An audio or 3D artifact name serves the audio/mesh arm '
       + '(a waveform or poster sheet plus its summary). After a run lands, '
@@ -1206,12 +1207,33 @@ export function meliteView(
         const meshed = await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments)
         return meshed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
       }
+      // THE FILM-FIRST DEFAULT (the 2026-11-22 burn): the §24 premise
+      // "a film run holds no images" is dead — the reshoot chain saves
+      // warp/orbit debug SaveImage frames BESIDE the SaveVideo film, and
+      // the old default served the newest debug frame while every film
+      // name refused on the image subset (hours of film work invisible
+      // behind two intermediates). An unnamed view of a run that holds
+      // its film observes THE FILM (the deliverable); the intermediates
+      // stay reachable by name below. A no-film run falls through on
+      // the arm's own no-video voice; any other refusal (a real film
+      // whose bytes will not open) rethrows — the chain never masks a
+      // working arm's error.
+      if (artifact === '') {
+        try {
+          const filmed = await viewFilmArtifact(seat, runId, '', exec, ctx, attachments, render)
+          return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+        } catch (filmMiss) {
+          if (!(filmMiss instanceof Error && /produced no image artifacts/.test(filmMiss.message))) throw filmMiss
+        }
+      }
       const found = await firstRootWithRun(seat, 'image', runId)
       if (found === null) {
-        // THE FILM ARM (§24): a film run holds no images — observe
-        // it through its own artifact (ffprobe summary + a contact
-        // sheet the model can SEE). The no-film voice keeps the old
-        // prefix (the walls pin it); the value carries the film row.
+        // THE FILM ARM (§24, named face): a no-image run's NAMED token
+        // observes through the film arm (a film spelling, a film-row
+        // path); the unnamed face already rode the film-first default
+        // above and only re-walks to speak the same no-video voice.
+        // The no-film voice keeps the old prefix (the walls pin it);
+        // the value carries the film row.
         try {
           const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments, render)
           return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
@@ -1251,7 +1273,23 @@ export function meliteView(
       const own = found.own
       const picked = artifact.length > 0 ? own.filter((i) => artifactRowMatches(i.name, artifact)) : own
       if (picked.length === 0) {
-        throw new Error('run "' + runId + '" has no image artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', '))
+        // THE NAMED-MISS FILM FALLBACK (the same burn): a film named by
+        // bare stem or extension ("SaveVideo", "mp4") carries no video
+        // extension for the intent arms above, so it refused on the
+        // image subset even though the film walk matches it. Match the
+        // film walk before refusing; its own miss (no film name match,
+        // or no film anywhere) restores the image voice verbatim; any
+        // other refusal (a matched film whose bytes will not open)
+        // speaks its probe verdict, not the image voice.
+        try {
+          const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments, render)
+          return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+        } catch (filmMiss) {
+          if (filmMiss instanceof Error && (/has no film artifact containing/.test(filmMiss.message) || /produced no image artifacts/.test(filmMiss.message))) {
+            throw new Error('run "' + runId + '" has no image artifact containing "' + artifact + '" — the run holds: ' + own.slice(0, 8).map((i) => i.name).join(', '))
+          }
+          throw filmMiss
+        }
       }
       const row = picked[0]!
 

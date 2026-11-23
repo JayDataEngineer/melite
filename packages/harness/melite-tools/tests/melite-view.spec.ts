@@ -112,6 +112,20 @@ beforeAll(() => {
   const film = join(root, 'output', 'run-face001-wide')
   mkdirSync(film, { recursive: true })
   copyFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url), join(film, 'film.mp4'))
+  // THE BOTH-KINDS BURN (2026-11-22): the reshoot chain saves warp/orbit
+  // debug SaveImage frames BESIDE the SaveVideo film — the run holds its
+  // deliverable AND two intermediates. The debug frames are NEWER so the
+  // old image-first default provably served a debug frame (the burn's
+  // exact shape on the operator's lane: hours of film work invisible
+  // behind two intermediates).
+  const both = join(root, 'output', 'run-face030-both')
+  mkdirSync(join(both, 'h3-film'), { recursive: true })
+  writeFileSync(join(both, 'SaveImage.0_reshoot_warp_00001_.png'), PNG_BYTES)
+  writeFileSync(join(both, 'SaveImage.1_reshoot_orbit_00001_.png'), PNG_BYTES)
+  copyFileSync(new URL('../../../../tests/fixtures/film-2s.mp4', import.meta.url), join(both, 'h3-film', 'SaveVideo.0_h3_t4_w1_00001_.mp4'))
+  utimesSync(join(both, 'SaveImage.0_reshoot_warp_00001_.png'), new Date('2026-01-02T00:00:00Z'), new Date('2026-01-02T00:00:00Z'))
+  utimesSync(join(both, 'SaveImage.1_reshoot_orbit_00001_.png'), new Date('2026-01-03T00:00:00Z'), new Date('2026-01-03T00:00:00Z'))
+  utimesSync(join(both, 'h3-film', 'SaveVideo.0_h3_t4_w1_00001_.mp4'), new Date('2026-01-01T00:00:00Z'), new Date('2026-01-01T00:00:00Z'))
 })
 
 afterAll(() => {
@@ -616,6 +630,69 @@ describe('melite_view film — the §24 observe arm (fakes for the engine render
     await assert.rejects(
       tool.execute({ run_id: 'run-face010-f14', artifact: 'reshoot_other_take' }, visualExec as never),
       /has no film artifact containing "reshoot_other_take"/,
+    )
+  })
+
+  test('THE BOTH-KINDS BURN: an unnamed view of a run holding film + debug frames serves THE FILM', async () => {
+    // the burn's unnamed face: the old default walked images first and
+    // served the newest debug frame — the film arm only ran for runs
+    // with NO images. The film is the deliverable; the default serves it.
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, fakeProc())
+    const out = await tool.execute({ run_id: 'run-face030-both' }, visualExec as never) as ViewedImageValue
+    assert.equal(out.film!.file, 'h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4')
+    assert.equal(out.film!.duration_s, 2)
+    assert.equal(out.film!.sheet_of, 4)
+  })
+
+  test('THE BOTH-KINDS BURN, named faces: bare stem and bare extension ride the film walk', async () => {
+    // the burn's transcript asked for "SaveVideo" and "mp4" — neither
+    // carries a video extension for an extname-keyed intent arm, and
+    // both refused on the image subset. The named-miss fallback matches
+    // the film walk before refusing.
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, fakeProc())
+    for (const token of ['SaveVideo', 'mp4']) {
+      const out = await tool.execute({ run_id: 'run-face030-both', artifact: token }, visualExec as never) as ViewedImageValue
+      assert.equal(out.film!.file, 'h3-film/SaveVideo.0_h3_t4_w1_00001_.mp4', token)
+    }
+  })
+
+  test('THE BOTH-KINDS BURN: a named intermediate still serves the image — the film did not eat the name', async () => {
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, fakeProc())
+    const out = await tool.execute({ run_id: 'run-face030-both', artifact: 'reshoot_warp' }, visualExec as never) as ViewedImageValue
+    assert.ok(String(out.url).includes('SaveImage.0_reshoot_warp_00001_.png'), out.url)
+    assert.equal(out.image!.mediaType, 'image/png')
+  })
+
+  test('THE BOTH-KINDS BURN: a full miss keeps the image voice (the fallback restored it)', async () => {
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, fakeProc())
+    await assert.rejects(
+      tool.execute({ run_id: 'run-face030-both', artifact: 'nope' }, visualExec as never),
+      /has no image artifact containing "nope" — the run holds: /,
+    )
+  })
+
+  test('THE BOTH-KINDS BURN: a dead side-film speaks the probe voice — named and unnamed', async () => {
+    // a corrupt container beside good images: the film-first default and
+    // the named-miss fallback both rethrow the arm's own reason (a
+    // silent fall to the intermediates would hide the corruption; the
+    // voice names the dead file and the caller picks a cure by name).
+    const dead = join(root, 'output', 'run-face031-deadside')
+    mkdirSync(dead, { recursive: true })
+    writeFileSync(join(dead, 'gen_00001_.png'), PNG_BYTES)
+    writeFileSync(join(dead, 'extra.webm'), Buffer.from('not a container'))
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx, fakeProc())
+    await assert.rejects(
+      tool.execute({ run_id: 'run-face031-deadside' }, visualExec as never),
+      /cannot view the film "extra\.webm": the media probe recognized neither/,
+    )
+    await assert.rejects(
+      tool.execute({ run_id: 'run-face031-deadside', artifact: 'extra' }, visualExec as never),
+      /cannot view the film "extra\.webm": the media probe recognized neither/,
     )
   })
 
