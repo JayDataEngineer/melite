@@ -295,7 +295,15 @@ describe("the stage drill's faces each carry a × that retires only its own face
       () => { expect(fakes?.calls.some((c) => c.method === "bench/ungroup")).toBe(true); },
       { timeout: 8000 },
     );
-    const face = await screen.findByText("ungroup failed", {}, { timeout: 8000 });
+    // THE FACE IS THE DRILL'S (2026-11-23, CI windows run
+    // 45129017603): the strip's own runError line voices the same
+    // "ungroup failed" words, and under loaded-runner timing it can
+    // paint before the drill's row — screen-wide findByText then
+    // returned the strip's <p>, whose ancestor chain holds no div,
+    // and closest("div") handed dismissIn a null container. The
+    // query rides the zoom card: the drill row is the face's only
+    // home there.
+    const face = await within(zoomCard()).findByText("ungroup failed", {}, { timeout: 8000 });
     const row = face.closest("div") as HTMLElement;
     dismissIn(row);
     // THE LOAD BUDGET (the round-6 battery): this repaint is one state
