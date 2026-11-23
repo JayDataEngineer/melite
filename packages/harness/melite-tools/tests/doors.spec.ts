@@ -105,6 +105,7 @@ function fakeHost(opts?: {
       return () => {}
     },
     llm: opts?.llm ?? fakeLlm(),
+    logger: { info: () => {}, warn: () => {} },
     registry: { values: () => [] },
     tools: {
       schemas: () => opts?.schemas ?? [

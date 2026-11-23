@@ -26,6 +26,7 @@ function boot(): Array<{ path: string; handler: (req: unknown, res: unknown) => 
   const host = {
     effect: (fn: () => void) => { fn(); return () => {} },
     llm: {},
+    logger: { info: () => {}, warn: () => {} },
     registry: { values: () => [] },
     tools: { schemas: () => [] },
     webServer: {

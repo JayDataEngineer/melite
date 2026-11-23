@@ -18,6 +18,19 @@ import { meliteView } from '../src/tools/melite-view.ts'
 import type { ViewedImageValue } from '../src/tools/melite-view.ts'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { Context } from '@deepseek-ai/cordis'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
+
+/**
+ * A real session seat: the plugin-record writer refuses non-Sessions
+ * (dsh-session's private-brand check on the receiver), so the exec
+ * fakes carry live logs seeded with the request header the fold
+ * serves back to the route resolver.
+ */
+function seatSession(config: { provider: string, model: string }): Session {
+  const session = Session.create(SessionId(`sess-mesh-${config.model}`))
+  session.append([['request/header', { header: { config }, reason: 'initial' }]])
+  return session
+}
 
 const PNG_BYTES = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0])
 
@@ -131,7 +144,7 @@ function fakeCtx(opts?: { store?: false; visual?: boolean }): { ctx: Context, sa
 const visualExec = {
   signal: AbortSignal.timeout(2000),
   agent: {
-    session: { requestHeader: () => ({ config: { provider: 'zai', model: 'glm-5v-turbo' } }) },
+    session: seatSession({ provider: 'zai', model: 'glm-5v-turbo' }),
     options: {},
   },
 }

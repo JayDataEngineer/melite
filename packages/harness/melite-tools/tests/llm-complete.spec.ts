@@ -18,6 +18,7 @@ import {
   type HarnessRoute,
   type LlmStreamSeam,
 } from '../src/llm-complete.ts'
+import type { AuxCallLog } from '../src/aux-session-log.ts'
 
 const JSON_REPLY = '{"positive":"P","negative":"N"}'
 
@@ -64,7 +65,11 @@ async function throwsMsg(fn: () => Promise<unknown>): Promise<string> {
 }
 
 const ROUTE = { provider: 'p', model: 'm' }
-const REQ = { system: 'sys', prompt: 'a red boat' }
+/** The no-op emission seat: these residuals judge the stream teeth,
+ *  not the record (the record's own walls live estate-side in
+ *  aux-model-call-session-log.spec.ts). */
+const LOG: AuxCallLog = { append: () => {} }
+const REQ = { system: 'sys', prompt: 'a red boat', log: LOG }
 
 describe('resolveHarnessRoutes residuals', () => {
   test('zero providers throws the no-adapter error', async () => {

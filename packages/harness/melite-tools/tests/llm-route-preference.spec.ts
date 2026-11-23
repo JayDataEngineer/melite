@@ -18,6 +18,7 @@ import {
   type LlmStreamSeam,
 } from '../src/llm-complete.ts'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { AuxCallLog } from '../src/aux-session-log.ts'
 
 const JSON_REPLY = '{"positive":"P","negative":"N"}'
 
@@ -67,7 +68,7 @@ function fakeSeam(opts?: {
   }
 }
 
-const REQ = { system: 'sys', prompt: 'a red boat' }
+const REQ = { system: 'sys', prompt: 'a red boat', log: { append: () => {} } satisfies AuxCallLog }
 const DEFAULT = 'opencode-go/muse-spark'
 
 async function throwsMsg(fn: () => Promise<unknown>): Promise<string> {
@@ -196,6 +197,7 @@ describe('llm route preference', () => {
     await harnessEnhance(llm, {
       system: 'structure: [subject, action, environment]; rules:; - pair every bare noun with adjectives',
       prompt: 'Test',
+      log: { append: () => {} } satisfies AuxCallLog,
     }, DEFAULT)
     assert.equal(llm.systems.length, 1)
     assert.ok(llm.systems[0].includes('structure: [subject'))

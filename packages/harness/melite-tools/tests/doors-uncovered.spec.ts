@@ -45,6 +45,7 @@ function fakeHost(): { host: unknown; routes: Route[] } {
       return () => {}
     },
     llm: fakeLlm(),
+    logger: { info: () => {}, warn: () => {} },
     registry: { values: () => [] },
     tools: { schemas: () => [] },
     webServer: {

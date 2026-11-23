@@ -12,6 +12,7 @@ vi.mock('../src/discovery.ts', async (importOriginal) => {
 })
 
 import { agenticSweep, type LlmSeam } from '../src/enhance-agent.ts'
+import type { AuxCallLog } from '../src/aux-session-log.ts'
 
 const JSON_REPLY = '{"positive":"P","negative":"N"}'
 
@@ -34,6 +35,8 @@ function fakeLlm(): LlmSeam & { calls: number } {
   return seam as unknown as LlmSeam & { calls: number }
 }
 
+/** The no-op emission seat: the record's own walls live estate-side. */
+const LOG: AuxCallLog = { append: () => {} }
 const SIG = AbortSignal.timeout(5000)
 
 describe('agenticSweep field shapes', () => {
@@ -45,6 +48,7 @@ describe('agenticSweep field shapes', () => {
       prompt: 'a song',
       signal: SIG,
       defaultLlm: 'p/m',
+      log: LOG,
     })
     assert.equal(out.model, 'music3')
     assert.deepEqual(Object.keys(out.results).sort(), ['lyrics', 'prompt'])
@@ -62,6 +66,7 @@ describe('agenticSweep field shapes', () => {
       signal: SIG,
       llmWant: 'p/m',
       defaultLlm: 'elsewhere/nope',
+      log: LOG,
     })
     assert.deepEqual(Object.keys(out.results), ['prompt'])
     assert.equal(out.results['prompt']?.via, 'p/m')
@@ -76,6 +81,7 @@ describe('agenticSweep field shapes', () => {
       prompt: 'hi',
       signal: SIG,
       defaultLlm: 'p/m',
+      log: LOG,
     })
     assert.deepEqual(Object.keys(out.results), ['prompt'])
     assert.equal(llm.calls, 1)

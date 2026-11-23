@@ -42,6 +42,7 @@ function boot(seats: Record<string, unknown> = {}): Route[] {
       return () => {}
     },
     llm: {},
+    logger: { info: () => {}, warn: () => {} },
     registry: { values: () => [] },
     tools: { schemas: () => [] },
     webServer: {

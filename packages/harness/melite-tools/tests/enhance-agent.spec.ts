@@ -17,6 +17,7 @@ import {
   GENERIC_ENHANCE_RECIPE,
   type LlmSeam,
 } from '../src/enhance-agent.ts'
+import type { AuxCallLog } from '../src/aux-session-log.ts'
 
 const JSON_REPLY = '{"positive":"P","negative":"N"}'
 
@@ -42,6 +43,8 @@ function fakeLlm(): LlmSeam & { seen: Array<{ provider: string; model: string }>
   } as unknown as LlmSeam & { seen: Array<{ provider: string; model: string }> }
 }
 
+/** The no-op emission seat: the record's own walls live estate-side. */
+const LOG: AuxCallLog = { append: () => {} }
 const SIG = AbortSignal.timeout(5000)
 const DEFAULT = 'opencode-go/muse-spark'
 
@@ -95,7 +98,7 @@ describe('enhanceOneField', () => {
   test('an explicit llmWant wins over the host default', async () => {
     const llm = fakeLlm()
     const out = await enhanceOneField(
-      llm, 'recipe', 'a red boat', 0.5, SIG, 'deepseek-official/deepseek-chat', DEFAULT,
+      llm, 'recipe', 'a red boat', 0.5, SIG, 'deepseek-official/deepseek-chat', DEFAULT, undefined, LOG,
     )
     assert.deepEqual(out, { positive: 'P', negative: 'N', via: 'deepseek-official/deepseek-chat' })
     assert.deepEqual(llm.seen, [{ provider: 'deepseek-official', model: 'deepseek-chat' }])
@@ -103,13 +106,13 @@ describe('enhanceOneField', () => {
 
   test('an absent llmWant serves the host default', async () => {
     const llm = fakeLlm()
-    const out = await enhanceOneField(llm, 'recipe', 'a red boat', undefined, SIG, undefined, DEFAULT)
+    const out = await enhanceOneField(llm, 'recipe', 'a red boat', undefined, SIG, undefined, DEFAULT, undefined, LOG)
     assert.equal(out.via, DEFAULT)
   })
 
   test('an empty llmWant serves the host default, never a blind walk', async () => {
     const llm = fakeLlm()
-    const out = await enhanceOneField(llm, 'recipe', 'a red boat', undefined, SIG, '', DEFAULT)
+    const out = await enhanceOneField(llm, 'recipe', 'a red boat', undefined, SIG, '', DEFAULT, undefined, LOG)
     assert.equal(out.via, DEFAULT)
   })
 })
@@ -122,6 +125,7 @@ describe('agenticSweep (live form-spec SSOT)', () => {
       prompt: 'hello world',
       signal: SIG,
       defaultLlm: DEFAULT,
+      log: LOG,
     })
     assert.equal(out.model, 'tts')
     assert.deepEqual(Object.keys(out.results), ['prompt'])
@@ -141,6 +145,7 @@ describe('agenticSweep (live form-spec SSOT)', () => {
         prompt: 'hi',
         signal: SIG,
         defaultLlm: DEFAULT,
+        log: LOG,
       }),
       /'no-such-model' does not resolve/,
     )

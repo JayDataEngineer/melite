@@ -20,6 +20,31 @@ import { mediaVocab } from '@melite/contracts/mediaKinds'
 import type { ViewedImageValue, MediaSheetRender } from '../src/tools/melite-view.ts'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { Context } from '@deepseek-ai/cordis'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
+
+/**
+ * A real session seat: the plugin-record writer refuses non-Sessions
+ * (dsh-session's private-brand check on the receiver), so the exec
+ * fakes carry live logs. `config === undefined` seeds no request
+ * header — the fold answers undefined, the route falls onward.
+ */
+function seatSession(config?: { provider: string, model: string }): Session {
+  const session = Session.create(SessionId(`sess-view-${config?.model ?? 'bare'}`))
+  if (config !== undefined) {
+    session.append([['request/header', { header: { config }, reason: 'initial' }]])
+  }
+  return session
+}
+
+/** The half-header arm rides the wire's looseness: the header event
+ *  validates as a record, its config carries no route fields, and the
+ *  real fold serves exactly that emptiness back. */
+function seatSessionPartialHeader(): Session {
+  const session = Session.create(SessionId('sess-view-half-header'))
+  session.append([['request/header', { header: { config: {} as LlmCallConfig }, reason: 'initial' }]])
+  return session
+}
 
 // ── the runs tree (real files, controlled mtimes) ──────────────────
 
@@ -154,7 +179,7 @@ function fakeCtx(opts?: { store?: false; seat?: false; visual?: boolean; byteCap
 const visualExec = {
   signal: AbortSignal.timeout(15_000),
   agent: {
-    session: { requestHeader: () => ({ config: { provider: 'zai', model: 'glm-5v-turbo' } }) },
+    session: seatSession({ provider: 'zai', model: 'glm-5v-turbo' }),
     options: {},
   },
 }
@@ -333,7 +358,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
     const tool = meliteView(ctx)
     const optionsExec = {
       signal: AbortSignal.timeout(15_000),
-      agent: { session: { requestHeader: () => undefined }, options: { provider: 'zai', model: 'glm-5v-turbo' } },
+      agent: { session: seatSession(), options: { provider: 'zai', model: 'glm-5v-turbo' } },
     }
     const out = await tool.execute({ run_id: 'run-abc123-hero' }, optionsExec as never) as ViewedImageValue
     assert.equal(out.image!.attachmentId, 'att_1')
@@ -1240,7 +1265,7 @@ describe('melite_view — the route micro-arms (every fallback has an owner)', (
     const halfHeaderExec = {
       signal: AbortSignal.timeout(15_000),
       agent: {
-        session: { requestHeader: () => ({ config: {} }) },
+        session: seatSessionPartialHeader(),
         options: { provider: 'zai', model: 'glm-5v-turbo' },
       },
     }
