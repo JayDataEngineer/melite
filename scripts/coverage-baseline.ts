@@ -1149,6 +1149,21 @@ export const COVERAGE_BASELINE_UNSEATED: Record<string, {
   // run 44445676376 job 135297090428); the integer-margin law fences
   // the relieved metric at 99 while the seated face keeps 100.
   '**/packages/harness/melite-tools/src/discovery.ts': { statements: 100, branches: 99, functions: 100, lines: 100 },
+  // CROSSED 2026-11-23 (CI run 45125630241, tip a154055c5): the wave's
+  // seated regen + the new store-seat walls raised these files' deep
+  // coverage past what the unseated pool reaches — the named class,
+  // population drift. Each relieved branches metric fences at the
+  // INTEGER FLOOR of its observed face; the other metrics travel at
+  // their base floors verbatim (only branches red; the rest met).
+  // repair.ts: the tiled repair bag's carrier branches (2ed1a5805)
+  // ride the seated walls' 28-arm walk — CI measured 85.1 vs the
+  // seated 94.44. bench.ts: the sweep-word store walls' store-seat
+  // arms (6a9c3806e) run where the store lives — CI 96.71 vs 96.77
+  // (an epsilon crossing; the fence is the law's, not extra slack).
+  // h3-timeline card.ts: CI 99.01 vs the seated 99.47.
+  '**/packages/models/h3/src/repair.ts': { statements: 97.44, branches: 85, functions: 88.88, lines: 97.3 },
+  '**/packages/estate/drafts/src/bench.ts': { statements: 99.8, branches: 96, functions: 99.11, lines: 99.89 },
+  '**/packages/video/h3-timeline/src/card.ts': { statements: 99.5, branches: 99, functions: 96.77, lines: 99.41 },
 }
 
 /**
