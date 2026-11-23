@@ -1,5 +1,6 @@
 import type { GenerateOptions } from '@deepseek-ai/dsh-llm';
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment';
+import type { AuxCallLog } from '../aux-session-log.js';
 /**
  * vision-route.ts — the maker lane's delegated eye (the vision-capable
  * route the charter owes, dev_docs/ROADMAP.md "A vision-capable route
@@ -128,9 +129,15 @@ export type VisionQuestionKind = keyof typeof VISION_QUESTIONS;
  * @param image - the durable attachment ref (the store's own normalization).
  * @param kind - which fixed question the arm asks.
  * @param signal - the view call's cancellation (deadline-bounded).
+ * @param log - the session-log emission seat (REQUIRED — the type
+ *   system refuses an unseated caller at the earliest resolvable
+ *   point; conventions sweep drift ①, the model-visible ⟺ logged
+ *   law: the pixels + question are a model-visible input, one record
+ *   enters the log pre-dispatch with the attachment's durable
+ *   identity carriers).
  * @returns the seeing route's verdict plus the serving route (the `via` echo).
  */
-export declare function verifyVisual(llm: VisionLlmSeam, route: VisionRoute, image: ImageAttachmentRef, kind: VisionQuestionKind, signal?: AbortSignal): Promise<{
+export declare function verifyVisual(llm: VisionLlmSeam, route: VisionRoute, image: ImageAttachmentRef, kind: VisionQuestionKind, signal: AbortSignal | undefined, log: AuxCallLog): Promise<{
     verdict: string;
     via: string;
 }>;

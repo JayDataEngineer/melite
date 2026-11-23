@@ -31,6 +31,8 @@ import type { LlmStreamSeam } from './llm-complete.ts'
 import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds'
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
 import { agenticSweep } from './enhance-agent.ts'
+import { unsessionedAuxCallLog } from './aux-session-log.ts'
+import type { AuxCallLog } from './aux-session-log.ts'
 import {
   engineLorasListing,
   formSpecArm,
@@ -204,6 +206,10 @@ interface CtxView {
    *  (F-2/F-4, 2026-11-05). */
   get(name: string): unknown
   effect(effect: () => void, label?: string): unknown
+  /** The cordis logger (the door's unsessioned aux-call record voice). */
+  logger: {
+    warn(...args: unknown[]): void
+  }
   llm: LlmStreamSeam
   registry: {
     values(): Iterable<{
@@ -665,6 +671,14 @@ export function apply(c: CtxView, config: Config = {}): void {
   // the file's inline node:http idiom): `unknown` forced a cast at
   // every touch site, so the signature states the seat (2026-09-12).
   const enhanceHandler = (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse): void => {
+      // THE DOOR'S EMISSION SEAT (conventions sweep drift ①): the ✦
+      // press names no session on the wire and this door opens none —
+      // the audit's documented-exception arm (registry row
+      // gates-aux-model-call-session-log). The record rides the host
+      // logger as one JSON line naming the exception, never a silent
+      // skip; the completion core stamps purpose 'melite-enhance' on
+      // the wire beside it.
+      const doorLog: AuxCallLog = unsessionedAuxCallLog((line) => { c.logger.warn(line) })
       let ok = true
       const respond = (status: number, payload: unknown): void => {
         if (!ok) return
@@ -737,6 +751,7 @@ export function apply(c: CtxView, config: Config = {}): void {
             ...(llmWant !== undefined ? { llmWant } : {}),
             defaultLlm: readDefaultLlm(),
             preference: preferenceOf(config),
+            log: doorLog,
           })
             .then((result) => respond(200, result))
             .catch(mapEnhanceError)
@@ -752,6 +767,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           prompt: body.prompt,
           temperature,
           ...(llmWant !== undefined ? { llm: llmWant } : {}),
+          log: doorLog,
         }, readDefaultLlm(), preferenceOf(config))
           .then((result) => respond(200, result))
           .catch(mapEnhanceError)

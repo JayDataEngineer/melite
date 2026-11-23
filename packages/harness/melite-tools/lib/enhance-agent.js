@@ -36,14 +36,28 @@ export async function fetchDeclaredFields(model) {
     }
     return declaredFieldsFromSpec(spec);
 }
-/** One field's enhancement through the harness model. */
-export function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm, preference) {
+/**
+ * One field's enhancement through the harness model. The seat rides
+ * through to the completion core (one record per auxiliary call).
+ * @param llm - the harness llm seat.
+ * @param recipe - the field's recipe system prompt.
+ * @param prompt - the user's words.
+ * @param temperature - the caller's sampling temperature, when set.
+ * @param signal - the call's cancellation.
+ * @param llmWant - the explicit route preference, when named.
+ * @param defaultLlm - the host's default route.
+ * @param preference - the door's ordered route preference.
+ * @param log - the session-log emission seat (required; the sweep's
+ *   caller owns which seat its plane carries).
+ */
+export function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm, preference, log) {
     return harnessEnhance(llm, {
         system: recipe,
         prompt,
         temperature,
         signal,
         ...(llmWant !== undefined && llmWant.length > 0 ? { llm: llmWant } : {}),
+        log,
     }, defaultLlm, preference);
 }
 /**
@@ -84,7 +98,7 @@ export async function agenticSweep(ctx, llm, opts) {
     }
     const results = {};
     for (const name of names) {
-        results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm, opts.preference);
+        results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm, opts.preference, opts.log);
     }
     return { model: opts.model, results };
 }

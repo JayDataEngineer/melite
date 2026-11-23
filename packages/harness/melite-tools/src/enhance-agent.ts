@@ -9,6 +9,7 @@
  */
 import { formSpecArm } from './discovery.ts'
 import { harnessEnhance } from './llm-complete.ts'
+import type { AuxCallLog } from './aux-session-log.ts'
 
 /** The form-spec envelope the recipes ride (the wire shape, read
  *  in-process by formSpecArm). */
@@ -59,16 +60,30 @@ export interface FieldResult {
   via: string
 }
 
-/** One field's enhancement through the harness model. */
+/**
+ * One field's enhancement through the harness model. The seat rides
+ * through to the completion core (one record per auxiliary call).
+ * @param llm - the harness llm seat.
+ * @param recipe - the field's recipe system prompt.
+ * @param prompt - the user's words.
+ * @param temperature - the caller's sampling temperature, when set.
+ * @param signal - the call's cancellation.
+ * @param llmWant - the explicit route preference, when named.
+ * @param defaultLlm - the host's default route.
+ * @param preference - the door's ordered route preference.
+ * @param log - the session-log emission seat (required; the sweep's
+ *   caller owns which seat its plane carries).
+ */
 export function enhanceOneField(
   llm: LlmSeam,
   recipe: string,
   prompt: string,
   temperature: number | undefined,
   signal: AbortSignal,
-  llmWant?: string,
-  defaultLlm?: string,
-  preference?: string,
+  llmWant: string | undefined,
+  defaultLlm: string | undefined,
+  preference: string | undefined,
+  log: AuxCallLog,
 ): Promise<FieldResult> {
   return harnessEnhance(llm, {
     system: recipe,
@@ -76,6 +91,7 @@ export function enhanceOneField(
     temperature,
     signal,
     ...(llmWant !== undefined && llmWant.length > 0 ? { llm: llmWant } : {}),
+    log,
   }, defaultLlm, preference)
 }
 
@@ -104,7 +120,7 @@ export const GENERIC_ENHANCE_RECIPE: string =
 export async function agenticSweep(
   ctx: unknown,
   llm: LlmSeam,
-  opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal; llmWant?: string; defaultLlm?: string; preference?: string },
+  opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal; llmWant?: string; defaultLlm?: string; preference?: string; log: AuxCallLog },
 ): Promise<{ model: string; results: Record<string, FieldResult> }> {
   // The sweep reads the form-spec SSOT IN-PROCESS (2026-09-12 fix:
   // the old makeEstateRequest lane served no GET /v1/form-spec seat,
@@ -126,7 +142,7 @@ export async function agenticSweep(
   const results: Record<string, FieldResult> = {}
   for (const name of names) {
     results[name] = await enhanceOneField(
-      llm, fields[name]!, opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm, opts.preference,
+      llm, fields[name]!, opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm, opts.preference, opts.log,
     )
   }
   return { model: opts.model, results }

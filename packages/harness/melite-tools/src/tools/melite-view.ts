@@ -49,8 +49,26 @@ import { listMedia } from '@melite/estate-media'
 import type { MediaListRow } from '@melite/estate-media'
 import { resolveVisionRoute, verifyVisual, viewRoutePreference } from './vision-route.ts'
 import type { VisionLlmSeam, VisionQuestionKind, VisionRoute } from './vision-route.ts'
+import { auxCallLogOf } from '../aux-session-log.ts'
 import { rootsManifest, searchedVoice } from '@melite/estate-queue'
 import type { JsonValue, ToolDefinition } from '../types.ts'
+
+/** THE VERDICT CAP (tool-context audit F4, 2026-11-22): the delegated
+ *  eye's verdict rides textObservation — the model face — and its
+ *  length is the SEEING ROUTE's own output configuration, never a
+ *  bound this door chose. Past 4,000 chars the insert keeps the head
+ *  and names the cut honestly (shown N of M — ask again for the
+ *  rest); verifyVisual's answer itself is untouched (the honest
+ *  "N of M" form, never a silent slice). */
+export const VERDICT_CAP = 4_000
+
+/** The insert face for one delegated verdict: whole at or under the
+ *  cap; over it, the head plus the honest truncation line. */
+function verdictFace(verdict: string): string {
+  if (verdict.length <= VERDICT_CAP) return verdict
+  return verdict.slice(0, VERDICT_CAP)
+    + ' … verdict truncated (shown ' + String(VERDICT_CAP) + ' of ' + String(verdict.length) + ' chars — ask again for the rest)'
+}
 
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
  *  manifest in order — own root first, then the extras (the queue
@@ -390,7 +408,7 @@ async function delegatedFilmVisual(
   if (route === null) return null
   const stamps = sheetPlan(probe.duration_s)
   const ref = await commitFilmSheet(attachments, render, row.name, absPath, stamps.length, exec.signal)
-  const seen = await verifyVisual(llm, route, ref, 'film', exec.signal)
+  const seen = await verifyVisual(llm, route, ref, 'film', exec.signal, auxCallLogOf(sessionSeat(exec)))
   const streams = probe.streams.map((s) =>
     s.codec + (s.width !== undefined && s.height !== undefined ? ' ' + String(s.width) + 'x' + String(s.height) : '')
     + (s.fps !== undefined ? ' @' + s.fps : '') + (s.frames !== undefined ? ' ' + String(s.frames) + 'f' : '')).join(' + ')
@@ -402,7 +420,7 @@ async function delegatedFilmVisual(
       + (probe.duration_s !== undefined ? ', ' + String(probe.duration_s) + 's' : '')
       + ', ' + String(probe.size_bytes) + ' bytes, streams: ' + streams
       + ', contact sheet of ' + String(stamps.length)
-      + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the sheet): ' + seen.verdict,
+      + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the sheet): ' + verdictFace(seen.verdict),
   }
 }
 
@@ -604,13 +622,30 @@ export async function viewAudioArtifact(
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
  * ToolRunContext). Exported for the contact-sheet door (B9 — the
- * same route gate, one spelling). */
+ * same route gate, one spelling). The session face carries the
+ * auxiliary-call append door too (aux-session-log's emission seat —
+ * the model-visible ⟺ logged law: the delegated eye's model call
+ * records its consumed inputs pre-dispatch). */
 export interface ViewExec {
   signal: AbortSignal
   agent?: {
-    session?: { requestHeader?: () => { config?: { provider?: string, model?: string } } | undefined }
+    session?: {
+      requestHeader?: () => { config?: { provider?: string, model?: string } } | undefined
+      append(type: string, data: unknown): unknown
+    }
     options?: { provider?: string, model?: string }
   }
+}
+
+/** The emission seat's session view (aux-session-log's ctor takes
+ *  exactly the append door). A session-less exec refuses LOUD here —
+ *  a delegated eye with no log home never fires. */
+function sessionSeat(exec: ViewExec): { append(type: string, data: unknown): unknown } {
+  const session = exec.agent?.session
+  if (session === undefined) {
+    throw new Error('melite_view: the delegated eye has no session to log into — refusing to fire the vision call unlogged (Model-visible ⟺ logged)')
+  }
+  return session
 }
 
 /** The structural llm service view (resolveModelInfo only). */
@@ -704,7 +739,7 @@ export async function delegatedVisual(
   const route = await seeingRoute(ctx, exec)
   if (route === null) return null
   const ref = await attachments.saveImage({ data: image.data, mediaType: image.mediaType, ...(image.name === undefined ? {} : { name: image.name }) })
-  return verifyVisual(llm, route, ref, kind, exec.signal)
+  return verifyVisual(llm, route, ref, kind, exec.signal, auxCallLogOf(sessionSeat(exec)))
 }
 
 /** THE TEXT OBSERVATION: the film's facts as text — the same numbers
@@ -831,14 +866,14 @@ async function delegatedMeshPoster(
   // directly (no second resolution — a re-resolve could only repeat
   // the same answer, and its null arm would be dead code).
   const ref = await attachments.saveImage({ data: bytes, mediaType, name: basename(poster.name) })
-  const seen = await verifyVisual(llm, route, ref, 'poster', exec.signal)
+  const seen = await verifyVisual(llm, route, ref, 'poster', exec.signal, auxCallLogOf(sessionSeat(exec)))
   return {
     runId,
     url: row.url,
     host: join(root, 'output', row.runId, row.name),
     textObservation: 'melite_view mesh: ' + row.url + ' (' + meshVoice(summary)
       + '; poster: ' + posterName
-      + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the poster): ' + seen.verdict + ')',
+      + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the poster): ' + verdictFace(seen.verdict) + ')',
     mesh: { ...summary, poster: posterName },
   }
 }
@@ -1001,7 +1036,7 @@ export async function viewStillArtifact(
       url: row.url,
       host: absPath,
       textObservation: facts
-        + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the pixels): ' + seen.verdict,
+        + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the pixels): ' + verdictFace(seen.verdict),
     }
   }
   const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)

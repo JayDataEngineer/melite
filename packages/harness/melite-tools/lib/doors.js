@@ -2,6 +2,7 @@ import Schema from '@deepseek-ai/schemastery';
 import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds';
 import { harnessEnhance, resolveHarnessRoutes, routeName } from "./llm-complete.js";
 import { agenticSweep } from "./enhance-agent.js";
+import { unsessionedAuxCallLog } from "./aux-session-log.js";
 import { engineLorasListing, formSpecArm, formsArm, kindsDoorArm, bootFactsArm, modelCatalogArm, cardToolsArm, } from "./discovery.js";
 import { makeEstateRequest, seatFamilyForPath } from "./estate.js";
 // The protocol refusal discrimination (the false-death fix,
@@ -488,6 +489,14 @@ export function apply(c, config = {}) {
     // the file's inline node:http idiom): `unknown` forced a cast at
     // every touch site, so the signature states the seat (2026-09-12).
     const enhanceHandler = (req, res) => {
+        // THE DOOR'S EMISSION SEAT (conventions sweep drift ①): the ✦
+        // press names no session on the wire and this door opens none —
+        // the audit's documented-exception arm (registry row
+        // gates-aux-model-call-session-log). The record rides the host
+        // logger as one JSON line naming the exception, never a silent
+        // skip; the completion core stamps purpose 'melite-enhance' on
+        // the wire beside it.
+        const doorLog = unsessionedAuxCallLog((line) => { c.logger.warn(line); });
         let ok = true;
         const respond = (status, payload) => {
             if (!ok)
@@ -557,6 +566,7 @@ export function apply(c, config = {}) {
                     ...(llmWant !== undefined ? { llmWant } : {}),
                     defaultLlm: readDefaultLlm(),
                     preference: preferenceOf(config),
+                    log: doorLog,
                 })
                     .then((result) => respond(200, result))
                     .catch(mapEnhanceError);
@@ -571,6 +581,7 @@ export function apply(c, config = {}) {
                 prompt: body.prompt,
                 temperature,
                 ...(llmWant !== undefined ? { llm: llmWant } : {}),
+                log: doorLog,
             }, readDefaultLlm(), preferenceOf(config))
                 .then((result) => respond(200, result))
                 .catch(mapEnhanceError);

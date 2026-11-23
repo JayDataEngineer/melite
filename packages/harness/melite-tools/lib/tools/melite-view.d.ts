@@ -6,6 +6,14 @@ import type { MeshSummary } from './glbSummary.js';
 import type { MediaListRow } from '@melite/estate-media';
 import type { VisionQuestionKind, VisionRoute } from './vision-route.js';
 import type { ToolDefinition } from '../types.js';
+/** THE VERDICT CAP (tool-context audit F4, 2026-11-22): the delegated
+ *  eye's verdict rides textObservation — the model face — and its
+ *  length is the SEEING ROUTE's own output configuration, never a
+ *  bound this door chose. Past 4,000 chars the insert keeps the head
+ *  and names the cut honestly (shown N of M — ask again for the
+ *  rest); verifyVisual's answer itself is untouched (the honest
+ *  "N of M" form, never a silent slice). */
+export declare const VERDICT_CAP = 4000;
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
  *  manifest in order — own root first, then the extras (the queue
  *  seat's stateRoots config). First root holding the run serves (own
@@ -175,7 +183,10 @@ export declare function viewAudioArtifact(seat: QueueSeatSeam, runId: string, ar
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
  * ToolRunContext). Exported for the contact-sheet door (B9 — the
- * same route gate, one spelling). */
+ * same route gate, one spelling). The session face carries the
+ * auxiliary-call append door too (aux-session-log's emission seat —
+ * the model-visible ⟺ logged law: the delegated eye's model call
+ * records its consumed inputs pre-dispatch). */
 export interface ViewExec {
     signal: AbortSignal;
     agent?: {
@@ -186,6 +197,7 @@ export interface ViewExec {
                     model?: string;
                 };
             } | undefined;
+            append(type: string, data: unknown): unknown;
         };
         options?: {
             provider?: string;

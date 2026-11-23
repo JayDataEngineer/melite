@@ -223,6 +223,12 @@ export const RUNTIME_LIB_ALIAS: Record<string, string> = {
   // copy — the exact deepEqualJson own-key-count semantics the recipe
   // seam runs (card-base hosts the kit and the counting seam).
   '@deepseek-ai/dsh-util-values': path.join(import.meta.dirname, 'packages/web/card-base/node_modules/@deepseek-ai/dsh-util-values/lib/index.js'),
+  // THE AUX-PLANE LOG WALL's log home (conventions sweep drift ①,
+  // aux-model-call-session-log): the melite-tools-anchored copy — the
+  // package whose auxiliary streams append the plugin record, so the
+  // wall mounts the SAME Session class instance the cure writes
+  // through (appendPluginRecord brand-checks its receiver).
+  '@deepseek-ai/dsh-session': path.join(import.meta.dirname, 'packages/harness/melite-tools/node_modules/@deepseek-ai/dsh-session/lib/index.js'),
 }
 
 /**

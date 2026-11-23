@@ -66,6 +66,10 @@ interface CtxView {
      *  (F-2/F-4, 2026-11-05). */
     get(name: string): unknown;
     effect(effect: () => void, label?: string): unknown;
+    /** The cordis logger (the door's unsessioned aux-call record voice). */
+    logger: {
+        warn(...args: unknown[]): void;
+    };
     llm: LlmStreamSeam;
     registry: {
         values(): Iterable<{

@@ -1,3 +1,4 @@
+import type { AuxCallLog } from './aux-session-log.js';
 /** The form-spec envelope the recipes ride (the wire shape, read
  *  in-process by formSpecArm). */
 interface FormSpecShape {
@@ -24,8 +25,21 @@ export interface FieldResult {
     /** The harness route that actually served this field — never silent. */
     via: string;
 }
-/** One field's enhancement through the harness model. */
-export declare function enhanceOneField(llm: LlmSeam, recipe: string, prompt: string, temperature: number | undefined, signal: AbortSignal, llmWant?: string, defaultLlm?: string, preference?: string): Promise<FieldResult>;
+/**
+ * One field's enhancement through the harness model. The seat rides
+ * through to the completion core (one record per auxiliary call).
+ * @param llm - the harness llm seat.
+ * @param recipe - the field's recipe system prompt.
+ * @param prompt - the user's words.
+ * @param temperature - the caller's sampling temperature, when set.
+ * @param signal - the call's cancellation.
+ * @param llmWant - the explicit route preference, when named.
+ * @param defaultLlm - the host's default route.
+ * @param preference - the door's ordered route preference.
+ * @param log - the session-log emission seat (required; the sweep's
+ *   caller owns which seat its plane carries).
+ */
+export declare function enhanceOneField(llm: LlmSeam, recipe: string, prompt: string, temperature: number | undefined, signal: AbortSignal, llmWant: string | undefined, defaultLlm: string | undefined, preference: string | undefined, log: AuxCallLog): Promise<FieldResult>;
 /** Structural re-export so callers do not import llm-complete for the type. */
 export type LlmSeam = import('./llm-complete.js').LlmStreamSeam;
 /**
@@ -49,6 +63,7 @@ export declare function agenticSweep(ctx: unknown, llm: LlmSeam, opts: {
     llmWant?: string;
     defaultLlm?: string;
     preference?: string;
+    log: AuxCallLog;
 }): Promise<{
     model: string;
     results: Record<string, FieldResult>;

@@ -71,6 +71,7 @@ export async function harnessCompleteOnRoute(llm, route, req) {
     // had no id and a plugin source missing its ContextFormed
     // companion, tolerated only because adapters read role/content
     // (deep-audit harness finding #6, fixed 2026-09-10).
+    const assembledSystem = req.system + OUTPUT_CONTRACT;
     const options = {
         provider: route.provider,
         model: route.model,
@@ -80,10 +81,26 @@ export async function harnessCompleteOnRoute(llm, route, req) {
                 source: { kind: 'user' },
             }),
         ],
-        system: req.system + OUTPUT_CONTRACT,
+        system: assembledSystem,
         ...(req.temperature !== undefined && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {}),
         signal,
+        // The auxiliary-call classification (dsh-llm's own field, the
+        // session-title precedent) — the wire carries what this call is.
+        purpose: 'melite-enhance',
     };
+    // THE PRE-DISPATCH RECORD (model-visible ⟺ logged, the
+    // session/title-llm-request grammar): the exact consumed inputs
+    // enter the log before the stream fires — assembled system verbatim
+    // (the recipe + the door's output contract), the prompt verbatim,
+    // the route. appendPluginRecord's own JSON validation fails loud on
+    // a non-serializable payload; a throwing seat propagates.
+    req.log.append({
+        stream: 'enhance',
+        route: { provider: route.provider, model: route.model },
+        system: assembledSystem,
+        prompt: req.prompt,
+        ...(req.temperature !== undefined && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {}),
+    });
     // The text join is a DELIBERATE hand-roll, not an oversight (the
     // audit's 4.5 record, 2026-10-12): dsh-llm's BlockAssembler is the
     // canonical assembler, but its contract defaults a finish-less

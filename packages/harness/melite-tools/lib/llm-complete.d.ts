@@ -21,6 +21,7 @@
  * stay light, but every field now checks against the SSOT.
  */
 import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
+import type { AuxCallLog } from "./aux-session-log.js";
 /** The runtime seat this core exercises — a structural Pick of the
  *  REAL LlmRuntime contract (@deepseek-ai/dsh-llm). */
 export type LlmStreamSeam = Pick<LlmRuntime, "stream" | "listProviders" | "listModels">;
@@ -39,6 +40,16 @@ export interface EnhanceRequest {
      * wrong-model answer — the response echoes `via`).
      */
     llm?: string;
+    /**
+     * The session-log emission seat (conventions sweep drift ①, the
+     * model-visible ⟺ logged law: a new model-visible input requires
+     * a session event — one record per auxiliary model call).
+     * REQUIRED — the type system refuses an unseated caller the way
+     * auxCallLogOf refuses a malformed session seat; the doors
+     * no-session face builds its own seat and passes it here. The
+     * wall's toggle arm omits it to prove the record's absence reds.
+     */
+    log: AuxCallLog;
 }
 /** One route on the harness model plane. */
 export interface HarnessRoute {

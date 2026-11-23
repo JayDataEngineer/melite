@@ -1,6 +1,7 @@
 import type { GenerateOptions, LlmRuntime as DshLlmRuntime } from '@deepseek-ai/dsh-llm'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
+import type { AuxCallLog } from '../aux-session-log.ts'
 
 /**
  * vision-route.ts — the maker lane's delegated eye (the vision-capable
@@ -182,6 +183,12 @@ export type VisionQuestionKind = keyof typeof VISION_QUESTIONS
  * @param image - the durable attachment ref (the store's own normalization).
  * @param kind - which fixed question the arm asks.
  * @param signal - the view call's cancellation (deadline-bounded).
+ * @param log - the session-log emission seat (REQUIRED — the type
+ *   system refuses an unseated caller at the earliest resolvable
+ *   point; conventions sweep drift ①, the model-visible ⟺ logged
+ *   law: the pixels + question are a model-visible input, one record
+ *   enters the log pre-dispatch with the attachment's durable
+ *   identity carriers).
  * @returns the seeing route's verdict plus the serving route (the `via` echo).
  */
 export async function verifyVisual(
@@ -189,24 +196,46 @@ export async function verifyVisual(
   route: VisionRoute,
   image: ImageAttachmentRef,
   kind: VisionQuestionKind,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  log: AuxCallLog,
 ): Promise<{ verdict: string, via: string }> {
   const timeout = AbortSignal.timeout(VISION_DEADLINE_MS)
   const combined = signal !== undefined ? AbortSignal.any([signal, timeout]) : timeout
+  const question = VISION_QUESTIONS[kind]
   const options: GenerateOptions = {
     provider: route.provider,
     model: route.model,
     messages: [
       createUserMessage({
         content: [
-          { type: 'text', text: VISION_QUESTIONS[kind] },
+          { type: 'text', text: question },
           { type: 'image', attachment: image },
         ],
         source: { kind: 'user' },
       }),
     ],
     signal: combined,
+    // The auxiliary-call classification (dsh-llm's own field, the
+    // session-title precedent) — the wire carries what this call is.
+    purpose: 'melite-vision',
   }
+  // THE PRE-DISPATCH RECORD (the session/title-llm-request grammar):
+  // the fixed question verbatim + the attachment's durable identity —
+  // the pixels live estate-side in the attachment store's own durable
+  // log; the record carries their identity, never a copy.
+  log.append({
+    stream: 'vision',
+    route: { provider: route.provider, model: route.model },
+    kind,
+    question,
+    image: {
+      attachmentId: image.attachmentId,
+      mediaType: image.mediaType,
+      bytes: image.bytes,
+      width: image.width,
+      height: image.height,
+    },
+  })
   // THE ASSEMBLY TEETH (the enhance door's deliberate hand-roll,
   // same contract): malformed deltas are ignored, a finish-less
   // stream throws, a non-stop finish names its route and cause.
