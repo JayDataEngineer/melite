@@ -4,6 +4,9 @@
 // junk (a non-string example is dropped, not stringified), the render
 // names the served id and prints REFUSED verbatim, and the presenter
 // keeps its single gated seat.
+
+// @contract gates-skill-doc-body-cap
+
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
@@ -93,6 +96,32 @@ describe('melite_skill_write execute — the authoring door', () => {
     assert.equal(doc['body'], '')
     assert.equal(doc['lora'], '')
     assert.equal(doc['replace'], false)
+  })
+
+  // ── THE AUTHORED-DOC CAP (tool-context audit F5, 2026-11-22) ──
+  // The body rides melite_skill_read WHOLE, so an unbounded write was
+  // the one UNBOUNDED path into the context. The write door refuses
+  // LOUD past 32KB (the load seat's own budget is the house
+  // precedent) and the seat never meets an over-cap doc.
+  test('THE AUTHORED-DOC CAP: a body past 32KB refuses at the door naming the bytes — the seat never sees it', async () => {
+    const { seen, estate } = fakeEstate({ skillWrite: () => ANSWER })
+    const tool = skillWrite(estate)
+    const big = 'x'.repeat(32 * 1024 + 1)
+    await assert.rejects(
+      tool.execute({ model: 'krea-2', name: 'n', description: 'd', body: big } as never, exec),
+      /skill doc body 32769 bytes, over the 32KB authored-doc cap/,
+    )
+    assert.equal(seen.length, 0, 'the estate seat never meets an over-cap doc')
+  })
+
+  test('the cap edge: a body at exactly 32KB rides — the door bounds, never narrows an honest write', async () => {
+    const { seen, estate } = fakeEstate({ skillWrite: () => ANSWER })
+    const tool = skillWrite(estate)
+    const edge = 'y'.repeat(32 * 1024)
+    await tool.execute({ model: 'krea-2', name: 'n', description: 'd', body: edge } as never, exec)
+    assert.equal(seen.length, 1)
+    const doc = seen[0]!.args[0] as Record<string, unknown>
+    assert.equal(doc['body'], edge)
   })
 
   test('the render names the served id and voices a refusal verbatim', async () => {

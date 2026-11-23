@@ -24,6 +24,16 @@ export declare function isTextName(name: string): boolean;
  *  built from the rows (miss, ambiguous-refusal) names them in ONE
  *  order on every lane). */
 export declare function listRunText(runDir: string): Promise<TextRow[]>;
+/** The counted walk: the rows the door lists (≤ ROW_CAP) plus the
+ *  EXACT count of text rows past the cap (names walked past it, bytes
+ *  not read). The listing line's honest "+N more" rides this — the
+ *  walk stopping silently at the cap titles an oversized run complete
+ *  (tool-context audit F3, 2026-11-22; the byte cap's loud refusal at
+ *  readRunText is the template, and silence is the disease it names). */
+export declare function listRunTextCounted(runDir: string): Promise<{
+    rows: TextRow[];
+    overflow: number;
+}>;
 type ReadResult = {
     runId: string;
     path?: string;

@@ -156,8 +156,14 @@ export function ledgerTail(estate) {
             // no string arm rides — the old one was gate-dead (2026-09-12).
             // The seat reads defaulted strings ('50' / '') — the query
             // string's own defaults (the router parsed them the same way).
+            // THE DOOR KEEPS ITS OWN PROMISE (tool-context audit F6,
+            // 2026-11-22): the description says "max 500" — the clamp seats
+            // HERE, at the door, never only downstream (the estate seat's
+            // own 1..500 clamp is the second net, never the only one; if the
+            // seat law ever moved, this door's answer would still be true).
+            const LIMIT_MAX = 500;
             const limit = typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0
-                ? String(Math.floor(a.limit))
+                ? String(Math.min(Math.floor(a.limit), LIMIT_MAX))
                 : '50';
             const event = typeof a.event === 'string' && a.event.length > 0 ? a.event : '';
             const res = await estate.ledgerTail(limit, event, exec.signal, LEDGER_TIMEOUT_MS);

@@ -22,6 +22,9 @@ import { fakeExec } from './fake-exec.ts'
 /** The typed-lane mock (F-1, 2026-11-05): the tool plane's tests
  *  stub the ESTATE seam, never a URL transport. `seen` records the
  *  lane a tool rode; ledgerTail is this spec's one lane. */
+
+// @contract gates-ledger-tail-limit-clamp
+
 function mockEstate(handler: () => unknown): {
   seen: Array<{ lane: string; args: unknown[] }>;
   estate: Estate;
@@ -116,6 +119,31 @@ describe('ledger_tail execute — the tail', () => {
     await assert.rejects(tool.execute({ limit: Number.NaN } as never, exec), ToolArgsError)
     await assert.rejects(tool.execute({ limit: Number.POSITIVE_INFINITY } as never, exec), ToolArgsError)
     assert.equal(seen.length, 0)
+  })
+
+  // ── THE DOOR'S OWN LIMIT PROMISE (tool-context audit F6, 2026-11-22) ──
+  // The description says "max 500". The seat clamps 1..500
+  // downstream (estate-queue ledgerTail.ts:33-38) but the door used to
+  // forward the number as-is — if the seat law ever moved, the door's
+  // own promise would silently lie. The clamp seats at execute: over
+  // 500 rides as '500' on the lane args (the door keeps its promise
+  // with its own teeth, the seat stays the second net).
+  test('THE LIMIT CLAMP: an over-500 limit rides the lane as 500 — the door keeps its own promise', async () => {
+    for (const limit of [501, 10_000, Number.MAX_SAFE_INTEGER]) {
+      const { seen, estate } = mockEstate(() => ({ entries: [] }))
+      const tool = ledgerTail(estate)
+      await tool.execute({ limit }, exec)
+      assert.deepEqual(seen[0], { lane: 'ledgerTail', args: ['500', '', exec.signal, 15_000] }, `limit ${String(limit)} clamps to 500`)
+    }
+  })
+
+  test('the clamp edge: 500 rides whole; 500.7 floors to 500 — the bound holds, never narrows an honest tail', async () => {
+    for (const [limit, want] of [[500, '500'], [500.7, '500']] as const) {
+      const { seen, estate } = mockEstate(() => ({ entries: [] }))
+      const tool = ledgerTail(estate)
+      await tool.execute({ limit }, exec)
+      assert.deepEqual(seen[0], { lane: 'ledgerTail', args: [want, '', exec.signal, 15_000] }, `limit ${String(limit)} rides as ${want}`)
+    }
   })
 
   test('the event prefix rides verbatim; combined filters ride the lane args', async () => {

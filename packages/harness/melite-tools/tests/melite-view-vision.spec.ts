@@ -15,6 +15,8 @@
 // LOUD (explicit means explicit); a capable chat route never spends
 // a vision call.
 
+// @contract gates-view-verdict-cap
+
 import { describe, test, beforeAll, afterAll, beforeEach, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync, copyFileSync } from 'node:fs'
@@ -33,6 +35,26 @@ import type { VisionLlmSeam, VisionStreamChunk } from '../src/tools/vision-route
 import { delegatedVisual, viewFilmArtifact, viewModelArtifact, viewStillArtifact } from '../src/tools/melite-view.ts'
 import type { MediaSheetRender } from '../src/tools/melite-view.ts'
 import type { MediaListRow } from '@melite/estate-media'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import type { AuxCallLog } from '../src/aux-session-log.ts'
+
+/**
+ * A real session seat: the plugin-record writer refuses non-Sessions
+ * (dsh-session's private-brand check on the receiver), so the exec
+ * fakes carry live logs seeded with the request header the fold
+ * serves back to the route resolver.
+ */
+function seatSession(config: { provider: string, model: string }): Session {
+  const session = Session.create(SessionId(`sess-vision-${config.provider}-${config.model}`))
+  session.append([['request/header', { header: { config }, reason: 'initial' }]])
+  return session
+}
+
+/**
+ * The recording emission seat: the record's own walls live estate-side.
+ * The package arms ride it to prove the payload, not the log home.
+ */
+const LOG: AuxCallLog = { append: () => {} }
 
 // ── the fake eye ───────────────────────────────────────────────────
 
@@ -240,13 +262,13 @@ describe('the lane eye — the one verification call', () => {
   test('text deltas join to the verdict and the serving route echoes as via', async () => {
     const eye = fakeEye()
     const ref = { attachmentId: 'att_1' } as ImageAttachmentRef
-    const out = await verifyVisual(eye, { provider: 'vp', model: 'sees' }, ref, 'still')
+    const out = await verifyVisual(eye, { provider: 'vp', model: 'sees' }, ref, 'still', undefined, LOG)
     assert.deepEqual(out, { verdict: VERDICT, via: 'vp/sees' })
   })
   test('the call carries the fixed question AND the image block (the eye sees the pixels)', async () => {
     const eye = fakeEye()
     const ref = { attachmentId: 'att_9' } as ImageAttachmentRef
-    await verifyVisual(eye, { provider: 'vp', model: 'sees' }, ref, 'film')
+    await verifyVisual(eye, { provider: 'vp', model: 'sees' }, ref, 'film', undefined, LOG)
     assert.equal(eye.sent.length, 1)
     const first = eye.sent[0]!.messages[0]
     assert.ok(first !== undefined && 'content' in first && Array.isArray(first.content))
@@ -270,13 +292,13 @@ describe('the lane eye — the one verification call', () => {
         { type: 'finish', reason: { kind: 'stop' } },
       ],
     })
-    const out = await verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'poster')
+    const out = await verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'poster', undefined, LOG)
     assert.equal(out.verdict, 'hi')
   })
   test('a finish-less stream throws (never an empty verdict)', async () => {
     const eye = fakeEye({ chunks: [{ type: 'text-delta', text: 'hi' }] })
     await assert.rejects(
-      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still'),
+      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still', undefined, LOG),
       /ended without a terminal finish/,
     )
   })
@@ -285,7 +307,7 @@ describe('the lane eye — the one verification call', () => {
       chunks: [{ type: 'finish', reason: { kind: 'error', failure: { message: 'quota dead', code: 'AUTH' } } }],
     })
     await assert.rejects(
-      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still'),
+      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still', undefined, LOG),
       (e: unknown) => /vp\/sees/.test(e instanceof Error ? e.message : '') && /quota dead/.test(e instanceof Error ? e.message : ''),
     )
   })
@@ -294,7 +316,7 @@ describe('the lane eye — the one verification call', () => {
       chunks: [{ type: 'finish', reason: { kind: 'error', failure: { message: 'boom' } } }],
     })
     await assert.rejects(
-      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still'),
+      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still', undefined, LOG),
       (e: unknown) => /vp\/sees.*boom.*\[\?\]/.test(e instanceof Error ? e.message : ''),
     )
   })
@@ -303,7 +325,7 @@ describe('the lane eye — the one verification call', () => {
       chunks: [{ type: 'finish', reason: { kind: 42 } }],
     })
     await assert.rejects(
-      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still'),
+      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still', undefined, LOG),
       (e: unknown) => /vp\/sees.*42/.test(e instanceof Error ? e.message : ''),
     )
   })
@@ -312,7 +334,7 @@ describe('the lane eye — the one verification call', () => {
       chunks: [{ type: 'finish', reason: undefined }],
     })
     await assert.rejects(
-      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still'),
+      verifyVisual(eye, { provider: 'vp', model: 'sees' }, { attachmentId: 'a' } as ImageAttachmentRef, 'still', undefined, LOG),
       (e: unknown) => /vp\/sees.*failed — null/.test(e instanceof Error ? e.message : ''),
     )
   })
@@ -428,7 +450,7 @@ function stillRow(): MediaListRow {
 const blindExec = {
   signal: AbortSignal.timeout(15_000),
   agent: {
-    session: { requestHeader: () => ({ config: { provider: 'chat', model: 'noggin' } }) },
+    session: seatSession({ provider: 'chat', model: 'noggin' }),
     options: {},
   },
 }
@@ -436,7 +458,7 @@ const blindExec = {
 const seeingExec = {
   signal: AbortSignal.timeout(15_000),
   agent: {
-    session: { requestHeader: () => ({ config: { provider: 'vp', model: 'sees' } }) },
+    session: seatSession({ provider: 'vp', model: 'sees' }),
     options: {},
   },
 }
@@ -597,6 +619,86 @@ describe('the delegated eye — the mesh poster arm', () => {
       viewModelArtifact({ stateRoot: root }, 'run-44c30351b94e-bad', 'bad_00001.glb', blindExec, ctx, store.attachments),
       /the bytes are not an image/,
     )
+  })
+})
+
+// ── THE VERDICT CAP (tool-context audit F4, 2026-11-22) ──
+// The seeing route's output length is the route's own configuration;
+// the inserted verdict is the model face. Past 4,000 chars the insert
+// keeps the head and names the cut honestly (shown N of M — ask again
+// for the rest) on EVERY arm; the whole verdict never rides, and a
+// verdict at the cap rides whole (absence admits nothing).
+describe('the delegated eye — the verdict cap', () => {
+  // 3,990 filler + the marker + 600 filler: the cut at 4,000 lands
+  // INSIDE the marker, so "head rides / tail never rides" is
+  // discriminating by literal content, not by length alone.
+  const LONG = 'a'.repeat(3_990) + 'BOUNDARY-MARKER' + 'z'.repeat(600)
+  const longEye = (): FakeEye => fakeEye({
+    chunks: [
+      { type: 'text-delta', text: LONG },
+      { type: 'finish', reason: { kind: 'stop' } },
+    ],
+  })
+
+  test('the still arm truncates at 4,000 with the honest shown-N-of-M line', async () => {
+    delete process.env[VIEW_ROUTE_ENV]
+    const { ctx, store } = eyeCtx(longEye())
+    const value = await viewStillArtifact(root, stillRow(), 'run-abc123-still', blindExec, ctx, store.attachments)
+    const text = String(value.textObservation)
+    assert.match(text, /verdict truncated \(shown 4000 of 4605 chars — ask again for the rest\)/)
+    assert.ok(text.includes('BOUNDARY-M'), 'the head through the cut rides')
+    assert.ok(!text.includes('BOUNDARY-MA'), 'the bytes past the cut never ride')
+    assert.ok(!text.includes(LONG), 'the whole verdict never rides')
+    assert.match(text, /VISUAL VERIFICATION via vp\/sees/)
+  })
+
+  test('the film arm truncates the same way (the sheet verdict is the model face too)', async () => {
+    delete process.env[VIEW_ROUTE_ENV]
+    const { ctx, store } = eyeCtx(longEye())
+    const render: MediaSheetRender = async () => PNG_BYTES
+    const value = await viewFilmArtifact({ stateRoot: root }, 'run-face001-film', '', blindExec, ctx, store.attachments, render)
+    const text = String(value.textObservation)
+    assert.match(text, /verdict truncated \(shown 4000 of 4605 chars — ask again for the rest\)/)
+    assert.ok(!text.includes('BOUNDARY-MARKER'))
+  })
+
+  test('the mesh poster arm truncates the same way (inside its parenthetical)', async () => {
+    delete process.env[VIEW_ROUTE_ENV]
+    const { ctx, store } = eyeCtx(longEye())
+    const value = await viewModelArtifact({ stateRoot: root }, 'run-44c30351b94e-eye', 'eye_00001.glb', blindExec, ctx, store.attachments)
+    const text = String(value.textObservation)
+    assert.match(text, /verdict truncated \(shown 4000 of 4605 chars — ask again for the rest\)/)
+    assert.ok(!text.includes('BOUNDARY-MARKER'))
+  })
+
+  test('a verdict at exactly the cap rides WHOLE — the cap never slices an honest answer', async () => {
+    delete process.env[VIEW_ROUTE_ENV]
+    const exact = 'b'.repeat(4_000)
+    const { ctx, store } = eyeCtx(fakeEye({
+      chunks: [
+        { type: 'text-delta', text: exact },
+        { type: 'finish', reason: { kind: 'stop' } },
+      ],
+    }))
+    const value = await viewStillArtifact(root, stillRow(), 'run-abc123-still', blindExec, ctx, store.attachments)
+    const text = String(value.textObservation)
+    assert.ok(text.includes(exact), 'the whole verdict rides')
+    assert.doesNotMatch(text, /verdict truncated/)
+  })
+
+  test('one char over the cap truncates with shown 4000 of 4001', async () => {
+    delete process.env[VIEW_ROUTE_ENV]
+    const over = 'c'.repeat(4_001)
+    const { ctx, store } = eyeCtx(fakeEye({
+      chunks: [
+        { type: 'text-delta', text: over },
+        { type: 'finish', reason: { kind: 'stop' } },
+      ],
+    }))
+    const value = await viewStillArtifact(root, stillRow(), 'run-abc123-still', blindExec, ctx, store.attachments)
+    const text = String(value.textObservation)
+    assert.match(text, /verdict truncated \(shown 4000 of 4001 chars — ask again for the rest\)/)
+    assert.ok(!text.includes(over))
   })
 })
 

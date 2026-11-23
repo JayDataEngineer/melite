@@ -12,6 +12,8 @@
 // URL grammar is the browser face's. The URL-spelling arm re-rolled
 // to the typed lane + args via `seen`; every other arm is a seam swap.
 
+// @contract gates-run-status-projection
+
 import { describe, test, vi, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
@@ -224,6 +226,36 @@ describe('run_status execute — the run monitor', () => {
     assert.equal(out.export_name, 'voice')
     assert.equal(out.export_path, '/voice.qvoice')
     assert.equal(out.test, true)
+  })
+
+  // ── THE PROJECTION IS THE BOUND (tool-context audit F2, 2026-11-22) ──
+  // D-40's whole-artifact receipt is honest (~90KB at this estate's
+  // worst) but megabyte-safe ONLY because the tool projects explicit
+  // keys (run-status.ts:448-475): the seat's own row carries
+  // card_snapshot/card_recipe (~2.3MB each, measured), plus
+  // compose_echo/source_echo/graph_receipt. One additive `...res`
+  // tomorrow would push 4.6MB per poll with every other arm green —
+  // the artifact wall asserts artifacts print, never that the
+  // snapshot stays out. Each arm HERE pins the projection with the
+  // seat serving the full megabyte row: the honest keys ride, the
+  // five heavy keys MUST NOT. D-40 is byte-identical — nothing here
+  // touches the receipt face.
+  test('THE PROJECTION ARM: a seat serving the full megabyte row projects honest keys only — the five heavy keys never ride', async () => {
+    const snapshot = 'x'.repeat(10)
+    const { estate } = mockEstate(() => ({
+      run_id: 'r-mb', status: 'completed', stages: [], artifacts: ['out/film.mp4'],
+      card_snapshot: { bytes: snapshot }, card_recipe: { bytes: snapshot },
+      compose_echo: { seam: 'carry' }, source_echo: { seam: 'cut' }, graph_receipt: { nodes: 1 },
+      sweep: undefined,
+    }))
+    const tool = runStatus(estate)
+    const out = await tool.execute({ runId: 'r-mb' }, exec) as Record<string, unknown>
+    // the honest keys ride: status, the artifact set, the count line's own rows
+    assert.equal(out.status, 'completed')
+    assert.deepEqual(out.artifacts, ['out/film.mp4'])
+    for (const heavy of ['card_snapshot', 'card_recipe', 'compose_echo', 'source_echo', 'graph_receipt']) {
+      assert.ok(!(heavy in out), `the execute result MUST NOT carry ${heavy} (the toggle adds ...res; this arm reds)`)
+    }
   })
 
   test('a gateway {error} refuses without a status', async () => {

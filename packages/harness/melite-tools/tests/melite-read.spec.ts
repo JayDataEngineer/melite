@@ -4,6 +4,8 @@
 // caps and every refusal voice are pinned. The read is the point — a
 // listing with no body is not a read.
 
+// @contract gates-melite-read-listing-overflow
+
 import { describe, test, beforeAll, afterAll } from 'vitest'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs'
@@ -35,6 +37,14 @@ beforeAll(() => {
   mkdirSync(escape, { recursive: true })
   writeFileSync(join(root, 'secret.txt'), 'not yours')
   symlinkSync(join(root, 'secret.txt'), join(escape, 'leak.txt'))
+  // an oversized run: 205 text rows across two subtrees — the walk
+  // saturates the listing cap in the first and counts the overflow in
+  // the second (the honest "+N more" rides the exact count)
+  const many = join(root, 'output', 'run-bb22dd-many')
+  for (const [sub, count] of [['a', 103], ['b', 102]] as const) {
+    mkdirSync(join(many, sub), { recursive: true })
+    for (let i = 0; i < count; i++) writeFileSync(join(many, sub, 'row-' + String(i) + '.json'), '{}')
+  }
 })
 
 afterAll(() => {
@@ -121,6 +131,27 @@ describe('listRunText (the discovery arm)', () => {
     }
     const rows = await listRunText(many)
     assert.equal(rows.length, 200, 'the cap is the door\'s own ROW_CAP')
+  })
+
+  // ── THE OVERFLOW IS COUNT-HONEST (tool-context audit F3, 2026-11-22) ──
+  // The walk used to stop at ROW_CAP and the listing line printed the
+  // 200 rows with no marker — a run holding more text files titled
+  // itself complete. The byte cap's loud refusal is the template: the
+  // cap names itself, with the EXACT remainder and the cure.
+  test('THE OVERFLOW MARKER: a walk past the cap ends the listing "… (+N more — name a path filter)" with the exact N', async () => {
+    const out = await readRunText({ stateRoot: root }, 'run-bb22dd-many', '')
+    assert.ok(out.files!.endsWith('… (+5 more — name a path filter)'), out.files!.slice(-120))
+    // the marker glues to the 200th row with ' …' (not ', ') — the
+    // split count equals ROW_CAP exactly, and the tail entry carries both
+    assert.equal(out.files!.split(', ').length, 200, 'the listing carries exactly ROW_CAP rows')
+    const rows = await listRunText(join(root, 'output', 'run-bb22dd-many'))
+    assert.equal(rows.length, 200, 'the walk\'s own contract is unchanged (≤ ROW_CAP rows)')
+  })
+
+  test('a walk under the cap carries NO marker — absence admits nothing', async () => {
+    const out = await readRunText({ stateRoot: root }, 'run-ab12cd-side', '')
+    assert.ok(!out.files!.includes('more — name a path filter'), out.files!)
+    assert.ok(!out.files!.includes('…'), 'no ellipsis on a complete listing')
   })
 })
 

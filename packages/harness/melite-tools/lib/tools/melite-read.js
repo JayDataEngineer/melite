@@ -67,11 +67,21 @@ export function isTextName(name) {
  *  built from the rows (miss, ambiguous-refusal) names them in ONE
  *  order on every lane). */
 export async function listRunText(runDir) {
+    return (await listRunTextCounted(runDir)).rows;
+}
+/** The counted walk: the rows the door lists (≤ ROW_CAP) plus the
+ *  EXACT count of text rows past the cap (names walked past it, bytes
+ *  not read). The listing line's honest "+N more" rides this — the
+ *  walk stopping silently at the cap titles an oversized run complete
+ *  (tool-context audit F3, 2026-11-22; the byte cap's loud refusal at
+ *  readRunText is the template, and silence is the disease it names). */
+export async function listRunTextCounted(runDir) {
     const rows = [];
+    let overflow = 0;
     const walk = async (dir, rel, depth) => {
         // the depth bound guards entry; the ROW_CAP guard lives in the
-        // entry loop below, which is the ONLY place a further walk can be
-        // requested — an entry check here would be dead code
+        // entry loop below (rows stop, the walk CONTINUES counting —
+        // overflow is how the listing stays count-honest)
         if (depth > MAX_DEPTH)
             return;
         let entries;
@@ -83,8 +93,6 @@ export async function listRunText(runDir) {
             return;
         }
         for (const e of entries) {
-            if (rows.length >= ROW_CAP)
-                return;
             if (e.isDirectory()) {
                 await walk(join(dir, e.name), rel === '' ? e.name : `${rel}/${e.name}`, depth + 1);
                 continue;
@@ -96,6 +104,10 @@ export async function listRunText(runDir) {
             // containment check below would be dead code.
             if ((!e.isFile() && !e.isSymbolicLink()) || !isTextName(e.name))
                 continue;
+            if (rows.length >= ROW_CAP) {
+                overflow += 1;
+                continue;
+            }
             const name = rel === '' ? e.name : `${rel}/${e.name}`;
             let bytes = 0;
             try {
@@ -109,7 +121,7 @@ export async function listRunText(runDir) {
         }
     };
     await walk(runDir, '', 1);
-    return rows.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : /* v8 ignore next */ 0));
+    return { rows: rows.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : /* v8 ignore next */ 0)), overflow };
 }
 /** The first manifest root holding the run's directory wins (own
  *  writes win); a miss names every searched tree. */
@@ -146,15 +158,22 @@ export async function readRunText(seat, runId, path) {
     if (found === null) {
         throw new Error(`run "${runId}" is not in the runs tree ` + searchedVoice(rootsSpoken));
     }
-    const rows = await listRunText(found.dir);
+    const { rows, overflow } = await listRunTextCounted(found.dir);
     const want = path.trim();
     if (want === '') {
         if (rows.length === 0) {
             throw new Error(`run "${runId}" holds no text files ` + searchedVoice(rootsSpoken));
         }
+        // THE CAP NAMES ITSELF (audit F3): a walk that hit ROW_CAP ends
+        // the listing with the exact remainder and the cure — a path
+        // filter narrows the walk. A silent stop would title the run
+        // complete at 200 rows.
+        const listed = rows.slice(0, ROW_CAP).map((r) => r.path + ' (' + String(r.bytes) + 'b)').join(', ');
         return {
             runId,
-            files: rows.slice(0, ROW_CAP).map((r) => r.path + ' (' + String(r.bytes) + 'b)').join(', '),
+            files: overflow > 0
+                ? listed + ' … (+' + String(overflow) + ' more — name a path filter)'
+                : listed,
         };
     }
     // the caller's path is a FILTER over the walk's own rows — the

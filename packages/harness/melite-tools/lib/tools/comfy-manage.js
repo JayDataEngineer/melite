@@ -282,11 +282,24 @@ function actionRows(action, data, rows) {
     const nested = recordValue(data);
     const nestedRows = nested === null ? undefined : [nested.rows, nested.items, nested.lines].find((candidate) => Array.isArray(candidate));
     const values = Array.isArray(rows) ? rows : Array.isArray(data) ? data : Array.isArray(nestedRows) ? nestedRows : [];
-    if (action === 'logs')
-        return values.slice(0, 200).map((row) => typeof row === 'string' ? row : rowText(row));
+    // THE DISPLAY CAP NAMES ITSELF (tool-context audit F1, 2026-11-22):
+    // the seat serves up to 2,000 journal lines; a 200-line render with
+    // no marker titles the tail complete — the resources cap's own law
+    // (:275) one list over.
+    if (action === 'logs') {
+        const shownLogs = values.slice(0, 200).map((row) => typeof row === 'string' ? row : rowText(row));
+        if (values.length > shownLogs.length) {
+            shownLogs.push('logs: … +' + String(values.length - shownLogs.length) + ' more line(s) (display cap)');
+        }
+        return shownLogs;
+    }
     if (values.length === 0)
         return ['rows: none'];
-    return ['rows:', ...values.slice(0, 50).map((row) => '  ' + rowText(row))];
+    const shownRows = ['rows:', ...values.slice(0, 50).map((row) => '  ' + rowText(row))];
+    if (values.length > 50) {
+        shownRows.push('rows: … +' + String(values.length - 50) + ' more row(s) (display cap)');
+    }
+    return shownRows;
 }
 function inferredNext(action, data) {
     const value = recordValue(data);
@@ -352,6 +365,12 @@ function renderManage(args, value) {
                 if (tail.length > 0) {
                     lines.push('engine application log tail (' + String(appLog.path ?? '?') + ', fresh):');
                     lines.push(...tail);
+                    // THE CAP NAMES ITSELF (tool-context audit F1, 2026-11-22):
+                    // the app-log read is windowed seat-side (64KB); a tail
+                    // sliced at 200 without a marker titles it complete.
+                    if (rawLines.length > tail.length) {
+                        lines.push('engine application log: … +' + String(rawLines.length - tail.length) + ' more line(s) (display cap)');
+                    }
                 }
             }
         }
@@ -384,8 +403,15 @@ function renderManage(args, value) {
         if (Array.isArray(result.misses))
             lines.push('misses: ' + result.misses.join(', '));
         if (Array.isArray(result.items)) {
-            for (const item of result.items.slice(0, 50))
+            // THE CAP NAMES ITSELF (tool-context audit F1, 2026-11-22): a
+            // 50-row item roster without a marker titles the roster
+            // complete — snapshot_list/lora_list rosters exceed 50.
+            const shownItems = result.items.slice(0, 50);
+            for (const item of shownItems)
                 lines.push('item: ' + rowText(item));
+            if (result.items.length > shownItems.length) {
+                lines.push('item: … +' + String(result.items.length - shownItems.length) + ' more item(s) (display cap)');
+            }
         }
         if (Array.isArray(result.operations)) {
             for (const operation of result.operations.slice(0, 20))

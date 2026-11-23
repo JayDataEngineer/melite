@@ -14,6 +14,14 @@
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { jsonClean } from "../json-clean.js";
 const WRITE_TIMEOUT_MS = 15_000;
+/** THE AUTHORED-DOC CAP (tool-context audit F5, 2026-11-22): the
+ *  authored body was the one UNBOUNDED path into the context — a
+ *  later melite_skill_read returns it WHOLE, so growth was
+ *  disk-content-bound end to end. The write door refuses past 32KB
+ *  (the load seat's own budget, estate-queue loadPlane.ts MAX_BYTES,
+ *  is the house precedent): the read door never meets a doc this
+ *  door did not bound. */
+export const AUTHORED_BODY_CAP_BYTES = 32 * 1024;
 export function skillWrite(estate) {
     const presentCall = (args) => {
         const a = (typeof args === 'object' && args !== null ? args : {});
@@ -114,6 +122,14 @@ export function skillWrite(estate) {
                 lora: typeof a.lora === 'string' ? a.lora : '',
                 replace: a.replace === true,
             };
+            // THE AUTHORED-DOC CAP: refuse LOUD at the door, before any seat
+            // round-trip — the body rides melite_skill_read WHOLE, so an
+            // over-cap write would land an unbounded context face later.
+            const bodyBytes = Buffer.byteLength(doc['body'], 'utf8');
+            if (bodyBytes > AUTHORED_BODY_CAP_BYTES) {
+                throw new Error('skill doc body ' + String(bodyBytes) + ' bytes, over the 32KB authored-doc cap '
+                    + '(a read returns the body whole — write the craft, not the corpus; split the doc)');
+            }
             // A refusal arrives as the seat's error with the door's voice
             // VERBATIM — let it propagate; that IS the honest answer.
             const res = (await estate.skillWrite(doc, exec.signal, WRITE_TIMEOUT_MS));

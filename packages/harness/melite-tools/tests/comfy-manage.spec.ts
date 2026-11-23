@@ -17,6 +17,7 @@
 //      lines it unwraps.
 
 // @contract infra-manage-plane-status-truth
+// @contract gates-comfy-manage-honest-caps
 
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
@@ -216,6 +217,60 @@ describe('comfy_manage render — the action line', () => {
     })
     assert.match(clean, /no misses — every axis green/)
     assert.doesNotMatch(clean, /MISS/)
+  })
+})
+
+// ── THE HONEST DISPLAY CAPS (tool-context audit F1, 2026-11-22) ──
+// Four render slices dropped the remainder silently against the
+// tool's own honest-cap law (resources :275, operations :290).
+// Each arm feeds the seat's served shape and demands the marker
+// with the EXACT count — seat values untouched, one line per cap.
+describe('comfy_manage render — the honest display caps', () => {
+  test('the logs cap names its remainder (the seat serves up to 2,000 lines)', () => {
+    const tool = comfyManage(stubEstate())
+    const served: string[] = Array.from({ length: 202 }, (_v, i) => 'journal line ' + String(i))
+    const text = (tool.output.render({ action: 'logs' }, asJson({ ok: true, action: 'logs', detail: '202 line(s)', data: served })) as Array<{ text?: string }>)
+      .map((p) => p.text ?? '').join('\n')
+    assert.match(text, /journal line 199/, 'the 200 shown lines ride')
+    assert.doesNotMatch(text, /journal line 200\b/, 'line 201 is past the display cap')
+    assert.match(text, /logs: … \+2 more line\(s\) \(display cap\)/, 'the marker names the exact remainder')
+  })
+
+  test('the logs cap stays silent at exactly 200 — absence admits nothing', () => {
+    const tool = comfyManage(stubEstate())
+    const served: string[] = Array.from({ length: 200 }, (_v, i) => 'journal line ' + String(i))
+    const text = (tool.output.render({ action: 'logs' }, asJson({ ok: true, action: 'logs', detail: '200 line(s)', data: served })) as Array<{ text?: string }>)
+      .map((p) => p.text ?? '').join('\n')
+    assert.doesNotMatch(text, /more line\(s\)/)
+  })
+
+  test('the generic rows cap names its remainder (rosters can exceed 50)', () => {
+    const tool = comfyManage(stubEstate())
+    const served: JsonValue[] = Array.from({ length: 51 }, (_v, i) => ({ name: 'row-' + String(i) }))
+    const text = (tool.output.render({ action: 'search_models' }, asJson({ ok: true, action: 'search_models', detail: '51 hit(s)', rows: served })) as Array<{ text?: string }>)
+      .map((p) => p.text ?? '').join('\n')
+    assert.match(text, /rows: … \+1 more row\(s\) \(display cap\)/, 'the marker names the exact remainder')
+  })
+
+  test('the fresh app-log tail cap names its remainder below the journal lines', () => {
+    const tool = comfyManage(stubEstate())
+    const served: string[] = Array.from({ length: 201 }, (_v, i) => 'gpu traceback line ' + String(i))
+    const text = (tool.output.render({ action: 'logs' }, asJson({
+      ok: true, action: 'logs', detail: '1 line(s)',
+      data: { app_log: { verdict: 'fresh', path: '/var/log/melite-app.log', lines: served } },
+    })) as Array<{ text?: string }>)
+      .map((p) => p.text ?? '').join('\n')
+    assert.match(text, /engine application log tail \(\/var\/log\/melite-app\.log, fresh\):/)
+    assert.match(text, /engine application log: … \+1 more line\(s\) \(display cap\)/, 'the marker names the exact remainder')
+  })
+
+  test('the items cap names its remainder (snapshot/lora rosters exceed 50)', () => {
+    const tool = comfyManage(stubEstate())
+    const served: JsonValue[] = Array.from({ length: 54 }, (_v, i) => ({ key: 'row:' + String(i), name: 'row-' + String(i), outcome: 'ok' }))
+    const text = (tool.output.render({ action: 'install_extension' }, asJson({ ok: true, action: 'install_extension', detail: '54 item(s)', state: 'ok', items: served })) as Array<{ text?: string }>)
+      .map((p) => p.text ?? '').join('\n')
+    assert.match(text, /item: row-49/, 'the 50 shown items ride')
+    assert.match(text, /item: … \+4 more item\(s\) \(display cap\)/, 'the marker names the exact remainder')
   })
 })
 
