@@ -115,6 +115,25 @@ describe("§9 — the studio's mod projection (the commission derivation)", () =
     }
   })
 
+  it("ARM 2b — the TILED repair bag projects ONE ROW PER ENTRY (the stacked-bag law's third face): each row carries its own window's span, never just bag[0]", () => {
+    // (the windows arc) repair is the ONE legacy kind whose
+    // multi-entry bag still composes — each entry IS one repair
+    // window. Naming only bag[0] would hide the second window's own
+    // mask and span (the F29 invisibility class on a new face).
+    const w0 = { ...REPAIR, repair_prompt: "fix the hands", window_seconds: 2.3333333333333335 }
+    const w1 = { ...REPAIR, mask: "clips/mask_b.png", repair_prompt: "fix the cup", window_seconds: 1.625 }
+    const rows = deriveCommissions({ repair: [w0, w1] })
+    expect(rows, "a two-entry repair bag is two rows").toHaveLength(2)
+    expect(rows[0]!.kind).toBe("repair")
+    const seats0 = new Map(rows[0]!.seats.map((s) => [s.key, s.value]))
+    const seats1 = new Map(rows[1]!.seats.map((s) => [s.key, s.value]))
+    expect(seats0.get("mask")).toBe("clips/mask.png")
+    expect(seats1.get("mask")).toBe("clips/mask_b.png")
+    expect(seats1.get("window_seconds")).toBe("1.625")
+    // the single-entry face keeps its one row (the projection's own law)
+    expect(deriveCommissions({ repair: [REPAIR] })).toHaveLength(1)
+  })
+
   it("ARM 3 — the row order follows the card's bag order (one deterministic rail)", () => {
     const rows = deriveCommissions({
       edit: [EDIT], reshoot: [RESHOOT], extend: [EXTEND], repair: [REPAIR], replace: [REPLACE],

@@ -39,10 +39,12 @@
 // mask resizes to the WINDOW's plan geometry, so window_length must equal one plan clip's
 // frames — the loader's cap and the plan's clip_seconds are the one
 // clock).
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
+import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js'
 import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
-import { assertGridLength, resolveCarryOverlap } from './timelineContract.js'
+import type { MaskedChainSeat } from './chainEdit.js'
+import { assertGridLength, MAX_COMPOSED_WINDOWS, resolveCarryOverlap } from './timelineContract.js'
 
 /** The repair entry's required seats (the reshoot idiom: an armed
  * doc with an empty seat refuses loud naming the seat). The third
@@ -85,24 +87,33 @@ const statedNumber = (p: Record<string, unknown>, k: string, d: number): number 
   return v
 }
 
-/** The repair renderer: validates the bound entry, then composes the
- * masked second-pass chain. Like the swap, the film path never
- * reaches here (the card branches on a non-empty repair bag, refuses
- * a bag under an armed reshoot or replace — one door per doc), and
- * the emission ends in MiniMaxH3ChainAssemble.
- * @param entry the repair mod's single bound entry
- * @param p the walked doc params (the lora mod bag + SLA/shift knobs
- * — the family plane this repair renders under)
- * @param facts the family's lane facts (unet off the DECL row)
- * @param g the run's graph builder
- * @param runId the run tree's id (the assemble filename rides it) */
-export function renderH3Repair(
+/** ONE repair entry, validated (the single-window arm and the tiled
+ *  bag share the walk — one owner of every refusal, the axiom's one
+ *  piece of arithmetic). Pure: no node is created, so the tiled bag
+ *  can judge its whole grammar before node one lands.
+ * @param entry the repair entry (the arm's bound stanza)
+ * @param p the walked doc params (the plan tier resolves off it)
+ * @returns the entry's resolved seats */
+interface RepairPlan {
+  readonly sourceClipSeat: string
+  readonly repairPromptSeat: string
+  readonly maskSeat: string
+  readonly denoise: number
+  readonly seed: number
+  readonly steps: number
+  readonly clipSeconds: number
+  readonly resolution: string
+  readonly windowStart: number
+  readonly windowLength: number
+  /** the entry's resolved plan-head join (resolveCarryOverlap —
+   *  absent = 39; a stated ≠39 refuses at the plan head's own door). */
+  readonly overlapFrames: number
+}
+
+const planRepairEntry = (
   entry: Record<string, unknown>,
   p: Record<string, unknown>,
-  facts: H3Facts,
-  g: GraphBuilder,
-  runId: string,
-): void {
+): RepairPlan => {
   // NO FALLBACK READS: every required seat narrows through its own
   // refusal; every optional number refuses a wrong-typed stated
   // value instead of silently defaulting (the schema walk types
@@ -136,11 +147,27 @@ export function renderH3Repair(
       `h3-timeline repair: window_start ${windowStart} / window_length ${windowLength} — a window seat never goes negative (frames at the film clock, 24 fps; 0/0 is the whole clip)`,
     )
   }
+  return { sourceClipSeat, repairPromptSeat, maskSeat, denoise, seed, steps, clipSeconds, resolution, windowStart, windowLength, overlapFrames: resolveCarryOverlap(entry) }
+}
 
+/** The validated entry's chain seat — the loader, the truthful
+ *  anchor, and the shared masked-edit spine. The `assemble` terminal
+ *  is the caller's: the single-window arm assembles in-chain
+ *  (`<runId>/repair`), the tiled bag joins by file (the window
+ *  film's own streams ride the join's boundary chain).
+ * @param plan the validated entry (planRepairEntry)
+ * @param facts the family's lane facts
+ * @param g the run's graph builder */
+const repairSeat = (
+  plan: RepairPlan,
+  p: Record<string, unknown>,
+  facts: H3Facts,
+  g: GraphBuilder,
+): Omit<MaskedChainSeat, 'assemble'> => {
   // ── the staged media: the WINDOW loader (cap + skip on the same
   // VHS seat, so frames and audio stay in sync) and the inline
   // per-frame SAM3 mask that replaces the swap's staged PNG ──
-  const [srcFrames, srcAudio] = loadVideo(g, sourceClipSeat, Math.round(windowLength), Math.round(windowStart))
+  const [srcFrames, srcAudio] = loadVideo(g, plan.sourceClipSeat, Math.round(plan.windowLength), Math.round(plan.windowStart))
   // picture_1 for the plan head: the window's own first frame. The
   // plan node REQUIRES a picture (its describer vocabulary); the
   // repair's "replacement" is the source's own person, so the
@@ -150,29 +177,21 @@ export function renderH3Repair(
   const anchorFrame = g.node('ImageFromBatch', {
     image: srcFrames, batch_index: 0, length: 1,
   }).out(0)
-
-  renderMaskedEditChain(g, {
+  return {
     p, facts,
-    clipSeconds,
-    overlapFrames: resolveCarryOverlap(entry),
-    resolution, seed, steps,
+    clipSeconds: plan.clipSeconds,
+    overlapFrames: plan.overlapFrames,
+    resolution: plan.resolution, seed: plan.seed, steps: plan.steps,
     roles: '',
-    sourceClip: sourceClipSeat,
-    windowStart,
+    sourceClip: plan.sourceClipSeat,
+    windowStart: plan.windowStart,
     picture1: anchorFrame,
     srcFrames, srcAudio,
     // the ignored literal fallback — the plan node's WINDOW-RE-SLICED
     // shots ride plan_json_input (the repair's geometry law)
-    planJson: JSON.stringify({ shots: [{ id: 'repair', prompt: repairPromptSeat }] }),
+    planJson: JSON.stringify({ shots: [{ id: 'repair', prompt: plan.repairPromptSeat }] }),
     planFromSource: true,
-    denoise,
-    assemble: {
-      // a repair is a VISUAL second pass: the soundtrack is the
-      // source's own, always (audio_source 'source' — the swap's
-      // keep_audio switch has no repair pole to flip)
-      audioSource: 'source',
-      filename: `${runId}/repair`,
-    },
+    denoise: plan.denoise,
     body: ({ cur, clip, vaeVideo, vaeAudio, mutedChainAudio, sliceAudio, refImages }) => {
       // ── P0-2 (defect board row 2): the mask is RECEIVED, never
       // manufactured — the inline SAM3 prose door (and its F7
@@ -182,7 +201,7 @@ export function renderH3Repair(
       // chain's — resize to the plan geometry in-graph, never trust
       // the file. The recommended bridge (the track run's pixel-max
       // union) arrives already grown; prose manufactures nothing. ──
-      const raw = g.node('LoadImage', { image: maskSeat }).out(0)
+      const raw = g.node('LoadImage', { image: plan.maskSeat }).out(0)
       // D-16 (defect board 2026-11-18): the door once wired
       // `ImageResize` — a class NO engine build owns (1817 classes,
       // none so named; the refusal landed at compose time, after the
@@ -206,7 +225,7 @@ export function renderH3Repair(
       // anchor of a repair is the person already in the frame — the
       // zero-new-pixels law) ──
       const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-        prompt: repairPromptSeat,
+        prompt: plan.repairPromptSeat,
         width: cur.out(8), height: cur.out(9), length: cur.out(6),
         ref_image_size: 'match',
         clip, vae: vaeVideo, audio_vae: vaeAudio,
@@ -227,5 +246,180 @@ export function renderH3Repair(
       })
       return { conditioning: r2v.out(0), targetLatent: target }
     },
+  }
+}
+
+/** The repair renderer: validates the bound entry, then composes the
+ * masked second-pass chain. Like the swap, the film path never
+ * reaches here (the card branches on a non-empty repair bag, refuses
+ * a bag under an armed reshoot or replace — one door per doc), and
+ * the emission ends in MiniMaxH3ChainAssemble.
+ * @param entry the repair mod's single bound entry
+ * @param p the walked doc params (the lora mod bag + SLA/shift knobs
+ * — the family plane this repair renders under)
+ * @param facts the family's lane facts (unet off the DECL row)
+ * @param g the run's graph builder
+ * @param runId the run tree's id (the assemble filename rides it)
+ * @returns nothing; the chain's nodes are emitted onto `g` */
+export function renderH3Repair(
+  entry: Record<string, unknown>,
+  p: Record<string, unknown>,
+  facts: H3Facts,
+  g: GraphBuilder,
+  runId: string,
+): void {
+  const plan = planRepairEntry(entry, p)
+  renderMaskedEditChain(g, {
+    ...repairSeat(plan, p, facts, g),
+    assemble: {
+      // a repair is a VISUAL second pass: the soundtrack is the
+      // source's own, always (audio_source 'source' — the swap's
+      // keep_audio switch has no repair pole to flip)
+      audioSource: 'source',
+      filename: `${runId}/repair`,
+    },
   })
+}
+
+/** THE TILED REPAIR BAG — the windows arc (the honesty row's owed
+ *  design, `windows: [...]` on the bag + the film-with-splice
+ *  emission, landed in the GAPS-19 shape the refine bag proved): N ≥ 2
+ *  hand-tiled windows, EACH its own masked-edit chain on the one
+ *  spine (the seat's file-join posture — no in-chain assemble), each
+ *  saved `<runId>/repair_w<k>`, joined into ONE `<runId>/repair` film
+ *  by the film tail's own join primitives (chainSaveBoundaries orders
+ *  every save; concatSavedFilms stitches). Outside the tracked mask
+ *  the pixels ARE the source's own, so a window cut at its boundary
+ *  is not the refine arm's pop-risk seam — the file splice is the
+ *  honest join for this face. A ONE-entry bag never reaches here (the
+ *  card keeps the single-window emission byte-identical); the carrier
+ *  refuses it by name so the lib face cannot silently reroute.
+ * @param bag the repair bag's entries, film order (the card's alias
+ * door passes the armed bag verbatim)
+ * @param p the walked doc params (the lora mod bag + SLA/shift knobs)
+ * @param facts the family's lane facts (unet off the DECL row)
+ * @param g the run's graph builder
+ * @param runId the run tree's id (the joined film's prefix rides it)
+ * @returns nothing; the window chains, the boundary chain, and the
+ * joined film are emitted onto `g` */
+export function renderH3RepairBag(
+  bag: readonly unknown[],
+  p: Record<string, unknown>,
+  facts: H3Facts,
+  g: GraphBuilder,
+  runId: string,
+): void {
+  if (!Array.isArray(bag)) {
+    throw new Error(
+      'h3-timeline repair: the repair bag is present but is not an array — the tiled bag is a list of window stanzas',
+    )
+  }
+  // THE CEILING (one owner: MAX_COMPOSED_WINDOWS — the film's
+  // composed-window ceiling, the same number every tiling face
+  // refuses at): more windows than the ceiling refuses naming the
+  // number and the cure.
+  if (bag.length > MAX_COMPOSED_WINDOWS) {
+    throw new Error(
+      `h3-timeline repair: the bag carries ${bag.length} entries — the film's composed-window ceiling is ${MAX_COMPOSED_WINDOWS}; repair a shorter film or state fewer, longer windows (the single-window arm's clip_seconds ceiling is 15 s = 360 f)`,
+    )
+  }
+  // THE N=1 DELEGATE LAW (GAPS-19's T7): one entry rides the
+  // single-window emission — the edit door's own alias translation —
+  // never the tiled tail (a CreateVideo/boundary/concat tail where
+  // the single-window emission forbids one is the regression the
+  // refine bag's wall catches for its own face).
+  if (bag.length < 2) {
+    throw new Error(
+      `h3-timeline repair: the bag carries ${bag.length} entr${bag.length === 1 ? 'y' : 'ies'} — one window rides the single-window emission (the alias resolves into ONE edit entry, whole-film by default); the tiled bag starts at two windows`,
+    )
+  }
+  // THE GRAMMAR, EVERY ENTRY, BEFORE NODE ONE (a bag that refuses
+  // half-composed would leave the graph a partial film):
+  const plans: RepairPlan[] = bag.map((entry, k) => {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(
+        `h3-timeline repair: the bag's window ${k} is not a knob stanza (got ${Array.isArray(entry) ? 'an array' : entry === null ? 'null' : `a bare ${typeof entry}`}) — every entry is a repair stanza (source_clip, repair_prompt, mask, window_seconds)`,
+      )
+    }
+    const stanza = entry as Record<string, unknown>
+    // THE SERVED DIALECT (the served-docs tool law's own acceptance
+    // test — "does the agent type window_start? if yes, the
+    // interface failed"): the frame seats are the single-window
+    // arm's INTERNAL arithmetic. A tiled entry states its window in
+    // SECONDS; the carrier derives every start. A stated frame seat
+    // refuses — never silently ignored (the statedNumber law).
+    if (stanza.window_start !== undefined || stanza.window_length !== undefined) {
+      throw new Error(
+        `h3-timeline repair: window ${k} states window_start/window_length — the tiled bag states windows in SECONDS (window_seconds); the frame seats are the single-window arm's internal arithmetic, and the carrier derives every start from the stated spans`,
+      )
+    }
+    const plan = planRepairEntry(stanza, p)
+    // THE WINDOW, STATED IN SECONDS: required in a tiled entry. The
+    // carrier converts ×24 at the film clock and judges the engine
+    // grid (22+17k frames) — an unstated span, a wrong-typed span,
+    // or an off-grid span refuses at the compose door naming the
+    // nearest legal length, never engine-side.
+    const seconds = statedNumber(stanza, 'window_seconds', 0)
+    if (seconds <= 0) {
+      throw new Error(
+        `h3-timeline repair: window ${k} states no window_seconds — a tiled bag's every entry states its window's length in seconds (window_seconds); the whole-film tiling is the edit door's own (one entry, carry splits on the film's timeline)`,
+      )
+    }
+    const windowLength = Math.round(seconds * 24)
+    assertGridLength(windowLength, `h3-timeline repair window ${k} window_seconds`)
+    // THE BUDGET: the join consumes ONE trimmed window per entry —
+    // a window past the entry's own clip budget slices into scenes
+    // the file join would silently drop. Refuse naming both numbers
+    // and the cure (the band tops at 15 s = 360 f).
+    if (windowLength > Math.round(plan.clipSeconds * 24)) {
+      throw new Error(
+        `h3-timeline repair: window ${k} states ${windowLength} f (${seconds} s) against a ${plan.clipSeconds} s clip budget (${Math.round(plan.clipSeconds * 24)} f) — the tiled join consumes ONE window per entry, and a window past the budget renders as multiple scenes the join would drop. Raise the entry's clip_seconds (the plan band tops at 15 s = 360 f) or state a shorter window`,
+      )
+    }
+    return { ...plan, windowLength }
+  })
+  // ONE FILM: every window repairs the SAME clip — differing sources
+  // are two films, and the concat would splice across them.
+  const first = plans[0]!
+  for (const [k, plan] of plans.entries()) {
+    if (k > 0 && plan.sourceClipSeat !== first.sourceClipSeat) {
+      throw new Error(
+        `h3-timeline repair: window ${k} repairs '${plan.sourceClipSeat}' but window 0 repairs '${first.sourceClipSeat}' — the tiling joins windows of ONE timeline; two sources are two films (state one source_clip per bag)`,
+      )
+    }
+  }
+  // THE FILM-ORDER LAW, BY DERIVATION: the joined film IS the
+  // windows in film order, so window 0 opens at the head and every
+  // next window opens where the last ends. The starts are the
+  // carrier's own arithmetic (the served doc never types a frame
+  // seat), so the windows always abut — no dropped seconds, no
+  // doubled render, nothing to misorder.
+  let cursor = 0
+  const seated: RepairPlan[] = plans.map((plan) => {
+    const s = { ...plan, windowStart: cursor }
+    cursor += plan.windowLength
+    return s
+  })
+  // ── the emission: N window chains (the spine's file-join posture
+  // — no in-chain assemble), each saved `<runId>/repair_w<k>`, the
+  // boundary chain ordering every save, the concat joining ONE
+  // `<runId>/repair` film (the film tail's own law, one spelling). ──
+  const saves: OutputHandle[] = []
+  const prefixes: string[] = []
+  for (const [k, plan] of seated.entries()) {
+    const prefix = `${runId}/repair_w${k}`
+    const { trimmed } = renderMaskedEditChain(g, { ...repairSeat(plan, p, facts, g), assemble: null })
+    const created = g.node('CreateVideo', {
+      images: trimmed.out(0), audio: filmJoinAudio(g, trimmed.out(1)), fps: 24, bit_depth: 8,
+    })
+    saves.push(
+      g.node('SaveVideo', {
+        video: created.out(), filename_prefix: prefix,
+        format: 'mp4', codec: 'h264',
+      }).out(),
+    )
+    prefixes.push(prefix)
+  }
+  const boundary = chainSaveBoundaries(g, saves)
+  concatSavedFilms(g, prefixes, boundary, `${runId}/repair`)
 }

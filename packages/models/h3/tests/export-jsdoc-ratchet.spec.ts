@@ -66,7 +66,7 @@ const BASELINE: Record<string, number> = {
   "src/filmMix.ts": 0, // 2026-11-22: the module moved home to @melite/contracts/filmMix (the L3 debt's cure); this subpath is a pure re-export — zero undocumented exports, and the contracts plane's own ratchet owns the moved file
   "src/finalize.ts": 1,
   "src/refine.ts": 2,
-  "src/repair.ts": 1,
+  "src/repair.ts": 0, // (the windows arc): renderH3Repair's void return and renderH3RepairBag's emission contract are documented — the debt is paid, not re-seated
   "src/reshoot.ts": 3,
   "src/schema.ts": 2,
   "src/secondPass.ts": 3,

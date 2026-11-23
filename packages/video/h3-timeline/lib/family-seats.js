@@ -39,6 +39,7 @@ export const primeFamilySeats = () => {
         if (typeof main.h3DefaultLoraEntry !== 'function' ||
             typeof main.finalizeH3 !== 'function' ||
             typeof main.renderH3Edit !== 'function' ||
+            typeof main.renderH3RepairBag !== 'function' ||
             typeof main.reshootArmed !== 'function' ||
             typeof main.assertOverlayGated !== 'function' ||
             typeof main.filmAdmissionNotices !== 'function' ||
@@ -58,6 +59,7 @@ export const primeFamilySeats = () => {
             defaultLoraEntry: main.h3DefaultLoraEntry,
             finalize: main.finalizeH3,
             renderEdit: main.renderH3Edit,
+            renderRepairBag: main.renderH3RepairBag,
             reshootArmed: main.reshootArmed,
             assertOverlayGated: main.assertOverlayGated,
             filmAdmissionNotices: main.filmAdmissionNotices,

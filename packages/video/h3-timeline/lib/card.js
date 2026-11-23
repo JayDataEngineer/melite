@@ -231,7 +231,7 @@ export const EDIT_MOD = {
     // its own door is Reshoot (a different chain, MoGe depth +
     // CrossView — not a mask/denoise variation).
     sections: [
-        { id: 'repair-region', label: 'Repair', tooltip: 'The repair section: identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound. The mask is RECEIVED: one staged PNG (the track run\u2019s pixel-max union is the recommended bridge; the chain resizes it to its own geometry in-graph) — the repair refuses without one.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
+        { id: 'repair-region', label: 'Repair', tooltip: 'The repair section: identity anchored to the source itself, partial denoise holding everything outside the mask — and its sound. TWO FACES: one entry is the single-window face — no window stated runs the WHOLE film (the carry split segments the film on its own timeline and joins the windows into one film), a stated window repairs just that window. The tiled face is the legacy repair BAG with N entries: each entry states its window\u2019s span in seconds (window_seconds; the carrier judges the engine grid and derives every start, so windows abut from the head) and the carrier joins them into ONE film at <runId>/repair. The mask is RECEIVED: one staged PNG per entry (the track run\u2019s pixel-max union is the recommended bridge; the chain resizes it to its own geometry in-graph) — the repair refuses without one.', patch: { mask_source: 'static-png', reference: 'self', denoise: 0.32, keep_audio: true } },
         { id: 'identity-swap', label: 'Swap', tooltip: 'The swap section (one, per §0.7 — clothing vs identity is prompt words, never two pills): the region tracked frame by frame, identity carried by a replacement still + a mannequin video (the motion carrier — any video clip may be bound; the source clip itself is a valid mannequin when the motion is already in the shot, no track run required); denoise seeds 1 (full re-render of the masked side). A still+mannequin swap of a DIFFERENT person needs near-full noise (measured: 0.5 = none, 1.0 = full); 0.55 keeps the source\'s motion by keeping its identity — the garment read, never the recast.', patch: { mask_source: 'region', reference: 'still+mannequin', denoise: 1 } },
         { id: 'whole-frame-restyle', label: 'Whole-frame restyle', tooltip: 'Nothing held: the whole frame re-renders at partial denoise anchored to the source itself — stay under 0.8 (the identity-boil floor refuses beyond it on this anchor).', patch: { mask_source: 'whole-frame', reference: 'self', denoise: 0.6 } },
         { id: 'refine-2x', label: 'Upscale 2x', tooltip: "ONE dial: the posture composes itself — whole-frame, self-anchored, denoise 0.32, 56 f windows under the measured 141 f 2x ceiling, the learned upscale riding the edit's own latents in the same run. ANY staged video rides the source seat — an outside clip is not a special case, no run id, no pattern. State a seat only to override (a prompt steers the re-render; a stated window rides its own judgement).", patch: { refine: true, scale: 2 } },
@@ -366,6 +366,15 @@ export function resolveLegacyEditAliases(p) {
     }
     const key = armed[0];
     const bag = p[key];
+    // THE TILED REPAIR BAG (the windows arc, 2026-11-22): the repair
+    // face is the ONE legacy name whose multi-entry bag still composes —
+    // N ≥ 2 hand-tiled windows ride the family's repair-bag carrier
+    // (each entry its own masked-edit window, the windows joined into
+    // ONE repair film). The bag stays ARMED under its own key and the
+    // compose dispatch hands it to the seat below; every other legacy
+    // name keeps the one-entry law (their cells have no tiling).
+    if (key === 'repair' && bag.length >= 2)
+        return p;
     if (bag.length > 1) {
         throw new Error(key === 'refine'
             ? `h3-timeline: refine carries ${bag.length} entries — the bag is ONE window per doc (the tiling and the join are the loop's: the context carry serves the seams (F3-14 cured, 2026-11-15), and the window is the ~2.33 s design cell). State one window per doc`
@@ -539,19 +548,12 @@ function translateLegacyCell(key, e, h) {
 export function judgeDeclaredBands(p) {
     // THE SERVED ROSTER (seat-derived): the family-owned loras kind's
     // bands judge with the card-local ones when the seat boarded.
-    for (const kind of declaredModKinds()) {
-        // THE RESHOOT CARVE-OUT (h3-reshoot-chain ARM 3): the reshoot
-        // bag's dials already meet a judge — the emission's own camera
-        // door (bandedAll), which refuses naming every offender, its
-        // recorded value, and the never-a-widget-400 tail, against the
-        // same bounds its DeclaredModifierKind rows state (ARM 2 pins
-        // the 1:1). This walk firing first would only preempt that
-        // richer voice with a thinner one — the same law, said worse.
-        if (kind.kind === 'reshoot')
-            continue;
-        const bag = p[kind.param_key];
-        if (!Array.isArray(bag))
-            continue;
+    const kinds = declaredModKinds();
+    /** One bag against one kind's declared numeric rows (the walk is
+     *  shared: each served kind judges its own bag; the tiled repair
+     *  bag — the legacy cell kept armed under its own key — judges
+     *  against the edit kind's rows, the cell it resolves to). */
+    const judgeBag = (kind, bag, label) => {
         for (const [i, e] of bag.entries()) {
             if (e === null || typeof e !== 'object' || Array.isArray(e))
                 continue;
@@ -595,11 +597,39 @@ export function judgeDeclaredBands(p) {
                 }
                 if (v < floor || v > max) {
                     throw new Error(kind.kind === 'edit' && String(f.name) === 'clip_seconds' && floor !== min
-                        ? `h3-timeline edit entry ${i}: 'clip_seconds': ${v} is outside this seat's refine-2x band ${floor}–${max} (the 56 f rung relaxes the plan node's 2.5 floor under refine + scale ≥ 2) — the declaration binds, not the tooltip`
-                        : `h3-timeline ${kind.kind} entry ${i}: '${String(f.name)}': ${v} is outside this seat's declared band ${min}–${max} — the declaration binds, not the tooltip`);
+                        ? `h3-timeline ${label} entry ${i}: 'clip_seconds': ${v} is outside this seat's refine-2x band ${floor}–${max} (the 56 f rung relaxes the plan node's 2.5 floor under refine + scale ≥ 2) — the declaration binds, not the tooltip`
+                        : `h3-timeline ${label} entry ${i}: '${String(f.name)}': ${v} is outside this seat's declared band ${min}–${max} — the declaration binds, not the tooltip`);
                 }
             }
         }
+    };
+    for (const kind of kinds) {
+        // THE RESHOOT CARVE-OUT (h3-reshoot-chain ARM 3): the reshoot
+        // bag's dials already meet a judge — the emission's own camera
+        // door (bandedAll), which refuses naming every offender, its
+        // recorded value, and the never-a-widget-400 tail, against the
+        // same bounds its DeclaredModifierKind rows state (ARM 2 pins
+        // the 1:1). This walk firing first would only preempt that
+        // richer voice with a thinner one — the same law, said worse.
+        if (kind.kind === 'reshoot')
+            continue;
+        const bag = p[kind.param_key];
+        if (!Array.isArray(bag))
+            continue;
+        judgeBag(kind, bag, kind.kind);
+    }
+    // THE TILED REPAIR BAG (the windows arc): the resolver keeps an
+    // N ≥ 2 repair bag armed under its own key, so the served-roster
+    // walk above never sees it — the cell judges here against the
+    // edit kind's own declared rows (the repair cell IS the edit bag's
+    // masked-partial cell; one band law, one voice). The family
+    // carrier judges what the declaration does not carry (the window
+    // geometry: grid, budget, derived starts).
+    const repairBag = p['repair'];
+    if (Array.isArray(repairBag)) {
+        const editKind = kinds.find((k) => k.kind === 'edit');
+        if (editKind)
+            judgeBag(editKind, repairBag, 'repair');
     }
 }
 /** THE FAMILY ACTION BINDING (the atom vocabulary's video stroke):
@@ -730,6 +760,30 @@ export const ACTION_BINDINGS = {
                 }
                 : { mode: 'self' };
             seat.renderEdit(entry, mask, reference, p, seat.parseFacts(model.lane_inputs), g, runId);
+            return;
+        }
+        // THE TILED REPAIR BAG (the windows arc, 2026-11-22): the
+        // resolver keeps an N ≥ 2 repair bag armed under its own key —
+        // the family's repair-bag carrier composes it here: each entry
+        // its own masked-edit window on the one spine, the windows saved
+        // `<runId>/repair_w<k>` and joined into ONE `<runId>/repair` film
+        // by the film tail's join primitives (the film-with-splice
+        // emission the honesty row owed). A ONE-entry bag never reaches
+        // here — the alias translation above keeps that emission
+        // byte-identical. The refusals (ceiling, mixed source, seconds
+        // dialect, grid, budget) live in the carrier — one owner, the
+        // lib bypass face judges the same grammar; the film-order law
+        // is the carrier's own derivation (window 0 at the head, every
+        // next window at the last's end — always abutting).
+        const repairBagRef = p.repair;
+        if (Array.isArray(repairBagRef) && repairBagRef.length >= 2) {
+            // THE RESHOOT EDGE (the one pair that survives): the tiled
+            // bag returns before the film action, so an armed reshoot
+            // under it would be silently dropped. One door per doc.
+            if (seat.reshootArmed(p)) {
+                throw new Error('h3-timeline: the tiled repair bag and Reshoot are both armed — the repair branch never enters the film action, so an armed reshoot would be silently dropped. Pick one door: empty the repair arm for a reshoot, or empty the Reshoot arm for the tiled repair.');
+            }
+            seat.renderRepairBag(repairBagRef, p, seat.parseFacts(model.lane_inputs), g, runId);
             return;
         }
         // THE PROMPT GATE (the VID GEN handoff, operator 2026-11-12):

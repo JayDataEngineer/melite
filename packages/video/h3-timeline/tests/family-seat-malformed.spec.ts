@@ -12,6 +12,7 @@ vi.doMock('@melite/models-h3', () => ({
   h3DefaultLoraEntry: () => ({}),
   finalizeH3: () => ({}),
   renderH3Edit: () => ({}),
+  renderH3RepairBag: () => ({}),
   reshootArmed: () => ({}),
   assertOverlayGated: () => {},
   filmAdmissionNotices: () => [],

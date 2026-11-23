@@ -22,6 +22,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+import { MAX_COMPOSED_WINDOWS } from "../../../../packages/models/h3/src/timelineContract.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILLS = join(HERE, "..", "src", "agents", "skills");
@@ -186,7 +187,33 @@ describe("every served mod bag has a skill leaf an agent can read", () => {
     // dial's region spelling belongs to the edit bag's own doc.
     assert.match(md, /mask_source: "static-png"/, "the translation's mask dial is stated");
     assert.match(md, /reference: "self"/, "the translation's anchor is stated");
-    assert.match(md, /one entry per/i, "the doc states the one-entry law");
+    assert.match(md, /one entry per doc keeps the single-window emission/i,
+      "the doc states the one-entry law (the single-window face)");
+    assert.match(md, /the tiled bag starts\s+at two windows/i,
+      "the doc states the tiled tail's own start (the tiled face is N ≥ 2)");
+  });
+
+  it("ARM 2b — the repair leaf's TILED FACE states the served grammar: the seconds dialect, the derived starts, the real ceiling", () => {
+    // (the windows arc) the tiled face is the ONE legacy bag whose
+    // multi-entry form still composes — the leaf teaches the grammar
+    // the carrier enforces, judged off the contract's own numbers,
+    // and it teaches NO frame seat (the tool law's acceptance test:
+    // does the agent type window_start? if yes, the interface failed).
+    const md = readSkill("repair");
+    assert.match(md, /THE TILED FACE/, "the leaf carries the tiled face");
+    assert.match(md, /window_seconds/, "the tiled entry states its span in seconds");
+    assert.match(md, /22\+17k/, "the leaf names the engine grid the carrier judges");
+    assert.match(md, /the carrier\s+derives every start/,
+      "the starts are the carrier's arithmetic, never a stated seat");
+    assert.match(md, /windows always abut/,
+      "the abut law is stated (no dropped seconds, no doubled render)");
+    assert.match(md, new RegExp(`more than ${MAX_COMPOSED_WINDOWS} entries`),
+      "the ceiling quotes the contract's composed-window ceiling, not a frozen literal");
+    assert.match(md, /byte-identical/,
+      "the N=1 law is stated (one window rides the alias emission)");
+    assert.equal(md.includes("window_start"), false, "the leaf types no window_start");
+    assert.equal(md.includes("window_length"), false, "the leaf types no window_length");
+    assert.equal(md.includes("clip_seconds"), false, "the leaf teaches no clip_seconds");
   });
 
   it("ARM 3 — the upscale ALIAS leaf quotes the edit band, the pass-2 default, and the bare run name law", () => {

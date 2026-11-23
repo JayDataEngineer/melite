@@ -630,7 +630,7 @@ export const family: Plugin = {
 
 export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
 export { renderH3Swap } from "./swap.js"
-export { renderH3Repair } from "./repair.js"
+export { renderH3Repair, renderH3RepairBag } from "./repair.js"
 export {
   renderH3Edit,
   EDIT_IDENTITY_BOIL_FLOOR,

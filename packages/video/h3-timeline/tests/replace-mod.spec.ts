@@ -146,8 +146,25 @@ describe("the Replace name — a preset cell of the one edit bag (the collapse, 
   // refusal had arms on 2 of the 5 legacy names — the other three
   // could rot silently. The arm walks the DERIVED roster: every
   // name the door admits, one loop, no hand list.
-  it("a TWO-ENTRY bag refuses under EVERY legacy name — the arm walks the derived roster", () => {
+  // (the windows arc) repair is the ONE legacy name whose
+  // multi-entry bag still composes — its two-entry bag rides the
+  // tiled face (the carrier's own wall, repair-mod.spec.ts), so the
+  // loop expects the refusal from the four retired names and the
+  // JOIN from repair.
+  it("a TWO-ENTRY bag refuses under every RETIRED legacy name — repair composes it (the tiled face)", () => {
     for (const k of LEGACY_EDIT_KEYS) {
+      if (k === "repair") {
+        const entry = {
+          source_clip: "clips/a.mp4", repair_prompt: "fix", mask: "masks/a.png",
+          window_seconds: 39 / 24,
+        };
+        const out = compose({ [k]: [entry, { ...entry }] } as Record<string, unknown>, `run_two_${k}`);
+        assert.equal(
+          ofClass(out, "MeliteConcatVideos").length, 1,
+          `the ${k} name composes its two-entry bag (the tiled face — the one legacy bag that still tiles)`,
+        );
+        continue;
+      }
       assert.throws(
         () => compose({ [k]: [{ source_clip: "clips/a.mp4" }, { source_clip: "clips/b.mp4" }] } as Record<string, unknown>, `run_two_${k}`),
         new RegExp(`${k} carries 2 entries`),

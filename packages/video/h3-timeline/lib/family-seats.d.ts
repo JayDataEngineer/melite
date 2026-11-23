@@ -23,6 +23,10 @@ export type H3FamilySeat = {
     finalize: (graph: PromptGraph) => PromptGraph;
     /** The masked-edit matrix renderer (the edit bag's emission). */
     renderEdit: (entry: Record<string, unknown>, mask: EditMaskDial, reference: EditReferenceDial, p: Record<string, unknown>, facts: H3Facts, g: GraphBuilder, runId: string) => void;
+    /** THE TILED REPAIR BAG (the windows arc): N ≥ 2 hand-tiled
+     *  windows, each its own masked-edit chain on the one spine, joined
+     *  into ONE film by the film tail's join primitives. */
+    renderRepairBag: (bag: readonly unknown[], p: Record<string, unknown>, facts: H3Facts, g: GraphBuilder, runId: string) => void;
     reshootArmed: (p: Record<string, unknown>) => boolean;
     /** The overlay-gate assert (the single-call lift's judge). */
     assertOverlayGated: (doc: Record<string, unknown>, where: string) => void;

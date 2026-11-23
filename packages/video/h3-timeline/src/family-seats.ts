@@ -75,6 +75,16 @@ export type H3FamilySeat = {
     g: GraphBuilder,
     runId: string,
   ) => void
+  /** THE TILED REPAIR BAG (the windows arc): N ≥ 2 hand-tiled
+   *  windows, each its own masked-edit chain on the one spine, joined
+   *  into ONE film by the film tail's join primitives. */
+  renderRepairBag: (
+    bag: readonly unknown[],
+    p: Record<string, unknown>,
+    facts: H3Facts,
+    g: GraphBuilder,
+    runId: string,
+  ) => void
   reshootArmed: (p: Record<string, unknown>) => boolean
   /** The overlay-gate assert (the single-call lift's judge). */
   assertOverlayGated: (doc: Record<string, unknown>, where: string) => void
@@ -112,6 +122,7 @@ type H3MainModule = {
   h3DefaultLoraEntry?: H3FamilySeat['defaultLoraEntry']
   finalizeH3?: H3FamilySeat['finalize']
   renderH3Edit?: H3FamilySeat['renderEdit']
+  renderH3RepairBag?: H3FamilySeat['renderRepairBag']
   reshootArmed?: H3FamilySeat['reshootArmed']
   assertOverlayGated?: H3FamilySeat['assertOverlayGated']
   filmAdmissionNotices?: H3FamilySeat['filmAdmissionNotices']
@@ -150,6 +161,7 @@ export const primeFamilySeats = (): Promise<void> => {
         typeof main.h3DefaultLoraEntry !== 'function' ||
         typeof main.finalizeH3 !== 'function' ||
         typeof main.renderH3Edit !== 'function' ||
+        typeof main.renderH3RepairBag !== 'function' ||
         typeof main.reshootArmed !== 'function' ||
         typeof main.assertOverlayGated !== 'function' ||
         typeof main.filmAdmissionNotices !== 'function' ||
@@ -170,6 +182,7 @@ export const primeFamilySeats = (): Promise<void> => {
         defaultLoraEntry: main.h3DefaultLoraEntry,
         finalize: main.finalizeH3,
         renderEdit: main.renderH3Edit,
+        renderRepairBag: main.renderH3RepairBag,
         reshootArmed: main.reshootArmed,
         assertOverlayGated: main.assertOverlayGated,
         filmAdmissionNotices: main.filmAdmissionNotices,

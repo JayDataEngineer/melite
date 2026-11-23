@@ -182,12 +182,15 @@ export function deriveCommissions(params) {
         // THE STACKED BAGS (F29, 2026-10-30; GAPS-19, 2026-11-01): a
         // multi-entry kind projects ONE ROW PER ENTRY. `loras` stacks to
         // the family catalog (max_stack 4 — the distill adapter + the
-        // camera adapter) and `refine` stacks to the composed-window
-        // ceiling (each entry IS one refine window, max_stack 32), so
-        // naming only bag[0] would hide the second adapter / the second
-        // window — exactly the invisibility the operator reported on the
-        // loras face. Every other bag is one-entry by its own max_stack.
-        if (kind === 'loras' || kind === 'refine') {
+        // camera adapter), `refine` stacks to the composed-window
+        // ceiling (each entry IS one refine window, max_stack 32), and
+        // `repair` joined them (the windows arc): it is the ONE legacy
+        // kind whose multi-entry bag still composes (each entry IS one
+        // repair window), so naming only bag[0] would hide the second
+        // window's own mask and span — exactly the invisibility the
+        // operator reported on the loras face. Every other bag is
+        // one-entry by its own max_stack.
+        if (kind === 'loras' || kind === 'refine' || kind === 'repair') {
             for (const row of bag) {
                 const stacked = bagEntry([row]);
                 out.push(stacked === undefined
