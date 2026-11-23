@@ -43,8 +43,8 @@ export interface StudioDeclaration {
 declare const FOLD_GLYPHS: {
     readonly branch: import("react").FunctionComponentElement<import("@deepseek-ai/dsh-client-ui-primitives").IconProps>;
     readonly sliders: import("react").FunctionComponentElement<import("@deepseek-ai/dsh-client-ui-primitives").IconProps>;
-    readonly box: import("react").FunctionComponentElement<import("./icons.tsx").IconProps>;
-    readonly layers: import("react").FunctionComponentElement<import("./icons.tsx").IconProps>;
+    readonly box: import("react").FunctionComponentElement<import("./icons.js").IconProps>;
+    readonly layers: import("react").FunctionComponentElement<import("./icons.js").IconProps>;
 };
 /** A fold's glyph id — the palette's keys, typed at the call site. */
 export type FoldGlyph = keyof typeof FOLD_GLYPHS;

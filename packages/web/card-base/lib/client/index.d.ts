@@ -60,5 +60,5 @@ export declare function apply(ctx: Context): void;
  *  ordering note), and the boot loop runs synchronously, so any
  *  import-order seat is in place before the event loop can fire. */
 export declare function wireContractToastToRowStore(): void;
-export * from '../index.ts';
+export * from '../index.js';
 //# sourceMappingURL=index.d.ts.map
