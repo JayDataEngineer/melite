@@ -283,6 +283,16 @@ function healStoredStageAuthorship(doc: Record<string, unknown>): void {
   for (const row of stagesOf(doc)) healStageAuthorship(row);
 }
 
+/** THE STORED-ROWS PRESS-WORD READER HEAL (the same stored-rows law,
+ *  CONTRACTS.md §4 debt 6 — the seeds reopen burn): rows persisted
+ *  before the store shed the queue door's vocabulary serve shed. The
+ *  doc a card view opens cannot carry a word no surface declares. */
+function shedStoredStagePressWords(doc: Record<string, unknown>): void {
+  for (const row of stagesOf(doc)) {
+    if (isRecord(row["params"])) row["params"] = shedPressWords(row["params"]);
+  }
+}
+
 
 /** THE SEED-ANCESTOR WALK (the one-seat audit, 2026-10-31, depth
  *  BLOCKER: the landed inheritance covered only ensureBench's pure
@@ -317,6 +327,9 @@ function seedStagesFrom(parentDoc: Record<string, unknown>): Record<string, unkn
     if (live === "running" || live === "queued" || live === "pending") {
       copy["runStatus"] = "";
     }
+    // the copy is a fresh generation's row — it crosses the same
+    // store law every other write lands under (the seeds reopen burn)
+    if (isRecord(copy["params"])) copy["params"] = shedPressWords(copy["params"]);
     return copy;
   });
 }
@@ -443,6 +456,10 @@ export function normalizeStages(
       // the load arm's rows cross the same remote encoding — the
       // store-seat unwrap applies here too (wireParams law)
       row["params"] = wireParams(row["params"]);
+      // THE STORE SHEDS THE PRESS WORDS (the seeds reopen burn): a
+      // born or loaded row holds the card's knobs and the lawful lane
+      // words — the queue door's vocabulary stays at the press.
+      if (isRecord(row["params"])) row["params"] = shedPressWords(row["params"]);
       // THE STORED-ROWS COMPAT READER, BODY HALF: a row that arrived
       // (from storage or a caller body) carrying the legacy authorship
       // key heals onto the new key before the coordinate check below
@@ -758,6 +775,7 @@ export async function ensureBench(
   // serve and load arms (the stored-rows law, CONTRACTS.md §4 debt 6
   // — one-way: writes emit the new key only).
   healStoredStageAuthorship(doc);
+  shedStoredStagePressWords(doc);
   const block: BenchBlock = benchBlockOf(doc);
   if (body["stages"] === undefined) {
     return {
@@ -915,6 +933,12 @@ export function getBench(
   // stored-rows law, CONTRACTS.md §4 debt 6 — one-way: writes emit
   // the new key only).
   healStoredStageAuthorship(doc);
+  // THE STORED-ROWS PRESS-WORD READER HEAL (the same law — the seeds
+  // reopen burn): a bench persisted before the store shed serves
+  // shed, so the doc a card view opens carries only what a surface
+  // can declare. One-way, like the authorship heal: writes emit the
+  // shed bag only.
+  shedStoredStagePressWords(doc);
   // THE SERVE-TIME CRIME GATE (2026-10-10, the operator's live
   // report: a bench doc born BEFORE the bench/self-wire law
   // persisted its crime and served silently until a run tripped a
@@ -1175,6 +1199,10 @@ async function loadBench(
   // serve arm below): every mutation door births through loadBench,
   // so stored rows heal at the one deserialize point they share.
   healStoredStageAuthorship(doc);
+  // the press words shed at the same one point (the seeds reopen
+  // burn) — no mutation door judges or trails a word a row cannot
+  // keep.
+  shedStoredStagePressWords(doc);
   return { draftId, doc, block: benchBlockOf(doc) };
 }
 
@@ -1821,11 +1849,42 @@ function admitRestored(
   admit(card, strippedForAdmission(card, params), undefined);
 }
 
+/** THE PRESS WORDS (the seeds reopen burn, 2026-11-25): the queue
+ *  door's vocabulary, consumed at the press BEFORE any card composes
+ *  (expandSeedSweep; CARD_ENVELOPE_KEYS — "never a card knob"). The
+ *  write door's lane admission judges the LIFTED view, which sheds
+ *  this class, so a write carrying it judged clean while the STORED
+ *  row kept the raw bag — and the stored row is the card's reopen
+ *  truth, where the mirror refuses every key the served surface does
+ *  not declare. No model DECL declares any of these names, so the
+ *  shed never eats a knob; `model` is not here — a family address is
+ *  lawful row state (the family-address law) and rides verbatim. */
+const PRESS_ONLY_ROW_WORDS: readonly string[] = [
+  "seeds", "press_key", "bench_stage_id", "draft_id", "test", "service",
+  "yaml", "flow", "flow_inline",
+];
+
+/** The store's view of a params bag: the card's knobs and the lawful
+ *  lane words only. Idempotent — a row already shed sheds to itself.
+ *  @param params the bag as it arrived at a store or reader seat
+ *  @returns a fresh record without the press words (the input is
+ *  never mutated) */
+export function shedPressWords(
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  const shed: Record<string, unknown> = { ...params };
+  for (const word of PRESS_ONLY_ROW_WORDS) delete shed[word];
+  return shed;
+}
+
 /** The judged view of a row's params — the view the doc will HOLD
  *  (2026-10-10, the write-seat audit's row 7): normalizeBenchStage
  *  strips a self-naming model at store, so every admission seat
  *  judges the STRIPPED copy or the door refuses what the run
- *  composes. One spelling, used by every seat that admits a row. */
+ *  composes. One spelling, used by every seat that admits a row.
+ *  The press words shed here too (the seeds reopen burn): the judged
+ *  view and the stored row hold one bag — the write door never
+ *  judges a word the row is not allowed to keep. */
 export function strippedForAdmission(
   card: string,
   params: Record<string, unknown>,
@@ -1834,7 +1893,7 @@ export function strippedForAdmission(
   if (judged["model"] === card && !SELF_NAMED_FAMILIES.has(card)) {
     delete judged["model"];
   }
-  return judged;
+  return shedPressWords(judged);
 }
 
 function admitStage(
@@ -2265,6 +2324,10 @@ export async function addStageBench(
     },
     stageId,
   );
+  // THE STORE SHEDS THE PRESS WORDS (the seeds reopen burn): the
+  // judged view above shed them via strippedForAdmission; the stored
+  // row sheds the same class — the door judges and holds one bag.
+  row["params"] = shedPressWords(row["params"] as Record<string, unknown>);
   // THE WRITER EMITS THE NEW KEY ONLY (the stored-rows law,
   // CONTRACTS.md §4 debt 6): the legacy spelling is never written.
   row[AUTHORSHIP_KEY] = author;
@@ -2464,6 +2527,9 @@ export async function addStagesBench(
     );
     // the new key only, same writer law as the single add door
     row[AUTHORSHIP_KEY] = author;
+    // THE STORE SHEDS THE PRESS WORDS (the seeds reopen burn): every
+    // batch row lands under the same store law as the single add.
+    row["params"] = shedPressWords(row["params"] as Record<string, unknown>);
     if (isRecord(stageBody["expected"])) row["expected"] = stageBody["expected"];
     // D3-04 (c): every batch row carries its own settle stamp — the
     // press face judges each row's freshness per-row, never the
@@ -3335,6 +3401,10 @@ export async function undoBench(
     // dedup the load carry applies.
     for (const r of stagesOf(undoDoc)) {
       if (Array.isArray(r["history"])) r["history"] = trailDedupe(r["history"] as unknown[]);
+      // THE TRAIL SHED (the seeds reopen burn): a pre-cure trail row's
+      // press word never rides its inverse back onto the bench — the
+      // landing rows hold what a write door would land today.
+      if (isRecord(r["params"])) r["params"] = shedPressWords(r["params"]);
     }
     const restored = stagesOf(undoDoc);
     // THE STANDING-ID REFUSAL (CONTRACTS §4 debt 0 — the 2026-10-26

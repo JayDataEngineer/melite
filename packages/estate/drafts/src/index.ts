@@ -18,7 +18,7 @@ export { openDraftsDomain } from "./store.js";
 export { DRAFT_ID_RE, draftIdOk } from "./spec.js";
 export type { CharacterRecord } from "./spec.js";
 export type { BenchChangeSeam } from "./bench.js";
-export { setBenchChangeSeam } from "./bench.js";
+export { setBenchChangeSeam, shedPressWords } from "./bench.js";
 // The storage PROVIDER rows are GONE (retired 2026-09-10): the DSH
 // storage packages' pieces are composed at the COMPOSITION SITE —
 // dsh-base's rows in profiles, the boot rigs inline (DSH's own rig

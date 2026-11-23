@@ -3,7 +3,7 @@ import { DraftsDomainSeatService } from "./store.js";
 export { BenchRemoteService, DraftsRemoteService, installBenchChangeSeam } from "./remote.js";
 export { openDraftsDomain } from "./store.js";
 export { DRAFT_ID_RE, draftIdOk } from "./spec.js";
-export { setBenchChangeSeam } from "./bench.js";
+export { setBenchChangeSeam, shedPressWords } from "./bench.js";
 export const name = "estate-drafts";
 export function apply(ctx) {
     // the domain seat mounts FIRST — the remote services' writers open

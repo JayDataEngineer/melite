@@ -372,11 +372,20 @@ export type FamilyReseat = (card: string, params: Record<string, unknown>, prior
     params: Record<string, unknown>;
     dropped: readonly string[];
 } | null;
+/** The store's view of a params bag: the card's knobs and the lawful
+ *  lane words only. Idempotent — a row already shed sheds to itself.
+ *  @param params the bag as it arrived at a store or reader seat
+ *  @returns a fresh record without the press words (the input is
+ *  never mutated) */
+export declare function shedPressWords(params: Record<string, unknown>): Record<string, unknown>;
 /** The judged view of a row's params — the view the doc will HOLD
  *  (2026-10-10, the write-seat audit's row 7): normalizeBenchStage
  *  strips a self-naming model at store, so every admission seat
  *  judges the STRIPPED copy or the door refuses what the run
- *  composes. One spelling, used by every seat that admits a row. */
+ *  composes. One spelling, used by every seat that admits a row.
+ *  The press words shed here too (the seeds reopen burn): the judged
+ *  view and the stored row hold one bag — the write door never
+ *  judges a word the row is not allowed to keep. */
 export declare function strippedForAdmission(card: string, params: Record<string, unknown>): Record<string, unknown>;
 /** The wiring admission over ONE row (params = the MERGED view the
  *  next run composes; inputs = the MERGED wiring; liveIds = the
