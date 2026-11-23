@@ -845,7 +845,10 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // lib/timelineContract.js join (the models/h3 originals stay as
   // the family's re-export shim seats, already counted). Zero
   // deletions; --diff-filter=A is exactly these two files.
-  const LIB_CENSUS_PIN = 682;
+  // lib/aux-session-log.js joins (the drift-① cure's new emission
+  // module — the aux-call plugin record writer, melite-tools' lib).
+  // Zero deletions; --diff-filter=A is exactly this one file.
+  const LIB_CENSUS_PIN = 683;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

@@ -137,9 +137,18 @@
   //    (vendor/cordis_plugins/*) carry the upstream manifest's foundation
   //    row; cordis re-exports cosmokit so no vendored src imports it
   //    directly, and pnpm-workspace.yaml pins 1.8.5 estate-wide.
+  // 5. @deepseek-ai/dsh-session / dsh-llm / dsh-attachment -- the
+  //    aux-model-call-session-log wall (drift ① cure, 2026-11-23)
+  //    mounts REAL dsh Session/LlmConfig/Attachment carriers through
+  //    the melite-tools-anchored copies (vitest.shared.ts
+  //    RUNTIME_LIB_ALIAS row); the owning manifests declare them at
+  //    their packages, never at the root aggregator (item 1's law).
   "ignoreDependencies": [
     "@deepseek-ai/cordis-plugin-timer",
     "@deepseek-ai/cosmokit",
+    "@deepseek-ai/dsh-attachment",
+    "@deepseek-ai/dsh-llm",
+    "@deepseek-ai/dsh-session",
     "@deepseek-ai/dsh-storage",
     "@deepseek-ai/dsh-storage-domain",
     "@deepseek-ai/dsh-storage-json",

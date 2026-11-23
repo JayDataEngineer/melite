@@ -30,6 +30,7 @@
 import { describe, expect, it } from "vitest";
 import { draftIdOf } from "@melite/contracts/benchStage";
 import { BenchRemoteService, DraftsRemoteService } from "../src/remote.ts";
+import type { JsonValue } from "../src/remote.ts";
 import { bootCtx, sig, seed } from "./bench-helpers.ts";
 
 type Row = Record<string, unknown>;
@@ -61,7 +62,7 @@ function paramsOf(row: Row): Row {
 /** THE BURN BODY: the agent's add_stage whose params carry the sweep
  *  word beside the card's knobs (the AI meant the sweep; the queue
  *  door consumes it at the press — the row is not its seat). */
-const burnParams = (): Row => ({
+const burnParams = (): { [key: string]: JsonValue } => ({
   model: "moss-image",
   prompt: "a moss-covered stone bridge",
   seeds: [11, 22],
