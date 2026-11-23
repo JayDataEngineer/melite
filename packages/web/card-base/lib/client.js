@@ -13184,6 +13184,12 @@ window.__ModuleLoader__.load({
 		* @returns the assets-door display URL for an estate input path, else null.
 		*/
 		function estateInputUrl(value) {
+			const tail = value.lastIndexOf("data/input/");
+			if (tail > 0) {
+				const leaf = value.slice(tail + 11);
+				if (/^[^/]+$/.test(leaf) && IMAGE_EXT_RE.test(leaf)) return "/v1/assets/inputs/" + encodeURIComponent(leaf);
+				return null;
+			}
 			const m = /^data\/input\/([^/]+)$/.exec(value);
 			if (m === null) return null;
 			const name = m[1];

@@ -14,6 +14,18 @@ describe('estate input display mirror', () => {
     expect(estateInputUrl('data/input/x.png')).toBe('/v1/assets/inputs/x.png')
   })
 
+  it('heals the agent-landed host spelling of the same uploads leaf (the 2026-11-22 burn)', () => {
+    // THE ABSOLUTE-TAIL ARM: the agent's construct lands '/home/…/data/input/x.png'
+    // (the host spelling of the uploads leaf) — the same bytes the
+    // assets door serves. Without this arm the square painted the
+    // held face (the raw path as text) instead of the thumb.
+    expect(estateInputUrl('/home/user/estate/data/input/x.png')).toBe('/v1/assets/inputs/x.png')
+    expect(estateInputUrl('/mnt/data/input/a.jpeg')).toBe('/v1/assets/inputs/a.jpeg')
+    expect(estateInputUrl('data/input/../x.png')).toBeNull()
+    expect(estateInputUrl('/srv/data/input/sub/x.png')).toBeNull()
+    expect(estateInputUrl('/mnt/data/a.png')).toBeNull()
+  })
+
   it('percent-encodes the leaf name, never the path grammar', () => {
     expect(estateInputUrl('data/input/my file (1).webp'))
       .toBe('/v1/assets/inputs/my%20file%20(1).webp')

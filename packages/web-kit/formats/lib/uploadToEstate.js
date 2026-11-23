@@ -95,6 +95,23 @@ export function estateInputUrl(value) {
         return value;
     }
     const m = /^data\/input\/([A-Za-z0-9_-]+\.(?:png|jpe?g|webp))$/i.exec(value);
-    return m ? `/v1/assets/inputs/${m[1]}` : null;
+    if (m)
+        return `/v1/assets/inputs/${m[1]}`;
+    // THE ABSOLUTE-TAIL ARM (the agent-refs burn, 2026-11-22): the
+    // agent's construct lands the HOST spelling of the uploads leaf —
+    // '/home/…/data/input/x.png' — the same bytes the preview door
+    // serves. The leaf grammar is the door's own (one clean segment,
+    // the charset class above); every leading segment is address.
+    // A tail outside the uploads tree heals nothing (the held face
+    // stays the honest verdict for genuinely unresolvable values).
+    const tail = value.lastIndexOf('data/input/');
+    if (tail > 0) {
+        const leaf = value.slice(tail + 'data/input/'.length);
+        if (/^[A-Za-z0-9_-]+\.(?:png|jpe?g|webp)$/i.test(leaf)) {
+            return `/v1/assets/inputs/${leaf}`;
+        }
+        return null;
+    }
+    return null;
 }
 //# sourceMappingURL=uploadToEstate.js.map

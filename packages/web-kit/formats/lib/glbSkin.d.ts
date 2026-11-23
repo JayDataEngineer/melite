@@ -1,4 +1,4 @@
-import { type SomaSkin } from "./somaSkin.js";
+import { type SomaSkin } from "./somaSkin.ts";
 export declare class NotSomaxGlbError extends Error {
     constructor(reason: string);
 }

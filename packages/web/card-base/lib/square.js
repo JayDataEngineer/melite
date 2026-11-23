@@ -77,6 +77,24 @@ export function isImageUrl(value) {
  * @returns the assets-door display URL for an estate input path, else null.
  */
 export function estateInputUrl(value) {
+    // THE ABSOLUTE-TAIL ARM (the agent-refs burn, 2026-11-22): an
+    // agent-landed ref arrives as the HOST spelling of the same
+    // uploads currency — '/home/…/data/input/x.png' — a path no <img>
+    // can fetch and no earlier arm healed (runHostMediaUrl needs a
+    // run-id segment; isImageUrl passed the raw path and the browser's
+    // broken-image glyph flipped the face to the HELD text). The
+    // uploads tree is the leaf: every leading segment up to the LAST
+    // 'data/input/' pair is address, and the single-segment grammar
+    // the door enforces (doors.ts SEG) rides the leaf. A value whose
+    // tail is not the uploads tree still heals nothing.
+    const tail = value.lastIndexOf('data/input/');
+    if (tail > 0) {
+        const leaf = value.slice(tail + 'data/input/'.length);
+        if (/^[^/]+$/.test(leaf) && IMAGE_EXT_RE.test(leaf)) {
+            return '/v1/assets/inputs/' + encodeURIComponent(leaf);
+        }
+        return null;
+    }
     const m = /^data\/input\/([^/]+)$/.exec(value);
     if (m === null)
         return null;

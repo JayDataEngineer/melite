@@ -5536,7 +5536,7 @@ window.__ModuleLoader__.load({
 					continue;
 				}
 				if (bag.length === 0) continue;
-				if (kind === "loras" || kind === "refine") {
+				if (kind === "loras" || kind === "refine" || kind === "repair") {
 					for (const row of bag) {
 						const stacked = bagEntry([row]);
 						out.push(stacked === void 0 ? {

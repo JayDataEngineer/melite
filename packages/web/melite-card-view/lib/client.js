@@ -22899,24 +22899,25 @@ window.__ModuleLoader__.load({
 					for (const k of userKeys) if (touchedRef.current.has(k)) patch[k] = user[k];
 					for (const k of heldKeys) if (!userKeys.has(k) && (touchedRef.current.has(k) || droppedRef.current.has(k))) patch[k] = null;
 					const sameAsHeld = Object.keys(patch).length > 0 && Object.entries(patch).every(([k, v]) => heldKeys.has(k) && Object.is(held[k], v));
-					if (Object.keys(patch).length > 0 && !sameAsHeld) {
-						const baseAfterSync = { ...held };
-						for (const [k, v] of Object.entries(patch)) if (v === null) delete baseAfterSync[k];
-						else baseAfterSync[k] = v;
+					const baseAfterSync = { ...held };
+					for (const [k, v] of Object.entries(patch)) if (v === null) delete baseAfterSync[k];
+					else baseAfterSync[k] = v;
+					const ledgerFailed = stageWriteState(bench.draftId, stage.id).failedKeys.length > 0;
+					if (Object.keys(patch).length > 0 || !ledgerFailed) {
 						const gateViolations = composeGateViolations(spec, baseAfterSync, user, {});
 						if (gateViolations.length > 0) {
 							setError(gateViolations.map((v) => gateRefusalVoice(v)).join("\n"));
 							setGateSet(gateViolations);
 							return;
 						}
-						try {
-							await patchStageParamsChained(bench.draftId, stage.id, patch);
-						} catch {
-							setGateSet([]);
-							setError(unlandedWriteVoice(bench.draftId, stage.id, wedgeGhostKeys()));
-							onResync?.();
-							return;
-						}
+					}
+					if (Object.keys(patch).length > 0 && !sameAsHeld) try {
+						await patchStageParamsChained(bench.draftId, stage.id, patch);
+					} catch {
+						setGateSet([]);
+						setError(unlandedWriteVoice(bench.draftId, stage.id, wedgeGhostKeys()));
+						onResync?.();
+						return;
 					}
 					const fence = await refuseForUnlandedWrite(bench.draftId, stage.id, wedgeGhostKeys());
 					if (fence !== null) {

@@ -118,4 +118,14 @@ describe("estateInputUrl", () => {
     assert.equal(estateInputUrl("data/input/../x.png"), null);
     assert.equal(estateInputUrl("data/input/sub/a.png"), null);
   });
+
+  it("heals the agent-landed host spelling of the same uploads leaf (the 2026-11-22 burn)", () => {
+    // The absolute-tail arm: '/home/…/data/input/x.png' is the same
+    // uploads leaf the preview door serves — the host segments are
+    // address, the leaf is the file.
+    assert.equal(estateInputUrl("/home/user/estate/data/input/x.png"), "/v1/assets/inputs/x.png");
+    assert.equal(estateInputUrl("/mnt/data/input/a.jpeg"), "/v1/assets/inputs/a.jpeg");
+    assert.equal(estateInputUrl("/srv/data/input/sub/a.png"), null);
+    assert.equal(estateInputUrl("/mnt/data/a.png"), null);
+  });
 });
