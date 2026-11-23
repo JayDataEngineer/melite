@@ -165,8 +165,15 @@ for (const dir of [
   // build prints its own tail, naming the package and the cure door.
   const tsErr = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lane-rebuild-")), "tsdown.log");
   const fd = fs.openSync(tsErr, "w");
-  const run = spawnSync(path.join(dir, "node_modules", ".bin", "tsdown"), [], {
-    cwd: dir,
+  // THE BIN PATH IS ABSOLUTE (2026-11-23, the 127 burn): a relative
+  // program path with options.cwd re-resolves $0 from the CHILD's cwd
+  // — the pnpm shim's basedir doubled the package dir under itself and
+  // exec'd a path that does not exist (exit 127, misread as a missing
+  // devDep). resolve() pins both the program and its cwd to the repo
+  // root, so the shim's dirname is the real .bin wherever this runs.
+  const bin = path.resolve(dir, "node_modules", ".bin", "tsdown");
+  const run = spawnSync(bin, [], {
+    cwd: path.resolve(dir),
     stdio: ["ignore", fd, fd],
   });
   fs.closeSync(fd);
