@@ -1548,35 +1548,53 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       }
       const sameAsHeld = Object.keys(patch).length > 0
         && Object.entries(patch).every(([k, v]) => heldKeys.has(k) && Object.is(held[k], v))
-      if (Object.keys(patch).length > 0 && !sameAsHeld) {
-        // THE GATE JUDGES THE DOC THE PRESS LANDS (the post-sync
-        // base — the purge's P4 root, 2026-11-08): the flush's own
-        // nulls apply to the base BEFORE the gate judges. Judging
-        // the PRE-sync base refused states this very press deletes —
-        // the live B8 banner (a departed key the seed dropped, the
-        // flush about to null it, the gate refusing the ghost
-        // anyway). JSON Merge Patch semantics on the base: null
-        // deletes, values write; the touched writes are already the
-        // user overlay's verdicts, applied here too so the judged
-        // candidate is exactly the doc that reaches the bench.
-        const baseAfterSync: Record<string, unknown> = { ...held }
-        for (const [k, v] of Object.entries(patch)) {
-          if (v === null) delete baseAfterSync[k]
-          else baseAfterSync[k] = v
-        }
-        // THE COMPOSE GATE AT THE RUN SEAT: the full-doc sync is a
-        // write like any other — an invalid candidate refuses HERE,
-        // in the studio, before anything reaches the engine. THE
-        // SINGULARITY CURE: the WHOLE judged set lands on the ONE
-        // strip — one row per refusal, each row's words acting
-        // through its own field-named unstamp; the banner stands
-        // down for every voiced row (mutedViolations).
+      // THE GATE JUDGES THE STANDING DOC TOO (the cross-platform
+      // census red, 2026-11-22 run 45075393639): the judgment used
+      // to ride inside the write branch, so a press whose patch the
+      // settle retire had emptied SKIPPED the gate and ran a doc the
+      // drill's own write face had already promised to refuse
+      // (composePendingVoice judges the standing doc at keystroke
+      // time). The trailing flush landing before the press retires
+      // the touch and empties the patch — slow runners lose the
+      // press-before-flush race, and the refusal must not depend on
+      // winning it. THE POST-SYNC BASE (the purge's P4 root,
+      // 2026-11-08): the flush's own nulls apply to the base BEFORE
+      // the gate judges — JSON Merge Patch on the base: null
+      // deletes, values write — so the judged candidate is exactly
+      // the doc that reaches the bench. An emptied patch judges the
+      // live doc (the face's own surface); a touched patch judges
+      // the doc the press lands.
+      const baseAfterSync: Record<string, unknown> = { ...held }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null) delete baseAfterSync[k]
+        else baseAfterSync[k] = v
+      }
+      // THE COMPOSE GATE AT THE RUN SEAT: an invalid candidate
+      // refuses HERE, in the studio, before anything reaches the
+      // engine. THE SINGULARITY CURE: the WHOLE judged set lands on
+      // the ONE strip — one row per refusal, each row's words acting
+      // through its own field-named unstamp; the banner stands down
+      // for every voiced row (mutedViolations).
+      // THE LEDGER'S MEMORY SEAT (the press-wedge wall's ARM 3): a
+      // press carrying no fresh authoring over a ledger that
+      // remembers a refused write voices the FENCE below — its
+      // sentence names the cure from ledger truth (re-offer the
+      // null), which a fresh compose judgment cannot know. Every
+      // other press judges here: the fresh-authoring press beside a
+      // failed write (P1-J — the gate strip, never the fence voice),
+      // and the retired-touch press over a clean ledger (the
+      // settled-flush arm — the standing doc the write face promised
+      // to refuse).
+      const ledgerFailed = stageWriteState(bench.draftId, stage.id).failedKeys.length > 0
+      if (Object.keys(patch).length > 0 || !ledgerFailed) {
         const gateViolations = composeGateViolations(spec, baseAfterSync, user, {})
         if (gateViolations.length > 0) {
           setError(gateViolations.map((v) => gateRefusalVoice(v)).join('\n'))
           setGateSet(gateViolations)
           return
         }
+      }
+      if (Object.keys(patch).length > 0 && !sameAsHeld) {
         try {
           await patchStageParamsChained(bench.draftId, stage.id, patch)
         } catch {

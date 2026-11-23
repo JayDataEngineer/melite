@@ -35,6 +35,12 @@
 //     copy); the strip row key names BOTH field and message.
 //   P0-C sweep (5) — 0/1/2/3/5 ghost keys: banner 0, strip rows ==
 //     violation count, one unstamp per named field.
+//   P0-C settled-flush (1) — the trailing flush landed BEFORE the
+//     press (the loaded-runner timing): the touch retired, the patch
+//     is empty, and the press still refuses the standing doc — the
+//     strip owns the ghost, no run starts. Platform-robustness by
+//     construction: fast runners refuse through the write branch,
+//     slow runners through the standing-doc judge — same strip.
 //   P0-D mixed (1) — ghost + envelope on the strip, the
 //     requires word on the lane-warn seat, banner 0. The plan
 //     letter's split (strip owns the requires word too) is
@@ -72,6 +78,11 @@
 //   P0-C/E — the mutedViolations whole-set mute
 //     (stage-drill.tsx:1874-1878 → form.tsx:340-342): drop one
 //     message and the banner returns it beside the strip.
+//   P0-C settled-flush — the judge hoist (stage-drill.tsx:1551-1578
+//     gateViolations over baseAfterSync): move the judge back inside
+//     the write branch (guard it on patch non-empty && !sameAsHeld)
+//     and the settled-flush press starts the run — the arm's "starts
+//     no run" line reds, the exact win/macos shape.
 //   P0-D — route relations into the gate set
 //     (stage-drill.tsx:1486 setGateSet(gateViolations)) and the
 //     strip voices the requires word while the lane-warn seat keeps
@@ -621,6 +632,46 @@ describe("P0-C cardinality sweep — 0/1/2/3/5 ghosts, one row each, banner 0", 
       }
     });
   }
+});
+
+describe("P0-C settled-flush — a press after the trailing write landed still refuses (the platform-robustness arm)", () => {
+  test("a press after the flush retired the touch refuses the standing doc: the strip owns the ghost, no run starts", async () => {
+    // THE RACE ARM (the 2026-11-22 cross-platform red, run
+    // 45075393639: N=1 silenced ONLY on loaded win/macos runners):
+    // a press that arrives AFTER the 300ms trailing flush has
+    // landed and retired the touch carries an EMPTY patch — the
+    // old judge rode inside the write branch and skipped the gate
+    // entirely, so the run started over the very doc the write
+    // face already promised to refuse. This arm forces THAT
+    // timing (flush visibly landed before the press) so the
+    // outcome no longer depends on which lane of the race the
+    // runner wins. Deterministic BOTH ways: fast runners refuse
+    // through the write branch, slow runners refuse through the
+    // standing-doc judge — same strip, same silence downstream.
+    const params = ghostParams(1);
+    const spec = ghostSpecDoc();
+    const produced: ComposeViolation[] = composeValidate(spec, params);
+    expect(produced.length, "the mirror must emit the one ghost violation").toBe(1);
+    mountBench([stageWith("s_0", params)], spec);
+    await openDrill();
+    await typeText("an edit so the flush has a key");
+    // FORCE THE LOADED-RUNNER TIMING: the trailing flush (300ms)
+    // lands before the press, retires the touch, empties the
+    // press patch. The old cure skipped the gate here and the run
+    // started; the standing-doc judge refuses instead.
+    await waitFor(() => {
+      if (!patchParams().some((p) => p["text"] === "an edit so the flush has a key")) throw new Error("typed write not landed yet");
+    }, { timeout: LOADED_WAIT() * 4 / 15 });
+    expect(writeFaceEl(), "the pending face stands under the ghost while the touch settles").not.toBeNull();
+    await pressRun();
+    const strip = await awaitStrip();
+    expect((fakes?.calls ?? []).some((c) => c.method === "runs/start"), "the refused press starts no run").toBe(false);
+    expect(gateBanners().length, "the banner stands down for the carried message:\n  " + gateBanners().map((b) => b.textContent).join("\n  ")).toBe(0);
+    expect(strip.textContent ?? "", "the strip voices the ghost violation").toContain(produced[0]?.message ?? "g1");
+    const stamps = stripUnstamps();
+    expect(stamps.length, "one unstamp for the named field, got " + JSON.stringify(stamps.map((b) => b.getAttribute("aria-label")))).toBe(1);
+    expect(stamps.map((b) => b.getAttribute("aria-label")).join("|"), "field g1 owns an unstamp").toContain("g1");
+  });
 });
 
 describe("P0-D mixed-kind — ghost + envelope on the strip, requires on the lane-warn seat", () => {
