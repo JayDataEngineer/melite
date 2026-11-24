@@ -211,6 +211,64 @@ test('SLIDER: an out-of-span draft never writes; blur voices ONE sentence and re
   expect(screen.queryAllByRole('status').length).toBe(0)
 })
 
+test('SLIDER: a one-sided span names its own end (below/above), never an invented pair', () => {
+  const onEdit = vi.fn()
+  const low = render(h(SpecSliderAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', min: 4, step: 1 }),
+    value: 20, onEdit,
+  }))
+  fireEvent.change(screen.getByLabelText('Steps'), { target: { value: '2' } })
+  fireEvent.blur(screen.getByLabelText('Steps'))
+  expect(screen.getByRole('status').textContent).toMatch(/^Not applied — 2 is below 4\./)
+  expect(onEdit).not.toHaveBeenCalled()
+  low.unmount()
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'number', max: 30, step: 1 }),
+    value: 12, onEdit,
+  }))
+  fireEvent.change(screen.getByLabelText('Steps'), { target: { value: '99' } })
+  fireEvent.blur(screen.getByLabelText('Steps'))
+  expect(screen.getByRole('status').textContent).toMatch(/^Not applied — 99 is above 30\./)
+  expect(onEdit).not.toHaveBeenCalled()
+})
+
+test('SLIDER: a whitespace draft on the text face reverts on blur with no sentence and no write', () => {
+  const onEdit = vi.fn()
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'width', label: 'Width', type: 'number', min: 256, max: 7680, step: 16 }),
+    value: 'held-truth', onEdit, envelope: [256, 7680], step: 32,
+  }))
+  const box = screen.getByLabelText('Width') as HTMLInputElement
+  // a non-number truth keeps the text face, so spaces survive the DOM
+  expect(box.type).toBe('text')
+  // leaving with no draft settles nothing (no sentence, no write)
+  fireEvent.blur(box)
+  expect(screen.queryAllByRole('status').length).toBe(0)
+  fireEvent.change(box, { target: { value: '   ' } })
+  expect(onEdit).not.toHaveBeenCalled()
+  fireEvent.blur(box)
+  expect(screen.queryAllByRole('status').length).toBe(0)
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(box.value).toBe('held-truth')
+})
+
+test('SLIDER: blur after a land that re-states the held number retires the local text silently', () => {
+  const onEdit = vi.fn()
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'width', label: 'Width', type: 'number', min: 256, max: 7680, step: 16 }),
+    value: 5472, onEdit, envelope: [256, 7680], step: 32,
+  }))
+  const box = screen.getByLabelText('Width') as HTMLInputElement
+  // the same number in another spelling: it lands, yet the shown
+  // number never moves, so the local text is still the draft
+  fireEvent.change(box, { target: { value: '5472.0' } })
+  expect(onEdit).toHaveBeenCalledWith('width', '5472.0')
+  expect(box.value).toBe('5472.0')
+  fireEvent.blur(box)
+  expect(screen.queryAllByRole('status').length).toBe(0)
+  expect(box.value).toBe('5472')
+})
+
 test('SPEC ATOM: the image square builds when claimed; bare text when not (never a bare URL input)', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'img', label: 'Image', type: 'image' })
@@ -884,4 +942,10 @@ test('THE ZERO-LAW CHIP (cure D, 2026-10-28): a held 0 whose tooltip declares th
     value: 0, onEdit,
   }))
   assert.equal(container.querySelector('[data-zero-law="width"]'), null)
+  // a "0 =" tooltip with no closing period shows its whole sentence
+  rerender(h(SpecSliderAtom, {
+    f: F({ name: 'width', label: 'Width', type: 'slider', min: 0, max: 16384, step: 32, tooltip: '0 = inherit the source frame' }),
+    value: 0, onEdit,
+  }))
+  assert.equal(container.querySelector('[data-zero-law="width"]')?.textContent, '0 = inherit the source frame')
 })

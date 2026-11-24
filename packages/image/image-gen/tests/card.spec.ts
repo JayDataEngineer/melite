@@ -664,8 +664,8 @@ import {
 describe("the per-family canvas span (the model owns the floor and the ceiling)", () => {
   // THE CANVAS TRUTH CURE (operator order 2026-11-19: the form's
   // artificial ceiling refused the size the model publishes): the
-  // schema is the widest boarded family's span, and each DECL
-  // owns its own narrower span. h3-image's truth: per-side 480-7680
+  // schema is the widest boarded family's span, and each DECL owns
+  // its own narrower span. h3-image's truth: per-side 480-7680
   // (7680×2560 = the widest legal 3:1 pair at 19.66 MP) on a 32
   // grain, area 655,360-20,000,000 px, aspect 1:3-3:1.
   const pins: Array<[string, ModelDecl, number, number]> = [

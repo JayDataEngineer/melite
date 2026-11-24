@@ -49,9 +49,6 @@ export const chromeCopy = {
    *  so the sentence offers only the clear. */
   sliderDraftNoSpan: (): string =>
     'Not applied — this lane admits no value for this knob. Clear the box to leave it unstated.',
-  /** The draft refusal's span word when NEITHER side is bounded
-   *  (a malformed served field: the atom still owns one sentence). */
-  sliderDraftSpanFallback: (): string => 'outside the allowed range',
   /** Model axes heading + the model picker's accessible name (one word, two seats). */
   modelLabel: 'Model',
   /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */

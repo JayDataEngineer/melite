@@ -504,6 +504,15 @@ describe('judgeLaneSize / judgeLaneCanvas (the canvas pair law)', () => {
     assert.deepEqual(judgeLaneSize(h3, { width: 3552, height: 1184 }), [])
   })
 
+  it('a non-integer rail spells its own float; a non-finite side is silence; zero height names the ceiling', () => {
+    // no clean reciprocal and no integer: the refusal keeps the float
+    assert.match(judgeLaneSize({ maxAspect: 2.35 }, { width: 1024, height: 300 })[0]!.message, /aspect is at most 2\.35:1/)
+    // a non-finite side is not a stated pair (the card schema owns type)
+    assert.deepEqual(judgeLaneSize(h3, { width: Number.POSITIVE_INFINITY, height: 4096 }), [])
+    // zero height drives aspect to infinity, still ONE sentence
+    assert.match(judgeLaneSize({ maxAspect: 3 }, { width: 4096, height: 0 })[0]!.message, /aspect is at most 3:1/)
+  })
+
   it('a half pair, a blank, a non-number and a missing law never fire (authoring tolerance)', () => {
     assert.deepEqual(judgeLaneSize(h3, { width: 4096 }), [])
     assert.deepEqual(judgeLaneSize(h3, { height: 4096 }), [])

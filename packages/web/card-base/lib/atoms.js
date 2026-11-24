@@ -296,9 +296,11 @@ export function SpecSliderAtom({ f, value, onEdit, envelope, step }) {
             return 'outside ' + gapLo + '–' + gapHi;
         if (Number.isFinite(gapLo))
             return 'below ' + gapLo;
-        if (Number.isFinite(gapHi))
-            return 'above ' + gapHi;
-        return chromeCopy.sliderDraftSpanFallback();
+        // only the high end is finite here: a refusal is above it (the
+        // low-only span words itself in the arm above; both ends
+        // infinite admits every finite draft, and a disjoint span rides
+        // sliderDraftNoSpan instead of this sentence)
+        return 'above ' + gapHi;
     };
     const refusalText = refusal === null
         ? null

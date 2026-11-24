@@ -254,6 +254,11 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       // 2026-11-07) — read by the census arm of the door-stamp wall
       // (resolver-defaults-door-stamp.spec.ts arm 7)
       "required_defaults",
+      // THE CANVAS PAIR LAW (canvas burn, 2026-11-24) — the model
+      // family's native geometry (grain/area/aspect), read by the
+      // bench write door's laneVerdictCore (cardsRegistry.ts) and
+      // served to the form through laneContractOf
+      "size",
     ]);
     for (const key of carriedSet) {
       expect(owned.has(key), `the facts row carries '${key}', which no reader owns — a write-only column`).toBe(true);

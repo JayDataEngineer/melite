@@ -132,8 +132,9 @@ describe("the h3-image cell artifact pins (verbatim content law)", () => {
 
 // @contract models-h3-image-canvas-law (THE CANVAS TRUTH CURE,
 // 2026-11-19). THE OPERATOR BURN: the form's artificial ceiling
-// refused the size the model publishes — the DECL declared a 4096×4096 ceiling the model never had, so the form
-// refused the model's OWN recommended 4K pair (5472×3072). The
+// refused the size the model publishes — the DECL declared a
+// 4096×4096 ceiling the model never had, so the form refused the
+// model's OWN recommended 4K pair (5472×3072). The
 // truth is the model's published canvas: sides 480–7680 on a 32
 // grain, area 655,360–20,000,000 px, aspect 1:3–3:1. This arm walls
 // the DECL's own rows — the per-field bounds AND the pair law the

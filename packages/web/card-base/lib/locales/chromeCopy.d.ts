@@ -49,9 +49,6 @@ export declare const chromeCopy: {
      *  EMPTY (a disjoint envelope ∩ bounds) — no typed value can land,
      *  so the sentence offers only the clear. */
     readonly sliderDraftNoSpan: () => string;
-    /** The draft refusal's span word when NEITHER side is bounded
-     *  (a malformed served field: the atom still owns one sentence). */
-    readonly sliderDraftSpanFallback: () => string;
     /** Model axes heading + the model picker's accessible name (one word, two seats). */
     readonly modelLabel: "Model";
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */

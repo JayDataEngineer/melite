@@ -16,9 +16,6 @@ export const chromeCopy = {
      *  EMPTY (a disjoint envelope ∩ bounds) — no typed value can land,
      *  so the sentence offers only the clear. */
     sliderDraftNoSpan: () => 'Not applied — this lane admits no value for this knob. Clear the box to leave it unstated.',
-    /** The draft refusal's span word when NEITHER side is bounded
-     *  (a malformed served field: the atom still owns one sentence). */
-    sliderDraftSpanFallback: () => 'outside the allowed range',
     /** Model axes heading + the model picker's accessible name (one word, two seats). */
     modelLabel: 'Model',
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */

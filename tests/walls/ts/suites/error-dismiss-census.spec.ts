@@ -188,6 +188,13 @@ function specPairedFaces(roster: Set<string>): Set<string> {
 const UNSTATED_FROZEN = new Set([
   'btnDanger', 'dangerVerb', 'dotBad', 'errorCode', 'missing',
   'operatorBadge', 'rescueErr', 'rowError', 'stateBad', 'wireUnwire',
+  // THE DRAFT-REFUSAL PAIR (canvas burn, 2026-11-24): the slider's
+  // refused input and its ONE local sentence. These are TRANSIENT
+  // validation seats, not dismissible error messages — both retire
+  // by cure (the next legal keystroke or blur reverts the box), so a
+  // dismiss × would be a second control on a face that resolves
+  // itself; the drill/banner row owns the dismissible error.
+  'specSliderInput', 'specSliderRefusal',
 ])
 
 describe('THE ERROR-DISMISS CENSUS — every served error seat carries × + anchor (audit 017 C2)', () => {

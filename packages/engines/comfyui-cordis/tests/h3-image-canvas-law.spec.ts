@@ -5,10 +5,13 @@
 // flip — while every family-scoped surface the agent reads was silent
 // or missing the law). The wall pins the law's TWO seats: the t2i
 // skill's canvas-law section (the agent's pre-compose reading path)
-// and the DECL's own lane row (description + the 2048×2048 default
+// and the DECL's own lane row (description + the 2K drafting default
 // the compose door fills when no canvas is stated). The law must name
-// the working band, the family default, AND the inheritance hazard —
-// a law that omits the hazard teaches the exact burn it survived.
+// the model's native-4K envelope, the drafting default, AND the
+// inheritance hazard — a law that omits the hazard teaches the exact
+// burn it survived. (2026-11-24 canvas truth cure: the old wall pinned
+// a 2048-class working band the model never had; the checkpoint is
+// native 4K, and the operator's own recommended pairs are the law.)
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -24,10 +27,15 @@ const skill = flat(readFileSync(T2I_SKILL, "utf8"));
 
 describe("the h3-image canvas law (promgen A4 — 832×1216 rode a model flip seven times)", () => {
   it("the t2i skill carries the canvas law: the working band, the family default, the low-canvas verdict", () => {
-    // the band, in the node's own terms
-    expect(skill).toMatch(/2048-class working area/);
-    expect(skill).toMatch(/~2048×2048 pixels, 32-multiple canvas/);
-    // the family default the compose door fills
+    // the model's own envelope, in its published units
+    expect(skill).toMatch(/native-4K model \(~16 MP\)/);
+    expect(skill).toMatch(/2K\s*drafting floor/);
+    expect(skill).toMatch(/area 655,360–20,000,000\s*px/);
+    expect(skill).toMatch(/aspect 1:3–3:1/);
+    // the model's recommended pairs, the 4K set above the 2K default
+    expect(skill).toMatch(/4096×4096/);
+    expect(skill).toMatch(/7104×2368/);
+    // the drafting default the compose door fills
     expect(skill).toMatch(/width: 2048, height: 2048/);
     // the low-canvas verdict — the operator's own ruling voiced
     expect(skill).toMatch(/doesn't work well in low resolution/);
@@ -41,10 +49,12 @@ describe("the h3-image canvas law (promgen A4 — 832×1216 rode a model flip se
     expect(skill).toMatch(/Restate\s*width\/height when switching onto this family/);
   });
 
-  it("the DECL lane row carries the same law — the description's area law and the 2048² default", () => {
+  it("the DECL lane row carries the same law — the native-4K envelope and the 2K drafting default", () => {
     const desc = flat(String(DECL.description ?? ""));
-    expect(desc).toMatch(/~2048x2048 pixels of working area/);
-    expect(desc).toMatch(/composes low-resolution work poorly/);
+    expect(desc).toMatch(/native 4K \(~16 MP\)/);
+    expect(desc).toMatch(/655,360–20,000,000 px/);
+    expect(desc).toMatch(/aspect 1:3–3:1/);
+    expect(desc).toMatch(/4096x4096/);
     const defaults = DECL.defaults as Record<string, unknown> | undefined;
     expect(defaults?.width).toBe(2048);
     expect(defaults?.height).toBe(2048);
