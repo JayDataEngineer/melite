@@ -31,7 +31,7 @@
   {
     "name": "melite-autorig-nodes",
     "url": "https://github.com/JayDataEngineer/melite-autorig-nodes",
-    "ref": "11440daf6b3727176b42506188b76eaedc6d6560",
+    "ref": "1a473f1fc53d385c4228b312e5b44fcdcefab449",
     "required": true,
     "desc": "KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist) + KimodoExportFBX (SOMA-77 weight transfer, GLB out — the blender arms deleted 2026-11-01).",
     "pip": [],
