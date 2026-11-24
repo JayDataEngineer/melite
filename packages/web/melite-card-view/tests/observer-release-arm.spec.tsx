@@ -3,13 +3,20 @@
 // wall (audit V-S7, round13-cures: the cure note said "the named
 // catch is the honest brace, no new wall" — the 2026-11-18 coverage
 // ratchet disagreed, and rightly: an unowned brace is a law nobody
-// re-fires). The invariant: whatever observeRunOutcome does — settle
-// OR explode — the tile map gives the run id back, so Stop never
-// targets a dead run forever. The real observer resolves on EVERY
-// honest wire path (the CRITICAL-2 transport-escalation law), so the
-// thrown settle is armed here at the module seam: one rejected
-// promise, everything else actual. Toggle the onStarted catch out and
-// this arm reds — the stop stays armed on the exploded run.
+// re-fires). The invariant after the 2026-11-24 stop-address cure:
+// whatever observeRunOutcome does — settle OR explode — the tile map
+// gives the run id back, AND the served row carries its own
+// `result.run_id`, so a thrown settle can no longer leave a live
+// card's Stop dead: the press re-addresses the row's run and the
+// cancel door — not this tab's memory — judges whether it still
+// stops (a settled run refuses with its own word). The fence
+// consequence of the release (a re-run is not blocked by a dead map
+// entry) is asserted at run-gate.spec.tsx. The real observer resolves
+// on EVERY honest wire path (the CRITICAL-2 transport-escalation
+// law), so the thrown settle is armed here at the module seam: one
+// rejected promise, everything else actual. Toggle the row-address
+// fallback out and this arm reds — the stop goes unavailable on a
+// row the estate still lists as live.
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
@@ -60,7 +67,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("THE OBSERVER'S RELEASE: a THROWN settle still returns the run id — Stop never arms on a dead run", async () => {
+test("THE OBSERVER'S RELEASE: a THROWN settle still gives the map back — and Stop stays addressed to the row's run", async () => {
   vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path === "/v1/bench/ensure") {
@@ -122,10 +129,23 @@ test("THE OBSERVER'S RELEASE: a THROWN settle still returns the run id — Stop 
     if ((stop as HTMLButtonElement).disabled) throw new Error("stop not armed — the start never seated the map");
   }, { timeout: 5000 });
 
-  // the observer EXPLODES mid-watch — the brace must still return
-  // the id (a dead run's Stop is a lie aimed at the wire).
+  // the observer EXPLODES mid-watch — the brace still returns the id
+  // to the map (the V-S7 release; the fence consequence rides
+  // run-gate). The row itself keeps its `result.run_id` stamp, so the
+  // live card's Stop stays ADDRESSABLE: the tab no longer judges the
+  // run dead by losing its observer — the cancel door owns that
+  // verdict, and a settled run refuses with its own word.
   observerSeat.reject!(new Error("observer exploded mid-poll"));
   await waitFor(() => {
-    if (!(stop as HTMLButtonElement).disabled) throw new Error("stop still armed on the exploded run — the tile map orphaned it");
+    const stop = document.querySelector('[data-testid="tile-stop"]');
+    if (stop === null) throw new Error("the stop face vanished with the observer — a live row must keep its Stop");
+    if (stop.getAttribute("aria-disabled") !== null) {
+      throw new Error("the stop went unavailable on the row's own run id — the row address was never consulted");
+    }
   }, { timeout: 5000 });
+  fireEvent.click(screen.getByTestId("tile-stop"));
+  await waitFor(() => {
+    expect(fakes.calls.some((c) => c.method === "runs/stop"
+      && (c.args as Record<string, unknown>)["runId"] === "run-1")).toBe(true);
+  });
 });

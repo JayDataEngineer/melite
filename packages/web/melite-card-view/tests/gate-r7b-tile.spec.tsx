@@ -6,7 +6,8 @@
 // check-circle arms (✓ + checkOn class vs empty), the selection
 // click (onToggleSelect, never onOpen), the chrome absence (no
 // trash, no run/stop), and the grouping data marks; plus the
-// running stop's disabled arm (activeRunId null), the four tile
+// running stop's never-swallow arm (activeRunId null still hands the
+// press to the owner), the four tile
 // faces, and the card-drop no-op arms.
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi, type Mock } from "vitest";
@@ -164,18 +165,27 @@ describe("grouping mode — selection replaces chrome and reorder", () => {
   });
 });
 
-describe("the running stop — no run id, no arming", () => {
-  test("a running row with a null run id disables its stop (never a live lie)", () => {
-    mountTile(benchRow(stage({ runStatus: "running" })), { activeRunId: null });
+describe("the running stop — never a swallowed press", () => {
+  test("a running row with a null run id announces its stop unavailable but the press still reaches the owner", () => {
+    // THE NEVER-SWALLOW LAW (2026-11-24): a native `disabled`
+    // attribute dropped the operator's click with no word and no
+    // cursor cue — the tile now marks the affordance unavailable
+    // (aria-disabled) and still hands the press to the owner, which
+    // voices the miss. The tile itself never invents a verdict.
+    const spies = mountTile(benchRow(stage({ runStatus: "running" })), { activeRunId: null });
     expect(tileLi("s_0").querySelector('[data-testid="tile-spin"]')).not.toBeNull();
     const stop = screen.getByTestId("tile-stop");
     expect(stop.getAttribute("aria-label")).toBe("Stop run");
-    expect((stop as HTMLButtonElement).disabled).toBe(true);
+    expect(stop.getAttribute("aria-disabled")).toBe("true");
+    expect((stop as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(stop);
+    expect(spies.onStop).toHaveBeenCalledTimes(1);
   });
 
   test("a running row with a run id arms its stop", () => {
     mountTile(benchRow(stage({ runStatus: "running" })), { activeRunId: "run-1" });
     expect((screen.getByTestId("tile-stop") as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByTestId("tile-stop").getAttribute("aria-disabled")).toBeNull();
   });
 });
 

@@ -21,7 +21,7 @@ const SAVE_DIAL_MS = 20_000
 import type { StageViewOwnerProps } from './types.ts'
 import type { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop, isMalformedCapabilityDrop } from './dnd-payloads.ts'
-import { benchRow, groupStagesByCard, rowRunning, type CardRowLineTabRow } from './bench-row.ts'
+import { benchRow, groupStagesByCard, rowRunning, rowRunId, type CardRowLineTabRow } from './bench-row.ts'
 import { useCardLabels } from './card-labels.ts'
 import { SortableTile } from './sortable-tile.tsx'
 import { StageDrill } from './stage-drill.tsx'
@@ -663,7 +663,13 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
                   onRun: (r) => onRunStage(r.stage),
                   onStop: (r) => onStopStage(r.stage),
                   onRemove: (r) => onRemoveStage(r.stage),
-                  activeRunId: stageRuns[s.id] ?? null,
+                  // THE STOP ADDRESS (2026-11-24, the operator's
+                  // "the stop button does nothing" burn): the tab's
+                  // map only knows runs THIS pane started; the row's
+                  // own `result.run_id` names the run every pane can
+                  // stop (reload, second tab, remount). Without the
+                  // fallback a live card rendered a disabled Stop.
+                  activeRunId: stageRuns[s.id] ?? rowRunId(s),
                 })
               }),
               h('li', { className: css.tile + ' ' + css.tileAdd },

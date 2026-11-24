@@ -61,6 +61,23 @@ export function rowRunning(row: CardRowLineTabRow): boolean {
   return s === 'running' || s === 'queued'
 }
 
+/** THE ROW'S OWN RUN (the stop-address cure, 2026-11-24): the run id
+ *  the outcome observer stamps into `result.run_id` at the start patch
+ *  and keeps on the terminal patch — the estate-served truth a tab
+ *  that did NOT start the run still holds (a reload, a second tab, the
+ *  bench re-mounted while another pane runs the card). The tile's and
+ *  the drill's Stop target it when this tab's in-memory run map has no
+ *  entry; null when the row carries none (nothing addressable).
+ * @param stage the bench row's stage as the served doc carries it
+ * @returns the run id, or null when absent/empty/non-string */
+export function rowRunId(stage: BenchStageView): string | null {
+  const result = typeof stage.result === 'object' && stage.result !== null
+    ? stage.result as Record<string, unknown>
+    : null
+  const rid = result?.['run_id']
+  return typeof rid === 'string' && rid !== '' ? rid : null
+}
+
 /** The bench stage as a card row (the same distillation cardRows()
  *  performs for the chat plane). */
 export interface CardRowLineTabRow {

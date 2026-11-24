@@ -631,8 +631,10 @@
   opacity: 1;
 }
 
-.tileIconBtn:disabled {
+.tileIconBtn:disabled,
+.tileIconBtn[aria-disabled="true"] {
   cursor: default;
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .tileTrash {

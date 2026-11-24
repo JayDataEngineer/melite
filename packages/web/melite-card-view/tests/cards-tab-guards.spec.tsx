@@ -466,9 +466,12 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
     const s1stop = stops.find((el) => ownerOf(el) === "s_1") as HTMLButtonElement | undefined;
     expect(s0stop).toBeTruthy();
     expect(s1stop).toBeTruthy();
-    // the pass's in-flight card is stoppable; the waiting card is not
+    // the pass's in-flight card is stoppable; the waiting card has no
+    // run id yet — announced unavailable, but its press is never
+    // swallowed (the owner voices the miss)
     expect(s0stop?.disabled).toBe(false);
-    expect(s1stop?.disabled).toBe(true);
+    expect(s1stop?.disabled).toBe(false);
+    expect(s1stop?.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(s0stop ?? stops[0]);
     await waitFor(() => {
       expect(calls().some((p) => p.method === "runs/stop"
@@ -524,5 +527,59 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
     });
     fireEvent.click(await screen.findByTestId("tile-stop", {}, { timeout: 4000 }));
     expect(await screen.findByText("stop failed", {}, { timeout: 4000 })).toBeTruthy();
+  });
+});
+
+describe("the row's own run — a live card stops from any pane (2026-11-24 burn)", () => {
+  // THE BURN: an operator pressed the Stop button on a generating
+  // card, every generation, and nothing happened — no word, and the
+  // render landed anyway. The tile's Stop was natively `disabled`
+  // whenever this mounted pane's in-memory run map had no entry, and
+  // that map only ever knows runs THIS pane started: a reload, a
+  // second tab, or the bench pane re-mounted while another pane
+  // pressed Run left it empty for the whole live run (the lane's
+  // ledger: zero stop rows across the burned session). The served row
+  // ALREADY carries its run id (`result.run_id`, stamped by the start
+  // patch) — every pane can address it.
+  const liveRow = (over: Record<string, unknown> = {}): BenchStageView => ({
+    id: "s_0", card: "image-gen", engine: "comfyui", params: {},
+    runStatus: "running", result: { run_id: "run-adopted" }, ...over,
+  });
+
+  test("a live row the tab never started arms the tile stop from the row's run id", async () => {
+    const row = liveRow();
+    mount({ stages: [row], docStages: [row] });
+    const stop = await screen.findByTestId("tile-stop", {}, { timeout: 4000 });
+    // armed — not the disabled swallow: the press is addressable
+    expect(stop.getAttribute("aria-disabled")).toBeNull();
+    fireEvent.click(stop);
+    await waitFor(() => {
+      expect(calls().some((p) => p.method === "runs/stop"
+        && (p.args as Record<string, unknown>)["runId"] === "run-adopted")).toBe(true);
+    });
+  });
+
+  test("the drill's stop on that same live row rides runs/stop (never a silent no-op)", async () => {
+    const row = liveRow();
+    mount({ stages: [row], docStages: [row] });
+    const user = userEvent.setup();
+    await waitFor(() => { expect(firstTile()).toBeTruthy(); });
+    await user.click(firstTile());
+    const drillStop = await screen.findByTestId("drill-stop", {}, { timeout: 4000 });
+    fireEvent.click(drillStop);
+    await waitFor(() => {
+      expect(calls().some((p) => p.method === "runs/stop"
+        && (p.args as Record<string, unknown>)["runId"] === "run-adopted")).toBe(true);
+    });
+  });
+
+  test("a live row with no run id voices the miss instead of dropping the press", async () => {
+    const row = liveRow({ result: undefined });
+    mount({ stages: [row], docStages: [row] });
+    const stop = await screen.findByTestId("tile-stop", {}, { timeout: 4000 });
+    expect(stop.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(stop);
+    expect(await screen.findByText("nothing to stop — this card carries no run id to cancel", {}, { timeout: 4000 })).toBeTruthy();
+    expect(calls().some((p) => p.method === "runs/stop")).toBe(false);
   });
 });

@@ -218,7 +218,14 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
             ? h('button', {
                 className: css.tileIconBtn + ' ' + css.tileRunBtn,
                 type: 'button', 'aria-label': chromeCopy.stopRun, 'data-testid': 'tile-stop',
-                disabled: activeRunId === null,
+                // THE NEVER-SWALLOW LAW (2026-11-24, the operator's
+                // "I press stop and it completely ignores me" burn):
+                // an unaddressable run is ANNOUNCED unavailable, but
+                // the press still reaches the owner — a native
+                // `disabled` attribute swallowed the click with no
+                // cursor change and no word, the silent no-op the
+                // burn names. The owner voices the miss.
+                'aria-disabled': activeRunId === null ? true : undefined,
                 onClick: (e: React.MouseEvent) => { e.stopPropagation(); onStop(row) },
               }, h(IconStopFillRegular, { size: 14 }))
             : h('button', {

@@ -5,6 +5,7 @@
 // fetch, no DOM.
 import { describe, expect, test } from "vitest";
 import { benchRow } from "../src/client/CardsTab.tsx";
+import { rowRunId } from "../src/client/bench-row.ts";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
 
@@ -129,5 +130,19 @@ describe("benchRow — the upstream badge's resolution", () => {
       bench([parent]),
     );
     expect(row.upstream).toBeNull();
+  });
+});
+
+describe("rowRunId — the row's own stop address (2026-11-24)", () => {
+  test("a stamped result names its run", () => {
+    expect(rowRunId(stage({ id: "s_0", result: { run_id: "run-1" } }))).toBe("run-1");
+  });
+
+  test("no stamp, an empty word, a non-string, or a non-object result is no address", () => {
+    expect(rowRunId(stage({ id: "s_0" }))).toBeNull();
+    expect(rowRunId(stage({ id: "s_0", result: {} }))).toBeNull();
+    expect(rowRunId(stage({ id: "s_0", result: { run_id: "" } }))).toBeNull();
+    expect(rowRunId(stage({ id: "s_0", result: { run_id: 42 } }))).toBeNull();
+    expect(rowRunId(stage({ id: "s_0", result: "run-1" }))).toBeNull();
   });
 });

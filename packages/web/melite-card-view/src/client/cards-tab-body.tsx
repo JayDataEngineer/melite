@@ -68,6 +68,7 @@ import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePrevi
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 import { BenchView } from './bench-view.tsx'
+import { rowRunId } from './bench-row.ts'
 import { DraftView, RunView } from './draft-run-views.tsx'
 import { rejectionVoice } from './rejection-voice.ts'
 import { chromeCopy } from '../chromeCopy.ts'
@@ -604,8 +605,24 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // and queues the state write, so a click inside the settle-to-paint
     // window closes over the STALE map and would wire a stop for a
     // run that already answered (a cancel refuses, voicing a lie).
-    const rid = stageRunsRef.current[stage.id]
-    if (rid === undefined) return
+    // THE ROW'S OWN ADDRESS (2026-11-24, the operator's burn: "I press
+    // the stop button on a card and it completely ignores me, every
+    // generation, and the render lands"): the map only knows runs THIS
+    // mounted pane started — a reload, a second tab, or the bench pane
+    // re-mounted while another pane pressed Run leaves it empty, the
+    // tile's Stop renders disabled, and the press reaches no door at
+    // all (the ledger: zero stop rows across the whole burned
+    // session). The row the tile SHOWS carries its run id
+    // (`result.run_id`, stamped by the start patch) — the run stop
+    // must target. The map stays first: an armed entry is the freshest
+    // local truth and is cleared only when ITS run settles.
+    const rid = stageRunsRef.current[stage.id] ?? rowRunId(stage)
+    if (rid === null) {
+      // THE VOICED MISS (never a silent drop): a live card with no
+      // addressable run says so instead of swallowing the press.
+      setLocalRunError(verbClaim('stop', chromeCopy.stopNoRun))
+      return
+    }
     void stopRun(rid)
       .then(() => { setLocalRunError(clearVerb('stop')) })
       .catch((e: unknown) => {

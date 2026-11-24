@@ -165,6 +165,11 @@ export const chromeCopy = {
     removeStage: 'Remove stage',
     /** Tile + zoom stop button accessible name. */
     stopRun: 'Stop run',
+    /** THE VOICED STOP MISS (2026-11-24): a live card's Stop whose row
+     *  carries no run id (no addressable run) — the press voices why
+     *  instead of passing silently (the operator's burn: "it completely
+     *  ignores me"). */
+    stopNoRun: 'nothing to stop — this card carries no run id to cancel',
     /** Tile + zoom run button accessible name. */
     runStage: 'Run stage',
     /** Tile wired-mark hover (the agent-recorded inputs.source edge). */
