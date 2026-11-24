@@ -22,6 +22,10 @@
  *                                (walls render hermetic roots through
  *                                config — never an env redirect)
  *   --profile-rows <file>       operator rows (llm providers…), verbatim
+ *   --re-parent                 accept re-rendering a lane profile whose
+ *                                provenance names a DIFFERENT tree (the
+ *                                pairing fence refuses by default — the
+ *                                2026-11-24 :3089 boot loop's cure)
  *
  * Rendered profiles mount the SAME melite rows the bundle patch mounts
  * (the bundle owns the rows, so `dsh plugin add` and rendered profiles
@@ -46,6 +50,59 @@ import process from 'node:process'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PROVISIONER = dirname(HERE) // bin/ -> the provisioner package itself
+const RENDER_ROOT = resolve(PROVISIONER, '../../..')
+export { RENDER_ROOT }
+
+// THE LANE-PAIRING FENCE (2026-11-24, the :3089 morning boot loop).
+// The render is self-locating: repoRoot, the link: dependencies and the
+// estate's runs root all pin the tree this file runs from. A lane
+// profile rendered last from tree A and re-rendered from tree B is
+// re-parented wholesale — the lane's unit keeps serving tree A while
+// every row binds tree B, and the estate boots into ANOTHER estate's
+// runs root. That is the exact morning burn: a render from the dev
+// workspace pinned :3089 at the dev lane's runs root, the gateway lock
+// refused the collision, the estate seats never settled, and every
+// agent preset naming a subagent tool failed session validation. The
+// provenance stamp (F5) already remembers the pairing; the render door
+// now enforces it. Pure predicates — the wall arms them with fixtures
+// and drives the real bin for its firing arm.
+export function pairingVerdict(prevRoot, currentRoot, { reParent = false } = {}) {
+  if (prevRoot === null || prevRoot === undefined) return { ok: true, reParented: false }
+  if (prevRoot === currentRoot) return { ok: true, reParented: false }
+  if (reParent) return { ok: true, reParented: true }
+  return {
+    ok: false,
+    reParented: false,
+    refusal: 'refusing to re-render a lane profile last rendered from ' + prevRoot
+      + ' — this render runs from ' + currentRoot
+      + ', so repoRoot, the link: dependencies and the estate runs root would ALL repin to '
+      + currentRoot
+      + ' (the 2026-11-24 :3089 boot loop: a foreign-tree render pinned the lane at another '
+      + "estate's runs root). Render from " + prevRoot + ' (the tree the lane serves), or pass '
+      + '--re-parent to accept the new pairing loud.'
+  }
+}
+
+/** Read the profile dir's existing provenance stamp and judge the
+ *  pairing against `currentRoot`. Absent or unparseable stamps compare
+ *  as a first render (the foreign-file gate is F1's, at the
+ *  package.json write — this fence judges pairing only).
+ *  @param dst profile dir (may not exist yet)
+ *  @param opts reParent accepts a mismatch loud; currentRoot overrides
+ *         the render's own root (tests)
+ *  @returns the {@link pairingVerdict} shape plus the previous root */
+export function enforcePairing(dst, { reParent = false, currentRoot = RENDER_ROOT } = {}) {
+  let prev = null
+  try {
+    const prov = JSON.parse(readFileSync(join(dst, 'render-provenance.json'), 'utf8'))
+    if (prov !== null && typeof prov === 'object' && prov.renderer === 'infer-provision'
+        && prov.source !== null && typeof prov.source === 'object') {
+      prev = typeof prov.source.root === 'string' ? prov.source.root : null
+    }
+  } catch { /* no stamp, or unparseable: nothing to compare */ }
+  const verdict = pairingVerdict(prev, currentRoot, { reParent })
+  return { ...verdict, prevRoot: prev }
+}
 
 // ── args ────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2)
@@ -66,6 +123,7 @@ const PROFILE_ROWS = flag('--profile-rows', '')
 // used to be regenerated silently: dependencies rewritten, the
 // original gone. See the guard at the package.json write.
 const FORCE_RENDER = argv.includes('--force-render')
+const RE_PARENT = argv.includes('--re-parent')
 
 const log = (...a) => console.log(...a)
 const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1) }
@@ -126,7 +184,7 @@ function releaseLock(dst) {
 // plane — the loader reads package.json/cordis.* only), the
 // fossil-vs-fresh question answered without archaeology.
 function provenanceDoc(name, provPkg, bundles, profileRowsSha) {
-  const root = resolve(PROVISIONER, '../../..')
+  const root = RENDER_ROOT
   let commit = null
   let dirty = null
   try {
@@ -226,7 +284,7 @@ const PROFILE_BASES = {
  *  install — the profile dir is its own install, so the renderer
  *  resolves them itself). @returns Map<name, absolute dir> */
 function workspacePackages() {
-  const root = resolve(PROVISIONER, '../../..')
+  const root = RENDER_ROOT
   const wsFile = join(root, 'pnpm-workspace.yaml')
   const out = new Map()
   if (!existsSync(wsFile)) return out
@@ -275,6 +333,15 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
   const bundles = PROFILE_BASES[name]
   const dst = join(DSH_HOME, 'profiles', name)
   mkdirSync(dst, { recursive: true })
+  // THE PAIRING FENCE fires before any file write: a profile whose
+  // provenance names another tree refuses here, never three boots
+  // later at another estate's lock.
+  const pairing = enforcePairing(dst, { reParent: RE_PARENT })
+  if (!pairing.ok) die(pairing.refusal)
+  if (pairing.reParented) {
+    log('  RE-PARENTED loud: the lane profile re-pairs with tree ' + RENDER_ROOT
+      + ' (previous pairing: ' + String(pairing.prevRoot) + ')')
+  }
   const link = 'link:' + PROVISIONER
 
   // pnpm does NOT materialize a link: dependency's OWN link:/workspace
@@ -416,7 +483,7 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
         : '')
       + '- id: melite-estate\n'
       + '  config:\n'
-      + '    repoRoot: ' + JSON.stringify(resolve(PROVISIONER, '../../..')) + '\n'
+      + '    repoRoot: ' + JSON.stringify(RENDER_ROOT) + '\n'
       + '    acquireStallTimeoutMs: 10000\n'
       + (webMount ? '    durableDownloads: true\n' : '')
       + (ESTATE_STATE_ROOT
@@ -525,6 +592,10 @@ function renderInstall(name) {
 }
 
 // ── main ────────────────────────────────────────────────────────────────
+// The pure fence predicates are exported for the wall; the CLI body
+// runs only when this file IS the entry (the build-plane idiom).
+const invokedDirectly = process.argv[1] === fileURLToPath(import.meta.url)
+if (invokedDirectly) {
 switch (cmd) {
   case 'all': {
     // Ledger row 34 (2026-09-10): the installPreset() arm died with the
@@ -559,4 +630,5 @@ switch (cmd) {
   // reads ~/.dsh/.agent-presets — refuse LOUD instead of a
   // ReferenceError
   default: die('unknown command ' + JSON.stringify(cmd) + ' — use all | profile <name>')
+}
 }
