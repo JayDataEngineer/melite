@@ -152,6 +152,13 @@ export const ParamRelationWords = z.object({
     at_most_one: z.array(ParamAtMostOneRow).required(false),
     required: z.array(ParamRequiredRow).required(false),
 });
+export const SizeLawRow = z.object({
+    multiple: z.number().required(false),
+    minArea: z.number().required(false),
+    maxArea: z.number().required(false),
+    minAspect: z.number().required(false),
+    maxAspect: z.number().required(false),
+});
 export const ParamBoundRow = z.object({
     min: z.number().required(false),
     max: z.number().required(false),
@@ -272,6 +279,7 @@ export function assertSchemaAcceptsMinimalRows() {
         ["ParamRequiredRow", ParamRequiredRow, { fields: ["f"] }], // min(1): a required row names what it requires
         ["ParamRelationWords", ParamRelationWords, {}],
         ["ParamBoundRow", ParamBoundRow, {}],
+        ["SizeLawRow", SizeLawRow, { multiple: 32 }],
         // caught by the self-enumeration the moment it landed (A-M15):
         // StudioRow was exported with no minimal entry — the exact
         // escape the hand-table era allowed.
@@ -420,6 +428,10 @@ export const ModelDecl = z.object({
      *  addition to each variant's own). */
     relations: ParamRelationWords.required(false),
     bounds: z.dict(ParamBoundRow).required(false),
+    // THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+    // model's own width×height geometry — absent = per-field bounds
+    // only (every legacy family).
+    size: SizeLawRow.required(false),
     // THE FAMILY DOOR'S DECLARED ACTIONS (the atom vocabulary, stroke
     // 0): executable doors on a data row — the schema twin is
     // deliberately LOOSE (z.any members): a strict row schema would

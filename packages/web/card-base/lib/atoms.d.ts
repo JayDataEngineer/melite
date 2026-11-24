@@ -38,15 +38,16 @@ export declare function TriStateAtom({ label, value, onEdit, name, disabled }: {
     name: string;
     disabled?: boolean;
 }): ReturnType<typeof h>;
-export declare function SpecSliderAtom({ f, value, onEdit, envelope }: {
+export declare function SpecSliderAtom({ f, value, onEdit, envelope, step }: {
     f: SpecField;
     value: unknown;
     onEdit(name: string, v: unknown): void;
     envelope?: readonly [number, number] | null;
+    step?: number;
 }): ReturnType<typeof h>;
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }: {
+export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, step, hideSquareLabel }: {
     f: SpecField;
     value: unknown;
     onEdit(name: string, v: unknown): void;
@@ -61,6 +62,11 @@ export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, pla
      *  track clamps to it (the dragbar law); absent when the caller
      *  has no variant envelope to offer. */
     envelope?: readonly [number, number] | null;
+    /** THE LANE GRAIN (the h3-image truth cure, 2026-11-19): the
+     *  canvas pair law's `multiple` — the knob steps by the model's
+     *  own 32 so a drag/spinner never authors an off-grain value the
+     *  write door then refuses. Absent = the field's own step. */
+    step?: number;
     /** the row's placeholder override (the seed dice's random face:
      *  the sentinel never paints, the placeholder explains the state) */
     placeholder?: string;

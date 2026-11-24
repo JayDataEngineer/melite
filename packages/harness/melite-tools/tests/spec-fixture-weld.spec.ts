@@ -64,15 +64,33 @@ const canonUids = (doc: Record<string, unknown>): Record<string, unknown> => {
   }
   collect(doc)
   const rank = new Map([...uids].sort((a, b) => a - b).map((u, i) => [u, i]))
-  const sub = (v: unknown): unknown => {
-    if (Array.isArray(v)) return v.map(sub)
+  // THE REFERENCE SEATS (2026-11-19, the canvas-truth cure's collision):
+  // a uid is named by the ref-table KEY, `uid`, a `dict` value, a `list`
+  // member, or `inner` — NEVER by an arbitrary numeric literal.
+  // Substituting every numeric value that happened to equal a live uid
+  // rewrote the mask_detail_size DEFAULT (512) into a rank once the new
+  // DECL size schema shifted schemastery's process-order numbering into
+  // the fixture's default range. The canon is referential: rewrite the
+  // reference seats, leave declared values alone.
+  const sub = (v: unknown, ref = false): unknown => {
+    if (Array.isArray(v)) return v.map((it) => sub(it, false))
     if (v === null || typeof v !== 'object') {
-      return typeof v === 'number' && rank.has(v) ? rank.get(v) : v
+      return ref && typeof v === 'number' && rank.has(v) ? rank.get(v) : v
     }
     const out: Record<string, unknown> = {}
     for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
       const num = /^\d+$/.test(k) ? Number(k) : null
-      out[num !== null && rank.has(num) ? String(rank.get(num)) : k] = sub(val)
+      const key = num !== null && rank.has(num) ? String(rank.get(num)) : k
+      if (k === 'dict' && val !== null && typeof val === 'object') {
+        const dict: Record<string, unknown> = {}
+        for (const [dk, dv] of Object.entries(val as Record<string, unknown>)) dict[dk] = sub(dv, true)
+        out[key] = dict
+        continue
+      }
+      const refSeat = k === 'uid' || k === 'inner'
+      out[key] = k === 'list' && Array.isArray(val)
+        ? val.map((it) => sub(it, true))
+        : sub(val, refSeat)
     }
     return out
   }

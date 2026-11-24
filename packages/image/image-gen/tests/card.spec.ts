@@ -657,50 +657,63 @@ import { DECL as qwenImg21Decl } from "@melite/models-qwen-img-21";
 import { DECL as zImageDecl } from "@melite/models-z-image";
 import {
   judgeLaneBounds,
+  judgeLaneCanvas,
   laneBoundsOf,
 } from "@melite/contracts/laneRelations";
 
-describe("the per-family canvas ceilings (the schema widened for one, never for all)", () => {
-  const pins: Array<[string, ModelDecl, number]> = [
-    ["anima", animaDecl, 2048],
-    ["flux-klein", fluxKleinDecl, 2048],
-    ["h3-image", h3ImageDecl, 4096],
-    ["krea-2", krea2Decl, 2048],
-    ["moss-image", mossImageDecl, 2048],
-    ["qwen-img-21", qwenImg21Decl, 2048],
-    ["z-image", zImageDecl, 2048],
+describe("the per-family canvas span (the model owns the floor and the ceiling)", () => {
+  // THE CANVAS TRUTH CURE (operator order 2026-11-19: the form's
+  // artificial ceiling refused the size the model publishes): the
+  // schema is the widest boarded family's span, and each DECL
+  // owns its own narrower span. h3-image's truth: per-side 480-7680
+  // (7680×2560 = the widest legal 3:1 pair at 19.66 MP) on a 32
+  // grain, area 655,360-20,000,000 px, aspect 1:3-3:1.
+  const pins: Array<[string, ModelDecl, number, number]> = [
+    ["anima", animaDecl, 256, 2048],
+    ["flux-klein", fluxKleinDecl, 256, 2048],
+    ["h3-image", h3ImageDecl, 480, 7680],
+    ["krea-2", krea2Decl, 256, 2048],
+    ["moss-image", mossImageDecl, 256, 2048],
+    ["qwen-img-21", qwenImg21Decl, 256, 2048],
+    ["z-image", zImageDecl, 256, 2048],
   ];
 
-  it("EVERY boarded family pins a canvas bounds row — an unpinned family inherits the schema's widened 4096 silently", () => {
-    for (const [fam, decl, max] of pins) {
+  it("EVERY boarded family pins its own canvas row — an unpinned family inherits the schema's widened span silently", () => {
+    for (const [fam, decl, min, max] of pins) {
       const bounds = laneBoundsOf(decl.bounds ?? null, null);
-      assert.notEqual(bounds, null, `${fam} declares its own canvas ceiling`);
+      assert.notEqual(bounds, null, `${fam} declares its own canvas row`);
       assert.equal(bounds!.width.max, max, `${fam} width ceiling is ${max}`);
       assert.equal(bounds!.height.max, max, `${fam} height ceiling is ${max}`);
-      assert.equal(bounds!.width.min, 256, `${fam} keeps the 256 floor`);
+      assert.equal(bounds!.width.min, min, `${fam} width floor is ${min}`);
     }
   });
 
-  it("a 4096 canvas admits ONLY on h3-image — every other family refuses it in the lane-bounds voice", () => {
-    for (const [fam, decl, max] of pins) {
-      const v = judgeLaneBounds(laneBoundsOf(decl.bounds ?? null, null), { width: 4096, height: 1024 });
-      if (max === 4096) {
-        assert.deepEqual(v, [], `${fam} admits the long canvas (the expansion)`);
-      } else {
-        assert.equal(v.length, 1, `${fam} refuses the widened canvas`);
-        assert.match(v[0].message, new RegExp(`'width': 4096 is outside this lane's range \\(256–${max}\\)`),
-          `${fam} names its own ceiling in the refusal`);
-      }
+  it("each family refuses past its OWN ceiling in the lane-bounds voice", () => {
+    for (const [fam, decl, , max] of pins) {
+      const v = judgeLaneBounds(laneBoundsOf(decl.bounds ?? null, null), { width: max + 16, height: 1024 });
+      assert.equal(v.length, 1, `${fam} refuses past ${max}`);
+      assert.match(v[0].message, new RegExp(`'width': ${max + 16} is outside this lane's range \\(${fam === "h3-image" ? 480 : 256}–${max}\\)`),
+        `${fam} names its own span in the refusal`);
     }
   });
 
-  it("THE SCHEMA SEAT: the card schema itself now admits 4096 (the widest family's ceiling) and still refuses past it", () => {
-    const wide = def.schema({ prompt: "a long panorama", width: 4096, height: 1024, model: "h3-image" });
-    assert.equal(wide.width, 4096, "the schema parses the long canvas");
+  it("h3-image's 4096×1024 panorama refuses by ASPECT — its pair law is what bounds the canvas, not 4096", () => {
+    const bounds = laneBoundsOf(h3ImageDecl.bounds ?? null, null);
+    const v = judgeLaneCanvas(bounds, h3ImageDecl.size ?? null, { width: 4096, height: 1024 });
+    assert.equal(v.length, 1);
+    assert.match(v[0].message, /aspect is at most 3:1/);
+    // the model's own recommended 4K pair is clean on the same judge
+    assert.deepEqual(judgeLaneCanvas(bounds, h3ImageDecl.size ?? null, { width: 5472, height: 3072 }), []);
+  });
+
+  it("THE SCHEMA SEAT: the card schema admits the model's 4K canvas and still refuses past it", () => {
+    const wide = def.schema({ prompt: "a long canvas", width: 5472, height: 3072, model: "h3-image" });
+    assert.equal(wide.width, 5472, "the schema parses the recommended 4K pair");
+    assert.equal(wide.height, 3072);
     assert.throws(
-      () => def.schema({ prompt: "too far", width: 4112, height: 1024 }),
-      /4096|max|at most/i,
-      "the schema ceiling stays hard at 4096",
+      () => def.schema({ prompt: "too far", width: 7808, height: 1024 }),
+      /7680|max|at most/i,
+      "the schema ceiling stays hard at 7680",
     );
     assert.throws(
       () => def.schema({ prompt: "under floor", width: 192, height: 1024 }),

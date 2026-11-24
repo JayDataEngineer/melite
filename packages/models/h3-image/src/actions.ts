@@ -69,7 +69,8 @@ export function parseT2IFacts(raw: LaneInputsFacts, model: ModelFacts): T2IFacts
 
 /** The text-to-image action: the official H3-Image template — ONE
  *  MiniMaxH3ImageConditioning at the stated canvas (the node's own
- *  area law: ~2048x2048 working area, 32-multiple canvas), the
+ *  geometry law: 32-multiple sides, area 655,360–20,000,000 px,
+ *  aspect 1:3–3:1 — native 4K ~16 MP, 2K drafting), the
  *  negative zeroed, KSampler on the conditioning's OWN emitted
  *  latent (its second output — the node sizes the canvas latent
  *  from its own width/height inputs), decode + save under
@@ -85,11 +86,12 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   // the image-gen card schema's own — the family door judges
   // defaults and variant presets against this row; the closed sets
   // resolve from the ONE engine vocabulary, never hand-copied.
-  // THE MAX-CANVAS EXPANSION (2026-11-18): the shared size surface
-  // widens to [256, 4096] (the widest family's ceiling — this one);
-  // this family's own DECL bounds row holds the same 4096, and the
-  // six sibling image-gen families' DECL rows hold their own 2048
-  // (the lane-bounds judge's seat — the RANGE RULE).
+  // THE CANVAS TRUTH CURE (2026-11-19): the shared size surface is
+  // the widest legal per-side [256, 7680]; this family's own DECL
+  // row narrows to [480, 7680] and its `size` pair law holds the
+  // real envelope (32-multiple, 655,360–20,000,000 px, 1:3–3:1),
+  // while the six sibling image-gen families' DECL rows hold their
+  // own 2048 (the lane-bounds judge's seat — the RANGE RULE).
   params: [...diffusionParamRows()],
   facts: parseT2IFacts,
   build({ p, facts, model, g, runId }) {

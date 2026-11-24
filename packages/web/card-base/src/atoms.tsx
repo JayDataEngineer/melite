@@ -240,24 +240,40 @@ function useLocalSliderValue(value: unknown): { value: number | null, set(n: num
  *  track clamps to the ACTIVE variant's declared envelope (min and
  *  max intersected with the field's own bounds) — an
  *  out-of-envelope value cannot be dragged or saved from the form
- *  while the wire gate stays loud for API authors. A HELD value
- *  outside the envelope renders AS ITSELF, refused (the
- *  no-fallback law): the track never paints a clamped neighbor over
- *  an impossible contract. @param f the knob's field row.
+ *  while the wire gate stays loud for API authors.
+ *
+ *  THE CONTROL STAYS (operator 2026-11-19, the input-loss cure:
+ *  "YOU TAKE AWAY THE INPUT BOX SO I CAN'T FIX IT"): a held value
+ *  the lane refuses is rendered AS ITSELF in the typed box — never
+ *  replaced by a text span, never clamped over — and the track
+ *  stands down for that value (a range thumb would paint a clamped
+ *  neighbor over an impossible contract). The box is the control
+ *  that fixes the refusal, so it is the one face that never leaves.
+ *  A typed draft outside the span does NOT land (no per-keystroke
+ *  bench write, no unlanded strip): the text stays in the box with
+ *  ONE local sentence, and the box reverts to the held truth on
+ *  blur. A refusal the DOC already holds (a stale bench row) keeps
+ *  a silent refused face — the form's lane banner is its single
+ *  voice; the box's local sentence is only for a draft the banner
+ *  cannot see.
+ *  @param f the knob's field row.
  *  @param value the resolved display value.
  *  @param onEdit the settle seam.
  *  @param envelope the active variant's [min,max] for THIS knob,
- *  null when the variant declares none. */
+ *  null when the variant declares none.
+ *  @param step the lane-declared grain (the canvas pair's 32), else
+ *  the field's own. */
 /** The zero-law sentence a declaration may state in its tooltip
  * ("0 = the clip's own width (…).") — the first sentence, chipped on
  * the face exactly while the knob holds the 0 (cure D, 2026-10-28). */
 const ZERO_LAW_RE = /^0 =[^.]*\./
 
-export function SpecSliderAtom({ f, value, onEdit, envelope }: {
+export function SpecSliderAtom({ f, value, onEdit, envelope, step }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   envelope?: readonly [number, number] | null
+  step?: number
 }): ReturnType<typeof h> {
   const shown = useLocalSliderValue(value)
   // THE BOX'S OWN SETTLE (the blank law): a clear writes '' through
@@ -266,86 +282,119 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
   // keystroke. The box keeps its own local TEXT: blank or mid-typed
   // strings show as typed; the track holds its last finite number.
   const [boxText, setBoxText] = useState<string | null>(null)
-  useEffect(() => { setBoxText(null) }, [shown.value]) // eslint-disable-line react-hooks/exhaustive-deps
-  // the refused face: the held value is not a number the run can
-  // compose — rendered AS ITSELF (raw), the slider refuses to
-  // imply a healthy number it does not hold. A BLANK ('') is not
-  // poison: it is the clear's own write, the knob keeps its seat.
-  if (shown.value === null && value !== '') {
-    return h('span', { className: css.specSliderRow, 'data-refused': f.name },
-      h('span', { className: css.specSliderValue },
-        String(value) + ' — REFUSED: not a number'),
-    )
-  }
-  // the envelope's refused face: a HELD out-of-envelope number is
-  // an impossible contract — rendered as itself, never clamped over.
-  // A disjoint envelope (its min above the field's max or its max
-  // below the field's min) admits no value at all — the knob is
-  // refused outright, the DECL's own broken state named.
+  // THE LOCAL VOICE (one sentence, draft-only): the typed text did
+  // not land because it is outside the knob's span. A HELD refusal
+  // never speaks here — the form's lane banner owns that row.
+  const [refusal, setRefusal] = useState<string | null>(null)
+  useEffect(() => { setBoxText(null); setRefusal(null) }, [shown.value]) // eslint-disable-line react-hooks/exhaustive-deps
+  // THE ENVELOPE'S EFFECTIVE SPAN: the field's own bounds intersected
+  // with the active variant's envelope. A disjoint intersection
+  // admits NOTHING (the DECL's own broken state) — the box still
+  // renders, every typed value is refused.
   const clamped = envelope !== undefined && envelope !== null
     ? {
         min: Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]),
         max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1]),
       }
     : null
-  if (clamped !== null && (clamped.min > clamped.max
-    || (shown.value !== null && (shown.value < clamped.min || shown.value > clamped.max)))) {
-    const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min
-    const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max
-    return h('span', { className: css.specSliderRow, 'data-refused': f.name },
-      h('span', { className: css.specSliderValue },
-        (shown.value === null ? String(value) : String(shown.value)) + ' — OUTSIDE the variant envelope ['
-        + String(lo) + ', ' + String(hi) + ']'),
-    )
+  const lo = clamped !== null ? clamped.min : (f.min ?? Number.NEGATIVE_INFINITY)
+  const hi = clamped !== null ? clamped.max : (f.max ?? Number.POSITIVE_INFINITY)
+  const noSpan = lo > hi
+  // THE HELD FACE (no-fallback law): a held value the span cannot
+  // hold is shown AS ITSELF in the box — the track stands down
+  // (a clamped neighbor would be a lie). A BLANK ('') is not poison:
+  // it is the clear's own write, the knob keeps its seat.
+  const poison = shown.value === null && value !== undefined && value !== null && value !== ''
+  const heldRefused = poison || noSpan
+    || (shown.value !== null && (shown.value < lo || shown.value > hi))
+  const verdictOf = (raw: string): 'land' | 'blank' | 'refuse' => {
+    if (raw === '') return 'blank'
+    const n = Number(raw)
+    if (raw.trim() === '' || !Number.isFinite(n)) return 'refuse'
+    return noSpan || n < lo || n > hi ? 'refuse' : 'land'
   }
-  // THE MIXED KNOB (the operator's 2026-11-05 order: "if we could
-  // change to the swipe and type in mix parameters selection knobs
-  // that would be ideal"): one control, two faces sharing one
-  // value — the range swipes (the settle law below), the typed box
-  // types (each landed keystroke persists — typing is deliberate,
-  // never a 60Hz drag). The VALUE still travels raw on every face;
-  // coerce once at patch, the estate's law.
-  // The blank state (backing '' after a clear): the box shows its
-  // own text, the track holds the nearest bound until a number
-  // lands — the knob never unseats mid-edit.
-  const trackValue = shown.value ?? (clamped !== null ? Math.min(Math.max(0, clamped.min), clamped.max) : (f.min ?? 0))
-  const boxValue = boxText ?? String(shown.value ?? '')
+  const draftRefused = boxText !== null && verdictOf(boxText) === 'refuse'
+  const refused = heldRefused || draftRefused
+  // the fallback paint for a blank backing: the nearest admitted
+  // number (a legal unstated state — not a lie about a held value).
+  const trackValue = shown.value
+    ?? (clamped !== null && !noSpan ? Math.min(Math.max(0, clamped.min), clamped.max) : (f.min ?? 0))
+  const backingText = shown.value !== null
+    ? String(shown.value)
+    : (value === undefined || value === null || value === '' ? '' : String(value))
+  const boxValue = boxText ?? backingText
+  const gapLo = noSpan ? Math.min(lo, hi) : lo
+  const gapHi = noSpan ? Math.max(lo, hi) : hi
+  const spanWord = (): string => {
+    if (Number.isFinite(gapLo) && Number.isFinite(gapHi)) return 'outside ' + gapLo + '–' + gapHi
+    if (Number.isFinite(gapLo)) return 'below ' + gapLo
+    if (Number.isFinite(gapHi)) return 'above ' + gapHi
+    return chromeCopy.sliderDraftSpanFallback()
+  }
+  const refusalText = refusal === null
+    ? null
+    : noSpan
+      ? chromeCopy.sliderDraftNoSpan()
+      : Number.isFinite(Number(refusal))
+        ? chromeCopy.sliderDraftRefusal({ value: refusal.trim(), span: spanWord() })
+        : chromeCopy.sliderDraftNaN({ value: refusal.trim() })
   // ARGUED RAW SEAT (S7c/S7g/S7j, the slider law): the catalog ships
   // no slider/range atom (ui-primitives types/index.d.ts export set),
   // and DSH's own field widget renders its embedded control raw
   // (settings-form fields.tsx:95-106) — the native range stays.
-  return h('span', { className: css.specSliderRow },
-    h('input', {
+  // THE MIXED KNOB (the operator's 2026-11-05 order): one control,
+  // two faces sharing one value — the range swipes, the typed box
+  // types; the box commits only inside the span (a draft outside it
+  // is held locally, one sentence, no write).
+  return h('span', {
+    className: css.specSliderRow,
+    ...(refused ? { 'data-refused': f.name } : {}),
+  },
+    heldRefused ? null : h('input', {
       className: css.specSlider,
       type: 'range',
-      min: clamped !== null ? clamped.min : (f.min ?? 0),
-      max: clamped !== null ? clamped.max : (f.max ?? 10),
-      step: f.step ?? 0.1,
+      min: Number.isFinite(lo) ? lo : 0,
+      max: Number.isFinite(hi) ? hi : 10,
+      step: step ?? f.step ?? 0.1,
       value: trackValue,
       onInput: (e: unknown) => { shown.set(Number((e as { target: { value: string } }).target.value)) },
       onChange: (e: unknown) => { onEdit(f.name, (e as { target: { value: string } }).target.value) },
       'aria-label': f.label + ' ' + chromeCopy.sliderAriaWord,
     }),
     h(Input, {
-      type: 'number',
-      min: clamped !== null ? clamped.min : f.min,
-      max: clamped !== null ? clamped.max : f.max,
-      step: f.step,
+      // A non-number truth cannot paint in a number input (the DOM
+      // sanitizes it to '') — the text face keeps the poison visible
+      // and editable; a numeric truth renders the number box.
+      type: poison ? 'text' : 'number',
+      ...(noSpan || !Number.isFinite(lo) ? {} : { min: lo }),
+      ...(noSpan || !Number.isFinite(hi) ? {} : { max: hi }),
+      step: step ?? f.step,
       className: css.specSliderInput,
       value: boxValue,
+      ...(refused ? { 'aria-invalid': true } : {}),
       onChange: (e: unknown) => {
-        // the typed face writes raw through EXACTLY like the number
-        // face it replaced (a clear persists '' — the draft coerces
-        // at patch; the settled knob re-syncs when a number lands).
-        // The number echo keeps the track live while the box owns
-        // its own text (the settle law above).
         const raw = (e as { target: { value: string } }).target.value
         setBoxText(raw)
-        if (raw !== '') {
-          const n = Number(raw)
-          if (Number.isFinite(n)) shown.set(n)
-        }
+        setRefusal(null)
+        const verdict = verdictOf(raw)
+        if (verdict === 'blank') { onEdit(f.name, ''); return }
+        if (verdict === 'refuse') return
+        shown.set(Number(raw))
         onEdit(f.name, raw)
+      },
+      onBlur: () => {
+        // THE BLUR SETTLE (the frictionless-authoring ruling): the
+        // draft is judged ONCE, when the box is left — never one
+        // keystroke at a time. A refused draft speaks ONE sentence
+        // and the box returns to the held truth (nothing landed; a
+        // box painting unlanded text would lie about the run's
+        // input).
+        const raw = boxText
+        if (raw === null) return
+        if (raw.trim() === '') { setBoxText(null); return }
+        if (verdictOf(raw) === 'land') { setBoxText(null); return }
+        setRefusal(raw)
+        setBoxText(null)
       },
       'aria-label': f.label,
     }),
@@ -360,12 +409,15 @@ export function SpecSliderAtom({ f, value, onEdit, envelope }: {
       ? [h('span', { className: css.specSliderZero, 'data-zero-law': f.name },
           ZERO_LAW_RE.exec(f.tooltip)?.[0] ?? f.tooltip)]
       : []),
+    ...(refusalText !== null
+      ? [h('span', { className: css.specSliderRefusal, 'data-slider-refusal': f.name, role: 'status' }, refusalText)]
+      : []),
   )
 }
 
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }: {
+export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, step, hideSquareLabel }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
@@ -376,6 +428,11 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
    *  track clamps to it (the dragbar law); absent when the caller
    *  has no variant envelope to offer. */
   envelope?: readonly [number, number] | null
+  /** THE LANE GRAIN (the h3-image truth cure, 2026-11-19): the
+   *  canvas pair law's `multiple` — the knob steps by the model's
+   *  own 32 so a drag/spinner never authors an off-grain value the
+   *  write door then refuses. Absent = the field's own step. */
+  step?: number
   /** the row's placeholder override (the seed dice's random face:
    *  the sentinel never paints, the placeholder explains the state) */
   placeholder?: string
@@ -522,7 +579,7 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
     })
   }
   if (f.type === 'slider') {
-    return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}) })
+    return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}), ...(step !== undefined ? { step } : {}) })
   }
   if (f.type === 'tri') {
     // THE TRI-STATE ATOM (hour 15, stroke C — h3's TriControl
@@ -618,11 +675,13 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
   // the knob's seat: the control must not flap mid-edit.
   if (f.type === 'number' && f.min !== undefined && f.max !== undefined
     && (placeholder ?? f.placeholder) === undefined) {
-    const held = typeof value === 'number' ? value
-      : typeof value === 'string' && value !== '' ? Number(value)
-      : Number.NaN
-    if (Number.isFinite(held) || value === '') {
-      return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}) })
+    // THE HELD FACE RIDES THE KNOB for every stated value (the
+    // input-loss cure, 2026-11-19): a non-numeric truth renders in
+    // the knob's own text box (refused, editable); the typed
+    // spinner would blank it — input[type=number] cannot paint a
+    // non-number — and hide the very value to fix.
+    if (value !== undefined) {
+      return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}), ...(step !== undefined ? { step } : {}) })
     }
   }
   if (f.type === 'number') {

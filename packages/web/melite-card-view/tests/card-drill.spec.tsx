@@ -1222,7 +1222,7 @@ test('THE DRAGBAR CLAMP: sliding 9 against turbo\'s [1,2] cannot author the impo
   }
 })
 
-test('THE COMPOSE GATE: a HELD cfg outside the envelope (a foreign writer\'s 3.8) refuses in the studio with the door\'s own voice — the dragbar shows the impossible contract AS ITSELF', async () => {
+test('THE COMPOSE GATE: a HELD cfg outside the envelope (a foreign writer\'s 3.8) refuses in the studio with the door\'s own voice — the box shows the impossible contract AS ITSELF', async () => {
   const kreaSpec = {
     form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
     families: [],
@@ -1267,11 +1267,161 @@ test('THE COMPOSE GATE: a HELD cfg outside the envelope (a foreign writer\'s 3.8
     expect(document.body.textContent ?? '').toContain('THE COMPOSE GATE REFUSED')
     expect(document.body.textContent ?? '').toContain('stated cfg 3.8 is OUTSIDE the route envelope for variant "turbo"')
   })
-  // THE KNOB'S OWN FACE: the impossible value renders AS ITSELF —
-  // the track never paints a clamped neighbor over it
-  expect(document.body.textContent ?? '').toContain('3.8 — OUTSIDE the variant envelope [1, 2]')
+  // THE KNOB'S OWN FACE (the input-loss cure, 2026-11-19): the
+  // impossible value renders AS ITSELF in its box — the track never
+  // paints a clamped neighbor over it, and the box stays the
+  // control that fixes it. ONE crime, one row: the gate banner is
+  // the voice; the field carries no mirror sentence.
+  const cfgBox = screen.getByLabelText('CFG') as HTMLInputElement
+  expect(cfgBox.value).toBe('3.8')
+  expect(document.querySelector('[data-refused="cfg"]')).not.toBeNull()
+  expect(document.querySelector('input[aria-label="CFG slider"]')).toBeNull()
+  expect(document.querySelector('[data-slider-refusal]')).toBeNull()
   await new Promise((r) => setTimeout(r, 500))
   expect(calls.filter((c) => c.method === 'drafts/patch'), 'the invalid doc never reached the wire').toEqual([])
+})
+
+// ── THE LANE CANVAS AT THE PRESS (the h3-image truth cure,
+//    2026-11-19): the write/run door judges the lane's size law
+//    (grain, area, aspect) over the stated pair. The press must
+//    refuse that state in the studio, BEFORE the wire — with ONE
+//    row (the strip) and the form's lane banner standing down under
+//    the same words. The operator's burn was the opposite: the
+//    banner and the write refusal voiced one crime twice, and the
+//    unlanded strip arrived on top.
+// THE SERVED CANVAS LANE (h3-image's truth on a krea-2 address):
+// both sides bounded 256–7680 on a 32 grain, the model's own area
+// and aspect rails. One spec feeds the press arm and the typing arm.
+const h3LaneSpec = () => ({
+  form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+  families: [],
+  schema: schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+    width: { type: 'number', meta: { description: 'Width', default: 2048, min: 256, max: 7680, step: 32 } },
+    height: { type: 'number', meta: { description: 'Height', default: 2048, min: 256, max: 7680, step: 32 } },
+  }),
+  variants: [
+    { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'krea-2' },
+  ],
+  lanes: {
+    bounds: { width: { min: 256, max: 7680 }, height: { min: 256, max: 7680 } },
+    size: { multiple: 32, minArea: 655360, maxArea: 20000000, minAspect: 1 / 3, maxAspect: 3 },
+  },
+})
+
+test('THE LANE CANVAS AT THE PRESS: an over-area pair refuses before the wire — ONE row, the banner stands down', async () => {
+  const h3Spec = h3LaneSpec()
+  // 6048 × 3360 = 20.32 MP: both sides inside the lane's bounds and
+  // on its grain — only the AREA clause fails
+  const { calls } = stubWire({
+    formSpecs: { 'krea-2': h3Spec },
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', width: 6048, height: 3360 } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2', variant: 'turbo', width: 6048, height: 3360 } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // the form's lane banner voices the pair while the doc stands
+  await waitFor(() => {
+    expect(document.querySelector('[data-lane-warn]')?.textContent ?? '')
+      .toContain("6048 × 3360 is outside this lane's canvas (area is at most 20000000 px)")
+  })
+  // the knobs stay editable (the input-loss cure): the pair is
+  // curable at the fields, never a dead end
+  expect(screen.getByLabelText('Width')).not.toBeNull()
+  expect(screen.getByLabelText('Height')).not.toBeNull()
+  const detail = screen.getByText('Width').closest('div[class*="zoomCard"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
+  // the press refuses in the studio: the strip owns the canvas row
+  const strip = await screen.findByTestId('stage-error-strip', {}, { timeout: 5000 })
+  expect(strip.textContent ?? '').toContain("6048 × 3360 is outside this lane's canvas")
+  // ONE row: the sentence appears once, and the banner stood down
+  // under the same words (one crime, one seat)
+  const body = document.body.textContent ?? ''
+  expect(body.split("is outside this lane's canvas").length - 1).toBe(1)
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  // the strip's unstamp is field-named (the cure is the pair's own
+  // width revert — the height default re-derives with it)
+  expect(within(strip).getAllByRole('button', { name: /Unstamp 'width'/ }).length).toBe(1)
+  // nothing reached the wire
+  await new Promise((r) => setTimeout(r, 300))
+  expect(calls.filter((c) => c.method === 'drafts/patch')).toEqual([])
+  expect(calls.filter((c) => c.method === 'runs/start')).toEqual([])
+})
+
+test('THE AUTHORING HOLD: a typed pair the lane refuses stays in the studio — no refused write, the banner is the voice', async () => {
+  const h3Spec = h3LaneSpec()
+  const { calls } = stubWire({
+    formSpecs: { 'krea-2': h3Spec },
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', width: 6048, height: 2048 } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2', variant: 'turbo', width: 6048, height: 2048 } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const height = await screen.findByLabelText('Height', {}, { timeout: 4000 })
+  await user.clear(height)
+  await user.type(height, '3360')
+  // 6048 × 3360 is over the model's area rail: the value is held in
+  // the studio (the form banner speaks) and NO refused write rides
+  // the door — the operator sees one voice, never banner + unlanded
+  await waitFor(() => {
+    expect(document.querySelector('[data-lane-warn]')?.textContent ?? '')
+      .toContain("6048 × 3360 is outside this lane's canvas")
+  })
+  await new Promise((r) => setTimeout(r, 400))
+  // the clear's blank write is legal authoring (the half pair, the
+  // blank law); the REFUSED 3360 pair is what must never ride the
+  // wire — and no unlanded strip may answer it either
+  const frames = calls.filter((c) => c.method === 'drafts/patch')
+    .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
+  expect(frames.some((p) => p['height'] === 3360), 'the refused pair never reached the wire').toBe(false)
+  expect(document.querySelector('[data-testid="stage-error-strip"]')).toBeNull()
+  // the mode square is refused but the box stays the control
+  expect((screen.getByLabelText('Height') as HTMLInputElement).value).toBe('3360')
+  // the cure heals the hold: 6048 × 3072 is inside the canvas, and
+  // the write lands as the studio shows it
+  await user.clear(screen.getByLabelText('Height'))
+  await user.type(screen.getByLabelText('Height'), '3072')
+  await waitFor(() => {
+    const frames = calls.filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
+    expect(frames.some((p) => p['height'] === 3072), 'the healed pair writes').toBe(true)
+  }, { timeout: 3000 })
 })
 
 // THE POSITIVE CONTROL: the same field INSIDE the envelope writes

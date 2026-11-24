@@ -39,7 +39,8 @@ export type T2IParams = {
 export declare function parseT2IFacts(raw: LaneInputsFacts, model: ModelFacts): T2IFacts;
 /** The text-to-image action: the official H3-Image template — ONE
  *  MiniMaxH3ImageConditioning at the stated canvas (the node's own
- *  area law: ~2048x2048 working area, 32-multiple canvas), the
+ *  geometry law: 32-multiple sides, area 655,360–20,000,000 px,
+ *  aspect 1:3–3:1 — native 4K ~16 MP, 2K drafting), the
  *  negative zeroed, KSampler on the conditioning's OWN emitted
  *  latent (its second output — the node sizes the canvas latent
  *  from its own width/height inputs), decode + save under

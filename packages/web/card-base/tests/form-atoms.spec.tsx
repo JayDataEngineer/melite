@@ -88,7 +88,7 @@ test('SLIDER: the drag shows locally AND voices (React settles range onChange pe
   expect(onEdit).toHaveBeenCalledWith('cfg', '8')
 })
 
-test('SLIDER: an outside move reclaims the bubble; a held non-number refuses AS ITSELF', () => {
+test('SLIDER: an outside move reclaims the bubble; a held non-number SHOWS in the box (the control never leaves)', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'cfg', label: 'Cfg', type: 'slider' })
   const { rerender } = render(h(SpecSliderAtom, { f, value: 5, onEdit }))
@@ -96,9 +96,20 @@ test('SLIDER: an outside move reclaims the bubble; a held non-number refuses AS 
   expect((screen.getByLabelText('Cfg') as HTMLInputElement).value).toBe('9')
   rerender(h(SpecSliderAtom, { f, value: 6, onEdit }))
   expect((screen.getByLabelText('Cfg') as HTMLInputElement).value).toBe('6')
+  // THE INPUT STAYS (operator 2026-11-19: "YOU TAKE AWAY THE INPUT
+  // BOX SO I CAN'T FIX IT"): a poison truth renders in the TEXT box,
+  // editable — the box is the control that fixes the refusal, so it
+  // is the one face that never leaves. The track stands down (a
+  // clamped thumb would paint a neighbor over an impossible state);
+  // the held refusal is SILENT here — the form's lane banner is its
+  // one voice, never a second mirror sentence.
   rerender(h(SpecSliderAtom, { f, value: 'poison', onEdit }))
-  expect(screen.getByText('poison — REFUSED: not a number')).not.toBeNull()
+  const box = screen.getByLabelText('Cfg') as HTMLInputElement
+  expect(box.value).toBe('poison')
+  expect(box.type).toBe('text')
   expect(document.querySelector('[data-refused="cfg"]')).not.toBeNull()
+  expect(document.querySelector('input[type="range"]')).toBeNull()
+  expect(document.querySelector('[data-slider-refusal]')).toBeNull()
 })
 
 test('SLIDER: undeclared bounds fall to 0..10 × 0.1 (never an unbound drag)', () => {
@@ -124,30 +135,80 @@ test('SLIDER: the track clamps to the variant envelope (turbo cfg 1-2 inside a 0
   expect(slider.value).toBe('1.5')
 })
 
-test('SLIDER: a held out-of-envelope value refuses AS ITSELF (the no-clamp-over lie)', () => {
+test('SLIDER: a held out-of-envelope value renders AS ITSELF in the box (the no-clamp-over lie)', () => {
   render(h(SpecSliderAtom, {
     f: F({ name: 'cfg', label: 'Cfg', type: 'slider', min: 0, max: 10, step: 0.1 }),
     value: 3.8, onEdit: () => {}, envelope: [1, 2],
   }))
-  expect(screen.getByText('3.8 — OUTSIDE the variant envelope [1, 2]')).not.toBeNull()
+  const box = screen.getByLabelText('Cfg') as HTMLInputElement
+  expect(box.value).toBe('3.8')
+  // the box's own HTML span IS the refused envelope — typing 2.5 is
+  // the cure and the spinner never offers past its ceiling
+  expect(box.min).toBe('1')
+  expect(box.max).toBe('2')
   expect(document.querySelector('[data-refused="cfg"]')).not.toBeNull()
-  // no track at all — the impossible contract offers no drag
+  // no track at all — the impossible contract offers no drag — and no
+  // mirror sentence (the lane banner is the row's one voice)
   expect(document.querySelector('input[type="range"]')).toBeNull()
+  expect(document.querySelector('[data-slider-refusal]')).toBeNull()
 })
 
-test('SLIDER: a null envelope keeps the field bounds; a disjoint envelope refuses outright', () => {
+test('SLIDER: a null envelope keeps the field bounds; a disjoint envelope refuses with the box present', () => {
   render(h(SpecSliderAtom, {
     f: F({ name: 'steps', label: 'Steps', type: 'slider', min: 1, max: 50 }),
     value: 20, onEdit: () => {}, envelope: null,
   }))
   expect((screen.getByLabelText('Steps') as HTMLInputElement).max).toBe('50')
+  cleanup()
   render(h(SpecSliderAtom, {
     f: F({ name: 'steps', label: 'Steps', type: 'slider', min: 1, max: 50 }),
     value: 20, onEdit: () => {}, envelope: [60, 80],
   }))
   // disjoint: the envelope (60-80) meets the field (1-50) in nothing —
-  // the refused face names the gap's own span, the knob admits nothing
-  expect(screen.getByText('20 — OUTSIDE the variant envelope [50, 60]')).not.toBeNull()
+  // the knob admits nothing, the held value shows in the box, and the
+  // box stays the control (its own HTML span is withheld: there is
+  // no honest min/max pair to state).
+  const box = screen.getByLabelText('Steps') as HTMLInputElement
+  expect(box.value).toBe('20')
+  expect(box.min).toBe('')
+  expect(box.max).toBe('')
+  expect(document.querySelector('[data-refused="steps"]')).not.toBeNull()
+  expect(document.querySelector('input[type="range"]')).toBeNull()
+})
+
+// THE COMMIT-ON-VALID LAW (the input-loss cure's second half,
+// 2026-11-19): a typed draft outside the span never reaches onEdit —
+// the bench door would refuse the write, painting the lane banner AND
+// the unlanded strip for a value the operator is still typing. The
+// box holds the text, blur judges ONCE (one local sentence) and the
+// box reverts to the held truth. The lane's grain (h3's 32) rides
+// BOTH faces so a legal draft lands on the model's own lattice.
+test('SLIDER: an out-of-span draft never writes; blur voices ONE sentence and reverts the box', () => {
+  const onEdit = vi.fn()
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'width', label: 'Width', type: 'number', min: 256, max: 7680, step: 16 }),
+    value: 1024, onEdit, envelope: [256, 7680], step: 32,
+  }))
+  const box = screen.getByLabelText('Width') as HTMLInputElement
+  const track = screen.getByLabelText('Width slider') as HTMLInputElement
+  // the lane's grain rides both faces (the canvas pair's 32)
+  expect(box.step).toBe('32')
+  expect(track.step).toBe('32')
+  fireEvent.change(box, { target: { value: '80' } })
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(box.value).toBe('80')
+  expect(track.value).toBe('1024')
+  expect(box.getAttribute('aria-invalid')).toBe('true')
+  // blur: ONE sentence, the box back on the held truth
+  fireEvent.blur(box)
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(screen.queryAllByRole('status').length).toBe(1)
+  expect(screen.getByRole('status').textContent).toMatch(/^Not applied — 80 is outside 256–7680\./)
+  expect((screen.getByLabelText('Width') as HTMLInputElement).value).toBe('1024')
+  // a legal draft commits: the write lands, the sentence clears
+  fireEvent.change(screen.getByLabelText('Width'), { target: { value: '5472' } })
+  expect(onEdit).toHaveBeenCalledWith('width', '5472')
+  expect(screen.queryAllByRole('status').length).toBe(0)
 })
 
 test('SPEC ATOM: the image square builds when claimed; bare text when not (never a bare URL input)', () => {
@@ -661,14 +722,26 @@ test('MIXED KNOB: a clear writes the blank through and the knob keeps its seat',
 // all — the knob must refuse in EVERY state, blank included (a
 // blank track under a disjoint envelope rendered a broken range,
 // min above max).
-test('MIXED KNOB: a disjoint envelope refuses even when the box is blank', () => {
+test('MIXED KNOB: a disjoint envelope keeps the box (the only control) and refuses every draft with ONE sentence', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'cfg', label: 'CFG', type: 'number', min: 1, max: 10, step: 1 })
   render(h(SpecAtom, { f, value: '', onEdit, envelope: [50, 100] }))
-  // the envelope refusal voices itself; neither knob face renders
-  expect(screen.getByText(/OUTSIDE the variant envelope \[10, 50\]/)).toBeTruthy()
+  // blank under a disjoint envelope: the seat holds, the track stands
+  // down (no legal range exists), the box renders blank
+  const box = screen.getByLabelText('CFG') as HTMLInputElement
+  expect(box.value).toBe('')
   expect(screen.queryByLabelText('CFG slider')).toBe(null)
-  expect(screen.queryByLabelText('CFG')).toBe(null)
+  expect(document.querySelector('[data-refused="cfg"]')).not.toBeNull()
+  // typing a value cannot land; the blur voices ONE sentence and the
+  // box returns to the held blank — never a per-keystroke write
+  fireEvent.change(box, { target: { value: '55' } })
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(box.value).toBe('55')
+  fireEvent.blur(box)
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(screen.getAllByRole('status').length).toBe(1)
+  expect(screen.getByRole('status').textContent).toMatch(/^Not applied — this lane admits no value/)
+  expect((screen.getByLabelText('CFG') as HTMLInputElement).value).toBe('')
 })
 
 // THE BLANK PARK (the mixed knob's blank law, envelope arms): a
@@ -718,15 +791,18 @@ test('SPEC ATOM: a select menu closes on Escape without a pick (the close seam i
 // by its number.
 test('MIXED KNOB ROUTE: poison keeps the typed face; a ghost keeps the typed face; a numeric string seats', () => {
   const onEdit = vi.fn()
-  // poison: bounded but not a number — the plain typed face, raw
+  // poison: bounded but not a number — the box keeps the poison
+  // VISIBLE (the input-loss cure: a text face, never a wrong span
+  // and never a vanished control); the track stands down
   render(h(SpecAtom, {
     f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
     value: 'abc', onEdit,
   }))
   expect(screen.queryByLabelText('Steps slider')).toBe(null)
-  // a number input cannot DISPLAY non-numeric text (the DOM's own
-  // law): the poison still rides the draft raw; the face stays typed
-  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('')
+  const poisonBox = screen.getByLabelText('Steps') as HTMLInputElement
+  expect(poisonBox.value).toBe('abc')
+  expect(poisonBox.type).toBe('text')
+  expect(document.querySelector('[data-refused="steps"]')).not.toBeNull()
   cleanup()
   // ghost: bounded WITH a placeholder — unset-aware, typed face
   render(h(SpecAtom, {
@@ -744,15 +820,26 @@ test('MIXED KNOB ROUTE: poison keeps the typed face; a ghost keeps the typed fac
   expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('7')
   expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('7')
   cleanup()
-  // a typed NON-FINITE (1e999 -> Infinity): the echo skips, the raw
-  // still writes through (the draft's own poison to coerce)
+  // a typed NON-FINITE (1e999 -> Infinity) is REFUSED locally: it
+  // never reaches the bench (a poison write would paint the unlanded
+  // strip for a draft the operator is still typing). The box holds
+  // the text; the blur voices ONE sentence and reverts to the held 7.
+  cleanup()
+  onEdit.mockClear()
   render(h(SpecAtom, {
     f: F({ name: 'steps', label: 'Steps', type: 'number', min: 1, max: 150, step: 1 }),
     value: 7, onEdit,
   }))
-  fireEvent.change(screen.getByLabelText('Steps'), { target: { value: '1e999' } })
-  expect(onEdit).toHaveBeenCalledWith('steps', '1e999')
+  const typedBox = screen.getByLabelText('Steps') as HTMLInputElement
+  fireEvent.change(typedBox, { target: { value: '1e999' } })
+  expect(onEdit).not.toHaveBeenCalled()
   expect((screen.getByLabelText('Steps slider') as HTMLInputElement).value).toBe('7')
+  expect(typedBox.value).toBe('1e999')
+  fireEvent.blur(typedBox)
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(screen.getAllByRole('status').length).toBe(1)
+  expect(screen.getByRole('status').textContent).toMatch(/1e999 is not a number/)
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).value).toBe('7')
   })
 
   it("THE BOOLEAN SWITCH FLIPS (operator 2026-11-05: the second-pass switch must flip) — click toggles the checked face, the edit lands as a real boolean", async () => {

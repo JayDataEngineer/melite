@@ -130,50 +130,82 @@ describe("the h3-image cell artifact pins (verbatim content law)", () => {
   });
 });
 
-// @contract models-h3-image-canvas-law (THE MAX-CANVAS EXPANSION,
-// 2026-11-18). THE OPERATOR BURN: "you did not expand the max image
-// size for Minimax-image like you said you would" — the card schema
-// capped every family at 2048 per axis. This checkpoint is tuned for
-// a ~2048² (≈4.2MP) working area; the expansion stretches ONE axis
-// to 4096 while the other comes down (4096×1024 keeps the area).
-// This arm walls the DECL's own bounds row — the per-family ceiling
-// the lane-bounds judge reads at every seat (the card schema's 4096
-// is the WIDEST family's ceiling, never this family's alone).
+// @contract models-h3-image-canvas-law (THE CANVAS TRUTH CURE,
+// 2026-11-19). THE OPERATOR BURN: the form's artificial ceiling
+// refused the size the model publishes — the DECL declared a 4096×4096 ceiling the model never had, so the form
+// refused the model's OWN recommended 4K pair (5472×3072). The
+// truth is the model's published canvas: sides 480–7680 on a 32
+// grain, area 655,360–20,000,000 px, aspect 1:3–3:1. This arm walls
+// the DECL's own rows — the per-field bounds AND the pair law the
+// form's inline gate and the write/run door judge.
 import {
   judgeLaneBounds,
+  judgeLaneCanvas,
   laneBoundsOf,
 } from "@melite/contracts/laneRelations";
 
-describe("the max-canvas expansion (bounds rows are the per-family ceiling)", () => {
+describe("the canvas truth (the DECL owns the floor, the ceiling and the pair law)", () => {
   const bounds = laneBoundsOf(DECL.bounds ?? null, null);
+  const size = DECL.size ?? null;
+  if (size === null) throw new Error("the h3-image DECL lost its size law — the canvas truth cannot derive");
+  const judge = (values: Record<string, number>) => judgeLaneCanvas(bounds, size, values);
 
-  it("declares a bounds row for both axes — the ceiling is the declaration's, never the form's", () => {
-    assert.notEqual(bounds, null, "the DECL states its own canvas ceiling");
-    assert.equal(bounds!.width.max, 4096, "width stretches to 4096 (the expansion)");
-    assert.equal(bounds!.height.max, 4096, "height stretches to 4096 (the expansion)");
-    assert.equal(bounds!.width.min, 256, "the floor survives (the 2.1 width burn)");
+  it("declares the model's per-side span — the ceiling is the declaration's, never the form's", () => {
+    assert.notEqual(bounds, null, "the DECL states its own canvas span");
+    assert.equal(bounds!.width.min, 480, "the API's 480 floor (480×1440 = 691,200 px at 3:1)");
+    assert.equal(bounds!.width.max, 7680, "7680×2560 is the widest legal 3:1 pair (19.66 MP)");
+    assert.equal(bounds!.height.min, 480);
+    assert.equal(bounds!.height.max, 7680);
+    assert.equal(size.multiple, 32, "local/ComfyUI sides land on the 32 grain");
+    assert.equal(size.minArea, 655_360);
+    assert.equal(size.maxArea, 20_000_000);
+    assert.equal(size.minAspect, 1 / 3);
+    assert.equal(size.maxAspect, 3);
   });
 
-  it("a 4096×1024 canvas (the ~4.2MP area law, one axis stretched) judges CLEAN", () => {
-    assert.deepEqual(judgeLaneBounds(bounds, { width: 4096, height: 1024 }), [],
-      "the long canvas admits — the working area is what the checkpoint is tuned for");
+  it("the model's own recommended 4K and 2K pairs judge CLEAN", () => {
+    for (const [width, height] of [
+      [4096, 4096], [4736, 3552], [5024, 3360], [5472, 3072], [6272, 2688], [7104, 2368],
+      [2048, 2048], [2720, 1536], [3552, 1184],
+    ]) {
+      assert.deepEqual(judge({ width, height }), [], `${width}×${height} is inside the model's own canvas`);
+    }
   });
 
-  it("a 4097 axis refuses with the range voice — the ceiling is hard", () => {
-    const v = judgeLaneBounds(bounds, { width: 4097, height: 1024 });
+  it("a 4096×1024 canvas refuses by ASPECT (4:1 past the 3:1 rail) — the old 'tuned for one axis' lie is dead", () => {
+    const v = judge({ width: 4096, height: 1024 });
     assert.equal(v.length, 1);
-    assert.match(v[0].message, /'width': 4097 is outside this lane's range \(256–4096\)/);
+    assert.match(v[0].message, /aspect is at most 3:1/);
+  });
+
+  it("a past-ceiling axis refuses with the range voice — the ceiling is hard", () => {
+    const v = judgeLaneBounds(bounds, { width: 7681, height: 1024 });
+    assert.equal(v.length, 1);
+    assert.match(v[0].message, /'width': 7681 is outside this lane's range \(480–7680\)/);
   });
 
   it("an under-floor axis refuses (the floor is the declaration's too)", () => {
     const v = judgeLaneBounds(bounds, { width: 192, height: 1024 });
     assert.equal(v.length, 1);
-    assert.match(v[0].message, /'width': 192 is outside this lane's range \(256–4096\)/);
+    assert.match(v[0].message, /'width': 192 is outside this lane's range \(480–7680\)/);
   });
 
-  it("the family default stays 2048×2048 — the expansion widens the ceiling, never the default", () => {
+  it("the pair law catches what per-side bounds cannot: grain, area and aspect — ONE row", () => {
+    const grain = judge({ width: 7104, height: 2369 });
+    assert.equal(grain.length, 1);
+    assert.match(grain[0].message, /both sides are multiples of 32/);
+    const area = judge({ width: 6048, height: 3360 });
+    assert.equal(area.length, 1);
+    assert.match(area[0].message, /area is at most 20000000 px/);
+    // 80 is a bounds crime first: the pair judge stands down (one row)
+    const floor = judge({ width: 80, height: 2048 });
+    assert.equal(floor.length, 1);
+    assert.match(floor[0].message, /'width': 80 is outside this lane's range \(480–7680\)/);
+  });
+
+  it("the family default stays 2048×2048 — the canvas widens the ceiling, never the default", () => {
     const defaults = DECL.defaults ?? {};
-    assert.equal(defaults.width, 2048, "unstated canvas lands the tuned default");
-    assert.equal(defaults.height, 2048, "unstated canvas lands the tuned default");
+    assert.equal(defaults.width, 2048, "unstated canvas lands the drafting default");
+    assert.equal(defaults.height, 2048, "unstated canvas lands the drafting default");
   });
 });

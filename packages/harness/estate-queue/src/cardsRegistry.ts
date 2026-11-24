@@ -100,7 +100,7 @@ import type { CardDeclRow, ModelFactsRow, ResolvedVariantRow, VariantCellRow } f
 import { cardAdmits, factsPath, deriveDecls, familyLanesOf, liftStageReservedForAdmission } from "./cardsFacts.ts";
 import { reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { dropAuthoringIncomplete, isEitherOrHalfVoice, isTogetherHalfVoice, isUnstatedRequiredVoice, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { dropAuthoringIncomplete, isEitherOrHalfVoice, isTogetherHalfVoice, isUnstatedRequiredVoice, judgeDeliverableSize, judgeLaneBounds, judgeLaneCanvas, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -1931,7 +1931,11 @@ export class CardRegistryService extends Service {
       ...judgeLaneSurface(surface, knobFields, prep.params),
       ...(servesDeliverableSwitch ? judgeDeliverableSize(prep.params) : []),
       ...judgeLaneRelations(relations, prep.params),
-      ...judgeLaneBounds(bounds, prep.params),
+      // THE CANVAS PAIR LAW rides the bounds' seat (the h3-image
+      // truth cure, 2026-11-19): the per-side rows plus the pair's
+      // area/aspect/step grain, one door — a per-side row that
+      // already voices the crime keeps the pair silent (one row).
+      ...judgeLaneCanvas(bounds, famRow.size ?? null, prep.params),
     ];
     const violations: LaneViolation[] = admitIncomplete
       ? incompleteDraftViolations(judgedFam)

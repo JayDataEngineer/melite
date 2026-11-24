@@ -34,6 +34,24 @@ import type { ReactNode } from 'react';
 export declare const chromeCopy: {
     /** The mixed knob's range aria-name suffix (the typed face owns the bare label). */
     readonly sliderAriaWord: "slider";
+    /** The mixed knob's local draft refusal — ONE sentence under the
+     *  row, only while a typed draft the banner cannot see is outside
+     *  the knob's span (the input-loss cure, 2026-11-19). */
+    readonly sliderDraftRefusal: (p: {
+        value: string;
+        span: string;
+    }) => string;
+    /** The mixed knob's local draft refusal for a non-number draft. */
+    readonly sliderDraftNaN: (p: {
+        value: string;
+    }) => string;
+    /** The mixed knob's local draft refusal when the lane's span is
+     *  EMPTY (a disjoint envelope ∩ bounds) — no typed value can land,
+     *  so the sentence offers only the clear. */
+    readonly sliderDraftNoSpan: () => string;
+    /** The draft refusal's span word when NEITHER side is bounded
+     *  (a malformed served field: the atom still owns one sentence). */
+    readonly sliderDraftSpanFallback: () => string;
     /** Model axes heading + the model picker's accessible name (one word, two seats). */
     readonly modelLabel: "Model";
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */

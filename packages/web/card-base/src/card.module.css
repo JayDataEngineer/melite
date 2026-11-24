@@ -229,7 +229,22 @@ select option {
 .specSliderRow {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+/* THE REFUSED BOX (the input-loss cure, 2026-11-19): a held value
+ * the span cannot hold keeps its seat and its editability — the
+ * border is the only decoration; the row's single voice is the lane
+ * banner (held) or the one local sentence (a draft that did not
+ * land). */
+.specSliderRow[data-refused] .specSliderInput {
+  border-color: var(--dsw-alias-state-error-primary, #e5484d);
+}
+.specSliderRefusal {
+  color: var(--dsw-alias-state-error-primary, #e5484d);
+  flex-basis: 100%;
+  font-size: 11px;
+  line-height: 1.35;
 }
 .specSlider { flex: 1 1 0%; accent-color: var(--dsw-alias-accent, #3b82f6); }
 /* the mixed knob's typed face: a compact box beside the track —

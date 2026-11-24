@@ -113,7 +113,7 @@ export type {
 import {
   dropAuthoringIncomplete,
   judgeDeliverableSize,
-  judgeLaneBounds,
+  judgeLaneCanvas,
   judgeLaneRelations,
   judgeLaneSurface,
   laneBlank,
@@ -129,6 +129,7 @@ import {
   variantMatrixFromFlatRows,
   type LaneBounds,
   type LaneRelations,
+  type LaneSizeLaw,
   type LaneViolation,
   type SamplerEnvelope,
 } from '@melite/contracts/laneRelations'
@@ -927,6 +928,14 @@ export function laneBoundsFor(
   )
 }
 
+/** THE CANVAS PAIR LAW the served lane declares (absent = none):
+ *  the benchmark's width×height geometry — a per-side bounds row
+ *  cannot express the step grain, the area envelope or the aspect
+ *  span the model refuses outside. */
+export function laneSizeFor(spec: FormSpecDoc): LaneSizeLaw | null {
+  return spec.lanes?.size ?? null
+}
+
 /** Field visibility UNDER the lane contract: a declared surface
  *  hides every field it does not name (the declaration is the
  *  author — the field set IS the variant); a family that declares
@@ -1002,7 +1011,13 @@ export function laneViolations(
   // exact failure this whole shape exists to kill. Latent today (no
   // such DECL), fatal the day one lands.
   const relations = laneRelationsFor(spec, variantId)
-  if (surface === null && relations.length === 0) return []
+  // THE EARLY RETURN RETIRED (the h3-image truth cure, 2026-11-19):
+  // a family that declares BOUNDS or the CANVAS PAIR LAW and no
+  // surface/relations used to return here — its numeric law never
+  // reached the form, so the write door refused keys the form showed
+  // clean (the 2026-11-18 canvas burn's second half). The judges
+  // below already stand down on null declarations, so reading them
+  // costs a familyless lane nothing.
   // THE NAMING ROW IS STAGE POLICY (the rc.3 burn, operator
   // 2026-11-16: "field 'output_name' fires nothing on this lane" at
   // the form face while every server door admits it): the spec
@@ -1050,7 +1065,7 @@ export function laneViolations(
     ...judgeLaneSurface(surface, names, stated),
     ...(servesDeliverableSwitch ? judgeDeliverableSize(stated) : []),
     ...judgeLaneRelations(relations, stated),
-    ...judgeLaneBounds(bounds, stated),
+    ...judgeLaneCanvas(bounds, laneSizeFor(spec), stated),
   ])
 }
 

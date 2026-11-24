@@ -41,7 +41,7 @@ export const DECL: ModelDecl = {
   "id": "h3-image",
   "form": "form_generate",
   "label": "MiniMax H3 Image",
-  "description": "MiniMax-H3-Image — the image checkpoint of the H3 line (t2i here, prompt-only; the sibling h3-image-edit family serves the reference-guided edit lane on the image-edit card — same weights, the conditioning node's vision path rides THERE as input_images). One MiniMaxH3ImageConditioning node conditions on the prompt and emits the canvas latent itself; the negative rides ConditioningZeroOut at cfg 1 (distilled guidance — the lane has no negative seat), 6 steps euler/simple per the official template. The model's own area law: tuned for ~2048x2048 pixels of working area, 32-multiple canvas — the lane composes low-resolution work poorly, which is the edit sibling's 4MP pre-scale law.",
+  "description": "MiniMax-H3-Image — the image checkpoint of the H3 line (t2i here, prompt-only; the sibling h3-image-edit family serves the reference-guided edit lane on the image-edit card — same weights, the conditioning node's vision path rides THERE as input_images). One MiniMaxH3ImageConditioning node conditions on the prompt and emits the canvas latent itself; the negative rides ConditioningZeroOut at cfg 1 (distilled guidance — the lane has no negative seat), 6 steps euler/simple per the official template. The model's own canvas law: native 4K (~16 MP) with 2K (4 MP) drafting, 32-multiple sides, area 655,360–20,000,000 px, aspect 1:3–3:1 — 4096x4096, 4736x3552, 5024x3360, 5472x3072, 6272x2688 and 7104x2368 are the recommended 4K canvases; 2048x2048, 2720x1536 and 3552x1184 the 2K set.",
   "engine": "comfyui",
   "defaults": {
     "width": 2048,
@@ -89,18 +89,35 @@ export const DECL: ModelDecl = {
       },
     ],
   },
-  // THE MAX-CANVAS EXPANSION (operator 2026-11-18: "you did not
-  // expand the max image size for Minimax-image like you said you
-  // would"). This checkpoint is tuned for a ~2048² (≈4.2MP) working
-  // area — the expansion stretches ONE axis to 4096 while the other
-  // comes down (4096×1024 stays ~4.2MP; 4096×4096 quadruples the
-  // area the conditioning geometry is tuned for, so it is out of
-  // tune, not out of bounds). The card schema's ceiling is 4096; THIS
-  // row is the per-family ceiling the lane-bounds judge reads — the
-  // sibling image-gen families each pin their own 2048 below.
+  // THE CANVAS LAW (the 2026-11-19 truth cure: the old 4096
+  // ceiling and the "tuned for ~2048²" comments were WRONG — the
+  // operator's model truth is native 4K ≈ 16 MP, 2K drafting, and a
+  // hard API envelope of 655,360–20,000,000 px at aspect 1:3–3:1,
+  // with 32-multiple sides on the local engine). The per-side rows
+  // hold the widest legal sides: the smallest side an in-envelope
+  // pair can state is 480 (480x1440 = the 3:1 floor at 691,200 px),
+  // the largest is 7680 (7680x2560 = the 3:1 ceiling at
+  // 19,660,800 px) — a per-side row cannot express the area/aspect
+  // themselves, so `size` below judges the PAIR. The card schema
+  // serves the widest family's per-side surface (7680); the six
+  // sibling image-gen families pin their own 2048 below.
   "bounds": {
-    "width": { "min": 256, "max": 4096 },
-    "height": { "min": 256, "max": 4096 },
+    "width": { "min": 480, "max": 7680 },
+    "height": { "min": 480, "max": 7680 },
+  },
+  // THE PAIR LAW (the model's own canvas envelope, judged where the
+  // lane is judged: the form's inline gate and the bench write/run
+  // door): 32-multiple sides (the local ComfyUI latent grain),
+  // area 655,360–20,000,000 px (the API's hard floor/ceiling), and
+  // aspect 1:3–3:1. The recommended working range is 4–16 MP —
+  // advice, not a refusal, so it rides the description, not this
+  // row.
+  "size": {
+    "multiple": 32,
+    "minArea": 655360,
+    "maxArea": 20000000,
+    "minAspect": 0.3333333333333333,
+    "maxAspect": 3,
   },
   // THE LORAS BOARDING (operator 2026-11-06: every family applies
   // LoRAs): boards 'loras' — no first-party rows yet (the H3-Image

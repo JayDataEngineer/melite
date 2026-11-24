@@ -32,7 +32,7 @@ describe("C4 — the operator ranking is carried (the served-doc date ban strips
     const block = AGENT_MD.slice(at, AGENT_MD.indexOf("## Worked examples") > at ? AGENT_MD.indexOf("## Worked examples") : at + 1600);
     const body = block;
     assert.ok(!/20\d\d-\d\d-\d\d/.test(body), "no calendar date rides the served doc (the origin-label wall's sibling ban)");
-    for (const seat of ["moss-image", "krea-2 raw", "anima turbo", "h3-image", "2048-class", "h3-image-edit", "qwen-img-edit-21"]) {
+    for (const seat of ["moss-image", "krea-2 raw", "anima turbo", "h3-image", "native 4K", "h3-image-edit", "qwen-img-edit-21"]) {
       assert.ok(body.includes(seat), `the ranking names ${seat}`);
     }
     assert.ok(/retired photoreal family is struck/i.test(body), "the struck family is named by its ban-law spelling");
@@ -56,17 +56,27 @@ describe("C5 — the h3 steps marriage is stated, and its numbers MATCH THE DECL
 });
 
 describe("C6 — the canvas law lives ON THE CARD SURFACE (the thing read at compose time)", () => {
-  it("the width/height knobs carry the per-family canvas-law tooltip", () => {
+  it("the width/height knobs carry the MODEL'S OWN canvas law (the retired 2048 myth is dead)", () => {
     // THE BURN'S PROOF THE OLD PLACEMENT WAS WRONG: the under-size
     // happened DESPITE the skill having been read — the skill file
-    // is not the compose-time surface; the knob tooltip is.
+    // is not the compose-time surface; the knob tooltip is. THE
+    // SECOND BURN (operator 2026-11-19: "AHHH I CAN'T EVEN DO THE
+    // RECOMMENDED RESOLUTION"): the tooltip taught a 2048² ceiling
+    // the model never had. It now states the model's published
+    // truth — the recommended 4K pairs and the hard canvas rails.
     // schemastery: .extra('extra', bag(...)) lands in knob.meta.extra
     const dict = (imageGenSchema as unknown as { dict?: Record<string, { meta?: { extra?: { tooltip?: string } } }> }).dict;
     assert.ok(dict !== undefined, "the card schema exposes its knob dict");
     for (const knob of ["width", "height"]) {
       const tooltip = dict[knob]?.meta?.extra?.tooltip ?? "";
-      assert.ok(tooltip.includes("2048"), `the ${knob} knob's tooltip names the h3 2048-class canvas law`);
-      assert.ok(tooltip.includes("composes poorly"), `the ${knob} knob's tooltip warns that under-size composes poorly on h3`);
+      assert.ok(tooltip.includes("native-4K"), `the ${knob} knob's tooltip names the model's native-4K truth`);
+      for (const pair of ["4096x4096", "5472x3072", "7104x2368"]) {
+        assert.ok(tooltip.includes(pair), `the ${knob} knob's tooltip names the recommended 4K canvas ${pair}`);
+      }
+      assert.ok(tooltip.includes("32-multiple"), `the ${knob} knob's tooltip names the 32 grain`);
+      assert.ok(tooltip.includes("655,360-20,000,000"), `the ${knob} knob's tooltip names the API's area span`);
+      assert.ok(tooltip.includes("1:3-3:1"), `the ${knob} knob's tooltip names the aspect rail`);
+      assert.ok(!tooltip.includes("composes poorly"), `the ${knob} knob's retired under-size warning is gone`);
     }
   });
 });

@@ -541,6 +541,92 @@ export function laneSurfaceOf(familyParams, variantParams, cellParams) {
             ...(cellParams ?? []),
         ])];
 }
+/** The bounds-range sentence stem — the judge's one spelling and the
+ *  form's duplicate mute read the same literal (a compose gate that
+ *  already voices the field owns the row; the lane's bounds voice
+ *  stands down). */
+export const LANE_BOUNDS_RANGE_STEM = " is outside this lane's range (";
+/** The bounds class test: the sentence is the lane's per-field
+ *  range refusal.
+ *  @param text the refusal sentence to classify
+ *  @returns true when the sentence is the bounds-range voice */
+export function isLaneBoundsVoice(text) {
+    return text.includes(LANE_BOUNDS_RANGE_STEM);
+}
+/** The canvas sentence stem — the pair judge's one spelling.
+ *  @param text the refusal sentence to classify
+ *  @returns true when the sentence is the canvas-pair voice */
+export function isLaneCanvasVoice(text) {
+    return text.includes(' is outside this lane\'s canvas (');
+}
+/** A ratio in the model's own `W:H` spelling (3 → '3:1', 1/3 →
+ *  '1:3', 2.35 → '2.35:1') — a canvas refusal names the law in the
+ *  units the model publishes, never a bare float. */
+function ratioWord(ratio) {
+    const inv = 1 / ratio;
+    if (ratio > 0 && Math.abs(inv - Math.round(inv)) < 1e-9)
+        return '1:' + String(Math.round(inv));
+    if (Math.abs(ratio - Math.round(ratio)) < 1e-9)
+        return String(Math.round(ratio)) + ':1';
+    return String(Math.round(ratio * 100) / 100) + ':1';
+}
+/** THE PAIR-LEVEL CANVAS JUDGMENT: the lane's declared canvas law
+ *  over the STATED width/height pair. A half pair is authoring (the
+ *  blank law's own tolerance), never a refusal; a blank or
+ *  non-number side stands down (the card schema owns type
+ *  refusals). Every failed clause rides the ONE sentence, and the
+ *  named field is 'width' — the press strip's unstamp reverts it to
+ *  the family default, which re-derives the pair.
+ *  @param size the lane's canvas law (null/undefined = none).
+ *  @param values the stated state (width/height read by name).
+ *  @returns one violation, or none. */
+export function judgeLaneSize(size, values) {
+    if (size === null || size === undefined)
+        return [];
+    const w = values['width'];
+    const h = values['height'];
+    if (laneBlank(w) || laneBlank(h) || typeof w !== 'number' || typeof h !== 'number')
+        return [];
+    if (!Number.isFinite(w) || !Number.isFinite(h))
+        return [];
+    const failed = [];
+    if (size.multiple !== undefined && (w % size.multiple !== 0 || h % size.multiple !== 0)) {
+        failed.push('both sides are multiples of ' + size.multiple);
+    }
+    const area = w * h;
+    if (size.minArea !== undefined && area < size.minArea)
+        failed.push('area is at least ' + size.minArea + ' px');
+    if (size.maxArea !== undefined && area > size.maxArea)
+        failed.push('area is at most ' + size.maxArea + ' px');
+    const aspect = h === 0 ? Number.POSITIVE_INFINITY : w / h;
+    if (size.minAspect !== undefined && aspect < size.minAspect)
+        failed.push('aspect is at least ' + ratioWord(size.minAspect));
+    if (size.maxAspect !== undefined && aspect > size.maxAspect)
+        failed.push('aspect is at most ' + ratioWord(size.maxAspect));
+    if (failed.length === 0)
+        return [];
+    return [{
+            field: 'width',
+            message: "'width' × 'height': " + w + ' × ' + h + " is outside this lane's canvas (" +
+                failed.join('; ') + ') — ' +
+                'restate the pair inside the canvas, or leave it unstated for the family default ' +
+                '(the model owns the floor and the ceiling — the declaration, not the form)',
+        }];
+}
+/** THE ONE CANVAS DOOR: the per-field bounds plus the pair law, with
+ *  the pair standing down while a per-side row already voices the
+ *  crime (one crime, one row — a width below the lane's range must
+ *  not ALSO be reported as an area miss).
+ *  @param bounds the lane's per-field numeric domains.
+ *  @param size the lane's canvas law (null/undefined = none).
+ *  @param values the stated state.
+ *  @returns every canvas violation the write/run seats voice. */
+export function judgeLaneCanvas(bounds, size, values) {
+    const out = judgeLaneBounds(bounds, values);
+    if (out.some((v) => v.field === 'width' || v.field === 'height'))
+        return out;
+    return [...out, ...judgeLaneSize(size, values)];
+}
 export function laneBoundsOf(familyBounds, variantBounds) {
     if (familyBounds === undefined || familyBounds === null) {
         return variantBounds === undefined || variantBounds === null
@@ -750,6 +836,7 @@ export function laneContractOf(decl) {
         ...(decl.params !== undefined ? { base: [...decl.params] } : {}),
         ...(decl.relations !== undefined ? { relations: decl.relations } : {}),
         ...(decl.bounds !== undefined ? { bounds: decl.bounds } : {}),
+        ...(decl.size !== undefined ? { size: decl.size } : {}),
         variants,
     };
 }

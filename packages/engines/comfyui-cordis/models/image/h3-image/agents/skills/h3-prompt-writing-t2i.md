@@ -11,16 +11,22 @@ description: The official MiniMax H3-Image text-to-image guide — brief develop
 
 ## The canvas law (this lane's own — read before stating width/height)
 
-The H3-Image checkpoint is tuned for a **2048-class working area** (the
-node's own law: ~2048×2048 pixels, 32-multiple canvas). The family
-default on this card is `width: 2048, height: 2048`. The lane composes
-low-resolution work poorly — the official template's own line is
-"MiniMax H3 Image doesn't work well in low resolution", and the edit
-sibling pre-scales every reference to 4 MP for exactly this reason.
+The H3-Image checkpoint is a **native-4K model (~16 MP)** with a 2K
+drafting floor. Its own law: 32-multiple sides, area 655,360–20,000,000
+px, aspect 1:3–3:1 (per-side 480–7680) — the lane refuses a pair outside
+it. The family default on this card is the 2K drafting pair
+`width: 2048, height: 2048`; state one of the model's own pairs for a
+4K render:
 
-When you state width/height yourself, stay in the big band (≥ ~2 MP;
-2048×2048 is the tuned center). A small canvas (832×1216, 1024×1024)
-does not render faster-and-fine here — it renders worse.
+- 4K: `4096×4096`, `4736×3552`, `5024×3360`, `5472×3072`,
+  `6272×2688`, `7104×2368`
+- 2K: `2048×2048`, `2720×1536`, `3552×1184`
+
+The lane composes low-resolution work poorly — the official template's
+own line is "MiniMax H3 Image doesn't work well in low resolution", and
+the edit sibling pre-scales every reference to 4 MP for exactly this
+reason. A small canvas (832×1216, 1024×1024) does not render
+faster-and-fine here — it renders worse.
 
 **The inheritance hazard (a real burn, 2026-11-17):** the bench keeps
 stated params across a model flip. If a previous family's canvas (a

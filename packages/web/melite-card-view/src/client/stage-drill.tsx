@@ -38,7 +38,8 @@ import { CardDrill } from './card-drill.tsx'
 import { VerbBar } from './verb-bar.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, resolveFamilyKey, uploadLoraDoor, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { coerceFieldEdit, fetchFormSpec, fieldsOf, laneViolations, resolveValue, seedUser, reseatEnvelopeKeys, CardForm, resolveFamilyKey, uploadLoraDoor, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { isLaneBoundsVoice, isLaneCanvasVoice } from '@melite/contracts/laneRelations'
 import { axisUnset, axisGroups, axisKey, composeCandidateDoc, composeValidate, dropStaleReopenCarry, mergeSwitchFrame, modelSwitchPatch, studioClaimsRow } from '@melite/card-base/client'
 import type { ComposeViolation } from '@melite/card-base/client'
 import { forgetStageWrites, reconcileStageWriteFailures, refuseForUnlandedWrite, scheduleStageParam } from './draft.ts'
@@ -253,6 +254,71 @@ function composePendingVoice(
  *  rest: the twice face). The mirror and family clauses name keys NO
  *  rendered control owns, so each row's words must act (the field's
  *  unstamp), not just name. */
+/** THE LANE LAW ON THE PRESS (the h3-image truth cure, 2026-11-19):
+ *  the write/run door refuses the lane's bounds, canvas pair and
+ *  relations exactly as loudly as the compose gate — judging them
+ *  HERE lets the press refuse BEFORE the wire (the strip voices one
+ *  row; the form banner stands down under the same message) and
+ *  lets an authoring write hold a refused value without bouncing it
+ *  through the door. The judge reads the CARRIED layers (user over
+ *  base, nulls deleted) — never the resolved map, whose
+ *  materialized defaults would read as stated. The compose gate's
+ *  own bounds voice (a sampler envelope projected into the served
+ *  bounds) owns its field: the lane's duplicate stands down.
+ *  @param spec the served doc (null = nothing to judge).
+ *  @param held the bench row's carried params.
+ *  @param user the studio's authored layer.
+ *  @param frame the candidate patch (a null DELETES its key).
+ *  @returns the lane-class violations the write door would speak. */
+function laneGateViolations(
+  spec: FormSpecDoc | null,
+  held: Record<string, unknown> | undefined,
+  user: SpecValues,
+  frame: Record<string, unknown>,
+): ComposeViolation[] {
+  if (spec === null) return []
+  // the DOOR's view: the bench row, the studio layer and the frame
+  // merged with JSON-Merge-Patch nulls (a null DELETES its key) —
+  // never laneViolations' base-then-user layer fold, where a null
+  // in the user layer merely skips and the departed base stamp
+  // resurrects (the pick⇄strike burn: a lawful pick read as stating
+  // the lane it just left).
+  const candidate = composeCandidateDoc(held ?? {}, user, frame)
+  const gate = composeValidate(spec, candidate)
+  // the gate's own field claims: a violation's `field`, plus the
+  // sampler-envelope voice (which names its knob in prose, no field
+  // key) — its crime IS the lane bounds row the serve projected from
+  // the same envelope, so the duplicate must stand down.
+  const gateFields = new Set(gate.flatMap((v) => (v.field !== undefined ? [v.field] : [])))
+  for (const v of gate) {
+    const named = /^card_compose: stated (\w+) /.exec(v.message)
+    if (named !== null) gateFields.add(named[1]!)
+  }
+  // ONLY the lane's numeric law joins the press (bounds, the canvas
+  // pair). Relations and undeclared-key rows are the COMPOSE gate's
+  // voice at the refusing authority — the banner's lane-warn seat
+  // keeps its relation words (the split-seat law P0-D), and the
+  // strip never re-words a crime the gate already speaks.
+  return laneViolations(spec, fieldsOf(spec), candidate).filter((v) =>
+    (isLaneBoundsVoice(v.message) || isLaneCanvasVoice(v.message)) && !gateFields.has(v.field))
+}
+
+/** THE AUTHORING HOLD (the input-loss cure, 2026-11-19): a typed
+ *  edit that leaves the lane refused is NOT written — the form's
+ *  lane banner is its one voice, the studio keeps the value, and
+ *  the press flushes it once the state heals. (The old arm wrote,
+ *  the door refused, and the operator saw the banner AND the
+ *  unlanded strip for one value.) */
+function laneRefused(
+  spec: FormSpecDoc | null,
+  held: Record<string, unknown> | undefined,
+  user: SpecValues,
+  frame: Record<string, unknown>,
+): boolean {
+  return laneGateViolations(spec, held, user, frame).some((v) =>
+    isLaneBoundsVoice(v.message) || isLaneCanvasVoice(v.message))
+}
+
 function composeGateViolations(
   spec: FormSpecDoc | null,
   held: Record<string, unknown> | undefined,
@@ -260,7 +326,10 @@ function composeGateViolations(
   frame: Record<string, unknown>,
 ): ComposeViolation[] {
   if (spec === null) return []
-  return composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame))
+  return [
+    ...composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame)),
+    ...laneGateViolations(spec, held, user, frame),
+  ]
 }
 
 export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
@@ -913,6 +982,16 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19). image_list rides the slot flush below (THE STACK GESTURE LAW, 2026-10-13: an upload onto a stack is as discrete as a slot pick — the trailing write's delay let a close-before-flush drop it) */
     if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh' && shape2 !== 'image_list') {
+      // THE AUTHORING HOLD (the input-loss cure, 2026-11-19): a
+      // typed value the LANE refuses (bounds, the canvas pair) is
+      // held in the studio, never written — the write door would
+      // refuse it, painting the form banner AND the unlanded strip
+      // for one value. The form's lane banner is its one voice; the
+      // press flushes the value once the state heals. Judged against
+      // the DOOR's view (the bench row plus this key), never the
+      // whole studio: an unrelated held draft must not freeze the
+      // writes the door would admit.
+      if (laneRefused(spec, stage.params, {}, { [name]: v })) return
       // THE FRICTIONLESS-AUTHORING CURE (the voice_name brick's
       // class, killed generically): a typed write NEVER drops on a
       // compose violation — half a required pair is a state being

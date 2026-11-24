@@ -738,11 +738,15 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     assert.deepEqual(stepRow?.bounds, [1, 100]);
     assert.deepEqual(cfgRow?.bounds, [1, 20]);
     const widthRow = diffusionParamRows().find((r) => r.name === "width");
-    // [256, 2048] -> [256, 4096] (2026-11-18, the max-canvas
-    // expansion): the shared diffusion surface carries the WIDEST
-    // family's ceiling; each family's own tighter cap is its DECL
-    // bounds row (the lane-bounds judge's seat).
-    assert.deepEqual(widthRow?.bounds, [256, 4096]);
+    // [256, 2048] -> [256, 4096] -> [256, 7680] (2026-11-19, the
+    // h3-image truth cure): the shared diffusion surface carries the
+    // WIDEST family's ceiling; each family's own tighter cap is its
+    // DECL bounds row (the lane-bounds judge's seat). MiniMax-H3-Image
+    // publishes a 1:3–3:1 canvas whose widest legal pair is 7680×2560
+    // (19.66 MP), so a 4096 shared ceiling silently hid the model's
+    // own recommended 4K widths (5472, 7104) from every card that
+    // rides the shared rows.
+    assert.deepEqual(widthRow?.bounds, [256, 7680]);
     const editWidth = diffusionParamRows(EDIT_DIFFUSION_BOUNDS).find((r) => r.name === "width");
     assert.equal(editWidth, undefined, "the edit families RETIRE the size pair (size: false — the latent law)");
   });

@@ -11,7 +11,7 @@
  */
 import type { Wtype } from './extraKeys.js';
 import type { FamilyLaw } from './familyLane.js';
-import type { LaneRelations, SamplerEnvelope } from './laneRelations.js';
+import type { LaneRelations, LaneSizeLaw, SamplerEnvelope } from './laneRelations.js';
 /** One node of a serialized schemastery schema (toJSON's refs entry):
  *  `type` discriminates, `meta` carries the declaration's facts
  *  (description/min/max/step/default + the UI bag under meta.extra),
@@ -584,6 +584,12 @@ export interface FormSpecDoc {
             min?: number;
             max?: number;
         }>>;
+        /** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19):
+         *  the model's own width×height geometry (step grain, area,
+         *  aspect) — served so the form's inline gate and the bench
+         *  write/run door judge one truth. Absent = per-field bounds
+         *  only. */
+        size?: LaneSizeLaw;
         /** Per-variant lane rows. `cells` (the size-at-quant reshape,
          *  operator 2026-10-26: "THEN QUANT, THAT IS WHERE YOU CHOSE
          *  1.7 OR .6") carries a size cell's additions keyed by quant —

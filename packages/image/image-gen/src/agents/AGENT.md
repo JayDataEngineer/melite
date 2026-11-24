@@ -69,7 +69,8 @@ signature default when the brief names a look:
   docs and text — moss is its replacement in every routing seat.
 - THE PHOTOREAL/ANIME ROUTING RANKING: photoreal → **moss-image** or **krea-2 raw**;
   anime → **anima turbo**; dense multi-element scenes + realism →
-  **h3-image** (at its 2048-class canvas); edits → **h3-image-edit**
+  **h3-image** (native 4K — state one of its recommended pairs);
+  edits → **h3-image-edit**
   / **qwen-img-edit-21**. The RETIRED PHOTOREAL FAMILY is struck
   from the ranking entirely (the photoreal-ban law, same date:
   the operator's comparison ruling retired it from every routing
@@ -92,10 +93,14 @@ signature default when the brief names a look:
   cfg [1, 2]** — state nothing and the 6/1 marriage lands (law 3
   stands); a quality-push may pin steps inside the envelope, and
   cfg above 1 leans on a zeroed negative (a bounded experiment,
-  never a recipe). THE CANVAS LAW (C6/A4): h3 is tuned for
-  **~2048×2048 working area** — leave width/height unstated and
-  the 2048² family default lands; an 832×1216-class canvas composes
-  POORLY on this family.
+  never a recipe). THE CANVAS LAW (C6/A4): h3 is a NATIVE-4K
+  checkpoint (~16 MP) with a 2K drafting floor. Leave width/height
+  unstated and the 2048×2048 drafting default lands; for the look
+  the brief wants, state one of the model's own pairs —
+  **4096×4096, 4736×3552, 5024×3360, 5472×3072, 6272×2688,
+  7104×2368** (the 2K set: 2048×2048, 2720×1536, 3552×1184). The
+  lane enforces the model's rails: 32-multiple sides, area
+  655,360–20,000,000 px, aspect 1:3–3:1, per-side 480–7680.
 
 Ambiguous ("make it cool")? ASK the user which look — one line,
 the options. The family rides `params.model` on the stage

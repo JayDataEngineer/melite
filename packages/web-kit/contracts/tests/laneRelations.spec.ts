@@ -10,12 +10,16 @@ import assert from "node:assert/strict";
 import {
   laneBlank,
   judgeLaneBounds,
+  judgeLaneCanvas,
+  judgeLaneSize,
   judgeLaneRelations,
   judgeLaneSurface,
   laneBoundsOf,
   laneContractOf,
   laneTogetherClosure,
   laneSurfaceOf,
+  isLaneBoundsVoice,
+  isLaneCanvasVoice,
   isPurelyUnstatedRequiredVoice,
   isUnstatedRequiredVoice,
 } from "../src/laneRelations.ts";
@@ -442,5 +446,91 @@ describe('laneContractOf projects the route envelope into bounds', () => {
     const violations = judgeLaneBounds(bounds, { steps: 40, cfg: 1.5 })
     assert.equal(violations.length, 1)
     assert.match(violations[0]!.message, /'steps': 40 is outside this lane's range \(4–30\)/)
+  })
+})
+
+// ── THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+// DECL's native geometry, judged over the STATED pair. The operator's
+// burn: the form offered a 4096 axis ceiling the model never had and
+// refused the model's own recommended 4K pair. The law is the
+// model's published truth — sides in 32s, 655,360–20,000,000 px,
+// 1:3–3:1 — and it fires ONE row, in the canvas's own voice.
+describe('judgeLaneSize / judgeLaneCanvas (the canvas pair law)', () => {
+  const h3 = {
+    multiple: 32,
+    minArea: 655_360,
+    maxArea: 20_000_000,
+    minAspect: 1 / 3,
+    maxAspect: 3,
+  } as const
+
+  it('the model\'s own recommended 4K and 2K pairs are clean', () => {
+    for (const [width, height] of [
+      [4096, 4096],
+      [4736, 3552],
+      [5024, 3360],
+      [5472, 3072],
+      [6272, 2688],
+      [7104, 2368],
+      [2048, 2048],
+      [2720, 1536],
+      [3552, 1184],
+    ]) {
+      assert.deepEqual(judgeLaneSize(h3, { width, height }), [], `${width}×${height} is inside the model's canvas`)
+    }
+  })
+
+  it('a side off the 32 grain refuses ONCE, naming the grain and the width field', () => {
+    const v = judgeLaneSize(h3, { width: 7104, height: 2369 })
+    assert.equal(v.length, 1)
+    assert.equal(v[0]!.field, 'width')
+    assert.match(v[0]!.message, /'width' × 'height': 7104 × 2369 is outside this lane's canvas \(/)
+    assert.match(v[0]!.message, /both sides are multiples of 32/)
+    assert.doesNotMatch(v[0]!.message, /area is/)
+    assert.ok(isLaneCanvasVoice(v[0]!.message))
+  })
+
+  it('the area floor and ceiling refuse (the API hard bounds)', () => {
+    assert.match(judgeLaneSize(h3, { width: 480, height: 480 })[0]!.message, /area is at least 655360 px/)
+    assert.match(judgeLaneSize(h3, { width: 6000, height: 4000 })[0]!.message, /area is at most 20000000 px/)
+    // the floor's own edge is legal: 480×1440 = 691,200 px at 3:1
+    assert.deepEqual(judgeLaneSize(h3, { width: 480, height: 1440 }), [])
+  })
+
+  it('the aspect rail refuses past 3:1 and under 1:3, in the model\'s own ratio spelling', () => {
+    assert.match(judgeLaneSize(h3, { width: 4096, height: 1024 })[0]!.message, /aspect is at most 3:1/)
+    assert.match(judgeLaneSize(h3, { width: 1024, height: 4096 })[0]!.message, /aspect is at least 1:3/)
+    // exactly 3:1 is legal (the rail is closed)
+    assert.deepEqual(judgeLaneSize(h3, { width: 3552, height: 1184 }), [])
+  })
+
+  it('a half pair, a blank, a non-number and a missing law never fire (authoring tolerance)', () => {
+    assert.deepEqual(judgeLaneSize(h3, { width: 4096 }), [])
+    assert.deepEqual(judgeLaneSize(h3, { height: 4096 }), [])
+    assert.deepEqual(judgeLaneSize(h3, { width: '', height: 4096 }), [])
+    assert.deepEqual(judgeLaneSize(h3, { width: '4096', height: 3072 }), [])
+    assert.deepEqual(judgeLaneSize(null, { width: 1, height: 1 }), [])
+    assert.deepEqual(judgeLaneSize(undefined, { width: 1, height: 1 }), [])
+  })
+
+  it('judgeLaneCanvas: the per-side bounds own their crime — the pair stands down (one row)', () => {
+    const bounds = { width: { min: 480, max: 7680 }, height: { min: 480, max: 7680 } }
+    const v = judgeLaneCanvas(bounds, h3, { width: 80, height: 1024 })
+    assert.equal(v.length, 1)
+    assert.equal(v[0]!.field, 'width')
+    assert.ok(isLaneBoundsVoice(v[0]!.message))
+    // bounds clean → the pair judges
+    const pair = judgeLaneCanvas(bounds, h3, { width: 4096, height: 1024 })
+    assert.equal(pair.length, 1)
+    assert.ok(isLaneCanvasVoice(pair[0]!.message))
+    // both clean → silent
+    assert.deepEqual(judgeLaneCanvas(bounds, h3, { width: 5472, height: 3072 }), [])
+  })
+
+  it('laneContractOf serves the size law on the family row (one construction, every face)', () => {
+    const row = laneContractOf({ params: ['prompt'], size: h3 })
+    assert.deepEqual(row.size, h3)
+    // absent stays absent (nothing invented)
+    assert.equal('size' in laneContractOf({ params: ['prompt'] }), false)
   })
 })

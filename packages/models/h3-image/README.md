@@ -19,8 +19,13 @@ in-prompt as `<Picture n>`) and emits BOTH the positive
 conditioning and the canvas latent; the negative rides
 `ConditioningZeroOut` at cfg 1 (distilled guidance — the lane has
 no negative_prompt seat); KSampler at the template's own counts
-(6 steps, euler/simple); decode + save. The node's area law:
-~2048x2048 pixels of working area, 32-multiple canvas.
+(6 steps, euler/simple); decode + save. The model's own canvas
+law: native 4K (~16 MP) with a 2K drafting floor, 32-multiple
+sides, area 655,360–20,000,000 px and aspect 1:3–3:1. Recommended
+4K canvases: 4096×4096, 4736×3552, 5024×3360, 5472×3072,
+6272×2688, 7104×2368; the 2K set: 2048×2048, 2720×1536,
+3552×1184. Per-side span: 480–7680 (7680×2560 is the widest legal
+3:1 pair at 19.66 MP)
 
 The encoder tiers and vae provision from the
 Comfy-Org/MiniMax-H3-Image repo; the qwen3vl-32b encoder files
@@ -45,8 +50,10 @@ conditioning.
 #### What the model sees
 
 The prompt (the one required relation word), the canvas pair, and
-the sampling block (6 steps / cfg 1 / euler / simple at 2048×2048
-by default). ONE `MiniMaxH3ImageConditioning` node conditions on
+the sampling block (6 steps / cfg 1 / euler / simple at the 2K
+drafting default 2048×2048; state any recommended 4K pair for
+native-4K output — the lane judges the model's own grain, area and
+aspect rails). ONE `MiniMaxH3ImageConditioning` node conditions on
 the prompt and emits BOTH the positive conditioning and the canvas
 latent; the negative rides `ConditioningZeroOut` — the lane has no
 negative seat. Reference pictures are NOT served on this lane
@@ -70,10 +77,11 @@ the family invalidates nothing cached.
 - **No negative seat** — a stated non-empty `negative_prompt`
   refuses at compose, never drops silently (distilled guidance at
   cfg 1).
-- **The area law bounds the canvas** — tuned for ~2048² of working
-  area; the 4096 ceiling stretches ONE axis (4096×1024 stays
-  ~4.2MP), while 4096×4096 quadruples the area the conditioning
-  geometry is tuned for — out of tune, not out of bounds.
+- **The canvas is the model's published law** — native 4K (~16 MP),
+  32-multiple sides, area 655,360–20,000,000 px, aspect 1:3–3:1.
+  The DECL declares that span (480–7680 per side) and the pair law;
+  an out-of-span pair refuses at the form/write door with the
+  model's own numbers, never a form-invented 2048 ceiling.
 - **Provisioning is required** — the H3-Image files are not on a
   box by default; a missing file refuses loud at engine validation
   (the encoder dedups against the h3 video family's seated files).

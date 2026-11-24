@@ -6,6 +6,19 @@
 export const chromeCopy = {
     /** The mixed knob's range aria-name suffix (the typed face owns the bare label). */
     sliderAriaWord: 'slider',
+    /** The mixed knob's local draft refusal — ONE sentence under the
+     *  row, only while a typed draft the banner cannot see is outside
+     *  the knob's span (the input-loss cure, 2026-11-19). */
+    sliderDraftRefusal: (p) => 'Not applied — ' + p.value + ' is ' + p.span + '. Type a value inside the span, or clear the box to leave it unstated.',
+    /** The mixed knob's local draft refusal for a non-number draft. */
+    sliderDraftNaN: (p) => 'Not applied — ' + p.value + ' is not a number. Type a number, or clear the box to leave it unstated.',
+    /** The mixed knob's local draft refusal when the lane's span is
+     *  EMPTY (a disjoint envelope ∩ bounds) — no typed value can land,
+     *  so the sentence offers only the clear. */
+    sliderDraftNoSpan: () => 'Not applied — this lane admits no value for this knob. Clear the box to leave it unstated.',
+    /** The draft refusal's span word when NEITHER side is bounded
+     *  (a malformed served field: the atom still owns one sentence). */
+    sliderDraftSpanFallback: () => 'outside the allowed range',
     /** Model axes heading + the model picker's accessible name (one word, two seats). */
     modelLabel: 'Model',
     /** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */

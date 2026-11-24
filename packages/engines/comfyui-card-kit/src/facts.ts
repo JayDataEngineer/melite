@@ -257,7 +257,7 @@ export function parseEditCap(reader: LaneInputsReader, label: string): number {
   return Math.floor(cap)
 }
 
-import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations'
+import type { LaneRelations, LaneSizeLaw, SamplerEnvelope } from '@melite/contracts/laneRelations'
 import { boardedPacks } from './mods/guard.ts'
 
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,
@@ -305,6 +305,11 @@ export interface ModelFacts {
    * only where the DECL declares one (absent ≡ the card's union
    * table authors the fields — the legacy truth, nothing binds). */
   params?: string[]
+  /** THE FAMILY SIZE LAW (the h3-image truth cure, 2026-11-19): the
+   * canvas grain (multiple, area, aspect) judged over the stated
+   * width/height pair — per-field bounds replace a variant's row but
+   * the grain is family-wide. Absent = no size judgment. */
+  size?: LaneSizeLaw
   /** The family-wide relation words (judged on every lane).
    * Present only where declared. */
   relations?: LaneRelationsFacts
@@ -661,6 +666,13 @@ function deriveRow(
   // domains, verbatim, present-only-where-declared.
   if (d.bounds !== undefined && d.bounds !== null) {
     row.bounds = JSON.parse(JSON.stringify(d.bounds)) as Record<string, { min?: number; max?: number }>
+  }
+  // THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+  // model's own width×height geometry rides the derived row so the
+  // bench door judges the same pair the form serves — present only
+  // where the DECL declares one (the absent-equals-empty law).
+  if (d.size !== undefined && d.size !== null) {
+    row.size = JSON.parse(JSON.stringify(d.size)) as LaneSizeLaw
   }
   // THE MARRIAGE GRAMMAR (#36, the openjutsu lane burn 2026-10-28):
   // DECL.mods entries are pack names or {pack, marries} rows — the

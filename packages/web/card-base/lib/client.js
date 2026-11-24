@@ -1872,6 +1872,71 @@ window.__ModuleLoader__.load({
 				...cellParams ?? []
 			])];
 		}
+		/** The bounds class test: the sentence is the lane's per-field
+		*  range refusal.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the bounds-range voice */
+		function isLaneBoundsVoice$1(text) {
+			return text.includes(LANE_BOUNDS_RANGE_STEM$1);
+		}
+		/** The canvas sentence stem — the pair judge's one spelling.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the canvas-pair voice */
+		function isLaneCanvasVoice(text) {
+			return text.includes(" is outside this lane's canvas (");
+		}
+		/** A ratio in the model's own `W:H` spelling (3 → '3:1', 1/3 →
+		*  '1:3', 2.35 → '2.35:1') — a canvas refusal names the law in the
+		*  units the model publishes, never a bare float. */
+		function ratioWord$1(ratio) {
+			const inv = 1 / ratio;
+			if (ratio > 0 && Math.abs(inv - Math.round(inv)) < 1e-9) return "1:" + String(Math.round(inv));
+			if (Math.abs(ratio - Math.round(ratio)) < 1e-9) return String(Math.round(ratio)) + ":1";
+			return String(Math.round(ratio * 100) / 100) + ":1";
+		}
+		/** THE PAIR-LEVEL CANVAS JUDGMENT: the lane's declared canvas law
+		*  over the STATED width/height pair. A half pair is authoring (the
+		*  blank law's own tolerance), never a refusal; a blank or
+		*  non-number side stands down (the card schema owns type
+		*  refusals). Every failed clause rides the ONE sentence, and the
+		*  named field is 'width' — the press strip's unstamp reverts it to
+		*  the family default, which re-derives the pair.
+		*  @param size the lane's canvas law (null/undefined = none).
+		*  @param values the stated state (width/height read by name).
+		*  @returns one violation, or none. */
+		function judgeLaneSize$1(size, values) {
+			if (size === null || size === void 0) return [];
+			const w = values["width"];
+			const h = values["height"];
+			if (laneBlank$1(w) || laneBlank$1(h) || typeof w !== "number" || typeof h !== "number") return [];
+			if (!Number.isFinite(w) || !Number.isFinite(h)) return [];
+			const failed = [];
+			if (size.multiple !== void 0 && (w % size.multiple !== 0 || h % size.multiple !== 0)) failed.push("both sides are multiples of " + size.multiple);
+			const area = w * h;
+			if (size.minArea !== void 0 && area < size.minArea) failed.push("area is at least " + size.minArea + " px");
+			if (size.maxArea !== void 0 && area > size.maxArea) failed.push("area is at most " + size.maxArea + " px");
+			const aspect = h === 0 ? Number.POSITIVE_INFINITY : w / h;
+			if (size.minAspect !== void 0 && aspect < size.minAspect) failed.push("aspect is at least " + ratioWord$1(size.minAspect));
+			if (size.maxAspect !== void 0 && aspect > size.maxAspect) failed.push("aspect is at most " + ratioWord$1(size.maxAspect));
+			if (failed.length === 0) return [];
+			return [{
+				field: "width",
+				message: "'width' × 'height': " + w + " × " + h + " is outside this lane's canvas (" + failed.join("; ") + ") — restate the pair inside the canvas, or leave it unstated for the family default (the model owns the floor and the ceiling — the declaration, not the form)"
+			}];
+		}
+		/** THE ONE CANVAS DOOR: the per-field bounds plus the pair law, with
+		*  the pair standing down while a per-side row already voices the
+		*  crime (one crime, one row — a width below the lane's range must
+		*  not ALSO be reported as an area miss).
+		*  @param bounds the lane's per-field numeric domains.
+		*  @param size the lane's canvas law (null/undefined = none).
+		*  @param values the stated state.
+		*  @returns every canvas violation the write/run seats voice. */
+		function judgeLaneCanvas$1(bounds, size, values) {
+			const out = judgeLaneBounds$1(bounds, values);
+			if (out.some((v) => v.field === "width" || v.field === "height")) return out;
+			return [...out, ...judgeLaneSize$1(size, values)];
+		}
 		function laneBoundsOf$1(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
 			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
@@ -2008,6 +2073,7 @@ window.__ModuleLoader__.load({
 				...decl.params !== void 0 ? { base: [...decl.params] } : {},
 				...decl.relations !== void 0 ? { relations: decl.relations } : {},
 				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+				...decl.size !== void 0 ? { size: decl.size } : {},
 				variants
 			};
 		}
@@ -2273,7 +2339,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote$1, UNSTATED_REQUIRED_STEM$1, TOGETHER_HALF_STEM$1, EITHER_OR_HALF_STEM$1, DELIVERABLE_HALF_STEM$1, statedOf$1, visibleRows$1, visibleCells$1, knownIds$1, knownQuants$1;
+		var RELATION_WORDS, quote$1, UNSTATED_REQUIRED_STEM$1, TOGETHER_HALF_STEM$1, EITHER_OR_HALF_STEM$1, DELIVERABLE_HALF_STEM$1, LANE_BOUNDS_RANGE_STEM$1, statedOf$1, visibleRows$1, visibleCells$1, knownIds$1, knownQuants$1;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -2288,6 +2354,7 @@ window.__ModuleLoader__.load({
 			TOGETHER_HALF_STEM$1 = " ride together on this lane (state all or none)";
 			EITHER_OR_HALF_STEM$1 = " — the stated combination completes none of them";
 			DELIVERABLE_HALF_STEM$1 = "state both width and height";
+			LANE_BOUNDS_RANGE_STEM$1 = " is outside this lane's range (";
 			statedOf$1 = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows$1 = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells$1 = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -4190,6 +4257,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET$1,
 			FLF_MODES: () => FLF_MODES,
 			FLOW_ID_RE: () => FLOW_ID_RE,
+			LANE_BOUNDS_RANGE_STEM: () => LANE_BOUNDS_RANGE_STEM$1,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX$1,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			LORA_ACCEPT: () => LORA_ACCEPT$1,
@@ -4237,6 +4305,8 @@ window.__ModuleLoader__.load({
 			isDataUrl: () => isDataUrl,
 			isDeliverableHalfVoice: () => isDeliverableHalfVoice$1,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice$1,
+			isLaneBoundsVoice: () => isLaneBoundsVoice$1,
+			isLaneCanvasVoice: () => isLaneCanvasVoice,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus$1,
@@ -4244,7 +4314,9 @@ window.__ModuleLoader__.load({
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice$1,
 			judgeDeliverableSize: () => judgeDeliverableSize$1,
 			judgeLaneBounds: () => judgeLaneBounds$1,
+			judgeLaneCanvas: () => judgeLaneCanvas$1,
 			judgeLaneRelations: () => judgeLaneRelations$1,
+			judgeLaneSize: () => judgeLaneSize$1,
 			judgeLaneSurface: () => judgeLaneSurface$1,
 			judgeSamplerEnvelope: () => judgeSamplerEnvelope$1,
 			kindForId: () => kindForId,
@@ -9040,6 +9112,70 @@ window.__ModuleLoader__.load({
 				...cellParams ?? []
 			])];
 		}
+		/** The bounds-range sentence stem — the judge's one spelling and the
+		*  form's duplicate mute read the same literal (a compose gate that
+		*  already voices the field owns the row; the lane's bounds voice
+		*  stands down). */
+		const LANE_BOUNDS_RANGE_STEM = " is outside this lane's range (";
+		/** The bounds class test: the sentence is the lane's per-field
+		*  range refusal.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the bounds-range voice */
+		function isLaneBoundsVoice(text) {
+			return text.includes(LANE_BOUNDS_RANGE_STEM);
+		}
+		/** A ratio in the model's own `W:H` spelling (3 → '3:1', 1/3 →
+		*  '1:3', 2.35 → '2.35:1') — a canvas refusal names the law in the
+		*  units the model publishes, never a bare float. */
+		function ratioWord(ratio) {
+			const inv = 1 / ratio;
+			if (ratio > 0 && Math.abs(inv - Math.round(inv)) < 1e-9) return "1:" + String(Math.round(inv));
+			if (Math.abs(ratio - Math.round(ratio)) < 1e-9) return String(Math.round(ratio)) + ":1";
+			return String(Math.round(ratio * 100) / 100) + ":1";
+		}
+		/** THE PAIR-LEVEL CANVAS JUDGMENT: the lane's declared canvas law
+		*  over the STATED width/height pair. A half pair is authoring (the
+		*  blank law's own tolerance), never a refusal; a blank or
+		*  non-number side stands down (the card schema owns type
+		*  refusals). Every failed clause rides the ONE sentence, and the
+		*  named field is 'width' — the press strip's unstamp reverts it to
+		*  the family default, which re-derives the pair.
+		*  @param size the lane's canvas law (null/undefined = none).
+		*  @param values the stated state (width/height read by name).
+		*  @returns one violation, or none. */
+		function judgeLaneSize(size, values) {
+			if (size === null || size === void 0) return [];
+			const w = values["width"];
+			const h = values["height"];
+			if (laneBlank(w) || laneBlank(h) || typeof w !== "number" || typeof h !== "number") return [];
+			if (!Number.isFinite(w) || !Number.isFinite(h)) return [];
+			const failed = [];
+			if (size.multiple !== void 0 && (w % size.multiple !== 0 || h % size.multiple !== 0)) failed.push("both sides are multiples of " + size.multiple);
+			const area = w * h;
+			if (size.minArea !== void 0 && area < size.minArea) failed.push("area is at least " + size.minArea + " px");
+			if (size.maxArea !== void 0 && area > size.maxArea) failed.push("area is at most " + size.maxArea + " px");
+			const aspect = h === 0 ? Number.POSITIVE_INFINITY : w / h;
+			if (size.minAspect !== void 0 && aspect < size.minAspect) failed.push("aspect is at least " + ratioWord(size.minAspect));
+			if (size.maxAspect !== void 0 && aspect > size.maxAspect) failed.push("aspect is at most " + ratioWord(size.maxAspect));
+			if (failed.length === 0) return [];
+			return [{
+				field: "width",
+				message: "'width' × 'height': " + w + " × " + h + " is outside this lane's canvas (" + failed.join("; ") + ") — restate the pair inside the canvas, or leave it unstated for the family default (the model owns the floor and the ceiling — the declaration, not the form)"
+			}];
+		}
+		/** THE ONE CANVAS DOOR: the per-field bounds plus the pair law, with
+		*  the pair standing down while a per-side row already voices the
+		*  crime (one crime, one row — a width below the lane's range must
+		*  not ALSO be reported as an area miss).
+		*  @param bounds the lane's per-field numeric domains.
+		*  @param size the lane's canvas law (null/undefined = none).
+		*  @param values the stated state.
+		*  @returns every canvas violation the write/run seats voice. */
+		function judgeLaneCanvas(bounds, size, values) {
+			const out = judgeLaneBounds(bounds, values);
+			if (out.some((v) => v.field === "width" || v.field === "height")) return out;
+			return [...out, ...judgeLaneSize(size, values)];
+		}
 		function laneBoundsOf(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
 			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
@@ -9357,6 +9493,19 @@ window.__ModuleLoader__.load({
 		const chromeCopy = {
 			/** The mixed knob's range aria-name suffix (the typed face owns the bare label). */
 			sliderAriaWord: "slider",
+			/** The mixed knob's local draft refusal — ONE sentence under the
+			*  row, only while a typed draft the banner cannot see is outside
+			*  the knob's span (the input-loss cure, 2026-11-19). */
+			sliderDraftRefusal: (p) => "Not applied — " + p.value + " is " + p.span + ". Type a value inside the span, or clear the box to leave it unstated.",
+			/** The mixed knob's local draft refusal for a non-number draft. */
+			sliderDraftNaN: (p) => "Not applied — " + p.value + " is not a number. Type a number, or clear the box to leave it unstated.",
+			/** The mixed knob's local draft refusal when the lane's span is
+			*  EMPTY (a disjoint envelope ∩ bounds) — no typed value can land,
+			*  so the sentence offers only the clear. */
+			sliderDraftNoSpan: () => "Not applied — this lane admits no value for this knob. Clear the box to leave it unstated.",
+			/** The draft refusal's span word when NEITHER side is bounded
+			*  (a malformed served field: the atom still owns one sentence). */
+			sliderDraftSpanFallback: () => "outside the allowed range",
 			/** Model axes heading + the model picker's accessible name (one word, two seats). */
 			modelLabel: "Model",
 			/** Recipe row's visible key + the recipe picker's accessible name (one word, two seats). */
@@ -10193,6 +10342,13 @@ window.__ModuleLoader__.load({
 			if (lanes === void 0) return null;
 			return laneBoundsOf(lanes.bounds ?? null, variantId === null ? void 0 : lanes.variants?.[variantId]?.bounds ?? null);
 		}
+		/** THE CANVAS PAIR LAW the served lane declares (absent = none):
+		*  the benchmark's width×height geometry — a per-side bounds row
+		*  cannot express the step grain, the area envelope or the aspect
+		*  span the model refuses outside. */
+		function laneSizeFor(spec) {
+			return spec.lanes?.size ?? null;
+		}
 		/** Field visibility UNDER the lane contract: a declared surface
 		*  hides every field it does not name (the declaration is the
 		*  author — the field set IS the variant); a family that declares
@@ -10231,7 +10387,6 @@ window.__ModuleLoader__.load({
 			const rawQuant = carried("quant");
 			const surface = laneSurfaceFor(spec, variantId, typeof rawQuant === "string" && rawQuant !== "" ? rawQuant : null);
 			const relations = laneRelationsFor(spec, variantId);
-			if (surface === null && relations.length === 0) return [];
 			const names = fields.map((f) => f.name).filter((n) => n !== ESTATE_NAMING_ROW.name);
 			const stated = {};
 			for (const src of [base ?? {}, user]) for (const [k, v] of Object.entries(src)) {
@@ -10244,7 +10399,7 @@ window.__ModuleLoader__.load({
 				...judgeLaneSurface(surface, names, stated),
 				...servesDeliverableSwitch ? judgeDeliverableSize(stated) : [],
 				...judgeLaneRelations(relations, stated),
-				...judgeLaneBounds(bounds, stated)
+				...judgeLaneCanvas(bounds, laneSizeFor(spec), stated)
 			]);
 		}
 		/** Does the served doc offer this variant id? The VARIANT rows are
@@ -12228,8 +12383,8 @@ window.__ModuleLoader__.load({
 			}
 		}
 		// \0dsh-css:packages/web/card-base/src/card.module.css.mjs
-		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{align-items:center;gap:8px;display:flex}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:nowrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;flex:1 1 0;justify-content:center;gap:2px;min-width:0;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;flex:none;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:100%;padding:4px 4px 8px;overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:8px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:6px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:3px;font-size:11px;display:flex}.emezXW_modLeafGroup{flex-direction:column;gap:4px;display:flex}.emezXW_modGroupTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin:0;font-size:10px;font-weight:600}.emezXW_modLeafAdvanced{border-top:1px dashed var(--border,#80808040);padding-top:6px}.emezXW_modFieldPair{align-items:flex-end;gap:8px;display:flex}.emezXW_modFieldPair>.emezXW_modField{flex:1;min-width:0}.emezXW_modFieldPair>.emezXW_modField:last-child{flex:0 0 96px}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_modLeafHint{opacity:.65;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:nowrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specSlotCell{flex-direction:column;flex:1 1 0;gap:4px;min-width:0;max-width:132px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;min-width:0;margin-left:auto;font-size:9px;overflow:hidden}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
-		const tagId$4 = "@melite/card-base/card.module.css@8ce835ea";
+		const css$4 = ".emezXW_specForm :where(input,textarea,select,button){box-sizing:border-box}.emezXW_specForm{flex-direction:column;gap:12px;display:flex}.emezXW_specGroup{flex-direction:column;gap:8px;display:flex}.emezXW_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.emezXW_modelAxes .emezXW_specGroupTitle{grid-column:1/-1;margin-bottom:0}.emezXW_modelAxes>.emezXW_specHint{grid-column:1/-1}.emezXW_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.emezXW_axesPair>*{min-width:0}.emezXW_specGroupTitle{color:var(--dsw-alias-label-secondary);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.emezXW_specField{flex-direction:column;gap:6px;display:flex}.emezXW_specFieldKey{color:var(--dsw-alias-label-secondary);align-items:center;min-height:20px;font-size:12px;display:flex}.emezXW_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.emezXW_specHint{color:var(--dsw-alias-label-secondary);font-size:11px}.emezXW_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.emezXW_laneWarn p{margin:0}.emezXW_specInfo{border:1px solid var(--dsw-alias-label-secondary);width:12px;height:12px;color:var(--dsw-alias-label-secondary);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.emezXW_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.emezXW_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.emezXW_specDice:hover{opacity:1}.emezXW_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}select option{color:canvastext;background:canvas}.emezXW_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:inherit;font:inherit;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;width:100%;min-width:0;padding:5px 8px;font-size:13px;display:block;overflow:hidden}.emezXW_specSelectText{text-overflow:ellipsis;white-space:nowrap;min-width:0;display:block;overflow:hidden}.emezXW_specSelectStatic{cursor:default;justify-content:center;display:flex}.emezXW_specSliderRow{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.emezXW_specSliderRow[data-refused] .emezXW_specSliderInput{border-color:var(--dsw-alias-state-error-primary,#e5484d)}.emezXW_specSliderRefusal{color:var(--dsw-alias-state-error-primary,#e5484d);flex-basis:100%;font-size:11px;line-height:1.35}.emezXW_specSlider{accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.emezXW_specSliderInput{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;width:7ch;min-width:6ch;font-size:12px}.emezXW_specSliderValue{color:var(--dsw-alias-label-secondary);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.emezXW_specSliderZero{color:var(--dsw-alias-label-secondary);white-space:nowrap;text-overflow:ellipsis;max-width:22ch;font-size:11px;overflow:hidden}.emezXW_specTextarea{background:var(--dsw-alias-interactive-bg-hover);border:.5px solid var(--dsw-alias-border-l2);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.emezXW_squareOff{opacity:.5;pointer-events:none}.emezXW_squareBox{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.emezXW_squareOver{border-color:var(--dsw-alias-border-l3);box-shadow:0 0 0 2px var(--dsw-alias-border-l1)}.emezXW_squareThumb{object-fit:cover;width:100%;height:100%}.emezXW_squareMesh{pointer-events:none;position:absolute;inset:0}.emezXW_squareGlyph{color:var(--dsw-alias-label-tertiary)}.emezXW_squareEmptyIcon{align-items:center;display:flex}.emezXW_squareHeld{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:9px;overflow:hidden}.emezXW_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.emezXW_squareActions>*{pointer-events:auto}.emezXW_squarePick{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.emezXW_squareBadge{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.emezXW_squareX{background:var(--dsw-alias-interactive-bg-hover-solid);border:.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.emezXW_squareLabel{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.emezXW_squareMetric{color:var(--dsw-alias-label-tertiary);font-size:10px;line-height:17px}.emezXW_squareFileInput{display:none}.emezXW_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.emezXW_modHead{align-items:baseline;gap:8px;display:flex}.emezXW_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.emezXW_modHint{opacity:.45;font-size:9px}.emezXW_modRow{flex-wrap:nowrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.emezXW_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;flex:1 1 0;justify-content:center;gap:2px;min-width:0;max-width:132px;padding:6px 8px;display:flex}.emezXW_modTile:active{cursor:grabbing}.emezXW_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.emezXW_modTileStrength{opacity:.55;font-size:9px}.emezXW_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.emezXW_modAddSquare{border:1px dashed var(--dsw-alias-border-l3);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:8px;flex:none;justify-content:center;align-items:center;width:64px;display:flex}.emezXW_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4);opacity:1}.emezXW_tileDragging{opacity:.5}.emezXW_modTileRecipe{cursor:default;border-style:dashed}.emezXW_modTileRecipe .emezXW_modTileStrength:after{content:\" · recipe\"}.emezXW_specChips{flex-wrap:wrap;gap:4px;display:flex}.emezXW_modLeafModal{width:min(760px,100vw - 32px);max-height:100%;padding:4px 4px 8px;overflow-y:auto}.emezXW_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.emezXW_modLeafStage{min-width:0}.emezXW_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.emezXW_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.emezXW_modLeaf{flex-direction:column;gap:8px;min-width:260px;display:flex}.emezXW_modLeafFields{gap:6px;display:grid}.emezXW_modLeafActions{gap:8px;display:flex}.emezXW_modField{flex-direction:column;gap:3px;font-size:11px;display:flex}.emezXW_modLeafGroup{flex-direction:column;gap:4px;display:flex}.emezXW_modGroupTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin:0;font-size:10px;font-weight:600}.emezXW_modLeafAdvanced{border-top:1px dashed var(--border,#80808040);padding-top:6px}.emezXW_modFieldPair{align-items:flex-end;gap:8px;display:flex}.emezXW_modFieldPair>.emezXW_modField{flex:1;min-width:0}.emezXW_modFieldPair>.emezXW_modField:last-child{flex:0 0 96px}.emezXW_modLeafError{color:#e06c5f;margin:0;font-size:11px}.emezXW_modLeafHint{opacity:.65;font-size:11px}.emezXW_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.emezXW_pickRow{display:block}.emezXW_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.emezXW_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.emezXW_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.emezXW_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.emezXW_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.emezXW_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.emezXW_sourceRow{flex-direction:column;display:flex}.emezXW_sourceRowErr{color:#e06c5f;word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_sourceRowBusy{color:var(--dsw-alias-label-secondary);word-break:break-word;margin:2px 0 0;font-size:11px}.emezXW_specSlotRow{flex-wrap:nowrap;align-items:flex-start;gap:8px;display:flex}.emezXW_specSlotCell{flex-direction:column;flex:1 1 0;gap:4px;min-width:0;max-width:132px;display:flex}.emezXW_specGrid{align-items:start;gap:8px;display:grid}.emezXW_inputRail{gap:10px}.emezXW_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .emezXW_squareBox{border-style:dashed}.emezXW_sz14{flex:none;width:14px;height:14px}.emezXW_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.emezXW_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.emezXW_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireList{margin:0;padding:0;list-style:none}.emezXW_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.emezXW_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.emezXW_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.emezXW_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.emezXW_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.emezXW_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.emezXW_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.emezXW_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.emezXW_wireMeta{flex:1;min-width:0}.emezXW_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.emezXW_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.emezXW_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.emezXW_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.emezXW_specLinkBtn{font:inherit;cursor:pointer;color:var(--dsw-alias-state-business-primary);background:0 0;border:none;padding:0;text-decoration:underline}.emezXW_specLinkBtn:disabled{cursor:default;color:var(--dsw-alias-label-tertiary);text-decoration:none}.emezXW_specGrid :where(input,select){width:100%}.emezXW_tipAnchor{display:inline-flex}.emezXW_tipFill{display:block}.emezXW_ctlRow,.emezXW_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.emezXW_ctlRow select,.emezXW_ctlRowSm select{font-size:10px}.emezXW_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.emezXW_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.emezXW_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_emptyPane,.emezXW_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.emezXW_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.emezXW_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.emezXW_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.emezXW_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.emezXW_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.emezXW_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.emezXW_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.emezXW_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.emezXW_paneHint{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;min-width:0;margin-left:auto;font-size:9px;overflow:hidden}.emezXW_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes emezXW_panePulse{0%,to{opacity:1}50%{opacity:.45}}.emezXW_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite emezXW_panePulse}.emezXW_pickSearch{margin:0 0 8px}.emezXW_pickSearchInput{background:var(--dsw-alias-interactive-bg-default,transparent);border:1px solid var(--dsw-alias-border-l2);box-sizing:border-box;color:var(--dsw-alias-label-primary);border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.emezXW_pickSearchInput:focus{border-color:var(--dsw-alias-border-l4);outline:none}";
+		const tagId$4 = "@melite/card-base/card.module.css@72446f21";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/card-base";
@@ -12316,6 +12471,7 @@ window.__ModuleLoader__.load({
 			"specSelectText": "emezXW_specSelectText",
 			"specSlider": "emezXW_specSlider",
 			"specSliderInput": "emezXW_specSliderInput",
+			"specSliderRefusal": "emezXW_specSliderRefusal",
 			"specSliderRow": "emezXW_specSliderRow",
 			"specSliderValue": "emezXW_specSliderValue",
 			"specSliderZero": "emezXW_specSliderZero",
@@ -14684,48 +14840,82 @@ window.__ModuleLoader__.load({
 		*  track clamps to the ACTIVE variant's declared envelope (min and
 		*  max intersected with the field's own bounds) — an
 		*  out-of-envelope value cannot be dragged or saved from the form
-		*  while the wire gate stays loud for API authors. A HELD value
-		*  outside the envelope renders AS ITSELF, refused (the
-		*  no-fallback law): the track never paints a clamped neighbor over
-		*  an impossible contract. @param f the knob's field row.
+		*  while the wire gate stays loud for API authors.
+		*
+		*  THE CONTROL STAYS (operator 2026-11-19, the input-loss cure:
+		*  "YOU TAKE AWAY THE INPUT BOX SO I CAN'T FIX IT"): a held value
+		*  the lane refuses is rendered AS ITSELF in the typed box — never
+		*  replaced by a text span, never clamped over — and the track
+		*  stands down for that value (a range thumb would paint a clamped
+		*  neighbor over an impossible contract). The box is the control
+		*  that fixes the refusal, so it is the one face that never leaves.
+		*  A typed draft outside the span does NOT land (no per-keystroke
+		*  bench write, no unlanded strip): the text stays in the box with
+		*  ONE local sentence, and the box reverts to the held truth on
+		*  blur. A refusal the DOC already holds (a stale bench row) keeps
+		*  a silent refused face — the form's lane banner is its single
+		*  voice; the box's local sentence is only for a draft the banner
+		*  cannot see.
+		*  @param f the knob's field row.
 		*  @param value the resolved display value.
 		*  @param onEdit the settle seam.
 		*  @param envelope the active variant's [min,max] for THIS knob,
-		*  null when the variant declares none. */
+		*  null when the variant declares none.
+		*  @param step the lane-declared grain (the canvas pair's 32), else
+		*  the field's own. */
 		/** The zero-law sentence a declaration may state in its tooltip
 		* ("0 = the clip's own width (…).") — the first sentence, chipped on
 		* the face exactly while the knob holds the 0 (cure D, 2026-10-28). */
 		const ZERO_LAW_RE = /^0 =[^.]*\./;
-		function SpecSliderAtom({ f, value, onEdit, envelope }) {
+		function SpecSliderAtom({ f, value, onEdit, envelope, step }) {
 			const shown = useLocalSliderValue(value);
 			const [boxText, setBoxText] = (0, react.useState)(null);
+			const [refusal, setRefusal] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				setBoxText(null);
+				setRefusal(null);
 			}, [shown.value]);
-			if (shown.value === null && value !== "") return (0, react.createElement)("span", {
-				className: card_module_css_default.specSliderRow,
-				"data-refused": f.name
-			}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value) + " — REFUSED: not a number"));
 			const clamped = envelope !== void 0 && envelope !== null ? {
 				min: Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]),
 				max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1])
 			} : null;
-			if (clamped !== null && (clamped.min > clamped.max || shown.value !== null && (shown.value < clamped.min || shown.value > clamped.max))) {
-				const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min;
-				const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max;
-				return (0, react.createElement)("span", {
-					className: card_module_css_default.specSliderRow,
-					"data-refused": f.name
-				}, (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, (shown.value === null ? String(value) : String(shown.value)) + " — OUTSIDE the variant envelope [" + String(lo) + ", " + String(hi) + "]"));
-			}
-			const trackValue = shown.value ?? (clamped !== null ? Math.min(Math.max(0, clamped.min), clamped.max) : f.min ?? 0);
-			const boxValue = boxText ?? String(shown.value ?? "");
-			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+			const lo = clamped !== null ? clamped.min : f.min ?? Number.NEGATIVE_INFINITY;
+			const hi = clamped !== null ? clamped.max : f.max ?? Number.POSITIVE_INFINITY;
+			const noSpan = lo > hi;
+			const poison = shown.value === null && value !== void 0 && value !== null && value !== "";
+			const heldRefused = poison || noSpan || shown.value !== null && (shown.value < lo || shown.value > hi);
+			const verdictOf = (raw) => {
+				if (raw === "") return "blank";
+				const n = Number(raw);
+				if (raw.trim() === "" || !Number.isFinite(n)) return "refuse";
+				return noSpan || n < lo || n > hi ? "refuse" : "land";
+			};
+			const draftRefused = boxText !== null && verdictOf(boxText) === "refuse";
+			const refused = heldRefused || draftRefused;
+			const trackValue = shown.value ?? (clamped !== null && !noSpan ? Math.min(Math.max(0, clamped.min), clamped.max) : f.min ?? 0);
+			const backingText = shown.value !== null ? String(shown.value) : value === void 0 || value === null || value === "" ? "" : String(value);
+			const boxValue = boxText ?? backingText;
+			const gapLo = noSpan ? Math.min(lo, hi) : lo;
+			const gapHi = noSpan ? Math.max(lo, hi) : hi;
+			const spanWord = () => {
+				if (Number.isFinite(gapLo) && Number.isFinite(gapHi)) return "outside " + gapLo + "–" + gapHi;
+				if (Number.isFinite(gapLo)) return "below " + gapLo;
+				if (Number.isFinite(gapHi)) return "above " + gapHi;
+				return chromeCopy.sliderDraftSpanFallback();
+			};
+			const refusalText = refusal === null ? null : noSpan ? chromeCopy.sliderDraftNoSpan() : Number.isFinite(Number(refusal)) ? chromeCopy.sliderDraftRefusal({
+				value: refusal.trim(),
+				span: spanWord()
+			}) : chromeCopy.sliderDraftNaN({ value: refusal.trim() });
+			return (0, react.createElement)("span", {
+				className: card_module_css_default.specSliderRow,
+				...refused ? { "data-refused": f.name } : {}
+			}, heldRefused ? null : (0, react.createElement)("input", {
 				className: card_module_css_default.specSlider,
 				type: "range",
-				min: clamped !== null ? clamped.min : f.min ?? 0,
-				max: clamped !== null ? clamped.max : f.max ?? 10,
-				step: f.step ?? .1,
+				min: Number.isFinite(lo) ? lo : 0,
+				max: Number.isFinite(hi) ? hi : 10,
+				step: step ?? f.step ?? .1,
 				value: trackValue,
 				onInput: (e) => {
 					shown.set(Number(e.target.value));
@@ -14735,30 +14925,53 @@ window.__ModuleLoader__.load({
 				},
 				"aria-label": f.label + " " + chromeCopy.sliderAriaWord
 			}), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				min: clamped !== null ? clamped.min : f.min,
-				max: clamped !== null ? clamped.max : f.max,
-				step: f.step,
+				type: poison ? "text" : "number",
+				...noSpan || !Number.isFinite(lo) ? {} : { min: lo },
+				...noSpan || !Number.isFinite(hi) ? {} : { max: hi },
+				step: step ?? f.step,
 				className: card_module_css_default.specSliderInput,
 				value: boxValue,
+				...refused ? { "aria-invalid": true } : {},
 				onChange: (e) => {
 					const raw = e.target.value;
 					setBoxText(raw);
-					if (raw !== "") {
-						const n = Number(raw);
-						if (Number.isFinite(n)) shown.set(n);
+					setRefusal(null);
+					const verdict = verdictOf(raw);
+					if (verdict === "blank") {
+						onEdit(f.name, "");
+						return;
 					}
+					if (verdict === "refuse") return;
+					shown.set(Number(raw));
 					onEdit(f.name, raw);
+				},
+				onBlur: () => {
+					const raw = boxText;
+					if (raw === null) return;
+					if (raw.trim() === "") {
+						setBoxText(null);
+						return;
+					}
+					if (verdictOf(raw) === "land") {
+						setBoxText(null);
+						return;
+					}
+					setRefusal(raw);
+					setBoxText(null);
 				},
 				"aria-label": f.label
 			}), ...shown.value === 0 && typeof f.tooltip === "string" && f.tooltip.startsWith("0 =") ? [(0, react.createElement)("span", {
 				className: card_module_css_default.specSliderZero,
 				"data-zero-law": f.name
-			}, ZERO_LAW_RE.exec(f.tooltip)?.[0] ?? f.tooltip)] : []);
+			}, ZERO_LAW_RE.exec(f.tooltip)?.[0] ?? f.tooltip)] : [], ...refusalText !== null ? [(0, react.createElement)("span", {
+				className: card_module_css_default.specSliderRefusal,
+				"data-slider-refusal": f.name,
+				role: "status"
+			}, refusalText)] : []);
 		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, hideSquareLabel }) {
+		function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope, step, hideSquareLabel }) {
 			if ((f.type === "image" || f.type === "file" || f.type === "mesh") && square !== void 0) {
 				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : (typeof value === "string" ? estateInputUrl(value) : null) ?? (typeof value === "string" ? value : null);
 				return (0, react.createElement)("div", {
@@ -14838,7 +15051,8 @@ window.__ModuleLoader__.load({
 				f,
 				value,
 				onEdit,
-				...envelope !== void 0 ? { envelope } : {}
+				...envelope !== void 0 ? { envelope } : {},
+				...step !== void 0 ? { step } : {}
 			});
 			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
 				label: f.label !== "" ? f.label : f.name,
@@ -14891,12 +15105,12 @@ window.__ModuleLoader__.load({
 				});
 			}
 			if (f.type === "number" && f.min !== void 0 && f.max !== void 0 && (placeholder ?? f.placeholder) === void 0) {
-				const held = typeof value === "number" ? value : typeof value === "string" && value !== "" ? Number(value) : NaN;
-				if (Number.isFinite(held) || value === "") return (0, react.createElement)(SpecSliderAtom, {
+				if (value !== void 0) return (0, react.createElement)(SpecSliderAtom, {
 					f,
 					value,
 					onEdit,
-					...envelope !== void 0 ? { envelope } : {}
+					...envelope !== void 0 ? { envelope } : {},
+					...step !== void 0 ? { step } : {}
 				});
 			}
 			if (f.type === "number") {
@@ -15031,7 +15245,7 @@ window.__ModuleLoader__.load({
 				})))
 			});
 		}
-		function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }) {
+		function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope, step }) {
 			const seedKnob = f.name === "seed";
 			const seedRandom = seedKnob && (value === -1 || value === "-1");
 			const star = fieldRequired(f, values ?? {});
@@ -15046,6 +15260,7 @@ window.__ModuleLoader__.load({
 				value: seedRandom ? void 0 : value,
 				...seedRandom ? { placeholder: chromeCopy.seedRandomPlaceholder } : {},
 				...envelope !== void 0 ? { envelope } : {},
+				...step !== void 0 ? { step } : {},
 				onEdit,
 				square,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
@@ -15631,14 +15846,21 @@ window.__ModuleLoader__.load({
 			const groupFieldsAll = flatFields.filter(visible);
 			const gateViolations = composeValidate(spec, user);
 			const gateFields = new Set(gateViolations.flatMap((v) => v.field !== void 0 ? [v.field] : []));
+			for (const v of gateViolations) {
+				const named = /^card_compose: stated (\w+) /.exec(v.message);
+				if (named !== null) gateFields.add(named[1]);
+			}
 			const laneWarns = laneViolations(spec, flatFields, {
 				...user,
 				model: family ?? ""
-			}, base).filter((v) => !isUnstatedRequiredVoice(v.message) && !(gateFields.has(v.field) && v.message.includes("fires nothing on this lane")));
+			}, base).filter((v) => !isUnstatedRequiredVoice(v.message) && !(gateFields.has(v.field) && (v.message.includes("fires nothing on this lane") || isLaneBoundsVoice(v.message))));
 			const shownGateViolations = mutedViolations === void 0 ? gateViolations : gateViolations.filter((v) => !mutedViolations.includes(v.message));
+			const shownLaneWarns = mutedViolations === void 0 ? laneWarns : laneWarns.filter((v) => !mutedViolations.includes(v.message));
 			const offered = offeredVariantOf(spec.variants ?? [], value, spec);
 			const variantEnvelope = offered?.sampler_envelope ?? null;
 			const laneBounds = laneBoundsFor(spec, offered?.id ?? null);
+			const laneSize = laneSizeFor(spec);
+			const laneStep = (f) => laneSize?.multiple !== void 0 && (f.name === "width" || f.name === "height") ? laneSize.multiple : void 0;
 			const knobEnvelope = (f) => {
 				const mins = [];
 				const maxs = [];
@@ -15654,8 +15876,11 @@ window.__ModuleLoader__.load({
 					if (row.min !== void 0) mins.push(row.min);
 					if (row.max !== void 0) maxs.push(row.max);
 				}
-				if (mins.length === 0 && maxs.length === 0) return {};
-				return { envelope: [mins.length > 0 ? Math.max(...mins) : Number.NEGATIVE_INFINITY, maxs.length > 0 ? Math.min(...maxs) : Number.POSITIVE_INFINITY] };
+				const step = laneStep(f);
+				const out = {};
+				if (mins.length > 0 || maxs.length > 0) out.envelope = [mins.length > 0 ? Math.max(...mins) : Number.NEGATIVE_INFINITY, maxs.length > 0 ? Math.min(...maxs) : Number.POSITIVE_INFINITY];
+				if (step !== void 0) out.step = step;
+				return out;
 			};
 			const groups = groupFields(groupFieldsAll, {
 				...value,
@@ -15736,11 +15961,11 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.laneWarn,
 				"data-compose-gate": String(shownGateViolations.length),
 				role: "alert"
-			}, (0, react.createElement)("p", { style: { fontWeight: 700 } }, "THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row."), shownGateViolations.map((v, i) => (0, react.createElement)("p", { key: "gate-" + String(i) }, v.message))) : null, laneWarns.length > 0 ? (0, react.createElement)("div", {
+			}, (0, react.createElement)("p", { style: { fontWeight: 700 } }, "THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row."), shownGateViolations.map((v, i) => (0, react.createElement)("p", { key: "gate-" + String(i) }, v.message))) : null, shownLaneWarns.length > 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.laneWarn,
-				"data-lane-warn": String(laneWarns.length),
+				"data-lane-warn": String(shownLaneWarns.length),
 				role: "alert"
-			}, laneWarns.map((v, i) => (0, react.createElement)("p", { key: "lane-" + String(i) }, v.message))) : null, (0, react.createElement)(PackPrompt, {
+			}, shownLaneWarns.map((v, i) => (0, react.createElement)("p", { key: "lane-" + String(i) }, v.message))) : null, (0, react.createElement)(PackPrompt, {
 				spec,
 				onInstallPack
 			}), (0, react.createElement)(ModelAxes, {
@@ -19493,6 +19718,7 @@ window.__ModuleLoader__.load({
 		exports.kindScalarFieldsOfEnvelope = kindScalarFieldsOfEnvelope;
 		exports.laneBoundsFor = laneBoundsFor;
 		exports.laneRelationsFor = laneRelationsFor;
+		exports.laneSizeFor = laneSizeFor;
 		exports.laneSurfaceFor = laneSurfaceFor;
 		exports.laneViolations = laneViolations;
 		exports.makeLabelSprite = makeLabelSprite;

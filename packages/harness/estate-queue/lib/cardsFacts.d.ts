@@ -1,5 +1,5 @@
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
-import type { LaneRelations, SamplerEnvelope } from "@melite/contracts/laneRelations";
+import type { LaneRelations, LaneSizeLaw, SamplerEnvelope } from "@melite/contracts/laneRelations";
 export interface VariantCellRow {
     readonly quant: string;
     readonly route: string;
@@ -61,6 +61,11 @@ export interface ModelFactsRow {
         min?: number;
         max?: number;
     }>>;
+    /** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+     *  model's own width×height geometry, carried verbatim from the
+     *  DECL (the facts projection) so the write/run door judges the
+     *  pair the form serves. Present only where declared. */
+    readonly size?: LaneSizeLaw;
     /** THE REQUIRED DEFAULTS (operator contract 2026-11-07): the
      *  DECL's classed manifest (user / variant / mod), present only
      *  where the family declares one. */

@@ -338,6 +338,13 @@ function deriveRow(reads, address, card, outputs, requires, owners) {
     if (d.bounds !== undefined && d.bounds !== null) {
         row.bounds = JSON.parse(JSON.stringify(d.bounds));
     }
+    // THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+    // model's own width×height geometry rides the derived row so the
+    // bench door judges the same pair the form serves — present only
+    // where the DECL declares one (the absent-equals-empty law).
+    if (d.size !== undefined && d.size !== null) {
+        row.size = JSON.parse(JSON.stringify(d.size));
+    }
     // THE MARRIAGE GRAMMAR (#36, the openjutsu lane burn 2026-10-28):
     // DECL.mods entries are pack names or {pack, marries} rows — the
     // consumption gate (guard.ts assertModUse) reads PACK NAMES. The

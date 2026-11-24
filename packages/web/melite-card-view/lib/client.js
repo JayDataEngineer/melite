@@ -11183,6 +11183,71 @@ window.__ModuleLoader__.load({
 				...cellParams ?? []
 			])];
 		}
+		/** The bounds class test: the sentence is the lane's per-field
+		*  range refusal.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the bounds-range voice */
+		function isLaneBoundsVoice$1(text) {
+			return text.includes(LANE_BOUNDS_RANGE_STEM$1);
+		}
+		/** The canvas sentence stem — the pair judge's one spelling.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the canvas-pair voice */
+		function isLaneCanvasVoice$1(text) {
+			return text.includes(" is outside this lane's canvas (");
+		}
+		/** A ratio in the model's own `W:H` spelling (3 → '3:1', 1/3 →
+		*  '1:3', 2.35 → '2.35:1') — a canvas refusal names the law in the
+		*  units the model publishes, never a bare float. */
+		function ratioWord(ratio) {
+			const inv = 1 / ratio;
+			if (ratio > 0 && Math.abs(inv - Math.round(inv)) < 1e-9) return "1:" + String(Math.round(inv));
+			if (Math.abs(ratio - Math.round(ratio)) < 1e-9) return String(Math.round(ratio)) + ":1";
+			return String(Math.round(ratio * 100) / 100) + ":1";
+		}
+		/** THE PAIR-LEVEL CANVAS JUDGMENT: the lane's declared canvas law
+		*  over the STATED width/height pair. A half pair is authoring (the
+		*  blank law's own tolerance), never a refusal; a blank or
+		*  non-number side stands down (the card schema owns type
+		*  refusals). Every failed clause rides the ONE sentence, and the
+		*  named field is 'width' — the press strip's unstamp reverts it to
+		*  the family default, which re-derives the pair.
+		*  @param size the lane's canvas law (null/undefined = none).
+		*  @param values the stated state (width/height read by name).
+		*  @returns one violation, or none. */
+		function judgeLaneSize(size, values) {
+			if (size === null || size === void 0) return [];
+			const w = values["width"];
+			const h = values["height"];
+			if (laneBlank(w) || laneBlank(h) || typeof w !== "number" || typeof h !== "number") return [];
+			if (!Number.isFinite(w) || !Number.isFinite(h)) return [];
+			const failed = [];
+			if (size.multiple !== void 0 && (w % size.multiple !== 0 || h % size.multiple !== 0)) failed.push("both sides are multiples of " + size.multiple);
+			const area = w * h;
+			if (size.minArea !== void 0 && area < size.minArea) failed.push("area is at least " + size.minArea + " px");
+			if (size.maxArea !== void 0 && area > size.maxArea) failed.push("area is at most " + size.maxArea + " px");
+			const aspect = h === 0 ? Number.POSITIVE_INFINITY : w / h;
+			if (size.minAspect !== void 0 && aspect < size.minAspect) failed.push("aspect is at least " + ratioWord(size.minAspect));
+			if (size.maxAspect !== void 0 && aspect > size.maxAspect) failed.push("aspect is at most " + ratioWord(size.maxAspect));
+			if (failed.length === 0) return [];
+			return [{
+				field: "width",
+				message: "'width' × 'height': " + w + " × " + h + " is outside this lane's canvas (" + failed.join("; ") + ") — restate the pair inside the canvas, or leave it unstated for the family default (the model owns the floor and the ceiling — the declaration, not the form)"
+			}];
+		}
+		/** THE ONE CANVAS DOOR: the per-field bounds plus the pair law, with
+		*  the pair standing down while a per-side row already voices the
+		*  crime (one crime, one row — a width below the lane's range must
+		*  not ALSO be reported as an area miss).
+		*  @param bounds the lane's per-field numeric domains.
+		*  @param size the lane's canvas law (null/undefined = none).
+		*  @param values the stated state.
+		*  @returns every canvas violation the write/run seats voice. */
+		function judgeLaneCanvas(bounds, size, values) {
+			const out = judgeLaneBounds(bounds, values);
+			if (out.some((v) => v.field === "width" || v.field === "height")) return out;
+			return [...out, ...judgeLaneSize(size, values)];
+		}
 		function laneBoundsOf(familyBounds, variantBounds) {
 			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
 			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
@@ -11319,6 +11384,7 @@ window.__ModuleLoader__.load({
 				...decl.params !== void 0 ? { base: [...decl.params] } : {},
 				...decl.relations !== void 0 ? { relations: decl.relations } : {},
 				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+				...decl.size !== void 0 ? { size: decl.size } : {},
 				variants
 			};
 		}
@@ -11584,7 +11650,7 @@ window.__ModuleLoader__.load({
 				}))
 			}));
 		}
-		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, DELIVERABLE_HALF_STEM, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
+		var RELATION_WORDS, quote, UNSTATED_REQUIRED_STEM, TOGETHER_HALF_STEM, EITHER_OR_HALF_STEM, DELIVERABLE_HALF_STEM, LANE_BOUNDS_RANGE_STEM$1, statedOf, visibleRows, visibleCells, knownIds, knownQuants;
 		var init_laneRelations = __esmMin((() => {
 			RELATION_WORDS = {
 				requires: true,
@@ -11599,6 +11665,7 @@ window.__ModuleLoader__.load({
 			TOGETHER_HALF_STEM = " ride together on this lane (state all or none)";
 			EITHER_OR_HALF_STEM = " — the stated combination completes none of them";
 			DELIVERABLE_HALF_STEM = "state both width and height";
+			LANE_BOUNDS_RANGE_STEM$1 = " is outside this lane's range (";
 			statedOf = (stated) => typeof stated === "string" ? stated : null;
 			visibleRows = (variants) => variants.filter((v) => v.hide_from_dropdown !== true);
 			visibleCells = (cells) => cells.filter((c) => c.hide_from_dropdown !== true);
@@ -12902,6 +12969,7 @@ window.__ModuleLoader__.load({
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
 			FLOW_ID_RE: () => FLOW_ID_RE,
+			LANE_BOUNDS_RANGE_STEM: () => LANE_BOUNDS_RANGE_STEM$1,
 			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
 			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
 			LORA_ACCEPT: () => LORA_ACCEPT,
@@ -12949,6 +13017,8 @@ window.__ModuleLoader__.load({
 			isDataUrl: () => isDataUrl,
 			isDeliverableHalfVoice: () => isDeliverableHalfVoice,
 			isEitherOrHalfVoice: () => isEitherOrHalfVoice,
+			isLaneBoundsVoice: () => isLaneBoundsVoice$1,
+			isLaneCanvasVoice: () => isLaneCanvasVoice$1,
 			isLiveRunStatus: () => isLiveRunStatus$1,
 			isPurelyUnstatedRequiredVoice: () => isPurelyUnstatedRequiredVoice,
 			isTerminalStatus: () => isTerminalStatus$1,
@@ -12956,7 +13026,9 @@ window.__ModuleLoader__.load({
 			isUnstatedRequiredVoice: () => isUnstatedRequiredVoice,
 			judgeDeliverableSize: () => judgeDeliverableSize,
 			judgeLaneBounds: () => judgeLaneBounds,
+			judgeLaneCanvas: () => judgeLaneCanvas,
 			judgeLaneRelations: () => judgeLaneRelations,
+			judgeLaneSize: () => judgeLaneSize,
 			judgeLaneSurface: () => judgeLaneSurface,
 			judgeSamplerEnvelope: () => judgeSamplerEnvelope,
 			kindForId: () => kindForId,
@@ -19306,6 +19378,25 @@ window.__ModuleLoader__.load({
 				})
 			});
 		}
+		// ../../web-kit/contracts/src/laneRelations.ts
+		/** The bounds-range sentence stem — the judge's one spelling and the
+		*  form's duplicate mute read the same literal (a compose gate that
+		*  already voices the field owns the row; the lane's bounds voice
+		*  stands down). */
+		const LANE_BOUNDS_RANGE_STEM = " is outside this lane's range (";
+		/** The bounds class test: the sentence is the lane's per-field
+		*  range refusal.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the bounds-range voice */
+		function isLaneBoundsVoice(text) {
+			return text.includes(LANE_BOUNDS_RANGE_STEM);
+		}
+		/** The canvas sentence stem — the pair judge's one spelling.
+		*  @param text the refusal sentence to classify
+		*  @returns true when the sentence is the canvas-pair voice */
+		function isLaneCanvasVoice(text) {
+			return text.includes(" is outside this lane's canvas (");
+		}
 		// ../../estate/drafts/src/trail.ts
 		init_benchStage();
 		/** One url, canonical: the run-relative path. The media route and
@@ -22322,9 +22413,45 @@ window.__ModuleLoader__.load({
 		*  rest: the twice face). The mirror and family clauses name keys NO
 		*  rendered control owns, so each row's words must act (the field's
 		*  unstamp), not just name. */
+		/** THE LANE LAW ON THE PRESS (the h3-image truth cure, 2026-11-19):
+		*  the write/run door refuses the lane's bounds, canvas pair and
+		*  relations exactly as loudly as the compose gate — judging them
+		*  HERE lets the press refuse BEFORE the wire (the strip voices one
+		*  row; the form banner stands down under the same message) and
+		*  lets an authoring write hold a refused value without bouncing it
+		*  through the door. The judge reads the CARRIED layers (user over
+		*  base, nulls deleted) — never the resolved map, whose
+		*  materialized defaults would read as stated. The compose gate's
+		*  own bounds voice (a sampler envelope projected into the served
+		*  bounds) owns its field: the lane's duplicate stands down.
+		*  @param spec the served doc (null = nothing to judge).
+		*  @param held the bench row's carried params.
+		*  @param user the studio's authored layer.
+		*  @param frame the candidate patch (a null DELETES its key).
+		*  @returns the lane-class violations the write door would speak. */
+		function laneGateViolations(spec, held, user, frame) {
+			if (spec === null) return [];
+			const candidate = (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame);
+			const gate = (0, _melite_card_base_client.composeValidate)(spec, candidate);
+			const gateFields = new Set(gate.flatMap((v) => v.field !== void 0 ? [v.field] : []));
+			for (const v of gate) {
+				const named = /^card_compose: stated (\w+) /.exec(v.message);
+				if (named !== null) gateFields.add(named[1]);
+			}
+			return (0, _melite_card_base_client.laneViolations)(spec, (0, _melite_card_base_client.fieldsOf)(spec), candidate).filter((v) => (isLaneBoundsVoice(v.message) || isLaneCanvasVoice(v.message)) && !gateFields.has(v.field));
+		}
+		/** THE AUTHORING HOLD (the input-loss cure, 2026-11-19): a typed
+		*  edit that leaves the lane refused is NOT written — the form's
+		*  lane banner is its one voice, the studio keeps the value, and
+		*  the press flushes it once the state heals. (The old arm wrote,
+		*  the door refused, and the operator saw the banner AND the
+		*  unlanded strip for one value.) */
+		function laneRefused(spec, held, user, frame) {
+			return laneGateViolations(spec, held, user, frame).some((v) => isLaneBoundsVoice(v.message) || isLaneCanvasVoice(v.message));
+		}
 		function composeGateViolations(spec, held, user, frame) {
 			if (spec === null) return [];
-			return (0, _melite_card_base_client.composeValidate)(spec, (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame));
+			return [...(0, _melite_card_base_client.composeValidate)(spec, (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame)), ...laneGateViolations(spec, held, user, frame)];
 		}
 		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
 			String(stage.title ?? stage.card ?? stage.id);
@@ -22569,6 +22696,7 @@ window.__ModuleLoader__.load({
 				const shape2 = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19). image_list rides the slot flush below (THE STACK GESTURE LAW, 2026-10-13: an upload onto a stack is as discrete as a slot pick — the trailing write's delay let a close-before-flush drop it) */
 				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh" && shape2 !== "image_list") {
+					if (laneRefused(spec, stage.params, {}, { [name]: v })) return;
 					const pendingTyped = composePendingVoice(spec, stage.params, user, { [name]: v });
 					if (pendingTyped !== null) setWriteFace(pendingTyped);
 					const settleDraftId = bench.draftId;

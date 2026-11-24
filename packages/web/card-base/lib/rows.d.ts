@@ -24,7 +24,7 @@ export declare function SeedDice({ random, onToggle }: {
     random: boolean;
     onToggle(): void;
 }): ReturnType<typeof h>;
-export declare function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }: {
+export declare function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope, step }: {
     f: SpecField;
     value: unknown;
     /** the SIBLING values (the entry's whole state): the
@@ -43,6 +43,9 @@ export declare function SpecFieldRow({ f, value, values, onEdit, square, wireCan
      *  the slider atom's track clamp (the dragbar law); absent when
      *  the caller has no variant envelope to offer. */
     envelope?: readonly [number, number] | null;
+    /** the lane-declared grain (the canvas pair's 32) — forwarded to
+     *  the atom so the spinner/drag never authors off-grain values. */
+    step?: number;
 }): ReturnType<typeof h>;
 /** ── THE OVERRIDE PARAMETER LAYER (hour 22 — the operator's law) ──
  *

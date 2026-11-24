@@ -940,9 +940,9 @@ test('THE MEDIA-SEAT FACE: an image-typed row renders NO freehand input — rail
 // boarded family's ceiling, never the seated family's; the lanes
 // bounds the bench-write judge refuses with clamp the canvas knobs
 // themselves, so the form can never OFFER what the write would
-// refuse. The refused face renders the held value AS ITSELF — the
-// write-desync banner class ("THE WRITE DID NOT LAND") dies at the
-// field, never at the press.
+// refuse. A HELD out-of-span value keeps its box (the control that
+// fixes it, operator 2026-11-19) and the lane banner is the one
+// voice — no cut-off text span, no second mirror sentence.
 const canvasRefs: Record<number, Ref> = {
   0: { type: 'object', dict: { height: 1 } },
   1: { type: 'number', meta: { description: 'Height', min: 256, max: 4096, step: 16 } },
@@ -963,10 +963,19 @@ test('CANVAS SPAN: a 2048-capped family never offers 4096 — the track clamps t
   expect(track.getAttribute('min')).toBe('256')
 })
 
-test('CANVAS SPAN: a HELD 4096 on the 2048 family renders refused AS ITSELF (never a silent unlanded write)', () => {
+test('CANVAS SPAN: a HELD 4096 on the 2048 family keeps its box — the lane banner is the one voice', () => {
   form({ spec: canvasDoc({ height: { min: 256, max: 2048 } }), user: { variant: 'turbo', height: 4096 } })
-  const refused = document.querySelector('[data-refused="height"]')
-  expect(refused?.textContent).toMatch(/4096 — OUTSIDE the variant envelope \[256, 2048\]/)
+  // the control that fixes the refusal never leaves: the box shows
+  // the held 4096, editable, and the impossible drag stands down
+  const box = screen.getByLabelText('Height') as HTMLInputElement
+  expect(box.value).toBe('4096')
+  expect(document.querySelector('[data-refused="height"]')).not.toBeNull()
+  expect(document.querySelector('input[type="range"]')).toBeNull()
+  // ONE crime, one row: the lane banner names the span; the field
+  // carries no second sentence (the mirror text is dead)
+  const banner = document.querySelector('[data-lane-warn]')
+  expect(banner?.textContent).toMatch(/'height': 4096 is outside this lane's range \(256–2048\)/)
+  expect(document.querySelector('[data-slider-refusal]')).toBeNull()
 })
 
 test('CANVAS SPAN: the 4096 family (h3-image\'s shape) offers and holds 4096 clean', () => {
@@ -975,6 +984,83 @@ test('CANVAS SPAN: the 4096 family (h3-image\'s shape) offers and holds 4096 cle
   const track = document.querySelector('input[type="range"]') as HTMLInputElement | null
   if (track === null) throw new Error('the height knob seats')
   expect(track.getAttribute('max')).toBe('4096')
+})
+
+// ── THE CANVAS PAIR LAW ON THE FORM (the h3-image truth cure,
+// 2026-11-19): the lane's size law (grain, area, aspect) is judged
+// over the stated pair — ONE row on the banner, never a per-field
+// duplicate; and its grain rides the knobs' step so a legal draft
+// lands on the model's own lattice.
+// the card's own schema states the model's canvas (the served
+// image-gen card stepped to 7680 with h3's truth) — the lane's
+// bounds and the field's own bounds must agree, or the field's
+// stale 4096 ceiling would refuse the model's own 4K pair
+const pairRefs: Record<number, Ref> = {
+  0: { type: 'object', dict: { width: 1, height: 2 } },
+  1: { type: 'number', meta: { description: 'Width', min: 256, max: 7680, step: 16 } },
+  2: { type: 'number', meta: { description: 'Height', min: 256, max: 7680, step: 16 } },
+}
+const pairDoc = (size: Record<string, unknown>): FormSpecDoc => ({
+  form: 'image-gen',
+  model: 'krea-2',
+  schema: { uid: 0, refs: pairRefs },
+  variants: [{ id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'turbo' }],
+  lanes: {
+    bounds: { width: { min: 256, max: 7680 }, height: { min: 256, max: 7680 } },
+    size,
+  },
+} as never)
+const H3_SIZE = { multiple: 32, minArea: 655360, maxArea: 20000000, minAspect: 1 / 3, maxAspect: 3 }
+
+test('CANVAS LAW: the model\'s own 4K pairs are clean — no banner, no refusal', () => {
+  form({ spec: pairDoc(H3_SIZE), user: { variant: 'turbo', width: 5472, height: 3072 } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  expect(document.querySelector('[data-refused="width"]')).toBeNull()
+  expect(document.querySelector('[data-refused="height"]')).toBeNull()
+  cleanup()
+  form({ spec: pairDoc(H3_SIZE), user: { variant: 'turbo', width: 7104, height: 2368 } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+})
+
+test('CANVAS LAW: an over-area pair speaks ONE row, and the knobs stay editable', () => {
+  // 6048 × 3360 = 20.32 MP — both sides in bounds and on the grain,
+  // only the area clause fails: one crime, one row
+  form({ spec: pairDoc(H3_SIZE), user: { variant: 'turbo', width: 6048, height: 3360 } })
+  const banner = document.querySelector('[data-lane-warn]')
+  expect(banner).not.toBeNull()
+  expect(banner!.querySelectorAll('p').length).toBe(1)
+  expect(banner!.textContent).toMatch(/6048 × 3360 is outside this lane's canvas/)
+  expect(banner!.textContent).toMatch(/area is at most 20000000 px/)
+  // the boxes that cure it never leave
+  expect(screen.getByLabelText('Width')).not.toBeNull()
+  expect(screen.getByLabelText('Height')).not.toBeNull()
+})
+
+test('CANVAS LAW: the lane grain (32) rides both canvas knobs as their step', () => {
+  form({ spec: pairDoc(H3_SIZE), user: { variant: 'turbo', width: 5472, height: 3072 } })
+  expect((screen.getByLabelText('Width') as HTMLInputElement).step).toBe('32')
+  expect((screen.getByLabelText('Height') as HTMLInputElement).step).toBe('32')
+  expect((screen.getByLabelText('Width slider') as HTMLInputElement).step).toBe('32')
+})
+
+test('ONE VOICE: a stated cfg outside the variant envelope renders ONE row (the projected bounds stand down)', () => {
+  const spec = {
+    form: 'txt2img', model: 'krea-2',
+    schema: { uid: 0, refs: {
+      0: { type: 'object', dict: { cfg: 1 } },
+      1: { type: 'number', meta: { description: 'Cfg', default: 5, step: 0.5 } },
+    } },
+    variants: [{ id: 'turbo', label: 'Turbo', group: 'Variant', defaults: {}, route: 'turbo', sampler_envelope: { cfg: [1, 2] } }],
+    lanes: { bounds: { cfg: { min: 1, max: 2 } } },
+  } as never
+  form({ spec, user: { variant: 'turbo', cfg: 3.8 } })
+  // the compose gate is the refusing authority; its row names the
+  // envelope, and the projected lane bounds row stands down
+  const gate = document.querySelector('[data-compose-gate]')
+  expect(gate).not.toBeNull()
+  expect(gate!.textContent).toMatch(/stated cfg 3.8 is OUTSIDE the route envelope/)
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  expect(screen.getAllByText(/OUTSIDE the route envelope/).length).toBe(1)
 })
 
 // THE LANE ROW'S PARTIAL ENDS: a bounds row states one end and the

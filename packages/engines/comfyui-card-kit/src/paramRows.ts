@@ -30,10 +30,12 @@ export interface DiffusionParamBounds {
   readonly cfg?: readonly [number, number];
   /** The width/height envelope; `null` declares the rows UNBOUNDED; `false` RETIRES the rows from
    *  the surface entirely (the latent law, 2026-11-08 — the edit lanes edit at the source's own
-   *  frame, so a stated size wires to nothing). Default: [256, 4096] — the WIDEST family's
-   *  ceiling (the 2026-11-18 h3-image max-canvas expansion; the shared card schema serves every
-   *  image-gen family, and the two-homes law pins schema == action row). A family's OWN tighter
-   *  ceiling is its DECL bounds row — the lane-bounds judge's seat, never this surface's. */
+   *  frame, so a stated size wires to nothing). Default: [256, 7680] — the WIDEST family's
+   *  per-side ceiling (the 2026-11-19 h3-image truth cure: its canvas law is a PAIR law —
+   *  32-multiple sides, area 655,360–20,000,000 px, aspect 1:3–3:1 — so the widest legal side
+   *  is 7680, not 4096; the shared card schema serves every image-gen family, and the two-homes
+   *  law pins schema == action row). A family's OWN tighter ceiling is its DECL bounds row —
+   *  the lane-bounds judge's seat, never this surface's. */
   readonly size?: readonly [number, number] | null | false;
 }
 
@@ -47,7 +49,7 @@ export interface DiffusionParamBounds {
 export function diffusionParamRows(bounds: DiffusionParamBounds = {}): readonly ParamSpec[] {
   const steps: readonly [number, number] = bounds.steps ?? [1, 100];
   const cfg: readonly [number, number] = bounds.cfg ?? [1, 20];
-  const size: readonly [number, number] | null | false = bounds.size === undefined ? [256, 4096] : bounds.size;
+  const size: readonly [number, number] | null | false = bounds.size === undefined ? [256, 7680] : bounds.size;
   const sizeRows: readonly ParamSpec[] = size === false
     ? []
     : (["width", "height"] as const).map((name) =>

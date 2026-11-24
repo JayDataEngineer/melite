@@ -29,7 +29,7 @@
 // Schema resolver (the same object — service.ts takes it as `Schema`)
 import z from "@deepseek-ai/schemastery";
 import type { FamilyLaw } from '@melite/contracts/familyLane';
-import type { SamplerEnvelope } from "@melite/contracts/laneRelations";
+import type { LaneSizeLaw, SamplerEnvelope } from "@melite/contracts/laneRelations";
 import * as contractNs from "./model-contract.ts";
 
 /** THE CONTRACT'S SCHEMA INSTANCE (exported so a wall drives THIS
@@ -471,6 +471,22 @@ export interface ParamBoundRow {
  * floor). */
 export type LaneBoundsMap = Record<string, ParamBoundRow>;
 
+/** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+ *  model's own width×height geometry — a per-side row cannot state
+ *  the step grain, the area envelope or the aspect span the model
+ *  actually refuses outside. ONE spelling with the contract floor
+ *  (LaneSizeLaw, the served/judged shape); this row is the DECL's
+ *  grammar twin and accepts it verbatim. */
+export type SizeLawRow = LaneSizeLaw;
+
+export const SizeLawRow: z<SizeLawRow> = z.object({
+  multiple: z.number().required(false),
+  minArea: z.number().required(false),
+  maxArea: z.number().required(false),
+  minAspect: z.number().required(false),
+  maxAspect: z.number().required(false),
+});
+
 export const ParamBoundRow: z<ParamBoundRow> = z.object({
   min: z.number().required(false),
   max: z.number().required(false),
@@ -645,6 +661,7 @@ export function assertSchemaAcceptsMinimalRows(): void {
     ["ParamRequiredRow", ParamRequiredRow, { fields: ["f"] }], // min(1): a required row names what it requires
     ["ParamRelationWords", ParamRelationWords, {}],
     ["ParamBoundRow", ParamBoundRow, {}],
+    ["SizeLawRow", SizeLawRow, { multiple: 32 }],
     // caught by the self-enumeration the moment it landed (A-M15):
     // StudioRow was exported with no minimal entry — the exact
     // escape the hand-table era allowed.
@@ -867,6 +884,10 @@ export const ModelDecl: z<ModelDecl> = z.object({
    *  addition to each variant's own). */
   relations: ParamRelationWords.required(false),
   bounds: z.dict(ParamBoundRow).required(false),
+  // THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+  // model's own width×height geometry — absent = per-field bounds
+  // only (every legacy family).
+  size: SizeLawRow.required(false),
   // THE FAMILY DOOR'S DECLARED ACTIONS (the atom vocabulary, stroke
   // 0): executable doors on a data row — the schema twin is
   // deliberately LOOSE (z.any members): a strict row schema would
@@ -1053,6 +1074,11 @@ export interface ModelDecl {
   familyLaw?: FamilyLaw;
   /** The family-wide relation words (judged on every lane). */
   relations?: ParamRelationWords;
+  /** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+   *  model's own width×height geometry — a per-side bounds row cannot
+   *  express the step grain, the area envelope or the aspect span the
+   *  model refuses outside. Absent = per-field bounds only. */
+  size?: SizeLawRow;
   /** The family's declared graph actions (the atom vocabulary):
    *  the atom's own segment doors, validated at registration (the
    *  facts parse runs over the family row and every variant merge

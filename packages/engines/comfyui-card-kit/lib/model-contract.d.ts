@@ -1,6 +1,6 @@
 import z from "@deepseek-ai/schemastery";
 import type { FamilyLaw } from '@melite/contracts/familyLane';
-import type { SamplerEnvelope } from "@melite/contracts/laneRelations";
+import type { LaneSizeLaw, SamplerEnvelope } from "@melite/contracts/laneRelations";
 /** THE CONTRACT'S SCHEMA INSTANCE (exported so a wall drives THIS
  *  judge, never a second copy: the walls project cannot resolve
  *  schemastery by name, and a test that imported its own instance
@@ -283,6 +283,14 @@ export interface ParamBoundRow {
  * can tighten its own ceiling but never silently drop the family's
  * floor). */
 export type LaneBoundsMap = Record<string, ParamBoundRow>;
+/** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+ *  model's own width×height geometry — a per-side row cannot state
+ *  the step grain, the area envelope or the aspect span the model
+ *  actually refuses outside. ONE spelling with the contract floor
+ *  (LaneSizeLaw, the served/judged shape); this row is the DECL's
+ *  grammar twin and accepts it verbatim. */
+export type SizeLawRow = LaneSizeLaw;
+export declare const SizeLawRow: z<SizeLawRow>;
 export declare const ParamBoundRow: z<ParamBoundRow>;
 export declare const DeclVariantRow: z<DeclVariantRow>;
 export interface VariantGroupRow {
@@ -559,6 +567,11 @@ export interface ModelDecl {
     familyLaw?: FamilyLaw;
     /** The family-wide relation words (judged on every lane). */
     relations?: ParamRelationWords;
+    /** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19): the
+     *  model's own width×height geometry — a per-side bounds row cannot
+     *  express the step grain, the area envelope or the aspect span the
+     *  model refuses outside. Absent = per-field bounds only. */
+    size?: SizeLawRow;
     /** The family's declared graph actions (the atom vocabulary):
      *  the atom's own segment doors, validated at registration (the
      *  facts parse runs over the family row and every variant merge

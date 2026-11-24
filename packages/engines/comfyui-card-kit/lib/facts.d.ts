@@ -146,7 +146,7 @@ export declare function parseDiffusionLaneFacts<Node extends string>(reader: Lan
  *  @throws Error when the key is outside the DECL's declared set, or
  *   max_images is absent, non-finite, or < 1 */
 export declare function parseEditCap(reader: LaneInputsReader, label: string): number;
-import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations';
+import type { LaneRelations, LaneSizeLaw, SamplerEnvelope } from '@melite/contracts/laneRelations';
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,
  *  the four-agent contract audit's top finding: this interface was a
  *  hand-copy of four of the six words — `at_most_one` and `required`
@@ -183,6 +183,11 @@ export interface ModelFacts {
      * only where the DECL declares one (absent ≡ the card's union
      * table authors the fields — the legacy truth, nothing binds). */
     params?: string[];
+    /** THE FAMILY SIZE LAW (the h3-image truth cure, 2026-11-19): the
+     * canvas grain (multiple, area, aspect) judged over the stated
+     * width/height pair — per-field bounds replace a variant's row but
+     * the grain is family-wide. Absent = no size judgment. */
+    size?: LaneSizeLaw;
     /** The family-wide relation words (judged on every lane).
      * Present only where declared. */
     relations?: LaneRelationsFacts;

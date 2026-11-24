@@ -81,7 +81,7 @@ import { CATEGORIES } from '@melite/contracts/planes';
 import { deriveFamilyLane, familyKeyPresent } from '@melite/contracts/familyLane';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
 import { ESTATE_NAMING_ROW } from '@melite/contracts/formSpec';
-import { dropAuthoringIncomplete, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
+import { dropAuthoringIncomplete, judgeDeliverableSize, judgeLaneCanvas, judgeLaneRelations, judgeLaneSurface, laneBlank, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, marriedKnobValues, resolveCellRow, resolveVariantRow, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, variantMatrixFromFlatRows, } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
  *  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -852,6 +852,13 @@ export function laneBoundsFor(spec, variantId) {
         return null;
     return laneBoundsOf(lanes.bounds ?? null, variantId === null ? undefined : lanes.variants?.[variantId]?.bounds ?? null);
 }
+/** THE CANVAS PAIR LAW the served lane declares (absent = none):
+ *  the benchmark's width×height geometry — a per-side bounds row
+ *  cannot express the step grain, the area envelope or the aspect
+ *  span the model refuses outside. */
+export function laneSizeFor(spec) {
+    return spec.lanes?.size ?? null;
+}
 /** Field visibility UNDER the lane contract: a declared surface
  *  hides every field it does not name (the declaration is the
  *  author — the field set IS the variant); a family that declares
@@ -918,8 +925,13 @@ export function laneViolations(spec, fields, user, base) {
     // exact failure this whole shape exists to kill. Latent today (no
     // such DECL), fatal the day one lands.
     const relations = laneRelationsFor(spec, variantId);
-    if (surface === null && relations.length === 0)
-        return [];
+    // THE EARLY RETURN RETIRED (the h3-image truth cure, 2026-11-19):
+    // a family that declares BOUNDS or the CANVAS PAIR LAW and no
+    // surface/relations used to return here — its numeric law never
+    // reached the form, so the write door refused keys the form showed
+    // clean (the 2026-11-18 canvas burn's second half). The judges
+    // below already stand down on null declarations, so reading them
+    // costs a familyless lane nothing.
     // THE NAMING ROW IS STAGE POLICY (the rc.3 burn, operator
     // 2026-11-16: "field 'output_name' fires nothing on this lane" at
     // the form face while every server door admits it): the spec
@@ -968,7 +980,7 @@ export function laneViolations(spec, fields, user, base) {
         ...judgeLaneSurface(surface, names, stated),
         ...(servesDeliverableSwitch ? judgeDeliverableSize(stated) : []),
         ...judgeLaneRelations(relations, stated),
-        ...judgeLaneBounds(bounds, stated),
+        ...judgeLaneCanvas(bounds, laneSizeFor(spec), stated),
     ]);
 }
 /** Does the served doc offer this variant id? The VARIANT rows are

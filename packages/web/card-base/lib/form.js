@@ -30,8 +30,8 @@
 import { createElement as h, useId, useState } from 'react';
 import { SegmentedTabs } from '@deepseek-ai/dsh-client-ui-primitives';
 import { ModifiersSection } from "./mods.js";
-import { coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneBoundsFor, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from "./spec.js";
-import { isUnstatedRequiredVoice } from '@melite/contracts/laneRelations';
+import { coerceFieldEdit, composeCandidateDoc, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneBoundsFor, laneSizeFor, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from "./spec.js";
+import { isLaneBoundsVoice, isUnstatedRequiredVoice } from '@melite/contracts/laneRelations';
 import css from './card.module.css';
 import { useSquareProvider } from "./square-provider.js";
 import { SpecAtom, SourceRow } from "./atoms.js";
@@ -228,8 +228,27 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // keeps its voice even on a gate-voiced field: it is a DIFFERENT
     // crime with its own cure line. One crime, one row.
     const gateFields = new Set(gateViolations.flatMap((v) => (v.field !== undefined ? [v.field] : [])));
+    // THE ENVELOPE VOICE'S FIELD (the same cure's second duplicate): a
+    // sampler-envelope refusal names its knob in prose (`stated cfg 3.8
+    // is OUTSIDE the route envelope …`) — no `field` key — while the
+    // served lanes PROJECT the very same envelope into a per-field
+    // bounds row. The gate is the refusing authority; the projected
+    // lane row stands down for that knob.
+    for (const v of gateViolations) {
+        const named = /^card_compose: stated (\w+) /.exec(v.message);
+        if (named !== null)
+            gateFields.add(named[1]);
+    }
     const laneWarns = laneViolations(spec, flatFields, { ...user, model: family ?? '' }, base).filter((v) => !isUnstatedRequiredVoice(v.message)
-        && !(gateFields.has(v.field) && v.message.includes('fires nothing on this lane')));
+        // THE BOUNDS CLASS STANDS DOWN TOO (the h3-image truth cure,
+        // 2026-11-19 — the operator's "TWO ERRORS ON THE CARD"): a
+        // sampler envelope refusal raises the compose gate's row AND the
+        // lane's bounds row for ONE stated knob (the served lanes project
+        // the envelope into per-field bounds). The compose gate is the
+        // refusing authority (its voice is what the write door speaks),
+        // so the lane's double stands down — a relation row on the same
+        // field keeps its own voice (a different crime, its own cure).
+        && !(gateFields.has(v.field) && (v.message.includes('fires nothing on this lane') || isLaneBoundsVoice(v.message))));
     // THE INTAKE GATE (2026-09-29, the render law — the operator's
     // words: THE CARD DOES NOT RENDER IMPOSSIBLE CONTRACTS). The pick
     // gates judge every WRITE the composer makes; this seat judges
@@ -249,6 +268,15 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     const shownGateViolations = mutedViolations === undefined
         ? gateViolations
         : gateViolations.filter((v) => !mutedViolations.includes(v.message));
+    // THE LANE BANNER'S MUTE rides the SAME list (the h3-image truth
+    // cure, 2026-11-19): when the press strip already voices a lane
+    // refusal (the drill's gate set), the banner is the SAME crime at
+    // a second seat — one crime, one row. The atom's local draft
+    // sentence is a different class (a value the doc never held) and
+    // never reaches this list.
+    const shownLaneWarns = mutedViolations === undefined
+        ? laneWarns
+        : laneWarns.filter((v) => !mutedViolations.includes(v.message));
     // THE DRAGBAR CLAMP SOURCE (the form-must-not-author row,
     // 2026-10-13): the ACTIVE variant's sampler envelope — resolved
     // by the door's own law (offeredVariantOf: stated id-or-route,
@@ -277,6 +305,14 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // the field's ends lands the finite track). A malformed served
     // pair (not length 2) clamps nothing — the wire gate still
     // refuses, so the display stays permissive rather than wrong.
+    // THE LANE GRAIN (the h3-image truth cure, 2026-11-19): the
+    // canvas pair law's `multiple` is the model's own step — the knob
+    // steps by it, so a drag/spinner never authors an off-grain value
+    // the write door then refuses. Other knobs keep the field's step.
+    const laneSize = laneSizeFor(spec);
+    const laneStep = (f) => laneSize?.multiple !== undefined && (f.name === 'width' || f.name === 'height')
+        ? laneSize.multiple
+        : undefined;
     const knobEnvelope = (f) => {
         const mins = [];
         const maxs = [];
@@ -294,14 +330,17 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
             if (row.max !== undefined)
                 maxs.push(row.max);
         }
-        if (mins.length === 0 && maxs.length === 0)
-            return {};
-        return {
-            envelope: [
+        const step = laneStep(f);
+        const out = {};
+        if (mins.length > 0 || maxs.length > 0) {
+            out.envelope = [
                 mins.length > 0 ? Math.max(...mins) : Number.NEGATIVE_INFINITY,
                 maxs.length > 0 ? Math.min(...maxs) : Number.POSITIVE_INFINITY,
-            ],
-        };
+            ];
+        }
+        if (step !== undefined)
+            out.step = step;
+        return out;
     };
     // THE MODEL GUARD (the grammar's own key — the base owns the
     // mechanism, the card owns the leaves): the serving family rides
@@ -442,8 +481,8 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // LANE REFUSALS SEAT WITH THE FORM'S REFUSAL SURFACE (the admission
     // voice never renders inside the parameter flow — a bare sibling
     // after the axes grid reads as the Recipe row's value).
-    laneWarns.length > 0
-        ? h('div', { className: css.laneWarn, 'data-lane-warn': String(laneWarns.length), role: 'alert' }, laneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)))
+    shownLaneWarns.length > 0
+        ? h('div', { className: css.laneWarn, 'data-lane-warn': String(shownLaneWarns.length), role: 'alert' }, shownLaneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)))
         : null, 
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).

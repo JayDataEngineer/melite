@@ -67,7 +67,7 @@ export function SeedDice({ random, onToggle }: { random: boolean; onToggle(): vo
   })
 }
 
-export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope }: {
+export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates, envelope, step }: {
   f: SpecField
   value: unknown
   /** the SIBLING values (the entry's whole state): the
@@ -82,6 +82,9 @@ export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates,
    *  the slider atom's track clamp (the dragbar law); absent when
    *  the caller has no variant envelope to offer. */
   envelope?: readonly [number, number] | null
+  /** the lane-declared grain (the canvas pair's 32) — forwarded to
+   *  the atom so the spinner/drag never authors off-grain values. */
+  step?: number
 }): ReturnType<typeof h> {
   // the row is a DIV, not a wrapper label: the atoms self-label
   // (aria-label) — a button inside a <label> steals the label
@@ -133,6 +136,7 @@ export function SpecFieldRow({ f, value, values, onEdit, square, wireCandidates,
       value: seedRandom ? undefined : value,
       ...(seedRandom ? { placeholder: chromeCopy.seedRandomPlaceholder } : {}),
       ...(envelope !== undefined ? { envelope } : {}),
+      ...(step !== undefined ? { step } : {}),
       onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}),
     }),
   )

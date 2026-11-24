@@ -43,7 +43,7 @@ export declare function schemaEnvelope(dict: Record<string, SchemaRef & {
 import { CATEGORIES } from '@melite/contracts/planes';
 import type { FormSpecDoc, InputEdge, ModifierKind, SchemaEnvelope, SchemaRef, SpecField, FormVariantRow } from '@melite/contracts/formSpec';
 export type { FormSpecDoc, InputEdge, ModifierKind, ModifierOption, SchemaEnvelope, SchemaRef, SpecField, FormVariantRow, } from '@melite/contracts/formSpec';
-import { type LaneBounds, type LaneRelations, type LaneViolation } from '@melite/contracts/laneRelations';
+import { type LaneBounds, type LaneRelations, type LaneSizeLaw, type LaneViolation } from '@melite/contracts/laneRelations';
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
  *  served modifier kind owns — its fields' names plus its param_key
  *  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -292,6 +292,11 @@ export declare function laneRelationsFor(spec: FormSpecDoc, variantId: string | 
  *  per-field replaced by the variant's own (the DECL cascade's
  *  replace-law for numbers). */
 export declare function laneBoundsFor(spec: FormSpecDoc, variantId: string | null): LaneBounds | null;
+/** THE CANVAS PAIR LAW the served lane declares (absent = none):
+ *  the benchmark's width×height geometry — a per-side bounds row
+ *  cannot express the step grain, the area envelope or the aspect
+ *  span the model refuses outside. */
+export declare function laneSizeFor(spec: FormSpecDoc): LaneSizeLaw | null;
 /** Field visibility UNDER the lane contract: a declared surface
  *  hides every field it does not name (the declaration is the
  *  author — the field set IS the variant); a family that declares

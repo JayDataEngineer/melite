@@ -275,6 +275,59 @@ export interface ParamBound {
  *  the nearer layer wins, the surface cascade's add-law does not
  *  apply to numbers). */
 export type LaneBounds = Readonly<Record<string, ParamBound>>;
+/** THE CANVAS LAW a lane may declare beside its per-field bounds
+ *  (the h3-image truth cure, 2026-11-19): a per-side row cannot
+ *  express an area, an aspect or a step grain — the model's real
+ *  canvas envelope is a PAIR law (MiniMax-H3-Image: 32-multiple
+ *  sides, area 655,360–20,000,000 px, aspect 1:3–3:1). Declared on
+ *  the DECL, served on the lane contract, judged where the lane is
+ *  judged (the form's inline gate and the bench write/run door).
+ *  @param multiple every stated side must be a multiple of this.
+ *  @param minArea the smallest admitted width×height product.
+ *  @param maxArea the largest admitted width×height product.
+ *  @param minAspect the narrowest admitted width:height ratio.
+ *  @param maxAspect the widest admitted width:height ratio. */
+export interface LaneSizeLaw {
+    readonly multiple?: number;
+    readonly minArea?: number;
+    readonly maxArea?: number;
+    readonly minAspect?: number;
+    readonly maxAspect?: number;
+}
+/** The bounds-range sentence stem — the judge's one spelling and the
+ *  form's duplicate mute read the same literal (a compose gate that
+ *  already voices the field owns the row; the lane's bounds voice
+ *  stands down). */
+export declare const LANE_BOUNDS_RANGE_STEM: string;
+/** The bounds class test: the sentence is the lane's per-field
+ *  range refusal.
+ *  @param text the refusal sentence to classify
+ *  @returns true when the sentence is the bounds-range voice */
+export declare function isLaneBoundsVoice(text: string): boolean;
+/** The canvas sentence stem — the pair judge's one spelling.
+ *  @param text the refusal sentence to classify
+ *  @returns true when the sentence is the canvas-pair voice */
+export declare function isLaneCanvasVoice(text: string): boolean;
+/** THE PAIR-LEVEL CANVAS JUDGMENT: the lane's declared canvas law
+ *  over the STATED width/height pair. A half pair is authoring (the
+ *  blank law's own tolerance), never a refusal; a blank or
+ *  non-number side stands down (the card schema owns type
+ *  refusals). Every failed clause rides the ONE sentence, and the
+ *  named field is 'width' — the press strip's unstamp reverts it to
+ *  the family default, which re-derives the pair.
+ *  @param size the lane's canvas law (null/undefined = none).
+ *  @param values the stated state (width/height read by name).
+ *  @returns one violation, or none. */
+export declare function judgeLaneSize(size: LaneSizeLaw | null | undefined, values: Record<string, unknown>): LaneViolation[];
+/** THE ONE CANVAS DOOR: the per-field bounds plus the pair law, with
+ *  the pair standing down while a per-side row already voices the
+ *  crime (one crime, one row — a width below the lane's range must
+ *  not ALSO be reported as an area miss).
+ *  @param bounds the lane's per-field numeric domains.
+ *  @param size the lane's canvas law (null/undefined = none).
+ *  @param values the stated state.
+ *  @returns every canvas violation the write/run seats voice. */
+export declare function judgeLaneCanvas(bounds: LaneBounds | null, size: LaneSizeLaw | null | undefined, values: Record<string, unknown>): LaneViolation[];
 export declare function laneBoundsOf(familyBounds: LaneBounds | null | undefined, variantBounds: LaneBounds | null | undefined): LaneBounds | null;
 /** Judge the bounds over one stated state. PURE. Blank fields never
  *  violate (the blank law: unstated is the family default's
@@ -403,6 +456,11 @@ export interface LaneContractRow {
         min?: number;
         max?: number;
     }>;
+    /** THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19):
+     *  served verbatim so the form's inline gate and the bench
+     *  write/run door judge the same pair geometry. Absent = the
+     *  lane declares no pair law (per-field bounds only). */
+    size?: LaneSizeLaw;
     variants: Record<string, LaneContractVariantRow>;
 }
 export interface LaneContractDecl {
@@ -412,6 +470,7 @@ export interface LaneContractDecl {
         min?: number;
         max?: number;
     }>;
+    size?: LaneSizeLaw;
     variants?: ReadonlyArray<{
         id: string;
         params?: readonly string[];

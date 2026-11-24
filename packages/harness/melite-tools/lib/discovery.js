@@ -1268,6 +1268,11 @@ export function specBody(svc, defs, res, engineLoras) {
         ...(decl !== null && (decl.params !== undefined ||
             decl.relations !== undefined ||
             decl.bounds !== undefined ||
+            // THE CANVAS PAIR LAW (the h3-image truth cure, 2026-11-19):
+            // a family that declares geometry but no per-field row still
+            // serves its contract — else the form judges no pair while the
+            // bench door refuses the write.
+            decl.size !== undefined ||
             (decl.variants ?? []).some((v) => v.params !== undefined || v.relations !== undefined || v.bounds !== undefined || v.sampler_envelope !== undefined ||
                 // THE CELL SURFACE (the size-at-quant reshape, operator
                 // 2026-10-26): a variant that declares additions at a SIZE

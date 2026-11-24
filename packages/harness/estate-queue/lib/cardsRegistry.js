@@ -87,7 +87,7 @@ import { CardArmError, EnvelopeRefusal, phaseRefusalCode } from "./cardsArmError
 export { CardArmError } from "./cardsArmError.js";
 import { cardAdmits, factsPath, deriveDecls, familyLanesOf, liftStageReservedForAdmission } from "./cardsFacts.js";
 import { reseatDeadKeys } from "@melite/contracts/familyLane";
-import { dropAuthoringIncomplete, isUnstatedRequiredVoice, judgeDeliverableSize, judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
+import { dropAuthoringIncomplete, isUnstatedRequiredVoice, judgeDeliverableSize, judgeLaneBounds, judgeLaneCanvas, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneStaleCarry, laneSurfaceOf, laneTogetherClosure, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePresenceRefusal } from "./cardsLanes.js";
 import { selectCardVariant, liftCardParams } from "./cardsVariant.js";
 // the extracted planes re-export through the registry's public
@@ -1877,7 +1877,11 @@ export class CardRegistryService extends Service {
             ...judgeLaneSurface(surface, knobFields, prep.params),
             ...(servesDeliverableSwitch ? judgeDeliverableSize(prep.params) : []),
             ...judgeLaneRelations(relations, prep.params),
-            ...judgeLaneBounds(bounds, prep.params),
+            // THE CANVAS PAIR LAW rides the bounds' seat (the h3-image
+            // truth cure, 2026-11-19): the per-side rows plus the pair's
+            // area/aspect/step grain, one door — a per-side row that
+            // already voices the crime keeps the pair silent (one row).
+            ...judgeLaneCanvas(bounds, famRow.size ?? null, prep.params),
         ];
         const violations = admitIncomplete
             ? incompleteDraftViolations(judgedFam)
