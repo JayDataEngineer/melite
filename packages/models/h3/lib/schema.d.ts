@@ -39,7 +39,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     refmod_pool: z<number, number, "defined">;
     refmod_identity: z<number, number, "defined">;
     refmod_save: z<boolean, boolean, "defined">;
-    duck_depth_db: z<number, number, "defined">;
+    duck_depth_db: z<number, number, "plain">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
@@ -112,7 +112,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     refmod_pool: z<number, number, "defined">;
     refmod_identity: z<number, number, "defined">;
     refmod_save: z<boolean, boolean, "defined">;
-    duck_depth_db: z<number, number, "defined">;
+    duck_depth_db: z<number, number, "plain">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
@@ -240,7 +240,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     refmod_pool: z<number, number, "defined">;
     refmod_identity: z<number, number, "defined">;
     refmod_save: z<boolean, boolean, "defined">;
-    duck_depth_db: z<number, number, "defined">;
+    duck_depth_db: z<number, number, "plain">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;
@@ -313,7 +313,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     refmod_pool: z<number, number, "defined">;
     refmod_identity: z<number, number, "defined">;
     refmod_save: z<boolean, boolean, "defined">;
-    duck_depth_db: z<number, number, "defined">;
+    duck_depth_db: z<number, number, "plain">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
     height: z<number, number, "defined">;

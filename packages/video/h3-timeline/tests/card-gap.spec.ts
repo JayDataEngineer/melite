@@ -2080,11 +2080,17 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
     });
     assert.equal(manifest.duckDb, -22, "the knob's value rides the manifest verbatim");
     // the knob is DECLARED on the schema (the studio-contract law: no
-    // UI fiction the door would drop)
-    const spec = def.schema({}) as Record<string, unknown>;
+    // UI fiction the door would drop) — judged by STATING it, never by
+    // an empty doc materializing a default: since defect A3's cure the
+    // unstated depth is DERIVED from the film's rows (computeFilmMix),
+    // and a schema default would outvote them at exactly this door.
+    const filmCalls = [SHOT(), SHOT({ text: LAWFUL_TEXT_CARRIED, start_frame: 56, end_frame: 124 })];
+    const stated = def.schema({ calls: filmCalls, audio_clips: rawClips, duck_depth_db: -22 }) as Record<string, unknown>;
+    assert.equal(stated.duck_depth_db, -22, "duck_depth_db normalizes through the schema door");
+    const unstated = def.schema({ calls: filmCalls, audio_clips: rawClips }) as Record<string, unknown>;
     assert.ok(
-      Object.keys(spec).includes("duck_depth_db"),
-      "duck_depth_db normalizes through the schema door",
+      !Object.keys(unstated).includes("duck_depth_db"),
+      "an unstated knob never materializes a depth the film's own rows should decide",
     );
   });
 

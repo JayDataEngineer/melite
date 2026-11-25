@@ -97,6 +97,18 @@ export function parseFilmMixClips(rows) {
     return clips;
 }
 const round3 = (v) => Math.round(v * 1000) / 1000;
+/**
+ * The generated track's depth under a placed DIALOGUE row (defect A3,
+ * cured 2026-11-25). A row whose job is to BE the voice cannot leave the
+ * model's own rendition audible beneath it: at −14 dB it is still a
+ * second voice (EP01 `run-e0e296e18f37-124ae24a`: raw correlation 0.970
+ * against the source take, 1.0000 at −48 dB), and every film spec of the
+ * show had to state `duck_depth_db: −48` by hand to hear one voice.
+ */
+const DIALOGUE_DUCK_DB = -48;
+/** The music bed yields, it does not vanish: the long-standing shallow
+ *  default, kept for a film that only scores. */
+const MUSIC_DUCK_DB = -14;
 /** The minimum overlap (frames at the DOC CLOCK) that can size a
  * slice for the stamp pin — the audio slice node's 0.1s floor. */
 const SLICE_FLOOR_FRAMES = 2.4;
@@ -255,7 +267,12 @@ export function computeFilmMix(input) {
         if (clips[ci].cls !== 'music')
             musicDuckSpans.push(s);
     }
-    const duckDb = typeof input.duckDb === 'number' && Number.isFinite(input.duckDb) ? input.duckDb : -14;
+    // THE DEFAULT FOLLOWS THE REASON FOR DUCKING (defect A3): a pasted
+    // line silences the generated voice under it; a score-only film keeps
+    // the shallow bed dip. The operator's stated knob always wins — this is
+    // the DEFAULT, never a pinned literal (duck depth is a knob, roadmap §14).
+    const ducking = clips.some((c) => c.cls === 'dialogue') ? DIALOGUE_DUCK_DB : MUSIC_DUCK_DB;
+    const duckDb = typeof input.duckDb === 'number' && Number.isFinite(input.duckDb) ? input.duckDb : ducking;
     return {
         placements,
         duckSpans,

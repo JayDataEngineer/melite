@@ -63,9 +63,14 @@ describe('the served face carries the refaudio rail truth (D-38/§14)', () => {
 
   it('the duck_depth_db tooltip names BOTH duck sources (a placed clip or a ref_audios voice) and the dial range', () => {
     const tooltips = seatTooltips()
-    const duck = tooltips.find((t) => t.includes('mix-desk default'))
+    const duck = tooltips.find((t) => t.includes('How far the generated voice ducks under a conditioned row'))
     expect(duck, 'the duck_depth_db tooltip is served').toBeDefined()
     expect(duck).toMatch(/under a conditioned row — a placed dialogue clip or a ref_audios voice/)
     expect(duck).toMatch(/range −48–0/)
+    // A3's disclosure (2026-11-25): an unstated dial is DERIVED from the
+    // film's own rows, and the served face says so before the operator
+    // ships a film with two voices.
+    expect(duck).toMatch(/−48 under a placed dialogue row/)
+    expect(duck).toMatch(/−14 for a score-only film/)
   })
 })

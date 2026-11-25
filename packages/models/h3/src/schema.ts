@@ -170,7 +170,7 @@ export const paramSchema = z.object({
   // generated voice yields under a conditioned clip at its film
   // span. −14dB is the natural mix-desk default; deeper for dense
   // dialogue, shallower when the generated voice should hold.
-  duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).default(-14).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a conditioned row — a placed dialogue clip or a ref_audios voice (−14 is the mix-desk default; range −48–0)." })),
+  duck_depth_db: z.number().description("Duck depth (dB)").min(-48).max(0).step(1).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1, tooltip: "How far the generated voice ducks under a conditioned row — a placed dialogue clip or a ref_audios voice (range −48–0). Unstated, the depth follows the reason the track ducks: −48 under a placed dialogue row (the pasted take IS the voice, so the model's rendition must go), −14 for a score-only film. The DEFAULT lives in computeFilmMix, never here: a schema default would outvote the film's own rows." })),
   seed: z.number().description("Seed").step(1).default(42).extra('extra', bag({ order: null, columns: 2, width: 1, tooltip: "Same seed across re-rolls = same world texture" })),
   width: z.number().description("Width").min(448).max(1344).step(32).default(1344).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),
   height: z.number().description("Height").min(448).max(1344).step(32).default(768).extra('extra', bag({ order: null, wtype: 'number', columns: 2, width: 1 })),

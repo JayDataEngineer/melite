@@ -16,7 +16,24 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    # c8a718b 2026-11-12 (tts NEW-3, the release door): POST
+    # 16199c2 2026-11-25 (defect A2, the line-end ghost): the duck
+    # drew its release arc INSIDE the span (release_ms before the end,
+    # unity AT it), so the row's last 350 ms came back un-ducked and a
+    # row ending on its last word let the model's own rendition of that
+    # word rise under the pasted take (EP01 D2S2, five films: b 0.00 ->
+    # 0.96 over the last 10 frames). The floor now holds to the span
+    # end and the arc spills after it — THE TAIL LAW (>= 8 frames) is a
+    # safety margin, not a requirement. Walls: melite
+    # tests/py/test_duck_release_after_span.py (4 arms). Prior a0abac1 2026-11-25 (defect A1, the music-bus union): the film
+    # mix stacked its music sub-bus with length_mode="base", and
+    # MeliteAudioMix truncates to the FIRST argument — a second music
+    # clip placed past the first one's placed extent was cut to zero
+    # samples before it was summed (runs ca2c3198e17c + 6462805e37b0:
+    # both rows in clips_json, only L33 delivered). _stack_bus joins
+    # with "longest" (a bus is the union of its clips); the film's own
+    # length still applies once, at the final join onto the film track.
+    # Walls: melite tests/py/test_film_mix_music_bus.py (3 arms).
+    # Prior c8a718b 2026-11-12 (tts NEW-3, the release door): POST
     # /audiocore/release_warmed fires release_warmed_handles() —
     # the warmed qwen3 torch seats (~4.3 GB + graphs per variant)
     # are engine-owned process-wide handles ComfyUI's native /free
@@ -108,7 +125,7 @@ extensions:
     # in transformers 5.20) died at from_pretrained. The torch
     # pipeline now loads under the same tolerant registry patch the
     # tts engines load under. Wall: tests/test_moss_rope_registry_leak.py.
-    ref: 73f50ed5ba93c6ad877edba86c72a5831e4afe7c
+    ref: 16199c246588111cdf9ea439eea37701b08bcbab
     required: true
     desc: >-
       The ONE audio pack: Qwen3-TTS synthesis (qwen3_tts — card lane
