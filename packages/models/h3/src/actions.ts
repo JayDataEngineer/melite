@@ -37,7 +37,7 @@ import { chooseLaneClips, computeFilmMix, parseFilmMixClips, spanOverlap, stanza
 import type { FilmMixClip, FilmMixSpan } from './filmMix.js'
 import { SECOND_PASS_WINDOW } from './secondPass.js'
 import { mountRefModBake } from './refmodBake.js'
-import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, admitSpanGrid, bookSeconds, imageReferenceCap, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js'
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, admitSpanGrid, bookSeconds, imageReferenceCap, retimeRowsToRendered, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js'
 import {
   applyH3ReshootCond,
   applyH3ReshootModel,
@@ -559,6 +559,19 @@ function renderH3Film(
   for (let i = 0; i < spans.length; i++) {
     spans[i] = { ...spans[i]!, start: admittedSpans.spans[i]!.start, end: admittedSpans.spans[i]!.end }
   }
+  // THE ROWS ON THE RENDERED CLOCK (defect F7, cured 2026-11-25): the
+  // admit pass above slides every window after a snapped one, but the
+  // rows kept their AUTHORED frames — so from the first snap on, a row
+  // authored inside window N fell before N's rendered start and the lane
+  // law gave it to N-1: the card voiced the line in BOTH windows
+  // (receipt run-b455015a839a-1268cd59, authored 107/107/124/107 vs
+  // rendered 0-107/107-226/226-362/362-481). The stamps and the film
+  // mix below both read this one clock.
+  const renderedClips: FilmMixClip[] = retimeRowsToRendered(
+    calls.map((c) => ({ start: c.start_frame as number })),
+    spans,
+    clips,
+  )
   // THE RE-SHOOT CHAIN, BUILT ONCE (feature 024): an armed re-shoot
   // builds its depth → warp → mask subgraph ONCE on the run's graph
   // (never per window — a multi-window film pays for the depth model
@@ -761,11 +774,11 @@ function renderH3Film(
       // window 2's dialogue lane from the row that started there,
       // and window 2 re-performed line 1 while the real row
       // conditioned nothing.
-      const lanes = chooseLaneClips(clips, sf, ef, genStart)
+      const lanes = chooseLaneClips(renderedClips, sf, ef, genStart)
       for (const cls of ['dialogue', 'sfx', 'music'] as const) {
         const ci = lanes[cls]
         if (ci === undefined) continue
-        const clip = clips[ci]!
+        const clip = renderedClips[ci]!
         const lo = Math.max(clip.start, genStart)
         const hi = Math.min(clip.start + clip.dur, ef)
         // ONE CLOCK (journey audit AUDIO-2): the stamps' seconds
@@ -1105,7 +1118,7 @@ function renderH3Film(
   const docFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT
   const manifest = computeFilmMix({
     spans,
-    clips,
+    clips: renderedClips,
     windowSecs: stanzaSecs(spans, docFps),
     fps: docFps,
     // the knob's declared default (−14) walks through the schema
@@ -1171,7 +1184,7 @@ function renderH3Film(
     const wiredSeats: Record<string, OutputHandle> = {}
     let nextSeat = 0
     const mixRows = manifest.placements.map((pl) => {
-      const clip = clips[pl.clip]!
+      const clip = renderedClips[pl.clip]!
       // THE OVERLAY'S IN-POINT (the clipping lane): in_sec rides only
       // when the clip starts past the source head — a 0 in-point omits
       // the key, byte-identical to every manifest row composed before

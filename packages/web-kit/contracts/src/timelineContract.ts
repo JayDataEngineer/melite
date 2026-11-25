@@ -529,6 +529,41 @@ export function admitCallSpans(
   return { spans, notices }
 }
 
+/** THE RENDERED-CLOCK RETIME (defect F7, cured 2026-11-25): a row
+ *  authored on the DOC's frames must be judged on the frames the film
+ *  actually renders. `admitCallSpans` re-tiles the clock — every
+ *  window after a snapped one slides by that snap — but rows keep their
+ *  authored coordinates, so from the first snapped window on a row
+ *  authored inside window N falls BEFORE window N's rendered start and
+ *  is owned by window N-1: the card voiced the line in BOTH windows
+ *  (receipt run-b455015a839a-1268cd59 — authored 107/107/124/107
+ *  rendered 0-107, 107-226, 226-362, 362-481).
+ *
+ *  This maps a row's authored start onto the rendered clock by the
+ *  slide of the window it was authored in (the LAST authored start at
+ *  or before it — the same owner comparison the lane law uses). Lengths
+ *  are held: only the clock slides.
+ * @param authored the doc's own spans, one per call (authored starts)
+ * @param rendered the admit pass's spans, same order (what the film renders)
+ * @param rows the authored rows (any shape carrying a `start` frame)
+ * @returns the same rows with their starts on the rendered clock
+ *   (the input array, unchanged, when the two walks disagree in length —
+ *   a partial map would silently move a row to a window it never had)
+ */
+export function retimeRowsToRendered<T extends { readonly start: number }>(
+  authored: readonly { readonly start: number }[],
+  rendered: readonly { readonly start: number }[],
+  rows: readonly T[],
+): T[] {
+  if (rendered.length === 0 || rendered.length !== authored.length) return rows.slice()
+  const slideOf = (frame: number): number => {
+    let w = 0
+    for (let i = 0; i < authored.length; i++) if (frame >= authored[i]!.start) w = i
+    return rendered[w]!.start - authored[w]!.start
+  }
+  return rows.map((row) => ({ ...row, start: row.start + slideOf(row.start) }))
+}
+
 /** The booked render clock, one home: the seconds seat rounds its
  *  quotient to milliseconds before it rides the wire, so every
  *  consumer that needs the value the graph will actually carry (the
@@ -1153,12 +1188,24 @@ export function filmAdmissionNotices(doc: Record<string, unknown>): readonly str
   // owns its speech (the stamps' lane law keys on the same start).
   // The map books the RENDERED spans (the admit pass's own rows):
   // the warn judges the film that renders, not the one authored.
+  const authoredRows: Array<Record<string, unknown> & { start: number }> = clips.map((clip) => ({
+    ...clip,
+    start: typeof clip['start_frame'] === 'number' ? (clip['start_frame'] as number) : 0,
+  }))
+  const renderedClips = retimeRowsToRendered(
+    calls.map((c) => ({ start: typeof c['start_frame'] === 'number' ? (c['start_frame'] as number) : 0 })),
+    admitted.spans,
+    authoredRows,
+  )
   const states = calls.map((c, i): string => {
     const sf = admitted.spans[i]?.start
     const ef = admitted.spans[i]?.end
     if (sf === undefined || ef === undefined || ef <= sf) return `${i}:?`
-    const ownedRow = clips.find((clip) => typeof clip?.start_frame === 'number'
-      && clip.start_frame >= sf && clip.start_frame < ef)
+    // the same retime the compose uses (defect F7): a row authored on
+    // the doc's frames is judged where the film renders it
+    // the row's RENDERED start is the retime's own output — the map
+    // keys on the coordinate the film seats, never the authored frame
+    const ownedRow = renderedClips.find((clip) => clip.start >= sf && clip.start < ef)
     if (ownedRow !== undefined) return `${i}:row`
     return ef - sf >= SILENT_WINDOW_WARN_FRAMES ? `${i}:silent ${ef - sf}f` : `${i}:silent`
   })

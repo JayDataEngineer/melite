@@ -327,6 +327,34 @@ export declare function admitCallSpans(calls: readonly Record<string, unknown>[]
     }>;
     notices: string[];
 };
+/** THE RENDERED-CLOCK RETIME (defect F7, cured 2026-11-25): a row
+ *  authored on the DOC's frames must be judged on the frames the film
+ *  actually renders. `admitCallSpans` re-tiles the clock — every
+ *  window after a snapped one slides by that snap — but rows keep their
+ *  authored coordinates, so from the first snapped window on a row
+ *  authored inside window N falls BEFORE window N's rendered start and
+ *  is owned by window N-1: the card voiced the line in BOTH windows
+ *  (receipt run-b455015a839a-1268cd59 — authored 107/107/124/107
+ *  rendered 0-107, 107-226, 226-362, 362-481).
+ *
+ *  This maps a row's authored start onto the rendered clock by the
+ *  slide of the window it was authored in (the LAST authored start at
+ *  or before it — the same owner comparison the lane law uses). Lengths
+ *  are held: only the clock slides.
+ * @param authored the doc's own spans, one per call (authored starts)
+ * @param rendered the admit pass's spans, same order (what the film renders)
+ * @param rows the authored rows (any shape carrying a `start` frame)
+ * @returns the same rows with their starts on the rendered clock
+ *   (the input array, unchanged, when the two walks disagree in length —
+ *   a partial map would silently move a row to a window it never had)
+ */
+export declare function retimeRowsToRendered<T extends {
+    readonly start: number;
+}>(authored: readonly {
+    readonly start: number;
+}[], rendered: readonly {
+    readonly start: number;
+}[], rows: readonly T[]): T[];
 /** The booked render clock, one home: the seconds seat rounds its
  *  quotient to milliseconds before it rides the wire, so every
  *  consumer that needs the value the graph will actually carry (the
