@@ -35,6 +35,10 @@
     // - scripts/*.mjs / *.d.mts, tests/drives/*.mjs, tools/*.d.mts, the
     //   tests/helpers+fixtures rows: the spawned harness plane
     //   (package.json script rows and drive probes execute them).
+    // - packages/**/bin/*.d.mts: a package bin's type face — TypeScript
+    //   resolves the twin implicitly from the .mjs an importer names;
+    //   no import ever names the file itself (CI 45492709450: the
+    //   provisioner's fence-wall face read as an unused FILE).
     // - the per-package rows: probe/config/fixture/e2e/hot-example
     //   files consumed by their lane scripts, vitest projects, or
     //   the loader's glob (css-module type twins, the viewers face).
@@ -45,6 +49,7 @@
     "scripts/*.d.mts",
     "tests/drives/*.mjs",
     "tools/*.d.mts",
+    "packages/**/bin/*.d.mts",
     "tests/helpers/launch-probe.mjs",
     "tests/walls/ts/fixtures/manager-stub.mjs",
     // ── THE vi.mock FACTORY PLANE (2026-11-17, the battery's knip

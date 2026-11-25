@@ -19,8 +19,22 @@
 // that burned: a browser-spec cure must not re-fire the GPU tier, and
 // a GPU-row diet must not re-fire the browser tier).
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
+
+/** Directories that are NEVER lease inputs. `.git` and `node_modules`
+ *  are not the repo's bytes; `__pycache__`, `coverage`, `test-results`,
+ *  `playwright-report` and `.venv` are what a test run, a coverage run
+ *  or an install EMITS — hashing them would move every lease on every
+ *  run. `lib` and `dist` are a package's BUILD OUTPUT only where the
+ *  directory above them owns a package.json; a SOURCE folder named lib
+ *  has no manifest above it and stays an input (2026-11-25: the
+ *  name-only skip left tests/walls/ts/lib and scripts/lib unhashed
+ *  under globs that named them). */
+const NEVER_INPUT = new Set(["node_modules", ".git", "__pycache__", "coverage", "test-results", "playwright-report", ".venv"]);
+const BUILD_OUTPUT = new Set(["lib", "dist"]);
+const isSkippedDir = (name, dir) =>
+  NEVER_INPUT.has(name) || (BUILD_OUTPUT.has(name) && existsSync(join(dir, "package.json")));
 
 /** Minimal glob: `**` spans directories, `*` within one segment.
  * No brace/extglob — the table below uses only these two forms, and a
@@ -54,7 +68,7 @@ export function expandGlobs(root, globs) {
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
-      if (e.name === "node_modules" || e.name === ".git" || e.name === "lib" || e.name === "dist") continue;
+      if (isSkippedDir(e.name, dir)) continue;
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
       else if (e.isFile()) {
@@ -81,31 +95,47 @@ function hashInputs(root, globs) {
   return { hash: h.digest("hex"), files: files.length };
 }
 
+// PACKAGE CODE OUTSIDE src/ — the trees a package owns that tiers READ
+// beside src/: its bins and scripts. Tests import them (the lane-pairing
+// fence imports bin/infer-provision.mjs), the typecheck wall resolves
+// their type twins, knip judges them as files. Every tier that hashes
+// src/ hashes these too — one list, no per-tier asymmetry.
+// (2026-11-25, CI 45492709450: a .d.mts beside the provisioner's
+// own bin/ moved knip's answer and the typecheck wall's, every leased
+// tier carried a stale green, and the push landed a red main.)
+const PACKAGE_CODE = ["packages/**/bin/**", "packages/**/scripts/**"];
+
 // THE TIER INPUT TABLE — one home for what each tier judges. This is
 // the load-bearing table: conservative by construction (wide sets),
 // and every set carries the battery's own scripts + the lockfile via
 // the resolver below, never by repetition here.
 export const TIER_INPUTS = {
-  tsc: ["packages/**/src/**", "packages/**/tsconfig*.json", "packages/**/package.json", "pnpm-workspace.yaml"],
-  build: ["packages/**/src/**", "packages/**/package.json", "package.json", "tools/build-plane.mjs", "scripts/*.mjs"],
-  walls: ["tests/walls/**", "packages/**/tests/**", "packages/**/src/**", "vitest*.ts", "vitest*.mts", "packages/**/vitest*.ts"],
+  tsc: ["packages/**/src/**", "packages/**/tsconfig*.json", "packages/**/package.json", "pnpm-workspace.yaml", ...PACKAGE_CODE],
+  build: ["packages/**/src/**", "packages/**/package.json", "package.json", "tools/build-plane.mjs", "scripts/*.mjs", ...PACKAGE_CODE],
+  walls: ["tests/walls/**", "packages/**/tests/**", "packages/**/src/**", "vitest*.ts", "vitest*.mts", "packages/**/vitest*.ts", ...PACKAGE_CODE],
   // THE PRE-PUSH NODE SEAT (push-pipeline rework, 2026-11-17): the
   // lefthook walls job once ran the node project un-leased on EVERY
   // push — the same suite the battery's walls tier owns, paid twice.
   // Its green now carries on its own lease, same inputs as walls.
-  "walls-node": ["tests/walls/**", "packages/**/tests/**", "packages/**/src/**", "vitest*.ts", "vitest*.mts", "packages/**/vitest*.ts"],
-  expected: ["tests/expected/**", "packages/**/src/**", "packages/**/tests/**", "vitest.expected.config.ts"],
-  bench: ["tests/bench/**", "packages/**/src/**", "packages/**/tests/**", "vitest.bench.config.ts"],
-  snapshot: ["tests/snapshot/**", "packages/**/src/**", "packages/**/tests/**", "vitest.snapshot.config.ts"],
-  web: ["packages/web/**/src/**", "packages/web/**/tests/**", "vitest.web.config.ts"],
+  "walls-node": ["tests/walls/**", "packages/**/tests/**", "packages/**/src/**", "vitest*.ts", "vitest*.mts", "packages/**/vitest*.ts", ...PACKAGE_CODE],
+  expected: ["tests/expected/**", "packages/**/src/**", "packages/**/tests/**", "vitest.expected.config.ts", ...PACKAGE_CODE],
+  bench: ["tests/bench/**", "packages/**/src/**", "packages/**/tests/**", "vitest.bench.config.ts", ...PACKAGE_CODE],
+  snapshot: ["tests/snapshot/**", "packages/**/src/**", "packages/**/tests/**", "vitest.snapshot.config.ts", ...PACKAGE_CODE],
+  web: ["packages/web/**/src/**", "packages/web/**/tests/**", "vitest.web.config.ts", ...PACKAGE_CODE],
   pytest: ["tests/**/*.py", "vendor/**/*.py", "packages/**/*.py"],
-  knip: ["knip.jsonc", "tools/knip-budget.mjs", "packages/**/src/**", "packages/**/package.json"],
-  coverage: ["scripts/coverage-baseline.ts", "tools/coverage-ratchet.mjs", "packages/**/src/**", "packages/**/tests/**", "vitest*.ts"],
+  // knip judges every file of every workspace the root config admits
+  // (pnpm-workspace.yaml minus its ignoreWorkspaces) plus the root
+  // project's own code. The lease hashes that whole surface — build
+  // output and generated dirs stay out by the walker's rule, so a
+  // coverage summary never re-fires it. The 2026-11-25 row hashed
+  // src/ alone: narrower than the judge, and it carried.
+  knip: ["knip.jsonc", "tools/knip-budget.mjs", "packages/**", "vendor/cordis_plugins/**", "tests/**", "scripts/**", "tools/**", "infra/**"],
+  coverage: ["scripts/coverage-baseline.ts", "tools/coverage-ratchet.mjs", "packages/**/src/**", "packages/**/tests/**", "vitest*.ts", ...PACKAGE_CODE],
   // THE JUDGED-SURFACE LAW (audit 2026-11-17): the e2e tier's config
   // also runs packages/*/*/tests/**/*.e2e.ts and tests/lane/** and
   // imports vitest.shared.ts — a lease that hashes none of them lets
   // an edit there ride a green carry. Wider never narrower.
-  e2e: ["tests/e2e/**", "tests/lane/**", "packages/**/tests/**", "vitest.e2e.config.ts", "vitest.shared.ts", "packages/**/src/**", "packages/engines/**/*.yaml"],
+  e2e: ["tests/e2e/**", "tests/lane/**", "packages/**/tests/**", "vitest.e2e.config.ts", "vitest.shared.ts", "packages/**/src/**", "packages/engines/**/*.yaml", ...PACKAGE_CODE],
   // The browser tier runs BOTH playwright legs (view + deck, root
   // package.json test:web:browser) and the lane script + its lib are
   // node now — all four trees hash here now.

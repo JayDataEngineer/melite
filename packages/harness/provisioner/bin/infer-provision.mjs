@@ -278,6 +278,24 @@ const PROFILE_BASES = {
     '@melite/harness-tools', '@melite-plugin/dsh-estate'],
 }
 
+/** Repo-relative, forward-slashed path. pnpm's workspace globs are
+ *  POSIX; join() answers the PLATFORM separator, so on Windows the raw
+ *  slice never matched a glob — the name map came back empty and every
+ *  base bundle read "unresolvable" (no profile rendered there; CI
+ *  45492709450, the fence wall's control arm). `full` must begin with
+ *  `root` + one separator. Exported for the wall's synthetic-input arm. */
+export function relPosix(root, full) {
+  return full.slice(root.length + 1).split('\\').join('/')
+}
+
+/** One pnpm-workspace glob → an anchored regex over POSIX repo-relative
+ *  paths (`**` spans directories, `*` stays in one segment). Exported
+ *  so the wall composes the REAL compiler with relPosix. */
+export function workspaceGlobRegExp(glob) {
+  const seg = (g) => g.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '(?:.*/)?').replace(/\*/g, '[^/]*')
+  return new RegExp('^' + seg(glob) + '$')
+}
+
 /** Maps every workspace package's name to its directory by reading
  *  this repository's pnpm-workspace.yaml globs (the manifest's
  *  workspace:* specs are names; pnpm resolves them only inside an
@@ -290,11 +308,10 @@ function workspacePackages() {
   if (!existsSync(wsFile)) return out
   const globs = [...readFileSync(wsFile, 'utf8').matchAll(/^\s*-\s*['"]?([^'"\s#]+)/gm)]
     .map((m) => m[1]).filter((g) => !g.startsWith('!'))
-  const seg = (g) => g.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '(?:.*/)?').replace(/\*/g, '[^/]*')
   const prefixes = [...new Set(globs.map((g) => g.split('*')[0]))]
     .filter((p, i, a) => !a.some((q) => q !== p && p.startsWith(q)))
   for (const g of globs) {
-    const re = new RegExp('^' + seg(g) + '$')
+    const re = workspaceGlobRegExp(g)
     for (const prefix of prefixes) {
       const base = join(root, prefix)
       if (!existsSync(base)) continue
@@ -304,7 +321,7 @@ function workspacePackages() {
         for (const e of entries) {
           if (!e.isDirectory() || e.name === 'node_modules') continue
           const full = join(dir, e.name)
-          const rel = full.slice(root.length + 1)
+          const rel = relPosix(root, full)
           if (re.test(rel)) {
             const pj = join(full, 'package.json')
             if (existsSync(pj)) {

@@ -32,6 +32,29 @@ const ROOT = join(__dirname, "../../../../");
 const PACK = join(ROOT, "vendor/comfyui_extensions/melite-autorig-nodes");
 const VENV_PYTHON = "/home/user/tools/comfyui/.venv/bin/python";
 
+/** A failed probe spawn that leaves this box NOTHING to parity
+ *  against: status 3 is the probe's own stand-down (venv present,
+ *  template absent); ENOENT is an absent venv BINARY (the CI box —
+ *  the spawn never exits, so status is null). Every other failure is
+ *  the probe's red and must surface. */
+function venvStandDown(failure: { status?: number | null; code?: string }): boolean {
+  return failure.status === 3 || failure.code === "ENOENT";
+}
+
+/** Run the parity probe under `python`; answers "stood-down" when
+ *  venvStandDown holds, else the probe's stdout (a red throws). */
+function runParityProbe(python: string): "stood-down" | string {
+  const probe = join(__dirname, "../fixtures/rig-autolane-parity.py");
+  expect(existsSync(probe), "the parity probe fixture exists").toBe(true);
+  try {
+    return execFileSync(python, [probe, PACK], { encoding: "utf8", timeout: 600_000 });
+  } catch (err) {
+    const failure = err as { status?: number | null; code?: string; stdout?: string; stderr?: string };
+    if (venvStandDown(failure)) return "stood-down";
+    throw new Error(`the parity probe exited ${failure.status}\n${failure.stdout}\n${failure.stderr}`);
+  }
+}
+
 const pack = (name: string): string => readFileSync(join(PACK, name), "utf8");
 
 /** One axis-aligned box as a subdivided hollow shell (n=6: the judge's
@@ -274,17 +297,22 @@ describe("rig-autolane-contract — the auto lane rigs a STANDING humanoid, refu
       .toBe("SCENE-ROOTS-CLEAN");
   });
 
+  it("THE STAND-DOWN RIDES THE ABSENT BINARY (CI 45492709450: `the parity probe exited null`): no engine venv on the box is a stand-down, judged on this arm's own spawn path", () => {
+    // The first CI run of this suite died on every hosted runner: the
+    // arm knew only the probe's exit 3, and an ABSENT binary never
+    // exits — execFileSync answers status null + code ENOENT. A path
+    // that exists nowhere is the CI box, reproduced here.
+    expect(runParityProbe(join(tmpdir(), "no-engine-venv", "bin", "python"))).toBe("stood-down");
+    // …and only those two shapes stand down: a real probe red, a
+    // timeout kill, an unknown failure all surface.
+    expect(venvStandDown({ status: 1 })).toBe(false);
+    expect(venvStandDown({ status: null, code: "ETIMEDOUT", signal: "SIGTERM" })).toBe(false);
+    expect(venvStandDown({})).toBe(false);
+  });
+
   it("THE VENV PARITY (stands down without the engine venv): the executor rigs a standing multi-part scene with static props intact, and refuses a slab with no output", () => {
-    const probe = join(__dirname, "../fixtures/rig-autolane-parity.py");
-    expect(existsSync(probe), "the parity probe fixture exists").toBe(true);
-    let out: string;
-    try {
-      out = execFileSync(VENV_PYTHON, [probe, PACK], { encoding: "utf8", timeout: 600_000 });
-    } catch (err) {
-      const failure = err as { status?: number; stderr?: string; stdout?: string };
-      if (failure.status === 3) return; // no engine venv / no template on this box
-      throw new Error(`the parity probe exited ${failure.status}\n${failure.stdout}\n${failure.stderr}`);
-    }
+    const out = runParityProbe(VENV_PYTHON);
+    if (out === "stood-down") return; // no engine venv / no template on this box
     expect(out, "the executor rigs standing, keeps props static, preserves every node, and refuses seated with no output")
       .toContain("PARITY-OK");
   });

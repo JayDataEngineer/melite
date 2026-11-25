@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { readdirSync } from "node:fs";
+import { globMatch } from "../../../../tools/battery-leases.mjs";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -108,5 +110,43 @@ describe("THE LANE-PAIRING FENCE — a lane profile never re-renders from a fore
     expect(src).toContain("const RE_PARENT = argv.includes('--re-parent')");
     expect(src).toContain("export function pairingVerdict");
     expect(src).toContain("export function enforcePairing");
+  });
+
+  it("THE TYPE TWIN IS ACCOUNTED FOR — every ambient .d.mts the tiers judge is either imported by path or argued in knip.jsonc (CI 45492709450)", () => {
+    // The typed import above needs a twin beside the bin, and knip
+    // counts an unimported file: the restore turned the budget red
+    // (`GREW files: 1/0`) on a file nobody could import by name. The
+    // derivation, not a literal: every twin in the judged trees that
+    // is NOT build output must match a knip ignore pattern — so a new
+    // unargued twin reds HERE, before it reds the budget.
+    const root = RENDER_ROOT;
+    // knip.jsonc is JSONC, but its only comment form is the full-line
+    // `//` note: glob strings themselves carry `/*` (`scripts/*.d.mts`)
+    // and `*/` (`**/bin/*.d.mts`), so a comment STRIPPER that eats
+    // block syntax corrupts the very patterns this arm reads.
+    const cfg = JSON.parse(
+      readFileSync(join(root, "knip.jsonc"), "utf8").replace(/^\s*\/\/.*$/gm, ""),
+    ) as { ignore: string[] };
+    const isBuildOutput = (f: string): boolean => /(^|\/)(dist|lib|node_modules|coverage|test-results|__pycache__)\//.test(f);
+    const twins: string[] = [];
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === "node_modules" || e.name === ".git") continue;
+        const full = join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (e.name.endsWith(".d.mts")) twins.push(full.slice(root.length + 1).split("\\").join("/"));
+      }
+    };
+    for (const d of ["packages", "scripts", "tools", "tests"]) walk(join(root, d));
+    const judged = twins.filter((f) => !isBuildOutput(f));
+    expect(judged.length, "the tree carries ambient twins (the bin's type face is one)").toBeGreaterThan(2);
+    const unaccounted = judged.filter((f) => !cfg.ignore.some((g) => globMatch(g, f)));
+    expect(unaccounted,
+      `ambient .d.mts files no knip ignore pattern argues (knip will count them as unused FILES):\n  ${unaccounted.join("\n  ")}`).toEqual([]);
+    // …and the specific twin this file's import needs is one of them.
+    // the twin this file's import resolves through — asserted by its
+    // basename: the directory is the tree's, the file is the bin's.
+    expect(judged.some((f) => f.endsWith("/infer-provision.d.mts")),
+      "the bin's type face is in the derived set").toBe(true);
   });
 });

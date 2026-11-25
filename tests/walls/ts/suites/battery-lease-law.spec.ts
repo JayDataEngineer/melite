@@ -158,6 +158,86 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
       `the e2e tier RUNS but does not HASH (a green carry would ride an edit here):\n  ${unhashed.join('\n  ')}`).toEqual([])
   })
 
+  it('THE JUDGED-SURFACE LAW, knip leg: every file knip can report on is hashed by the knip lease', () => {
+    // The 2026-11-25 burn (CI 45492709450): a type twin added under
+    // packages/harness/provisioner/bin/ grew knip's file count 1 over
+    // budget, and the knip lease carried green — its row hashed src/
+    // alone while knip judges every file of every admitted workspace.
+    // The judge's own admission doors are the truth: the workspace
+    // globs admit, knip.jsonc's ignoreWorkspaces exclude.
+    const yaml = readFileSync(join(process.cwd(), 'pnpm-workspace.yaml'), 'utf8')
+    const globs = [...yaml.matchAll(/^\s*-\s*['"]?([^'"\s#]+)/gm)].map((m) => m[1]!).filter((g) => !g.startsWith('!'))
+    expect(globs.length, 'pnpm-workspace.yaml declares globs').toBeGreaterThan(3)
+    const knipCfg = readFileSync(join(process.cwd(), 'knip.jsonc'), 'utf8')
+    const ignoreBlock = knipCfg.match(/"ignoreWorkspaces":\s*\[([^\]]*)\]/s)
+    const ignored = ignoreBlock ? [...ignoreBlock[1]!.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]!) : []
+    const admitted = (f: string): boolean =>
+      ignored.some((w) => f === w || f.startsWith(w.replace(/\/$/, '') + '/')) ? false
+        : globs.some((g) => globMatch(g + '/**', f) || globMatch(g, f.slice(0, f.lastIndexOf('/'))))
+    const judged = expandGlobs(process.cwd(), [...globs.map((g) => g + '/**'), ...globs]).filter(admitted)
+    expect(judged.length, 'the admitted workspace surface matched zero files').toBeGreaterThan(500)
+    const lease = tierGlobs('knip')
+    const unhashed = judged.filter((f) => !lease.some((g) => globMatch(g, f)))
+    expect(unhashed,
+      `knip JUDGES but its lease does not HASH (a green carry would ride an edit here):\n  ${unhashed.slice(0, 25).join('\n  ')}`).toEqual([])
+  }, 120_000)
+
+  it('THE PACKAGE-CODE LAW (the 2026-11-25 burn): every tier that hashes a package\'s src/ hashes the bins and scripts beside it', () => {
+    // A bin is code the tiers read: the typecheck wall resolves its type
+    // twin, knip counts it, and suites import it (the lane-pairing
+    // fence imports bin/infer-provision.mjs). The burn: a .d.mts under
+    // packages/harness/provisioner/bin/ red both CI judges while every
+    // leased tier carried a green.
+    const srcTiers = Object.entries(TIER_INPUTS)
+      .filter(([, gs]) => (gs as string[]).includes('packages/**/src/**')).map(([id]) => id)
+    expect(srcTiers.length, 'some tier hashes packages/**/src/**').toBeGreaterThan(4)
+    for (const id of srcTiers) {
+      const gs = tierGlobs(id)
+      for (const need of ['packages/**/bin/**', 'packages/**/scripts/**']) {
+        expect(gs, `tier ${id} hashes src/ but not ${need} — a bin edit would ride its green`).toContain(need)
+      }
+    }
+    // …and the widened rows find real files (a glob matching nothing
+    // is a dead row that carries forever).
+    for (const id of ['tsc', 'walls', 'knip']) {
+      const files = filesFor(id)
+      expect(files.some((f) => f.startsWith('packages/harness/provisioner/bin/')),
+        `tier ${id} hashes the provisioner bin tree`).toBe(true)
+    }
+  }, 120_000)
+
+  it('THE BUILD-OUTPUT RULE: a lib/dist directory is skipped only under a manifest, so a SOURCE folder named lib is hashed', () => {
+    // The walker skipped any directory literally named lib or dist, at
+    // any depth — which left tests/walls/ts/lib (the walls' own source
+    // lib, imported by the suites) and scripts/lib (named by the
+    // browser row's own globs) unhashed. The rule is "build output",
+    // and build output is what a manifest owns.
+    const root = mkdtempSync(join(tmpdir(), 'battery-lease-built-'))
+    try {
+      mkdirSync(join(root, 'pkg/lib'), { recursive: true })
+      writeFileSync(join(root, 'pkg/package.json'), '{}\n')
+      writeFileSync(join(root, 'pkg/lib/built.js'), 'build output\n')
+      mkdirSync(join(root, 'src/lib'), { recursive: true })
+      writeFileSync(join(root, 'src/lib/source.ts'), 'source\n')
+      const files = expandGlobs(root, ['**/*'])
+      expect(files, 'build output under a manifest stays out').not.toContain('pkg/lib/built.js')
+      expect(files, 'a source folder named lib is an input').toContain('src/lib/source.ts')
+    } finally { rmTree(root) }
+  })
+
+  it('THE GENERATED-OUTPUT RULE: coverage/test-results/__pycache__/.venv never key a lease (a run must not re-fire every tier)', () => {
+    const root = mkdtempSync(join(tmpdir(), 'battery-lease-gen-'))
+    try {
+      for (const d of ['coverage', 'test-results', 'playwright-report', '__pycache__', '.venv/lib']) {
+        mkdirSync(join(root, 'x', d), { recursive: true })
+        writeFileSync(join(root, 'x', d, 'emitted.txt'), 'emitted\n')
+      }
+      writeFileSync(join(root, 'x/real.ts'), 'real\n')
+      expect(expandGlobs(root, ['**/*'])).toEqual(['x/real.ts'])
+    } finally { rmTree(root) }
+  })
+
+
   it('THE JUDGED-SURFACE LAW, browser leg: both playwright legs\' spec trees are hashed by the browser lease', () => {
     const lease = tierGlobs('browser')
     const legs = [
