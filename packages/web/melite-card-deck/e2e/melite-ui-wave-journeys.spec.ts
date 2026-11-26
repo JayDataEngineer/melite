@@ -223,7 +223,17 @@ test('journey (j/l): the anny body seats own the preview face', async ({ page })
   const preview = page.locator('[data-testid="stage-preview-mesh"]').first()
   expect(await preview.count(), 'the anny drill renders the mesh preview seat (the (j) face)').toBeGreaterThan(0)
   if (served.figure) {
-    expect(await preview.locator('canvas').count(), 'the declared figure renders the poser stage (the preview face is the body the run would bake)').toBeGreaterThan(0)
+    // THE CANVAS IS POLLED, NOT SAMPLED (battery flake 2026-11-25):
+    // the poser stage mounts its canvas asynchronously (the figure's
+    // own WebGL boot), so counting once right after the seat appears
+    // read 0 on a loaded bench while the SAME run's screenshot (taken
+    // two lines later) showed the 18k-vert figure rendered in place.
+    // The assertion keeps its teeth: a canvas that never attaches
+    // still reds, at the poll's ceiling.
+    await expect.poll(async () => preview.locator('canvas').count(), {
+      timeout: 20_000,
+      message: 'the declared figure renders the poser stage (the preview face is the body the run would bake)',
+    }).toBeGreaterThan(0)
   } else {
     expect((await preview.innerText()).length, 'the undeclared figure renders the honest tombstone voice (non-destructive)').toBeGreaterThan(0)
   }
