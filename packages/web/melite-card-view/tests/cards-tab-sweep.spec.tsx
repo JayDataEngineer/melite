@@ -15,11 +15,25 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire';
 import { CardsTab } from "../src/client/CardsTab.tsx";
+import { resetStageWrites } from "../src/client/draft.ts";
 import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  // THE LEDGER RESET (the sibling specs' standing law —
+  // write-ledger-law, gate-r7b-drill2, lane-strike-carryover): specs
+  // share draft/stage ids across tests, so a refusal recorded by one
+  // test must not refuse the next test's run, and a write still in
+  // its trailing window must not land inside the NEXT test's fake
+  // estate. Without it the authoring-contract arm's failed prompt
+  // write poisoned bench-p/s_0 and its trailing schedule fired
+  // mid-Play-arm — whether the run gate saw the poison or the cure
+  // was a 300ms timer race (CI 45752267648 unit-ubuntu: both Play
+  // arms refused "wire down (unlanded keys: prompt)" when the gate
+  // won the race). resetStageWrites kills the pending timers and
+  // drops the rows: no poison crosses a test boundary.
+  resetStageWrites();
   unbindEstateRemote();
   // the tab reads the catalog at mount now (tile names) — the wire
   // caches per boot, so each test starts cold like a fresh boot.
