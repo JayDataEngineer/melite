@@ -1666,19 +1666,21 @@ describe("the clips-stitch (positioned clips land in the post-generation mix nod
     // of one window + the card's 51 f faceless tail, composed on
     // the film chain (the mix rides it). The FROZEN no-calls shape
     // still refuses — that arm lives in the models/h3 door suite.
+    // THE SEAT LAW (defects F4/F5, cured 2026-11-25): the row must
+    // REACH the tail (SHOT ends at 56; the tail runs to 107), so the
+    // clip spans 0→107 and stamps it. A row stopping at the sole call
+    // refuses by name — models/h3 film-door-refusals.spec.ts.
     const g = new GraphBuilder();
     const walked = def.schema({
       calls: [SHOT()],
-      audio_clips: [CLIP({ start_frame: 0 })],
+      audio_clips: [CLIP({ start_frame: 0, dur_frames: 107 })],
     }) as Record<string, unknown>;
     assert.doesNotThrow(() => def.compose(walked, model, g, "run_clips_single"));
     const calls = walked.calls as Array<Record<string, unknown>>;
-    assert.equal(calls.length, 2, "the promotion appends the silent tail call");
-    assert.equal(
-      (calls[1]!.end_frame as number) - (calls[1]!.start_frame as number),
-      51,
-      "the tail is the 51 f grid-legal carried window",
-    );
+    assert.equal(calls.length, 1, "the doc keeps its sole call — the tail rides the run's copy");
+    const graph = g.toJSON() as Record<string, unknown>;
+    assert.ok(Object.keys(graph).some((id) => id.startsWith("window2_")),
+      "the promotion appends the 51 f tail window to the FILM");
   });
 });
 

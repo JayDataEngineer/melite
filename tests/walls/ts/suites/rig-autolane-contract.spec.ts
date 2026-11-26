@@ -47,7 +47,15 @@ function runParityProbe(python: string): "stood-down" | string {
   const probe = join(__dirname, "../fixtures/rig-autolane-parity.py");
   expect(existsSync(probe), "the parity probe fixture exists").toBe(true);
   try {
-    return execFileSync(python, [probe, PACK], { encoding: "utf8", timeout: 600_000 });
+    // THE DEVICE IS NOT THE LAW (2026-11-26 burn): the probe picked cuda
+    // whenever it was merely AVAILABLE, and a busy GPU (the operator's
+    // engine resident) answered `torch.AcceleratorError: CUDA error: out
+    // of memory` at cuDevicePrimaryCtxRetain — a host event reding a wall
+    // whose law is the executor's GLB. The probe now runs with the device
+    // hidden: torch resolves cpu, the same transfer runs deterministically
+    // (6 s, PARITY-OK) and the box's VRAM is nobody's judge.
+    const env = { ...process.env, CUDA_VISIBLE_DEVICES: "" };
+    return execFileSync(python, [probe, PACK], { encoding: "utf8", timeout: 600_000, env });
   } catch (err) {
     const failure = err as { status?: number | null; code?: string; stdout?: string; stderr?: string };
     if (venvStandDown(failure)) return "stood-down";

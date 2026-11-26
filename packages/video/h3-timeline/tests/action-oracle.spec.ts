@@ -214,18 +214,21 @@ describe("the h3 film action oracle (the interlock)", () => {
     // (k-marked) still refuses (a frozen window can never grow a
     // film). The tail carries the call's own end as its start
     // (tiling holds) and no refs/guide/face seats.
+    // THE SEAT LAW (defects F4/F5, cured 2026-11-25): the row reaches
+    // the tail (12 + 95 = 107 = the sole call's 56 + the tail's 51), so
+    // the tail is stamped and the promotion composes; a row that stops
+    // at the sole call refuses by name (models/h3 film-door-refusals).
     const walked = def.schema({
       calls: [SHOT()],
       length: 56,
-      audio_clips: [{ src: "/bench/vocal.mp3", start_frame: 12, dur_sec: 1.5, class: "dialogue" }],
+      audio_clips: [{ src: "/bench/vocal.mp3", start_frame: 12, dur_frames: 107 - 12, class: "dialogue" }],
     }) as Record<string, unknown>;
     const g = new GraphBuilder();
     def.compose(walked as never, h3, g, "oracle");
-    const promoted = (walked.calls as Array<Record<string, unknown>>);
-    assert.equal(promoted.length, 2, "the dispatch appends the silent tail call");
-    assert.equal(promoted[1]!.start_frame, 56, "the tail starts at the sole call's end");
-    assert.equal((promoted[1]!.end_frame as number) - (promoted[1]!.start_frame as number), 51, "the tail is 51f — 17·3, grid-legal carried");
+    const authored = (walked.calls as Array<Record<string, unknown>>);
+    assert.equal(authored.length, 1, "the doc keeps its sole call — the tail rides the run's copy");
     const graph = g.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+    assert.ok(Object.keys(graph).some((id) => id.startsWith("window2_")), "the promoted film renders the tail as its own window");
     assert.ok(Object.values(graph).some((n) => n.class_type === "MeliteFilmAudioMix"), "the promoted film composes the film-path mix");
     const msg = refuses({
       calls: [SHOT()],
