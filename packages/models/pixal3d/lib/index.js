@@ -69,7 +69,7 @@ export const DECL = {
         {
             "id": "1024",
             "label": "1024",
-            "hint": "Standard resolution — the fast tier",
+            "hint": "The 1024 model row (route + the INT8 ConvRot cell). The quality tiers are the Recipe group, not this row.",
             "group": "Variant",
             "route": "pixal3d",
             // Resolution stays family-owned (one value, one owner — this row

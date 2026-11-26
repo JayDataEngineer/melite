@@ -36,3 +36,5 @@ independent — nothing here appends to or reshapes a session cache.
 
 - **Per-family surfaces differ** — only pixal3d and transfer-rig carry pack requirements today; a new family must declare both its action and its slice.
 - **Studio exposure is fixed** — `ImgToMeshStudio` folds the input and generation stages; other stages are not exposed yet.
+- **The Recipe dial owns quality** — High (default), Standard, Fast, and Quality override `resolution`, `remesh_resolution`, and `decimate_faces`; a press that stamps no tier composes the family floor (1024 / remesh 768 / 700k).
+- **The deliverable is a shaded mesh, not a likeness or a print file** — faces arrive generic, metallic/roughness are the bake's own inference with no knob, the GLB carries no metric scale, and thin or interior geometry can tear when printed.

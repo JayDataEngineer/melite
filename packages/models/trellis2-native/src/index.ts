@@ -15,7 +15,12 @@ export const DECL: ModelDecl = {
   "id": "trellis2-native",
   "form": "form_img_to_mesh",
   "label": "TRELLIS.2 Native",
-  "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+  // THE FACES LIMIT (goal item 4, the mesh lane's defect board):
+  // TRELLIS.2 resolves object-scale form — a face lifted at this
+  // scale arrives as generic facial geometry, never a likeness. The
+  // sentence is served (discovery, the model picker) so a run that
+  // wants a face is warned BEFORE the press, not after the mesh.
+  "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb. Object-scale lift — faces come back generic, never a likeness; the mesh carries no metric scale.",
   "engine": "comfyui",
   "defaults": {
     // THE STANDARD FLOOR (operator 2026-11-02: the mesh trio fast /
@@ -80,7 +85,7 @@ export const DECL: ModelDecl = {
     {
       "id": "1024",
       "label": "1024",
-      "hint": "Standard resolution — the fast tier",
+      "hint": "The 1024 model row (route + the INT8 ConvRot cell). The quality tiers are the Recipe group, not this row.",
       "group": "Variant",
       "route": "trellis2-native",
       // Resolution stays family-owned (one value, one owner — this row

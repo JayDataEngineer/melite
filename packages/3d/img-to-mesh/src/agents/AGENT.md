@@ -56,6 +56,27 @@ families board one surface):
 
 ## Honest edges
 
+- `input_image`: one object, tight framing. Faces and fine print come
+  back generic — this lane resolves object-scale form, never a likeness.
+- **The Recipe dial** is the quality knob, not `resolution` alone:
+  High (the group default) stamps 1536 + remesh 1024 + 1M faces,
+  Standard is the calibrated floor (1024 + remesh 768 + 700k), Fast
+  previews at remesh 128 + 10k faces, Quality is the 32GB hero pass
+  (1536 + remesh 2048 + 2M). A press that stamps no tier — a bare flow
+  or API call — lands at the family floor, NOT at High: stamp the tier
+  you mean.
+- The bake writes base color, metallic, and roughness from the model's
+  own voxel color field. Neither metallic nor roughness is a knob, so
+  gloss is the model's inference — a matte source can come back shiny.
+- No metric scale: nothing on this card states a physical size, so a
+  lifted mesh has no real-world dimension. Scale it downstream before
+  measuring or printing.
+- Not print-ready: the remesh can carry interior shells and thin
+  features, and the unwrap pads one texel per island (a tight atlas
+  bleeds at the seams). `remesh_drop_enclosed` ON punches real holes —
+  never enable it to "fix" printability; validate watertightness in a
+  slicer instead.
+
 - The 512 target is not offered: the live Trellis2 upsample node
   requires at least 1024. Use 1024 for iteration and 1536 for a
   higher-resolution asset.

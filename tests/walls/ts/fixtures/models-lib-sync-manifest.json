@@ -82,8 +82,8 @@
       "libHash": "7e76f7edadd2a0f2366a00792aec6ab1b173c61f6cbd84ed4bc4e397fe966ca7"
     },
     "pixal3d": {
-      "srcHash": "ad873b36f22a66bb9dcbbfa458be4a0d59a1a834ec70fac1d65734e3bd1146dd",
-      "libHash": "fb0dd6a50e28106b5d233711b941178cabdf90fdf2ce0ca030ca8fce4c31edaf"
+      "srcHash": "d55ccf987832b3fd595fbe36949417512dcd232cfa12d339a37af2597976a9e7",
+      "libHash": "8bb8b7e2a311cf4ec835313aac95b55cfd725625520364038a26913266dbf9ee"
     },
     "qwen-img-21": {
       "srcHash": "acce97f63e999acdd377589f83428234c92c09286284e8bf79881884a3a809da",
@@ -118,8 +118,8 @@
       "libHash": "7ca5c65aaeb7610c3be49ce009f26eaf1ebea060aba99d1083f65f892daffc26"
     },
     "trellis2-native": {
-      "srcHash": "421ceb461323762715afb2d8433668074e282098ae4266484c7d252e873cd581",
-      "libHash": "8abd0f2d238829b2710834ebff805c96b724237ac6e4f10c7b0ecffc34c47ac3"
+      "srcHash": "fa104f617b304acf5a2423cee51e213c43b3b81e08e93b28360c4734d8a77a0d",
+      "libHash": "73aa3bfa03459c4df01facc08091964c4218c8c8e526a1d52e49080018f270fa"
     },
     "wd14": {
       "srcHash": "7a6ebafdc492668dfb6a62bf9dcefd8e763b9a825944aea247b0ded17c8e1d41",
