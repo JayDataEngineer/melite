@@ -245,12 +245,22 @@ export async function queueCard(w: World, body: Record<string, unknown>, tag: st
       // the warm settle. 240s — both h3-timeline stamp rows held
       // 'running' past 90s on the first cold battery with the
       // compose itself green (verdict=complete, nodes=55).
+      //
+      // 600s (2026-11-25, this ceiling's own red): the battery's
+      // `music3 full-length` stamp held 'running' past 240s on a
+      // bench whose browser tier had just restarted the engine cold
+      // and whose other tiers were still running alongside it — the
+      // cold load this machine pays in that window is longer than
+      // the ceiling calibrated on a quiet one. The budget remains a
+      // COLD-LOAD budget, never a settle budget: a run that never
+      // settles still reds, at the ceiling.
+      const COLD_STOP_BUDGET_S = 600
       let settled = ''
-      for (let i = 0; i < 240; i++) {
+      for (let i = 0; i < COLD_STOP_BUDGET_S; i++) {
         const row = await w.svc.status(ans.run_id, new AbortController().signal).catch(() => undefined as Record<string, unknown> | undefined)
         settled = typeof row?.['status'] === 'string' ? row['status'] : ''
         if (settled !== '' && settled !== 'queued' && settled !== 'running' && settled !== 'stopping') break
-        if (i === 239) throw new Error(tag + ': the run never settled after the stop (status ' + JSON.stringify(settled) + ' after 240s) — the worker never reached its flag check (a cold engine may hold the model load past this ceiling; MELITE_GPU_RENDER=1 re-warms the lane)')
+        if (i === COLD_STOP_BUDGET_S - 1) throw new Error(tag + ': the run never settled after the stop (status ' + JSON.stringify(settled) + ' after ' + COLD_STOP_BUDGET_S + 's) — the worker never reached its flag check (a cold engine may hold the model load past this ceiling; MELITE_GPU_RENDER=1 re-warms the lane)')
         await new Promise((r) => setTimeout(r, 1000))
       }
       console.log(`[${tag}] drain: run settled (${settled}) — judging the engine queue`)

@@ -119,12 +119,25 @@ test('the textless tts add LANDS, the press voices the words, typing cures (the 
   // STEP 5 — TYPE THE WORDS through the form's real keystroke door
   // (the trailing write-through → drafts/patch): the form exists
   // BECAUSE the add landed — the operator's cure path
+  //
+  // THE LANDING IS POLLED, NOT SLEPT (battery flake 2026-11-25): the
+  // write-through rides a 300 ms trailing coalesce and then the
+  // drafts/patch door, and the old fixed 1500 ms sleep raced that
+  // landing whenever the machine carried the battery's other tiers
+  // alongside this one — the tier's only failing journey across a
+  // green 41-minute battery, green on an immediate re-run, the row
+  // still at `params.text: undefined`. The assertion keeps its
+  // teeth: a write-through that never lands still reds, at the
+  // poll's own ceiling.
   await words.fill('The lanterns are lit. I move at dusk.')
-  await page.waitForTimeout(1500) // the 300ms trailing coalesce + the door's landing
-  const typed = await benchRow(page, sessionKey)
-  const typedRow = typed.stages.find((s) => s['card'] === 'tts')
-  expect((typedRow?.['params'] as Record<string, unknown> | undefined)?.['text'],
-    'the typed text did not land on the bench row').toEqual('The lanterns are lit. I move at dusk.')
+  await expect.poll(async () => {
+    const typed = await benchRow(page, sessionKey)
+    const typedRow = typed.stages.find((s) => s['card'] === 'tts')
+    return (typedRow?.['params'] as Record<string, unknown> | undefined)?.['text']
+  }, {
+    timeout: 20_000,
+    message: 'the typed text did not land on the bench row',
+  }).toEqual('The lanterns are lit. I move at dusk.')
 
   await expectNoPageErrors(page, errors)
 })
