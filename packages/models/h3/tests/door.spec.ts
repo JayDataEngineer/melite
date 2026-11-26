@@ -903,20 +903,31 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     // promotion is the card's own work — a 51 f faceless silent
     // tail window (17·3, grid-legal carried) minted after the sole
     // call. The consumer agent deletes its client-side tail stub.
+    // THE SEAT LAW (defects F4/F5, cured 2026-11-25): the row reaches
+    // the tail here (dur 175 = the sole call's 124 + the tail's 51),
+    // so the tail is stamped and the promotion composes. A row that
+    // stops at the sole call refuses by name — the wall is
+    // film-door-refusals.spec.ts.
     const g = new GraphBuilder();
     const doc = {
       variant: "timeline", seed: 42, loras: BAG,
       calls: [{ text: "a wide interior holds", start_frame: 0, end_frame: 124 }],
-      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 175, text: "a low drone" }],
     } as Record<string, unknown>;
     expect(() => instantiateAction(film, doc, WINDOW_MODEL, g, "run_promoted_tail")).not.toThrow();
-    // the promotion mutated the doc's calls: sole call + the silent
-    // tail, tiling at the sole call's end.
-    const calls = doc.calls as Array<{ text: string; start_frame: number; end_frame: number }>;
-    assert.equal(calls.length, 2, "the promotion appends exactly one silent tail call");
-    assert.equal(calls[1]!.start_frame, 124, "the tail starts at the sole call's end");
-    assert.equal(calls[1]!.end_frame - calls[1]!.start_frame, 51, "the tail is 51 f — 17·3, grid-legal carried");
-    assert.equal(calls[1]!.text, SILENT_TAIL_TEXT, "the tail text is the dictionary-clean constant");
+    // the film renders the tail as its own window, and the doc keeps
+    // its sole call: the promotion pushes onto a COPY of the call list.
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const ids = Object.keys(graph);
+    assert.ok(ids.some((id) => id.startsWith("window2_")), "the promotion appends exactly one tail window");
+    const tailPrompt = ids
+      .filter((id) => id.startsWith("window2_"))
+      .map((id) => graph[id]!.inputs["prompt"])
+      .filter((p): p is string => typeof p === "string")
+      .join("\n");
+    assert.ok(tailPrompt.includes(SILENT_TAIL_TEXT), "the tail window renders the dictionary-clean constant");
+    const calls = doc.calls as Array<{ text: string }>;
+    assert.equal(calls.length, 1, "the doc keeps its sole call — the tail rides the run's copy");
     // and the film admission notices report the promotion (the
     // run-status warn arm).
     const warns = filmAdmissionNotices(doc);

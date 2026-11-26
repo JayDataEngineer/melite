@@ -839,6 +839,39 @@ function renderH3Film(p, g, facts, model, runId) {
         // frame 0) — the window derives the reference lane with it
         const seamKeyframe = stanza.__seam_keyframe === true;
         stanza.variant = (guide !== '' || hasRefs || hasDirectRefs || anyStamp || winPins.length > 0 || seamKeyframe) ? 't4r' : chainLike ? 't4_chain' : 't4_open';
+        // THE PROMOTED TAIL MUST CARRY ITS OWN SEAT (defects F4/F5, cured
+        // 2026-11-25): the CLIPS-STITCH promotion (below) appends a 51 f
+        // silent tail to a one-call doc carrying a Music row, and mints it
+        // with no seats beyond its text — by design (a seat in the tail can
+        // invent a line, the M-T2 hazard). But a SEATLESS window derives
+        // the NON-reference arm, and that arm is the one that wires the
+        // generator's canvas to `CrossViewPrepareClip` (renderH3Window's
+        // re-shoot branch): in a re-shoot the tail rendered at the PREPARED
+        // canvas while every guided window rendered at the film's own, and
+        // the film tail's continuation died in the engine —
+        // `ValueError: The linear temporal mask requires matching latent
+        // spatial dimensions; got (30, 54) -> (30, 56)` (864/16 vs 896/16,
+        // receipt run-61fe80a093bc). Without a re-shoot the same seatless
+        // tail renders from its own constant text with nothing anchoring
+        // the film's scene, so it free-forms a different room
+        // (run-9e54c56bd0b9 — a living room in the tail of a beach film).
+        // THE LAW IS THE TAIL-STAMP LAW (benchgen docs/use/FILM-AUDIO-ROWS.md):
+        // a row must REACH the tail. A row spanning it stamps it — the lane
+        // law (`chooseLaneClips`) hands a crossing clip to the window no
+        // same-class clip starts inside — and a stamped window is a
+        // reference window: the film's canvas and the film's own
+        // conditioning. A row that stops at the sole call leaves it
+        // seatless, and the tail is the window that breaks. Refused here,
+        // where the ownership is known.
+        if (call.__silent_tail === true && stanza.variant !== 't4r') {
+            throw new Error(`h3-timeline window ${k}: the promoted silent tail (${SILENT_TAIL_FRAMES} f after calls[0]) carries no seat of its own — ` +
+                `no audio row reaches it and the tail mints none (a seat there can invent a line). A seatless window renders on the ` +
+                `non-reference arm: in a re-shoot that is the PREPARED canvas and the film tail's continuation dies ` +
+                `(got (30, 54) -> (30, 56), run-61fe80a093bc); in a plain film it renders the tail's own text with nothing anchoring ` +
+                `the scene (a living room in the tail of a beach film, run-9e54c56bd0b9). Spread the audio row across the tail ` +
+                `(its span must reach calls[0].end_frame + ${SILENT_TAIL_FRAMES}), give this window a guide/ref seat of its own, ` +
+                `or author the doc as two calls`);
+        }
         // the distill's steps apply unless this call's knobs pinned steps
         // — or the DOC did (the __steps_pinned stamp, the walk's own
         // explicit-keys fact; the single-window marriage always consulted
@@ -898,6 +931,15 @@ function renderH3Film(p, g, facts, model, runId) {
             // the generation. chainLike is the render's own carry law
             // (i>0 and a non-cut seam) — the same number filmMix's
             // stanzaSecs states (the two-clocks law, still one owner).
+            // THE CEILING IS THE WALK'S (defect F6, measured 2026-11-25):
+            // spanStanzaFrames books `22 + 17k` under GRID_MAX_FRAMES with a
+            // Math.min, so a request past 362 would be silently seated 362 —
+            // the clip would render 17 f short of its own doc span. The door
+            // never lets one through: admitCallSpans / admitSpanGrid refuse an
+            // authored span whose span+carry passes 362 ("past the grid's
+            // 362f ceiling", measured on [0→345, 345→690]: carried 367f).
+            // The wall is film-door-refusals.spec.ts (toggling that refusal
+            // out reds its carried-345 arm — the seat then clamps to 362).
             stanza.length = spanStanzaFrames(spans[i], chainLike ? overlap : 0);
             // THE TWO CLOCKS LAW (fixed 2026-09-22 — the 20-second proof
             // film): the window's VIDEO length derives from fps_seconds
@@ -2881,15 +2923,20 @@ export const film = {
             // can invent a line (the M-T2 hazard). The text is the
             // dictionary-clean constant; the promotion notice is the card's
             // admission warn (one pure helper, both consumers).
+            // THE TAIL IS MARKED (defects F4/F5, cured 2026-11-25): the film
+            // loop refuses a seatless marked tail by name (window k), so the
+            // mark must survive from this push into that loop. It is pushed
+            // onto a COPY of the call list — the caller's doc keeps its sole
+            // call, and only this run's film carries the tail.
             const sole = docCalls[0];
             const soleEnd = typeof sole.end_frame === 'number' && Number.isFinite(sole.end_frame) ? sole.end_frame : null;
             if (soleEnd !== null) {
-                docCalls.push({
-                    text: SILENT_TAIL_TEXT,
-                    start_frame: soleEnd,
-                    end_frame: soleEnd + SILENT_TAIL_FRAMES,
-                });
-                p.calls = docCalls;
+                p.calls = [...docCalls, {
+                        text: SILENT_TAIL_TEXT,
+                        start_frame: soleEnd,
+                        end_frame: soleEnd + SILENT_TAIL_FRAMES,
+                        __silent_tail: true,
+                    }];
                 return renderH3Film(p, g, facts, model, runId);
             }
             throw new Error('h3-timeline: the sole call states no end_frame — the promoted silent tail cannot tile after it ' +
