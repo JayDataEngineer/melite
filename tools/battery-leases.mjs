@@ -43,7 +43,12 @@ const isSkippedDir = (name, dir) =>
  * the wall asserts the big tiers' globs all match real trees). */
 export function globMatch(pattern, relPath) {
   const patParts = pattern.split("/");
-  const pathParts = relPath.split(sep);
+  // BOTH separators, always: the callers hand forward-slash rel paths
+  // (expandGlobs normalizes), and a judge that split on the PLATFORM
+  // separator read a windows path as one segment — every ignore
+  // pattern argued nothing there and the twins wall red on 4 files
+  // that four patterns name (CI 45742029356, windows-latest unit).
+  const pathParts = relPath.split(/[\\/]/);
   // seg(i, j): does patParts[i..] match pathParts[j..]?
   const seg = (i, j) => {
     if (i === patParts.length) return j === pathParts.length;

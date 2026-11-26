@@ -111,6 +111,15 @@ describe('reference contract', () => {
     assert.equal(refGenreOf('voice', 'https://x/a.wav'), 'audio')
     assert.equal(refGenreOf('notes'), 'other')
   })
+
+  it('a malformed percent-escape in ?path= falls back to the raw text — the sniff reads the pre-query extension, never crashing', () => {
+    // '%ZZ' is not a percent escape: decodeURIComponent throws URIError
+    // and the reader keeps the RAW path text (the ?path= value IS the
+    // sniffed face once one is stated — the extension inside it is
+    // what the genre reads, so a torn encoding still classifies).
+    assert.equal(refGenreOf('notes', 'https://x/o?path=clip.mp4%ZZ'), 'video')
+    assert.equal(refGenreOf('notes', 'https://x/o?path=still.png%ZZ&token=1'), 'image')
+  })
 })
 
 describe('call knob contract', () => {

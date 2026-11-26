@@ -309,4 +309,19 @@ describe('battery-leases: globMatch — `**` spans directories, `*` stays in one
     expect(globMatch('*.py', 'a/b.py')).toBe(false)
     expect(globMatch('tests/e2e/**', 'tests/walls/x.ts')).toBe(false)
   })
+
+  it('reads a path split by EITHER separator — a windows tree judges the same (CI 45742029356)', () => {
+    // expandGlobs normalizes to '/', but a wall that walks its own
+    // tree and hands the result over unsplit arrives with '\' on
+    // windows: matching it as ONE segment made every ignore pattern
+    // argue nothing and the twins wall red on four files that four
+    // patterns name.
+    expect(globMatch('tools/*.d.mts', 'tools/battery-leases.d.mts')).toBe(true)
+    expect(globMatch('tools/*.d.mts', 'tools\\battery-leases.d.mts')).toBe(true)
+    expect(globMatch('packages/**/bin/*.d.mts', 'packages\\harness\\provisioner\\bin\\infer-provision.d.mts')).toBe(true)
+    expect(globMatch('scripts/*.d.mts', 'scripts\\tmp-prefixes.d.mts')).toBe(true)
+    // the separator never widens the match itself
+    expect(globMatch('tools/*.d.mts', 'tools\\build-plane.d.ts')).toBe(false)
+    expect(globMatch('tools/*.d.mts', 'scripts\\build-plane.d.mts')).toBe(false)
+  })
 })

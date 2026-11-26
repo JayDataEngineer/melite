@@ -57,7 +57,7 @@ families board one surface):
 ## Honest edges
 
 - `input_image`: one object, tight framing. Faces and fine print come
-  back generic — this lane resolves object-scale form, never a likeness.
+  back generic — this card resolves object-scale form, never a likeness.
 - **The Recipe dial** is the quality knob, not `resolution` alone:
   High (the group default) stamps 1536 + remesh 1024 + 1M faces,
   Standard is the calibrated floor (1024 + remesh 768 + 700k), Fast

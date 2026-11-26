@@ -948,6 +948,45 @@ describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
     )).toThrow(/end_frame/);
   });
 
+  it("THE UNPROMOTED DIRECT READER: a sole call with no numeric end_frame gets NO promotion notice (the compose refuses; the notice must not promise a tail it cannot tile)", () => {
+    // The compose refuses this doc at the door (the arm above); the
+    // NOTICE reader is what an agent previewing an unpressed doc runs,
+    // and it must stay silent rather than announce a promotion whose
+    // window nobody can place.
+    const warns = filmAdmissionNotices({
+      calls: [{ text: "a wide interior holds", start_frame: 0 }],
+      audio_clips: [{ src: "/a/line.flac", start_frame: 0, dur_frames: 64, text: "Run." }],
+    } as Record<string, unknown>);
+    assert.ok(!warns.some((w) => w.includes("promoted")),
+      "no promotion notice can ride a call whose end the compose would refuse: " + warns.join(" | "));
+  });
+
+  it("THE CLIP WITHOUT A START FRAME books the render's frame 0 (never a NaN that reads as silence)", () => {
+    // The speech map's row stamp is the retime's own input: a clip
+    // with no start_frame is the film's head (0), so the window reads
+    // a ROW, not a silent window. A NaN fallback would satisfy
+    // neither bound and the map would libel the film as silent.
+    const doc = {
+      variant: "timeline", seed: 7, loras: BAG,
+      calls: [
+        { text: "a wide interior holds", start_frame: 0, end_frame: 175 },
+        { text: "the camera drifts on", start_frame: 175, end_frame: 350 },
+      ],
+      // no start_frame: the clip books the film's head (0) by the
+      // reader's own fallback — the map must read a ROW there.
+      audio_clips: [{ src: "/a/line.flac", dur_frames: 64, text: "Run." }],
+    } as Record<string, unknown>;
+    const warns = filmAdmissionNotices(doc);
+    assert.ok(warns.some((w) => w.includes("0:row")),
+      "the head window books the clip's row: " + warns.join(" | "));
+    // the second window's derived number belongs to the render grid
+    // (the compose's retime), so the arm judges the MAP'S SHAPE: the
+    // head books a row, the unowned window books silence — a NaN
+    // head would have printed 0:silent and no 0:row at all.
+    assert.ok(warns.some((w) => /windows: \[0:row, 1:silent \d+f\]/.test(w)),
+      "the second window (no row, no clip) is the silent one: " + warns.join(" | "));
+  });
+
   it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {
     const g = new GraphBuilder();
     instantiateAction(
