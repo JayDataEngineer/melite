@@ -53,6 +53,15 @@ non-trivial model- or product-user-visible change updates a keyless
 recorded-session snapshot in the same PR. `test:coverage`, not `test`,
 is the CI coverage gate.
 
+Commit history law (operator 2026-11-27, the `1fd12eb25` rewrite): a
+commit a lane has SERVED is never amended or rewritten — the change
+lands as the next commit. A served commit already displaced is pinned on
+`archive/served-<sha>` so every receipt that names it resolves forever;
+receipts cite the title beside the hash. The wall is
+`tests/walls/ts/suites/served-commits-reach-main.spec.ts` (every lane
+tree's HEAD reaches main or an archive ref; every archive ref pins a
+commit main does not carry).
+
 Developer-local material (working plan, conformance ledger, roadmap,
 runbooks, audits) lives in `dev_docs/` — untracked, present on
 development machines only. The compact law (operator 2026-09-20):

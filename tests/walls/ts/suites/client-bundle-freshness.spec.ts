@@ -80,6 +80,57 @@ function isStale(bundleMtime: number, newestSrcMtime: number): boolean {
   return bundleMtime < newestSrcMtime;
 }
 
+// THE FRESH-EMIT SEAT (T1, 2026-11-27): one tsdown emit per package,
+// built to a temp dir from the CURRENT inputs and memoized for the
+// run — the mtime arm's deferral and the byte arm read the same
+// bytes, so a fresh checkout pays one emit per flagged bundle, not
+// two. THE PRODUCTION-EMIT LAW (same as the hook tool's): the shared
+// preset defines NODE_ENV into the bundle, defaulting unset to
+// 'production'; this suite runs under vitest (NODE_ENV=test) — an
+// unstripped emit carries zustand's dev branches and false-reds
+// every bundle, so the child env strips it.
+type FreshEmit = { kind: "bytes"; fresh: Buffer } | { kind: "refusal"; why: string };
+const freshEmits = new Map<string, FreshEmit>();
+function freshEmitOf(pkgDir: string): FreshEmit {
+  const hit = freshEmits.get(pkgDir);
+  if (hit !== undefined) return hit;
+  const bin = join(ROOT, pkgDir, "node_modules", ".bin", process.platform === "win32" ? "tsdown.cmd" : "tsdown");
+  if (!existsSync(bin)) {
+    const out: FreshEmit = { kind: "refusal", why: `${pkgDir}: no tsdown builder (run pnpm install — the declaration arm above owns the declaration, this arm owns the binary)` };
+    freshEmits.set(pkgDir, out);
+    return out;
+  }
+  const tmp = mkdtempSync(join(tmpdir(), "wall-bundle-bytes-"));
+  try {
+    const { NODE_ENV: _stripped, ...childEnv } = process.env;
+    const r = spawnSync(bin, ["-d", tmp, "--silent"], { cwd: join(ROOT, pkgDir), encoding: "utf8", env: childEnv });
+    if (r.status !== 0) {
+      const out: FreshEmit = { kind: "refusal", why: `${pkgDir}/lib/client.js: fresh emit FAILED — the bundle is unreproducible and can never carry new bytes:\n${String(r.stdout + "\n" + r.stderr).split("\n").filter((l) => /ERROR|purity|cannot|failed/i.test(l)).slice(0, 3).join("\n")}` };
+      freshEmits.set(pkgDir, out);
+      return out;
+    }
+    const fresh = join(tmp, "client.js");
+    const out: FreshEmit = existsSync(fresh)
+      ? { kind: "bytes", fresh: readFileSync(fresh) }
+      : { kind: "refusal", why: `${pkgDir}/lib/client.js: emit produced no client.js — the config no longer builds the served bundle` };
+    freshEmits.set(pkgDir, out);
+    return out;
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+/** THE MTIME VERDICT (T1's deferral, one home): an mtime-fresh bundle
+ *  is quiet; an mtime-stale bundle is decided by its bytes — a
+ *  refusal or stale bytes is STALE (the row stands with the cure),
+ *  fresh bytes are a NOTE (never a failure). */
+type MtimeVerdict = "quiet" | "note" | "stale";
+function mtimeVerdict(mtimeStale: boolean, bytes: { kind: "bytes"; stale: boolean } | { kind: "refusal" }): MtimeVerdict {
+  if (!mtimeStale) return "quiet";
+  if (bytes.kind === "refusal" || bytes.stale) return "stale";
+  return "note";
+}
+
 // THE CHECKOUT-MTIME CLASS (the 2026-11-09 CI cure): this arm's mtime
 // signal is meaningful only AFTER a build act. A fresh checkout
 // materializes the committed lib/client.js and every src byte within
@@ -94,22 +145,110 @@ function isStale(bundleMtime: number, newestSrcMtime: number): boolean {
 const CHECKOUT_MTIMES = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 
 describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
-  it.skipIf(CHECKOUT_MTIMES)("every lib/client.js is at least as new as its package's newest src byte (tsc-only rebuilds can never leave a stale serve; CI: the Lib-sync byte gate owns this law — checkout mtimes are write order, not a build)", () => {
-    const bundles = clientBundles();
-    assert.ok(bundles.length >= 6, "the census sees the six web client bundles (got " + String(bundles.length) + " — the walker itself rotted)");
+  // THE DEFERRAL (T1, 2026-11-27 — benchgen's hour): the mtime
+  // signal is strictly NOISIER than the byte signal. Every true
+  // mtime hit (src moved, bundle not rebuilt) is a byte hit; a
+  // lawful no-change rebuild, or a fresh checkout writing lib/
+  // before src/, is byte-fresh yet mtime-stale — and the arm red
+  // eleven healthy bundles with a cure of eleven rebuilds. So an
+  // mtime-stale bundle is JUDGED BY BYTES here (the working file
+  // against the same fresh emit the byte arm reads): bytes differ →
+  // the row stands, with the cure; bytes match → the row is a note,
+  // never a failure. The 2026-10-24 outage class (a tsc-only rebuild
+  // leaving a stale serve) is byte-stale by construction and still
+  // reds.
+  /** The mtime arm's judge, with its two reads injectable: the tree
+   *  arm passes the wall clock and the memoized emit; the firing arm
+   *  passes a backdated mtime over the SAME real bundles and emits. */
+  function mtimeRows(
+    bundles: readonly string[],
+    reads: { mtimeOf: (bundle: string) => number; emitOf: (pkgDir: string) => FreshEmit },
+  ): { stale: string[]; proven: string[] } {
     const stale: string[] = [];
+    const proven: string[] = [];
     for (const bundle of bundles) {
       const pkgRoot = dirname(dirname(bundle)); // .../pkg/lib/client.js → .../pkg
       const newest = newestSource(pkgRoot);
       if (newest === null) continue // no src: a leaf that only wraps deps
-      const bundleMtime = statSync(bundle).mtimeMs;
-      if (isStale(bundleMtime, newest.mtime)) {
-        stale.push(relative(ROOT, bundle) + " (built " + new Date(bundleMtime).toISOString() +
-          ") is OLDER than " + relative(ROOT, newest.file) + " (" + new Date(newest.mtime).toISOString() + ") — REBUILD IT: cd " +
-          relative(ROOT, pkgRoot) + " && ./node_modules/.bin/tsdown  (tsdown BEFORE tsc: the ORDER LAW)");
+      const bundleMtime = reads.mtimeOf(bundle);
+      if (!isStale(bundleMtime, newest.mtime)) continue;
+      const pkgDir = relative(ROOT, pkgRoot);
+      const emit = reads.emitOf(pkgDir);
+      const bytes = emit.kind === "refusal"
+        ? { kind: "refusal" as const }
+        : { kind: "bytes" as const, stale: !bytesEqual(emit.fresh, readFileSync(bundle)) };
+      const head = relative(ROOT, bundle) + " (built " + new Date(bundleMtime).toISOString() +
+        ") is OLDER than " + relative(ROOT, newest.file) + " (" + new Date(newest.mtime).toISOString() + ")";
+      if (mtimeVerdict(true, bytes) === "stale") {
+        stale.push(head + (emit.kind === "refusal"
+          ? " — " + emit.why
+          : " — the bytes are STALE too — REBUILD IT: cd " + pkgDir + " && ./node_modules/.bin/tsdown  (tsdown BEFORE tsc: the ORDER LAW)"));
+      } else {
+        proven.push(head + " — the bytes are fresh (a fresh emit matches); a fresh checkout writes lib/ before src/ and a no-change rebuild moves src without changing bytes: nothing to rebuild");
       }
     }
-    assert.deepEqual(stale, [], "STALE SERVED BUNDLES — the lane serves lib/client.js verbatim and these predate their own src (the 2026-10-24 outage class):\n" + stale.join("\n"));
+    return { stale, proven };
+  }
+
+  it.skipIf(CHECKOUT_MTIMES)("every lib/client.js is at least as new as its package's newest src byte — an mtime-stale bundle the bytes prove fresh is a note, not a failure (tsc-only rebuilds can never leave a stale serve; CI: the Lib-sync byte gate owns this law — checkout mtimes are write order, not a build)", () => {
+    const bundles = clientBundles();
+    assert.ok(bundles.length >= 6, "the census sees the six web client bundles (got " + String(bundles.length) + " — the walker itself rotted)");
+    const { stale, proven } = mtimeRows(bundles, { mtimeOf: (b) => statSync(b).mtimeMs, emitOf: freshEmitOf });
+    assert.deepEqual(stale, [], "STALE SERVED BUNDLES — the lane serves lib/client.js verbatim and these predate their own src AND their bytes (the 2026-10-24 outage class):\n" + stale.join("\n"));
+    if (proven.length > 0) console.info("[client-bundle-freshness] mtime-stale, byte-fresh (" + String(proven.length) + ") — no rebuild owed:\n" + proven.join("\n"));
+  });
+
+  it("the deferral FIRES (an mtime-stale bundle is quiet, a note, or stale BY ITS BYTES — synthetic, never the wall clock)", () => {
+    // mtime-fresh: the bytes are never consulted
+    assert.equal(mtimeVerdict(false, { kind: "bytes", stale: true }), "quiet", "an mtime-fresh bundle is quiet whatever its bytes");
+    assert.equal(mtimeVerdict(false, { kind: "refusal" }), "quiet");
+    // mtime-stale + byte-fresh: the fresh-checkout class — a NOTE
+    assert.equal(mtimeVerdict(true, { kind: "bytes", stale: false }), "note", "an mtime-stale bundle the bytes prove fresh is a note, never a failure");
+    // mtime-stale + byte-stale: the outage class stands
+    assert.equal(mtimeVerdict(true, { kind: "bytes", stale: true }), "stale", "stale by both is stale");
+    // mtime-stale + an unreproducible emit: a refusal is stale (never masked as fresh)
+    assert.equal(mtimeVerdict(true, { kind: "refusal" }), "stale", "a failed emit can never be a note");
+  });
+
+  it("the deferral on the REAL door: ONE real bundle, backdated by injection, its REAL fresh emit — a note when the bytes match, the rebuild voice when they do not", () => {
+    // The fresh-checkout class reproduced without touching the tree:
+    // the same real bundles, the same real memoized emit, and a
+    // bundle mtime read one hour in the past. The tree's own mtimes
+    // are never written (the wall clock cannot be disturbed).
+    const bundles = clientBundles();
+    const target = bundles.find((b) => newestSource(dirname(dirname(b))) !== null);
+    assert.ok(target !== undefined, "no bundle with src to judge — the walker rotted");
+    const targetPkg = relative(ROOT, dirname(dirname(target)));
+    const realEmit = freshEmitOf(targetPkg);
+    assert.equal(realEmit.kind, "bytes", "the target must emit: " + (realEmit.kind === "refusal" ? realEmit.why : ""));
+    // backdated BELOW the target's own newest src byte, whatever the
+    // wall clock says (a tree idle for a day would not be stale at
+    // "now − 1 h")
+    const targetNewest = newestSource(dirname(dirname(target)));
+    assert.ok(targetNewest !== null, "the target has src");
+    const backdated = { mtimeOf: (b: string): number => b === target ? targetNewest.mtime - 3_600_000 : statSync(b).mtimeMs };
+    // 1. BYTE-FRESH (the T1 burn's tree): the mtime arm answers a note
+    const fresh = mtimeRows([target], { ...backdated, emitOf: freshEmitOf });
+    assert.deepEqual(fresh.stale, [], "an mtime-stale bundle whose real emit matches its bytes owes no rebuild");
+    assert.equal(fresh.proven.length, 1, "the note names the bundle");
+    assert.match(fresh.proven[0] ?? "", /the bytes are fresh/);
+    // 2. BYTE-STALE (the outage class): one flipped byte stands the row with the cure
+    const flipped = Buffer.from(realEmit.fresh);
+    flipped[flipped.length - 1] = (flipped[flipped.length - 1] ?? 0) ^ 1;
+    const stale = mtimeRows([target], { ...backdated, emitOf: () => ({ kind: "bytes", fresh: flipped }) });
+    assert.equal(stale.stale.length, 1, "stale bytes stand the row");
+    assert.match(stale.stale[0] ?? "", /REBUILD IT: cd .* && \.\/node_modules\/.bin\/tsdown/);
+    assert.match(stale.stale[0] ?? "", /the bytes are STALE too/);
+    assert.deepEqual(stale.proven, []);
+    // 3. AN UNREPRODUCIBLE EMIT is stale with its own voice, never a note
+    const refused = mtimeRows([target], { ...backdated, emitOf: () => ({ kind: "refusal", why: "emit FAILED — unreproducible" }) });
+    assert.equal(refused.stale.length, 1);
+    assert.match(refused.stale[0] ?? "", /emit FAILED — unreproducible/);
+    // 4. MTIME-FRESH never consults the emit at all
+    let consulted = 0;
+    const quiet = mtimeRows([target], { mtimeOf: () => Date.now() + 3_600_000, emitOf: () => { consulted += 1; return realEmit; } });
+    assert.deepEqual(quiet, { stale: [], proven: [] });
+    assert.equal(consulted, 0, "an mtime-fresh bundle costs no emit");
   });
 
   it("the law FIRES (the stale predicate reds a backdated bundle and greens a fresh one — synthetic mtimes, never the wall clock)", () => {
@@ -223,32 +362,14 @@ describe("THE SERVED-BUNDLE FRESHNESS LAW", () => {
     assert.ok(bundles.length >= 6, `the bundle roster collapsed (${bundles.length}) — the tsdown.config walk broke`);
     const stale: string[] = [];
     for (const pkgDir of bundles) {
-      const bin = join(ROOT, pkgDir, "node_modules", ".bin", process.platform === "win32" ? "tsdown.cmd" : "tsdown");
-      assert.ok(existsSync(bin), `${pkgDir}: no tsdown builder (run pnpm install — the declaration arm above owns the declaration, this arm owns the binary)`);
-      const tmp = mkdtempSync(join(tmpdir(), "wall-bundle-bytes-"));
-      try {
-        // THE PRODUCTION-EMIT LAW (same as the hook tool's): the
-        // shared preset defines NODE_ENV into the bundle, defaulting
-        // unset to 'production'. This suite runs under vitest
-        // (NODE_ENV=test) — an unstripped emit carries zustand's dev
-        // branches and false-reds every bundle. Strip it.
-        const { NODE_ENV: _stripped, ...childEnv } = process.env;
-        const r = spawnSync(bin, ["-d", tmp, "--silent"], { cwd: join(ROOT, pkgDir), encoding: "utf8", env: childEnv });
-        if (r.status !== 0) {
-          stale.push(`${pkgDir}/lib/client.js: fresh emit FAILED — the bundle is unreproducible and can never carry new bytes:\n${String(r.stdout + "\n" + r.stderr).split("\n").filter((l) => /ERROR|purity|cannot|failed/i.test(l)).slice(0, 3).join("\n")}`);
-          continue;
-        }
-        const fresh = join(tmp, "client.js");
-        if (!existsSync(fresh)) {
-          stale.push(`${pkgDir}/lib/client.js: emit produced no client.js — the config no longer builds the served bundle`);
-          continue;
-        }
-        const seated = execFileSync("git", ["show", `:${pkgDir}/lib/client.js`], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 });
-        if (!bytesEqual(readFileSync(fresh), seated)) {
-          stale.push(`${pkgDir}/lib/client.js: STALE BYTES — a fresh tsdown emit of its inputs differs from the seated bundle (inputs moved without a rebuild): cd ${pkgDir} && ./node_modules/.bin/tsdown (tsdown BEFORE tsc), then stage the diff`);
-        }
-      } finally {
-        rmSync(tmp, { recursive: true, force: true });
+      const emit = freshEmitOf(pkgDir);
+      if (emit.kind === "refusal") {
+        stale.push(emit.why);
+        continue;
+      }
+      const seated = execFileSync("git", ["show", `:${pkgDir}/lib/client.js`], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 });
+      if (!bytesEqual(emit.fresh, seated)) {
+        stale.push(`${pkgDir}/lib/client.js: STALE BYTES — a fresh tsdown emit of its inputs differs from the seated bundle (inputs moved without a rebuild): cd ${pkgDir} && ./node_modules/.bin/tsdown (tsdown BEFORE tsc), then stage the diff`);
       }
     }
     assert.deepEqual(stale, [], "STALE SERVED BUNDLES (bytes, not mtimes) — the lane serves these files verbatim and their inputs moved on:\n" + stale.join("\n"));
