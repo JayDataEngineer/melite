@@ -36,10 +36,11 @@ export function liftStanza(params) {
 }
 /** THE STAGE-POLICY WORDS (B5): what each reserved key arms and why
  *  a lone card compose refuses it — keyed by the reserved key, with
- *  one sentence for a key this table has not met. */
+ *  one sentence (`default`) for a key this table has not met. */
 const STAGE_POLICY_WORDS = {
     boundary_unload_models: () => "STAGE POLICY — it arms the unload boundary at the seam between two WIRED stages of a merged run, and this press composes one card alone: there is no seam to arm. State it on the downstream stage of a two-stage bench, or drop it",
     vram_budget_mb: () => "STAGE POLICY — the merged run's VRAM headroom budget, read at the merge, and this press composes one card alone and never merges. State it on a bench stage, or drop it",
+    execute_ceil_ms: () => "STAGE POLICY — the run's own execute ceiling in milliseconds (<= 0 disables the hung-run fuse), read by the queue's start door for the whole run, and this press composes one card alone and starts nothing. State it on a bench stage's params, or drop it",
     default: () => "STAGE POLICY (STAGE_RESERVED_PARAMS) — read by the merge plane between stages, and this press composes one card alone. State it on a bench stage, or drop it",
 };
 export async function composeOnce(deps, card, fam, params, runId, phase) {
@@ -242,7 +243,7 @@ export function admissionRefusal(deps, card, fam, lifted, phase, facts) {
         // key the merge plane declares.
         const policyHints = unknown
             .filter((k) => stageReservedKeyLifts(decl, k))
-            .map((k) => " '" + k + "' is " + STAGE_POLICY_WORDS[k === "boundary_unload_models" || k === "vram_budget_mb" ? k : "default"]());
+            .map((k) => " '" + k + "' is " + (STAGE_POLICY_WORDS[k] ?? STAGE_POLICY_WORDS["default"])());
         throw phaseRefusal(phase, "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
             " (admission is the declared surface — knobs + contract admits; see the card's TS definition)" +
             (hints.length > 0 ? " Mod-pack keys:" + hints.join(";") : "") +

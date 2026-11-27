@@ -50,7 +50,7 @@ async function raceExecuteFuse(p, ceilMs, what) {
                             Math.round(ceil / 60_000) + " min";
                     reject(new Error("runs/execute-hung: " + what + " exceeded the execute ceiling (" +
                         shown +
-                        ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs, set it <= 0 to disable, or state the run's own execute_ceil_ms"));
+                        ") — a hung engine call must never strand the serial queue; raise the queue config's executeCeilMs, set it <= 0 to disable, or state the run's own execute_ceil_ms (a stage-policy key: put it on the bench stage's params and the press carries it onto the start body)"));
                 }, { once: true });
             }),
         ]);

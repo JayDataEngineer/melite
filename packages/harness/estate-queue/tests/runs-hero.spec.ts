@@ -716,6 +716,12 @@ describe("runOne's hung-run fuse (executeCeilMs)", () => {
     await runOne(run, ctx, () => undefined);
     assert.equal(run.status, "failed");
     assert.ok(String(run.error).includes("25ms"), "the voice renders the run's own ceiling: " + String(run.error));
+    // B6: the cure the voice names must be a lever the bench press can
+    // state — the run-13c73da4e0cf burn named `execute_ceil_ms` with
+    // no seat on a stage row; it is the fourth STAGE_RESERVED_PARAMS
+    // key now, and the voice says where to put it.
+    assert.match(String(run.error), /put it on the bench stage's params/, "the fuse voice names the seat: " + String(run.error));
+    assert.match(String(run.error), /a stage-policy key/, "the fuse voice names the key's class");
   });
 });
 

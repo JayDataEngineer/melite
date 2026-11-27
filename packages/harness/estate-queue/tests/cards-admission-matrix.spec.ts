@@ -329,7 +329,7 @@ describe("T6 — THE NO-SEAM VOICE (B5, 2026-11-27: a stage-policy key at the lo
   // lift the key out of the card walk for the merge to read; at THIS
   // door the card composes alone, so the refusal names the fault: no
   // seam to arm, where the key does belong, or drop it.
-  it("boundary_unload_models refuses on every matrix card with the no-seam sentence; vram_budget_mb with the no-merge sentence; a stranger never wears stage-policy words", () => {
+  it("boundary_unload_models refuses on every matrix card with the no-seam sentence; vram_budget_mb with the no-merge sentence; execute_ceil_ms with the starts-nothing sentence; a stranger never wears stage-policy words", () => {
     const facts = svc.modelFacts();
     const failures: string[] = [];
     let cells = 0;
@@ -347,6 +347,14 @@ describe("T6 — THE NO-SEAM VOICE (B5, 2026-11-27: a stage-policy key at the lo
         if (!declaredBudget && budget.admitted) failures.push(`${card} × ${fam}: vram_budget_mb ADMITTED at the lone-card door`);
         if (!declaredBudget && !/Stage-policy keys: 'vram_budget_mb' is STAGE POLICY — the merged run's VRAM headroom budget, read at the merge, and this press composes one card alone and never merges\. State it on a bench stage, or drop it/.test(budget.error)) {
           failures.push(`${card} × ${fam}: the no-merge sentence is missing (${budget.error})`);
+        }
+        // B6: the run's own ceiling is the fourth policy key — the start
+        // door reads it for the whole run; a lone compose starts nothing
+        const declaredCeil = deriveDecls(cardDefsNow() ?? new Map(), facts)[card]?.schemaNames.includes("execute_ceil_ms") ?? false;
+        const ceil = verdict(card, fam, "execute_ceil_ms", facts);
+        if (!declaredCeil && ceil.admitted) failures.push(`${card} × ${fam}: execute_ceil_ms ADMITTED at the lone-card door`);
+        if (!declaredCeil && !/Stage-policy keys: 'execute_ceil_ms' is STAGE POLICY — the run's own execute ceiling in milliseconds \(<= 0 disables the hung-run fuse\), read by the queue's start door for the whole run, and this press composes one card alone and starts nothing\. State it on a bench stage's params, or drop it/.test(ceil.error)) {
+          failures.push(`${card} × ${fam}: the starts-nothing sentence is missing (${ceil.error})`);
         }
         const stranger = verdict(card, fam, "definitely_not_a_key", facts);
         if (stranger.admitted) failures.push(`${card} × ${fam}: a stranger ADMITTED`);

@@ -227,8 +227,16 @@ function assertAcyclic(edges, ids) {
  * (`h3_t4_film_<slug>`, `extend_film_<slug>`, the re-shoot plates).
  * Filenames ARE parsed — by the four film-lead finders
  * (filmLead.ts + its mirrors), which is why the stem is a schema
- * slug and the finders' regexes admit the slug segment. */
-export const STAGE_RESERVED_PARAMS = ["boundary_unload_models", "vram_budget_mb", "output_name"];
+ * slug and the finders' regexes admit the slug segment.
+ *
+ * THE RUN'S OWN CEILING (B6, 2026-11-27): `execute_ceil_ms` is
+ * the fourth policy key — read by the queue's START door for the
+ * whole run (queueSubmit executeCeilOf → the row's executeCeilMs),
+ * not by the merge; the burn (run-13c73da4e0cf, killed at 31.5 min
+ * with the film on disk) named a cure the bench press could not
+ * state: the key had no seat on a stage row. The merge carries it
+ * in paramsByStage and reads nothing of it. */
+export const STAGE_RESERVED_PARAMS = ["boundary_unload_models", "vram_budget_mb", "output_name", "execute_ceil_ms"];
 export function planMerge(rows, initials, inputNames) {
     const merged = {};
     const producers = {};

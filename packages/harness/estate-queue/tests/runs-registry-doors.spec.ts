@@ -1094,6 +1094,62 @@ describe("validate", () => {
     );
   });
 
+  it("THE CEILING LIFT (B6, 2026-11-27): execute_ceil_ms on a bench stage's params never meets card admission, and lands as the run's executeCeilMs", async () => {
+    // THE BURN (benchgen's MELITE-UPSTREAM-ISSUES B6): the fuse's own
+    // cure — "state the run's own execute_ceil_ms" — named a lever
+    // the bench press could not state: the key lived only on the
+    // start body, and the press builds that body from the stage's
+    // param bag, which card admission judged unknown. The cure is the
+    // reserved list: the stage states its ceiling, the lift keeps it
+    // off the card walk, the start door reads it for the whole run.
+    // Toggle the key out of STAGE_RESERVED_PARAMS and phase1 receives
+    // it — this wall reds on the refusal the operator hit.
+    const phase1Params: unknown[] = [];
+    const s = seat(
+      {
+        modelFacts: (): unknown => ({ "z-image": {} }),
+        resolveCardFamily: (): unknown => "z-image",
+        modelMids: (): unknown => new Set<string>(),
+        phase1Card: async (params: unknown): Promise<unknown> => {
+          phase1Params.push(params);
+          return { mid: "z-image", fam: "z-image", card: "image-gen", spell: null, params: {} };
+        },
+        phase2Card: async (): Promise<unknown> => ({
+          graph: { "9": { class_type: "EmptySD3LatentImage", inputs: {} } },
+          outputs: {},
+          outputNodes: { default: "9" },
+        }),
+      },
+      { stages: [{ id: "s_0", card: "image-gen", params: { prompt: "x", execute_ceil_ms: 3_600_000 } }] },
+    );
+    const engine = engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as Record<string, unknown>)["engines"] = {
+      ids: (): string[] => ["comfyui"],
+      resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+    };
+    engine.onFlow = async (rows) => ({
+      stages: Object.fromEntries(rows.map((r) => [r.stageId, { outputs: {}, artifacts: [] }])),
+      promptId: "p",
+    });
+    // THE PRESS SHAPE (melite-flow.ts: the bench press spreads the
+    // stage's resolved bag onto the start body beside draft_id/test)
+    const ans = await s.svc.start({ prompt: "x", execute_ceil_ms: 3_600_000, draft_id: "d1", test: false }, sig());
+    const run = await settleWait(s, ans.run_id);
+    assert.equal(run.status, "completed", "the ceiling-bearing stage composes and settles: " + String(run.error));
+    assert.ok(phase1Params.length > 0, "the card walk ran");
+    for (const p of phase1Params) {
+      assert.equal((p as Record<string, unknown>)["execute_ceil_ms"], undefined,
+        "phase1 receives the params WITHOUT the ceiling (the lift's own evidence)");
+      assert.equal((p as Record<string, unknown>)["prompt"], "x", "the declared card params still ride admission untouched");
+    }
+    const stageParams = run.params[0] as Record<string, unknown>;
+    assert.equal(stageParams["execute_ceil_ms"], 3_600_000, "the composed stage's params carry the ceiling verbatim");
+    assert.equal(JSON.stringify(stageParams["workflow"]).includes("3600000"), false,
+      "the ceiling never lands inside the serialized graph");
+    assert.equal(run.executeCeilMs, 3_600_000, "the start door read the stage's ceiling onto the run row");
+  });
+
   it("THE DECLARED-KEY SPARING (queue 12's file plane): a card that DECLARES output_name walks it into admission — the stem reaches the compose", async () => {
     // The lift's own law (the arm above) holds for POLICY keys on
     // cards that do not declare them. The file plane (2026-11-10,
