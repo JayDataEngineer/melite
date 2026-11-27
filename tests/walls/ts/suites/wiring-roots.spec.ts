@@ -166,11 +166,33 @@ describe("the wiring-roots wall (one store, four truths, all reconciled)", () =>
 // run REPORTS the skip; it does not paint a green bar over a leg
 // it never read.
 describe.skipIf(DELEGATED)("the boot legs (the engine process's own truths)", () => {
+  /** The unit's MainPID — systemctl first, the session bus as the
+   * fallback transport. systemd's private socket refuses peers outside
+   * its own cgroup hierarchy (sandboxed runs: AUTHENTICATING → CLOSED,
+   * "No data available") while the session bus answers the same truth;
+   * single-property Gets can refuse where GetAll answers, so the
+   * fallback reads the whole dict and picks MainPID out of it. */
+  const unitMainPID = (): string => {
+    try {
+      return execFileSync("systemctl", ["--user", "show", "-p", "MainPID", "--value", ENGINE_UNIT],
+        { encoding: "utf8" }).trim();
+    } catch {
+      const uid = process.getuid();
+      const out = execFileSync("busctl", ["--user", "call", "org.freedesktop.systemd1",
+        `/org/freedesktop/systemd1/unit/${ENGINE_UNIT.replaceAll(".", "_2e").replaceAll("-", "_2d")}`,
+        "org.freedesktop.DBus.Properties", "GetAll", "s", "org.freedesktop.systemd1.Service"], {
+        encoding: "utf8",
+        env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS ?? `unix:path=/run/user/${uid}/bus` },
+      });
+      const pid = /"MainPID" u (\d+)/.exec(out)?.[1];
+      if (pid !== undefined) return pid;
+      throw new Error("the session bus answered without a MainPID");
+    }
+  };
   it("BOOT FRESHNESS — the running engine's yaml equals the generated one", () => {
     let pid = "";
     try {
-      pid = execFileSync("systemctl", ["--user", "show", "-p", "MainPID", "--value", ENGINE_UNIT],
-        { encoding: "utf8" }).trim();
+      pid = unitMainPID();
     } catch {
       assert.fail(`${ENGINE_UNIT} is not queryable on this box — the battery's engine contract is broken (the compose doors need the same engine); cannot judge boot freshness`);
     }
@@ -180,7 +202,26 @@ describe.skipIf(DELEGATED)("the boot legs (the engine process's own truths)", ()
     try {
       cwd = readlinkSync(`/proc/${pid}/cwd`);
     } catch {
-      assert.fail(`cannot resolve /proc/${pid}/cwd for ${ENGINE_UNIT} — the boot truth is unreadable and the wall never guesses`);
+      // THE SANDBOX TRANSPORT: a confined run rides its own pid
+      // namespace and cannot see the host process, so the booted tree
+      // comes from the unit's own boot line — the fragment systemd
+      // exec'd. BOOT ENV pins the managed boot line to START with `cd`,
+      // so the fragment's WorkingDirectory IS the booted cwd; the
+      // /proc read stays first because it also catches a chdir'd
+      // process on boxes that can see it.
+      const uid = process.getuid();
+      const unit = execFileSync("busctl", ["--user", "call", "org.freedesktop.systemd1",
+        `/org/freedesktop/systemd1/unit/${ENGINE_UNIT.replaceAll(".", "_2e").replaceAll("-", "_2d")}`,
+        "org.freedesktop.DBus.Properties", "GetAll", "s", "org.freedesktop.systemd1.Unit"], {
+        encoding: "utf8",
+        env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS ?? `unix:path=/run/user/${uid}/bus` },
+      });
+      const fragment = /"FragmentPath" s "([^"]+)"/.exec(unit)?.[1] ?? "";
+      assert.notEqual(fragment, "",
+        "cannot read the unit fragment over the session bus — the booted tree is unknowable and the wall never guesses");
+      cwd = /^WorkingDirectory=(.*)$/m.exec(readFileSync(fragment, "utf8"))?.[1]?.trim() ?? "";
+      assert.notEqual(cwd, "",
+        `${fragment} carries no WorkingDirectory — the booted tree is unknowable and the wall never guesses`);
     }
     let booted = "";
     try {

@@ -849,6 +849,18 @@ export async function probeExecutability (innerFiles) {
 export async function publintOffender (tarName, f) {
   const { publint } = await import('publint')
   const dir = mkdtempSync(join(tmpdir(), 'melite-publint-'))
+  // publint's file list comes from @publint/pack, which shells out to
+  // `npm pack`; npm writes its diagnostics to $HOME/.npm/_logs and its
+  // pack cache to $HOME/.npm/_cacache, dying at spawn when either path
+  // is unwritable (sandboxed gate runs, read-only homes) — before the
+  // real lint ever executed. Both are secondary to the judgement, so
+  // the gate seats them into its own tmp dir UNCONDITIONALLY: npm seeds
+  // npm_config_* into inherited environments, so an absence guard would
+  // keep the caller's unwritable paths. The spawned pack never touches
+  // the caller's npm home; the gate's own error surfacing carries any
+  // pack failure.
+  process.env.npm_config_logs_dir = join(dir, 'npm-logs')
+  process.env.npm_config_cache = join(dir, 'npm-cache')
   try {
     run('mkdir', ['-p', dir])
     run('tar', ['-xzf', f, '-C', dir])
