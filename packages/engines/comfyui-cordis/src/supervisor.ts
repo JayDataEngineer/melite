@@ -62,7 +62,25 @@ export function isTransportDownError(error: unknown): boolean {
     return true;
   }
   const message: unknown = (error as { message?: unknown }).message;
-  if (typeof message !== "string") return false;
+  if (typeof message === "string" && transportDeadText(message)) return true;
+  // THE CAUSE HOP (B4b, 2026-11-27: the bare `fetch failed` burn):
+  // the SDK rides global fetch, and undici wraps the socket error —
+  // `TypeError: fetch failed` carries the errno on `.cause`, never
+  // on the error itself. Read without the hop, a dead engine at the
+  // press surfaced as the two words "fetch failed" in the run row
+  // (never a dead-engine diagnosis); a connect timeout stays a
+  // LIVE signal here exactly as above (the cause's code decides).
+  const cause: unknown = (error as { cause?: unknown }).cause;
+  if (typeof cause === "object" && cause !== null) {
+    const causeCode: unknown = (cause as { code?: unknown }).code;
+    if (typeof causeCode === "string" && TRANSPORT_DEAD_CODES.has(causeCode)) return true;
+    const causeMessage: unknown = (cause as { message?: unknown }).message;
+    if (typeof causeMessage === "string") return transportDeadText(causeMessage);
+  }
+  return false;
+}
+
+function transportDeadText(message: string): boolean {
   return (
     message.includes("ECONNREFUSED") ||
     message.includes("ECONNRESET") ||

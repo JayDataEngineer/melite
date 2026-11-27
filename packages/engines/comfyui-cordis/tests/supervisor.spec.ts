@@ -111,6 +111,22 @@ describe("isTransportDownError (the transport vocabulary)", () => {
     assert.equal(isTransportDownError({ message: 42 }), false, "a non-string message is not transport-down");
     assert.equal(isTransportDownError({}), false);
   });
+  it("THE CAUSE HOP (B4b, 2026-11-27): undici's `fetch failed` carries the errno on .cause — read there, never from the two words", () => {
+    for (const code of ["ECONNREFUSED", "ECONNRESET", "EPIPE"]) {
+      const err = new TypeError("fetch failed", { cause: Object.assign(new Error("connect " + code), { code }) });
+      assert.equal(isTransportDownError(err), true, code);
+    }
+    // the errno in the cause's MESSAGE only (no .code) still hits
+    assert.equal(isTransportDownError(new TypeError("fetch failed", { cause: new Error("connect ENOTFOUND engine") })), true);
+    // a timeout cause stays LIVE — the law above holds at the hop
+    assert.equal(isTransportDownError(new TypeError("fetch failed", {
+      cause: Object.assign(new Error("Connect Timeout Error"), { code: "UND_ERR_CONNECT_TIMEOUT" }),
+    })), false, "a connect timeout proves nothing dead");
+    // a non-error cause and a bare fetch failed are not dead either
+    assert.equal(isTransportDownError(new TypeError("fetch failed", { cause: "ECONNREFUSED" })), false);
+    assert.equal(isTransportDownError(new TypeError("fetch failed")), false);
+    assert.equal(isTransportDownError(new TypeError("fetch failed", { cause: null })), false);
+  });
 });
 
 describe("resolveSupervisorPolicy (misconfiguration fails LOUD)", () => {

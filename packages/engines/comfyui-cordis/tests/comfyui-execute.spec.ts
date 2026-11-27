@@ -268,6 +268,25 @@ describe("submitPrompt (the receipt law)", () => {
     await expect(submitPrompt(fakeClient({ queuePrompt: async () => ({ prompt_id: 7 }) }), {}))
       .rejects.toThrow(ComfyError);
   });
+  it("THE DEAD-ENGINE VOICE AT THE PRESS (B4b, 2026-11-27: the bare `fetch failed` burn): a refused connection is the ENGINE leaving, never a graph verdict", async () => {
+    // undici's shape: TypeError("fetch failed") with the errno on
+    // .cause — the SDK rides global fetch, so this is what a stopped
+    // or restarting engine throws at POST /prompt.
+    const cause = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:8188"), { code: "ECONNREFUSED" });
+    const dead = new TypeError("fetch failed", { cause });
+    const caught = await submitPrompt(fakeClient({ queuePrompt: async () => { throw dead; } }), { n: {} })
+      .then(() => null, (e: unknown) => e as Error);
+    expect(caught).toBeInstanceOf(ComfyError);
+    expect(caught?.message).toMatch(/^engine unreachable at the press \(ECONNREFUSED\)/);
+    expect(caught?.message).toMatch(/the graph never ran.*comfy_manage status names the unit's state; comfy_manage launch is the road back/);
+  });
+  it("a connect TIMEOUT at the press is not a dead engine (the classifier's live-signal law holds at the cause hop)", async () => {
+    const slow = new TypeError("fetch failed", {
+      cause: Object.assign(new Error("Connect Timeout Error"), { code: "UND_ERR_CONNECT_TIMEOUT" }),
+    });
+    await expect(submitPrompt(fakeClient({ queuePrompt: async () => { throw slow; } }), { n: {} }))
+      .rejects.toThrow(/^fetch failed$/);
+  });
   it("THE SILENT-TRUNCATION REFUSAL (the red-box hunt, 2026-10-08): a 200 answer carrying node_errors REFUSES LOUD — the node, its message, and the outputs that would have silently vanished — never a success with half the artifacts", async () => {
     const dropped = {
       queuePrompt: async () => ({

@@ -64,6 +64,22 @@ function nodeErrorLines(nodeErrors: Record<string, Record<string, unknown>>): st
   return lines;
 }
 
+/** The dead-engine diagnosis for a press the engine refused by
+ *  transport: names the errno the socket carried (undici keeps it on
+ *  `.cause`), states the graph never ran, and names the road back —
+ *  the unit's state through comfy_manage, launch, then the rerun on
+ *  the node cache. @param err - the transport error the SDK threw.
+ *  @returns the run row's error text. */
+function engineGoneAtPress(err: unknown): string {
+  const cause = (err as { cause?: { code?: unknown; message?: unknown } } | null)?.cause;
+  const code = typeof cause?.code === "string" ? " (" + cause.code + ")" : "";
+  return (
+    "engine unreachable at the press" + code +
+    " — the engine process is down or restarting (a stop/restart landed under this run, or the unit died); the graph never ran." +
+    " comfy_manage status names the unit's state; comfy_manage launch is the road back; the rerun rides the node cache"
+  );
+}
+
 export async function submitPrompt(
   client: Client,
   graph: Record<string, EngineJson>,
@@ -113,6 +129,15 @@ export async function submitPrompt(
       throw new ComfyError(
         `the engine refused the prompt — HTTP ${status}: ${voice}`,
       );
+    }
+    // THE DEAD-ENGINE VOICE AT THE PRESS (B4b, 2026-11-27): a
+    // refused connection at POST /prompt is the ENGINE leaving — a
+    // restart/stop that landed under this run, or the unit dying —
+    // never a verdict on the graph. Left raw it surfaced as the two
+    // words "fetch failed" in the run row (the burn: the operator
+    // read a doc fault and re-cut a film the engine never saw).
+    if (isTransportDownError(err)) {
+      throw new ComfyError(engineGoneAtPress(err));
     }
     throw err;
   }
@@ -587,7 +612,13 @@ async function hostSwapReading(): Promise<string | null> {
       }
       await bestEffortInterrupt(client, promptId);
       if (e instanceof ComfyError) throw e;
-      throw new ComfyError(e instanceof Error ? e.message : String(e));
+      // a bare "fetch failed" is voiceless — undici keeps the reason
+      // on .cause; carry it into the row (B4b)
+      const cause = (e as { cause?: { code?: unknown; message?: unknown } } | null)?.cause;
+      const causeText = typeof cause?.code === "string" ? String(cause.code)
+        : typeof cause?.message === "string" ? cause.message : "";
+      const base = e instanceof Error ? e.message : String(e);
+      throw new ComfyError(causeText !== "" ? base + " (" + causeText + ")" : base);
     } finally {
       probe.dispose();
     }
