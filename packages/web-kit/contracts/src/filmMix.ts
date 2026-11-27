@@ -219,6 +219,12 @@ const SLICE_FLOOR_FRAMES = 2.4
  * dialogue lane to row 1 — window 2 re-performed line 1 while row 2
  * conditioned nothing).
  *
+ * A crosser that ENDS at or before the window's first visible frame
+ * owns no lane there: no delivered frame of the window hears it — its
+ * whole overlap is the carry head, which the assembly trims. A clip
+ * is conditioned by the windows it is heard in; its overlay and its
+ * duck span do not change.
+ *
  * @param clips the parsed audio_clips rows, doc frames
  * @param spanStart the window's doc span start (frames)
  * @param spanEnd the window's doc span end (frames, exclusive)
@@ -238,6 +244,14 @@ export function chooseLaneClips(
     const lo = Math.max(clip.start, genStart)
     const hi = Math.min(clip.start + clip.dur, spanEnd)
     if (hi - lo < SLICE_FLOOR_FRAMES) continue
+    // The whole overlap inside the carry head: the window's delivered
+    // frames [spanStart, spanEnd) hold none of this clip. Stamped, such
+    // a window is denied the no-speech indicator and continues the
+    // voice with invented words (EP01 run-51a6d59be053-1be84c54:
+    // 2.8 s of speech, −27…−42 dBFS, in a window that opens 5 frames
+    // after the row's end; the same doc with the row ended before the
+    // window's generation span, run-0e33fe586e87-1bf5e7c9, is silent).
+    if (clip.start < spanStart && clip.start + clip.dur <= spanStart) continue
     const bucket = clip.start >= spanStart && clip.start < spanEnd ? starters : crossers
     const row = (bucket[clip.cls] ??= [])
     row.push(ci)

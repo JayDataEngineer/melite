@@ -27,6 +27,17 @@
 // picks it up mid-way is told the voice continues. Music is exempt —
 // a score is a state, not an onset.
 //
+// A CLIP THE WINDOW NEVER DELIVERS CONDITIONS NOTHING THERE
+// (2026-11-27, EP01 Draft 2 Scene 2): a crosser whose whole overlap
+// with a window is that window's carry head is heard by none of its
+// delivered frames. It used to own the lane all the same — the line's
+// tail pinned at frame 0, "the same voice is already speaking", and
+// no no-speech indicator — and the window went on speaking words
+// nobody wrote (run-51a6d59be053-1be84c54: 2.8 s of invented speech
+// at −27…−42 dBFS). The same doc with the row ended before the
+// window's generation span (run-0e33fe586e87-1bf5e7c9) took the
+// indicator and was silent. Such a clip owns no lane in that window.
+//
 // DEPTH: the real composition root (loadCardDefs → def.schema →
 // def.compose — the same door the run rides) plus the manifest and
 // the chooser's own unit faces; the graph asserts ride
@@ -119,6 +130,21 @@ describe("chooseLaneClips — the lane's owner is chosen by position", () => {
     const lanes = chooseLaneClips(grazed, 124, 125, 102); // overlap [102,103) = 1 frame
     assert.equal(lanes.sfx, undefined, "a 1-frame overlap is below the slice node's floor — the clip stays overlay-only");
   });
+
+  it("a crosser that ENDS inside the carry head owns no lane — no delivered frame of the window hears it", () => {
+    // run-51a6d59be053-1be84c54's own numbers: window 2 [158,260),
+    // generation from 158−22 = 136; the row [18,153) — its last 17
+    // frames lie in the head the assembly trims
+    const seamOnly = [{ src: "l42.flac", start: 18, dur: 135, text: "sir", srcIn: 0, cls: "dialogue" as const }];
+    assert.equal(chooseLaneClips(seamOnly, 158, 260, 136).dialogue, undefined, "the window's delivered frames hold none of the row — it must not stamp it");
+    assert.equal(chooseLaneClips(seamOnly, 0, 158, 0).dialogue, 0, "the row still owns the window it starts in");
+    // one delivered frame is enough: the row [18,159) is heard at frame 158 and keeps the lane
+    const oneFrameIn = [{ src: "l42.flac", start: 18, dur: 141, text: "sir", srcIn: 0, cls: "dialogue" as const }];
+    assert.equal(chooseLaneClips(oneFrameIn, 158, 260, 136).dialogue, 0, "a crosser heard in the window's delivered frames keeps the lane");
+    // a take STARTING in the carry head is not a crosser: both windows hear it from its head
+    const inTheHead = [{ src: "l42.flac", start: 140, dur: 60, text: "sir", srcIn: 0, cls: "dialogue" as const }];
+    assert.equal(chooseLaneClips(inTheHead, 158, 260, 136).dialogue, 0, "a take that starts inside the carry head keeps the lane");
+  });
 });
 
 describe("computeFilmMix — the conditioned set drives the same law", () => {
@@ -136,6 +162,14 @@ describe("computeFilmMix — the conditioned set drives the same law", () => {
     // conditioned set — index 1 (line 2) was the dropped row
     const ducked = manifest.duckSpans.length; // both rows' spans duck the film track
     assert.ok(ducked >= 2, `both conditioned rows duck the film track (got ${ducked})`);
+  });
+
+  it("a seam-only row still ducks the film track for its own span — the overlay half does not change", () => {
+    const clips = [{ src: "l42.flac", start: 18, dur: 135, text: "sir", srcIn: 0, cls: "dialogue" as const }];
+    const spans = [{ start: 0, end: 158 }, { start: 158, end: 260 }];
+    const manifest = computeFilmMix({ spans, clips, windowSecs: [158 / 24, 85 / 24] });
+    assert.deepEqual(manifest.duckSpans, [{ start: 0.75, end: 6.375 }], "the row conditions the window it starts in, so its duck span is exactly its own");
+    assert.deepEqual(manifest.placements.map((p) => p.filmSec), [0.75]);
   });
 });
 
@@ -236,6 +270,55 @@ describe("THE WORDS RIDE WHERE THE TAKE IS HEARD FROM ITS HEAD (the copy-across-
     const s1 = slicesOf(graph, 1);
     expect(s1.length).toBe(1);
     expect(s1[0]!.inputs["start_seconds"]).toBe(0);
+  });
+
+  it("a line that ENDS inside the next window's carry head stamps nothing there — that window takes the no-speech indicator", async () => {
+    // run-51a6d59be053-1be84c54's own numbers: 260f, window 1 [0,158),
+    // window 2 [158,260) with its generation from 136, the row
+    // [18,153): window 2's delivered frames open 5 frames after the
+    // row ends.
+    const graph = await composeH3({
+      length: 260,
+      audio_clips: [
+        { src: "/art/tts/l42.flac", start_frame: 18, dur_frames: 135, text: LINE, class: "dialogue" },
+      ],
+      calls: [
+        { text: LAWFUL_TEXT, start_frame: 0, end_frame: 158 },
+        { text: LAWFUL_TEXT_CARRIED, start_frame: 158, end_frame: 260 },
+      ],
+    }, "h3_seam_only_arm_1");
+    const promptOf = (w: number): string => Object.entries(graph)
+      .filter(([id]) => id.startsWith(`window${w}_`))
+      .map(([, n]) => n.inputs["prompt"])
+      .filter((v): v is string => typeof v === "string" && v !== "")
+      .join("\n");
+    const [p1, p2] = [promptOf(1), promptOf(2)];
+    // the window that holds the line speaks it, from its head
+    expect(tags(p1)).toBe(1);
+    expect(p1).toContain(LINE);
+    expect(p1).toContain("At 00:00.750");
+    // the next window holds none of it: no words, no continuing voice,
+    // and the indicator the operator's gibberish law requires
+    expect(tags(p2)).toBe(0);
+    expect(p2).not.toContain(LINE);
+    expect(p2).not.toMatch(/already speaking/);
+    expect(p2).not.toMatch(/mid-sentence/);
+    expect(p2).toContain("No speech or dialogue in this shot");
+    // no speech-carrying audio reaches that window: no slice, no audio guide
+    expect(slicesOf(graph, 2).length).toBe(0);
+    const audioGuides2 = Object.entries(graph)
+      .filter(([id]) => id.startsWith("window2_"))
+      .map(([, n]) => n)
+      .filter((n) => n.class_type === "MiniMaxH3AddGuide" && "audio" in n.inputs);
+    expect(audioGuides2.length).toBe(0);
+    // the holding window's slice is the whole take
+    const s1 = slicesOf(graph, 1);
+    expect(s1.length).toBe(1);
+    expect(s1[0]!.inputs["start_seconds"]).toBe(0);
+    expect(s1[0]!.inputs["duration_seconds"]).toBe(5.625);
+    // the overlay half: the row's duck span is its own
+    const mix = Object.values(graph).find((n) => n.class_type === "MeliteFilmAudioMix");
+    expect(mix?.inputs["duck_spans"]).toBe("0.75:6.375");
   });
 
   it("a take starting inside the CARRY head still speaks in both windows — each hears it from its head", async () => {

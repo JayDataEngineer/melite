@@ -1,4 +1,4 @@
-export { spanOverlap, spanStanzaFrames } from './timelineContract.js';
+export { spanOverlap, spanStanzaFrames } from './timelineContract.ts';
 export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music';
 /** One clip row — the card's audio_clips shape, post-parse. */
 export interface FilmMixClip {
@@ -91,6 +91,12 @@ export interface FilmMixInput {
  * started inside it, and first-wins row order handed window 2's
  * dialogue lane to row 1 — window 2 re-performed line 1 while row 2
  * conditioned nothing).
+ *
+ * A crosser that ENDS at or before the window's first visible frame
+ * owns no lane there: no delivered frame of the window hears it — its
+ * whole overlap is the carry head, which the assembly trims. A clip
+ * is conditioned by the windows it is heard in; its overlay and its
+ * duck span do not change.
  *
  * @param clips the parsed audio_clips rows, doc frames
  * @param spanStart the window's doc span start (frames)
