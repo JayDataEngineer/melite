@@ -1,6 +1,6 @@
 ---
 name: edit
-description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, one staged PNG resized in-graph, or the user's own per-frame mask video length-matched against the clip), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. The five legacy edit names (replace, repair, extend, refine, upscale) do not stay as doors: a doc stating one composes through to its cell here, and an unstated dial refuses loud (never a silent drop). NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
+description: "The video-edit matrix on the h3-timeline: ONE bag whose dials state the cell — mask source (per-frame SAM3 region, whole frame, one staged PNG resized in-graph, or the user's own per-frame mask video length-matched against the clip), identity anchors (the source itself, or a still + mannequin pair), and the denoise pole. replace, repair, extend (the extension), refine and upscale are five preset CELLS of this one bag, not five doors: a doc stating one composes through to its cell here, and an unstated dial refuses loud (never a silent drop). NOT a new camera (Reshoot) — the refine pass (refine + scale), the continuation (continuation + extend_seconds), and the deferred 2x upscale of a prior chain run (chain_run) are dials ON this door."
 genre: video
 ---
 
@@ -42,8 +42,8 @@ identity, the garment read, never the recast), `whole-frame-restyle`
 (whole-frame × self × 0.6, under the boil floor), `refine-2x`
 (whole-frame × self × 0.32 with the refine switch ON at 2x, the
 learned upscale riding this edit's own latents in the same run),
-`extend-continuation` (whole-frame × self × 1, fresh seconds past
-the forced seam, state extend_seconds), and `upscale-2x` (the
+`extend-continuation` — THE EXTENSION (whole-frame × self × 1, fresh
+seconds past the forced seam, state extend_seconds), and `upscale-2x` (the
 deferred second pass of a PRIOR chain run: state chain_run, the
 recipe's pass-2 window serves). A cell stages its dials into the
 bag; cells COMPOSE — repair + upscale in the same run is both
@@ -63,7 +63,7 @@ It is NOT:
   matrix.
 
 It IS (the postures that read like doors but are DIALS here): a
-continuation (`continuation` + `extend_seconds`, the forced seam
+continuation — the EXTENSION (`continuation` + `extend_seconds`, the forced seam
 appends fresh full-denoise seconds), a no-reference second pass
 (`refine` + `scale`, the learned upscale riding this edit's own
 latents in the same run), and a deferred 2x upscale of a PRIOR run
@@ -151,8 +151,8 @@ loop — a different mechanism than the refine switch).
      window past the measured 141 f OOM REFUSES naming both cures
      (press the 2.33 s design window instead, or drop scale under 2;
      the frame fields are internal engine seats — never the cure).
-   - `continuation` (boolean, false) — THE CONTINUATION SWITCH: ON
-     turns the edit into an EXTEND — fresh full-denoise seconds
+   - `continuation` (boolean, false) — THE CONTINUATION SWITCH, the
+     EXTENSION's arm: ON turns the edit into an extension — fresh full-denoise seconds
      appended to the source's last frame (the forced seam), joined
      with the prior into one film. Rides blank mask + self anchors +
      denoise 1; every other cell REFUSES loud.

@@ -854,7 +854,10 @@ export function registerCard(ctx, comfy) {
         // THE RETRIEVAL WORDS (friction F1): repair/reshoot/extend name
         // the card's masked-edit arms — the discover seat's exact-tag
         // facet routes those queries here, never derived (make-card law).
-        tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit', 'repair', 'reshoot', 'extend'],
+        // replace / upscale / refine / extension are the SAME arms in the
+        // operator's own words (2026-11-23: "this should've been easily known
+        // that we had extend, replace, repair, upscale") — they route here too.
+        tags: ['video', 'generate', 'text-to-video', 'timeline', 'edit', 'repair', 'replace', 'reshoot', 'extend', 'extension', 'refine', 'upscale'],
         // THE CARD-OWNED CRAFT LAW (the rework's slice 6, H5's split): the
         // CONTENT line the load digest serves. The FORMATTING law of this
         // card is already card-owned and mechanical — prompts.yaml's

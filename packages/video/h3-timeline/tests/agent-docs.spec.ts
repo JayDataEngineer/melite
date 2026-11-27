@@ -29,9 +29,22 @@ describe("THE AGENT-DOCS WALL (the live law, where agents load it)", () => {
     expect(md).toMatch(/THE WORDS MOVE THE MOUTH/);
     expect(md).toMatch(/One lane per CLASS per window, owned by POSITION/);
     expect(md).toMatch(/YIELDS the second/);
-    expect(md).toMatch(/two same-class rows starting/);
+    expect(md).toMatch(/[Tt]wo same-class rows starting/);
     expect(md).toMatch(/CONTINUES the same line across both/);
     expect(md).toMatch(/DUCKS under a conditioned row at `duck_depth_db`/);
+    // THE TWO CASES THAT BIT (benchgen's MELITE-UPSTREAM-ISSUES D2/D3,
+    // 2026-11-27): the stated default was the one the code no longer
+    // uses, and the law stated two cases and omitted the two a film
+    // paid for — a line ending in the carry head re-spoke in the next
+    // window (F10), and the voice returning after the window's last
+    // row (F11). An extension carrying no row at all (F8) was the third.
+    expect(md).toMatch(/default −48 dB when a\ndialogue row rides the film, −14 dB otherwise/);
+    expect(md).toMatch(/state it to override/);
+    expect(md).toMatch(/LAST dialogue row\nHOLDS to the window's end/);
+    expect(md).toMatch(/only overlap is the\ntrimmed carry head[^]*owns NO lane/);
+    expect(md).toMatch(/never the line again/);
+    expect(md).toMatch(/An EXTENSION \(`continuation` \+\n`extend_seconds`\) carries rows the same way when it is ONE window/);
+    expect(md).toMatch(/a multi-window extension carries none and refuses the rows/);
     // (re-voiced 2026-11-21, the M-T1 promotion): a sole call plus
     // clips IS a film — the card mints the 51f silent tail itself.
     expect(md).toMatch(/including a single-call/);

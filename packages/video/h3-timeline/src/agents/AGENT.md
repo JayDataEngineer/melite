@@ -34,11 +34,26 @@ the run starts at the user's Run press, and no run tool is yours to
 call.
 
 The served mod arms are THREE: the **edit bag** (the ONE masked-edit door,
-`params.edit` — its preset cells cover the legacy names replace, repair,
-extend, refine, upscale), **reshoot** (the camera door; Edit↔Reshoot is
-the one live pair and arming both refuses loud), and **loras** (the
-co-arming adapter bag — it stacks WITH a door, never blocks one). One
-edit door per doc: empty every arm but the one posture you want.
+`params.edit` — its preset cells ARE replace, repair, extend, refine and
+upscale), **reshoot** (the camera door; Edit↔Reshoot is the one live pair
+and arming both refuses loud), and **loras** (the co-arming adapter bag —
+it stacks WITH a door, never blocks one). One edit door per doc: empty
+every arm but the one posture you want.
+
+**WHAT YOU ASK FOR → THE ARM.** The card carries all of these; none is a
+missing feature and none needs a graph built by hand:
+
+| you say | the arm | its seed (a stated dial wins) |
+|---|---|---|
+| repair | edit cell `repair-region` | static-png × self × denoise 0.32 — one region redrawn, everything else and the soundtrack held |
+| replace | edit cell `identity-swap` | region × still+mannequin × denoise 1 — a different person into the footage |
+| extend, the extension | edit cell `extend-continuation` | whole-frame × self × denoise 1 + `extend_seconds` — fresh seconds off the source's last frame, joined with the prior into one film |
+| refine, upscale this take | edit cell `refine-2x` | `refine: true, scale: 2` — the learned 2x on this run's own latents |
+| upscale a finished run | edit cell `upscale-2x` | `chain_run` + denoise 0.24 + steps 20 — always last |
+| re-angle, close-up, a B shot | **reshoot** (its own door) | orbit / tilt / dolly / zoom on the source clip's own pixels |
+
+Every one of them is reachable from the `mods:` line of `melite_load`; read
+`card:h3-timeline:edit` before composing any of them.
 
 `calls`, `audio_clips`, and `keyframes` are deliberately absent from the loaded
 params listing — they are compose inputs this card's timeline owns, not
@@ -152,16 +167,27 @@ the row is dialogue. For example:
 THE WORDS MOVE THE MOUTH. One lane per CLASS per window, owned by POSITION:
 the row that STARTS inside a window owns its class lane there. A row crossing a
 window seam CONTINUES the same line across both windows, but YIELDS the second
-window's lane to a row that starts inside it; two same-class rows starting
-inside ONE window REFUSE at compose (end the first inside the window, merge the
-rows, or move the seam). A line's words are stated ONCE: the window that HEARS
+window's lane to a row that starts inside it; a row whose only overlap is the
+trimmed carry head (the generation overlap the assembly cuts away) owns NO lane
+in the next window — that window is told the line ended and nobody speaks after
+it, never the line again. Two same-class rows starting inside ONE window REFUSE
+at compose (end the first inside the window, merge the rows, or move the seam —
+one line per window is the measured posture; sequential same-class starters are
+a stated limit, not an omission). An EXTENSION (`continuation` +
+`extend_seconds`) carries rows the same way when it is ONE window (≤ 15.08 s):
+counted from the first appended frame, pinned, ducked and mixed over the
+appended seconds; a multi-window extension carries none and refuses the rows. A line's words are stated ONCE: the window that HEARS
 the take from its head carries the timed line; a window that picks the take up
 mid-way is told the voice already speaks and never restarts the line (its
 conditioning slice still starts where the take has reached). The same holds for
 an SFX row: the window that owns the event's onset states it at that onset, a
 window that picks it up mid-way hears it marked as already under way — never a
 second strike. The generated voice
-DUCKS under a conditioned row at `duck_depth_db` (default -14dB, range -48–0).
+DUCKS under a conditioned row at `duck_depth_db` (default −48 dB when a
+dialogue row rides the film, −14 dB otherwise — the depth follows the reason;
+state it to override, range −48–0), and the duck of a window's LAST dialogue row
+HOLDS to the window's end: the voice that rises after the last word is the
+ghost the mix holds down.
 Place the row with `start_frame` and
 `dur_frames` in film coordinates. Optional `in_frames` = the SOURCE in-point
 (doc frames): where in the file the clip starts — omit it and the clip plays
