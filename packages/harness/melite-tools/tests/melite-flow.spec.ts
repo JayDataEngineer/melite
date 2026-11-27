@@ -4005,4 +4005,21 @@ describe('B2 — the start timeout recovers the landed run (never a blind re-pre
     )
     assert.equal(seen.calls.some((c) => c.lane === 'runsList'), false, 'no recovery read on a plain transport death')
   })
+
+  // benchgen's MELITE-UPSTREAM-ISSUES B2 (2026-11-27): five stages
+  // exceeded 200 s before an answer came back — the harness's own tool
+  // window ended the call, so NO face could speak (the two arms above
+  // need the call to return). The one seat that reaches the operator
+  // before the press is the verb's own description: it states the
+  // many-stage window law, the ledger read, and that a re-press adopts
+  // (drains, never doubles). A description that drops the sentence
+  // reds here — the only judge a window-killed call can have.
+  test('the verb\'s description teaches the many-stage window law before the press (ledger_tail first; a re-press drains, never doubles)', () => {
+    const tool = meliteFlow(fakeEstate({}))
+    const desc = String(tool.description)
+    assert.match(desc, /MANY-STAGE bench pass .* can run past the tool\'s own window/, 'the window law is stated: ' + desc.slice(0, 200))
+    assert.match(desc, /no answer arrives but the starts keep landing on the queue/, 'the law names what keeps happening')
+    assert.match(desc, /read ledger_tail \(or run_status\) for what landed before anything else/, 'the ledger read is the first cure')
+    assert.match(desc, /a re-press adopts every live run and skips settled rows, so it drains the tail and never doubles a render/, 'the re-press is named safe — adoption, never a double')
+  })
 })

@@ -1800,6 +1800,10 @@ export function meliteFlow(estate: Estate, press?: PressWindow): ToolDefinition 
       + 'long render returns status pending WITH the run_id — the run is durable on the queue, poll with run_status. '
       + 'A pending bench press is RE-PRESSED to drain its tail: a row that already owns a live run is ADOPTED '
       + '(observed, never re-sent) and settled rows skip, so the re-press is the drain verb, never a double. '
+      + 'A MANY-STAGE bench pass composes and starts each stage in turn and can run past the tool\'s own window '
+      + '(five stages measured over 200 s before an answer, 2026-11-25): no answer arrives but the starts keep '
+      + 'landing on the queue — read ledger_tail (or run_status) for what landed before anything else; a re-press '
+      + 'adopts every live run and skips settled rows, so it drains the tail and never doubles a render. '
       + 'One active run machine-wide.',
     // D-7 — the wedge backstop: the press budget (~110 s) plus the
     // stamp-back takes bound the healthy settle well inside this; the
