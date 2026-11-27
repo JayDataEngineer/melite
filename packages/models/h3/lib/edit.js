@@ -362,7 +362,7 @@ export function renderH3Edit(entry, mask, reference, p, facts, g, runId) {
     const clipsRaw = p['audio_clips'];
     const clipsOnEdit = Array.isArray(clipsRaw) ? clipsRaw.length : 0;
     if (clipsOnEdit > 0 && seamShots === null) {
-        throw new Error(`h3-timeline edit: audio_clips ride the FILM path — this single-window edit press carries ${clipsOnEdit} row${clipsOnEdit === 1 ? '' : 's'} the pass cannot condition on (measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched). Add a second call to author a film, or press the edit first and place the line on the film after (a window's mouth is free — the known 2x sync risk)`);
+        throw new Error(`h3-timeline edit: audio_clips ride the FILM path — this single-window edit press carries ${clipsOnEdit} row${clipsOnEdit === 1 ? '' : 's'} the pass cannot condition on (measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched). Add a second call to author a film, continue the clip with the row (the continuation door carries audio_clips: one window, ≤ 15.08 s, the line pinned and mixed over the appended seconds), or press the edit first and place the line on the film after (a window's mouth is free — the known 2x sync risk)`);
     }
     // ── THE EDIT-CHAIN LATTICE PRE-JUDGE (defect board D-24,
     // 2026-11-18: the edit chain's plan node judges every shot's

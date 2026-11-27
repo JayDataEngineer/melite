@@ -107,6 +107,44 @@ export interface FilmMixInput {
  * @param genStart the window's generation start (spanStart − carry; a clip starting in the carry head belongs to the previous window's film seat, so it counts as a crosser here)
  * @returns per class, the winning clip's index into `clips` (absent = the class conditions this window through no clip) */
 export declare function chooseLaneClips(clips: readonly FilmMixClip[], spanStart: number, spanEnd: number, genStart: number): Partial<Record<FilmMixClipClass, number>>;
+/** One window's conditioning stamp for a lane — the slice the model
+ *  hears, the delay that places it, and the two predicates the prompt
+ *  walk reads. */
+export interface LaneStamp {
+    readonly src: string;
+    /** the SOURCE in-point: the conditioning slice starts in_frames
+     *  into the source, exactly where the pristine overlay starts — the
+     *  model hears the segment the film plays. */
+    readonly slice_start_seconds: number;
+    readonly slice_duration_seconds: number;
+    /** the head silence that places the slice, from the window's
+     *  GENERATION start (the carry head included). */
+    readonly delay_seconds: number;
+    readonly text: string;
+    /** the take's head sits inside this window's generation span — a
+     *  slice at the row's in-point is what the model hears first. */
+    readonly fromHead: boolean;
+    /** the row ENDS at or before the window's span end — the line's
+     *  last word falls inside this window. */
+    readonly endsHere: boolean;
+}
+/** THE STAMPS of one window — the lane law's winners (chooseLaneClips)
+ *  turned into the pin arithmetic: the window's generation render
+ *  starts at spanStart − carry (the model hears the whole generation
+ *  span); a clip sounds at generation offset (start − genStart) from
+ *  its own source offset (genStart − start); the slice covers the
+ *  overlap with the window's span [spanStart, spanEnd). ONE CLOCK:
+ *  seconds speak the fps the caller books the doc at (never a /24
+ *  literal beside a 16fps film). Both callers drive it — the film
+ *  loop's conditioning stamps and the extension's single window — so
+ *  the stamps and the pins cannot disagree.
+ *  @param clips the parsed rows
+ *  @param spanStart the window's first visible frame
+ *  @param spanEnd the window's end frame (exclusive)
+ *  @param genStart the window's generation start (spanStart − carry)
+ *  @param fps the doc clock
+ *  @returns the per-class stamps (absent where no row owns the lane) */
+export declare function laneStamps(clips: readonly FilmMixClip[], spanStart: number, spanEnd: number, genStart: number, fps: number): Partial<Record<FilmMixClipClass, LaneStamp>>;
 /** The duck span string — "start:end" at ms precision, ';'-joined. */
 export declare function formatDuckSpan(start: number, end: number): string;
 /** Per-window stanza seconds — THE compose-time windowSecs

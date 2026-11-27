@@ -27,7 +27,8 @@ import { saveAudio } from '@melite/comfyui-card-kit';
 import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT, outputNameTailOf } from './schema.js';
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
-import { chooseLaneClips, computeFilmMix, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
+import { computeFilmMix, laneStamps, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
+import { lanePromptText, speechLanguageOf } from './audioStamp.js';
 import { SECOND_PASS_WINDOW } from './secondPass.js';
 import { mountRefModBake } from './refmodBake.js';
 import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, bookSeconds, retimeRowsToRendered, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
@@ -383,6 +384,88 @@ export function concatSavedFilms(g, prefixes, after, out, opts = {}) {
         video: created.out(), filename_prefix: out, format: 'mp4', codec: 'h264',
     }).out();
 }
+/** THE FILM MIX NODE (Layer C, torch — the estate's own; the operator
+ *  law: the mix is ComfyUI's, never ffmpeg's): ONE owner for every
+ *  join that overlays rows over generated windows — the film tail
+ *  and the extension's fresh window. The manifest rendered verbatim:
+ *  every placement's source, film seat, duration, and class — doc
+ *  order kept (the node's two loops read the same order the retired
+ *  tail did). THE OVERLAY'S IN-POINT (the clipping lane): in_sec rides
+ *  only when the clip starts past the source head — a 0 in-point omits
+ *  the key, byte-identical to every manifest row composed before the
+ *  lane existed (the wired-row arm freezes that shape). A spelled
+ *  ('$name') src names a WIRED STAGE INPUT: the declared hop is a
+ *  MeliteAudioResample at FILM_AUDIO_RATE into the pack's optional
+ *  AUDIO seat wired_audio_k (rewriteSpells lands the producer's link
+ *  there, never a Load* file slot — the F17 class); a path row keeps
+ *  the staged-file handoff byte-identical (the estate boundary —
+ *  lawful, S3 freezes it). Seat overflow refuses loud, naming the row
+ *  and both cures — never a silent drop.
+ *  @param g the run's graph builder
+ *  @param manifest the film mix manifest (computeFilmMix)
+ *  @param clips the parsed rows, manifest.placements' clip indices
+ *  @param prefixes the mixed windows' SaveVideo prefixes, film order
+ *  @param after the boundary chain's final token (the ordering proof)
+ *  @param fps the DOC CLOCK the in-points convert at
+ *  @returns the mix node (out(0) AUDIO — the film's stem) */
+export function filmMixNode(g, manifest, clips, prefixes, after, fps) {
+    const wiredSeats = {};
+    let nextSeat = 0;
+    const mixRows = manifest.placements.map((pl) => {
+        const clip = clips[pl.clip];
+        const inSec = Math.round((clip.srcIn / fps) * 1000) / 1000;
+        const inField = inSec > 0 ? { in_sec: inSec } : {};
+        if (!isSpell(clip.src)) {
+            return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls, ...inField };
+        }
+        nextSeat += 1;
+        if (nextSeat > WIRED_CLIP_SEATS) {
+            throw new Error(`[h3-timeline] audio_clips[${pl.clip}] (${clip.cls}, src ${clip.src}) needs wired soundtrack seat ${nextSeat} but the film mix declares only ${WIRED_CLIP_SEATS} (wired_audio_1..${WIRED_CLIP_SEATS}) — wire fewer soundtrack producers, or raise WIRED_CLIP_SEATS in the melite-audio-nodes pack`);
+        }
+        wiredSeats[`wired_audio_${nextSeat}`] = g.node('MeliteAudioResample', {
+            audio: clip.src,
+            sample_rate: FILM_AUDIO_RATE,
+        }).out(0);
+        return { wired: nextSeat, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls, ...inField };
+    });
+    return g.node('MeliteFilmAudioMix', {
+        videos: prefixes.join(','),
+        after,
+        clips_json: JSON.stringify(mixRows),
+        ...wiredSeats,
+        duck_spans: manifest.duckSpanString,
+        music_duck_spans: manifest.musicDuckSpanString,
+        duck_db: manifest.duckDb,
+        film_seconds: manifest.filmSec,
+    });
+}
+/** THE AUDIO SLICE SEAT (the soundtrack merged-form wire): a spelled
+ *  src names a WIRED STAGE INPUT — it slices through
+ *  MeliteAudioTensorSlice.audio_tensor, a typed AUDIO socket the
+ *  merge rewrites (rewriteSpells lands the producer's link there),
+ *  never MeliteAudioSlice.audio — a Combo FILE seat validated against
+ *  the live input-dir listing, where a link would die at submit (the
+ *  F17 class). A path stamp keeps the file node byte-identical (the
+ *  estate boundary, the S7 arm freezes it). ONE owner for the film
+ *  windows and the extension's pin.
+ *  @param g the run's graph builder
+ *  @param src the row's source (a staged path or a '$name' spell)
+ *  @param startSeconds the source in-point
+ *  @param durationSeconds the slice length
+ *  @returns the slice's AUDIO output */
+export function audioSliceSeat(g, src, startSeconds, durationSeconds) {
+    return isSpell(src)
+        ? g.node('MeliteAudioTensorSlice', {
+            audio_tensor: src,
+            start_seconds: startSeconds,
+            duration_seconds: durationSeconds,
+        }).out(0)
+        : g.node('MeliteAudioSlice', {
+            audio: src,
+            start_seconds: startSeconds,
+            duration_seconds: durationSeconds,
+        }).out(0);
+}
 /** THE MERGED FILM: ONE prompt, N windows under `window${k}_`
  *  scopes (GraphBuilder.scoped), with real seam edges between scopes
  *  (the executor orders windows off the graph) and per-window
@@ -661,6 +744,35 @@ function renderH3Film(p, g, facts, model, runId) {
             sf = spans[i].start;
             ef = spans[i].end;
         }
+        // THE AUDIO CONDITIONING STAMPS (2026-09-21, generalized
+        // 2026-09-22 to the D-M-E lanes): every window whose generation
+        // span a clip rides HEARS that clip — one lane per CLASS, the
+        // lane law owned by chooseLaneClips (filmMix.ts): the clip that
+        // STARTS inside the window wins its class's lane; a crosser
+        // yields to it. A clip
+        // with no dur (or a sub-0.1s overlap) cannot size a slice and
+        // stays overlay-only. Computed BEFORE the stanza: a stamped
+        // window is a REFERENCE window (t4r) — the audio lanes only
+        // exist on that arm (the bed's own law: it too counts as a ref).
+        // THE STAMP (corrected 2026-09-22 while composing the
+        // proof film — the first cut sliced the source AT the timeline
+        // offset, so a clip starting mid-window conditioned the WRONG
+        // PART of the audio, immediately: window 1 of a seam-spanning
+        // dialogue heard the line's TAIL). The true law: the window's
+        // generation render starts at doc frame sf − carry (the carry
+        // head included — the model hears the whole generation span);
+        // the clip sounds at generation offset (clip.start − genStart)
+        // from its own source offset (genStart − clip.start). The
+        // stamp therefore carries BOTH: the SOURCE segment to slice
+        // [slice_start, +slice_dur) and the head silence (delay) that
+        // places it — the builder chains Slice → the pin at
+        // frame_idx = delay×24, fitted to the window's own generation
+        // length. ONE delay number feeds BOTH the pin and the prompt
+        // tag's clock — they cannot disagree.
+        // endsHere: the row ENDS at or before this window's span end — the
+        // line's last word falls inside this window (the F11 sentence and
+        // the ghost hold read it; a row running past the span end is
+        // continued by the next window and states no end here).
         const stamps = {};
         if (sf !== null && ef !== null && Number.isFinite(sf) && Number.isFinite(ef) && ef > sf) {
             const carry = i > 0 ? overlap : 0;
@@ -675,56 +787,17 @@ function renderH3Film(p, g, facts, model, runId) {
             // window 2's dialogue lane from the row that started there,
             // and window 2 re-performed line 1 while the real row
             // conditioned nothing.
-            const lanes = chooseLaneClips(renderedClips, sf, ef, genStart);
-            for (const cls of ['dialogue', 'sfx', 'music']) {
-                const ci = lanes[cls];
-                if (ci === undefined)
-                    continue;
-                const clip = renderedClips[ci];
-                const lo = Math.max(clip.start, genStart);
-                const hi = Math.min(clip.start + clip.dur, ef);
-                // ONE CLOCK (journey audit AUDIO-2): the stamps' seconds
-                // speak the DOC CLOCK — p.fps when stated, the schema row's
-                // default otherwise. The /24 literal stretched a 16fps
-                // film's dialogue and sfx slices by 1.5x (lip-sync drift,
-                // the audit's worst burn).
-                const stampFps = typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT;
-                const ms = (frames) => Math.round((frames / stampFps) * 1000) / 1000;
-                stamps[cls] = {
-                    src: clip.src,
-                    // the SOURCE in-point rides BOTH halves (the clipping
-                    // lane): the conditioning slice starts in_frames into the
-                    // source, exactly where the pristine overlay starts — the
-                    // model hears the segment the film plays.
-                    slice_start_seconds: ms(clip.srcIn + Math.max(0, genStart - clip.start)),
-                    slice_duration_seconds: ms(hi - lo),
-                    delay_seconds: ms(Math.max(0, clip.start - genStart)),
-                    text: clip.text,
-                    // the ONE predicate the prompt walk reads: the take's head
-                    // sits inside this window's generation span, so a slice at
-                    // the row's in-point is what the model hears first.
-                    fromHead: genStart <= clip.start,
-                    endsHere: clip.start + clip.dur <= ef,
-                };
-                // (§20: the conditioned set moved to filmMix.ts — the
-                // post-generation mix node derives it from the same stamp
-                // law. The stamps themselves stay: THIS window hears them.)
-            }
+            // ONE CLOCK (journey audit AUDIO-2): the stamps' seconds
+            // speak the DOC CLOCK — p.fps when stated, the schema row's
+            // default otherwise (the /24 literal stretched a 16fps film's
+            // dialogue and sfx slices by 1.5x — lip-sync drift). The
+            // arithmetic has ONE owner (filmMix.ts laneStamps): the
+            // extension's fresh window books the same stamps. (§20: the
+            // conditioned set moved to filmMix.ts — the post-generation
+            // mix node derives it from the same stamp law. The stamps
+            // themselves stay: THIS window hears them.)
+            Object.assign(stamps, laneStamps(renderedClips, sf, ef, genStart, typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT));
         }
-        // THE PROMPT FIELDS (the guide's law, one per lane): dialogue
-        // rides <d> tags — the exact words at the stamp's LOCAL time
-        // (MM:SS.mmm, the window's own clock), never translated or
-        // rewritten; this is the half the audio-only conditioning
-        // lacked: the audio pins the voice, the tag moves the mouth.
-        // SFX rides the soundscape field at its onset time (the model
-        // HEARS the blast and times the visual to it); music rides
-        // non_diegetic_music. Same delay number, same clock.
-        const stampClock = (t) => {
-            const mm = String(Math.floor(t / 60)).padStart(2, '0');
-            const ss = String(Math.floor(t % 60)).padStart(2, '0');
-            const mmm = String(Math.round((t % 1) * 1000)).padStart(3, '0');
-            return `${mm}:${ss}.${mmm}`;
-        };
         // ONE overall_soundscape FIELD per window (finding 11,
         // Commission 17, 2026-10-13): a window carrying both a dialogue
         // stamp and an sfx stamp once composed TWO fields with separate
@@ -734,113 +807,23 @@ function renderH3Film(p, g, facts, model, runId) {
         // then sfx — the historical append order) and ride a single
         // field; each sentence keeps its own lane clock (the one-clock
         // law trims a doubled clock off ONE text, never across lanes).
-        const soundscapeSentences = [];
-        if (stamps.dialogue !== undefined && stamps.dialogue.text !== '') {
-            // THE ROW-OWNS-THE-WORDS LAW (brief L1, 2026-11-20 — the
-            // heard-twice burn run-cba5d49f4131-f9f58337: the row's line
-            // at 2.67 s, the model's own reading 3.1–9.9 s, a duck that
-            // changed nothing): a window whose dialogue row owns the lane
-            // must not ALSO speak the words in its own text — the <d>
-            // spoken form in that window doubles the line. Refuse loud,
-            // naming the window and the cure; the spoken form belongs to
-            // films with NO row for the line (the dictionary's own
-            // advice, hardened at the door that knows the ownership).
-            if (/<d>\[[A-Za-z -]+\][^<]*<\/d>/.test(text)) {
-                throw new Error(`h3-timeline window ${k}: the call text carries a <d> spoken line while an audio_clips row owns this window's dialogue — ` +
-                    `the line would be heard twice (the row places the take; the model reads the text). ` +
-                    `Keep the call free of dialogue: the row is the only voice (SPOKEN-FORM's own advice, refused here where ownership is known)`);
-            }
-            const t = stampClock(stamps.dialogue.delay_seconds);
-            // SPEAKER-NEUTRAL (attempt-019 maker finding): the stamp once
-            // hard-coded "She says" — a plainly male harbourmaster got a
-            // female pronoun in his own mouth. The speaker is whoever the
-            // window shows; the stamp never genders them.
-            // SPEECH LANGUAGE (brief M-T2): the tag's bracket names the
-            // take's language — the doc's speech_language when stated,
-            // English otherwise. An unintended line at least lands in
-            // the named language, never a surprise one.
-            const speechLang = typeof p.speech_language === 'string' && p.speech_language.trim() !== ''
-                ? p.speech_language.trim()
-                : 'English';
-            // THE WORDS RIDE WHERE THE TAKE IS HEARD FROM ITS HEAD
-            // (2026-11-26, the operator's "audio being copied across
-            // windows"): the slice always continued correctly, the WORDS
-            // did not — a window whose generation starts late hears the take
-            // from `genStart − start` frames in, but the sentence handed it
-            // the WHOLE line, so the model re-spoke the line from its own
-            // frame 0 and that rendition, running `genStart − start` frames
-            // past the take's end, walked out of the duck span and played
-            // the line's tail a second time. A window that hears the take
-            // mid-line is told the truth instead: the voice continues, the
-            // mouth is already articulating, and the line never restarts.
-            // THE LINE'S END IS STATED (F11, 2026-11-27 — run-1fe005f28233-12ab5a02:
-            // "It wasn't a code." heard at 7.62–9.56 s and again at 11.0–12.0 s):
-            // the sentence stated the line's start and never its end, so
-            // after the row the model kept its own reading of the line going
-            // at full level. A row that ENDS inside this window is told
-            // where, on the window's own clock — the same clock as the start
-            // — and that nobody speaks after it. A row that runs past the
-            // window's end is continued by the next window and says nothing
-            // here (a false end would silence a line still being spoken).
-            // The film track's duck holds over the same frames
-            // (computeFilmMix's ghost hold): the prompt asks, the mix guarantees.
-            const lineEnd = stamps.dialogue.delay_seconds + stamps.dialogue.slice_duration_seconds;
-            const lineEndSentence = stamps.dialogue.endsHere
-                ? `\nThe line ends at ${stampClock(lineEnd)}; after it nobody speaks — room tone only.`
-                : '';
-            if (!stamps.dialogue.fromHead) {
-                soundscapeSentences.push(`At ${t} the same voice is already speaking: the line began before this shot, so the speaker is mid-sentence — mouth articulating the continuing voice; never restart the line.${lineEndSentence}`);
-            }
-            else {
-                soundscapeSentences.push(`At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[${speechLang}] ${stamps.dialogue.text}</d>${lineEndSentence}`);
-            }
-        }
-        if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
-            // THE ONE-CLOCK LAW (2026-09-24): an authored sfx text that already
-            // opens with its own "At MM:SS.mmm," clock must not carry two clocks —
-            // the stamp's clock is canonical, the authored one is trimmed.
-            const sfxText = stamps.sfx.text
-                .replace(/^\s*at\s+\d{1,2}:\d{2}(?:\.\d{1,3})?\s*[,-]\s*/i, '');
-            // THE SAME LAW FOR THE EVENT (2026-11-26): an sfx row the window
-            // picks up mid-way is a sound already under way — stating it at
-            // its own onset clock would re-strike the event at 00:00. The
-            // event stays NAMED (the model times the visual to it) and is
-            // marked as continuing, never as a fresh onset.
-            soundscapeSentences.push(stamps.sfx.fromHead
-                ? `At ${stampClock(stamps.sfx.delay_seconds)}, ${sfxText}`
-                : `At ${stampClock(stamps.sfx.delay_seconds)}, already under way from before this shot: ${sfxText} (the event continues; no fresh onset)`);
-        }
-        if (soundscapeSentences.length > 0) {
-            text = text.replace(/\s+$/, '') + '\n\noverall_soundscape:\n' + soundscapeSentences.join('\n');
-        }
-        // MUSIC stays one sentence per window it rides, crossers included:
-        // a score is a STATE, not an onset — restating "a low synth pad"
-        // is what keeps the bed the same bed across a seam. There is no
-        // performed word to copy (the 2026-11-26 law is about takes and
-        // events, never about the score's description).
-        if (stamps.music !== undefined && stamps.music.text !== '') {
-            text = text.replace(/\s+$/, '') +
-                `\n\nnon_diegetic_music:\n${stamps.music.text}`;
-        }
-        // THE NO-SPEECH INDICATOR (2026-09-24, the operator's gibberish
-        // law, paid for on the BRIEF9 films): unless the model is told
-        // 'no speech' OR given speech-carrying audio, it INVENTS random
-        // gibberish dialogue. A window with no dialogue stamp and no
-        // live ref audios is exactly that window — an sfx/music bed does
-        // NOT count (the first BRIEF9 window carried the bed on the sfx
-        // lane and still gibberished; only the dialogue-conditioned
-        // window came out clean). The card stamps the indicator itself:
-        // model memory is not a seat. Ref audios count as audio input
-        // only when the door guard leaves them live (an unstamped
-        // window); an authored indication of any spelling ('no speech',
-        // 'no dialogue', 'no voice') is honored, never doubled.
+        // THE PROMPT FIELDS (the guide's law, one per lane) have ONE
+        // owner — audioStamp.ts lanePromptText: the sentences, their
+        // lane order, the row-owns-the-words refusal and the no-speech
+        // indicator. The extension's fresh window rides the same
+        // assembly for the same row (F8, 2026-11-27).
+        const speechLang = speechLanguageOf(p);
+        // Ref audios count as audio input only when the door guard
+        // leaves them live (an unstamped window): a dialogue/sfx-pinned
+        // window mutes the rail — the pins own that window's audio
+        // conditioning (the door guard below).
         const voicePinnedHere = stamps.dialogue !== undefined || stamps.sfx !== undefined;
         const hearsRefAudio = !voicePinnedHere
             && (wireList(p.ref_audios).length > 0 || wireList(rb.audios).length > 0);
-        if (stamps.dialogue === undefined && !hearsRefAudio && !/\bno[\s_-]*(speech|dialogue|voice)/i.test(text)) {
-            text = text.replace(/\s+$/, '') +
-                '\n\noverall_soundscape:\nNo speech or dialogue in this shot — ambient and effects only; nobody speaks on screen and there is no voice-over.';
-        }
+        text = lanePromptText(text, stamps, {
+            speechLang, hearsRefAudio,
+            where: `window ${k}`, textSeat: 'the call text',
+        });
         const stanza = { ...p, ...knobs, prompt: text, k };
         // PER-CALL RESOLUTION (brief M-T6, 2026-11-20): a call that
         // states a tier renders at it; a draft-pinned doc renders every
@@ -1181,43 +1164,7 @@ function renderH3Film(p, g, facts, model, runId) {
         // handoff byte-identical (the estate boundary — lawful, S3
         // freezes it). Seat overflow refuses loud, naming the row and
         // both cures — never a silent drop.
-        const wiredSeats = {};
-        let nextSeat = 0;
-        const mixRows = manifest.placements.map((pl) => {
-            const clip = renderedClips[pl.clip];
-            // THE OVERLAY'S IN-POINT (the clipping lane): in_sec rides only
-            // when the clip starts past the source head — a 0 in-point omits
-            // the key, byte-identical to every manifest row composed before
-            // the lane existed (the wired-row arm freezes that shape).
-            const inSec = Math.round((clip.srcIn / (typeof p.fps === 'number' && p.fps > 0 ? p.fps : DOC_FPS_DEFAULT)) * 1000) / 1000;
-            const inField = inSec > 0 ? { in_sec: inSec } : {};
-            if (!isSpell(clip.src)) {
-                return { src: clip.src, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls, ...inField };
-            }
-            nextSeat += 1;
-            if (nextSeat > WIRED_CLIP_SEATS) {
-                throw new Error(`[h3-timeline] audio_clips[${pl.clip}] (${clip.cls}, src ${clip.src}) needs wired soundtrack seat ${nextSeat} but the film mix declares only ${WIRED_CLIP_SEATS} (wired_audio_1..${WIRED_CLIP_SEATS}) — wire fewer soundtrack producers, or raise WIRED_CLIP_SEATS in the melite-audio-nodes pack`);
-            }
-            wiredSeats[`wired_audio_${nextSeat}`] = g.node('MeliteAudioResample', {
-                audio: clip.src,
-                sample_rate: FILM_AUDIO_RATE,
-            }).out(0);
-            return { wired: nextSeat, start_sec: pl.filmSec, dur_sec: pl.durSec, class: pl.cls, ...inField };
-        });
-        const mix = g.node('MeliteFilmAudioMix', {
-            videos: windowPrefixes.join(','),
-            after,
-            // the manifest rendered verbatim: every placement's source,
-            // film seat, duration, and class — doc order kept (the node's
-            // two loops read the same order the retired tail did); spelled
-            // rows ride wired: k + the wired_audio_k seats above
-            clips_json: JSON.stringify(mixRows),
-            ...wiredSeats,
-            duck_spans: manifest.duckSpanString,
-            music_duck_spans: manifest.musicDuckSpanString,
-            duck_db: manifest.duckDb,
-            film_seconds: manifest.filmSec,
-        });
+        const mix = filmMixNode(g, manifest, renderedClips, windowPrefixes, after, docFps);
         // THE LOUDNESS METER (§39's owed Layer C node, 2026-09-25): a
         // passthrough tap between the mix and its consumers — the film's
         // integrated loudness (BS.1770-4, K-weighted + gated) rides the
@@ -1854,30 +1801,19 @@ function renderH3Window(p, g, facts, model, runId) {
             // would die at submit (the F17 class). A path stamp keeps the
             // file node byte-identical (the estate boundary, the S7 arm
             // freezes it).
-            const sliceSeat = (src, startSeconds, durationSeconds) => isSpell(src)
-                ? g.node('MeliteAudioTensorSlice', {
-                    audio_tensor: src,
-                    start_seconds: startSeconds,
-                    duration_seconds: durationSeconds,
-                }).out(0)
-                : g.node('MeliteAudioSlice', {
-                    audio: src,
-                    start_seconds: startSeconds,
-                    duration_seconds: durationSeconds,
-                }).out(0);
             const stamp = read('dialogue_slice');
             if (stamp !== null) {
-                dialogueAudio = sliceSeat(stamp.src, stamp.slice_start_seconds, stamp.slice_duration_seconds);
+                dialogueAudio = audioSliceSeat(g, stamp.src, stamp.slice_start_seconds, stamp.slice_duration_seconds);
                 dialogueFrameIdx = Math.round(stamp.delay_seconds * pinFps);
             }
             const sfxStamp = read('sfx_slice');
             if (sfxStamp !== null) {
-                sfxAudio = sliceSeat(sfxStamp.src, sfxStamp.slice_start_seconds, sfxStamp.slice_duration_seconds);
+                sfxAudio = audioSliceSeat(g, sfxStamp.src, sfxStamp.slice_start_seconds, sfxStamp.slice_duration_seconds);
                 sfxFrameIdx = Math.round(sfxStamp.delay_seconds * pinFps);
             }
             const musicStamp = read('music_slice');
             if (musicStamp !== null) {
-                musicAudio = sliceSeat(musicStamp.src, musicStamp.slice_start_seconds, musicStamp.slice_duration_seconds);
+                musicAudio = audioSliceSeat(g, musicStamp.src, musicStamp.slice_start_seconds, musicStamp.slice_duration_seconds);
                 musicFrameIdx = Math.round(musicStamp.delay_seconds * pinFps);
             }
         }

@@ -493,7 +493,7 @@ export function renderH3Edit(
   const clipsOnEdit = Array.isArray(clipsRaw) ? clipsRaw.length : 0
   if (clipsOnEdit > 0 && seamShots === null) {
     throw new Error(
-      `h3-timeline edit: audio_clips ride the FILM path — this single-window edit press carries ${clipsOnEdit} row${clipsOnEdit === 1 ? '' : 's'} the pass cannot condition on (measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched). Add a second call to author a film, or press the edit first and place the line on the film after (a window's mouth is free — the known 2x sync risk)`,
+      `h3-timeline edit: audio_clips ride the FILM path — this single-window edit press carries ${clipsOnEdit} row${clipsOnEdit === 1 ? '' : 's'} the pass cannot condition on (measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched). Add a second call to author a film, continue the clip with the row (the continuation door carries audio_clips: one window, ≤ 15.08 s, the line pinned and mixed over the appended seconds), or press the edit first and place the line on the film after (a window's mouth is free — the known 2x sync risk)`,
     )
   }
 

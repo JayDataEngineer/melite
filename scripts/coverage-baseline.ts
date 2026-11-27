@@ -158,6 +158,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/models/h3-image-edit/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
   '**/packages/models/h3-image/src/actions.ts': { statements: 95.83, branches: 90, functions: 50, lines: 95.83 },
   '**/packages/models/h3-image/src/index.ts': { statements: 75, branches: null, functions: 50, lines: 66.67 },
+  '**/packages/models/h3/src/audioStamp.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/models/h3/src/chainEdit.ts': { statements: 99.01, branches: 97.96, functions: 93.75, lines: 98.92 },
   // the video-edit matrix seat (timeline rework stage 2a): 98.18 /
   // 98.27 / 100 / 98.14 measured over edit-matrix.spec.ts — every

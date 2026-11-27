@@ -59,6 +59,7 @@ const FILES: string[] = [];
 const BASELINE: Record<string, number> = {
   "src/timelineContract.ts": 0,
   "src/actions.ts": 6,
+  "src/audioStamp.ts": 0, // 2026-11-27 (F8): the dialogue stamp's prompt half, one owner for the film loop and the extension — born documented, stays documented
   "src/chainEdit.ts": 1,
   "src/chainUpscale.ts": 1,
   "src/edit.ts": 1,

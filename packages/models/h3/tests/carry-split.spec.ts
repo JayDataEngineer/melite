@@ -595,10 +595,10 @@ describe("D-33 THE SILENT-INERT AUDIO GUARD (defect board 2026-11-18: the edit d
     return out(g);
   };
 
-  it("THE GUARD: audio_clips on a single-window edit press refuse loud — naming the measured inertness and both lawful doors", () => {
+  it("THE GUARD: audio_clips on a single-window edit press refuse loud — naming the measured inertness and every lawful door", () => {
     assert.throws(
       () => composeEdit(EDIT({}), { ...FILM, audio_clips: [{ id: "l1", name: "line1.wav", src: "data:audio/wav;base64,AAA", start_frame: 4, dur_frames: 91, text: "four?" }] }),
-      /audio_clips ride the FILM path — this single-window edit press carries 1 row the pass cannot condition on \(measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched\)\. Add a second call to author a film, or press the edit first and place the line on the film after \(a window's mouth is free — the known 2x sync risk\)/,
+      /audio_clips ride the FILM path — this single-window edit press carries 1 row the pass cannot condition on \(measured inert at the window: the mouth re-renders from source pixels at denoise, keep_audio muxes the soundtrack untouched\)\. Add a second call to author a film, continue the clip with the row \(the continuation door carries audio_clips: one window, ≤ 15\.08 s, the line pinned and mixed over the appended seconds\), or press the edit first and place the line on the film after \(a window's mouth is free — the known 2x sync risk\)/,
       "the silent no-op is dead: the door states what the rows do (nothing) and where they belong",
     );
   });

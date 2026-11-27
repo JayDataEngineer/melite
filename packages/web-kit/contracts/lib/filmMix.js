@@ -174,6 +174,45 @@ export function chooseLaneClips(clips, spanStart, spanEnd, genStart) {
     }
     return lanes;
 }
+/** THE STAMPS of one window — the lane law's winners (chooseLaneClips)
+ *  turned into the pin arithmetic: the window's generation render
+ *  starts at spanStart − carry (the model hears the whole generation
+ *  span); a clip sounds at generation offset (start − genStart) from
+ *  its own source offset (genStart − start); the slice covers the
+ *  overlap with the window's span [spanStart, spanEnd). ONE CLOCK:
+ *  seconds speak the fps the caller books the doc at (never a /24
+ *  literal beside a 16fps film). Both callers drive it — the film
+ *  loop's conditioning stamps and the extension's single window — so
+ *  the stamps and the pins cannot disagree.
+ *  @param clips the parsed rows
+ *  @param spanStart the window's first visible frame
+ *  @param spanEnd the window's end frame (exclusive)
+ *  @param genStart the window's generation start (spanStart − carry)
+ *  @param fps the doc clock
+ *  @returns the per-class stamps (absent where no row owns the lane) */
+export function laneStamps(clips, spanStart, spanEnd, genStart, fps) {
+    const lanes = chooseLaneClips(clips, spanStart, spanEnd, genStart);
+    const ms = (frames) => Math.round((frames / fps) * 1000) / 1000;
+    const out = {};
+    for (const cls of ['dialogue', 'sfx', 'music']) {
+        const ci = lanes[cls];
+        if (ci === undefined)
+            continue;
+        const clip = clips[ci];
+        const lo = Math.max(clip.start, genStart);
+        const hi = Math.min(clip.start + clip.dur, spanEnd);
+        out[cls] = {
+            src: clip.src,
+            slice_start_seconds: ms(clip.srcIn + Math.max(0, genStart - clip.start)),
+            slice_duration_seconds: ms(hi - lo),
+            delay_seconds: ms(Math.max(0, clip.start - genStart)),
+            text: clip.text,
+            fromHead: genStart <= clip.start,
+            endsHere: clip.start + clip.dur <= spanEnd,
+        };
+    }
+    return out;
+}
 /** The duck span string — "start:end" at ms precision, ';'-joined. */
 export function formatDuckSpan(start, end) {
     return `${round3(start)}:${round3(end)}`;

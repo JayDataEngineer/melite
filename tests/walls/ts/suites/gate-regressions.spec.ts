@@ -848,7 +848,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // lib/aux-session-log.js joins (the drift-① cure's new emission
   // module — the aux-call plugin record writer, melite-tools' lib).
   // Zero deletions; --diff-filter=A is exactly this one file.
-  const LIB_CENSUS_PIN = 683;
+  // Two emissions join the plane: lib/engineQuiet.js (the manage
+  // quiet law's one owner — the pin missed it at its own landing) and
+  // lib/audioStamp.js (the h3 lane-stamp sentences' one owner — the
+  // film loop and the extension read the same words). Zero deletions;
+  // --diff-filter=A is exactly these two files.
+  const LIB_CENSUS_PIN = 685;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {

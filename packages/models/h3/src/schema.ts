@@ -911,7 +911,25 @@ export function schema(v: unknown): Record<string, unknown> {
   // law (RunRecipeEngine.tsx) judges the SAME contract set — one
   // home, timelineContract.ts — so a row either door refuses is
   // refused at both.
-  if (variant !== 't4_chain') {
+  // THE CONTINUATION'S MIX (F8, 2026-11-27): a continuation carrying
+  // audio_clips rows composes ONE MeliteFilmAudioMix over the
+  // appended seconds (extend.ts) and reads duck_depth_db there — the
+  // knob FIRES on that lane, so the gate admits it when a
+  // continuation bag and rows ride the doc together. The gate's law
+  // is "refuse what composes into no node"; rows without a
+  // continuation (the single-window press the gate was built for)
+  // and a continuation without rows keep the refusal verbatim. (The
+  // extend door itself refuses a multi-window continuation with rows
+  // before any read — the knob never reaches a mix that is not
+  // composed.)
+  const entriesOf = (k: string): unknown[] => { const v = out[k]; return Array.isArray(v) ? v : [] }
+  const bagArmed = (k: string): boolean => entriesOf(k).length > 0
+  const continuationArmed = bagArmed('extend')
+    || entriesOf('edit').some(
+      (e) => typeof e === 'object' && e !== null && (e as Record<string, unknown>)['continuation'] === true,
+    )
+  const rowsOnContinuation = bagArmed('audio_clips') && continuationArmed
+  if (variant !== 't4_chain' && !rowsOnContinuation) {
     const b = bad(FILM_ONLY_KEYS)
     if (b.length) throw new Error(`h3_window(${variant}): film-only inject keys: ${b.join(', ')}`)
   }

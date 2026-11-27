@@ -152,6 +152,14 @@ Each window renders its own audio. Sound must EVOLVE, not restart:
 - Music: if you use `non_diegetic_music`, repeat the same music
   description in every window — it regenerates per window, so describe
   the TRACK (instrumentation, tempo), not the moment.
+- An EXTENSION (the edit door's continuation, one window ≤ 15.08 s)
+  carries `audio_clips` rows the same way: the row's take is pinned
+  into the appended seconds, its words ride the prompt, and the row
+  overlays them with the generated voice ducked under it. Count
+  `start_frame` from the extension's FIRST frame; a row that starts
+  past or runs past the delivered frames refuses (never cut mid-word
+  at the join); one row per class per window. A longer continuation
+  with rows is a film — author calls.
 - A negation in the soundscape binds the class it names, and ONLY that
   class: "no dialogue" suppresses SPEECH while the ambient bed still
   renders — a "no dialogue" window lands with full ambience and no

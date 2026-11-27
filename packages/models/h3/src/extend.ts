@@ -57,6 +57,28 @@
 //     by file — in-chain seams assemble in-chain; raw boundaries
 //     join by file.
 //
+// THE SPOKEN LINE (F8, 2026-11-27 — the benchgen film's first
+// block: "an extension cannot carry a spoken line"): the film lane's
+// audio_clips rows were read by the film loop alone, so a
+// continuation's appended seconds had no door to a pinned voice. The
+// continuation's ONE window now carries the film lane's own law end
+// to end — the rows parse through parseFilmMixClips, the lane law
+// (chooseLaneClips) picks one row per class, laneStamps books the
+// pin, the prompt rides the same sentences (lanePromptText: the
+// words at the stamp's clock, the line's end stated, the row owns
+// the words), the pins land on the window's latent after the forced
+// seam (dialogue → sfx → music, the film loop's order), and the mix
+// node overlays the rows over the appended seconds with the
+// generated voice ducked under them. THE EXTENSION CLOCK: frame 0 is
+// the appended seconds' first frame (the forced seam — the prior's
+// last frame) at 24 fps; a row's start_frame counts from there, and
+// a row that would start past or run past the delivered frames
+// refuses loud (never a row cut mid-word at the join). The chain
+// composes its body ONCE inside the loop and the plan carries
+// prompts only, so rows ride a single window (≤ 362f); a longer
+// continuation with rows refuses, naming the film door. Without
+// rows the arm's graph is byte-frozen.
+//
 // THE WINDOW COMPOSITION DOOR: stated seconds ≤ one window (362f)
 // land on the 22+17k grid verbatim (the single-window law). Beyond
 // it, the door composes N uniform grid-legal windows under the
@@ -73,7 +95,10 @@
 // concatSavedFilms).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { H3Facts } from './actions.js'
-import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js'
+import { audioSliceSeat, chainSaveBoundaries, concatSavedFilms, filmJoinAudio, filmMixNode } from './actions.js'
+import { lanePromptText, speechLanguageOf } from './audioStamp.js'
+import { chooseLaneClips, computeFilmMix, laneStamps, parseFilmMixClips } from './filmMix.js'
+import type { FilmMixClipClass, LaneStamp } from './filmMix.js'
 import {
   assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from './timelineContract.js'
 import { outputNameTailOf } from './schema.js'
@@ -239,6 +264,73 @@ export function renderH3Extend(
     roster = lines
   }
 
+  // ── THE SPOKEN LINE (header): the rows parse and judge HERE, at
+  // the door that knows the composition ──
+  const rowsRaw = p['audio_clips']
+  if (rowsRaw !== undefined && !Array.isArray(rowsRaw)) {
+    throw new Error(
+      `h3-timeline extend: audio_clips is stated as ${JSON.stringify(rowsRaw)} — the rows are a list ({src, start_frame, dur_frames, text?, class?, in_frames?}); a wrong-typed value never silently reads as unbound`,
+    )
+  }
+  const rows = parseFilmMixClips(rowsRaw ?? [])
+  const delivered = composition.deliveredFrames
+  if (rows.length > 0) {
+    if (composition.windows > 1) {
+      throw new Error(
+        `h3-timeline extend: audio_clips states ${rows.length} row${rows.length === 1 ? '' : 's'} but ${statedFrames} frames compose ${composition.windows} windows — the chain composes its body once inside the loop and the plan carries prompts only, so a row's pin and words cannot be placed on one window of the chain; carry the rows in ONE window (extend_seconds ≤ ${(GRID_MAX_FRAMES / 24).toFixed(2)} s = ${GRID_MAX_FRAMES} f), or author the continuation as a film (calls + audio_clips)`,
+      )
+    }
+    for (const [ci, row] of rows.entries()) {
+      if (row.start < 0) {
+        throw new Error(
+          `h3-timeline extend: audio_clips[${ci}] (${row.cls}, src ${row.src}) starts at frame ${row.start} — start_frame counts from the appended seconds' first frame (0) and is never negative`,
+        )
+      }
+      if (row.start >= delivered) {
+        throw new Error(
+          `h3-timeline extend: audio_clips[${ci}] (${row.cls}, src ${row.src}) starts at frame ${row.start} but the extension delivers ${delivered} frames — the row would place nothing; keep start_frame under ${delivered} or extend_seconds ≥ ${((row.start + 1) / 24).toFixed(2)} s`,
+        )
+      }
+      if (row.dur > 0 && row.start + row.dur > delivered) {
+        throw new Error(
+          `h3-timeline extend: audio_clips[${ci}] (${row.cls}, src ${row.src}) ends at frame ${row.start + row.dur} but the extension delivers ${delivered} frames — the row would be cut mid-word at the join; extend_seconds ≥ ${((row.start + row.dur) / 24).toFixed(2)} s (one window ≤ ${(GRID_MAX_FRAMES / 24).toFixed(2)} s), shorten dur_frames, or move the row earlier`,
+        )
+      }
+    }
+    // EVERY ROW WINS A LANE OR REFUSES: a row too short to size a
+    // conditioning slice would overlay a line the model was never
+    // told to speak — the mouth still while the voice plays. The
+    // film lane lets such a row ride overlay-only beside the window
+    // that hears it; the extension's one window has no other window
+    // to hear it, so the door refuses (the lane law judges; this
+    // only reads its verdict).
+    const lanes = chooseLaneClips(rows, 0, delivered, 0)
+    for (const [ci, row] of rows.entries()) {
+      if (row.dur > 0 && !Object.values(lanes).includes(ci)) {
+        throw new Error(
+          `h3-timeline extend: audio_clips[${ci}] (${row.cls}, src ${row.src}, ${row.dur} f) wins no lane — too short to size a conditioning slice; the row would overlay a line the model was never told to speak; lengthen dur_frames or drop the row`,
+        )
+      }
+    }
+  }
+  const lineStamps: Partial<Record<FilmMixClipClass, LaneStamp>> = rows.length > 0
+    ? laneStamps(rows, 0, delivered, 0, 24)
+    : {}
+  // THE PROMPT under the rows: the film lane's own assembly (the
+  // words at the stamp's clock, the line's end stated, the sfx and
+  // music fields, the no-speech indicator where no dialogue row
+  // rides — the extension serves no ref-audios rail, so nothing else
+  // carries speech). A <d> line in the seat under a dialogue row
+  // refuses inside it (the row owns the words).
+  const linePrompt = rows.length > 0
+    ? lanePromptText(roster ? roster[0]! : extendPromptSeat, lineStamps, {
+        speechLang: speechLanguageOf(p),
+        hearsRefAudio: false,
+        where: 'extend',
+        textSeat: roster ? 'window_prompts line 1' : 'extend_prompt',
+      })
+    : null
+
   // ── the staged media: the WHOLE prior clip on the VHS seat
   // (force_rate 24 — the one clock) and its LAST FRAME as the
   // in-graph anchor (a positive out-of-band index the engine clamps
@@ -253,7 +345,7 @@ export function renderH3Extend(
   // source slicing is the swap's semantics, never a continuation's;
   // the cure for the re-slice bug the unification's survey found) ──
   const shots = Array.from({ length: composition.windows }, (_k, i): { id: string; prompt: string } => ({
-    id: `extend-${i + 1}`, prompt: roster ? roster[i]! : extendPromptSeat,
+    id: `extend-${i + 1}`, prompt: linePrompt ?? (roster ? roster[i]! : extendPromptSeat),
   }))
   const planJson = JSON.stringify({ shots })
 
@@ -293,7 +385,7 @@ export function renderH3Extend(
       // (ref_image_0) and the whole clip as the motion identity
       // (ref_video_0), the swap/repair spine's own seats ──
       const r2v = g.node('MiniMaxH3ReferenceToVideo', {
-        prompt: extendPromptSeat,
+        prompt: linePrompt ?? extendPromptSeat,
         width: cur.out(8), height: cur.out(9), length: cur.out(6),
         ref_image_size: 'match',
         clip, vae: vaeVideo, audio_vae: vaeAudio,
@@ -331,7 +423,29 @@ export function renderH3Extend(
         image: lastFrame,
         frame_idx: 0,
       }).out(0)
-      return { conditioning: guided, targetLatent: target }
+      // ── THE AUDIO-ONLY KEYFRAMES (F8): each row's slice pins into
+      // the window's own AV latent at its generation-frame index on
+      // the extension clock (frame_idx = start_frame), AFTER the
+      // seam pin and in the film loop's lane order (dialogue → sfx →
+      // music) — the model HEARS the take (the lip-sync mechanism:
+      // the pinned audio latent rides its rows, the video generates
+      // to match). The slice is the stamp's (laneStamps — the same
+      // arithmetic the film loop books), the seat is the spell law's
+      // (audioSliceSeat: a $spell rides the tensor slot, a path the
+      // file node). ──
+      let conditioning = guided
+      for (const cls of ['dialogue', 'sfx', 'music'] as const) {
+        const stamp = lineStamps[cls]
+        if (stamp === undefined) continue
+        conditioning = g.node('MiniMaxH3AddGuide', {
+          positive: conditioning,
+          latent: target,
+          frame_idx: Math.round(stamp.delay_seconds * 24),
+          audio_vae: vaeAudio,
+          audio: audioSliceSeat(g, stamp.src, stamp.slice_start_seconds, stamp.slice_duration_seconds),
+        }).out(0)
+      }
+      return { conditioning, targetLatent: target }
     },
   })
 
@@ -398,6 +512,41 @@ export function renderH3Extend(
     video: priorCreated.out(), filename_prefix: `${runId}/x0`,
     format: 'mp4', codec: 'h264',
   }).out()
+  if (rows.length > 0) {
+    // THE MIXED EXTENSION (F8): the film tail's own law over the
+    // appended seconds — ONE MeliteFilmAudioMix reads the saved x1
+    // file as the generated track (strictly after its boundary),
+    // overlays the rows at their extension-clock seats, ducks the
+    // generated voice under them (the manifest's spans, the F11
+    // ghost hold included — one window, the row's end stated), and
+    // the mixed stem muxes into x1m: the saved x1 decodes back
+    // CPU-side (MeliteConcatVideos — frames and fps at the file's
+    // own clock, the join law's reader) under the mix's audio. The
+    // prior joins the MIXED file by the concat (x0 + x1m) — the
+    // prior's own soundtrack rides verbatim, the extension carries
+    // the mix, and no audio concat lives in-graph (Layer C owns the
+    // mix; the container mux is CreateVideo's).
+    const after = chainSaveBoundaries(g, [newSaved])
+    const manifest = computeFilmMix({
+      spans: [{ start: 0, end: delivered }],
+      clips: rows,
+      windowSecs: [delivered / 24],
+      fps: 24,
+      duckDb: p.duck_depth_db as number | undefined,
+    })
+    const mix = filmMixNode(g, manifest, rows, [`${runId}/x1`], after, 24)
+    const decoded = g.node('MeliteConcatVideos', { videos: `${runId}/x1`, after })
+    const mixedCreated = g.node('CreateVideo', {
+      images: decoded.out(0), audio: mix.out(0), fps: decoded.out(2), bit_depth: 8,
+    })
+    const mixedSaved = g.node('SaveVideo', {
+      video: mixedCreated.out(), filename_prefix: `${runId}/x1m`,
+      format: 'mp4', codec: 'h264',
+    }).out()
+    const after2 = chainSaveBoundaries(g, [mixedSaved, priorSaved])
+    concatSavedFilms(g, [`${runId}/x0`, `${runId}/x1m`], after2, `${runId}/extend_film${outputNameTailOf(p)}`)
+    return
+  }
   const after = chainSaveBoundaries(g, [newSaved, priorSaved])
   concatSavedFilms(g, [`${runId}/x0`, `${runId}/x1`], after, `${runId}/extend_film${outputNameTailOf(p)}`)
 }

@@ -1,6 +1,7 @@
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph';
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit';
+import type { FilmMixClip, FilmMixManifest } from './filmMix.js';
 /** The absent-bag default's catalog id (F34's chip half, 2026-11-13;
  *  the silveroxides merge takes the seat 2026-11-01). */
 export declare const H3_DEFAULT_LORA_ID = "h3_silver_dareties";
@@ -114,6 +115,48 @@ export declare function concatSavedFilms(g: GraphBuilder, prefixes: readonly str
     audio?: OutputHandle;
     append?: OutputHandle;
 }): OutputHandle;
+/** THE FILM MIX NODE (Layer C, torch — the estate's own; the operator
+ *  law: the mix is ComfyUI's, never ffmpeg's): ONE owner for every
+ *  join that overlays rows over generated windows — the film tail
+ *  and the extension's fresh window. The manifest rendered verbatim:
+ *  every placement's source, film seat, duration, and class — doc
+ *  order kept (the node's two loops read the same order the retired
+ *  tail did). THE OVERLAY'S IN-POINT (the clipping lane): in_sec rides
+ *  only when the clip starts past the source head — a 0 in-point omits
+ *  the key, byte-identical to every manifest row composed before the
+ *  lane existed (the wired-row arm freezes that shape). A spelled
+ *  ('$name') src names a WIRED STAGE INPUT: the declared hop is a
+ *  MeliteAudioResample at FILM_AUDIO_RATE into the pack's optional
+ *  AUDIO seat wired_audio_k (rewriteSpells lands the producer's link
+ *  there, never a Load* file slot — the F17 class); a path row keeps
+ *  the staged-file handoff byte-identical (the estate boundary —
+ *  lawful, S3 freezes it). Seat overflow refuses loud, naming the row
+ *  and both cures — never a silent drop.
+ *  @param g the run's graph builder
+ *  @param manifest the film mix manifest (computeFilmMix)
+ *  @param clips the parsed rows, manifest.placements' clip indices
+ *  @param prefixes the mixed windows' SaveVideo prefixes, film order
+ *  @param after the boundary chain's final token (the ordering proof)
+ *  @param fps the DOC CLOCK the in-points convert at
+ *  @returns the mix node (out(0) AUDIO — the film's stem) */
+export declare function filmMixNode(g: GraphBuilder, manifest: FilmMixManifest, clips: readonly FilmMixClip[], prefixes: readonly string[], after: OutputHandle, fps: number): {
+    out: (index?: number) => OutputHandle;
+};
+/** THE AUDIO SLICE SEAT (the soundtrack merged-form wire): a spelled
+ *  src names a WIRED STAGE INPUT — it slices through
+ *  MeliteAudioTensorSlice.audio_tensor, a typed AUDIO socket the
+ *  merge rewrites (rewriteSpells lands the producer's link there),
+ *  never MeliteAudioSlice.audio — a Combo FILE seat validated against
+ *  the live input-dir listing, where a link would die at submit (the
+ *  F17 class). A path stamp keeps the file node byte-identical (the
+ *  estate boundary, the S7 arm freezes it). ONE owner for the film
+ *  windows and the extension's pin.
+ *  @param g the run's graph builder
+ *  @param src the row's source (a staged path or a '$name' spell)
+ *  @param startSeconds the source in-point
+ *  @param durationSeconds the slice length
+ *  @returns the slice's AUDIO output */
+export declare function audioSliceSeat(g: GraphBuilder, src: string, startSeconds: number, durationSeconds: number): OutputHandle;
 /** The seam's cross-window wires: the RAW decode + sampler handles
  *  of one rendered window (pre-trim, pre-sharpen — the true tail). */
 export interface WindowHandles {

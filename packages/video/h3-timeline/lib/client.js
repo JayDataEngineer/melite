@@ -5122,7 +5122,7 @@ window.__ModuleLoader__.load({
 				min: .91,
 				max: 432.29,
 				step: .01,
-				tooltip: "RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s)."
+				tooltip: "RIDES ONLY the continuation (inert when off): seconds appended — a single window lands on the engine grid at 24fps (22+17k frames; 2.33s = 56f, 15.08s = 362f the largest single window); above 362f the door joins N uniform windows under the 39f context overlap, exact delivery or a refusal naming the neighbors (ceiling 432.29s). audio_clips rows ride the extension when it is ONE window: the line is pinned, spoken and mixed over the appended seconds (count start_frame from the first appended frame; a row past the end refuses)."
 			},
 			{
 				name: "window_prompts",

@@ -162,6 +162,23 @@ loop — a different mechanism than the refine switch).
      362f the largest); beyond it N uniform windows join under the
      39f context overlap, exact delivery or a refusal naming the
      neighbors (ceiling 432.29s).
+   - `window_prompts` (text) — THE PER-WINDOW ROSTER (optional,
+     rides the continuation): one prompt per line, exactly one line
+     per composed window — window i rides line i. Absent or empty,
+     the one edit_prompt serves every window. A wrong line count or
+     a blank line refuses, naming both numbers. Per-window seeds
+     stay the engine's own derivation.
+   - AUDIO ROWS ON A CONTINUATION: `audio_clips` rows ride the
+     appended seconds when the extension is ONE window (≤ 15.08 s):
+     the row's take is pinned into the window, its words ride the
+     prompt (keep the prompt free of dialogue — a `<d>` line under a
+     row refuses: the row is the only voice), and the row overlays
+     the appended seconds with the generated voice ducked under it.
+     Count `start_frame` from the extension's FIRST frame; a row
+     that starts past or runs past the delivered frames refuses
+     (never cut mid-word at the join). One row per class per window.
+     A multi-window continuation carries no rows — the refusal
+     names the film door (calls + audio_clips).
    - `chain_run` (chain-run picker) — THE UPSCALE POSTURE'S ARMING SEAT:
      re-render a PRIOR run at 2x. Human voice: "pick a finished
      run; its saved scenes upscale." The picker serves the
