@@ -178,4 +178,70 @@ describe("frame insertions and reference images are two mechanisms", () => {
     }
     expect(() => build(doc), "the bus-full guard let a 9th reference board").toThrow(/image bus is full: 9 references exceed the 9-slot bus/)
   });
+
+  it("the seam a call states decides where its window's insertions land — cut starts at the frame, unstated carries", () => {
+    // The seam vocabulary (timelineContract's CALL_TRANSITIONS) is a
+    // window head law, not a label: a 'cut' window generates FROM its
+    // start_frame, so a pin on that frame is generation-local 0; an
+    // unstated seam is the carry join (SEAM_OVERLAP_FRAMES = 22), so
+    // the same pin rides 22 frames into the carried window. One doc,
+    // one pin, two seams — the insertion follows the stated seam.
+    const pin = [{ image: "mid.png", frame: 90 }]
+    const cut = build({
+      ...FILM_DOC,
+      keyframes: pin,
+      calls: [FILM_DOC.calls[0], { ...FILM_DOC.calls[1], transition: "cut" }],
+    })
+    expect(insertions(cut), "a cut seam must start its window at the pin's own frame").toContainEqual({ image: "mid.png", frame_idx: 0 })
+    const carried = build({ ...FILM_DOC, keyframes: pin })
+    expect(insertions(carried), "an unstated seam carries — the pin rides the overlap, never frame 0").toContainEqual({ image: "mid.png", frame_idx: 22 })
+  });
+
+  it("a call's stated tier shapes its window; the film's own geometry is the unstated fallback", () => {
+    // PER-CALL RESOLUTION (brief M-T6): a close-up that states 480p
+    // renders at the draft tier's shape (the film's 1344x768 plan
+    // scaled to a 480 short edge: 832x480), while its neighbour that
+    // states nothing renders at the film's own geometry. The shape
+    // rides the window head's width/height — the render's real size.
+    const graph = build({
+      ...FILM_DOC,
+      calls: [{ ...FILM_DOC.calls[0], resolution: "480p" }, FILM_DOC.calls[1]],
+    })
+    const shapes = Object.values(graph)
+      .filter((n) => n.class_type === "MiniMaxH3ReferenceToVideo")
+      .map((n) => String(n.inputs.width) + "x" + String(n.inputs.height))
+    expect(shapes, "the stated tier did not land on the window head's shape").toContain("832x480")
+    expect(shapes, "the unstated window did not fall to the film's own 1344x768").toContain("1344x768")
+  });
+
+  it("a draft-pinned film renders every unstated call at the 480p draft tier — draft first, final last", () => {
+    // THE DRAFT PIN (brief M-T6): the doc's `draft` row is the film's
+    // one voice for "build the shape before paying the final tier" —
+    // every call that states no resolution of its own renders at
+    // 480p, so a two-shot pass costs the draft price on BOTH windows.
+    const drafted = build({ ...FILM_DOC, draft: true })
+    const shapes = Object.values(drafted)
+      .filter((n) => n.class_type === "MiniMaxH3ReferenceToVideo")
+      .map((n) => String(n.inputs.width) + "x" + String(n.inputs.height))
+    expect(shapes.length, "the drafted film did not compose both windows").toBe(2)
+    expect(shapes, "an unstated call under the draft pin did not render at the draft tier").toEqual(["832x480", "832x480"])
+  });
+
+  it("a single-window doc that states t4_open still composes a pin when the legacy last_frame carries", () => {
+    // THE STATED-VARIANT GUARD (the inverse-anchor audit): pins ride
+    // only the t4r reference lane, so a doc that states a family AND
+    // carries no reference channel refuses loud. `last_frame` is the
+    // legacy spelling of a carried reference — the guard reads it as
+    // the carry it is, never as an absence, so the pin composes.
+    const doc = {
+      loras: LORA,
+      seed: 7,
+      variant: "t4_open",
+      last_frame: "end.png",
+      calls: [{ text: "first", start_frame: 0, end_frame: 90 }],
+      keyframes: [{ image: "mid.png", frame: 40 }],
+    }
+    const graph = build(doc)
+    expect(insertions(graph), "the pin of a reference-carrying t4_open doc never composed").toContainEqual({ image: "mid.png", frame_idx: 40 })
+  });
 });

@@ -9870,6 +9870,38 @@ window.__ModuleLoader__.load({
 			if (f.name !== k.param_key) return false;
 			return WTYPE_SEATS[f.wtype !== void 0 && f.wtype !== "" ? f.wtype : f.type] === "mod-face";
 		}
+		/** THE WTYPE SEATS THAT PICK (a file / image / mesh square): the only
+		*  seats that can be the entry's OWN pick — the row a bag cannot exist
+		*  without (the qvoice persona). A dial is never a pick. */
+		const PICK_WTYPES = /* @__PURE__ */ new Set([
+			"file",
+			"image",
+			"mesh"
+		]);
+		/** Is this field the ENTRY'S OWN PICK — the seat that NAMES the row?
+		*
+		*  The law (operator burn, 2026-11-27): a FIELD-kind bag exists only
+		*  once the seat that names it is chosen — the qvoice persona, a
+		*  catalog row's pick. It is one field, never "whatever the operator
+		*  authored": `qvoice`'s entry payload reuses the bag's own name
+		*  (isBagContainerField's history), so the pick is recognized by
+		*  NAME IDENTITY plus its seat, never by the kind's label.
+		*
+		*  A dial is not a pick: `{ voice_strength: 1 }` is a tunable, and a
+		*  bag whose every seat is a dial may be created bare (the h3
+		*  timeline's Video edit / Reshoot bags). PURE. */
+		function isEntryPickField(k, f) {
+			if (f.name !== k.param_key) return false;
+			if (isBagContainerField(k, f)) return false;
+			return PICK_WTYPES.has(f.wtype ?? f.type);
+		}
+		/** THE STATED FACE (a seat holds an authored value): undefined, null
+		*  and the blank string are unstated; everything else — 0 and false
+		*  included — is a value. The leaf's create guard and every "did the
+		*  operator state this" judge share this one reading. PURE. */
+		function isStatedSeat(v) {
+			return v !== void 0 && v !== null && (typeof v !== "string" || v.trim() !== "");
+		}
 		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
 		*  as opposed to a FIELD kind (mask-shaped: its own param fields)?
 		*
@@ -16786,13 +16818,10 @@ window.__ModuleLoader__.load({
 						commit(k, next);
 					}
 				} else if (open.mode === "create") {
-					const identityPick = (k.fields ?? []).find((f) => f.name === k.param_key && !isBagContainerField(k, f) && (f.type === "file" || f.type === "image" || f.type === "mesh" || f.wtype === "file" || f.wtype === "image" || f.wtype === "mesh") && fieldVisible(f, draftParams));
-					if (identityPick !== void 0) {
-						const v = draftParams[identityPick.name];
-						if (!(v !== void 0 && v !== null && !(typeof v === "string" && v.trim() === ""))) {
-							setLeafError("Pick the " + (identityPick.label ?? identityPick.name) + " first — this row saves only once its pick is chosen.");
-							return;
-						}
+					const identityPick = (k.fields ?? []).find((f) => isEntryPickField(k, f) && fieldVisible(f, draftParams));
+					if (identityPick !== void 0 && !isStatedSeat(draftParams[identityPick.name])) {
+						setLeafError("Pick the " + (identityPick.label ?? identityPick.name) + " first — this row saves only once its pick is chosen.");
+						return;
 					}
 					commit(k, [...entries, { ...draftParams }]);
 				} else {
@@ -19782,12 +19811,14 @@ window.__ModuleLoader__.load({
 		exports.isBagContainerField = isBagContainerField;
 		exports.isCasConflict = isCasConflict;
 		exports.isDuplicateServiceSeat = isDuplicateServiceSeat;
+		exports.isEntryPickField = isEntryPickField;
 		exports.isEstateRefusal = isEstateRefusal;
 		exports.isHybridKind = isHybridKind;
 		exports.isImageUrl = isImageUrl;
 		exports.isMalformedCapabilityDrop = isMalformedCapabilityDrop;
 		exports.isMeshUrl = isMeshUrl;
 		exports.isOptionKind = isOptionKind;
+		exports.isStatedSeat = isStatedSeat;
 		exports.isVideoUrl = isVideoUrl;
 		exports.kindScalarFieldsOfEnvelope = kindScalarFieldsOfEnvelope;
 		exports.laneBoundsFor = laneBoundsFor;

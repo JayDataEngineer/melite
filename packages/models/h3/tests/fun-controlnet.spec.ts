@@ -133,6 +133,30 @@ describe("the h3 fun-controlnet lane (007 L7)", () => {
     expect(String(applies[1]![1].inputs.model)).toContain("MiniMaxH3FunControlNetApply");
   });
 
+  // THE MASK-ONLY PICK: the boarding gate admits a lock with no
+  // conditioning MAP as long as a mask (or a clip) is present — the
+  // node then applies the mask channel with NO control_video wire.
+  // Before this arm the still/image arm was the only shape judged,
+  // so the no-map branch of the pick could have wired an empty
+  // LoadImage ("") and the graph would have failed at the engine.
+  it("a mask-only pick applies with no control_video — the mask is the whole lock", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      { ...bag(), controlnets: [{ type: "region", model: UNION, mask: "regions.png", strength: 1 }] },
+      H3, g, "run_fc_mask_only",
+    );
+    const entries = nodes(g);
+    const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3FunControlNetApply")!;
+    expect(apply[1].inputs.control_video, "a mask-only pick must not carry a control_video wire").toBeUndefined();
+    // the mask rides its own loader — and no still map is loaded at all
+    expect(String(apply[1].inputs.mask)).toContain("LoadImageMask");
+    expect(entries.filter(([, n]) => n.class_type === "LoadImage"), "a mask-only pick composes no LoadImage").toHaveLength(0);
+    // the dials ride the row's stamped schedule defaults (0..1)
+    expect(apply[1].inputs.start_percent).toBe(0);
+    expect(apply[1].inputs.end_percent).toBe(1);
+  });
+
   it("an unboarded family refuses at the pack's own gate (never a silent skip)", () => {
     const g = new GraphBuilder();
     const UNBOARDED = { ...H3, mods: ["loras"] } as ModelFacts & { mods: string[] };

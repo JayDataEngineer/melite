@@ -91,6 +91,22 @@ test('THE SEAM — a v2v-windows leaf embeds the host face above the fields and 
   expect(onPatch).toHaveBeenCalledWith({ calls: NEXT })
 })
 
+test('THE CLOCK FALLBACK — a row that states no film clock hands the face the doc clock default, never NaN/undefined', () => {
+  // The strip draws windows against a clock; a stored row that never
+  // stated one (a legacy draft, a row saved before the fps seat) must
+  // still hand the face a NUMBER — the film's declared default (24f,
+  // DOC_FPS_DEFAULT) — never undefined, which the strip would read as
+  // a zero/NaN rate.
+  render(h(ModifiersSection, {
+    kinds: [EDIT],
+    values: { calls: [{ text: 'a', start_frame: 0, end_frame: 107 }] },
+    onEdit: vi.fn(), onPatch: vi.fn(), v2vFace: HostStub,
+  }))
+  openLeafViaPicker('Video edit')
+  expect(dlg().querySelector('[data-stub-value="fps"]')?.textContent,
+    'an unstated clock must fall to the doc clock default').toBe('24')
+})
+
 test('THE DEGRADE — a host that delivers no face keeps the leaf whole: no stage node, no embed, the kind fields hold (graceful, never a crash)', () => {
   render(h(ModifiersSection, {
     kinds: [EDIT],

@@ -9,7 +9,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
-import type { ModifierKind } from '../src/spec.ts'
+import type { ModifierKind, SpecField } from '../src/spec.ts'
+import { isEntryPickField, isStatedSeat } from '../src/spec.ts'
 import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
@@ -578,6 +579,76 @@ test('FIELD CREATE: a row picked at its own default still saves (the Video edit 
   expect(onEdit).toHaveBeenCalledWith('edit', [{ mask_source: 'region', blur: 0 }])
 })
 
+// THE ENTRY-PICK LAW (pure): the guard's two predicates are the law
+// the leaf arms above ride — the seat that NAMES the row is the only
+// pick, and "stated" means a value (0 and false included), never a
+// blank square.
+test('THE ENTRY-PICK LAW (pure): only the field that names the row, non-container, pick-seated, is the pick', () => {
+  const qvoice = { param_key: 'qvoice' }
+  const field = (f: Record<string, unknown>): SpecField => f as unknown as SpecField
+  expect(isEntryPickField(qvoice, field({ name: 'qvoice', type: 'file' }))).toBe(true)
+  // a sibling dial never names the row
+  expect(isEntryPickField(qvoice, field({ name: 'voice_strength', type: 'number' }))).toBe(false)
+  // the bag's own container seat (wtype mod-face) is the ROW, never its pick
+  expect(isEntryPickField({ param_key: 'mask' }, field({ name: 'mask', wtype: 'mask' }))).toBe(false)
+  // a seat that is not a pick is not a pick, even when it names the row
+  expect(isEntryPickField(qvoice, field({ name: 'qvoice', type: 'number' }))).toBe(false)
+  // the wtype spelling wins over `type`
+  expect(isEntryPickField(qvoice, field({ name: 'qvoice', wtype: 'image' }))).toBe(true)
+  // THE STATED FACE: unset and blank are unstated; 0 is a value
+  expect(isStatedSeat(undefined)).toBe(false)
+  expect(isStatedSeat(null)).toBe(false)
+  expect(isStatedSeat('   ')).toBe(false)
+  expect(isStatedSeat('https://host/x.png')).toBe(true)
+  expect(isStatedSeat(0)).toBe(true)
+})
+
+test('FIELD CREATE: a kind that declares no fields at all still saves on a bare Add', () => {
+  // THE EMPTY-FIELD-LIST ARM: the create guard reads the kind's field
+  // list to find the entry's own pick. A presence/flag kind declares
+  // no fields (the value IS the row) — the guard reads an empty list,
+  // finds no pick, and the bare Add still mints the row. Before this
+  // arm the no-fields spelling was only judged through a paint-canvas
+  // kind, which saves by its own face and never reaches the guard.
+  const BARE = { kind: 'flaggings', label: 'Flagging', param_key: 'flaggings', cardinality: 'multi' } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [BARE], values: {} })
+  openCreate('Flagging')
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('flaggings', [{}])
+  expect(screen.queryByText(/Pick the/)).toBeNull()
+})
+
+test('FIELD CREATE: a pick field with no label names itself in the refusal (never a blank seat)', () => {
+  // THE NAMELESS PICK: the guard's refusal has to name the seat the
+  // operator must fill. A pick field that declares no label (a
+  // hand-authored kind, a pack row's nameless dial) names itself by
+  // its field NAME — an empty quote there would be a refusal that
+  // points at nothing.
+  const QV = {
+    kind: 'qvoice', label: 'QVoice', param_key: 'qvoices', cardinality: 'multi',
+    fields: [{ name: 'qvoices', type: 'file' }],
+  } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [QV], values: {} })
+  openCreate('QVoice')
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit, 'an unpicked row must not save').not.toHaveBeenCalled()
+  expect(screen.getByText(/Pick the qvoices first/), 'the refusal must name the labelless seat').not.toBeNull()
+})
+
+test('FIELD CREATE: a PICK that carries a served default saves (the stated pick is a value)', () => {
+  const REFS = {
+    kind: 'ref', label: 'Reference', param_key: 'ref', cardinality: 'list', max_stack: 1,
+    fields: [
+      { name: 'ref', type: 'image', label: 'Reference', default: 'https://host/x.png' },
+      { name: 'weight', type: 'number', label: 'Weight', default: 1 },
+    ],
+  } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [REFS], values: {} })
+  openCreate('Reference')
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('ref', [{ ref: 'https://host/x.png', weight: 1 }])
+})
+
 // THE SAM_THRESHOLD CURE (2026-11-05, the operator's bug sweep): a
 // number typed in the leaf arrived as the RAW STRING (SpecAtom hands
 // back e.target.value) and the save stamped it verbatim — the card
@@ -828,6 +899,23 @@ test('THE FIELDLESS KIND: tiles name the kind; the leaf is actions only; the sav
   expect(screen.getByText('Edit Tag')).not.toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   expect(onEdit).toHaveBeenCalledWith('tags', [{}])
+})
+
+test('THE STEM LAW (2026-11-10, the AI-mod tile burn): an option-less file pick names its tile by the file itself', () => {
+  // The F54 ghost-parameter cure: a staged persona that tiles as a
+  // bare 'Voice' hides which voice the run composes. The pick field
+  // names the entry — by its SERVED options when there are any, and
+  // by the staged file's own last path segment when the pick serves
+  // no vocabulary (the tile is 132px; a raw path is noise).
+  const VOICE = {
+    kind: 'qvoice', label: 'QVoice', param_key: 'qvoices', cardinality: 'multi',
+    fields: [
+      { name: 'qvoice', type: 'file', label: 'QVoice' },
+      { name: 'voice_strength', type: 'number', label: 'Strength', default: 1 },
+    ],
+  } as unknown as ModifierKind
+  openLeaf({ kinds: [VOICE], values: { qvoices: [{ qvoice: 'https://host/staged/persona-7.wav', voice_strength: 1 }] } })
+  expect(screen.getByText('persona-7.wav'), 'an option-less file pick must name its tile by the staged file').not.toBeNull()
 })
 
 test('THE LEAF SQUARE: dropping a file uploads through the door and the name lands in the draft', async () => {

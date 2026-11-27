@@ -88,6 +88,26 @@ export declare function modOwnedFields(spec: FormSpecDoc): Set<string>;
 export declare function isBagContainerField(k: {
     param_key: string;
 }, f: SpecField): boolean;
+/** Is this field the ENTRY'S OWN PICK — the seat that NAMES the row?
+ *
+ *  The law (operator burn, 2026-11-27): a FIELD-kind bag exists only
+ *  once the seat that names it is chosen — the qvoice persona, a
+ *  catalog row's pick. It is one field, never "whatever the operator
+ *  authored": `qvoice`'s entry payload reuses the bag's own name
+ *  (isBagContainerField's history), so the pick is recognized by
+ *  NAME IDENTITY plus its seat, never by the kind's label.
+ *
+ *  A dial is not a pick: `{ voice_strength: 1 }` is a tunable, and a
+ *  bag whose every seat is a dial may be created bare (the h3
+ *  timeline's Video edit / Reshoot bags). PURE. */
+export declare function isEntryPickField(k: {
+    param_key: string;
+}, f: SpecField): boolean;
+/** THE STATED FACE (a seat holds an authored value): undefined, null
+ *  and the blank string are unstated; everything else — 0 and false
+ *  included — is a value. The leaf's create guard and every "did the
+ *  operator state this" judge share this one reading. PURE. */
+export declare function isStatedSeat(v: unknown): boolean;
 /** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
  *  as opposed to a FIELD kind (mask-shaped: its own param fields)?
  *

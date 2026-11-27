@@ -42,7 +42,7 @@ import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineReg
 import css from './card.module.css';
 import { SpecAtom } from "./form.js";
 import { useSquareProvider } from "./form.js";
-import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isBagContainerField, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
+import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isBagContainerField, isEntryPickField, isHybridKind, isOptionKind, isStatedSeat, optionKeyOf, scalarKeyOf, titleCaseId } from "./spec.js";
 import { modCommitWrite } from '@melite/contracts/formSpec';
 import { LORA_ACCEPT } from '@melite/contracts/loraExtensions';
 import { SpecMenuSelect } from "./atoms.js";
@@ -732,11 +732,10 @@ export function ModifiersSection(props) {
                 // Add before choosing a persona committed
                 // `{ voice_strength: 1 }`, and the press then died at phase 1
                 // with "qvoice bag entry requires a string qvoice path"). The
-                // seat the guard judges is the ENTRY'S OWN — the field that
-                // names the row (name === the bag's param_key, a pick seat,
-                // never the mod-face container): the persona for the qvoice
-                // bag, a row for a catalog bag. Only that pick must be
-                // stated; every other dial may seed itself.
+                // seat the guard judges is the ENTRY'S OWN (isEntryPickField,
+                // spec.ts): the field that names the row — the persona for the
+                // qvoice bag. Only that pick must be stated; every other dial
+                // may seed itself.
                 //
                 // Judging "nothing differs from the declared defaults"
                 // instead (the 2026-11-27 relapse) refused the Video edit and
@@ -744,20 +743,11 @@ export function ModifiersSection(props) {
                 // of a row that happens to BE the default (Mask source =
                 // Region) reads as unauthored, and a dial-only bag has no
                 // authored seat at all. A default is not an absence.
-                const identityPick = (k.fields ?? []).find((f) => f.name === k.param_key
-                    && !isBagContainerField(k, f)
-                    && (f.type === 'file' || f.type === 'image' || f.type === 'mesh'
-                        || f.wtype === 'file' || f.wtype === 'image' || f.wtype === 'mesh')
-                    && fieldVisible(f, draftParams));
-                if (identityPick !== undefined) {
-                    const v = draftParams[identityPick.name];
-                    const stated = v !== undefined && v !== null
-                        && !(typeof v === 'string' && v.trim() === '');
-                    if (!stated) {
-                        setLeafError('Pick the ' + (identityPick.label ?? identityPick.name)
-                            + ' first — this row saves only once its pick is chosen.');
-                        return;
-                    }
+                const identityPick = (k.fields ?? []).find((f) => isEntryPickField(k, f) && fieldVisible(f, draftParams));
+                if (identityPick !== undefined && !isStatedSeat(draftParams[identityPick.name])) {
+                    setLeafError('Pick the ' + (identityPick.label ?? identityPick.name)
+                        + ' first — this row saves only once its pick is chosen.');
+                    return;
                 }
                 commit(k, [...entries, { ...draftParams }]);
             }

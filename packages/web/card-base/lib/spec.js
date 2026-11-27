@@ -154,6 +154,36 @@ export function isBagContainerField(k, f) {
     const seat = WTYPE_SEATS[(f.wtype !== undefined && f.wtype !== '' ? f.wtype : f.type)];
     return seat === 'mod-face';
 }
+/** THE WTYPE SEATS THAT PICK (a file / image / mesh square): the only
+ *  seats that can be the entry's OWN pick — the row a bag cannot exist
+ *  without (the qvoice persona). A dial is never a pick. */
+const PICK_WTYPES = new Set(['file', 'image', 'mesh']);
+/** Is this field the ENTRY'S OWN PICK — the seat that NAMES the row?
+ *
+ *  The law (operator burn, 2026-11-27): a FIELD-kind bag exists only
+ *  once the seat that names it is chosen — the qvoice persona, a
+ *  catalog row's pick. It is one field, never "whatever the operator
+ *  authored": `qvoice`'s entry payload reuses the bag's own name
+ *  (isBagContainerField's history), so the pick is recognized by
+ *  NAME IDENTITY plus its seat, never by the kind's label.
+ *
+ *  A dial is not a pick: `{ voice_strength: 1 }` is a tunable, and a
+ *  bag whose every seat is a dial may be created bare (the h3
+ *  timeline's Video edit / Reshoot bags). PURE. */
+export function isEntryPickField(k, f) {
+    if (f.name !== k.param_key)
+        return false;
+    if (isBagContainerField(k, f))
+        return false;
+    return PICK_WTYPES.has(f.wtype ?? f.type);
+}
+/** THE STATED FACE (a seat holds an authored value): undefined, null
+ *  and the blank string are unstated; everything else — 0 and false
+ *  included — is a value. The leaf's create guard and every "did the
+ *  operator state this" judge share this one reading. PURE. */
+export function isStatedSeat(v) {
+    return v !== undefined && v !== null && (typeof v !== 'string' || v.trim() !== '');
+}
 /** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
  *  as opposed to a FIELD kind (mask-shaped: its own param fields)?
  *
