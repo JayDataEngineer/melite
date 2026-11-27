@@ -4015,7 +4015,7 @@ describe('B2 — the start timeout recovers the landed run (never a blind re-pre
   // (drains, never doubles). A description that drops the sentence
   // reds here — the only judge a window-killed call can have.
   test('the verb\'s description teaches the many-stage window law before the press (ledger_tail first; a re-press drains, never doubles)', () => {
-    const tool = meliteFlow(fakeEstate({}))
+    const tool = meliteFlow(mockEstate([]).request)
     const desc = String(tool.description)
     assert.match(desc, /MANY-STAGE bench pass .* can run past the tool\'s own window/, 'the window law is stated: ' + desc.slice(0, 200))
     assert.match(desc, /no answer arrives but the starts keep landing on the queue/, 'the law names what keeps happening')
