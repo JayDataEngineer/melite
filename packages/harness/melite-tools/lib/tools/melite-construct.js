@@ -1236,7 +1236,7 @@ export function meliteConstruct(estate, opts = {}) {
                     + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s params.model — ONE seat for every family-boarding card (B5, 2026-11-17): image-gen, image-edit and music all read it there; no stage row carries a top-level `model`, and the add_stage `model` arg folds into params.model at the mint) without '
                     + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
                     + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone. '
-                    + 'STAGE-POLICY KEYS (F41) are authored here, on the stage row (never the card surface): boundary_unload_models: true arms the pass-seam model unload, vram_budget_mb sets a stage\'s VRAM budget — the stored row keeps them verbatim and admission judges the rest of the bag.',
+                    + 'STAGE-POLICY KEYS (F41) are authored here, on the stage row (never the card surface): boundary_unload_models: true arms the pass-seam model unload, vram_budget_mb sets a stage\'s VRAM budget, execute_ceil_ms is the run\'s own execute ceiling in ms (<= 0 disarms the hung-run fuse; the press carries it from the stage row onto the start body — the cure for a long film the 30-min default kills, B6) — the stored row keeps them verbatim and admission judges the rest of the bag.',
             },
             params_file: {
                 type: 'string',
