@@ -9,12 +9,13 @@
 // mocked fetch — never frozen literals over the truth.
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
-import { countOomLines } from "../src/manageProbe.ts";
+import { countOomLines, systemdStampIso } from "../src/manageProbe.ts";
+import { systemdStamp } from "./systemd-fake.ts";
 
 const realPath = process.env.PATH ?? "";
 const realFetch = globalThis.fetch;
@@ -117,6 +118,7 @@ interface StatusData {
     last_exit_status?: number;
     last_exit_code?: string;
     last_exit_at?: string;
+    started_at?: string;
     oom_kills?: number;
     verdict: string;
     note?: string;
@@ -185,6 +187,105 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     assert.match(String(data.engine_unit.note), /journal tail/);
     assert.doesNotMatch(String(data.engine_unit.note), /memory pressure/);
     assert.doesNotMatch(String(data.engine_unit.note), /2\.33 s = 56 f/);
+  });
+
+  // ── S1 (2026-11-27): the boot time is the unit's own word ──────────
+  // The status face read `engine boot: 2026-11-24 · age 297640s` (3 d
+  // 10 h) over a unit the journal showed started six hours earlier:
+  // the restart receipt only knows the boots the estate's own door
+  // issued, and every other rester left it stale.
+  const receiptAt = (ms: number, source = "estate restart"): void => {
+    const dir = join(ROOT, "data", "runtime", "comfyui");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, ".estate-engine-boot.json"), JSON.stringify({ boot_at: ms, source }));
+  };
+  const SETTLED_PROPS = (startWord: string): string =>
+    "NRestarts=0\nExecMainStatus=0\nExecMainCode=n/a\nExecMainStartTimestamp=" + startWord + "\n";
+
+  it.skipIf(WIN_NO_SYSTEMD)("the boot time is the unit's own start — a stale restart receipt never states the age (S1)", async () => {
+    mkRoot();
+    // the stamp carries seconds; the row states the instant it names
+    const startedMs = Math.floor((Date.now() - 3_600_000) / 1000) * 1000;
+    receiptAt(Date.now() - 3 * 86_400_000);
+    fakeBin({
+      systemctl: { out: SETTLED_PROPS(systemdStamp(startedMs)), code: 0 },
+      journalctl: { out: "INFO: engine ready\n", code: 0 },
+    });
+    routeEngineUp();
+    const [_code, env] = await manage({ action: "status" });
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_boot.known, true);
+    assert.equal(data.engine_boot.boot_at, new Date(startedMs).toISOString());
+    assert.equal(data.engine_boot.source, "systemd: estate-comfyui.service ExecMainStartTimestamp");
+    const age = data.engine_boot.age_seconds as number;
+    assert.ok(age >= 3_599 && age <= 3_605, "one hour, not three days: " + String(age));
+    assert.equal(data.engine_unit.started_at, new Date(startedMs).toISOString());
+  });
+
+  it.skipIf(WIN_NO_SYSTEMD)("a unit with no running main process keeps the restart receipt as the witness (S1)", async () => {
+    mkRoot();
+    receiptAt(Date.now() - 93_000);
+    fakeBin({
+      systemctl: { out: SETTLED_PROPS(""), code: 0 },
+      journalctl: { out: "INFO: engine ready\n", code: 0 },
+    });
+    routeEngineUp();
+    const [_code, env] = await manage({ action: "status" });
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_boot.source, "estate restart");
+    assert.ok((data.engine_boot.age_seconds as number) >= 93);
+    assert.equal(data.engine_unit.started_at, undefined);
+  });
+
+  it("systemd's stamp word converts to ISO, and nothing else does (the parse never invents an instant)", () => {
+    assert.equal(systemdStampIso("Fri 2026-11-27 11:00:20 UTC"), "2026-11-27T11:00:20.000Z");
+    assert.equal(systemdStampIso(""), undefined);
+    assert.equal(systemdStampIso("n/a"), undefined);
+    assert.equal(systemdStampIso("Fr. 2026-11-27 11:00:20 UTC"), undefined, "a locale's spelling is not the parsed form");
+    assert.equal(systemdStampIso(undefined), undefined);
+  });
+
+  it.skipIf(WIN_NO_SYSTEMD)("an unparseable answer names the runtime dir the execs rode (S1)", async () => {
+    mkRoot();
+    fakeBin({
+      systemctl: { out: "", code: 0 },
+      journalctl: { out: "", code: 0 },
+    });
+    routeEngineUp();
+    const [_code, env] = await manage({ action: "status" });
+    const data = env.data as unknown as StatusData;
+    assert.equal(data.engine_unit.known, false);
+    assert.match(String(data.engine_unit.note), /systemd answered nothing parseable \(XDG_RUNTIME_DIR=.+\)/);
+  });
+
+  it.skipIf(WIN_NO_SYSTEMD || !existsSync("/run/user/" + String(process.getuid?.())))("a scrubbed env finds the user bus by the uid rule (S1)", async () => {
+    mkRoot();
+    // the fake systemctl reports the runtime dir it was handed
+    // through a property the census carries verbatim
+    const bin = mkdtempSync(join(tmpdir(), "truthbus-"));
+    writeFileSync(
+      join(bin, "systemctl"),
+      "#!/bin/sh\necho \"ExecMainExitTimestamp=saw_$XDG_RUNTIME_DIR\"\necho NRestarts=0\necho ExecMainCode=n/a\nexit 0\n",
+    );
+    chmodSync(join(bin, "systemctl"), 0o755);
+    writeFileSync(join(bin, "journalctl"), "#!/bin/sh\nexit 0\n");
+    chmodSync(join(bin, "journalctl"), 0o755);
+    process.env.PATH = bin + ":" + realPath;
+    const savedXdg = process.env.XDG_RUNTIME_DIR;
+    const savedBus = process.env.DBUS_SESSION_BUS_ADDRESS;
+    delete process.env.XDG_RUNTIME_DIR;
+    delete process.env.DBUS_SESSION_BUS_ADDRESS;
+    try {
+      routeEngineUp();
+      const [_code, env] = await manage({ action: "status" });
+      const data = env.data as unknown as StatusData;
+      assert.equal(data.engine_unit.known, true);
+      assert.equal(data.engine_unit.last_exit_at, "saw_/run/user/" + String(process.getuid?.()));
+    } finally {
+      if (savedXdg === undefined) delete process.env.XDG_RUNTIME_DIR; else process.env.XDG_RUNTIME_DIR = savedXdg;
+      if (savedBus === undefined) delete process.env.DBUS_SESSION_BUS_ADDRESS; else process.env.DBUS_SESSION_BUS_ADDRESS = savedBus;
+      rmSync(bin, { recursive: true, force: true });
+    }
   });
 
   it("an unanswerable census is honest absence — the answer never invents a degradation", async () => {

@@ -203,6 +203,55 @@ function unitTruthText(row: Record<string, unknown>): string {
   return parts.length === 0 ? '' : ' — ' + parts.join(' · ')
 }
 
+/** A span in the face's own words: seconds under two minutes, then
+ *  minutes, hours, days — the age of a claim is read, never computed
+ *  by the reader.
+ *  @param ms - a non-negative elapsed span.
+ *  @returns the span with its unit. */
+function ageWords(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000))
+  if (s < 120) return s + 's'
+  const m = Math.round(s / 60)
+  if (m < 120) return m + 'm'
+  const h = Math.round(m / 60)
+  if (h < 48) return h + 'h'
+  return Math.round(h / 24) + 'd'
+}
+
+/** A settled claim's CAUSE on the face (S1, 2026-11-27): `blocked`
+ *  with nothing said read as a verdict nobody could act on — five
+ *  blocked rows over a family whose files sat present, the cause and
+ *  the age both on the wire and neither rendered. The row's own
+ *  detail, else the first item's errorCode + detail, else nothing
+ *  (the absence is then the row's own — the resource line says so
+ *  through its state alone).
+ *  @param row - a resource or operation row off the status wire.
+ *  @returns the cause with its leading separator, or ''. */
+function claimCauseText(row: Record<string, unknown>): string {
+  const items = Array.isArray(row.items)
+    ? row.items.map(recordValue).filter((item): item is Record<string, unknown> => item !== null)
+    : []
+  const detail = typeof row.detail === 'string' && row.detail !== '' ? row.detail : undefined
+  const speaker = items.find((item) => typeof item.detail === 'string' || typeof item.errorCode === 'string')
+  const itemDetail = typeof speaker?.detail === 'string' ? speaker.detail : undefined
+  const code = typeof speaker?.errorCode === 'string' ? speaker.errorCode : undefined
+  const cause = detail ?? (itemDetail === undefined ? code : code === undefined ? itemDetail : code + ': ' + itemDetail)
+  return cause === undefined ? '' : ' — ' + cause
+}
+
+/** A claim's AGE on the face (S1): `finished_at` (settled), else
+ *  `started_at`, as the instant and the span since it.
+ *  @param row - a resource or operation row off the status wire.
+ *  @returns the age with its leading separator, or '' when the row is
+ *  unstamped. */
+function claimAgeText(row: Record<string, unknown>): string {
+  const finished = typeof row.finished_at === 'string' ? row.finished_at : undefined
+  const at = finished ?? (typeof row.started_at === 'string' ? row.started_at : undefined)
+  if (at === undefined) return ''
+  const ms = Date.parse(at)
+  return ' · ' + (finished === undefined ? 'started ' : 'settled ') + at + (Number.isFinite(ms) ? ' (' + ageWords(Date.now() - ms) + ' ago)' : '')
+}
+
 function statusText(data: unknown, verbose: boolean): string[] {
   const value = recordValue(data)
   if (value === null) return []
@@ -269,7 +318,16 @@ function statusText(data: unknown, verbose: boolean): string[] {
       if (row === null) continue
       const ref = recordValue(row.ref)
       const label = ref === null ? 'resource' : [ref.kind, ref.owner, ref.id].filter((item): item is string => typeof item === 'string').join('/')
-      out.push('resource: ' + label + ' · ' + asText(row.state))
+      const state = asText(row.state)
+      // A CLAIM WITH ITS CAUSE AND AGE (S1, 2026-11-27): a non-active
+      // row says why and when — the wire carried both and the face
+      // printed the bare verdict. A family that declares no fetchable
+      // row says so: the provisioning scan has nothing to verify over
+      // an operator-merged tree, so its verdict is not the files'.
+      const unfetchable = row.fetchable === false && state !== 'active'
+        ? ' · the declaration names no fetchable row — an operator-merged tree; this scan has nothing to verify (presence is judged at load)'
+        : ''
+      out.push('resource: ' + label + ' · ' + state + (state === 'active' ? '' : claimCauseText(row) + claimAgeText(row)) + unfetchable)
     }
     if (value.resources.length > shown.length) {
       out.push('resource: +' + String(value.resources.length - shown.length) + ' more (display cap — the roster is longer than shown)')
@@ -285,7 +343,11 @@ function statusText(data: unknown, verbose: boolean): string[] {
   // law one list over): 20 of 25 operations rendered without a note
   // titles the ledger complete.
   const shownOperations = operations.slice(0, 20)
-  for (const operation of shownOperations) out.push(operationText(operation))
+  for (const operation of shownOperations) {
+    // the operation ledger says a non-active claim's cause and age too (S1)
+    const row = recordValue(operation) ?? {}
+    out.push(operationText(operation) + (row.state === 'active' ? '' : claimCauseText(row) + claimAgeText(row)))
+  }
   if (operations.length > shownOperations.length) {
     out.push('operation: +' + String(operations.length - shownOperations.length) + ' more (display cap — the ledger is longer than shown)')
   }

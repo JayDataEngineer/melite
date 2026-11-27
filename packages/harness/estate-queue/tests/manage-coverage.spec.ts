@@ -1,6 +1,6 @@
-import { afterEach, describe, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resourceKey } from "@melite/estate-provisioning";
@@ -66,6 +66,23 @@ const realFetch = globalThis.fetch;
 // "undefined" under a -t filter, poisoning every later spec's PATH
 const realPath = process.env.PATH ?? "";
 let root = "";
+
+// THE SPEC OWNS ITS SYSTEMD (S1, 2026-11-27): the ctx names the real
+// engine unit, and the status face now reads the unit's own start —
+// a real systemd on the test box would leak the box's boot into the
+// boot row. A settled unit with no running main process answers:
+// the receipt stays the witness these arms judge.
+const systemdBin = mkdtempSync(join(tmpdir(), "coverage-systemd-"));
+writeFileSync(join(systemdBin, "systemctl"), "#!/bin/sh\ncat <<'PROPS'\nNRestarts=0\nExecMainStatus=0\nExecMainCode=n/a\nExecMainStartTimestamp=\nPROPS\n", "utf8");
+chmodSync(join(systemdBin, "systemctl"), 0o755);
+writeFileSync(join(systemdBin, "journalctl"), "#!/bin/sh\nexit 0\n", "utf8");
+chmodSync(join(systemdBin, "journalctl"), 0o755);
+beforeEach(() => {
+  process.env.PATH = systemdBin + ":" + realPath;
+});
+afterAll(() => {
+  rmSync(systemdBin, { recursive: true, force: true });
+});
 
 const json = (value: unknown, status = 200): Response => new Response(JSON.stringify(value), { status });
 const text = (value: string, status = 200): Response => new Response(value, { status });
@@ -844,6 +861,49 @@ describe("manage status projections", () => {
     assert.equal(data.resources[0]?.state, "restart_required", "the verified state re-states the row");
     assert.equal(data.resources[0]?.operation_id, "op-changed");
     assert.ok(!("detail" in (data.resources[0] as Record<string, unknown>)), "no detail rides a detail-less change");
+  });
+
+  it("a claim carries its operation's clock on the wire (S1): started_at on every stamped row, finished_at only on a settled one", async () => {
+    // THE LAW (managePlane.ts withOperationClock, S1 2026-11-27): the
+    // tool face states a blocked claim's age from the wire — a row
+    // whose stored operation keeps no clock adds nothing (never an
+    // invented instant).
+    root = mkdtempSync(join(tmpdir(), "manage-status-clock-"));
+    statusRoute();
+    const settledRef = extensionRef("settled");
+    const flyingRef = extensionRef("flying");
+    const unstampedRef = extensionRef("unstamped");
+    const t0 = Date.now() - 15 * 86_400_000;
+    const clocked = {
+      ...provisioning,
+      reconcile: async () => [
+        { ref: settledRef, state: "blocked", items: [] },
+        { ref: flyingRef, state: "acquiring", items: [] },
+        { ref: unstampedRef, state: "active", items: [] },
+      ],
+      operationOf: (ref: ResourceRef) => {
+        if (resourceKey(ref) === resourceKey(settledRef)) {
+          return { operationId: "op-settled", ref: settledRef, state: "blocked", items: [], startedAt: t0, finishedAt: t0 + 1_000 };
+        }
+        if (resourceKey(ref) === resourceKey(flyingRef)) {
+          return { operationId: "op-flying", ref: flyingRef, state: "acquiring", items: [], startedAt: t0 };
+        }
+        return { operationId: "op-unstamped", ref: unstampedRef, state: "active", items: [], startedAt: 0 };
+      },
+    } as unknown as ProvisioningServiceDefinition;
+    const [, envelope] = await run({ action: "status" }, { provisioning: clocked });
+    const data = envelope.data as {
+      resources: Array<{ ref: ResourceRef; started_at?: string; finished_at?: string }>;
+      operations: Array<{ operation_id: string; started_at?: string; finished_at?: string }>;
+    };
+    const row = (id: string): { started_at?: string; finished_at?: string } | undefined => data.resources.find((r) => r.ref.id === id);
+    assert.equal(row("settled")?.started_at, new Date(t0).toISOString());
+    assert.equal(row("settled")?.finished_at, new Date(t0 + 1_000).toISOString());
+    assert.equal(row("flying")?.started_at, new Date(t0).toISOString());
+    assert.ok(!("finished_at" in (row("flying") ?? {})), "an unsettled operation has no finish to state");
+    assert.ok(!("started_at" in (row("unstamped") ?? {})), "an unstamped record adds nothing");
+    assert.equal(data.operations.find((o) => o.operation_id === "op-settled")?.finished_at, new Date(t0 + 1_000).toISOString());
+    assert.ok(!("finished_at" in (data.operations.find((o) => o.operation_id === "op-flying") ?? {})));
   });
 
   it("an unknown ITEM over a decided row still marks the census partial (rows and items are each the scan's artifact)", async () => {

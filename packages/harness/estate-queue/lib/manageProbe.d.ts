@@ -84,6 +84,12 @@ export interface EngineUnitCensus {
     /** systemctl show ExecMainExitTimestamp, verbatim (systemd's own
      *  spelling — never reformatted into a claim). */
     last_exit_at?: string;
+    /** systemctl show ExecMainStartTimestamp as ISO 8601 — the unit's
+     *  own word for when the engine process started (the status face's
+     *  boot time, S1 2026-11-27). Absent when systemd prints an empty
+     *  value or `n/a`: the unit is not running, so there is no boot to
+     *  state. */
+    started_at?: string;
     /** oom-kill lines in the recent journal tail (countOomLines). */
     oom_kills?: number;
     /** "degraded" (restart loop / signal death / oom evidence),
@@ -91,10 +97,25 @@ export interface EngineUnitCensus {
     verdict: "degraded" | "settled" | "unknown";
     note?: string;
 }
+/** THE USER BUS'S SEAT (S1, 2026-11-27): `systemctl --user` and
+ *  `journalctl --user` find the user manager through
+ *  XDG_RUNTIME_DIR (or DBUS_SESSION_BUS_ADDRESS); a process with a
+ *  scrubbed env answers `Failed to connect to user scope bus` and the
+ *  census read `unknown` over a unit that was up. systemd's own rule
+ *  seats the user runtime dir at /run/user/<uid>; the census sets it
+ *  only where the process carries none. LC_ALL=C and TZ=UTC fix
+ *  systemd's timestamp words to the one spelling {@link
+ *  systemdStampIso} parses.
+ *  @returns the exec env: the process env plus the locale pins and,
+ *  when absent, the derived runtime dir and its bus address. */
+export declare function censusEnv(): NodeJS.ProcessEnv;
+export declare function systemdStampIso(word: string | undefined): string | undefined;
 /** @param mctx - the manage context (unit + signal).
  *  @returns the unit census; `known:false` + note when systemd or the
  *  journal cannot answer (BYO lane, bus-less box) — never invented
- *  zeros dressed as data. @throws the caller's own abort (N-S2). */
+ *  zeros dressed as data; the note names which of the two happened
+ *  and the runtime dir the execs rode. @throws the caller's own
+ *  abort (N-S2). */
 export declare function engineUnitCensus(mctx: ManageCtx): Promise<EngineUnitCensus>;
 export {};
 //# sourceMappingURL=manageProbe.d.ts.map

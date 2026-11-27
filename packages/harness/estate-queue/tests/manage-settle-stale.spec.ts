@@ -1,6 +1,7 @@
-import { describe, it, afterEach } from "vitest";
+import { afterAll, afterEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, utimesSync } from "node:fs";
+import { fakeSystemd } from "./systemd-fake.ts";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
@@ -22,6 +23,13 @@ const realFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = realFetch;
 });
+
+// THE SPEC OWNS ITS SYSTEMD (S1, 2026-11-27): the settle's boot
+// witness is the unit's own start when systemd answers (else the
+// restart receipt); the ctx names the real engine unit, so a real
+// systemd would leak the box's boot into the judge.
+const systemd = fakeSystemd();
+afterAll(() => systemd.rm());
 
 let root = "";
 const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
@@ -120,6 +128,7 @@ describe("the settle_stale action (tts NEW-2: pre-rebuild claims retire by opera
   it("engine idle with a boot receipt: a pre-boot sidecar settles by the boot rule", async () => {
     root = mkdtempSync(join(tmpdir(), "settle-boot-"));
     try {
+      systemd.seat(null);
       const now = Date.now();
       // INSIDE the 120s submit grace (the grace alone would SKIP
       // this sidecar) but PREDATING the boot receipt — the settle
@@ -133,6 +142,51 @@ describe("the settle_stale action (tts NEW-2: pre-rebuild claims retire by opera
       globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
       const [code, env] = await run({ action: "settle_stale" });
       assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], ["run-preboot"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+
+  it("the unit's own start ranks over a stale receipt (S1): a sidecar older than the running engine settles, one younger than it stays", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-unit-boot-"));
+    try {
+      const now = Date.now();
+      // the receipt is three days old (a restart the battery or the
+      // operator issued left it behind); the unit started 30s ago
+      systemd.seat(now - 30_000);
+      plantSidecar("run-preboot", "queued", now - 60_000);
+      plantSidecar("run-postboot", "queued", now - 10_000);
+      mkdirSync(join(root, "data", "runtime", "comfyui"), { recursive: true });
+      writeFileSync(
+        join(root, "data", "runtime", "comfyui", ".estate-engine-boot.json"),
+        JSON.stringify({ boot_at: now - 3 * 86_400_000, source: "estate restart" }),
+      );
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      assert.deepEqual((env.data as Record<string, unknown>)["settled"], ["run-preboot"], "older than the engine process — cannot be live");
+      // a row younger than the engine process and inside the grace is
+      // not eligible at all — never settled, never counted a skip
+      assert.equal(readStatus("run-postboot"), "queued");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      root = "";
+    }
+  });
+
+  it("no receipt at all, systemd answering: the unit's start is the boot the judge lacked", async () => {
+    root = mkdtempSync(join(tmpdir(), "settle-unit-only-"));
+    try {
+      const now = Date.now();
+      systemd.seat(now - 30_000);
+      plantSidecar("run-preboot", "running", now - 60_000);
+      globalThis.fetch = (async () => queueJson([], [])) as unknown as typeof fetch;
+      const [code, env] = await run({ action: "settle_stale" });
+      assert.equal(code, 200);
+      // before S1 a receipt-less lane judged by the 120s grace alone:
+      // a dead 60s-old claim stayed in the doors' way
       assert.deepEqual((env.data as Record<string, unknown>)["settled"], ["run-preboot"]);
     } finally {
       rmSync(root, { recursive: true, force: true });

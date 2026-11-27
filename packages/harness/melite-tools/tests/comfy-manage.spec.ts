@@ -1076,6 +1076,56 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
     assert.match(unknown, /engine unit: unknown — the unit census cannot answer on this lane/)
   })
 
+  test('a blocked claim says its cause and its age (S1) — the bare verdict is gone, an active row stays bare', () => {
+    // THE BURN (2026-11-27): `model/family/h3-image · blocked` over a
+    // family whose checkpoints sat present — five rows from a refused
+    // request fifteen days old, cause and age both on the wire, the
+    // face printing the one word. The row now says why, when, and
+    // what the verdict is not (an operator-merged tree's files).
+    const tool = comfyManage(stubEstate())
+    const settled = new Date(Date.now() - 15 * 86_400_000).toISOString()
+    const blockedItem = { key: '["model","family","h3-image",null,null]', kind: 'model', state: 'blocked', errorCode: 'provisioning/item-not-found', detail: 'requested provision item is not declared' }
+    const truth = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server up',
+      data: {
+        state: 'up',
+        resources: [
+          { ref: { kind: 'model', owner: 'family', id: 'h3-image' }, state: 'blocked', operation_id: '0f8cd913', started_at: settled, finished_at: settled, fetchable: false, items: [blockedItem] },
+          { ref: { kind: 'model', owner: 'family', id: 'anima' }, state: 'active', items: [] },
+          { ref: { kind: 'extension', id: 'melite-audio-nodes' }, state: 'failed', detail: 'manager refused the pin', started_at: settled },
+        ],
+        operations: [
+          { operation_id: '0f8cd913', name: 'h3-image', state: 'blocked', outcome: 'blocked', started_at: settled, finished_at: settled, items: [blockedItem] },
+          { operation_id: 'op-live', name: 'anima', state: 'active', outcome: 'active', started_at: settled, finished_at: settled, items: [] },
+        ],
+      },
+    })
+    assert.match(truth, /resource: model\/family\/h3-image · blocked — provisioning\/item-not-found: requested provision item is not declared · settled \S+ \(1[45]d ago\) · the declaration names no fetchable row — an operator-merged tree; this scan has nothing to verify \(presence is judged at load\)/)
+    assert.match(truth, /resource: model\/family\/anima · active\n/, 'an active row carries no cause and no age')
+    assert.match(truth, /resource: extension\/melite-audio-nodes · failed — manager refused the pin · started \S+ \(1[45]d ago\)/, 'an unsettled row states its start, never a settle')
+    assert.match(truth, /operation 0f8cd913 · h3-image · blocked — provisioning\/item-not-found: requested provision item is not declared · settled \S+ \(1[45]d ago\)/)
+    assert.match(truth, /operation op-live · anima · active\n/, 'an active operation stays bare')
+  })
+
+  test('a cause-less verdict says so through its state alone, and a bad stamp adds no age (S1)', () => {
+    const tool = comfyManage(stubEstate())
+    const truth = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server up',
+      data: {
+        state: 'up',
+        resources: [
+          { ref: { kind: 'model', owner: 'family', id: 'x' }, state: 'unknown', items: [], started_at: 'not-a-date' },
+        ],
+        operations: [],
+      },
+    })
+    assert.match(truth, /resource: model\/family\/x · unknown · started not-a-date\n/)
+  })
+
   test('the logs render keeps the source stamp above the nested lines it unwraps', () => {
     const tool = comfyManage(stubEstate())
     const out = text(tool, {

@@ -3,7 +3,7 @@
 // walk, the active-runs census, and the manager security probe.
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { sweepOutputRoots } from "./cardsDangling.js";
 import { sdkClient } from "@melite/comfyui-cordis";
@@ -258,6 +258,45 @@ export function countOomLines(lines) {
  *  fuses so a hung bus can never eat the status answer; a census that
  *  cannot answer in time is an honest `unknown`, never a lie. */
 const CENSUS_EXEC_MS = 1_500;
+/** THE USER BUS'S SEAT (S1, 2026-11-27): `systemctl --user` and
+ *  `journalctl --user` find the user manager through
+ *  XDG_RUNTIME_DIR (or DBUS_SESSION_BUS_ADDRESS); a process with a
+ *  scrubbed env answers `Failed to connect to user scope bus` and the
+ *  census read `unknown` over a unit that was up. systemd's own rule
+ *  seats the user runtime dir at /run/user/<uid>; the census sets it
+ *  only where the process carries none. LC_ALL=C and TZ=UTC fix
+ *  systemd's timestamp words to the one spelling {@link
+ *  systemdStampIso} parses.
+ *  @returns the exec env: the process env plus the locale pins and,
+ *  when absent, the derived runtime dir and its bus address. */
+export function censusEnv() {
+    const env = { ...process.env, LC_ALL: "C", TZ: "UTC" };
+    if (env["XDG_RUNTIME_DIR"] === undefined || env["XDG_RUNTIME_DIR"] === "") {
+        const uid = process.getuid?.();
+        const dir = uid === undefined ? undefined : "/run/user/" + String(uid);
+        if (dir !== undefined && existsSync(dir)) {
+            env["XDG_RUNTIME_DIR"] = dir;
+            if (env["DBUS_SESSION_BUS_ADDRESS"] === undefined)
+                env["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=" + dir + "/bus";
+        }
+    }
+    return env;
+}
+/** systemd's `ExecMainStartTimestamp` word under LC_ALL=C / TZ=UTC is
+ *  `Fri 2026-11-27 11:00:20 UTC`; a unit that is not running prints
+ *  an empty value or `n/a`.
+ *  @param word - the property's verbatim value.
+ *  @returns the same instant as ISO 8601, or undefined when the unit
+ *  has no running main process (or the word is not systemd's). */
+const SYSTEMD_STAMP_RE = /^([A-Z][a-z]{2}) (\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}) UTC$/;
+export function systemdStampIso(word) {
+    if (word === undefined)
+        return undefined;
+    const m = SYSTEMD_STAMP_RE.exec(word);
+    if (m === null)
+        return undefined;
+    return m[2] + "-" + m[3] + "-" + m[4] + "T" + m[5] + ":" + m[6] + ":" + m[7] + ".000Z";
+}
 /** THE DEGRADED LAW: two unplanned restarts, a SIGKILL last exit (the
  *  burn's `status=9/KILL` — signal 9 never arrives from a clean
  *  stop), or oom evidence in the recent journal. One of these alone
@@ -267,10 +306,13 @@ const KILL_SIGNAL = 9;
 /** @param mctx - the manage context (unit + signal).
  *  @returns the unit census; `known:false` + note when systemd or the
  *  journal cannot answer (BYO lane, bus-less box) — never invented
- *  zeros dressed as data. @throws the caller's own abort (N-S2). */
+ *  zeros dressed as data; the note names which of the two happened
+ *  and the runtime dir the execs rode. @throws the caller's own
+ *  abort (N-S2). */
 export async function engineUnitCensus(mctx) {
     const unit = mctx.comfyUnit;
-    const execOpts = { timeout: CENSUS_EXEC_MS, encoding: "utf8", signal: mctx.signal };
+    const env = censusEnv();
+    const execOpts = { timeout: CENSUS_EXEC_MS, encoding: "utf8", signal: mctx.signal, env };
     const [propsResult, journalResult] = await Promise.allSettled([
         execFileAsync("systemctl", [
             "--user", "show", unit,
@@ -278,6 +320,7 @@ export async function engineUnitCensus(mctx) {
             "--property=ExecMainStatus",
             "--property=ExecMainCode",
             "--property=ExecMainExitTimestamp",
+            "--property=ExecMainStartTimestamp",
         ], execOpts),
         execFileAsync("journalctl", ["--user", "-u", unit, "-n", "200", "--no-pager", "-o", "cat"], execOpts),
     ]);
@@ -294,7 +337,7 @@ export async function engineUnitCensus(mctx) {
         const why = propsResult.status === "rejected"
             ? String(propsResult.reason.stderr ?? propsResult.reason.message).trim().slice(0, 120)
             : "systemd answered nothing parseable";
-        return { known: false, unit, verdict: "unknown", note: "the unit census cannot answer on this lane: " + why };
+        return { known: false, unit, verdict: "unknown", note: "the unit census cannot answer on this lane: " + why + " (XDG_RUNTIME_DIR=" + String(env["XDG_RUNTIME_DIR"] ?? "unset") + ")" };
     }
     let oomKills;
     let journalNote;
@@ -330,6 +373,9 @@ export async function engineUnitCensus(mctx) {
     const exitAt = props["ExecMainExitTimestamp"];
     if (exitAt !== undefined && exitAt !== "" && exitAt !== "n/a")
         row.last_exit_at = exitAt;
+    const startedAt = systemdStampIso(props["ExecMainStartTimestamp"]);
+    if (startedAt !== undefined)
+        row.started_at = startedAt;
     if (oomKills !== undefined)
         row.oom_kills = oomKills;
     const degraded = (Number.isFinite(restarts) && restarts >= DEGRADE_RESTART_FLOOR)

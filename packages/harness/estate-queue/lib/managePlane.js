@@ -22,7 +22,7 @@ import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUse
 import { rearmLoraFlavors } from "@melite/comfyui-cordis";
 import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioning";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
-import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims, engineUnitCensus, countOomLines } from "./manageProbe.js";
+import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims, engineUnitCensus, countOomLines, censusEnv } from "./manageProbe.js";
 import { runPreflight, preflightLine } from "./managePreflight.js";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, quietOrRefuse } from "./manageOps.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
@@ -351,7 +351,27 @@ async function recordEngineBoot(ctx, source) {
         return;
     }
 }
-function engineBootRow(ctx) {
+/** THE BOOT'S OWN WITNESS (S1, 2026-11-27): the restart receipt only
+ *  knows the boots the estate's own door issued; every other rester
+ *  (the battery's handoff, `provision extensions`, the operator's
+ *  systemctl) left the receipt stale and the status face read an age
+ *  of days over a unit started hours ago. The census's
+ *  ExecMainStartTimestamp is the unit's own word and ranks first; the
+ *  receipt stays the fallback for a lane without a user bus, and its
+ *  absence stays the honest unknown.
+ *  @param ctx - the manage context (repo root for the receipt).
+ *  @param census - the unit census, when the caller has one.
+ *  @returns the boot row: known with ISO `boot_at`, `age_seconds`
+ *  and the `source` that answered, or `known:false` + note. */
+function engineBootRow(ctx, census) {
+    if (census?.started_at !== undefined) {
+        return {
+            known: true,
+            boot_at: census.started_at,
+            age_seconds: Math.max(0, Math.round((Date.now() - Date.parse(census.started_at)) / 1000)),
+            source: "systemd: " + census.unit + " ExecMainStartTimestamp",
+        };
+    }
     try {
         const raw = JSON.parse(readFileSync(engineBootReceiptPath(ctx), "utf8"));
         const bootAt = typeof raw.boot_at === "number" ? raw.boot_at : NaN;
@@ -383,12 +403,18 @@ function safeStatusItems(items) {
         ...(item.detail === undefined ? {} : { detail: item.detail }),
     }));
 }
-async function normalizedResources(resources, provisioning) {
-    const rows = [];
-    for (const resource of resources) {
-        rows.push(await normalizeResource(resource, provisioning));
-    }
-    return rows;
+/** @param row - the status row.
+ *  @param operation - the row's stored operation, when the seat has one.
+ *  @returns the row with the operation's clock; an unstamped record
+ *  (startedAt 0 — a seat that keeps no clock) adds nothing. */
+function withOperationClock(row, operation) {
+    if (operation === undefined || typeof operation.startedAt !== "number" || operation.startedAt === 0)
+        return row;
+    return {
+        ...row,
+        started_at: new Date(operation.startedAt).toISOString(),
+        ...(typeof operation.finishedAt === "number" ? { finished_at: new Date(operation.finishedAt).toISOString() } : {}),
+    };
 }
 /** THE TRUST MERGE (audit I-S6, 2026-10-22): the stored operation
  *  still fills a status row the declaration does not know (external
@@ -400,12 +426,11 @@ async function normalizedResources(resources, provisioning) {
  *  not a throw: a resource status the door can still report beats a
  *  status door that cannot answer. */
 async function normalizeResource(resource, provisioning) {
-    const row = (operationId, state, items, detail) => ({
+    const row = withOperationClock;
+    const bare = () => ({
         ...resource,
-        state,
-        items,
-        ...(operationId === undefined ? {} : { operationId }),
-        ...(detail === undefined ? {} : { detail }),
+        ...(resource.operationId === undefined ? {} : { operationId: resource.operationId }),
+        ...(resource.detail === undefined ? {} : { detail: resource.detail }),
     });
     if (provisioning === undefined) {
         /* v8 ignore next 2 -- the only caller (hStatus) initialises
@@ -414,29 +439,48 @@ async function normalizeResource(resource, provisioning) {
          * this function never sees provisioning === undefined; the
          * empty list never enters the loop (audit 2026-10-13,
          * call-site proof). */
-        return row(resource.operationId, resource.state, resource.items, resource.detail);
+        return bare();
     }
     try {
         const operation = provisioning.operationOf(resource.ref);
-        if (operation === undefined) {
-            return row(resource.operationId, resource.state, resource.items, resource.detail);
-        }
+        if (operation === undefined)
+            return bare();
         const verified = provisioning.verifyOperation === undefined
             ? operation
             : await provisioning.verifyOperation(operation);
         if (verified.state !== operation.state) {
-            return row(verified.operationId, verified.state, verified.items, verified.items[0]?.detail ?? resource.detail);
+            return row({
+                ...resource,
+                operationId: verified.operationId,
+                state: verified.state,
+                items: verified.items,
+                ...(verified.items[0]?.detail === undefined && resource.detail === undefined ? {} : { detail: verified.items[0]?.detail ?? resource.detail }),
+            }, operation);
         }
-        return row(operation.operationId, operation.state, operation.items, resource.detail ?? operation.detail);
+        return row({
+            ...resource,
+            operationId: operation.operationId,
+            state: operation.state,
+            items: operation.items,
+            ...(resource.detail ?? operation.detail) === undefined ? {} : { detail: resource.detail ?? operation.detail },
+        }, operation);
     }
     catch {
-        return row(resource.operationId, resource.state, resource.items, resource.detail);
+        return bare();
     }
+}
+async function normalizedResources(resources, provisioning) {
+    const rows = [];
+    for (const resource of resources) {
+        rows.push(await normalizeResource(resource, provisioning));
+    }
+    return rows;
 }
 function operationRows(resources) {
     return resources.flatMap((resource) => {
         const operationId = resource.operationId;
         const first = resource.items[0];
+        const timed = resource;
         return operationId === undefined ? [] : [{
                 operation_id: operationId,
                 name: resource.ref.id,
@@ -444,6 +488,8 @@ function operationRows(resources) {
                 ...(first?.path === undefined ? {} : { path: first.path }),
                 state: resource.state,
                 outcome: statusOutcome(resource.state),
+                ...(timed.started_at === undefined ? {} : { started_at: timed.started_at }),
+                ...(timed.finished_at === undefined ? {} : { finished_at: timed.finished_at }),
                 items: safeStatusItems(resource.items),
                 next_action: resource.state === "restart_required" || resource.state === "installed" ? "restart" : "status",
             }];
@@ -667,7 +713,7 @@ async function hStatus(req, ctx) {
         ...(active.length > 1 && !engineIdle
             ? { active_runs_note: active.length + " claims; the one-run law bounds machine-wide actives at 1 — the surplus is unsettled sidecars (historical); the engine queue corroborates only when empty" }
             : {}),
-        engine_boot: engineBootRow(ctx),
+        engine_boot: engineBootRow(ctx, census),
         engine_unit: census,
         routing,
         auto_provision: ctx.autoProvision,
@@ -732,6 +778,7 @@ async function unitAppLogPath(ctx) {
         const out = await execFileAsync("systemctl", ["--user", "cat", ctx.comfyUnit], {
             timeout: 5 * 1000,
             encoding: "utf8",
+            env: censusEnv(),
         });
         const m = /^StandardOutput=(?:append:|file:)(\S+)/m.exec(out.stdout);
         return m === null ? null : m[1];
@@ -776,7 +823,7 @@ function tailLines(path, max) {
  *  @param path the RESOLVED application-log path (the unit's own
  *    StandardOutput directive first — the deployment's truth — then
  *    the canonical derivation; null when neither seat produced one). */
-function appLogRow(ctx, path, tail) {
+function appLogRow(ctx, path, tail, census) {
     if (path === null) {
         return {
             known: false,
@@ -800,7 +847,7 @@ function appLogRow(ctx, path, tail) {
         };
     }
     const ageSeconds = Math.max(0, Math.round((Date.now() - mtimeMs) / 1000));
-    const boot = engineBootRow(ctx);
+    const boot = engineBootRow(ctx, census);
     const bootMs = boot.known === true && typeof boot.boot_at === "string" ? Date.parse(boot.boot_at) : NaN;
     const fresh = ageSeconds * 1000 <= APP_LOG_FRESH_MS || (Number.isFinite(bootMs) && mtimeMs >= bootMs);
     if (!fresh) {
@@ -847,10 +894,13 @@ async function hLogs(req, ctx) {
     const tail = Math.max(1, Math.min(Math.trunc(req.tail), 2000));
     let stdout;
     try {
+        // THE USER BUS'S SEAT (S1, 2026-11-27): the journal read rides the
+        // same env the census does — a scrubbed lane found no user journal.
         const out = await execFileAsync("journalctl", ["--user", "-u", ctx.comfyUnit, "-n", String(tail), "--no-pager", "-o", "cat"], {
             timeout: 15 * 1000,
             encoding: "utf8",
             signal: ctx.signal,
+            env: censusEnv(),
         });
         stdout = out.stdout;
     }
@@ -871,7 +921,11 @@ async function hLogs(req, ctx) {
     // not own it (the logs-truth law, unchanged).
     const port = appLogPort(ctx);
     const unitPath = port !== null ? await unitAppLogPath(ctx) : null;
-    const appLog = appLogRow(ctx, unitPath ?? (port !== null ? appLogPath(ctx, port) : null), tail);
+    const appLogPathRow = unitPath ?? (port !== null ? appLogPath(ctx, port) : null);
+    // the fresh bound judges against the unit's own start when systemd
+    // answers (S1) — only a resolved path pays the census exec
+    const appLogCensus = appLogPathRow === null ? Promise.resolve(undefined) : engineUnitCensus(ctx);
+    const appLog = appLogRow(ctx, appLogPathRow, tail, await appLogCensus);
     const data = {
         source: {
             kind: "journal",
@@ -2137,7 +2191,9 @@ async function hSettleStale(req, ctx) {
         throw new Refused(409, "settle_stale refused: the engine is working (running " + queue.running + " · pending " + queue.pending +
             ") — every live-worded sidecar may be live; settle only against an idle engine");
     }
-    const boot = engineBootRow(ctx);
+    // the unit's own start ranks over the receipt (S1): a sidecar that
+    // predates the running engine process cannot be live
+    const boot = engineBootRow(ctx, await engineUnitCensus(ctx));
     const bootAt = boot["known"] === true ? Date.parse(String(boot["boot_at"])) : NaN;
     const now = Date.now();
     const outcome = settleStaleClaims(ctx.stateRoots, (_name, mtimeMs) => {
