@@ -541,6 +541,43 @@ test('FIELD CREATE: the qvoice shape refuses a half-bag — the persona is picke
   expect(onEdit).not.toHaveBeenCalled()
 })
 
+// THE DEFAULT-IS-NOT-ABSENCE TWIN (the 2026-11-27 relapse the same
+// day: the guard first judged "nothing differs from the declared
+// defaults", and a bare Add on the h3 timeline's Video edit /
+// Reshoot bags stored NOTHING — payloads [] at the bench door —
+// because a dial-only bag authors no seat at all and a pick of the
+// row that happens to be the default reads as unauthored). The
+// guard judges the entry's OWN PICK, never the defaults: a bag with
+// no identity pick saves on a bare Add, and a stated default saves
+// too.
+test('FIELD CREATE: a dial-only bag still saves on a bare Add — defaults are not a half-row', () => {
+  const { onEdit } = openLeaf({ kinds: [MASK], values: {} })
+  openCreate('Mask')
+  // the pick seat is unnamed (image ≠ the bag's own key) — the row
+  // is the dial, never a half-bag
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 5 }])
+  expect(screen.queryByText(/Pick the/)).toBeNull()
+})
+
+test('FIELD CREATE: a row picked at its own default still saves (the Video edit Region press)', () => {
+  const VIDEO_EDIT = {
+    kind: 'edit', label: 'Video edit', param_key: 'edit', cardinality: 'list', max_stack: 1,
+    fields: [
+      { name: 'mask_source', type: 'select', label: 'Mask source', default: 'region',
+        options: [{ value: 'region', label: 'Region' }, { value: 'file', label: 'Staged file' }] },
+      { name: 'mask_image', type: 'image', label: 'Mask Image' },
+      { name: 'blur', type: 'number', label: 'Blur', default: 0 },
+    ],
+  } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [VIDEO_EDIT], values: {} })
+  openCreate('Video edit')
+  // the operator presses Region — the row the draft already rests on
+  pickCatalog(() => screen.getByLabelText('Mask source'), 'Region')
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('edit', [{ mask_source: 'region', blur: 0 }])
+})
+
 // THE SAM_THRESHOLD CURE (2026-11-05, the operator's bug sweep): a
 // number typed in the leaf arrived as the RAW STRING (SpecAtom hands
 // back e.target.value) and the save stamped it verbatim — the card

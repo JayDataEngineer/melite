@@ -812,34 +812,38 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     } else {
       // FIELD kind: the draft params object IS the entry
       if (open.mode === 'create') {
-        // THE NOTHING-AUTHORED GUARD (operator burn, 2026-11-27: the
+        // THE ENTRY'S OWN PICK GUARD (operator burn, 2026-11-27: the
         // Voice mod's create seeded the dials' defaults — pressing
         // Add before choosing a persona committed
         // `{ voice_strength: 1 }`, and the press then died at phase 1
-        // with "qvoice bag entry requires a string qvoice path"). A
-        // create whose draft states NOTHING but the fields' own
-        // declared defaults is a half-row: it saves only what the
-        // operator authored. When the missing seat is a PICK, the
-        // leaf names it (the square is the pick; the dial's default
-        // is not an entry). Same law as the hybrid leaves'
-        // "pick one from the served rows".
-        const authored = (k.fields ?? []).some((f) => {
-          if (!(f.name in draftParams)) return false
-          const v = draftParams[f.name]
-          if (v === undefined || v === null) return false
-          if (typeof v === 'string' && v.trim() === '') return false
-          return !(f.default !== undefined && f.default === v)
-        })
-        if (!authored && (k.fields ?? []).length > 0) {
-          const pick = (k.fields ?? []).find((f) =>
-            (f.type === 'file' || f.type === 'image' || f.type === 'mesh'
-              || f.wtype === 'file' || f.wtype === 'image')
-            && !isBagContainerField(k, f)
-            && fieldVisible(f, draftParams))
-          setLeafError(pick !== undefined
-            ? 'Pick the ' + (pick.label ?? pick.name) + ' first — this row saves only once its pick is chosen.'
-            : 'State a value first — this row saves only what you author, never bare dial defaults.')
-          return
+        // with "qvoice bag entry requires a string qvoice path"). The
+        // seat the guard judges is the ENTRY'S OWN — the field that
+        // names the row (name === the bag's param_key, a pick seat,
+        // never the mod-face container): the persona for the qvoice
+        // bag, a row for a catalog bag. Only that pick must be
+        // stated; every other dial may seed itself.
+        //
+        // Judging "nothing differs from the declared defaults"
+        // instead (the 2026-11-27 relapse) refused the Video edit and
+        // Reshoot bags on a bare Add: the operator's deliberate pick
+        // of a row that happens to BE the default (Mask source =
+        // Region) reads as unauthored, and a dial-only bag has no
+        // authored seat at all. A default is not an absence.
+        const identityPick = (k.fields ?? []).find((f) =>
+          f.name === k.param_key
+          && !isBagContainerField(k, f)
+          && (f.type === 'file' || f.type === 'image' || f.type === 'mesh'
+            || f.wtype === 'file' || f.wtype === 'image' || f.wtype === 'mesh')
+          && fieldVisible(f, draftParams))
+        if (identityPick !== undefined) {
+          const v = draftParams[identityPick.name]
+          const stated = v !== undefined && v !== null
+            && !(typeof v === 'string' && v.trim() === '')
+          if (!stated) {
+            setLeafError('Pick the ' + (identityPick.label ?? identityPick.name)
+              + ' first — this row saves only once its pick is chosen.')
+            return
+          }
         }
         commit(k, [...entries, { ...draftParams }])
       }

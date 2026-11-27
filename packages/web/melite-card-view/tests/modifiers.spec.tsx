@@ -244,19 +244,34 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
   expect(square).toBeTruthy()
   const mode = screen.getByLabelText('Region Mode')
   expect(mode).toBeTruthy()
-  // THE AUTHORED-ROW LAW (operator burn 2026-11-27): Add with only
-  // the declared defaults refuses and names the unpicked pick — a
-  // FIELD row exists once the operator authors something.
-  fireEvent.click(screen.getByText('Add'))
-  expect(await screen.findByText(/Pick the .*first/)).toBeTruthy()
-  expect(values['mask']).toBeUndefined()
-  // author a dial, then save: the entry is the params object (no id,
-  // no strength) and carries the authored value beside the rest
-  fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '9' } })
+  // THE DIAL-ONLY LAW (operator burn 2026-11-27, re-ruled the same
+  // day): Add with nothing but the declared defaults LANDS a FIELD
+  // row. The mask bag authors no identity pick — its envelope's
+  // `mask` seat IS the bag, and the test envelope below carries no
+  // such field at all — so there is nothing to pick before the row
+  // exists; a default is not an absence (the first, broad guard
+  // judged "nothing differs from the declared defaults" and the h3
+  // timeline's Video edit / Reshoot bags stored NOTHING). The
+  // refusal rides the entry's OWN pick — name === the bag's
+  // param_key, a file/image/mesh seat — the qvoice persona; that
+  // wall is packages/web/card-base/tests/mods-leaf.spec.tsx.
   fireEvent.click(screen.getByText('Add'))
   await waitFor(() => {
     const bag = values['mask'] as Array<Record<string, unknown>>
     expect(Array.isArray(bag)).toBe(true)
+    expect(bag[0]?.['mask_mode']).toBe('auto')
+    expect(bag[0]?.['mask_feather']).toBe(8)
+    expect(bag[0]?.['id']).toBeUndefined()
+  })
+  expect(screen.queryByText(/Pick the .*first/)).toBeNull()
+  // a STATED dial rides the entry (the create reads the whole draft,
+  // not only its defaults): reopen the leaf, type 9, Add
+  fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
+  fireEvent.click(await screen.findByText('Region Mask'))
+  fireEvent.change(await screen.findByLabelText('Feather'), { target: { value: '9' } })
+  fireEvent.click(screen.getByText('Add'))
+  await waitFor(() => {
+    const bag = values['mask'] as Array<Record<string, unknown>>
     expect(bag[0]?.['mask_mode']).toBe('auto')
     expect(bag[0]?.['mask_feather']).toBe(9)
     expect(bag[0]?.['id']).toBeUndefined()

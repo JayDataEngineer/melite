@@ -16786,16 +16786,13 @@ window.__ModuleLoader__.load({
 						commit(k, next);
 					}
 				} else if (open.mode === "create") {
-					if (!(k.fields ?? []).some((f) => {
-						if (!(f.name in draftParams)) return false;
-						const v = draftParams[f.name];
-						if (v === void 0 || v === null) return false;
-						if (typeof v === "string" && v.trim() === "") return false;
-						return !(f.default !== void 0 && f.default === v);
-					}) && (k.fields ?? []).length > 0) {
-						const pick = (k.fields ?? []).find((f) => (f.type === "file" || f.type === "image" || f.type === "mesh" || f.wtype === "file" || f.wtype === "image") && !isBagContainerField(k, f) && fieldVisible(f, draftParams));
-						setLeafError(pick !== void 0 ? "Pick the " + (pick.label ?? pick.name) + " first — this row saves only once its pick is chosen." : "State a value first — this row saves only what you author, never bare dial defaults.");
-						return;
+					const identityPick = (k.fields ?? []).find((f) => f.name === k.param_key && !isBagContainerField(k, f) && (f.type === "file" || f.type === "image" || f.type === "mesh" || f.wtype === "file" || f.wtype === "image" || f.wtype === "mesh") && fieldVisible(f, draftParams));
+					if (identityPick !== void 0) {
+						const v = draftParams[identityPick.name];
+						if (!(v !== void 0 && v !== null && !(typeof v === "string" && v.trim() === ""))) {
+							setLeafError("Pick the " + (identityPick.label ?? identityPick.name) + " first — this row saves only once its pick is chosen.");
+							return;
+						}
 					}
 					commit(k, [...entries, { ...draftParams }]);
 				} else {
