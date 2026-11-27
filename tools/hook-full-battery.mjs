@@ -26,6 +26,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tierGate, loadLeases, saveLeases } from "./battery-leases.mjs";
+import { coldCardHandoff, laneStateRoots } from "./engine-idle.mjs";
 
 // fileURLToPath, never URL.pathname (the windows CI doubled-drive
 // class, 2026-10-31: '/D:/…' is drive-rooted RELATIVE on win32).
@@ -465,17 +466,32 @@ await tier("coverage", async () => {
   // own pre-run performs by hand. Machine-local and guarded: only
   // when the engine answers at the dev host AND the user service
   // exists (keyless CI owns neither — its engine tiers self-skip).
+  //
+  // THE QUIET LAW AT THE HANDOFF (B4, 2026-11-27: the
+  // restart-under-a-press burn): the handoff used to restart
+  // UNCONDITIONALLY — guarded only by the engine answering
+  // /system_stats — and landed under a film the operator's other
+  // lane was pressing on the same engine (the next window died on a
+  // connection refusal). The restart now waits for a QUIET engine:
+  // the engine's own queue empty and staying empty for the window,
+  // and no live run sidecar under any lane's declared state root
+  // (tools/engine-idle.mjs — the manage plane's own quiet law in the
+  // battery's spelling). An engine that never goes quiet inside the
+  // budget is left running and the handoff says so LOUD; the browser
+  // tier then runs on the warm card, the same posture as the absent
+  // unit below.
   {
     const engineUp = await fetch("http://127.0.0.1:8188/system_stats", { signal: AbortSignal.timeout(4_000) }).then((r) => r.ok).catch(() => false);
     if (engineUp) {
-      const restart = await spawnTee("systemctl", ["--user", "restart", "melite-comfyui.service"], { shell });
-      if (restart.status === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 12_000));
-        const cold = await fetch("http://127.0.0.1:8188/system_stats", { signal: AbortSignal.timeout(20_000) }).then((r) => r.ok).catch(() => false);
-        console.warn(`HANDOFF: engine restarted cold for the browser tier (boot probe ${cold ? "ok" : "still settling — the lane's own boot grace covers it"})`);
-      } else {
-        console.warn("SKIP-LOUD: melite-comfyui.service absent — the browser tier runs on the WARM card the e2e tier left (journeys may refuse at the VRAM door)");
-      }
+      const lanes = laneStateRoots();
+      await coldCardHandoff({
+        fetchImpl: fetch,
+        baseUrl: "http://127.0.0.1:8188",
+        spawn: (cmd, args) => spawnTee(cmd, args, { shell }),
+        stateRoots: lanes.roots,
+        unknown: lanes.unknown,
+        log: (line) => console.warn(line),
+      });
     }
   }
   await tier("browser", async () => {

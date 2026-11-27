@@ -21,6 +21,7 @@ export const ManageConfig = Schema.object({
     comfyUnit: Schema.string().default("melite-comfyui.service"),
     autoProvision: Schema.boolean().default(false),
     userLorasPath: Schema.string().default(""),
+    engineQuiesceMs: Schema.natural().default(10_000),
 });
 export class ManageGatewayService extends Service {
     // THE QUEUE INJECT (af-close4, 2026-10-09): act() reads
@@ -37,10 +38,13 @@ export class ManageGatewayService extends Service {
     comfyUnit;
     /** The lane's provisioning posture (config-pinned). */
     autoProvision;
+    /** The teardown doors' quiet window in ms (config-pinned). */
+    engineQuiesceMs;
     constructor(ctx, config = {}) {
         super(ctx, "manage");
         this.comfyUnit = config.comfyUnit ?? "melite-comfyui.service";
         this.autoProvision = config.autoProvision ?? false;
+        this.engineQuiesceMs = config.engineQuiesceMs ?? 10_000;
     }
     /** The one entry: the tools' /v1/manage lane. */
     async act(doc, signal) {
@@ -51,6 +55,7 @@ export class ManageGatewayService extends Service {
             stateRoots: this.ctx.queue.stateRoots,
             comfyUnit: this.comfyUnit,
             autoProvision: this.autoProvision,
+            engineQuiesceMs: this.engineQuiesceMs,
             endpoint: () => loadEndpointConfig(),
             models: modelsService(),
             // NO CAST (2026-09-26): the seat is OPTIONAL and the type says

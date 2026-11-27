@@ -53,7 +53,7 @@ import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./ma
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims, engineUnitCensus, countOomLines } from "./manageProbe.ts";
 import type { EngineUnitCensus } from "./manageProbe.ts";
 import { runPreflight, preflightLine } from "./managePreflight.ts";
-import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.ts";
+import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, quietOrRefuse } from "./manageOps.ts";
 import type { LifecycleLatch } from "./lifecycleLatch.ts";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
@@ -203,6 +203,13 @@ export interface ManageCtx {
    *  operator confirm — the raw-URL arms stay operator-gated in the
    *  deck's own gate regardless of this value. */
   autoProvision: boolean;
+  /** THE QUIET WINDOW (B4, 2026-11-27): the milliseconds a teardown
+   *  door (restart, stop) requires the engine's queue to be empty
+   *  AND stay empty before it tears — the manage provider's config
+   *  field (engineQuiesceMs), resolved per mount. Every lane's press
+   *  is a row in that queue; a film between two windows reads empty
+   *  for seconds. 0 tears on the first empty reading. */
+  engineQuiesceMs: number;
   /** The endpoint config, re-read per call (fresh — never cached
    *  between calls): carries the engine url the manager rail rides.
    *  The bridges door passes loadEndpointConfig itself. */
@@ -2228,6 +2235,13 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
   guardLifecycle(req, ctx);
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
+  // THE QUIET LAW (B4, 2026-11-27): the reboot waits (unlocked) for
+  // an engine queue that is empty and stays empty — a film pressing
+  // from another lane is a row there, invisible to the lifecycle
+  // guard's own-roots census. The latch is taken only after the
+  // verdict, across the vendor call (a same-lane press during the
+  // wait lands and is itself the busy signal).
+  await quietOrRefuse(req, ctx, "restart");
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
   // call so a run pressed mid-reboot refuses instead of tearing.
   const releaseLifecycle = ctx.latch.hold(req.action);
@@ -2271,6 +2285,7 @@ async function hStop(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   estateOnly(req, ctx.endpoint());
   // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the
   // systemctl call so a run pressed mid-stop refuses.
+  await quietOrRefuse(req, ctx, "stop");
   const releaseLifecycle = ctx.latch.hold(req.action);
   try {
     return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);

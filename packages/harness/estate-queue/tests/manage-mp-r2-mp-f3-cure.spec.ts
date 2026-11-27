@@ -129,6 +129,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     repoRoot: ROOT,
     stateRoots: rootsManifest(resolveStateRoot({ repoRoot: ROOT }), []),
     comfyUnit: "estate-comfyui.service",
+    engineQuiesceMs: 0,
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
     models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     timeout: (cb: () => void, ms: number): (() => void) => {

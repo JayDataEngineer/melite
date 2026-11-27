@@ -388,6 +388,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/estate-queue/src/cardsRegistry.ts': { statements: 99.27, branches: 96.68, functions: 98.91, lines: 99.65 },
   '**/packages/harness/estate-queue/src/cardsVariant.ts': { statements: 99.27, branches: 97.3, functions: 93.33, lines: 99.1 },
   '**/packages/harness/estate-queue/src/discloseRegistry.ts': { statements: 98.5, branches: 92.78, functions: 96, lines: 99.05 },
+  '**/packages/harness/estate-queue/src/engineQuiet.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-queue/src/filmLead.ts': { statements: 66.67, branches: 50, functions: 50, lines: 50 },
   '**/packages/harness/estate-queue/src/filmMemoryWarn.ts': { statements: 97.87, branches: 97.87, functions: 75, lines: 97.37 },
   '**/packages/harness/estate-queue/src/flowsData.ts': { statements: 99.6, branches: 98.86, functions: 97.37, lines: 99.56 },

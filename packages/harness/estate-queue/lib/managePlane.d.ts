@@ -47,6 +47,13 @@ export interface ManageCtx {
      *  operator confirm — the raw-URL arms stay operator-gated in the
      *  deck's own gate regardless of this value. */
     autoProvision: boolean;
+    /** THE QUIET WINDOW (B4, 2026-11-27): the milliseconds a teardown
+     *  door (restart, stop) requires the engine's queue to be empty
+     *  AND stay empty before it tears — the manage provider's config
+     *  field (engineQuiesceMs), resolved per mount. Every lane's press
+     *  is a row in that queue; a film between two windows reads empty
+     *  for seconds. 0 tears on the first empty reading. */
+    engineQuiesceMs: number;
     /** The endpoint config, re-read per call (fresh — never cached
      *  between calls): carries the engine url the manager rail rides.
      *  The bridges door passes loadEndpointConfig itself. */

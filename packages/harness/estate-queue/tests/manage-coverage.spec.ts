@@ -171,6 +171,7 @@ const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
   stateRoots: root === "" ? [] : [root],
   comfyUnit: "melite-comfyui.service",
   autoProvision: false,
+  engineQuiesceMs: 0,
   endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
   models,
   provisioning,
@@ -620,8 +621,16 @@ describe("manage queue and child seats", () => {
     assert.match(journalEnvelope.detail, /journal failed/);
 
     const logAbort = new AbortController();
+    // execFile's contract (B4, 2026-11-27): an ALREADY-aborted signal
+    // rejects at once — a listener-only mock never fires when the
+    // abort lands before the child call (the stop door now yields at
+    // its quiet check before the call, so the test's synchronous
+    // abort can precede it)
     child.run = async (_file, _args, options) => await new Promise<ChildResult>((_resolve, reject) => {
-      (options["signal"] as AbortSignal | undefined)?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      const signal = options["signal"] as AbortSignal | undefined;
+      const refused = (): void => reject(new DOMException("aborted", "AbortError"));
+      if (signal?.aborted === true) { refused(); return; }
+      signal?.addEventListener("abort", refused, { once: true });
     });
     const pendingLogs = run({ action: "logs" }, { signal: logAbort.signal });
     logAbort.abort(new Error("journal-abort"));
@@ -653,8 +662,16 @@ describe("manage queue and child seats", () => {
     assert.match(stderrEnvelope.detail, /systemctl-stderr/);
 
     const systemAbort = new AbortController();
+    // execFile's contract (B4, 2026-11-27): an ALREADY-aborted signal
+    // rejects at once — a listener-only mock never fires when the
+    // abort lands before the child call (the stop door now yields at
+    // its quiet check before the call, so the test's synchronous
+    // abort can precede it)
     child.run = async (_file, _args, options) => await new Promise<ChildResult>((_resolve, reject) => {
-      (options["signal"] as AbortSignal | undefined)?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      const signal = options["signal"] as AbortSignal | undefined;
+      const refused = (): void => reject(new DOMException("aborted", "AbortError"));
+      if (signal?.aborted === true) { refused(); return; }
+      signal?.addEventListener("abort", refused, { once: true });
     });
     const pendingStop = run({ action: "stop", force: true }, { signal: systemAbort.signal });
     systemAbort.abort("system-abort");

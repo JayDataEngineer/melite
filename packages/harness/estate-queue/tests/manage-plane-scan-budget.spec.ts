@@ -124,6 +124,7 @@ function statusCtx(root: string, service: ProvisioningService): ManageCtx {
     stateRoots: rootsManifest(resolveStateRoot({ repoRoot: root }), []),
     endpoint: () => ({ provision: "managed", url: "http://127.0.0.1:1" }),
     autoProvision: false,
+    engineQuiesceMs: 0,
     models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: service as unknown as ProvisioningServiceDefinition & {
       reconcile: (signal?: AbortSignal) => Promise<ResourceStatus[]>;

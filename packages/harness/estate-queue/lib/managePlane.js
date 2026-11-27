@@ -24,7 +24,7 @@ import { AcquireBusyError, LIVE_ACQUIRE_STATES } from "@melite/estate-provisioni
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
 import { probeEndpoint, activeRuns, managerSecurity, engineQueueView, settleStaleClaims, engineUnitCensus, countOomLines } from "./manageProbe.js";
 import { runPreflight, preflightLine } from "./managePreflight.js";
-import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle } from "./manageOps.js";
+import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, quietOrRefuse } from "./manageOps.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { segmentConfined } from "@melite/contracts/mediaKinds";
 import { artifactFileName } from "@melite/contracts/benchResult";
@@ -1921,6 +1921,13 @@ async function hRestart(req, ctx) {
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
     estateOnly(req, cfg);
+    // THE QUIET LAW (B4, 2026-11-27): the reboot waits (unlocked) for
+    // an engine queue that is empty and stays empty — a film pressing
+    // from another lane is a row there, invisible to the lifecycle
+    // guard's own-roots census. The latch is taken only after the
+    // verdict, across the vendor call (a same-lane press during the
+    // wait lands and is itself the busy signal).
+    await quietOrRefuse(req, ctx, "restart");
     // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the vendor
     // call so a run pressed mid-reboot refuses instead of tearing.
     const releaseLifecycle = ctx.latch.hold(req.action);
@@ -1967,6 +1974,7 @@ async function hStop(req, ctx) {
     estateOnly(req, ctx.endpoint());
     // THE LIFECYCLE LATCH (MP-R1, 2026-10-10): held across the
     // systemctl call so a run pressed mid-stop refuses.
+    await quietOrRefuse(req, ctx, "stop");
     const releaseLifecycle = ctx.latch.hold(req.action);
     try {
         return await systemctl(req, "stop", ctx.comfyUnit, ctx.signal);

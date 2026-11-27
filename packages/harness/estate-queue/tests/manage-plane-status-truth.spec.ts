@@ -88,6 +88,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     comfyUnit: "estate-comfyui.service",
     endpoint: () => ({ provision: "managed", url: "http://127.0.0.1:8289" }),
     autoProvision: false,
+    engineQuiesceMs: 0,
     models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     timeout: (cb: () => void, ms: number): (() => void) => {
       const timer = setTimeout(cb, ms);

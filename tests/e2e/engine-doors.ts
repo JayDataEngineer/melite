@@ -11,6 +11,30 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
 
+/** The seat's manage context (B4, 2026-11-27): a REAL timer seat —
+ *  the teardown doors' quiet law polls the engine's queue on it
+ *  (a zero-delay seat spun that poll hot) — the queue seat's own
+ *  lifecycle latch class (the doors hold it across the vendor call;
+ *  the seat owns no queue fiber, so it mints the latch itself), the
+ *  estate's engine unit, and the production quiet window: the dev
+ *  host's seat shares its engine with the operator's live lanes. */
+async function seatManageCtx(stateRoot: string): Promise<ManageCtx> {
+  const { LifecycleLatch } = await import('../../packages/harness/estate-queue/src/lifecycleLatch.ts')
+  return {
+    latch: new LifecycleLatch(),
+    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
+    stateRoots: [stateRoot],
+    comfyUnit: 'melite-comfyui.service',
+    autoProvision: false,
+    engineQuiesceMs: 10_000,
+    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
+    models: { allDecls: () => [] },
+    timeout: (cb: () => void, ms: number) => { const t = setTimeout(cb, ms); return () => clearTimeout(t) },
+  } as unknown as ManageCtx
+}
+
+type ManageCtx = import('../../packages/harness/estate-queue/src/managePlane.ts').ManageCtx
+
 /** THE ENGINE-OWNED FREE DOOR (the rc.3 render lane, 2026-11-16):
  * the serial render lane's deepest rows (film-run's full stack)
  * leave residency the estate never evicts — and the engine's OWN
@@ -22,13 +46,7 @@ import { ENGINE_HOST, ENGINE_PORT } from './engine-gate.ts'
  * A consumer that needs the card calls THIS before it presses. */
 export async function freeEngineResidency(w: { stateRoot: string }): Promise<void> {
   const { dispatchManage } = await import('../../packages/harness/estate-queue/src/managePlane.ts')
-  const ctx = {
-    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
-    stateRoots: [w.stateRoot],
-    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
-    models: { allDecls: () => [] },
-    timeout: (cb: () => void) => { const t = setTimeout(cb, 0); return () => clearTimeout(t) },
-  } as never
+  const ctx = await seatManageCtx(w.stateRoot)
   const [, env] = await dispatchManage({ action: 'free' }, ctx)
   console.log(`[free-door] ${String((env as { detail?: string }).detail ?? 'residency freed')}`)
 }
@@ -44,13 +62,7 @@ export async function freeEngineResidency(w: { stateRoot: string }): Promise<voi
  * engine-up poll. Estate doors only, never systemctl from a test. */
 export async function restartEngineResidency(w: { stateRoot: string }): Promise<void> {
   const { dispatchManage } = await import('../../packages/harness/estate-queue/src/managePlane.ts')
-  const ctx = {
-    repoRoot: process.env.MELITE_REPO_ROOT ?? process.cwd(),
-    stateRoots: [w.stateRoot],
-    endpoint: () => ({ provision: 'managed', url: `http://${ENGINE_HOST}:${ENGINE_PORT}` }),
-    models: { allDecls: () => [] },
-    timeout: (cb: () => void) => { const t = setTimeout(cb, 0); return () => clearTimeout(t) },
-  } as never
+  const ctx = await seatManageCtx(w.stateRoot)
   const [, env] = await dispatchManage({ action: 'restart' }, ctx)
   console.log(`[restart-door] ${String((env as { detail?: string }).detail ?? 'reboot issued')}`)
   for (let i = 0; i < 60; i++) {

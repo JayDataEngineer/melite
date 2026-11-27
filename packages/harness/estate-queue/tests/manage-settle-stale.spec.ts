@@ -30,6 +30,7 @@ const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
   stateRoots: root === "" ? [] : [root],
   comfyUnit: "melite-comfyui.service",
   autoProvision: false,
+  engineQuiesceMs: 0,
   endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
   models: { allDecls: () => [] } as unknown as ManageCtx["models"],
   timeout: () => () => {},

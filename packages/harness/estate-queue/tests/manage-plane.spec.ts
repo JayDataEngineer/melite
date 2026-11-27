@@ -246,6 +246,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     comfyUnit: "estate-comfyui.service",
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
     autoProvision: false,
+    engineQuiesceMs: 0,
      models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: fakeProvisioning,
      timeout: (cb: () => void, ms: number): (() => void) => {

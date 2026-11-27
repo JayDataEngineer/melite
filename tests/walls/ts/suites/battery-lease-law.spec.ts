@@ -111,7 +111,7 @@ describe('battery-leases: the tier table — conservative inputs, self-keyed, di
   })
 
   it('the self-input law: the battery scripts, the lockfile, and the ROOT CONTROL FILES key EVERY tier (a battery or root-wiring rework invalidates every lease)', () => {
-    const SELF = ['tools/hook-full-battery.mjs', 'tools/battery-leases.mjs', 'pnpm-lock.yaml', 'package.json', 'tsconfig*.json', '.github/workflows/**']
+    const SELF = ['tools/hook-full-battery.mjs', 'tools/battery-leases.mjs', 'tools/engine-idle.mjs', 'pnpm-lock.yaml', 'package.json', 'tsconfig*.json', '.github/workflows/**']
     for (const id of Object.keys(TIER_INPUTS)) {
       for (const s of SELF) {
         expect(tierGlobs(id), `tier ${id} must self-key ${s}`).toContain(s)

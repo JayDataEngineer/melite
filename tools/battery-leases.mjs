@@ -162,6 +162,7 @@ export function tierGlobs(tierId) {
       ...base,
       "tools/hook-full-battery.mjs",
       "tools/battery-leases.mjs",
+      "tools/engine-idle.mjs",
       "pnpm-lock.yaml",
       "package.json",
       "tsconfig*.json",

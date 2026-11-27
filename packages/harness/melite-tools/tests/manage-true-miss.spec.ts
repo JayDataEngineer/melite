@@ -35,6 +35,7 @@ const managedCtx = (root: string, provisioning: unknown): ManageCtx => ({
   stateRoots: [root],
   endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
   autoProvision: false,
+  engineQuiesceMs: 0,
   models: { allDecls: () => [] },
   provisioning: provisioning as ManageCtx['provisioning'],
   timeout: (cb: () => void, ms: number): (() => void) => {

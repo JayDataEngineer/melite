@@ -137,6 +137,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
   ({
     latch: new LifecycleLatch(),
     repoRoot: tempRoot("lora-fetch-ctx-"),
+    engineQuiesceMs: 0,
     endpoint: () => ({ provision: "managed", url: "http://engine.invalid:8188", model_base_path: "/models" }),
     models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: seatless,

@@ -34,16 +34,26 @@ export interface ManageConfig {
      *  default) = the repo default path; the MELITE_USER_LORAS env
      *  var stays only as the documented fallback below config. */
     userLorasPath?: string;
+    /** THE QUIET WINDOW (B4, 2026-11-27): the milliseconds a teardown
+     *  door (restart, stop) requires the engine's queue to be empty
+     *  AND stay empty before it tears. Every lane's press is a row in
+     *  that queue, and a film between two windows reads empty for
+     *  seconds — a deployment that owns its engine exclusively (a
+     *  hermetic CI seat) may state 0 to tear on the first empty
+     *  reading. */
+    engineQuiesceMs?: number;
 }
 /** The validator twin of {@link ManageConfig}. */
 export declare const ManageConfig: Schema<Schemastery.ObjectS<NoInfer<{
     comfyUnit: Schema<string, string, "defined">;
     autoProvision: Schema<boolean, boolean, "defined">;
     userLorasPath: Schema<string, string, "defined">;
+    engineQuiesceMs: Schema<number, number, "defined">;
 }>>, Schemastery.ObjectT<NoInfer<{
     comfyUnit: Schema<string, string, "defined">;
     autoProvision: Schema<boolean, boolean, "defined">;
     userLorasPath: Schema<string, string, "defined">;
+    engineQuiesceMs: Schema<number, number, "defined">;
 }>>, "plain">;
 export declare class ManageGatewayService extends Service {
     static inject: string[];
@@ -51,6 +61,8 @@ export declare class ManageGatewayService extends Service {
     readonly comfyUnit: string;
     /** The lane's provisioning posture (config-pinned). */
     readonly autoProvision: boolean;
+    /** The teardown doors' quiet window in ms (config-pinned). */
+    readonly engineQuiesceMs: number;
     constructor(ctx: Context, config?: ManageConfig);
     /** The one entry: the tools' /v1/manage lane. */
     act(doc: unknown, signal: AbortSignal): Promise<ManageEnvelope>;
@@ -66,10 +78,12 @@ export declare const manageProvider: {
         comfyUnit: Schema<string, string, "defined">;
         autoProvision: Schema<boolean, boolean, "defined">;
         userLorasPath: Schema<string, string, "defined">;
+        engineQuiesceMs: Schema<number, number, "defined">;
     }>>, Schemastery.ObjectT<NoInfer<{
         comfyUnit: Schema<string, string, "defined">;
         autoProvision: Schema<boolean, boolean, "defined">;
         userLorasPath: Schema<string, string, "defined">;
+        engineQuiesceMs: Schema<number, number, "defined">;
     }>>, "plain">;
     apply(ctx: Context, config?: ManageConfig): void;
 };

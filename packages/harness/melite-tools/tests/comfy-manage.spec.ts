@@ -393,6 +393,7 @@ describe('comfy_manage execute — the manage lane', () => {
       stateRoots: [],
       comfyUnit: 'melite-comfyui.service',
       autoProvision: false,
+      engineQuiesceMs: 0,
       endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
       models: {} as ManageCtx['models'],
       timeout: () => () => {},
@@ -452,6 +453,7 @@ describe('comfy_manage execute — the manage lane', () => {
         stateRoots: [],
         comfyUnit: 'melite-comfyui.service',
         autoProvision: false,
+        engineQuiesceMs: 0,
         endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
         models: {} as ManageCtx['models'],
         provisioning: {
@@ -686,6 +688,7 @@ describe('comfy_manage contract projection matrix', () => {
       stateRoots: [],
       comfyUnit: 'melite-comfyui.service',
       autoProvision: false,
+      engineQuiesceMs: 0,
       endpoint: () => ({ provision: 'managed', url: 'http://engine:8188' }),
       models: {} as ManageCtx['models'],
       timeout: () => () => {},

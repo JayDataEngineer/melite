@@ -86,6 +86,7 @@ const ctx = (): ManageCtx =>
     stateRoots: [REPO],
     comfyUnit: "dsh-melite-test.service",
     autoProvision: false,
+    engineQuiesceMs: 0,
     endpoint: () => JSON.parse(readFileSync(CFG, "utf8")) as Record<string, unknown>,
     models: { allDecls: () => [DECL] },
     timeout: (cb: () => void, ms: number): (() => void) => {

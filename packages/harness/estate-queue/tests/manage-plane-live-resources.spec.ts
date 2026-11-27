@@ -51,6 +51,7 @@ const CTX = (seat: ProvisioningServiceDefinition, root: string): ManageCtx =>
     stateRoots: rootsManifest(resolveStateRoot({ repoRoot: root }), []),
     endpoint: () => ({ provision: "managed", url: "http://127.0.0.1:1" }),
     autoProvision: false,
+    engineQuiesceMs: 0,
     models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: seat,
     timeout: (cb: () => void, ms: number): (() => void) => {

@@ -60,6 +60,14 @@ export interface ManageConfig {
    *  default) = the repo default path; the MELITE_USER_LORAS env
    *  var stays only as the documented fallback below config. */
   userLorasPath?: string;
+  /** THE QUIET WINDOW (B4, 2026-11-27): the milliseconds a teardown
+   *  door (restart, stop) requires the engine's queue to be empty
+   *  AND stay empty before it tears. Every lane's press is a row in
+   *  that queue, and a film between two windows reads empty for
+   *  seconds — a deployment that owns its engine exclusively (a
+   *  hermetic CI seat) may state 0 to tear on the first empty
+   *  reading. */
+  engineQuiesceMs?: number;
 }
 
 /** The validator twin of {@link ManageConfig}. */
@@ -67,6 +75,7 @@ export const ManageConfig = Schema.object({
   comfyUnit: Schema.string().default("melite-comfyui.service"),
   autoProvision: Schema.boolean().default(false),
   userLorasPath: Schema.string().default(""),
+  engineQuiesceMs: Schema.natural().default(10_000),
 });
 
 export class ManageGatewayService extends Service {
@@ -87,10 +96,14 @@ export class ManageGatewayService extends Service {
   /** The lane's provisioning posture (config-pinned). */
   readonly autoProvision: boolean;
 
+  /** The teardown doors' quiet window in ms (config-pinned). */
+  readonly engineQuiesceMs: number;
+
   constructor(ctx: Context, config: ManageConfig = {}) {
     super(ctx, "manage");
     this.comfyUnit = config.comfyUnit ?? "melite-comfyui.service";
     this.autoProvision = config.autoProvision ?? false;
+    this.engineQuiesceMs = config.engineQuiesceMs ?? 10_000;
   }
 
   /** The one entry: the tools' /v1/manage lane. */
@@ -102,6 +115,7 @@ export class ManageGatewayService extends Service {
       stateRoots: this.ctx.queue.stateRoots,
       comfyUnit: this.comfyUnit,
       autoProvision: this.autoProvision,
+      engineQuiesceMs: this.engineQuiesceMs,
       endpoint: (): Record<string, unknown> =>
         loadEndpointConfig() as Record<string, unknown>,
       models: modelsService(),

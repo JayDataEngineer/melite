@@ -56,6 +56,7 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
     stateRoots: [ROOT],
     endpoint: () => ({ provision: "byo", url: "http://engine:8188" }),
     autoProvision: false,
+    engineQuiesceMs: 0,
     models: { allDecls: () => [] },
     provisioning: undefined,
     timeout: (cb: () => void, ms: number): (() => void) => {

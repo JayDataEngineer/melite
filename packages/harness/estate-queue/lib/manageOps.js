@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { activeRuns } from "./manageProbe.js";
 import { ManagerApiError, managerBase, managerGet } from "./managerRail.js";
 import { Refused } from "./managePlane.js";
+import { abortReason, awaitEngineQuiet, seatSleep } from "./engineQuiet.js";
 const execFileAsync = promisify(execFile);
 // ── the manager rail (vendor HTTP — see manager-api.ts) ────────────
 export function base(ctx) {
@@ -43,9 +44,6 @@ export function railMs(req) {
 /** Poll the vendor's task queue until drained (install arms: the
  *  vendor returns 202-semantics — queue accepted — and processes
  *  asynchronously; the poll bounds the AI door's wait). */
-function abortReason(signal) {
-    return signal.reason instanceof Error ? signal.reason : new DOMException("The operation was aborted", "AbortError");
-}
 export async function awaitQueueDrained(ctx, req) {
     const deadline = Date.now() + railMs(req);
     for (;;) {
@@ -70,33 +68,8 @@ export async function awaitQueueDrained(ctx, req) {
             return st;
         if (Date.now() >= deadline)
             return { ...st, timed_out: true };
-        await waitForQueuePoll(ctx);
+        await seatSleep(ctx, 1000);
     }
-}
-function waitForQueuePoll(ctx) {
-    const signal = ctx.signal;
-    if (signal?.aborted === true)
-        return Promise.reject(abortReason(signal));
-    return new Promise((resolvePromise, rejectPromise) => {
-        // The seat IS the timer (ManageCtx.timeout, the conformance
-        // stroke's no-bare-setTimeout guarantee): the poll waits on
-        // ctx.timeout and races the door's signal. No settled-flag dance
-        // -- a promise settles once, so the guard the wrapper carried
-        // was unreachable; the post-registration re-check closes the
-        // race where the signal aborts between the check above and the
-        // listener landing.
-        const dispose = ctx.timeout(() => {
-            signal?.removeEventListener('abort', onAbort);
-            resolvePromise();
-        }, 1000);
-        const onAbort = () => {
-            dispose();
-            rejectPromise(abortReason(signal));
-        };
-        signal?.addEventListener('abort', onAbort, { once: true });
-        if (signal?.aborted === true)
-            onAbort();
-    });
 }
 /** BYO guard: estate-orchestration legs (systemd, workspace reads)
  *  never touch a user-owned ComfyUI. */
@@ -159,5 +132,31 @@ export function guardLifecycle(req, ctx) {
         throw new Refused(409, "refused: " + inflight.length + " in-flight acquisition(s) (" + inflight.slice(0, 4).join(", ") +
             ") — wait for the fetch to land (poll acquire_weight) or pass force=true", { state: "conflict", next_action: "status" });
     }
+}
+/** THE QUIET LAW (B4, 2026-11-27) — the machine-wide half of the
+ *  teardown guard: the lifecycle guard above reads ONE lane's run
+ *  sidecars; this half reads the ENGINE's own queue, where every
+ *  lane's press is a row. A teardown door (restart, stop) waits
+ *  inside its rail budget for a queue that is empty and STAYS empty
+ *  for the ctx's quiet window (a film between two windows reads
+ *  empty for seconds — one empty reading tears it), then tears; a
+ *  queue that never goes quiet refuses, naming the rows it waited
+ *  on. `force` is the operator's override and skips the wait exactly
+ *  as it skips the lifecycle guard — never a lane's default.
+ *  @param req - the manage request (the rail budget + force).
+ *  @param ctx - the manage context (endpoint + timer seat + the
+ *  quiet window).
+ *  @param action - the teardown door's own verb, for the refusal. */
+export async function quietOrRefuse(req, ctx, action) {
+    if (req.force)
+        return;
+    const budgetMs = railMs(req);
+    const verdict = await awaitEngineQuiet(ctx, budgetMs, ctx.engineQuiesceMs);
+    if (verdict.quiet)
+        return;
+    throw new Refused(409, "refused: the engine's queue is busy — " + verdict.running + " running, " + verdict.pending +
+        " pending (another lane's press, or a film between its windows) — not " +
+        (action === "restart" ? "restarted" : "stopped") + " after waiting " +
+        Math.round(budgetMs / 1000) + "s for a quiet queue; retry when it drains (comfy_manage status names the queue) or pass force=true", { state: "conflict", next_action: "status" });
 }
 //# sourceMappingURL=manageOps.js.map

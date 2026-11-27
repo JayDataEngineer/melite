@@ -40,6 +40,7 @@ const ctx = (): ManageCtx =>
     stateRoots: [],
     comfyUnit: "melite-comfyui.service",
     autoProvision: false,
+    engineQuiesceMs: 0,
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
     models: { allDecls: () => [] },
     timeout: () => () => {},
