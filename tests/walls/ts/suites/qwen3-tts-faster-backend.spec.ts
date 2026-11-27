@@ -52,11 +52,18 @@ const py = (code: string): string => {
   // the probe never loads a model).
   const fakeModels = join(tmpdir(), "wall-audiocpp-models");
   mkdirSync(fakeModels, { recursive: true });
+  // librosa's numba jit carries cache=True; numba refuses import when
+  // every cache locator is unwritable (the venv's __pycache__ is
+  // read-only, the server owns ~/.cache) — the probe owns its cache
+  // dir the way it owns the models dir. Production judgement is
+  // untouched: the real module still imports, refuses, and patches.
+  const numbaCache = join(tmpdir(), "wall-numba-cache");
+  mkdirSync(numbaCache, { recursive: true });
   return execFileSync(VENV_PYTHON, ["-c", code], {
     encoding: "utf8",
     cwd: "/tmp",
     timeout: 240000,
-    env: { ...process.env, AUDIOCPP_MODELS_DIR: fakeModels },
+    env: { ...process.env, AUDIOCPP_MODELS_DIR: fakeModels, NUMBA_CACHE_DIR: numbaCache },
   }) as string;
 };
 

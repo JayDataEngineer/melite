@@ -1016,11 +1016,23 @@ const cmd = invokedDirectly ? (process.argv[2] ?? '') : ''
  * its tsc read half-written d.ts faces ("✗ packages/estate/drafts",
  * green on the settled tree minutes later). mkdir is atomic on every
  * filesystem we ride, so the lock is a directory under data/tmp
- * (runtime state, never committed); the holder stamps its pid and a
- * corpse (killed mid-build, the killed-sentry class) is reclaimed by
- * liveness probe. Read-only verbs (facade) skip it. The lock never
- * queues: a second writer FAILS LOUD with the holder's pid — silent
- * interleaving is the defect this cures.
+ * (runtime state, never committed); the holder stamps its pid AND its
+ * own argv identity, and a corpse is reclaimed by probe. Read-only
+ * verbs (facade) skip it. The lock never queues: a second writer
+ * FAILS LOUD with the holder's pid — silent interleaving is the
+ * defect this cures.
+ *
+ * THE IDENTITY PROBE (2026-11-27, the pid-reuse corpse): liveness
+ * alone is not holdership — a killed holder's pid number is recycled
+ * by the OS (a sandbox spawner handed pid 7 to an unrelated `head`
+ * mid-wall), so `kill(pid, 0)` reported a LIVE holder for a corpse
+ * lock and every later build refused forever. The holder therefore
+ * stamps its boot-clock start time (/proc stat starttime); on probe,
+ * a live pid whose start time differs from the stamp is a DIFFERENT
+ * process wearing a recycled number and the lock is reclaimed. A
+ * matching start time (or an unreadable /proc — the fallback keeps
+ * the old liveness-only judgement) is a live holder and stays
+ * refused.
  *
  * THE FRESH-TREE LAW (2026-11-19, CI run 44495761895): the parent
  * runtime dir is created RECURSIVELY before the atomic lock create.
@@ -1032,13 +1044,33 @@ const cmd = invokedDirectly ? (process.argv[2] ?? '') : ''
  * other errno surfaces. The wall judges it on a synthetic fresh root:
  * tests/walls/ts/suites/build-plane-tree-lock.spec.ts. */
 
-/** Raised when a LIVE process holds the build-plane tree lock. */
+/** Raised when a LIVE build-plane process holds the tree lock. */
 export class TreeLockHeld extends Error {
   /** @param {number} pid the live holder; @param {string} lockDir repo-relative lock path */
   constructor(pid, lockDir) {
     super(`build-plane: another instance (pid ${pid}) holds the tree lock (${lockDir}) — concurrent builds interleave lib/ writes and redden every reader. Wait for it, or kill ${pid} if it is a corpse.`)
     this.name = 'TreeLockHeld'
     this.pid = pid
+  }
+}
+
+/**
+ * This process's boot-clock start time (the /proc stat starttime field)
+ * — the holder identity a probe compares against. A pid number is
+ * recycled with a NEW start time, so start time is intrinsic: no argv
+ * spelling (node resolves argv[1], /proc records the raw exec string)
+ * can diverge between stamp and probe.
+ * @param {number} pid process to read (defaults to this one)
+ * @returns {string | null} the starttime, or null when /proc is unreadable
+ */
+function probeStarttime(pid = process.pid) {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
+    // comm may carry spaces; everything after its closing paren is fixed-order.
+    const after = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
+    return after[19] ?? null // state is field 3 → starttime (field 22) sits at index 19
+  } catch {
+    return null
   }
 }
 
@@ -1063,11 +1095,24 @@ export function acquireTreeLock(root, pid = process.pid) {
     if (Number.isInteger(holder) && holder > 0) {
       try { process.kill(holder, 0); alive = true } catch (probe) { alive = probe?.code === 'EPERM' }
     }
+    // A live pid number is not a live HOLDER: the number may have been
+    // recycled to an unrelated process after the stamping holder died.
+    // The stamp is the holder's boot-clock start time; a recycled pid
+    // boots at a different tick, so a mismatch is a corpse.
+    const stamped = existsSync(join(lockDir, 'holder'))
+      ? readFileSync(join(lockDir, 'holder'), 'utf8').trim()
+      : ''
+    if (alive && stamped !== '') {
+      const live = probeStarttime(holder)
+      if (live !== null && live !== stamped) alive = false
+    }
     if (alive) throw new TreeLockHeld(holder, relative(root, lockDir))
     rmSync(lockDir, { recursive: true, force: true })
     mkdirSync(lockDir)
   }
   writeFileSync(join(lockDir, 'pid'), `${pid}\n`)
+  const start = probeStarttime(pid)
+  if (start !== null) writeFileSync(join(lockDir, 'holder'), `${start}\n`)
   return lockDir
 }
 

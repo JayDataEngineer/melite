@@ -31,8 +31,13 @@
 //   5. NO SILENT PASS-THROUGH — an errno that is not EEXIST (parent is
 //      a FILE) surfaces; the lock never reads a filesystem fault as a
 //      held lock.
+//   6. THE RECYCLED CORPSE (2026-11-27, artifact-plane-law W4 red: the
+//      sandbox spawner handed the dead holder's pid number to an
+//      unrelated live process) — a live pid number whose argv does not
+//      match the holder stamp is a DIFFERENT process, not a holder:
+//      reclaimed, never refused forever.
 import { describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -129,5 +134,56 @@ describe("THE FRESH-TREE LOCK — data/tmp is runtime state, so the lock creates
     expect(thrown?.code, "the fault keeps its own errno — it must not be laundered into TreeLockHeld").not.toBe("EEXIST");
     expect(thrown instanceof TreeLockHeld).toBe(false);
     cleanup();
+  });
+
+  it("ARM 6: THE RECYCLED CORPSE — a live pid wearing a dead holder's number is reclaimed, not refused forever", () => {
+    const root = freshRoot();
+    // A genuinely live process whose argv differs from the stamp: the
+    // pid-reuse shape (the OS handed the corpse's number to a stranger).
+    const stranger = spawn(process.execPath, ["-e", "setInterval(() => {}, 1e6)"], {
+      stdio: "ignore",
+    });
+    try {
+      let strangerAlive = false;
+      try {
+        process.kill(stranger.pid!, 0);
+        strangerAlive = true;
+      } catch {
+        strangerAlive = false;
+      }
+      expect(stranger.pid, "the fixture needs a live stranger process").toBeTruthy();
+      expect(strangerAlive, "the stranger must still be alive for the reuse to be real").toBe(true);
+      const lockDir = join(root, "data", "tmp", "build-plane.lock");
+      mkdirSync(lockDir, { recursive: true });
+      writeFileSync(join(lockDir, "pid"), `${stranger.pid}\n`);
+      // The stamp records the DEAD holder's boot-clock start time —
+      // the stranger booted at a different tick, so it can never match.
+      writeFileSync(join(lockDir, "holder"), "100\n");
+      const reclaimed = acquireTreeLock(root);
+      expect(readFileSync(join(reclaimed, "pid"), "utf8").trim(), "the recycled corpse's lock must be reclaimed by the new writer").toBe(String(process.pid));
+      expect(readFileSync(join(reclaimed, "holder"), "utf8").trim(), "the reclaim restamps the holder start time").not.toBe("100");
+      releaseTreeLock(reclaimed);
+    } finally {
+      if (stranger.pid) process.kill(stranger.pid, "SIGKILL");
+      cleanup();
+    }
+  });
+
+  it("ARM 7: a live holder whose start time MATCHES the stamp is still refused — identity never defeats a real writer", () => {
+    const root = freshRoot();
+    const lockDir = acquireTreeLock(root);
+    try {
+      let held: TreeLockHeld | null = null;
+      try {
+        acquireTreeLock(root, process.pid);
+      } catch (err) {
+        held = err as TreeLockHeld;
+      }
+      expect(held, "a live matching holder is a real writer — the lock must refuse").not.toBeNull();
+      expect(readFileSync(join(lockDir, "pid"), "utf8").trim()).toBe(String(process.pid));
+    } finally {
+      releaseTreeLock(lockDir);
+      cleanup();
+    }
   });
 });
