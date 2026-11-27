@@ -704,6 +704,7 @@ function renderH3Film(p, g, facts, model, runId) {
                     // sits inside this window's generation span, so a slice at
                     // the row's in-point is what the model hears first.
                     fromHead: genStart <= clip.start,
+                    endsHere: clip.start + clip.dur <= ef,
                 };
                 // (§20: the conditioned set moved to filmMix.ts — the
                 // post-generation mix node derives it from the same stamp
@@ -772,11 +773,26 @@ function renderH3Film(p, g, facts, model, runId) {
             // the line's tail a second time. A window that hears the take
             // mid-line is told the truth instead: the voice continues, the
             // mouth is already articulating, and the line never restarts.
+            // THE LINE'S END IS STATED (F11, 2026-11-27 — run-1fe005f28233-12ab5a02:
+            // "It wasn't a code." heard at 7.62–9.56 s and again at 11.0–12.0 s):
+            // the sentence stated the line's start and never its end, so
+            // after the row the model kept its own reading of the line going
+            // at full level. A row that ENDS inside this window is told
+            // where, on the window's own clock — the same clock as the start
+            // — and that nobody speaks after it. A row that runs past the
+            // window's end is continued by the next window and says nothing
+            // here (a false end would silence a line still being spoken).
+            // The film track's duck holds over the same frames
+            // (computeFilmMix's ghost hold): the prompt asks, the mix guarantees.
+            const lineEnd = stamps.dialogue.delay_seconds + stamps.dialogue.slice_duration_seconds;
+            const lineEndSentence = stamps.dialogue.endsHere
+                ? `\nThe line ends at ${stampClock(lineEnd)}; after it nobody speaks — room tone only.`
+                : '';
             if (!stamps.dialogue.fromHead) {
-                soundscapeSentences.push(`At ${t} the same voice is already speaking: the line began before this shot, so the speaker is mid-sentence — mouth articulating the continuing voice; never restart the line.`);
+                soundscapeSentences.push(`At ${t} the same voice is already speaking: the line began before this shot, so the speaker is mid-sentence — mouth articulating the continuing voice; never restart the line.${lineEndSentence}`);
             }
             else {
-                soundscapeSentences.push(`At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[${speechLang}] ${stamps.dialogue.text}</d>`);
+                soundscapeSentences.push(`At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[${speechLang}] ${stamps.dialogue.text}</d>${lineEndSentence}`);
             }
         }
         if (stamps.sfx !== undefined && stamps.sfx.text !== '') {

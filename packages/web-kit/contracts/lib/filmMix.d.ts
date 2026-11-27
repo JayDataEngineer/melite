@@ -1,4 +1,4 @@
-export { spanOverlap, spanStanzaFrames } from './timelineContract.ts';
+export { spanOverlap, spanStanzaFrames } from './timelineContract.js';
 export type FilmMixClipClass = 'dialogue' | 'sfx' | 'music';
 /** One clip row — the card's audio_clips shape, post-parse. */
 export interface FilmMixClip {
@@ -50,7 +50,10 @@ export interface FilmMixSpanSec {
 export interface FilmMixManifest {
     readonly placements: FilmMixPlacement[];
     /** the film track ducks during every CONDITIONED span (the doubling
-     *  case — the model reproduces what it hears pinned). */
+     *  case — the model reproduces what it hears pinned); a DIALOGUE
+     *  row that stops before the end of the last window that hears it
+     *  holds its duck to that window's end (the ghost hold, F11: the
+     *  voice that rises after the word is the model's own). */
     readonly duckSpans: FilmMixSpanSec[];
     /** the music sub-bus ducks under dialogue/sfx spans only (the
      *  score yields to speech and impacts; never to itself). */

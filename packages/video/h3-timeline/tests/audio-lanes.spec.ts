@@ -296,7 +296,10 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
       windowSecs: stanzaSecs([{ start: 0, end: 56 }, { start: 56, end: 141 }, { start: 141, end: 260 }]),
     });
     assert.deepEqual(manifest.placements.map((p) => p.filmSec), [8.333], "overlay at the owner-map seat — never 7.417");
-    assert.ok(manifest.duckSpanString.includes("8.333:10.333"), "the duck spans the true seat");
+    // the duck OPENS at the true seat; its END is the ghost hold
+    // (F11, 2026-11-27): the row stops at 248, 12f before window 3
+    // ends, so the film track stays ducked to the film's end (260/24)
+    assert.ok(manifest.duckSpanString.includes("8.333:10.833"), "the duck opens at the true seat and holds to the window's end");
     // THE MIX NODE RENDERS THE OWNER-MAP SEAT (the 3-window case is
     // where start/24 and the old carry math coincide — the node's
     // clips_json row is the discriminator)

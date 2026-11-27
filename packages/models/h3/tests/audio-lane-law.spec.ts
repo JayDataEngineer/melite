@@ -164,11 +164,14 @@ describe("computeFilmMix — the conditioned set drives the same law", () => {
     assert.ok(ducked >= 2, `both conditioned rows duck the film track (got ${ducked})`);
   });
 
-  it("a seam-only row still ducks the film track for its own span — the overlay half does not change", () => {
+  it("a seam-only row still ducks the film track — its own seat in the window it starts in, held to that window's end (F11)", () => {
     const clips = [{ src: "l42.flac", start: 18, dur: 135, text: "sir", srcIn: 0, cls: "dialogue" as const }];
     const spans = [{ start: 0, end: 158 }, { start: 158, end: 260 }];
     const manifest = computeFilmMix({ spans, clips, windowSecs: [158 / 24, 85 / 24] });
-    assert.deepEqual(manifest.duckSpans, [{ start: 0.75, end: 6.375 }], "the row conditions the window it starts in, so its duck span is exactly its own");
+    // the overlay seat is the row's own; the duck OPENS there and
+    // (F11) HOLDS to window 1's end (158/24) because the row stops
+    // 5f early — never into window 2, which the row never stamps
+    assert.deepEqual(manifest.duckSpans, [{ start: 0.75, end: 6.583 }], "the row conditions the window it starts in: its duck opens at its seat and holds to that window's end");
     assert.deepEqual(manifest.placements.map((p) => p.filmSec), [0.75]);
   });
 });
@@ -316,9 +319,10 @@ describe("THE WORDS RIDE WHERE THE TAKE IS HEARD FROM ITS HEAD (the copy-across-
     expect(s1.length).toBe(1);
     expect(s1[0]!.inputs["start_seconds"]).toBe(0);
     expect(s1[0]!.inputs["duration_seconds"]).toBe(5.625);
-    // the overlay half: the row's duck span is its own
+    // the overlay half: the row's duck opens at its own seat and
+    // holds to window 1's end (F11 — the row stops 5f early)
     const mix = Object.values(graph).find((n) => n.class_type === "MeliteFilmAudioMix");
-    expect(mix?.inputs["duck_spans"]).toBe("0.75:6.375");
+    expect(mix?.inputs["duck_spans"]).toBe("0.75:6.583");
   });
 
   it("a take starting inside the CARRY head still speaks in both windows — each hears it from its head", async () => {

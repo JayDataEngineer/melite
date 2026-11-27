@@ -155,7 +155,10 @@ export interface FilmMixSpanSec {
 export interface FilmMixManifest {
   readonly placements: FilmMixPlacement[]
   /** the film track ducks during every CONDITIONED span (the doubling
-   *  case — the model reproduces what it hears pinned). */
+   *  case — the model reproduces what it hears pinned); a DIALOGUE
+   *  row that stops before the end of the last window that hears it
+   *  holds its duck to that window's end (the ghost hold, F11: the
+   *  voice that rises after the word is the model's own). */
   readonly duckSpans: FilmMixSpanSec[]
   /** the music sub-bus ducks under dialogue/sfx spans only (the
    *  score yields to speech and impacts; never to itself). */
@@ -335,15 +338,25 @@ export function computeFilmMix(input: FilmMixInput): FilmMixManifest {
   // and stays overlay-only. The generation render starts at doc
   // frame sf − carry (the carry head included).
   const conditioned = new Set<number>()
+  // THE LAST WINDOW each clip's voice is heard in (the ghost hold
+  // below reads it): the highest-indexed window whose lane the clip owns.
+  const lastLaneWindow: number[] = []
   spans.forEach((span, i) => {
     if (!Number.isFinite(span.start) || !Number.isFinite(span.end) || span.end <= span.start) return
     const carry = i > 0 ? overlaps[i]! : 0
     const lanes = chooseLaneClips(clips, span.start, span.end, span.start - carry)
     for (const cls of ['dialogue', 'sfx', 'music'] as const) {
       const ci = lanes[cls]
-      if (ci !== undefined) conditioned.add(ci)
+      if (ci !== undefined) {
+        conditioned.add(ci)
+        lastLaneWindow[ci] = i
+      }
     }
   })
+  // THE FILM SEAT of each window's END — the owner map's own
+  // accumulation (window w's delivered frames end where window w+1
+  // begins; the last window ends the film).
+  const windowEndSec: number[] = spans.map((_, i) => round3(i + 1 < spans.length ? filmStarts[i + 1]! : elapsed))
   // PLACEMENTS: doc frame → film seat through the owner map — the
   // SAME doc clock the windows spoke (AUDIO-2's placements half: the
   // /24 literal here outlived the window cure and drifted every clip
@@ -369,12 +382,34 @@ export function computeFilmMix(input: FilmMixInput): FilmMixManifest {
     if (!conditioned.has(ci) || pl.durSec <= 0) return null
     return { start: pl.filmSec, end: round3(pl.filmSec + pl.durSec) }
   }
+  // THE GHOST HOLD (F11, 2026-11-27 — run-1fe005f28233-12ab5a02: "It
+  // wasn't a code." heard at 7.62–9.56 s and again at 11.0–12.0 s):
+  // nothing tells the model to stop after a window's last row, so
+  // the frames between the row's end and the window's end carry the
+  // model's own rendition of the line at full level. A DIALOGUE row
+  // that stops before the end of the last window that hears it holds
+  // the film track's duck to that window's end — the voice that rises
+  // after the word is the ghost. The row's own span, the music bus's
+  // duck (the score returns under room tone), and every sfx row are
+  // untouched; a row that already runs to the window's end holds
+  // nothing new.
+  const ghostHoldEnd = (ci: number): number | null => {
+    const clip = clips[ci]!
+    if (clip.cls !== 'dialogue') return null
+    const w = lastLaneWindow[ci]
+    if (w === undefined) return null
+    const span = spans[w]!
+    if (clip.start + clip.dur > span.end) return null
+    const end = windowEndSec[w]!
+    return end > round3(placements[ci]!.filmSec + placements[ci]!.durSec) ? end : null
+  }
   const duckSpans: FilmMixSpanSec[] = []
   const musicDuckSpans: FilmMixSpanSec[] = []
   for (let ci = 0; ci < clips.length; ci++) {
     const s = spanOf(ci)
     if (s === null) continue
-    duckSpans.push(s)
+    const hold = ghostHoldEnd(ci)
+    duckSpans.push(hold === null ? s : { start: s.start, end: hold })
     if (clips[ci]!.cls !== 'music') musicDuckSpans.push(s)
   }
   // THE DEFAULT FOLLOWS THE REASON FOR DUCKING (defect A3): a pasted
