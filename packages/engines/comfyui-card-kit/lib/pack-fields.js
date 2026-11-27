@@ -192,12 +192,21 @@ export const QvoiceFields = z.object({
     qvoice: z.string().role('path').description('Voice (.qvoice)')
         .extra('extra', bag({
         wtype: 'file', group: 'qvoice', zone: 'mods', order: 0,
-        tooltip: 'A saved .qvoice persona (the Design mod exports these). Present = this voice performs the text (codec-level clone through the studio pipeline) instead of the preset timbre.',
+        // THE AUDIO SEAT (operator burn 2026-11-27: the Voice Mod "…
+        // doesn't let me choose a voice" — the picker offered no audio
+        // family at all): the hint is what makes
+        // the pick a VOICE pick — the OS dialog offers the audio family
+        // (AUDIO_SQUARE_ACCEPT carries `.qvoice`), the From-media row
+        // lists the audio library, and the drop judge takes an audio
+        // file. Unhinted, the seat defaulted to the image triad and a
+        // persona could not even be selected.
+        media: 'audio',
+        tooltip: 'A saved .qvoice persona (the Design mod exports these). Present = this voice performs the text (codec-level clone through the studio pipeline) instead of the preset timbre. Pick one from the run\'s own voices (a Design save lands there) or a file on disk.',
     })),
     voice_strength: z.number().description('Voice Strength').min(0).max(2).step(0.05).default(1)
         .extra('extra', bag({
         wtype: 'number', group: 'qvoice', zone: 'mods', order: 1,
-        tooltip: 'Identity intensity of the loaded persona — below 1 pulls toward neutral, above 1 exaggerates it (the clone pipeline scales the embedding).',
+        tooltip: 'Identity intensity of the loaded persona — the embedding steers along its deviation from the voices-bank neutral (steered = neutral + (emb − neutral) × strength): below 1 pulls toward neutral, above 1 pushes further out. 1 is the saved voice bit-identical; a different strength re-samples the delivery (pacing and phrasing), so state a take deliberately.',
     })),
 });
 // ── QVOICE SAVE (the qvoice_save pack): design a voice from a

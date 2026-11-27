@@ -19,8 +19,7 @@
 // ride the ONE card-kit helper. `export` declares the rule: its
 // single mint has no lock to preserve, so the ported mint is a
 // pass-through.
-import { qvoiceUse, type ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { voicePresetStated } from "@melite/comfyui-card-kit/facts";
+import { releasePresetBesidePersona, type ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { LaneInputsFacts, ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 /**
@@ -116,21 +115,17 @@ export const speak: ComfyActionSpec<TtsParams, TtsFacts> = {
   facts: parseTtsFacts,
   build({ p, model, g, runId }) {
     const lane = laneTopologyOf(model).synth_lane;
-    // THE PRESET+QVOICE CONFLICT (the tts dossier's B7 family arm,
-    // 2026-11-12 — mirrors the card's B2 voice): the engine's qvoice
-    // branch has NO speaker, so a stated preset beside a saved
-    // persona is silently dropped — the run performs the persona
-    // while the receipt claims a speaker. ONE voice performs: refuse
-    // loud, naming both seats and the cure. The card judges the same
-    // pair at its own door; this is the family's own firing arm, so
-    // a direct action caller gets the law without the card. THE
-    // STATED-PRESET TEST (F31): the service's defaults merge fills
-    // the lane's rest before this judge runs — the fill is not a
-    // stated preset (voicePresetStated, one implementation across
-    // all three tts judge seats).
-    if (qvoiceUse(p) !== undefined && voicePresetStated(p, model)) {
-      throw new Error("params 'voice' and 'qvoice' fire together on the qwen3-tts speak action (ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the .qvoice)");
-    }
+    // THE PERSONA OWNS THE VOICE (RE-STATED law, operator 2026-11-27:
+    // "THE WHOLE POINT OF THE QVOICE IS TO WORK WITH THE
+    // CUSTOMVOICE" — the press died with "params 'voice' and 'qvoice'
+    // fire together" on a preset the operator never picked). The bag
+    // IS the voice source and the engine's persona branch reads no
+    // speaker, so a preset name beside it is released from the doc
+    // (one implementation, releasePresetBesidePersona — the card
+    // judges the same pair through the same call) and the persona
+    // performs with the CustomVoice instruct. A direct action caller
+    // gets the same law without the card.
+    releasePresetBesidePersona(p)
     // three lanes under ONE family (the size-at-quant fold): the
     // design lane composes the studio in PREVIEW (the persona is
     // born and speaks the text — flac out, no persist), the clone

@@ -211,7 +211,7 @@ export declare const FAMILY_LAW: {
     }, {
         readonly lane: "t4r";
         readonly guideKeys: readonly ["keyframes", "last_frame", "ref_images", "ref_videos", "ref_audios", "image", "image_name", "ref_image"];
-        readonly callGuideKeys: readonly ["image", "ref_images", "ref_image", "image_name"];
+        readonly callGuideKeys: readonly ["image", "ref_images", "ref_image", "image_name", "last_frame"];
     }, {
         readonly lane: "t4_open";
     }];
@@ -523,11 +523,6 @@ export declare function assertSpanGrid(span: TimelineSpan, where: string, carry?
  * @param index the window's position in the calls array (0-based)
  * @returns the delivered frame count (never negative) */
 export declare function deliveredFrames(call: TimelineCallSpan, index: number): number;
-/** The image-bus seats available to loose references: a last-frame
- *  pin spends one of the REF_CAPS.images seats when it is set.
- * @param hasLastFrame whether a last-frame pin occupies the bus
- * @returns the maximum reference-image stack */
-export declare function imageReferenceCap(hasLastFrame: boolean): number;
 /** Split a comma-separated reference string into entries, trimming
  *  separators and surrounding spaces; a data: URI's mime comma does
  *  not split its entry.

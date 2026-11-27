@@ -242,14 +242,23 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
   // mod leaves), the select renders, never a bare text box
   const square = await screen.findByRole('button', { name: 'Region Mask source' }, { timeout: 2000 })
   expect(square).toBeTruthy()
-  expect(screen.getByLabelText('Region Mode')).toBeTruthy()
-  // save: the entry is the params object (no id, no strength)
+  const mode = screen.getByLabelText('Region Mode')
+  expect(mode).toBeTruthy()
+  // THE AUTHORED-ROW LAW (operator burn 2026-11-27): Add with only
+  // the declared defaults refuses and names the unpicked pick — a
+  // FIELD row exists once the operator authors something.
+  fireEvent.click(screen.getByText('Add'))
+  expect(await screen.findByText(/Pick the .*first/)).toBeTruthy()
+  expect(values['mask']).toBeUndefined()
+  // author a dial, then save: the entry is the params object (no id,
+  // no strength) and carries the authored value beside the rest
+  fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '9' } })
   fireEvent.click(screen.getByText('Add'))
   await waitFor(() => {
     const bag = values['mask'] as Array<Record<string, unknown>>
     expect(Array.isArray(bag)).toBe(true)
     expect(bag[0]?.['mask_mode']).toBe('auto')
-    expect(bag[0]?.['mask_feather']).toBe(8)
+    expect(bag[0]?.['mask_feather']).toBe(9)
     expect(bag[0]?.['id']).toBeUndefined()
   })
 })

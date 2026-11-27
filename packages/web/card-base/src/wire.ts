@@ -8,6 +8,7 @@
 import type { CatalogCard, FormSpecDoc } from './spec.ts'
 import { WTYPE_SET } from '@melite/contracts/extraKeys'
 import { readAsDataURL } from '@melite/formats/readFile'
+import { uploadKindOf } from '@melite/contracts/mediaKinds'
 import { manageRemote } from './estate-remote.ts'
 import { fetchCardCatalogRows } from '@melite-plugin/melite-run-wire'
 import type { ManageActDoc, ManageJsonValue } from '@melite/estate-manage/types'
@@ -200,15 +201,15 @@ export async function fetchFormsTable(signal?: AbortSignal): Promise<Record<stri
  *  whitelist, one clean segment) are the law; the client only voices
  *  its refusals, never invents its own. */
 export async function uploadInputFile(file: File, signal?: AbortSignal, dataUrl?: string): Promise<{ name: string; file: string }> {
-  // ANY MEDIA family boards (image | video | audio MIME prefixes) —
-  // the estate's own classifier grammar (mediaKinds), not a client
-  // sublist. THE MESH ARM (primitive ③): .glb/.gltf rides the same
-  // door — model/gltf-binary when the browser knows it,
-  // octet-stream with a GLB extension when it does not.
-  const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')
-  const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name)
-  const isMesh = file.type === 'model/gltf-binary' || file.type === 'model/gltf+json' || (file.type === 'application/octet-stream' && glbName)
-  if (!isMedia && !isMesh) {
+  // ONE CLASSIFIER, ONE SYSTEM (operator burn 2026-11-27: "WHEN WE
+  // UPLOAD VOICE CLIPS IT IS THE SAME SYSTEM… QVOICE NEEDS TO WORK
+  // THE SAME WAY. ONE SYSTEM"): the family comes from the estate's
+  // media vocabulary (uploadKindOf — extension first, the browser's
+  // MIME second), so a `.qvoice` picked from the OS dialog — which
+  // arrives with NO type — rides exactly like a `.wav`. The MIME-only
+  // gate refused the estate's own voice container while the square's
+  // accept offered it.
+  if (uploadKindOf(file.name, file.type) === undefined) {
     throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image, video, audio, or .glb/.gltf file')
   }
   // THE SINGLE READ (the upload-lag cure, 2026-10-28): the square

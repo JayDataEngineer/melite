@@ -93,14 +93,15 @@ export function laneInputsReader(model, raw, label) {
  *  fills the lane's `defaults.voice` into every doc before the tts
  *  judges run — the fill is the lane's REST, and it must not count
  *  as a stated preset in the one-voice exclusivity checks (the
- *  burn: a caller who never stated `voice` was refused with
- *  "params 'voice' and 'qvoice' fire together"). The preset is
- *  stated when the doc names a speaker AND that name differs from
- *  the lane's own default; an explicit pick OF the default preset
- *  is indistinguishable from the compile's own write and rides (the
- *  derived-stamp release trade). One implementation, all three tts
- *  judge seats — the card's save path, the card's preset+qvoice
- *  gate, and the family's speak action.
+ *  burn: a caller who never stated `voice` was told two voices
+ *  fired). The preset is stated when the doc names a speaker AND
+ *  that name differs from the lane's own default; an explicit pick
+ *  OF the default preset is indistinguishable from the compile's own
+ *  write and rides (the derived-stamp release trade). Its remaining
+ *  seats are the save path's ref_audio/design_prompt exclusivity
+ *  judges; the preset-beside-persona pair is no longer a refusal —
+ *  a picked .qvoice makes the preset inert and
+ *  releasePresetBesidePersona clears it (operator 2026-11-27).
  * @param doc the gated doc (post-merge at the service door)
  * @param model the resolved facts row (its defaults ARE the rest)
  * @returns true when `voice` names a speaker the lane did not fill */

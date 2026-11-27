@@ -76,7 +76,7 @@ export function schemaEnvelope(dict) {
 // shared by the web tier, the engine tier, and every card
 // declaration; before it, the form spelled visible_when while the
 // tool face spelled visibleWhen — a dead read for every card).
-import { extraOf } from '@melite/contracts/extraKeys';
+import { extraOf, WTYPE_SEATS } from '@melite/contracts/extraKeys';
 import { CATEGORIES } from '@melite/contracts/planes';
 import { deriveFamilyLane, familyKeyPresent } from '@melite/contracts/familyLane';
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
@@ -131,6 +131,28 @@ export function modOwnedFields(spec) {
         }
     }
     return owned;
+}
+/** THE BAG CONTAINER, JUDGED BY ITS SEAT (the Voice-no-pick burn,
+ *  operator 2026-11-27: the Voice Mod in the TTS card "doesn't let
+ *  me choose a voice … I can't use this mod at all" — the
+ *  leaf rendered the `qvoice` group heading and the strength dial
+ *  alone, and a saved persona could never be loaded).
+ *
+ *  The leaf EXCLUDES the envelope's bag row (rendering it asked the
+ *  operator to type a whole bag as text — the Fibo LoRA burn,
+ *  2026-11-15). The judgment is the SEAT, never name identity: a bag
+ *  container presents on a mod-face wtype (`mask` / `loras` /
+ *  `ip_adapters` / `controlnets` — WTYPE_SEATS, @melite/contracts),
+ *  while an entry's own payload may reuse the kind's param_key as a
+ *  name — qvoice's entry IS `{ qvoice, voice_strength }`, and its
+ *  `qvoice` payload row (an atom file seat — the persona PICK) was
+ *  eaten as if it were the bag, leaving a leaf that could tune a
+ *  voice it could not choose. PURE. */
+export function isBagContainerField(k, f) {
+    if (f.name !== k.param_key)
+        return false;
+    const seat = WTYPE_SEATS[(f.wtype !== undefined && f.wtype !== '' ? f.wtype : f.type)];
+    return seat === 'mod-face';
 }
 /** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
  *  as opposed to a FIELD kind (mask-shaped: its own param fields)?

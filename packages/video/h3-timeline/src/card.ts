@@ -961,9 +961,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
     flowKinds: {
       // THE RAIL (the operator's law, 2026-09-20; re-read 2026-11-12:
       // "THERE IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY FRAMES
-      // WHENEVER"): the image pin + the reference buses — one shared
-      // rail. `last_frame` stays a WIRING slot as the FL2VA end-anchor
-      // translation; the frame setup is the timeline's keyframes lane. The
+      // WHENEVER"): `image` and `last_frame` are IMAGE SLOTS on the
+      // wiring face — both carry a still that becomes a frame
+      // insertion (frame 0, and the window's last generated row), so
+      // the slot kind is 'image'. That is a WIRING fact, never the
+      // conditioning lane: the stills never ride the reference bus
+      // (2026-11-26). The
       // kinds are the SLOT kinds (the rail seats image/file slots,
       // never names). THE NAMING LAW rider (2026-10-09, "fix it
       // all"): the reference stacks are REAL input seats on the

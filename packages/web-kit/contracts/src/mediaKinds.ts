@@ -109,6 +109,42 @@ export function mediaKindOf(name: string): MediaKind | undefined {
   return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
 }
 
+/** The families an UPLOAD may carry — the media kinds minus text
+ *  (a .txt is a harvest, never a picked input). */
+export type UploadKind = Extract<MediaKind, "image" | "video" | "audio" | "model">;
+
+const UPLOAD_KIND_SET: ReadonlySet<string> = new Set<UploadKind>(["image", "video", "audio", "model"]);
+
+/** THE UPLOAD CLASSIFIER — the family a browser File carries, asked
+ *  ONCE for every upload rail: the estate's own extension vocabulary
+ *  first (`mediaKindOf`), the browser's MIME claim second (a
+ *  clipboard/drag blob whose name carries no extension still rides
+ *  its stated type).
+ *
+ *  THE ONE SYSTEM (operator burn 2026-11-27, verbatim: "WHEN WE UPLOAD
+ *  VOICE CLIPS IT IS THE SAME SYSTEM… QVOICE NEEDS TO WORK THE SAME
+ *  WAY. ONE SYSTEM"): the rails classified by MIME PREFIX alone, and
+ *  a `.qvoice` picked from the OS dialog arrives with NO type (no
+ *  desktop MIME database entry names it) — so the estate's own voice
+ *  container, classified `audio` by this vocabulary since 2026-10-15,
+ *  was refused at the client gate and again at the uploads door while
+ *  the same bytes as `.wav` sailed through. Classification belongs to
+ *  the vocabulary every other seat (media/list, the square accept, the
+ *  drop judge, the engine's staging table) already reads.
+ *
+ *  @param name the picked file's name (its extension is the vocabulary key).
+ *  @param mime the browser's declared content type ("" when it states none).
+ *  @returns the upload family, or undefined when the file is not one
+ *   (the rails refuse those in their own voice). */
+export function uploadKindOf(name: string, mime: string): UploadKind | undefined {
+  const byName = mediaKindOf(name);
+  if (byName !== undefined && UPLOAD_KIND_SET.has(byName)) return byName as UploadKind;
+  const slash = mime.indexOf("/");
+  if (slash <= 0) return undefined;
+  const family = mime.slice(0, slash).toLowerCase();
+  return UPLOAD_KIND_SET.has(family) ? family as UploadKind : undefined;
+}
+
 /** Is this a 3D-MODEL url or data-URI? THE ONE spelling
  *  (2026-10-13, the card-UI duplication audit: five seats carried
  *  their own model regex and they had already drifted — one matched

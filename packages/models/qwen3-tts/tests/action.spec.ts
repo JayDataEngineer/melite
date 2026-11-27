@@ -233,14 +233,17 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
     assert.ok(!nodeOf(action, "AudiocoreTTS"), "a stated embedding performs nothing through the synth node");
   });
 
-  it("THE PRESET+QVOICE CONFLICT (B7 family arm): qvoice + a stated preset refuses loud — the clone branch carries no speaker, one voice performs", () => {
-    // the family's OWN firing arm (mirrors the card's B2 voice): a
-    // direct action caller gets the law without the card's door.
+  it("THE PERSONA OWNS THE VOICE (RE-STATED B7 family arm, operator 2026-11-27): a preset name beside a persona is released, never a refused press", () => {
+    // the family's OWN arm (mirrors the card's compose): the bag IS the
+    // voice source — the persona performs on the CustomVoice lane and
+    // the stale preset name leaves the doc, so no speaker rides the
+    // graph to lie about.
     const action = new GraphBuilder({});
-    assert.throws(
-      () => instantiateAction(speak, { ...PARAMS, voice: "ryan", qvoice: [{ qvoice: "/m/voices/narrator.qvoice" }] }, FACTS, action, "probe-b7"),
-      /params 'voice' and 'qvoice' fire together on the qwen3-tts speak action \(ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the \.qvoice\)/,
-    );
+    const doc = { ...PARAMS, voice: "ryan", qvoice: [{ qvoice: "/m/voices/narrator.qvoice" }] };
+    instantiateAction(speak, doc, FACTS, action, "probe-b7");
+    assert.ok(nodeOf(action, "AudiocoreVoiceStudio"), "the persona performs through the studio");
+    assert.equal(nodeOf(action, "AudiocoreVoiceStudio")!.inputs.qvoice_path, "/m/voices/narrator.qvoice", "the artifact wires");
+    assert.ok(!nodeOf(action, "AudiocoreTTS"), "the preset synth never rides beside a saved persona — the released name leaves no speaker");
   });
 
   it("qvoice ALONE rides the use-branch (the B7 family arm guards the pair, never the persona)", () => {

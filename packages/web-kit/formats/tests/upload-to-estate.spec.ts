@@ -57,6 +57,23 @@ describe("uploadToEstate refusals", () => {
     assert.equal(posts, 1);
   });
 
+  // THE ONE SYSTEM (operator burn 2026-11-27: "WHEN WE UPLOAD VOICE
+  // CLIPS IT IS THE SAME SYSTEM… QVOICE NEEDS TO WORK THE SAME WAY.
+  // ONE SYSTEM"): a .qvoice from the OS dialog arrives with NO type —
+  // the estate's vocabulary calls it audio, so it rides this rail
+  // exactly like a .wav. The old MIME-prefix gate refused it with
+  // "unknown type" while the square's accept offered the container.
+  it("a .qvoice with no browser MIME rides (the estate vocabulary classifies it audio)", async () => {
+    stubReader("data:application/octet-stream;base64,AA==");
+    let seen: Record<string, unknown> = {};
+    globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
+      seen = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return new Response(JSON.stringify({ path: "data/input/persona.qvoice" }));
+    }) as typeof fetch;
+    assert.equal(await uploadToEstate(file("persona.qvoice", "")), "data/input/persona.qvoice");
+    assert.equal(seen["filename"], "persona.qvoice");
+  });
+
   it("maps unreadable files onto picker guidance", async () => {
     stubReader(undefined);
     await assert.rejects(

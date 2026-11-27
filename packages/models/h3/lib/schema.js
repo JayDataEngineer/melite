@@ -67,18 +67,21 @@ export const paramSchema = z.object({
     // JUST ARBITRARY FRAMES WHENEVER") — `image` is the frame-0 PIN
     // shorthand, never a first-frame physics; the setup is the timeline's keyframes lane.
     image: z.string().role('path').description("An image pin at the film's opening — the frame-0 shorthand (pin any other frame on the timeline's keyframes)").extra('extra', bag({ order: null, wtype: 'image', tooltip: "Absolute path to the PNG pinned at the film's opening (frame 0). For any other frame, pin it on the timeline's keyframes — there is no first/last frame setup." })),
-    // THE INPUT SURFACE (the H3 architecture truth — two DIFFERENT
-    // mechanics, the FL2VA latent anchors vs the Ref2VA conditioning
-    // bus): first_frame/last_frame are PIXEL anchors (bundle inputs
-    // 1-2, VAE-written into the latent ends — the i2v branch reads
-    // them verbatim); references ride the REMAINING image bus (inputs
-    // 3-9 → <Picture 3..9>) plus the video/audio lanes (<Video 1-3>,
-    // <Audio 1-3>) as AdaLN/cross-attention conditioning. Typed
-    // arrays, door-enforced: a non-string entry or an over-cap stack
-    // refuses LOUD at the gate (the probe-proven law —
-    // `expected array length <= 8`), never rides silent. The legacy
-    // `refs` stanza bag keeps its compose-side wireList readers; the
-    // declared fields are the primary surface.
+    // THE INPUT SURFACE (the H3 architecture truth — TWO DIFFERENT
+    // MECHANICS, never one bus): FRAME INSERTIONS ride MiniMaxH3AddGuide
+    // at a generation-local frame (`image` is the frame-0 shorthand,
+    // `keyframes` pins any frame, `last_frame` is the hidden legacy
+    // translation) and the REFERENCE BUS (bundle inputs 1-9 →
+    // <Picture 1..8>, plus the video/audio lanes <Video 1-3>,
+    // <Audio 1-3>) carries CONDITIONING ONLY as AdaLN/cross-attention.
+    // A pin is a frame the model must produce; a reference is something
+    // it may draw from. (The retired merge wired the anchor pair into
+    // inputs 1-2, which is why a reference appeared to be mirrored into
+    // the first frame.) Typed arrays, door-enforced: a non-string entry
+    // or an over-cap stack refuses LOUD at the gate (the probe-proven
+    // law — `expected array length <= 8`), never rides silent. The
+    // legacy `refs` stanza bag keeps its compose-side wireList readers;
+    // the declared fields are the primary surface.
     // THE ADD-FIRST RETIREMENT (operator 2026-11-12: "NOTICE THE
     // SETUP, THERE IS NO FIRST FRAME NOR LAST FRAME, JUST ARBITRARY
     // FRAMES WHENEVER"): last_frame is a HIDDEN alias — a validation
@@ -86,7 +89,7 @@ export const paramSchema = z.object({
     // (extra.hidden keeps it out of BOTH projections; params-emit.ts).
     // No wtype: a never-rendered field's wtype is dead surface (the
     // card-wtype-judge's law). The setup is the timeline's keyframes lane.
-    last_frame: z.string().role('path').description("Legacy FL2VA end anchor — a hidden validation key for old drafts, never a face; pins ride the timeline's keyframes lane").extra('extra', bag({ order: null, hidden: true, tooltip: "Legacy FL2VA end anchor (bundle input 2) — translation only. The setup is the timeline's keyframes lane: pin ANY frame, any time." })),
+    last_frame: z.string().role('path').description("Legacy FL2VA end anchor — a hidden validation key for old drafts, never a face; pins ride the timeline's keyframes lane").extra('extra', bag({ order: null, hidden: true, tooltip: "Legacy end-frame key — translated to an insertion at the window's last generated row, never a bus seat. The setup is the timeline's keyframes lane: pin ANY frame, any time." })),
     // THE ANY-FRAME PIN LANE (cure 8 RULED CLOSED, operator 2026-11-12:
     // "WE DO NOT DO FIRST FRAME LAST FRAME, WE DO ANY FRAME ANY TIME";
     // PLACED on the doc plane 2026-11-12, audit 013 — the pin row left
@@ -109,7 +112,7 @@ export const paramSchema = z.object({
     // the row. Placement is the compose gate's (schema() below + the
     // build door): film-absolute frame, inside a window, image names
     // media.
-    ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." })),
+    ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 1..8> via the bundle. References are conditioning only — they never pin a frame; keyframes are the frames you insert. 8 fills the bus." })),
     ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', bag({ order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." })),
     // THE TRIM SEAT (audit 003/V4, 2026-10-22): per-video trim,
     // index-paired with ref_videos — entry i slices guide i through

@@ -18,6 +18,7 @@ import {
   type StripTable,
   refuseImageEditFiring, finalizeAnny, finalizeMotion,
   qvoiceUse,
+  releasePresetBesidePersona,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -260,8 +261,32 @@ describe("the qvoice reader (a kit helper)", () => {
     // string path refuses before any node renders. With the lane retired the
     // gate is the reader's own — qvoiceUse refuses the same entry, and every
     // family's action reads its qvoice through it.
-    assert.throws(() => qvoiceUse({ qvoice: { voice_strength: "0.5" } }), /qvoice bag entry requires a string qvoice path/);
+    // THE UNPICKED SLOT (operator burn, 2026-11-27): the Voice mod's create
+    // committed `{ voice_strength: 1 }` before the persona pick and the press
+    // died here. Absence of the key is the seat's empty state, never a
+    // malformed bag — a PRESENT non-string key still refuses loud.
+    assert.equal(qvoiceUse({ qvoice: { voice_strength: "0.5" } }), undefined);
+    assert.equal(qvoiceUse({ qvoice: [{}] }), undefined);
     assert.throws(() => qvoiceUse({ qvoice: { qvoice: 7 } }), /qvoice bag entry requires a string qvoice path/);
     assert.throws(() => qvoiceUse({ qvoice: 7 }), /qvoice must be a path or one-entry qvoice bag/);
+  });
+
+  it("the persona supersedes a preset name (operator order 2026-11-27: qvoice works WITH the CustomVoice)", () => {
+    // the persona IS the voice source: a preset name beside it is the
+    // draft's leftover — released, never a refused press.
+    const doc: Record<string, unknown> = { voice: "vivian", qvoice: [{ qvoice: "/m/voices/siren.qvoice", voice_strength: 1 }], text: "hey" };
+    assert.equal(releasePresetBesidePersona(doc), true);
+    assert.equal("voice" in doc, false, "the stale preset leaves the doc — the run carries no speaker to lie about");
+    assert.deepEqual(doc.qvoice, [{ qvoice: "/m/voices/siren.qvoice", voice_strength: 1 }], "the persona rides untouched");
+    // no persona → the preset is the voice source and stays
+    const presetOnly: Record<string, unknown> = { voice: "vivian" };
+    assert.equal(releasePresetBesidePersona(presetOnly), false);
+    assert.equal(presetOnly.voice, "vivian");
+    // an unpicked slot states no persona → the preset stays
+    const slotOnly: Record<string, unknown> = { voice: "vivian", qvoice: [{ voice_strength: 1 }] };
+    assert.equal(releasePresetBesidePersona(slotOnly), false);
+    assert.equal(slotOnly.voice, "vivian");
+    // idempotent
+    assert.equal(releasePresetBesidePersona(doc), false);
   });
 });

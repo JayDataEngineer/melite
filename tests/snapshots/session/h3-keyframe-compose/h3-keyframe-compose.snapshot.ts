@@ -17,15 +17,17 @@ import { parseSnapshotManifest, selectGeneration } from '../../../../tests/snaps
 const here = dirname(fileURLToPath(import.meta.url))
 
 // THE KEYFRAME COMPOSE (keyless replay — the keyframe lane's snapshot,
-// slice 2 2026-11-05): the recorded ask carries two pins — one
-// strictly inside the first window, one on its last frame. Replay
-// drives the REAL tool face (the keyframes channel must ride both
-// estate doors beside calls/audio_clips) and then composes the posted
-// doc through the REAL h3 build: the interior pin rides the
-// MiniMaxH3AddGuide image arm at its generation-local frame, and a
-// boundary-pin doc composes BYTE-IDENTICALLY to the same doc stating
-// the anchor/end-anchor seats directly (the design's no-graph-change
-// probe — the model-visible truth this snapshot owns).
+// slice 2 2026-11-05, re-spelled by the two-mechanism cure 2026-11-26):
+// the recorded ask carries two pins — one strictly inside the first
+// window, one on its last generated row. Replay drives the REAL tool
+// face (the keyframes channel must ride both estate doors beside
+// calls/audio_clips) and then composes the posted doc through the REAL
+// h3 build: BOTH pins ride the MiniMaxH3AddGuide image arm at their
+// generation-local frames (frame 0 and a window's last row included —
+// one insertion mechanism, never a bus seat). The docs then prove the
+// endpoint shorthand is that same mechanism: the same doc stating the
+// last-row pin as the legacy `last_frame` key composes BYTE-IDENTICALLY
+// (the model-visible truth this snapshot owns).
 describe('h3 keyframe compose (keyless replay)', () => {
   it('carries the keyframes channel to both estate doors and composes the pins', async () => {
     const mode = process.env.DSH_SNAPSHOT ?? 'replay'
@@ -73,9 +75,9 @@ describe('h3 keyframe compose (keyless replay)', () => {
     assert.deepEqual(start?.body.keyframes, keyframes, 'the start door carries the pin channel')
 
     // THE COMPOSE (the model-visible ride): the posted doc walks the
-    // real schema and builds the real graph. Window 1 is [0, 90): the
-    // pin at 45 is strictly interior → AddGuide at generation-local 45;
-    // the pin at 89 is the window's last frame → the END ANCHOR seat.
+    // real schema and builds the real graph. Window 1 is [0, 90): both
+    // pins ride insertions at their generation-local frames — 45 and 89
+    // (89 IS the window's last generated row; it takes no bus slot).
     const model: ModelFacts = {
       id: 'h3', card: 'h3-timeline', defaults: {},
       lane_inputs: { unet: 'minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors' },
@@ -88,14 +90,19 @@ describe('h3 keyframe compose (keyless replay)', () => {
     }
     const graph = compose({ loras: [], seed: 7, prompt: 'A courier runs through a rainy market.', calls, keyframes })
     const guides = Object.values(graph).filter((n) => n.class_type === 'MiniMaxH3AddGuide' && n.inputs.image !== undefined)
-    assert.equal(guides.length, 1, 'the interior pin rides exactly one image guide')
-    assert.equal(guides[0]!.inputs.frame_idx, 45)
-    assert.ok(JSON.stringify(graph).includes('/assets/runs/r1/last-look.png'), 'the end-anchor pin reaches the graph')
+      .sort((a, b) => Number(a.inputs.frame_idx) - Number(b.inputs.frame_idx))
+    assert.equal(guides.length, 2, 'both pins ride image guides — one insertion mechanism')
+    assert.deepEqual(guides.map((g) => g.inputs.frame_idx), [45, 89], 'the interior pin and the last-row pin both insert at their frames')
+    const loaderOf = (handle: unknown): string => {
+      const [id] = handle as [string, number]
+      return String((graph[id]!.inputs as Record<string, unknown>)['image'])
+    }
+    assert.ok(loaderOf(guides[1]!.inputs.image).includes('/assets/runs/r1/last-look.png'), 'the last-row pin is the insertion at 89')
 
     // THE PROBE (byte-identical endpoints): the same doc stating the
-    // END pin as the seat directly — keeping the interior pin —
-    // composes the SAME graph bytes (boundary pins claim seats; the
-    // interior pin rides the chain identically on both sides).
+    // last-row pin as the legacy `last_frame` key — keeping the interior
+    // pin — composes the SAME graph bytes (the shorthand IS the
+    // insertion; one mechanism, two spellings).
     const seats = compose({
       loras: [], seed: 7, prompt: 'A courier runs through a rainy market.',
       calls: [

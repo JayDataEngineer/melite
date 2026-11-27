@@ -1459,7 +1459,7 @@ window.__ModuleLoader__.load({
 			if (w !== void 0 && w !== "" && !WTYPE_SET$1.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
 			return raw;
 		}
-		var EXTRA_KEYS$1, EXTRA_KEY_SET$1, WTYPE_SET$1, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
+		var EXTRA_KEYS$1, EXTRA_KEY_SET$1, WTYPE_SET$1, WTYPE_SEATS$1, MEDIA_SET, ZONE_SET, ROLE_SET;
 		var init_extraKeys = __esmMin((() => {
 			EXTRA_KEYS$1 = [
 				"order",
@@ -1499,7 +1499,7 @@ window.__ModuleLoader__.load({
 				"ip_adapters",
 				"controlnets"
 			];
-			WTYPE_SEATS = {
+			WTYPE_SEATS$1 = {
 				number: "atom",
 				select: "atom",
 				slider: "atom",
@@ -4279,7 +4279,7 @@ window.__ModuleLoader__.load({
 			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES$1,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
-			WTYPE_SEATS: () => WTYPE_SEATS,
+			WTYPE_SEATS: () => WTYPE_SEATS$1,
 			WTYPE_SET: () => WTYPE_SET$1,
 			ZONE_SET: () => ZONE_SET,
 			applySubcardDrop: () => applySubcardDrop,
@@ -8753,6 +8753,22 @@ window.__ModuleLoader__.load({
 			"ip_adapters",
 			"controlnets"
 		];
+		const WTYPE_SEATS = {
+			number: "atom",
+			select: "atom",
+			slider: "atom",
+			text: "atom",
+			textarea: "atom",
+			boolean: "atom",
+			image: "atom",
+			file: "atom",
+			mesh: "atom",
+			image_list: "rail",
+			mask: "mod-face",
+			loras: "mod-face",
+			ip_adapters: "mod-face",
+			controlnets: "mod-face"
+		};
 		/** THE TYPED READ — one getter for every face. `extraOf(node)`
 		*  narrows a serialized ref node's meta.extra to the bag type;
 		*  faces read keys off the result, never off a bare record. */
@@ -9833,6 +9849,26 @@ window.__ModuleLoader__.load({
 				}
 			}
 			return owned;
+		}
+		/** THE BAG CONTAINER, JUDGED BY ITS SEAT (the Voice-no-pick burn,
+		*  operator 2026-11-27: the Voice Mod in the TTS card "doesn't let
+		*  me choose a voice … I can't use this mod at all" — the
+		*  leaf rendered the `qvoice` group heading and the strength dial
+		*  alone, and a saved persona could never be loaded).
+		*
+		*  The leaf EXCLUDES the envelope's bag row (rendering it asked the
+		*  operator to type a whole bag as text — the Fibo LoRA burn,
+		*  2026-11-15). The judgment is the SEAT, never name identity: a bag
+		*  container presents on a mod-face wtype (`mask` / `loras` /
+		*  `ip_adapters` / `controlnets` — WTYPE_SEATS, @melite/contracts),
+		*  while an entry's own payload may reuse the kind's param_key as a
+		*  name — qvoice's entry IS `{ qvoice, voice_strength }`, and its
+		*  `qvoice` payload row (an atom file seat — the persona PICK) was
+		*  eaten as if it were the bag, leaving a leaf that could tune a
+		*  voice it could not choose. PURE. */
+		function isBagContainerField(k, f) {
+			if (f.name !== k.param_key) return false;
+			return WTYPE_SEATS[f.wtype !== void 0 && f.wtype !== "" ? f.wtype : f.type] === "mod-face";
 		}
 		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
 		*  as opposed to a FIELD kind (mask-shaped: its own param fields)?
@@ -11424,6 +11460,41 @@ window.__ModuleLoader__.load({
 			const dot = name.lastIndexOf(".");
 			if (dot < 0 || dot === name.length - 1) return void 0;
 			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+		}
+		const UPLOAD_KIND_SET = /* @__PURE__ */ new Set([
+			"image",
+			"video",
+			"audio",
+			"model"
+		]);
+		/** THE UPLOAD CLASSIFIER — the family a browser File carries, asked
+		*  ONCE for every upload rail: the estate's own extension vocabulary
+		*  first (`mediaKindOf`), the browser's MIME claim second (a
+		*  clipboard/drag blob whose name carries no extension still rides
+		*  its stated type).
+		*
+		*  THE ONE SYSTEM (operator burn 2026-11-27, verbatim: "WHEN WE UPLOAD
+		*  VOICE CLIPS IT IS THE SAME SYSTEM… QVOICE NEEDS TO WORK THE SAME
+		*  WAY. ONE SYSTEM"): the rails classified by MIME PREFIX alone, and
+		*  a `.qvoice` picked from the OS dialog arrives with NO type (no
+		*  desktop MIME database entry names it) — so the estate's own voice
+		*  container, classified `audio` by this vocabulary since 2026-10-15,
+		*  was refused at the client gate and again at the uploads door while
+		*  the same bytes as `.wav` sailed through. Classification belongs to
+		*  the vocabulary every other seat (media/list, the square accept, the
+		*  drop judge, the engine's staging table) already reads.
+		*
+		*  @param name the picked file's name (its extension is the vocabulary key).
+		*  @param mime the browser's declared content type ("" when it states none).
+		*  @returns the upload family, or undefined when the file is not one
+		*   (the rails refuse those in their own voice). */
+		function uploadKindOf(name, mime) {
+			const byName = mediaKindOf(name);
+			if (byName !== void 0 && UPLOAD_KIND_SET.has(byName)) return byName;
+			const slash = mime.indexOf("/");
+			if (slash <= 0) return void 0;
+			const family = mime.slice(0, slash).toLowerCase();
+			return UPLOAD_KIND_SET.has(family) ? family : void 0;
 		}
 		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
 		*  (2026-10-13, the card-UI duplication audit: five seats carried
@@ -14105,10 +14176,7 @@ window.__ModuleLoader__.load({
 		*  whitelist, one clean segment) are the law; the client only voices
 		*  its refusals, never invents its own. */
 		async function uploadInputFile(file, signal, dataUrl) {
-			const isMedia = file.type.startsWith("image/") || file.type.startsWith("video/") || file.type.startsWith("audio/");
-			const glbName = /\.glb$/i.test(file.name) || /\.gltf$/i.test(file.name);
-			const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
-			if (!isMedia && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, video, audio, or .glb/.gltf file");
+			if (uploadKindOf(file.name, file.type) === void 0) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, video, audio, or .glb/.gltf file");
 			const payload = dataUrl ?? await readAsDataURL(file);
 			const res = await fetch("/v1/uploads", {
 				method: "POST",
@@ -16717,8 +16785,20 @@ window.__ModuleLoader__.load({
 						};
 						commit(k, next);
 					}
-				} else if (open.mode === "create") commit(k, [...entries, { ...draftParams }]);
-				else {
+				} else if (open.mode === "create") {
+					if (!(k.fields ?? []).some((f) => {
+						if (!(f.name in draftParams)) return false;
+						const v = draftParams[f.name];
+						if (v === void 0 || v === null) return false;
+						if (typeof v === "string" && v.trim() === "") return false;
+						return !(f.default !== void 0 && f.default === v);
+					}) && (k.fields ?? []).length > 0) {
+						const pick = (k.fields ?? []).find((f) => (f.type === "file" || f.type === "image" || f.type === "mesh" || f.wtype === "file" || f.wtype === "image") && !isBagContainerField(k, f) && fieldVisible(f, draftParams));
+						setLeafError(pick !== void 0 ? "Pick the " + (pick.label ?? pick.name) + " first — this row saves only once its pick is chosen." : "State a value first — this row saves only what you author, never bare dial defaults.");
+						return;
+					}
+					commit(k, [...entries, { ...draftParams }]);
+				} else {
 					const seatEntry = resolveSeatEntry(entries, open);
 					if (seatEntry === null) {
 						setLeafError(ghostRaceRefusal(k));
@@ -17049,7 +17129,7 @@ window.__ModuleLoader__.load({
 					bbox_h: Math.round(b.height)
 				});
 			};
-			const leafFields = (k.fields ?? []).filter((f) => f.name !== k.param_key && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true) && fieldVisible(f, onDraft.draftParams));
+			const leafFields = (k.fields ?? []).filter((f) => !isBagContainerField(k, f) && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true) && fieldVisible(f, onDraft.draftParams));
 			const leafStar = (f) => fieldRequired(f, onDraft.draftParams) ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null;
 			const fieldRow = (f) => {
 				const sq = own.square(f);
@@ -19702,6 +19782,7 @@ window.__ModuleLoader__.load({
 		exports.imageSubjectKeysOf = imageSubjectKeysOf;
 		exports.inject = inject;
 		exports.inputEdgeOf = inputEdgeOf;
+		exports.isBagContainerField = isBagContainerField;
 		exports.isCasConflict = isCasConflict;
 		exports.isDuplicateServiceSeat = isDuplicateServiceSeat;
 		exports.isEstateRefusal = isEstateRefusal;

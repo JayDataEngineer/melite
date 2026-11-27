@@ -66,7 +66,7 @@ export {
 export type { TensorRef, StatedRegion } from './lanes-image.ts'
 export { foldLegacyAliases, type FoldKinds } from './alias-fold.ts'
 export type { ActionBinding } from './facts.ts'
-export { qvoiceUse, promoteQvoiceBag, type QVoiceUse } from './lanes-audio.ts'
+export { qvoiceUse, promoteQvoiceBag, releasePresetBesidePersona, type QVoiceUse } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
   finalizeAnny,

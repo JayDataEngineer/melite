@@ -15,7 +15,6 @@ import {
   carriedSpanGrid,
   deliveredFrames,
   gridSnap,
-  imageReferenceCap,
   joinRefList,
   migrateCallKnobKey,
   normalizeDeclaredRefs,
@@ -85,8 +84,9 @@ describe('reference contract', () => {
     // refmods (audit 010/R1): the RefMod loader's own MAX_SLOTS —
     // conditioning-side, no image-bus spend.
     assert.deepEqual(REF_CAPS, { images: 8, videos: 3, audios: 3, refmods: 8 })
-    assert.equal(imageReferenceCap(false), 8)
-    assert.equal(imageReferenceCap(true), 7)
+    // the bus is references-only: nothing docks a seat for an anchor or
+    // an end frame any more (the retired imageReferenceCap(hasLastFrame)
+    // split 8/7), so the bag's ceiling is the bag's ceiling
   })
 
   it('splits, normalizes, joins, and merges without shredding data URLs', () => {

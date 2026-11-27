@@ -3,7 +3,7 @@ import { laneBlank, judgeLaneRelations, laneSurfaceOf } from '@melite/contracts/
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (ttsT1).
 import type { Context } from '@melite/comfyui-card-kit/card-definition'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, qvoiceUse, instantiateAction, finalizeTts, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
+import { declaredAction, qvoiceUse, releasePresetBesidePersona, instantiateAction, finalizeTts, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import type { TtsLaneTopology } from '@melite/models-qwen3-tts'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { voicePresetStated } from '@melite/comfyui-card-kit/facts'
@@ -507,23 +507,32 @@ export function registerCard(ctx: Context, comfy: ComfyUIServiceFace): void {
         // word (the variant relations above) judges blankness — no
         // imperative copy here.
       }
-      if (!blank(doc.style_instruction) && !laneTakesStyleInstruction(model)) {
+      // THE PERSONA'S OWN INSTRUCT (operator 2026-11-27, the same
+      // press: 'Seductive' beside a picked .qvoice on the 0.6B
+      // CustomVoice cell). The gate below judges the PRESET synth's
+      // surface — the size cell's instruction_control. A picked
+      // persona composes the studio's generate mode instead, whose
+      // instruct input rides useSegment on EVERY cell
+      // (tts-segments.ts): the style fires there, never at the
+      // absent preset surface, so the persona path is exempt.
+      if (!blank(doc.style_instruction) && !laneTakesStyleInstruction(model) && qvoiceUse(doc) === undefined) {
         throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (this size cell has no instruction control — choose a lane with instruction control or drop the instruction)")
       }
-      // THE PRESET+QVOICE CONFLICT (the tts dossier's B2 cure,
-      // 2026-11-12 — mirrors the save-path conflict refusals above):
-      // the engine's qvoice branch has NO speaker (upstream
-      // generate_voice_clone carries none), so a stated preset beside
-      // a saved persona was silently dropped — the run performed the
-      // persona while the receipt claimed a speaker. ONE voice
-      // performs: refuse loud, naming both seats and the cure. (The
-      // overlay no longer STAMPS a preset beside a qvoice — the B7
-      // skip at stampCardOverlay; this guards the user's own
-      // explicit both-stated write.) THE STATED-PRESET TEST (F31):
-      // the lane's defaults fill is the rest, never a stated preset.
-      if (qvoiceStated(doc) && voicePresetStated(doc, model)) {
-        throw new Error("params 'voice' and 'qvoice' fire together on the tts card (ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the .qvoice)")
-      }
+      // THE PERSONA OWNS THE VOICE (RE-STATED law, operator
+      // 2026-11-27: "THE WHOLE POINT OF THE QVOICE IS TO WORK WITH
+      // THE CUSTOMVOICE" — after the press died with "params 'voice'
+      // and 'qvoice' fire together" on a doc carrying a preset name
+      // the operator never picked). The bag IS the voice source; a
+      // preset name beside it is the draft's leftover, and the
+      // engine's persona branch reads no speaker at all. So the
+      // stale name is RELEASED from the gated doc (one
+      // implementation, releasePresetBesidePersona) and the persona
+      // performs on the CustomVoice lane with its instruct — the
+      // run's params then carry no speaker to lie about. The old B2
+      // refusal (dossier cure, 2026-11-12) guarded a user intent
+      // that does not exist; a PRESENT persona makes the preset
+      // inert, never an error.
+      releasePresetBesidePersona(doc)
       // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
       // boarded family's own speak action composes (branching on
       // the resolved synth_lane DATA); an unbound row refuses loud

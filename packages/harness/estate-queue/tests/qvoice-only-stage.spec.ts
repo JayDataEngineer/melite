@@ -14,7 +14,7 @@
 //      node's load branch reads the input dir or a host path only.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { LifecycleLatch } from "../src/lifecycleLatch.ts";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { installLaneStoreOverlay, restoreLaneStoreOverlay } from "../../../../tests/helpers/lane-store-overlay.ts";
@@ -36,6 +36,7 @@ let svc: CardRegistryService;
 let ctx: Context;
 let def: CardDefinition;
 let facts: Record<string, ModelFactsRow>;
+let STATE_ROOT: string;
 let ttsFacts: ModelFacts;
 const FACTS_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "engines", "comfyui-cordis", "data", "model-facts.json");
 
@@ -46,8 +47,8 @@ beforeAll(async () => {
   new FlowsSeatService(ctx);
   (ctx as unknown as { queue: unknown }).queue = {
     lifecycleLatch: new LifecycleLatch(),
-    stateRoot: mkdtempSync(join(tmpdir(), "qvoice-only-")),
-    stateRoots: [] as string[],
+    stateRoot: (STATE_ROOT = mkdtempSync(join(tmpdir(), "qvoice-only-"))),
+    stateRoots: [STATE_ROOT] as string[],
   };
   svc = new CardRegistryService(ctx);
   await svc.prime();
@@ -92,15 +93,62 @@ describe("THE ONE-STAGE QVOICE DOOR — add-stage with qvoice only, one run", ()
     expect(out.params["qvoice"]).toBe("qvoice-01");
   });
 
-  it("DOOR 2: an AUTHOR-stated preset beside a qvoice still refuses (ONE voice performs)", () => {
+  it("DOOR 2: an AUTHOR-stated preset beside a qvoice is RELEASED — the persona owns the voice (operator 2026-11-27: qvoice works WITH the CustomVoice)", () => {
+    // THE OLD LAW REVERSED by the operator's own press: a preset
+    // name beside a picked persona is the draft's leftover, never a
+    // second voice. The prepared doc keeps the name (the write door
+    // does not guess), and the card's compose releases it at the
+    // judge so the studio performs the persona alone.
     const out = prepareCardParams(svc, {
       model: "qwen3-tts",
       params: { variant: "customvoice", text: "hello there", voice: "vivian", qvoice: "qvoice-01" },
     }, "qwen3-tts", "1", facts);
-    expect(out.params["voice"], "an authored preset is not derived currency — it rides").toBe("vivian");
-    expect(() => def.compose(out.params, ttsFacts, new GraphBuilder({}), "run_both")).toThrow(
-      /voice.*qvoice|qvoice.*voice/i,
-    );
+    expect(out.params["voice"], "the prepared doc keeps what the author wrote — release is the compose's judge").toBe("vivian");
+    const g = new GraphBuilder({});
+    def.compose(out.params, ttsFacts, g, "run_both");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio");
+    expect(studio, "the persona performs through the studio").toBeDefined();
+    expect(studio!.inputs["qvoice_path"]).toBe(BANK + "/qvoice-01.qvoice");
+    expect(Object.values(graph).filter((n) => "voice" in n.inputs),
+      "the released preset reaches no speaker seat").toEqual([]);
+  });
+
+  it("DOOR 2 (the operator press VERBATIM, 2026-11-27): customvoice + stale vivian + a Siren MK2 persona + Seductive composes — no refusal on the pickup path", () => {
+    // The lane ledger's second press.refused row, byte for byte:
+    // {"model":"qwen3-tts","variant":"customvoice","voice":"vivian",
+    //  "qvoice":{"qvoice":"/melite-media/runs/.../Siren%20MK2.qvoice"},
+    //  "text":"Hey, how you doing cowboy?","style_instruction":"Seductive "}.
+    // THE JOURNEY HOP: the real prepare door, then the real tts card
+    // compose over a real GraphBuilder — the graph the engine reads.
+    const PERSONA = "/melite-media/runs/run-c77376c132c2-1b9afef8/tts/run-c77376c132c2-1b9afef8_voices_MeliteQVoiceCopy.0_Siren%20MK2.qvoice";
+    // the ref is live on the swept tree (the real run's artifact
+    // exists; this seat materializes it so the dangling sweep reads
+    // the door the operator's press crossed, never a phantom)
+    const liveFile = join(svc.stateRoots()[0]!, "output", decodeURIComponent(PERSONA.slice("/melite-media/runs/".length)));
+    mkdirSync(dirname(liveFile), { recursive: true });
+    writeFileSync(liveFile, "qvoice-wdelta");
+    const out = prepareCardParams(svc, {
+      model: "qwen3-tts",
+      params: {
+        variant: "customvoice",
+        voice: "vivian",
+        qvoice: [{ qvoice: PERSONA, voice_strength: 1 }],
+        text: "Hey, how you doing cowboy?",
+        style_instruction: "Seductive ",
+      },
+    }, "qwen3-tts", "1", facts);
+    const g = new GraphBuilder({});
+    def.compose(out.params, ttsFacts, g, "run_operator_press");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio");
+    expect(studio, "the persona performs through the studio").toBeDefined();
+    expect(studio!.inputs["qvoice_path"]).toBe(PERSONA);
+    expect(studio!.inputs["instruct"], "the CustomVoice instruct rides WITH the persona").toBe("Seductive ");
+    expect(Object.values(graph).filter((n) => "voice" in n.inputs),
+      "the stale preset is released — the graph names no speaker").toEqual([]);
+    expect(Object.values(graph).filter((n) => n.class_type === "AudiocoreTTS"),
+      "no preset synth beside the persona").toEqual([]);
   });
 
   it("DOOR 2 (card compose): the prepared doc composes and the bare name reaches the studio as the bank path", () => {

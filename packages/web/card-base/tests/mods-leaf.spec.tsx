@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+// @contract cards-mod-leaf-authored-only
 // mods-leaf.spec.tsx — THE MOD SYSTEM's leaf face (mods.tsx half
 // 2): one modal edits one bag entry — OPTION (served row + seeded
 // strength), HYBRID (served row + stamped facts + verbatim fields),
@@ -515,6 +516,29 @@ test('FIELD CREATE: defaults seed the draft; the draft IS the entry on save', ()
   fireEvent.change(screen.getByLabelText('Feather'), { target: { value: '7' } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
   expect(onEdit).toHaveBeenCalledWith('masks', [{ feather: 7 }])
+})
+
+// THE QVOICE HALF-BAG (the operator's own press, 2026-11-27: the
+// Voice leaf's Add before choosing a persona committed
+// `{ voice_strength: 1 }`, and the press died at phase 1 with
+// "qvoice bag entry requires a string qvoice path"). The wall rides
+// the SAME FIELD create path with the qvoice kind's shape: a pick
+// seat that must be chosen, a dial that seeds itself.
+test('FIELD CREATE: the qvoice shape refuses a half-bag — the persona is picked before the row exists', () => {
+  const QVOICE = {
+    kind: 'qvoice', label: 'Voice', param_key: 'qvoice', cardinality: 'list', max_stack: 1,
+    fields: [
+      { name: 'qvoice', type: 'file', label: 'QVoice', media: 'audio' },
+      { name: 'voice_strength', type: 'number', label: 'Voice Strength', default: 1 },
+    ],
+  } as unknown as ModifierKind
+  const { onEdit } = openLeaf({ kinds: [QVOICE], values: {} })
+  openCreate('Voice')
+  // the dial seeds the draft (default 1); the persona is unpicked
+  expect((screen.getByLabelText('Voice Strength') as HTMLInputElement).value).toBe('1')
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(screen.getByText(/Pick the QVoice first/)).not.toBeNull()
+  expect(onEdit).not.toHaveBeenCalled()
 })
 
 // THE SAM_THRESHOLD CURE (2026-11-05, the operator's bug sweep): a

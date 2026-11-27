@@ -43,7 +43,7 @@ import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineReg
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isBagContainerField, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 import { modCommitWrite } from '@melite/contracts/formSpec'
 import { LORA_ACCEPT } from '@melite/contracts/loraExtensions'
 import { SpecMenuSelect } from './atoms.tsx'
@@ -811,7 +811,38 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       }
     } else {
       // FIELD kind: the draft params object IS the entry
-      if (open.mode === 'create') commit(k, [...entries, { ...draftParams }])
+      if (open.mode === 'create') {
+        // THE NOTHING-AUTHORED GUARD (operator burn, 2026-11-27: the
+        // Voice mod's create seeded the dials' defaults — pressing
+        // Add before choosing a persona committed
+        // `{ voice_strength: 1 }`, and the press then died at phase 1
+        // with "qvoice bag entry requires a string qvoice path"). A
+        // create whose draft states NOTHING but the fields' own
+        // declared defaults is a half-row: it saves only what the
+        // operator authored. When the missing seat is a PICK, the
+        // leaf names it (the square is the pick; the dial's default
+        // is not an entry). Same law as the hybrid leaves'
+        // "pick one from the served rows".
+        const authored = (k.fields ?? []).some((f) => {
+          if (!(f.name in draftParams)) return false
+          const v = draftParams[f.name]
+          if (v === undefined || v === null) return false
+          if (typeof v === 'string' && v.trim() === '') return false
+          return !(f.default !== undefined && f.default === v)
+        })
+        if (!authored && (k.fields ?? []).length > 0) {
+          const pick = (k.fields ?? []).find((f) =>
+            (f.type === 'file' || f.type === 'image' || f.type === 'mesh'
+              || f.wtype === 'file' || f.wtype === 'image')
+            && !isBagContainerField(k, f)
+            && fieldVisible(f, draftParams))
+          setLeafError(pick !== undefined
+            ? 'Pick the ' + (pick.label ?? pick.name) + ' first — this row saves only once its pick is chosen.'
+            : 'State a value first — this row saves only what you author, never bare dial defaults.')
+          return
+        }
+        commit(k, [...entries, { ...draftParams }])
+      }
       else {
         const seatEntry = resolveSeatEntry(entries, open)
         if (seatEntry === null) { setLeafError(ghostRaceRefusal(k)); return }
@@ -1375,11 +1406,14 @@ function ModLeaf(props: {
   // itself (`loras`, `mask`) beside the entry's own knobs. The leaf
   // EDITS that bag — rendering it as a row asked the operator to type
   // the whole bag as text ("The Fibo lora is freeform text"), and the
-  // compose door refuses every such literal (`unknown-lora`). Excluded
-  // by IDENTITY against the served param_key, never by a kind name: a
-  // bag container is a bag container on every pack.
+  // compose door refuses every such literal (`unknown-lora`).
+  // Excluded by the bag's SEAT (isBagContainerField — a mod-face
+  // wtype), never by name identity: the qvoice kind's entry payload
+  // is NAMED `qvoice` like its param_key, and name identity ate the
+  // persona pick, leaving a Voice leaf that rendered the strength
+  // dial and no way to choose a voice (operator burn 2026-11-27).
   const leafFields: SpecField[] = (k.fields ?? []).filter((f) =>
-    f.name !== k.param_key
+    !isBagContainerField(k, f)
     && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true)
     // THE MASTER MODAL'S SUBMENUS (slice 5, 2026-11-09): the riding
     // fields - scale under the refine switch, extend_seconds under

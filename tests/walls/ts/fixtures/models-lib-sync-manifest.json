@@ -34,8 +34,8 @@
       "libHash": "89d89d49de91e486da32c09595dc6626384f7148d86276df2da381742f77603e"
     },
     "h3": {
-      "srcHash": "fc061b705fb154d2ce88edcd0a08581a4a02adf91d5fb2052df31f9e8a305b28",
-      "libHash": "e4d7149cd8dc08207e6ce898e03fa7e6999f9acca70a82564f34dfdeb89bb324"
+      "srcHash": "567b178e8d40ff425f16a2a034ea65144e527b61984ff86dc89194f7f06518c0",
+      "libHash": "c20e9b14c829050818cf25988c0272d5525ee9b19319c5c7864bdb2fe670c1fd"
     },
     "h3-image": {
       "srcHash": "1cc3f956394f27f84e8a867c0bbab16d75f9fc77527a6921df8949bc4f209e87",
@@ -94,8 +94,8 @@
       "libHash": "cd8b1e5d74bbada77d027c4d9133838cdaba12ce45e2ce6e6431a21125493a51"
     },
     "qwen3-tts": {
-      "srcHash": "0462174a3dfe16cb6b8a11bafece62ad0f7977e1ea2e838a444c781e105fd8d6",
-      "libHash": "aafc247ded13d84b6c6fabdc64d85166f65e20751a8b65cfb17530ddd385a44f"
+      "srcHash": "ed73b8ae09361db5bc33c0f86afe593746e8c8bd3ad11002bbb724aa54be1dd3",
+      "libHash": "03715045d9b5c15c5025121dbf173b2a99d65b6028ebb497eca4a4e2c903e5ea"
     },
     "seed-vc": {
       "srcHash": "ae63a1d8ccc182dd85c51c35ab7fef787fccfc2f98bd519a7ed2546d466f255d",

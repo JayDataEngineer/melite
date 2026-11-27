@@ -1037,17 +1037,27 @@ describe("the empty-string strip (B1: the wire carries what composed, nothing el
     assert.deepEqual(empties, [], "the studio wire is honest (the dossier's N3: qvoice_path '' dies too)");
   });
 
-  it("THE PRESET+QVOICE CONFLICT (B2): both stated refuses loud — the clone branch carries no speaker, one voice performs", () => {
-    // THE STATED PRESET (F31): a stated pick of a NON-rest speaker —
-    // the lane's own default fill ('ryan') is the rest and rides
-    // beside a .qvoice (the service's merge wrote it, never the
-    // caller); 'vivian' is the caller's own word and refuses.
-    assert.throws(
-      () => def.compose(
-        def.schema({ text: "sample", voice: "vivian", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] }),
-        ttsModel, new GraphBuilder(), "run_b2",
-      ),
-      /params 'voice' and 'qvoice' fire together on the tts card \(ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the \.qvoice\)/,
+  it("THE PERSONA OWNS THE VOICE (RE-STATED B2, operator 2026-11-27): a preset name beside a persona is RELEASED — the bag is the voice source and the CustomVoice instruct rides with it", () => {
+    // THE OPERATOR'S OWN DOC (the bench's press.refused request):
+    // variant customvoice, voice 'vivian' (a name they never picked —
+    // the draft's leftover), a persona, and a style instruction. The
+    // old B2 arm refused this press; the law is now release: the
+    // persona performs through the studio, the graph carries no
+    // speaker, and the instruct still styles the delivery.
+    const p = def.schema({ text: "sample", voice: "vivian", style_instruction: "Seductive", qvoice: [{ qvoice: "/v/siren.qvoice", voice_strength: 1 }] });
+    const gPair = new GraphBuilder();
+    def.compose(p, ttsModel, gPair, "run_b2");
+    const studioPair = Object.values(gPair.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>)
+      .find((n) => n.class_type === "AudiocoreVoiceStudio");
+    assert.ok(studioPair, "the persona performs through the studio");
+    assert.equal(studioPair!.inputs.qvoice_path, "/v/siren.qvoice", "the persona wires");
+    const speakerSeats = Object.values(gPair.toJSON() as Record<string, { inputs: Record<string, unknown> }>)
+      .filter((n) => "voice" in n.inputs);
+    assert.deepEqual(speakerSeats, [], "the released preset reaches no speaker seat (the run's params name no voice)");
+    assert.equal(studioPair!.inputs.instruct, "Seductive", "the CustomVoice instruct rides WITH the persona (the operator's point: qvoice works with the CustomVoice)");
+    assert.equal(
+      Object.values(gPair.toJSON() as Record<string, { class_type: string }>).some((n) => n.class_type === "AudiocoreTTS"),
+      false, "no preset synth rides beside the persona",
     );
     // THE F31 REST: the lane's default fill beside a .qvoice is not
     // a stated preset — the persona performs (the failure's exact
@@ -1068,7 +1078,7 @@ describe("the empty-string strip (B1: the wire carries what composed, nothing el
     );
     const studio = Object.values(g.toJSON() as Record<string, { class_type: string }>)
       .find((n) => n.class_type === "AudiocoreVoiceStudio");
-    assert.ok(studio, "the persona's studio composes (the refusal guards the pair, never the persona)");
+    assert.ok(studio, "the persona's studio composes (the release guards the pair, never the persona)");
   });
 
   it("STATED VALUES RIDE: a non-empty style survives the strip — only '' dies", () => {

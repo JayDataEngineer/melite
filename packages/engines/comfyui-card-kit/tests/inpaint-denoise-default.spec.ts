@@ -99,8 +99,18 @@ describe("the inpaint denoise default — one truth, every seat", () => {
 
   test("no parallel default — the cordis pack imports the kit schema back (the one home)", () => {
     const packs = readFileSync(join(REPO, "packages/engines/comfyui-cordis/src/mods/packs.ts"), "utf8");
-    assert.match(packs, /import \{ MaskFields \} from '@melite\/comfyui-card-kit\/pack-fields'/,
-      "the engine imports the kit's schema — the kit header's own law");
+    // THE IMPORT IS JUDGED BY ITS NAMES, not its literal spelling: the
+    // row is one entry in a name list that grows as packs consolidate
+    // (qvoice joined it 2026-11-27), and pinning the exact line made
+    // the law red on a lawful second import.
+    const importLine = packs.match(/import \{([^}]*)\} from '@melite\/comfyui-card-kit\/pack-fields'/);
+    assert.ok(importLine, "the engine imports the kit's schemas — the kit header's own law");
+    const names = importLine![1].split(",").map((s) => s.trim());
+    for (const name of ["MaskFields", "QvoiceFields", "QvoiceSaveFields"]) {
+      assert.ok(names.includes(name), "packs.ts imports " + name + " from the kit (the one home)");
+    }
     assert.doesNotMatch(packs, /mask_denoise: z\.number/, "the parallel copy is dead — no second writer");
+    assert.doesNotMatch(packs, /const QvoiceFields = z\.object/, "the qvoice parallel copy is dead — no second writer");
+    assert.doesNotMatch(packs, /const QvoiceSaveFields = z\.object/, "the qvoice_save parallel copy is dead — no second writer");
   });
 });

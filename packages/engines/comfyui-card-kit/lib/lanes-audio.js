@@ -65,6 +65,15 @@ function qvoiceRow(value, fallbackStrength) {
         return qvoiceRow(item, fallbackStrength);
     }
     const pathValue = record['qvoice'];
+    // THE UNPICKED SLOT IS NOT A BAG (operator burn, 2026-11-27: a Voice
+    // mod added before the persona pick committed `{ voice_strength: 1 }`
+    // and the press died at phase 1 — "qvoice bag entry requires a string
+    // qvoice path" — while the operator had done nothing wrong). Absence
+    // of the key is the seat's empty state: the row's dials alone state
+    // no persona, exactly as an absent bag states none. A PRESENT key
+    // that is not a string stays a malformed write and refuses loud.
+    if (pathValue === undefined || pathValue === null)
+        return undefined;
     if (typeof pathValue !== 'string') {
         throw new Error('qvoice bag entry requires a string qvoice path');
     }
@@ -76,6 +85,28 @@ function qvoiceRow(value, fallbackStrength) {
 }
 export function qvoiceUse(p) {
     return qvoiceRow(p['qvoice'], p['voice_strength']);
+}
+/** THE PERSONA SUPERSEDES THE PRESET (operator order, 2026-11-27:
+ *  "THE WHOLE POINT OF THE QVOICE IS TO WORK WITH THE CUSTOMVOICE" —
+ *  after the press died with "params 'voice' and 'qvoice' fire
+ *  together" on a doc whose preset the operator never picked). The
+ *  bag IS the voice source: a persona riding beside a preset name is
+ *  the draft's leftover, never an intent, and the engine's persona
+ *  branch reads no speaker anyway — so the stale name is RELEASED
+ *  from the doc instead of refusing the press. One implementation,
+ *  both tts judge seats (the card's compose and the family's speak
+ *  action); the run's params then carry the persona alone, which is
+ *  what performs.
+ *  @param p the stage params (post-defaults-merge) about to compose
+ *  @returns true when a preset name was released */
+export function releasePresetBesidePersona(p) {
+    if (qvoiceUse(p) === undefined)
+        return false;
+    const preset = p['voice'];
+    if (typeof preset !== 'string' || preset === '')
+        return false;
+    delete p['voice'];
+    return true;
 }
 /** THE FLAT-QVOICE PROMOTION (the F49 cure, 2026-11-01): the flat
  * spelling `qvoice: "<path>"` composes — {@link qvoiceUse} reads it —

@@ -78,20 +78,20 @@ describe("the defaults merge is the lane's rest, never a stated preset (F31)", (
     assert.equal(synth.inputs["voice"], rest, "the fresh compose rides the lane's rest verbatim");
   });
 
-  it("THE STATED PRESET still refuses: an explicit non-rest speaker beside a .qvoice dies with the B2 voice", async () => {
+  it("THE STATED PRESET is RELEASED beside a .qvoice (operator 2026-11-27: the persona works WITH the CustomVoice — the stale name never refuses)", async () => {
     const svc = await boot();
     svc.registerCard(defs.get("tts")!);
     svc.setFacts(factsDoc);
-    expect(() =>
-      svc.compose(
-        "tts",
-        "qwen3-tts",
-        { text: "hello", voice: "vivian", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
-        "run_f31_stated",
-      ),
-    ).toThrow(
-      /params 'voice' and 'qvoice' fire together on the tts card \(ONE voice performs — the saved persona rides the qvoice mod bag and the engine's clone branch carries no speaker; drop the preset or the \.qvoice\)/,
+    const graph = svc.compose(
+      "tts",
+      "qwen3-tts",
+      { text: "hello", voice: "vivian", qvoice: [{ qvoice: "/v/ann.qvoice", voice_strength: 1 }] },
+      "run_f31_stated",
     );
+    assert.ok(graph["AudiocoreVoiceStudio.0"], "the persona performs (the preset is inert, never an error)");
+    const speakers = Object.values(graph as Record<string, { inputs: Record<string, unknown> }>)
+      .filter((n) => "voice" in n.inputs);
+    assert.deepEqual(speakers, [], "the released preset reaches no speaker seat (the graph names no voice)");
   });
 
   it("THE EXPLICIT REST rides beside a .qvoice: a caller who types the lane's own default is indistinguishable from the merge's write", async () => {
