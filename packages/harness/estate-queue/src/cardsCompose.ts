@@ -3,7 +3,7 @@
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
-import { cardAdmits, familyLanesOf } from "./cardsFacts.ts";
+import { cardAdmits, familyLanesOf, stageReservedKeyLifts } from "./cardsFacts.ts";
 import { ESTATE_NAMING_ROW } from "@melite/contracts/formSpec";
 export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
@@ -65,6 +65,18 @@ export function liftStanza(params: Record<string, unknown>): Record<string, unkn
     };
   }
   return params;
+}
+
+/** THE STAGE-POLICY WORDS (B5): what each reserved key arms and why
+ *  a lone card compose refuses it — keyed by the reserved key, with
+ *  one sentence for a key this table has not met. */
+const STAGE_POLICY_WORDS: Readonly<Record<"boundary_unload_models" | "vram_budget_mb" | "default", () => string>> = {
+  boundary_unload_models: (): string =>
+    "STAGE POLICY — it arms the unload boundary at the seam between two WIRED stages of a merged run, and this press composes one card alone: there is no seam to arm. State it on the downstream stage of a two-stage bench, or drop it",
+  vram_budget_mb: (): string =>
+    "STAGE POLICY — the merged run's VRAM headroom budget, read at the merge, and this press composes one card alone and never merges. State it on a bench stage, or drop it",
+  default: (): string =>
+    "STAGE POLICY (STAGE_RESERVED_PARAMS) — read by the merge plane between stages, and this press composes one card alone. State it on a bench stage, or drop it",
 }
 
 export async function composeOnce(
@@ -275,12 +287,23 @@ export function admissionRefusal(
             o.families.map((f) => "family '" + f + "'").join(" / ") +
             " — state params.model on that family's lane to ride it"
         })
+      // THE NO-SEAM VOICE (B5, 2026-11-27): a stage-policy key that
+      // reached THIS door composed alone — the run and bench doors
+      // lift STAGE_RESERVED_PARAMS out of the card walk before the
+      // merge reads them; here one card composes with no seam and no
+      // merge, so the knob has nothing to arm. The old refusal called
+      // it unknown — the operator's word for a missing feature — over a
+      // key the merge plane declares.
+      const policyHints = unknown
+        .filter((k) => stageReservedKeyLifts(decl, k))
+        .map((k) => " '" + k + "' is " + STAGE_POLICY_WORDS[k === "boundary_unload_models" || k === "vram_budget_mb" ? k : "default"]())
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
           " (admission is the declared surface — knobs + contract admits; see the card's TS definition)" +
           (hints.length > 0 ? " Mod-pack keys:" + hints.join(";") : "") +
-          (fieldHints.length > 0 ? " Mod-field families:" + fieldHints.join(";") : ""),
+          (fieldHints.length > 0 ? " Mod-field families:" + fieldHints.join(";") : "") +
+          (policyHints.length > 0 ? " Stage-policy keys:" + policyHints.join(";") : ""),
       )
     }
   }

@@ -320,6 +320,45 @@ describe("T6 — THE ESTATE NAMING ROW'S DOOR SANCTION (queue 12's ONE SEAT law)
   });
 });
 
+describe("T6 — THE NO-SEAM VOICE (B5, 2026-11-27: a stage-policy key at the lone-card door)", () => {
+  // THE BURN (benchgen's MELITE-UPSTREAM-ISSUES B5): a one-stage wall
+  // carrying boundary_unload_models refused "unknown param(s) on the
+  // h3-timeline card: boundary_unload_models" — the operator's word
+  // for a missing feature, over a key the merge plane DECLARES
+  // (comfyui-merge.ts STAGE_RESERVED_PARAMS). The run and bench doors
+  // lift the key out of the card walk for the merge to read; at THIS
+  // door the card composes alone, so the refusal names the fault: no
+  // seam to arm, where the key does belong, or drop it.
+  it("boundary_unload_models refuses on every matrix card with the no-seam sentence; vram_budget_mb with the no-merge sentence; a stranger never wears stage-policy words", () => {
+    const facts = svc.modelFacts();
+    const failures: string[] = [];
+    let cells = 0;
+    for (const { card, families } of matrixRows()) {
+      for (const fam of families) {
+        cells += 1;
+        const unload = verdict(card, fam, "boundary_unload_models", facts);
+        if (unload.admitted) failures.push(`${card} × ${fam}: boundary_unload_models ADMITTED at the lone-card door (a stage-policy key composes nowhere alone)`);
+        else if (!/Stage-policy keys: 'boundary_unload_models' is STAGE POLICY — it arms the unload boundary at the seam between two WIRED stages of a merged run, and this press composes one card alone: there is no seam to arm\. State it on the downstream stage of a two-stage bench, or drop it/.test(unload.error)) {
+          failures.push(`${card} × ${fam}: the no-seam sentence is missing (${unload.error})`);
+        }
+        const declaredBudget = deriveDecls(cardDefsNow() ?? new Map(), facts)[card]?.schemaNames.includes("vram_budget_mb") ?? false;
+        const budget = verdict(card, fam, "vram_budget_mb", facts);
+        // a card that DECLARES the budget on its own carrier keeps it as its param
+        if (!declaredBudget && budget.admitted) failures.push(`${card} × ${fam}: vram_budget_mb ADMITTED at the lone-card door`);
+        if (!declaredBudget && !/Stage-policy keys: 'vram_budget_mb' is STAGE POLICY — the merged run's VRAM headroom budget, read at the merge, and this press composes one card alone and never merges\. State it on a bench stage, or drop it/.test(budget.error)) {
+          failures.push(`${card} × ${fam}: the no-merge sentence is missing (${budget.error})`);
+        }
+        const stranger = verdict(card, fam, "definitely_not_a_key", facts);
+        if (stranger.admitted) failures.push(`${card} × ${fam}: a stranger ADMITTED`);
+        else if (/Stage-policy/.test(stranger.error)) failures.push(`${card} × ${fam}: a stranger wears the stage-policy voice (${stranger.error})`);
+      }
+    }
+    expect(cells, "the matrix went vacuous").toBeGreaterThan(0);
+    expect(matrixRows().some((r) => r.card === "h3-timeline"), "the burn's card left the matrix").toBe(true);
+    expect(failures).toEqual([]);
+  });
+});
+
 describe("T3 — the operator's writes land whole", () => {
   const LORAS = [{ name: "seed.safetensors", strength: 1 }];
   it("image-gen × qwen-img-21 + loras lands (the incident cell)", () => {
