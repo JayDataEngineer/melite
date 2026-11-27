@@ -43,7 +43,7 @@ import { Button, DisclosureRow, IconPlusOutlineRegular, IconSlidersTwoOutlineReg
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+import { coerceFieldEdit, fieldRequired, fieldVisible, groupFields, isBagContainerField, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 import { modCommitWrite } from '@melite/contracts/formSpec'
 import { LORA_ACCEPT } from '@melite/contracts/loraExtensions'
 import { SpecMenuSelect } from './atoms.tsx'
@@ -1375,11 +1375,14 @@ function ModLeaf(props: {
   // itself (`loras`, `mask`) beside the entry's own knobs. The leaf
   // EDITS that bag — rendering it as a row asked the operator to type
   // the whole bag as text ("The Fibo lora is freeform text"), and the
-  // compose door refuses every such literal (`unknown-lora`). Excluded
-  // by IDENTITY against the served param_key, never by a kind name: a
-  // bag container is a bag container on every pack.
+  // compose door refuses every such literal (`unknown-lora`).
+  // Excluded by the bag's SEAT (isBagContainerField — a mod-face
+  // wtype), never by name identity: the qvoice kind's entry payload
+  // is NAMED `qvoice` like its param_key, and name identity ate the
+  // persona pick, leaving a Voice leaf that rendered the strength
+  // dial and no way to choose a voice (operator burn 2026-11-27).
   const leafFields: SpecField[] = (k.fields ?? []).filter((f) =>
-    f.name !== k.param_key
+    !isBagContainerField(k, f)
     && !(hidden?.has(f.name) ?? false) && !(facePresent && f.faceOwned === true)
     // THE MASTER MODAL'S SUBMENUS (slice 5, 2026-11-09): the riding
     // fields - scale under the refine switch, extend_seconds under

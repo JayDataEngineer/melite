@@ -37,7 +37,7 @@ import { chooseLaneClips, computeFilmMix, parseFilmMixClips, spanOverlap, stanza
 import type { FilmMixClip, FilmMixSpan } from './filmMix.js'
 import { SECOND_PASS_WINDOW } from './secondPass.js'
 import { mountRefModBake } from './refmodBake.js'
-import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, admitSpanGrid, bookSeconds, imageReferenceCap, retimeRowsToRendered, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js'
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, admitSpanGrid, bookSeconds, retimeRowsToRendered, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js'
 import {
   applyH3ReshootCond,
   applyH3ReshootModel,
@@ -759,7 +759,12 @@ function renderH3Film(
     // frame_idx = delay×24, fitted to the window's own generation
     // length. ONE delay number feeds BOTH the pin and the prompt
     // tag's clock — they cannot disagree.
-    type Stamp = { src: string, slice_start_seconds: number, slice_duration_seconds: number, delay_seconds: number, text: string }
+    // fromHead: this window HEARS the take from its own head (the row
+    // starts inside this window's generation span). Only then may the
+    // words/event ride the prompt — a window that picks the take up
+    // mid-way re-performs whatever it is told from its frame 0, which
+    // copies the line across the seam (the 2026-11-26 burn).
+    type Stamp = { src: string, slice_start_seconds: number, slice_duration_seconds: number, delay_seconds: number, text: string, fromHead: boolean }
     const stamps: { dialogue?: Stamp, sfx?: Stamp, music?: Stamp } = {}
     if (sf !== null && ef !== null && Number.isFinite(sf) && Number.isFinite(ef) && ef > sf) {
       const carry = i > 0 ? overlap : 0
@@ -798,6 +803,10 @@ function renderH3Film(
           slice_duration_seconds: ms(hi - lo),
           delay_seconds: ms(Math.max(0, clip.start - genStart)),
           text: clip.text,
+          // the ONE predicate the prompt walk reads: the take's head
+          // sits inside this window's generation span, so a slice at
+          // the row's in-point is what the model hears first.
+          fromHead: genStart <= clip.start,
         }
         // (§20: the conditioned set moved to filmMix.ts — the
         // post-generation mix node derives it from the same stamp
@@ -858,9 +867,26 @@ function renderH3Film(
       const speechLang = typeof p.speech_language === 'string' && p.speech_language.trim() !== ''
         ? p.speech_language.trim()
         : 'English'
-      soundscapeSentences.push(
-        `At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[${speechLang}] ${stamps.dialogue.text}</d>`,
-      )
+      // THE WORDS RIDE WHERE THE TAKE IS HEARD FROM ITS HEAD
+      // (2026-11-26, the operator's "audio being copied across
+      // windows"): the slice always continued correctly, the WORDS
+      // did not — a window whose generation starts late hears the take
+      // from `genStart − start` frames in, but the sentence handed it
+      // the WHOLE line, so the model re-spoke the line from its own
+      // frame 0 and that rendition, running `genStart − start` frames
+      // past the take's end, walked out of the duck span and played
+      // the line's tail a second time. A window that hears the take
+      // mid-line is told the truth instead: the voice continues, the
+      // mouth is already articulating, and the line never restarts.
+      if (!stamps.dialogue.fromHead) {
+        soundscapeSentences.push(
+          `At ${t} the same voice is already speaking: the line began before this shot, so the speaker is mid-sentence — mouth articulating the continuing voice; never restart the line.`,
+        )
+      } else {
+        soundscapeSentences.push(
+          `At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[${speechLang}] ${stamps.dialogue.text}</d>`,
+        )
+      }
     }
     if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
       // THE ONE-CLOCK LAW (2026-09-24): an authored sfx text that already
@@ -868,11 +894,23 @@ function renderH3Film(
       // the stamp's clock is canonical, the authored one is trimmed.
       const sfxText = stamps.sfx.text
         .replace(/^\s*at\s+\d{1,2}:\d{2}(?:\.\d{1,3})?\s*[,-]\s*/i, '')
-      soundscapeSentences.push(`At ${stampClock(stamps.sfx.delay_seconds)}, ${sfxText}`)
+      // THE SAME LAW FOR THE EVENT (2026-11-26): an sfx row the window
+      // picks up mid-way is a sound already under way — stating it at
+      // its own onset clock would re-strike the event at 00:00. The
+      // event stays NAMED (the model times the visual to it) and is
+      // marked as continuing, never as a fresh onset.
+      soundscapeSentences.push(stamps.sfx.fromHead
+        ? `At ${stampClock(stamps.sfx.delay_seconds)}, ${sfxText}`
+        : `At ${stampClock(stamps.sfx.delay_seconds)}, already under way from before this shot: ${sfxText} (the event continues; no fresh onset)`);
     }
     if (soundscapeSentences.length > 0) {
       text = text.replace(/\s+$/, '') + '\n\noverall_soundscape:\n' + soundscapeSentences.join('\n')
     }
+    // MUSIC stays one sentence per window it rides, crossers included:
+    // a score is a STATE, not an onset — restating "a low synth pad"
+    // is what keeps the bed the same bed across a seam. There is no
+    // performed word to copy (the 2026-11-26 law is about takes and
+    // events, never about the score's description).
     if (stamps.music !== undefined && stamps.music.text !== '') {
       text = text.replace(/\s+$/, '') +
         `\n\nnon_diegetic_music:\n${stamps.music.text}`
@@ -1651,25 +1689,48 @@ function renderH3Window(
     // configuration is Layer A's alone). One canon, per seat:
     // replace (refs lanes), per-key replace (CALL_KNOB_KEYS), or
     // none (loras, geometry, the bed).
+    // THE TWO LANES (operator 2026-11-26, verbatim: "Keyframes !=
+    // Reference images. They do not. That has always been the case" +
+    // "WE CAN USE *IMAGE REFERENCES* AND *KEYFRAMES* AS TWO ENTIRELY
+    // DIFFERENT CONCEPTS THAT CAN BE APPLIED, AT THE SAME TIME, ON A
+    // VIDEO GENERATION"). A generation takes many independent inputs
+    // at once — image references, keyframes, audio, video, loras, the
+    // parameters, the mods system, refmods — and two of them are the
+    // subject here, kept apart:
+    //   • frame insertions — `p.image` (the frame-0 shorthand of the
+    //     keyframes rail) and the `__keyframe_pins` channel — ride the
+    //     MiniMaxH3AddGuide chain at their generation-local frame;
+    //   • image references — `ref_images` / the call's `refs.images`
+    //     bag — own the bundle's image bus.
+    // The burned merge (this cure): `p.image` was wired to bundle
+    // input_1, so the frame-0 shorthand entered the REFERENCE bus
+    // (ref_image_0) and the opening was GENERATED under its guidance
+    // instead of being inserted — the operator's "the reference gets
+    // mirrored into the first frame as well". A frame insertion is not
+    // a reference, and a reference is not a frame.
     const declaredImages = wireList(p.ref_images)
     const declaredVideos = wireList(p.ref_videos)
     const declaredAudios = wireList(p.ref_audios)
     // THE 9-SLOT IMAGE BUS (the bundle's own topology — the compose
-    // and the UI agree or they lie): inputs 1-9 are IMAGE slots —
-    // the anchor at 1, the FL2VA pair's END anchor at 2 when
-    // last_frame is set, references at 3..9 (7 with an end anchor,
-    // 8 riding input_2..9 without one); input_10 begins the video
-    // lanes. A 9th ref would land ON input_10 — the first video's
-    // image stream — and be silently clobbered; the law refuses
-    // LOUD instead.
+    // and the UI agree or they lie): inputs 1-9 are the REFERENCE
+    // slots (ref_image_0..8 on the r2v node); input_10 begins the
+    // video lanes. No anchor/end-anchor reservation exists any more:
+    // those two seats were the frame-insertion lane wearing the
+    // reference bus's clothes (2026-11-26). A 10th ref would land ON
+    // input_10 — the first video's image stream — and be silently
+    // clobbered; the law refuses LOUD instead.
     const lastFrame = (p.last_frame ?? '') as string
     // THE CANON'S REPLACE ARM (per lane): a stated call lane rides
     // INSTEAD of the declared lane; an absent call lane inherits it.
     const bagImages = wireList(refBag.images)
     const refImagesAll = bagImages.length > 0 ? bagImages : declaredImages
-    const imageCap = imageReferenceCap(lastFrame !== '')
-    if (lastFrame !== '' && refImagesAll.length > imageCap) {
-      throw new Error(`[h3-timeline] the image bus is full: a last frame (input 2) + ${String(refImagesAll.length)} references exceeds the ${IMAGE_BUS_SLOTS}-slot bus — keep references ≤ ${imageCap} with an end anchor (≤ ${REF_CAPS.images} without)`)
+    // THE BUS IS REFERENCES ONLY, so the cap is the cap: a last frame
+    // used to spend one of these seats (anchor 1 / end 2 / refs 3..),
+    // which double-booked one concept against the other. An insertion
+    // owns no bus slot (2026-11-26).
+    const imageCap = REF_CAPS.images
+    if (refImagesAll.length > imageCap) {
+      throw new Error(`[h3-timeline] the image bus is full: ${String(refImagesAll.length)} references exceed the ${IMAGE_BUS_SLOTS}-slot bus — keep references ≤ ${imageCap}`)
     }
     const refImages = refImagesAll.slice(0, imageCap)
     const bagVideos = wireList(refBag.videos)
@@ -1726,39 +1787,71 @@ function renderH3Window(
     // wired soundtrack seats.)
     const imageRef = (src: string): TensorRef =>
       isSpell(src) ? src : g.node('LoadImage', { image: src }).out()
-    let anchorRaw: TensorRef | undefined
-    if (guideImage !== '') {
-      anchorRaw = imageRef(guideImage)
-      bundleInputs.input_1 = g.node('UnifiedResizeImageMask', {
-        image: anchorRaw, scale_mode: 'Shorter Side',
-        aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
-        short_side_target: 2048.0, width: 1024.0, height: 1024.0,
-        multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
-        crop: 'center', divisible_by: 32.0, maintain_aspect: false,
-      }).out()
+    // THE FRAME INSERTIONS (the keyframes lane — the SAME mechanism at
+    // every frame). Three sources, one chain:
+    //   • the `__keyframe_pins` channel — the doc's film-absolute pins
+    //     mapped to this window's generation-local frames;
+    //   • `p.image` / `p.image_name` — the frame-0 SHORTHAND of the same
+    //     rail (schema.ts: "An image pin at the film's opening — the
+    //     frame-0 shorthand"), an insertion at frame 0 like any other;
+    //   • `p.last_frame` — the legacy end-anchor key (hidden, never a
+    //     face), translated to an insertion at the window's last
+    //     generated row ("we don't use ... last frame explicitly").
+    // NONE of these is a reference: an insertion is a frame the model
+    // must produce, a reference is conditioning it may draw from.
+    const seats: Array<{ image: string, frame_idx: number }> = [...pinsHere]
+    // ONE FRAME, ONE IMAGE. A shorthand naming a frame a spelled pin
+    // already claims is the SAME seat when it carries the same image
+    // (the doc says the seat twice — one insertion), and a REFUSAL
+    // when it carries another (two images cannot both be frame 0; the
+    // engine would let the later write win and the other would vanish
+    // silently — the dropped-image disease this file's header names).
+    const claim = (image: string, frame_idx: number, who: string): void => {
+      const seen = seats.find((s) => s.frame_idx === frame_idx)
+      if (seen === undefined) { seats.push({ image, frame_idx }); return }
+      if (seen.image === image) return
+      throw new Error(
+        `${who} names '${image}' at frame ${frame_idx}, but a keyframe pin already carries '${seen.image}' there — one frame carries one image. Drop one of the two, or move the pin to another frame.`,
+      )
     }
-    // THE FL2VA END ANCHOR: input_2 is the pair's second seat — the
-    // i2v branch reads out(0)/out(1) as first/last frame verbatim.
-    // Without an end anchor, refs ride from input_2 (legacy shelf).
+    if (guideImage !== '') claim(guideImage, 0, 'the frame-0 shorthand (`image`)')
+    if (lastFrame !== '') claim(lastFrame, (p.length as number) - 1, 'the legacy `last_frame` key')
+    // the chain rides frame order — the shorthand joins the pins in
+    // their own sequence, never ahead of or behind it
+    seats.sort((a, b) => a.frame_idx - b.frame_idx)
+    // ONE LOADER PER IMAGE THIS WINDOW INSERTS (2026-11-26): the same
+    // file can be the frame-0 shorthand AND the geometry resizer's
+    // source, and the old spelling decoded it twice (two LoadImages on
+    // one graph — a duplicate disk handoff for one image). The map is
+    // keyed by the spelled source so a $spell keeps riding its tensor
+    // slot; only the LoadImage hop is shared.
+    const loaders = new Map<string, TensorRef>()
+    const imageOf = (src: string): TensorRef => {
+      const hit = loaders.get(src)
+      if (hit !== undefined) return hit
+      const made = imageRef(src)
+      loaders.set(src, made)
+      return made
+    }
+    // the geometry resizer (i2v's dead branch) wants SOME image to
+    // derive the shape from; the frame-0 shorthand is the natural one
+    // and a reference is the fallback (below). Never a bus entry.
+    let anchorRaw: TensorRef | undefined
+    if (guideImage !== '') anchorRaw = imageOf(guideImage)
+    // THE REFERENCE BUS: bundle inputs 1-9, references in order, no
+    // reserved anchor/end seat (2026-11-26). The resize hop is shared
+    // so a spelled reference rides its TENSOR slot verbatim.
     const resizeRef = (src: string): OutputHandle => g.node('UnifiedResizeImageMask', {
-      image: imageRef(src), scale_mode: 'Shorter Side',
+      image: imageOf(src), scale_mode: 'Shorter Side',
       aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
       short_side_target: 2048.0, width: 1024.0, height: 1024.0,
       multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
       crop: 'center', divisible_by: 32.0, maintain_aspect: false,
     }).out()
-    if (lastFrame !== '') bundleInputs.input_2 = resizeRef(lastFrame)
-    const firstFreeSlot = lastFrame !== '' ? 3 : 2
+    const firstFreeSlot = 1
     refImages.forEach((src, i) => {
-      const img = imageRef(src)
-      if (anchorRaw === undefined && i === 0) anchorRaw = img
-      bundleInputs[`input_${firstFreeSlot + i}`] = g.node('UnifiedResizeImageMask', {
-        image: img, scale_mode: 'Shorter Side',
-        aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
-        short_side_target: 2048.0, width: 1024.0, height: 1024.0,
-        multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
-        crop: 'center', divisible_by: 32.0, maintain_aspect: false,
-      }).out()
+      if (anchorRaw === undefined && i === 0) anchorRaw = imageOf(src)
+      bundleInputs[`input_${firstFreeSlot + i}`] = resizeRef(src)
     })
     refVideos.forEach((src, i) => {
       // the spelled motion guide rides GetVideoComponents' tensor
@@ -1790,11 +1883,11 @@ function renderH3Window(
         ? src
         : g.node('LoadAudio', { audio: src }).out()
     })
-    // the geometry resizer (i2v's dead branch): fed by the anchor, or
-    // the first ref image, or — anchorless and imageless — pinned to
-    // the literals the geo node's own defaults produce (the branch is
-    // never selected; r2vBool pins true below).
-    const geoSrc = anchorRaw ?? bundleInputs.input_2
+    // the geometry resizer (i2v's dead branch): fed by the frame-0
+    // shorthand, or the first reference, or — seatless and imageless —
+    // pinned to the literals the geo node's own defaults produce (the
+    // branch is never selected; r2vBool pins true below).
+    const geoSrc = anchorRaw ?? bundleInputs.input_1
     let geoW: OutputHandle | number = 768.0
     let geoH: OutputHandle | number = 1344.0
     if (geoSrc !== undefined) {
@@ -1979,12 +2072,17 @@ function renderH3Window(
     // nearest lawful row (loud comment, silent snap — the length
     // law's own idiom). The image rides the spell law's own helper:
     // a $spell rides its tensor slot verbatim, a path keeps the
-    // LoadImage disk handoff (the anchor seat's exact grammar).
-    for (const pin of pinsHere) {
+    // LoadImage disk handoff.
+    // ONE ARM FOR EVERY FRAME (the 2026-11-26 cure): `seats` carries
+    // the doc's mapped keyframes, the frame-0 shorthand and the legacy
+    // end-anchor translation — all insertions, frame 0 and the last
+    // generated row included (the engine's 1-or-17k+5 rule makes a
+    // single-frame guide lawful at every row).
+    for (const pin of seats) {
       cond = g.node('MiniMaxH3AddGuide', {
         positive: cond, latent,
         frame_idx: Math.min(pin.frame_idx, (p.length as number) - 1),
-        vae: vaeVideo, image: imageRef(pin.image),
+        vae: vaeVideo, image: imageOf(pin.image),
       }).out(0)
     }
   } else {
@@ -2618,37 +2716,45 @@ const H3_SAMPLER_OPTIONS: readonly string[] = SAMPLER_OPTIONS.filter((n) =>
   (H3_RECOMMENDED_SAMPLERS as readonly string[]).includes(n));
 
 /** ONE WINDOW'S KEYFRAME RIDES (the keyframe lane, slice 2 — the
- *  design §A compose rules as data): `anchor`/`endAnchor` are the
- *  endpoint pins' seat values (bundle input_1 / the FL2VA end anchor
- *  input_2 — the existing first/last-frame pulls, no graph change),
- *  `pins` are the strictly-interior pins in film order, each carrying
- *  its GENERATION-LOCAL frame index (the film frame minus the
- *  window's generation head — the same clock the D-M-E audio stamps
- *  ride, so a carried window's 22-frame seam is already subtracted). */
+ *  design §A compose rules as data): `pins` are the window's frame
+ *  insertions in film order, each carrying its GENERATION-LOCAL frame
+ *  index (the film frame minus the window's generation head — the
+ *  same clock the D-M-E audio stamps ride, so a carried window's
+ *  22-frame seam is already subtracted). EVERY insertion rides this
+ *  arm — frame 0 and the last generated row included. */
 interface KeyframeRides {
-  anchor?: string
-  endAnchor?: string
   pins: Array<{ image: string; frame_idx: number }>
 }
 
-/** THE KEYFRAME→SEAT MAPPING (the keyframe lane, slice 2 — 2026-11-05):
- *  turns the doc's FILM-absolute `keyframes` pins into per-window
- *  rides. Runs at the build door AFTER the plan gate (placement is
- *  judged there; every pin here has exactly one covering window) and
- *  BEFORE the sole-call unpack, so both window shapes consume the
- *  mapped seats through their EXISTING doors — the film loop reads
- *  them off the rewritten call rows (guide/seat-union/variant derive
- *  with no pin awareness), the single-window shape lifts them through
- *  the unpack. Per the seat canon (Layer B replaces Layer A), a pin
- *  fills only a SILENT seat: a stated call guide/last_frame (or, on
- *  the single-window shape, the doc-level seat) wins and the pin
- *  rides the interior arm instead — at a boundary frame that is the
- *  AddGuide pin at the window's first/last generated row, so BOTH
- *  images reach the graph (the no-drop law: a pin never vanishes).
- *  Writes `p.calls` (new row objects; the caller's doc is untouched)
- *  and `p.__keyframe_pins` — the interior channel keyed by the 1-based
+/** THE KEYFRAME→INSERTION MAPPING (the keyframe lane, slice 2 —
+ *  2026-11-05; cured 2026-11-26): turns the doc's FILM-absolute
+ *  `keyframes` pins into per-window insertions. Runs at the build door
+ *  AFTER the plan gate (placement is judged there; every pin here has
+ *  exactly one covering window) and BEFORE the sole-call unpack.
+ *
+ *  THE TWO-MECHANISM LAW (operator 2026-11-26, verbatim: "Keyframes !=
+ *  Reference images. They do not. That has always been the case" +
+ *  "we don't use first frame, nor last frame explicitly, we use the
+ *  same frame insertion throughout"). A generation takes MANY
+ *  independent inputs at once — image references, keyframes, audio,
+ *  video, loras, the parameters, the mods system, refmods (each its
+ *  own lane) — and two of them are the subject here: this function
+ *  owns the KEYFRAME lane, so a row at ANY frame becomes an insertion
+ *  at that generation-local frame.
+ *
+ *  THE BURN this replaces: a row at the window's first frame was
+ *  rewritten into `w.row.image` and a row at its last row into
+ *  `w.row.last_frame` — the two seats the window arm wired to the
+ *  REFERENCE bus (bundle input_1/input_2). A frame insertion at 0
+ *  therefore became reference picture #1 and the opening was
+ *  GENERATED from it instead of being inserted; the operator read the
+ *  result as the reference having been mirrored into the first frame.
+ *  Two mechanisms, one seat: the class this law forbids.
+ *
+ *  Writes `p.__keyframe_pins` only — the channel keyed by the 1-based
  *  window k the renderers already carry (the `__` internal-channel
- *  precedent: __iteration/__overlap). */
+ *  precedent: __iteration/__overlap). The caller's doc is untouched:
+ *  no call row is rewritten, because an insertion is not a seat. */
 function applyKeyframeCompose(p: Record<string, unknown>): void {
   const kfRows = Array.isArray(p.keyframes) ? (p.keyframes as Array<Record<string, unknown>>) : []
   /* v8 ignore next 1 -- the sole caller (the keyframe placement gate) runs only when kfRows.length > 0, so the empty re-entry never fires; the guard stays as the function's own contract */
@@ -2656,26 +2762,18 @@ function applyKeyframeCompose(p: Record<string, unknown>): void {
   const calls = Array.isArray(p.calls) ? (p.calls as Array<Record<string, unknown>>) : []
   const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
   const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
-  // Per-window window metadata: the span, the generation head (the
+  // Per-window window metadata: the span and the generation head (the
   // film loop's own carry law — i>0 non-cut windows generate from
-  // sf − overlap), and the MAPPED row (lazily forked so untouched
-  // rows keep their identity).
-  type Win = { sf: number; ef: number; genStart: number; rides: KeyframeRides; row: Record<string, unknown>; forked: boolean }
+  // sf − overlap). No row forking: an insertion is not a seat.
+  type Win = { sf: number; ef: number; genStart: number; rides: KeyframeRides }
   const wins: Array<Win | null> = calls.map((row, i) => {
     const sf = num(row.start_frame)
     const ef = num(row.end_frame)
     if (sf === null || ef === null || ef <= sf) return null
     const carry = i > 0 ? transitionOverlap(typeof row.transition === 'string' ? row.transition : undefined) : 0
-    return { sf, ef, genStart: sf - carry, rides: { pins: [] }, row, forked: false }
+    return { sf, ef, genStart: sf - carry, rides: { pins: [] } }
   })
   const ridesByK = new Map<number, KeyframeRides>()
-  const fork = (w: Win): Record<string, unknown> => {
-    if (!w.forked) {
-      w.row = { ...w.row }
-      w.forked = true
-    }
-    return w.row
-  }
   for (const kf of kfRows) {
     // (the gate above guarantees a finite frame and a covering window)
     const f = kf.frame as number
@@ -2683,23 +2781,25 @@ function applyKeyframeCompose(p: Record<string, unknown>): void {
     const w = wins.find((win) => win !== null && f >= win.sf && f <= win.ef - 1) as Win | undefined
     /* v8 ignore next 1 -- unreachable post-gate: the placement gate above refuses any frame without a covering finite window, so the find always lands; the guard stays as the loop's own contract */
     if (w === undefined) continue // unreachable post-gate; the gate owns the refusal
-    if (f === w.sf && w.rides.anchor === undefined && !isSeatStated(w, 'anchor')) {
-      fork(w).image = image
-      w.rides.anchor = image
-      continue
+    // THE ONE MECHANISM: every frame inserts at its own generation-
+    // local index — frame 0 and the window's last row are frames like
+    // any other, never reference-bus seats (the 2026-11-26 cure).
+    // ONE FRAME, ONE IMAGE (spelled pins too): two pins on the same
+    // generation-local frame contend for one tensor slot — the engine
+    // would let the later write win and the earlier image would vanish
+    // silently. The same image twice is one seat; two images refuse.
+    const local = f - w.genStart
+    const claimed = w.rides.pins.find((q) => q.frame_idx === local)
+    if (claimed !== undefined) {
+      if (claimed.image === image) continue
+      throw new Error(
+        `keyframes: frame ${f} carries '${image}', but another pin already carries '${claimed.image}' on window ${wins.indexOf(w) + 1} (generated frame ${local}) — one frame carries one image. Move one of the pins to another frame.`,
+      )
     }
-    if (f === w.ef - 1 && w.rides.endAnchor === undefined && !isSeatStated(w, 'end')) {
-      fork(w).last_frame = image
-      w.rides.endAnchor = image
-      continue
-    }
-    // strictly interior — or a boundary seat already claimed (the first
-    // pin won it): the interior arm, so the image still reaches the graph
-    w.rides.pins.push({ image, frame_idx: f - w.genStart })
+    w.rides.pins.push({ image, frame_idx: local })
   }
   for (const [i, w] of wins.entries()) {
     if (w === null) continue
-    if (w.forked) calls[i] = w.row
     if (w.rides.pins.length > 0) {
       w.rides.pins.sort((a, b) => a.frame_idx - b.frame_idx)
       ridesByK.set(i + 1, w.rides)
@@ -2709,21 +2809,6 @@ function applyKeyframeCompose(p: Record<string, unknown>): void {
     const channel: Record<string, Array<{ image: string; frame_idx: number }>> = {}
     for (const [k, rides] of ridesByK) channel[String(k)] = rides.pins
     p.__keyframe_pins = channel
-  }
-
-  /** A window's own stated seat (the canon's Layer B claim): the row's
-   *  guide spellings (the film loop's exact union) or its end anchor;
-   *  on the single-window shape the DOC-level seat is the same seat —
-   *  a stated one wins over the pin there too. */
-  function isSeatStated(w: Win, seat: 'anchor' | 'end'): boolean {
-    if (seat === 'anchor') {
-      if (str(w.row.image) !== '' || str(w.row.ref_image) !== '' || str(w.row.image_name) !== '') return true
-      if (calls.length === 1 && str(p.image) !== '') return true
-      return false
-    }
-    if (str(w.row.last_frame) !== '') return true
-    if (calls.length === 1 && str(p.last_frame) !== '') return true
-    return false
   }
 }
 

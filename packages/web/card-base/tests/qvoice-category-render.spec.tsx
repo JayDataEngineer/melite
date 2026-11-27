@@ -102,3 +102,51 @@ test("F54: the composed qvoice bag renders its chip (run f2f56d282dfb exact para
   const text = (section?.textContent ?? '') + (document.body.textContent ?? '')
   expect(text, 'the staged kunoichi_v3 persona is visible — a hidden staged mod lies about the run').toMatch(/kunoichi_v3/)
 })
+
+// THE VOICE-NO-PICK BURN (operator 2026-11-27: the Voice Mod in the
+// TTS card "doesn't let me choose a voice … I can't use this mod at
+// all"): the leaf rendered the group heading and Voice
+// Strength and NOTHING ELSE — the .qvoice seat was missing, so a saved
+// persona could never be loaded. The kind's param_key is `qvoice` and
+// the entry's own payload key is ALSO `qvoice` (the bag reads
+// `qvoice: [{ qvoice, voice_strength }]`), and the leaf's
+// bag-never-a-field filter judged by NAME — it ate the payload row as
+// if it were the bag container. The filter now judges the SEAT (a
+// bag container presents on a mod-face wtype; an entry payload on an
+// atom), and this arm rides the REAL served tts doc, so a regression
+// to name-identity reds here.
+test("F54b: the Voice leaf seats the persona PICK (.qvoice), not just the strength dial", async () => {
+  bindMedia()
+  mountStage({ qvoice: [{ qvoice: 'kunoichi_v3', voice_strength: 1 }], variant: 'customvoice' })
+  const tile = document.querySelector('[data-testid="cb-mods-section"] [data-mod-tile]')
+  expect(tile, 'the staged Voice chip is a door into its leaf').not.toBeNull()
+  fireEvent.click(tile as Element)
+  const pick = document.querySelector('[data-source-row="qvoice"]')
+  expect(pick, 'the leaf carries the .qvoice pick seat — without it the mod cannot load a saved voice at all').not.toBeNull()
+  expect(pick?.textContent ?? '', 'the seated persona names itself').toMatch(/kunoichi_v3/)
+  // THE AUDIO SEAT: the pick's OS dialog offers the voice container
+  // (the field declares media 'audio'), never the image triad a bare
+  // file field defaults to — the other half of the same burn.
+  const fileInput = pick?.querySelector('input[type="file"]')
+  expect(fileInput?.getAttribute('accept') ?? '', 'the pick offers the .qvoice family').toContain('.qvoice')
+})
+
+// THE ADD PATH — the operator's actual first encounter (they pressed
+// "+" on the mods section, chose Voice, and the popup offered a lone
+// strength dial). The create leaf seeds from the same served rows, so
+// the same seat law governs it; this arm rides the menu door, not a
+// pre-composed bag.
+test("F54c: ADDING the Voice mod opens a leaf that can pick a voice", async () => {
+  bindMedia()
+  mountStage({})
+  const add = document.querySelector('[data-testid="cb-mods-section"] [data-subcard-add="mod"]')
+  expect(add, 'the mods section offers its add square').not.toBeNull()
+  fireEvent.click(add as Element)
+  const voice = Array.from(document.querySelectorAll('[role="menuitem"]'))
+    .find((el) => (el.textContent ?? '').trim() === 'Voice')
+  expect(voice, 'the offer lists the Voice kind by that name').toBeTruthy()
+  fireEvent.click(voice as Element)
+  const pick = document.querySelector('[data-source-row="qvoice"]')
+  expect(pick, 'the create leaf seats the persona pick — the burn was a Voice popup with only a strength dial').not.toBeNull()
+  expect(document.body.textContent ?? '', 'the strength dial still rides beside it').toMatch(/Voice Strength/)
+})

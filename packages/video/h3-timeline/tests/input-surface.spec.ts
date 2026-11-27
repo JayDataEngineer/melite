@@ -2,8 +2,10 @@
 // 2026-09-20: the H3 architecture truth — FL2VA anchors vs Ref2VA
 // conditioning, two different mechanics, one progressive rail).
 // The schema OWNS the wire form (typed arrays, door-enforced);
-// compose shelves them onto the 9-slot image bus (anchor 1,
-// last_frame 2, refs 3..9). The bed is GONE (2026-09-22): the D-M-E
+// compose routes them onto TWO mechanisms (2026-11-26): the 9-slot
+// image bus carries REFERENCES ONLY (input_1..9), while `image` /
+// `last_frame` are frame insertions (MiniMaxH3AddGuide at frame 0 /
+// the last generated row). The bed is GONE (2026-09-22): the D-M-E
 // lanes own film audio.
 // Every arm below refuses loud or composes provably — never silent.
 import "../../../../tests/helpers/boot-models.ts";
@@ -69,6 +71,18 @@ const bundleIn = (out: Record<string, GNode>): string => {
   assert.ok(id, "the r2v lane builds the bundle");
   return id;
 };
+/** Every image insertion the composed graph performs, read off the
+ * real AddGuide nodes: the generation-local frame and the image that
+ * rides it (a LoadImage path, or a spelled tensor slot verbatim). */
+const insertions = (out: Record<string, GNode>): Array<{ frame_idx: number; image: string }> =>
+  Object.values(out)
+    .filter((n) => n.class_type === "MiniMaxH3AddGuide" && n.inputs["image"] !== undefined)
+    .map((n) => {
+      const ref = n.inputs["image"] as unknown;
+      const src = Array.isArray(ref) ? out[ref[0] as string]?.inputs["image"] : ref;
+      return { frame_idx: n.inputs["frame_idx"] as number, image: String(src) };
+    })
+    .sort((a, b) => a.frame_idx - b.frame_idx);
 
 describe("the input surface: the schema owns the wire form", () => {
   it("refuses a non-string entry LOUD (never a silent shape)", () => {
@@ -323,47 +337,65 @@ describe("the input surface: variant derivation owns the lane first", () => {
 
   it("a guideless end-anchor doc COMPOSES (the t4r guard admits the anchor's own surface)", () => {
     // variant derivation says last_frame implies t4r (above); the
-    // compose-side guard must agree — an end-anchor-only window is
-    // the FL2VA shape: input_2 locked, nothing else shelved. The
-    // guard's refs law counts the anchor itself, so the window
-    // composes instead of refusing as "guideless t4r".
+    // compose-side guard must agree. THE ONE MECHANISM: an
+    // end-anchor-only window is a LAST-ROW INSERTION, not a bus seat —
+    // the graph carries an AddGuide image arm at the window's final
+    // generated row and the reference bus stays empty.
     const out = graphOf({ last_frame: "/m/end.png", calls: [SHOT()] }, "run_anchor_only");
     const r2v = Object.values(out).filter((n) => n.class_type === "MiniMaxH3ReferenceToVideo");
     assert.equal(r2v.length, 1, "the r2v lane composes for the anchor-only doc");
-    const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_2"), "/m/end.png", "the end anchor holds input 2");
+    assert.deepEqual(
+      insertions(out),
+      [{ frame_idx: 55, image: "/m/end.png" }],
+      "the end anchor inserts at the last generated row (56-frame window)",
+    );
+    assert.deepEqual(Object.keys(bundleIn(out) ? out[bundleIn(out)!].inputs : {}), [],
+      "an insertion takes no reference slot");
   });
 });
 
-describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () => {
-  it("last_frame lands input_2; refs re-shelve to input_3 (anchor stays input_1)", () => {
+describe("the input surface: the 9-slot bus carries REFERENCES ONLY", () => {
+  it("`image` and `last_frame` are INSERTIONS; refs ride input_1..", () => {
     const out = graphOf({
       image: "/m/first.png",
       last_frame: "/m/end.png",
       ref_images: ["/m/a.png", "/m/b.png"],
-      calls: [SHOT({ ref_image: "/m/first.png" })],
+      calls: [SHOT()],
     }, "run_pair");
     const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_1"), "/m/first.png", "the anchor holds input 1");
-    assert.equal(loaderFor(out, b, "input_2"), "/m/end.png", "the end anchor holds input 2");
-    assert.equal(loaderFor(out, b, "input_3"), "/m/a.png", "refs re-shelve from input 3");
-    assert.equal(loaderFor(out, b, "input_4"), "/m/b.png");
+    assert.equal(loaderFor(out, b, "input_1"), "/m/a.png", "refs start at input 1");
+    assert.equal(loaderFor(out, b, "input_2"), "/m/b.png");
+    assert.deepEqual(
+      insertions(out),
+      [{ frame_idx: 0, image: "/m/first.png" }, { frame_idx: 55, image: "/m/end.png" }],
+      "the anchor pair rides the insertion rail at frame 0 and the last row",
+    );
   });
 
-  it("without an end anchor refs ride the legacy shelf from input_2", () => {
+  it("refs ride the bus from input_1 (no reserved anchor hole)", () => {
     const out = graphOf({
       ref_images: ["/m/a.png"],
       calls: [SHOT()],
     }, "run_legacy");
     const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_2"), "/m/a.png", "the legacy shelf holds");
+    assert.equal(loaderFor(out, b, "input_1"), "/m/a.png", "the first reference owns input 1");
   });
 
-  it("a last frame + 8 refs refuses LOUD (10 > the 9-slot bus, never a silent clobber)", () => {
+  it("a last frame + 8 refs COMPOSES (insertions never take a bus slot); 9 refs refuse LOUD", () => {
+    // the retired cap docked a slot for the end anchor, which is why a
+    // last frame plus a full bag used to refuse at 8. The insertion
+    // rail owns no bus slot, so the bag may be full — and one more
+    // would land on input_10 (the first video stream) and be clobbered
+    // silently, which is what the refusal exists for.
     const eight = Array.from({ length: 8 }, (_, i) => `/m/r${i}.png`);
+    const out = graphOf({ last_frame: "/m/end.png", ref_images: eight, calls: [SHOT()] }, "run_full8");
+    assert.equal(loaderFor(out, bundleIn(out), "input_8"), "/m/r7.png", "the eighth reference holds input 8");
+    assert.deepEqual(insertions(out), [{ frame_idx: 55, image: "/m/end.png" }],
+      "the end anchor still inserts at the window's last generated row (56-frame span)");
+    // the ninth reference refuses at the door (the bag's declared cap)
     assert.throws(
-      () => graphOf({ last_frame: "/m/end.png", ref_images: eight, calls: [SHOT()] }, "run_full"),
-      /bus is full/,
+      () => def.schema({ ref_images: [...eight, "/m/r8.png"], calls: [SHOT()] }),
+      /ref_images expected array length <= 8/,
     );
   });
 
@@ -373,9 +405,9 @@ describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () =>
       calls: [SHOT({ refs: { images: ["/m/a.png", "/m/b.png"] } })],
     }, "run_merge");
     const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_2"), "/m/a.png", "declared leads");
-    assert.equal(loaderFor(out, b, "input_3"), "/m/b.png", "legacy appends");
-    assert.equal(loaderFor(out, b, "input_4"), null, "the dup never double-loads");
+    assert.equal(loaderFor(out, b, "input_1"), "/m/a.png", "declared leads");
+    assert.equal(loaderFor(out, b, "input_2"), "/m/b.png", "legacy appends");
+    assert.equal(loaderFor(out, b, "input_3"), null, "the dup never double-loads");
   });
 
   it("legacy comma refs preserve a data URL's mime comma", () => {
@@ -384,8 +416,8 @@ describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () =>
       calls: [SHOT({ refs: { images: `${data}, /m/b.png` } })],
     }, "run_data_refs");
     const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_2"), data);
-    assert.equal(loaderFor(out, b, "input_3"), "/m/b.png");
+    assert.equal(loaderFor(out, b, "input_1"), data);
+    assert.equal(loaderFor(out, b, "input_2"), "/m/b.png");
   });
 
   it("Layer B wins: a call's knobs replace the card-level stack (never union)", () => {
@@ -394,7 +426,7 @@ describe("the input surface: the 9-slot bus shelves the FL2VA pair first", () =>
       calls: [SHOT({ knobs: { ref_images: ["/m/c.png"] } })],
     }, "run_layerb");
     const b = bundleIn(out);
-    assert.equal(loaderFor(out, b, "input_2"), "/m/c.png", "the stanza's own stack rides");
+    assert.equal(loaderFor(out, b, "input_1"), "/m/c.png", "the stanza's own stack rides");
     const loaders = Object.values(out)
       .filter((n) => n.class_type === "LoadImage")
       .map((n) => String(n.inputs["image"]));
@@ -439,17 +471,18 @@ describe("THE SPELL ARM: wired stage inputs ride tensor slots, never loaders (th
       calls: [SHOT()],
     }, "run_spells");
     const b = bundleIn(out);
-    // input_1 (the anchor) traces to the RAW spell, not a loader
-    const anchorLink = out[b].inputs["input_1"] as unknown;
-    const anchorSrc = (out[Array.isArray(anchorLink) ? anchorLink[0] : ""]?.inputs ?? {})["image"];
-    assert.equal(anchorSrc, "$gen", "the anchor rides the producer tensor (the raw spell)");
-    // the spelled end anchor and image ref ride the resizer's image input
-    for (const slot of ["input_2", "input_3"]) {
-      const link = out[b].inputs[slot] as [string, number];
-      const resizer = out[link[0]];
-      assert.equal(resizer?.class_type, "UnifiedResizeImageMask", `${slot} still resizes`);
-      assert.equal(resizer.inputs["image"], slot === "input_2" ? "$end" : "$refimg", `${slot} rides the spell, not a loader`);
-    }
+    // the anchor pair IS the insertion rail: both spells ride an
+    // AddGuide image seat verbatim (frame 0 and the last generated row)
+    assert.deepEqual(
+      insertions(out),
+      [{ frame_idx: 0, image: "$gen" }, { frame_idx: 55, image: "$end" }],
+      "the spelled anchor pair rides the insertion rail as tensor slots",
+    );
+    // the image reference rides the bus resizer's image input
+    const link = out[b].inputs["input_1"] as [string, number];
+    const resizer = out[link[0]];
+    assert.equal(resizer?.class_type, "UnifiedResizeImageMask", "the reference still resizes");
+    assert.equal(resizer.inputs["image"], "$refimg", "the reference rides the spell, not a loader");
     // the spelled motion guide rides GetVideoComponents' video input
     const comp = Object.values(out).find((n) => n.class_type === "GetVideoComponents");
     assert.ok(comp, "the video components node builds");

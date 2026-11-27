@@ -312,6 +312,37 @@ test('uploadInputFile: ANY MEDIA boards the door (the any-media law, 2026-11-06)
   }
 })
 
+// THE ONE SYSTEM (operator burn 2026-11-27: "WHEN WE UPLOAD VOICE
+// CLIPS IT IS THE SAME SYSTEM… QVOICE NEEDS TO WORK THE SAME WAY. ONE
+// SYSTEM"): the OS dialog hands a .qvoice over with NO type. The rail
+// now asks the estate's vocabulary (uploadKindOf — the same classifier
+// media/list, the square accept and the engine's staging table read),
+// so the voice container rides exactly like a .wav. Before, the
+// MIME-prefix gate refused it as "that file" while the seat's accept
+// string offered .qvoice — the operator could not load a saved voice
+// from disk at all.
+test('uploadInputFile: a .qvoice with no browser MIME rides (the estate vocabulary says audio)', async () => {
+  const calls = useFake({ '/v1/uploads': () => json({ path: 'data/input/persona.qvoice' }) })
+  const RealReader = globalThis.FileReader
+  globalThis.FileReader = class {
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    result: string | null = null
+    readAsDataURL(): void {
+      this.result = 'data:application/octet-stream;base64,QUJD'
+      queueMicrotask(() => { this.onload?.() })
+    }
+  } as unknown as typeof FileReader
+  try {
+    await expect(uploadInputFile(new File(['x'], 'persona.qvoice', { type: '' })))
+      .resolves.toEqual({ name: 'data/input/persona.qvoice', file: 'persona.qvoice' })
+  } finally {
+    globalThis.FileReader = RealReader
+  }
+  const sent = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>
+  expect(sent['filename']).toBe('persona.qvoice')
+})
+
 test('uploadInputFile: an unreadable drop REFUSES (never an empty upload)', async () => {
   const RealReader = globalThis.FileReader
   class FailingReader {

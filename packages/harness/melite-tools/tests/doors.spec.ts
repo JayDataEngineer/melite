@@ -1599,16 +1599,41 @@ describe('uploads rail', () => {
       assert.equal(r.status, 200, data.slice(0, 24))
       created.push(path.join(dir, TAG + i + ext))
     }
-    // non-media (raw text) and a case-mangled mime still refuse
-    for (const data of ['hello', PNG.replace('image/png', 'image/PNG')]) {
+    // non-media refuses: raw text (no data URL at all) and a binary
+    // whose name the estate vocabulary does not classify AND whose
+    // declared family is not media — the whitelist is the VOCABULARY
+    // (uploadKindOf), so it stays closed to everything outside it.
+    for (const [name, data] of [
+      [TAG + 'x.png', 'hello'],
+      [TAG + 'x.bin', 'data:application/octet-stream;base64,' + Buffer.from('bin').toString('base64')],
+    ] as Array<[string, string]>) {
       const r = await call(h.routes, '/v1/uploads', {
         method: 'POST',
         url: '/',
-        body: { filename: TAG + 'x.png', data },
+        body: { filename: name, data },
       })
       assert.equal(r.status, 400)
       assert.ok(String((r.body as { error: string }).error).includes('only image / video / audio'))
     }
+
+    // THE ONE SYSTEM (operator burn 2026-11-27: "WHEN WE UPLOAD VOICE
+    // CLIPS IT IS THE SAME SYSTEM… QVOICE NEEDS TO WORK THE SAME WAY.
+    // ONE SYSTEM"): a .qvoice picked from the OS arrives as
+    // application/octet-stream — no desktop MIME entry names it — and
+    // the estate's vocabulary classifies it AUDIO (mediaKinds.ts:48).
+    // The rail carries it exactly like the .wav above; the old
+    // MIME-prefix regex refused the estate's own voice container.
+    const qvoice = await call(h.routes, '/v1/uploads', {
+      method: 'POST',
+      url: '/',
+      body: {
+        filename: TAG + 'persona.qvoice',
+        data: 'data:application/octet-stream;base64,' + Buffer.from('QVOICE').toString('base64'),
+      },
+    })
+    assert.equal(qvoice.status, 200, 'a .qvoice boards the same door as every other media file')
+    assert.deepEqual((qvoice.body as { path: string }).path, 'data/input/' + TAG + 'persona.qvoice')
+    created.push(path.join(dir, TAG + 'persona.qvoice'))
   })
 
   test('THE MESH ARM (primitive ③): glb uploads ride the door — named mime or extension-paired octet-stream; extension-less octet refuses', async () => {
@@ -1640,12 +1665,14 @@ describe('uploads rail', () => {
     })
     assert.equal(ok3.status, 200)
     created.push(path.join(dir, TAG + 'donor3.gltf'))
-    // octet-stream WITHOUT the glb name stays refused — the whitelist
-    // never opens to every binary
+    // a binary name OUTSIDE the estate vocabulary stays refused — the
+    // whitelist never opens to every binary (a vocab name like .png
+    // rides on its extension, the one-system law; `.bin` names no kind
+    // and declares no media family)
     const bad = await call(h.routes, '/v1/uploads', {
       method: 'POST',
       url: '/',
-      body: { filename: TAG + 'x.png', data: 'data:application/octet-stream;base64,' + bytes.toString('base64') },
+      body: { filename: TAG + 'x.bin', data: 'data:application/octet-stream;base64,' + bytes.toString('base64') },
     })
     assert.equal(bad.status, 400)
     assert.ok(String((bad.body as { error: string }).error).includes('only image / video / audio / glb / gltf'))

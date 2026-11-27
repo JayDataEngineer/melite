@@ -235,7 +235,11 @@ export const FAMILY_LAW = {
         {
             lane: 't4r',
             guideKeys: ['keyframes', 'last_frame', 'ref_images', 'ref_videos', 'ref_audios', 'image', 'image_name', 'ref_image'],
-            callGuideKeys: ['image', 'ref_images', 'ref_image', 'image_name'],
+            // `last_frame` rides the call row too: its render (stanza
+            // last_frame → a last-row insertion) is dead on a t4_open
+            // stamp, so a call row stating ONLY it must still derive the
+            // reference lane (2026-11-26, the one-mechanism cure).
+            callGuideKeys: ['image', 'ref_images', 'ref_image', 'image_name', 'last_frame'],
         },
         { lane: 't4_open' },
     ],
@@ -795,13 +799,6 @@ export function deliveredFrames(call, index) {
     if (index === 0 || call.transition === 'cut')
         return span;
     return Math.max(0, span - SEAM_OVERLAP_FRAMES);
-}
-/** The image-bus seats available to loose references: a last-frame
- *  pin spends one of the REF_CAPS.images seats when it is set.
- * @param hasLastFrame whether a last-frame pin occupies the bus
- * @returns the maximum reference-image stack */
-export function imageReferenceCap(hasLastFrame) {
-    return hasLastFrame ? REF_CAPS.images - 1 : REF_CAPS.images;
 }
 /** Split a comma-separated reference string into entries, trimming
  *  separators and surrounding spaces; a data: URI's mime comma does

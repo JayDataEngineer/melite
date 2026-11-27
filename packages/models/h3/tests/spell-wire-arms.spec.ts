@@ -213,7 +213,7 @@ describe("the h3 spell arms ride the wire (GAPS-20: the value crosses through th
     );
   });
 
-  it("ARM K1 — spelled keyframe pins ride their tensor seats (endpoint anchor, interior AddGuide), never a LoadImage (face #16)", async () => {
+  it("ARM K1 — spelled keyframe pins ride their tensor seats (AddGuide at EVERY frame), never a LoadImage (face #16)", async () => {
     const graph = await composeH3({
       length: 56,
       calls: [SHOT()],
@@ -222,13 +222,20 @@ describe("the h3 spell arms ride the wire (GAPS-20: the value crosses through th
         { frame: 28, image: "$mid_stage" },
       ],
     }, "h3_spell_arm_k1");
-    // the endpoint pin rides the anchor seat: the guide resizer's image
-    // input (bundle input_1's feeder) carries the spell verbatim.
-    assertSpellRides(graph, "UnifiedResizeImageMask", "image", "$anchor_stage", "KEYFRAMES");
-    // the interior pin rides the AddGuide image chain.
+    // ONE MECHANISM FOR EVERY FRAME (2026-11-26): the frame-0 pin is an
+    // insertion like the interior one — it rides an AddGuide image
+    // seat, not the retired anchor resizer the merge used to feed.
+    assertSpellRides(graph, "MiniMaxH3AddGuide", "image", "$anchor_stage", "KEYFRAMES");
     assertSpellRides(graph, "MiniMaxH3AddGuide", "image", "$mid_stage", "KEYFRAMES");
     assertNoLoaderBuilt(graph, "LoadImage", "image", "$anchor_stage", "KEYFRAMES");
     assertNoLoaderBuilt(graph, "LoadImage", "image", "$mid_stage", "KEYFRAMES");
+    // the pins are insertions, so no reference-bus slot may carry them
+    const bundle = Object.values(graph).find((n) => n.class_type === "PlagueKindBundleIn");
+    assert.deepEqual(
+      Object.keys(bundle?.inputs ?? {}),
+      [],
+      "KEYFRAMES SPELL-WIRE ARM: an image pin took a reference-bus slot — a keyframe is a frame to produce, never a reference",
+    );
   });
 
   it("ARM K2 — the spelled pins RESOLVE at the merge: the producer's link lands in both tensor seats (face #16 end to end)", async () => {
@@ -245,24 +252,20 @@ describe("the h3 spell arms ride the wire (GAPS-20: the value crosses through th
       {},
       { film: { anchor_stage: "framer.default", mid_stage: "framer.default" } },
     );
-    const resize = Object.entries(plan.workflow).find(
-      ([, n]) => asNode(n).class_type === "UnifiedResizeImageMask" && asNode(n).inputs["image"] !== undefined,
+    // BOTH pins are insertions, so both resolve through the SAME seam:
+    // the frame-0 pin's AddGuide and the interior pin's AddGuide each
+    // carry the producer's link at their image seat.
+    const guides = Object.entries(plan.workflow).filter(
+      ([, n]) => asNode(n).class_type === "MiniMaxH3AddGuide" && asNode(n).inputs["image"] !== undefined,
     );
-    assert.ok(resize, "the merged graph keeps the anchor resizer");
-    assert.deepEqual(
-      asNode(resize![1]).inputs["image"],
-      ["__unload$0", 0],
-      "KEYFRAMES SPELL-WIRE ARM: the merge did not land the framer's wire (boundary-mediated) in the endpoint pin's anchor seat",
-    );
-    const guide = Object.entries(plan.workflow).find(
-      ([, n]) => asNode(n).class_type === "MiniMaxH3AddGuide",
-    );
-    assert.ok(guide, "the merged graph keeps the interior pin's AddGuide");
-    assert.deepEqual(
-      asNode(guide![1]).inputs["image"],
-      ["__unload$0", 0],
-      "KEYFRAMES SPELL-WIRE ARM: the merge did not land the framer's wire (boundary-mediated) in the interior pin's AddGuide seat",
-    );
+    assert.equal(guides.length, 2, "the merged graph keeps both pins' AddGuide arms");
+    for (const [id, n] of guides) {
+      assert.deepEqual(
+        asNode(n).inputs["image"],
+        ["__unload$0", 0],
+        `KEYFRAMES SPELL-WIRE ARM: the merge did not land the framer's wire (boundary-mediated) in ${id}'s image seat`,
+      );
+    }
     // both seats ride the SAME boundary — one producer, one seam
     // (the F41 dedupe law), and its through aims at the framer.
     assert.deepEqual(

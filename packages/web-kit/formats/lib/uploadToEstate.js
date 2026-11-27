@@ -23,10 +23,15 @@
  * 2026-11-06); non-media refuses client-side before any POST.
  */
 import { readAsDataURL } from "./readFile.js";
+import { uploadKindOf } from "@melite/contracts/mediaKinds";
 // ANY MEDIA family boards (the any-media law, operator 2026-11-06:
 // the mod seat takes any media kind — image, video, audio — and the
-// system handles the conversion). The triad set died with it.
-const isMediaMime = (t) => t.startsWith("image/") || t.startsWith("video/") || t.startsWith("audio/");
+// system handles the conversion). The triad set died with it. THE
+// ONE CLASSIFIER (operator burn 2026-11-27: "QVOICE NEEDS TO WORK
+// THE SAME WAY. ONE SYSTEM"): the family comes from the estate's media
+// vocabulary (uploadKindOf — the extension first, the browser's MIME
+// second), so a `.qvoice` — which the OS hands over with NO type —
+// rides exactly like a `.wav`, and this rail carries no private list.
 // Shared readAsDataURL (@melite/ui SlotSquare — the ONE read path). The
 // picker-specific guidance survives as a catch mapping: the shared read
 // rejects bare, and only this rail knows what to tell the operator next.
@@ -44,7 +49,7 @@ export class UploadRefusedError extends Error {
 }
 /** The rail: File → POST /v1/uploads → the estate path. */
 export async function uploadToEstate(file) {
-    if (!isMediaMime(file.type)) {
+    if (uploadKindOf(file.name, file.type) === undefined) {
         throw new UploadRefusedError(`${file.name}: only image / video / audio upload (got ${file.type || "unknown type"})`);
     }
     const data = await readUploadFile(file);

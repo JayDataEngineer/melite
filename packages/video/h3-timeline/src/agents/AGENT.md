@@ -75,36 +75,36 @@ the schema listing alone under-describes this card by design.
 Describe motion, subject continuity, ambient sound, and style in each call's
 `text`. Use a stable seed for re-rolls of the same shot.
 
-**THE HYBRID RAILS — both image rails are live on ONE window, and they
-COMBINE.** There is no first-frame/last-frame
-setup and no either/or mode: the timeline's keyframes lane is `[{frame, image}]` — a
-film-absolute frame plus the image that must appear there, inside a window
-(`[start, end)`); `params.image` is the frame-0 shorthand for the same
-rail. `ref_images`, `ref_videos`, `ref_audios` are the reference rails
-(identity, style, motion). Pick by what the still MEANS, never by habit:
+**THE TWO IMAGE MECHANICS — insertions and references are different
+concepts, and they COMBINE freely on ONE window.** There is no
+first-frame/last-frame setup and no either/or mode.
 
-- **The anchor rail (`image` / the keyframes lane):** the still is the ANCHOR —
-  the strongest identity pull the film develops under (it never pins a
-  literal decoded first frame; the opening generates from it). Use when
-  the brief is "animate THIS picture" / "bring this image to life".
-- **The reference rails (`ref_images` and `ref_videos`):** the still conditions
-  identity/style/motion without anchoring the opening — the film may open
-  anywhere. Use when the brief is "make a video of her/him" and the
-  picture anchors WHO it is, not WHERE the opening sits.
-- **BOTH AT ONCE is often best:** the anchor and the references ride the
-  same window's image bus (the anchor takes the strongest seat, the
-  references stack after it; caps and slot budgets live on the served
-  schema rows). An anchored opening + identity references is a legal,
-  common compose — reach for it when the brief names a starting image AND
-  a character/style to hold.
+- **Frame insertions (keyframes).** The keyframes lane is
+  `[{frame, image}]` — a film-absolute frame plus the image that must
+  appear there, inside a window (`[start, end)`). Every pin is the same
+  mechanism at its own generation-local frame, frame 0 and the final row
+  included: the model is told THIS frame must look like THAT image.
+  `params.image` is the frame-0 shorthand for the same rail; the legacy
+  `last_frame` key translates to an insertion at the window's last
+  generated row (never a face). One frame carries one image — a pin and a
+  shorthand naming the same frame with different images refuses.
+- **Image references (`ref_images`, `ref_videos`, `ref_audios`).** The
+  reference bus carries conditioning only (identity, style, motion) —
+  `<Picture 1..8>`, `<Video 1..3>`, `<Audio 1..3>`. A reference never
+  occupies a frame; it stays on the bus and the model may draw from it.
+- **BOTH AT ONCE is often best:** pin the frames the brief fixes and
+  reference the identity/style it must hold throughout. The rails are
+  independent — a generation takes many inputs at once (insertions,
+  references, audio clips, refmods, loras, the parameters, the mods
+  system) and each one conditions without displacing another.
 
-The classic miss: a picture was given, so the agent reaches for `image`
-alone when the brief wanted a free-opening character film (that is the
-reference rail's job); or the reverse — bare `ref_images` on "animate
-this exact picture" lets the opening drift off the still (that is the
-anchor rail's job). Ambiguous? "video of this character" defaults to the
-anchor when the picture is composed as a shot (subject framed, looking at
-viewer); to references when it is a character sheet or identity plate.
+Pick by what the still MEANS, never by habit. "Animate THIS picture"
+usually wants an insertion at the frame the picture belongs to (plus
+references for whatever must stay consistent); "make a video of her"
+wants references, because the film may open anywhere. Ambiguous?
+"video of this character" defaults to references when the picture is a
+character sheet or identity plate, and to an insertion when the picture
+is composed as a specific shot (subject framed, looking at viewer).
 
 The card composes the upstream guide's scaffolding ITSELF (alignment
 lines, `[Shot n]` headers, keyframe-instruction blocks). Call `text`
@@ -154,7 +154,13 @@ the row that STARTS inside a window owns its class lane there. A row crossing a
 window seam CONTINUES the same line across both windows, but YIELDS the second
 window's lane to a row that starts inside it; two same-class rows starting
 inside ONE window REFUSE at compose (end the first inside the window, merge the
-rows, or move the seam). The generated voice
+rows, or move the seam). A line's words are stated ONCE: the window that HEARS
+the take from its head carries the timed line; a window that picks the take up
+mid-way is told the voice already speaks and never restarts the line (its
+conditioning slice still starts where the take has reached). The same holds for
+an SFX row: the window that owns the event's onset states it at that onset, a
+window that picks it up mid-way hears it marked as already under way — never a
+second strike. The generated voice
 DUCKS under a conditioned row at `duck_depth_db` (default -14dB, range -48–0).
 Place the row with `start_frame` and
 `dur_frames` in film coordinates. Optional `in_frames` = the SOURCE in-point

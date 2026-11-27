@@ -17,7 +17,7 @@ import { bag } from '@melite/contracts/extraKeys';
 // from that law — the F7 cure (the inpaint denoise default, qa8
 // 2026-11-01) moved the default in the kit and this file kept
 // serving 0.5. The import retires the second writer.
-import { MaskFields } from '@melite/comfyui-card-kit/pack-fields';
+import { MaskFields, QvoiceFields, QvoiceSaveFields } from '@melite/comfyui-card-kit/pack-fields';
 export const inject = ['comfyui'];
 // ── LORAS (the LorasMod): the LoRA stack. Entry steps (operator
 // correction, 2026-09-18): a DISTILL adapter is married to its step
@@ -120,64 +120,15 @@ const IPAdapterFields = z.object({
 });
 // ── MASK (the MaskMod): the region-modality contract — the schema
 // is imported above from the kit's pack-fields.ts (the one home).
-// ── QVOICE (the qvoice pack): a saved persona artifact — the
-// .qvoice file (the qvoice_save mod exports them) + the clone
-// pipeline's identity-intensity knob. The USE half of the
-// voice-lock cycle (2026-09-20, the round-trip stroke: the
-// artifact performs the text through the studio's Python clone
-// pipeline — the AudiocoreTTS embedding path is dead at the C
-// ABI, speaker_embedding hard-fails in build_speech_request). ──
-const QvoiceFields = z.object({
-    qvoice: z.string().role('path').description('Voice (.qvoice)')
-        .extra('extra', bag({
-        wtype: 'file', group: 'qvoice', zone: 'mods', order: 0,
-        tooltip: 'A saved .qvoice persona (the Design mod exports these). Present = this voice performs the text (codec-level clone through the studio pipeline) instead of the preset timbre.',
-    })),
-    voice_strength: z.number().description('Voice Strength').min(0).max(2).step(0.05).default(1)
-        .extra('extra', bag({
-        wtype: 'number', group: 'qvoice', zone: 'mods', order: 1,
-        tooltip: 'Identity intensity of the loaded persona — the embedding steers along its deviation from the voices-bank neutral (steered = neutral + (emb − neutral) × strength): below 1 pulls toward neutral, above 1 pushes further out. 1 is the saved voice bit-identical; a different strength re-samples the delivery (pacing and phrasing), so state a take deliberately.',
-    })),
-});
-// ── QVOICE SAVE (the qvoice_save pack): design a voice from a
-// description and export the .qvoice embedding (the voice-lock
-// card's design half, moved into the TTS card's mods 2026-09-21 —
-// the operator: "THE VOICE LOCK CARD DIES. THE VOICE LOCK SAVE
-// AND LOAD GO INSIDE TTS CARD MODS"). Owner-only: the 1.7B
-// VoiceDesign family fires it. THE BOOLEAN LAW (operator
-// 2026-10-22: "IT IS A SIMPLE BOOLEAN… SAVE THE EMBEDDINGS TO
-// MEDIA"): no name field — the toggle IS the save; the build mints
-// the export name (voice-<runId>) and the receipt names itself
-// from the minted file. ──
-// THE MOD-PRESENCE LAW (operator 2026-10-22: "WHEN I PUT THE SAVE
-// QVOICE MOD ON, IT JUST WORKS. IT IS LIKE A MOD… WHY WOULD IT
-// HAVE A TOGGLE / BOOLEAN"): the chip IS the signal — add states
-// save_qvoice:true, remove nulls it; no editor, no toggle, no
-// knobs. The sampling surface is the card's own lane surface —
-// restating it here duped every knob on the mods pane.
-// THE NAMED-PRESENCE REFINEMENT (operator 2026-10-22: "Make sure
-// that the 'design' mod has a popup, it can just be 'name' or
-// something so a name can be used for the save file"): the pack
-// carries exactly one text field - the add opens a one-field
-// popup (the name), never a knob wall; empty stays lawful (the
-// build mints the export name voice-<runId> and the receipt
-// names itself from the minted file).
-const QvoiceSaveFields = z.object({
-    // The presence stamp the add/remove gesture writes; never
-    // rendered as a widget (the pane's presence-kind law).
-    save_qvoice: z.boolean().description('SAVE QVOICE')
-        .extra('extra', bag({
-        wtype: 'boolean', group: 'qvoice_save', zone: 'mods', order: 0,
-        tooltip: 'The mod IS the save: present = the designed voice persists to media as a .qvoice; remove the mod = no save.',
-    })),
-    // The one text field the named-presence popup serves (the chip's
-    // name for the save file); '' = unstated, the mint owns it.
-    voice_name: z.string().description('NAME')
-        .extra('extra', bag({
-        wtype: 'text', group: 'qvoice_save', zone: 'mods', order: 1,
-        tooltip: 'Names the .qvoice file this mod saves. Leave empty and the build mints a unique name for the run.',
-    })),
-});
+// ── QVOICE (the qvoice pack) + QVOICE SAVE: the field schemas live
+// in the kit's pack-fields.ts (THE ONE HOME — the header's own law;
+// QVOICE_RIDERS/QVOICE_SAVE_RIDERS and the admission gate read the
+// same rows). The parallel copies that lived HERE drifted twice —
+// the voiced strength wording, and the pick's missing `media` hint
+// (the operator's 2026-11-27 burn: a Voice mod that could tune a
+// persona but never choose one, because the served envelope told
+// every picker the seat was an image seat). The import retires the
+// second writer, the F7/MaskFields precedent. ──
 export function apply(ctx) {
     const comfy = ctx.comfyui;
     // methods are called ON the service (never destructured — a

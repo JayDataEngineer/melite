@@ -28,7 +28,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import Schema from '@deepseek-ai/schemastery'
 import type { LlmStreamSeam } from './llm-complete.ts'
-import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds'
+import { contentTypeForArtifact, segmentConfined, uploadKindOf } from '@melite/contracts/mediaKinds'
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
 import { agenticSweep } from './enhance-agent.ts'
 import { unsessionedAuxCallLog } from './aux-session-log.ts'
@@ -836,17 +836,25 @@ export function apply(c: CtxView, config: Config = {}): void {
           // image, video, audio (the any-media law, operator
           // 2026-11-06: the mod seat takes any media kind and the
           // system handles the conversion) — plus the mesh wire
-          // type's pair (2026-09-21, primitive ③) —
-          // model/gltf-binary, or octet-stream ONLY when the filename
-          // carries the .glb/.gltf extension (browsers disagree on
-          // the MIME; the extension closes the pair, and the whitelist
-          // stays closed to every other binary).
-          const meshName = /\.glb$/i.test(filename) || /\.gltf$/i.test(filename)
-           const b64 = /^data:(?:(image|video|audio)\/[a-z0-9.+-]+|model\/gltf(?:-binary|\+json)|(application\/octet-stream));base64,(.+)$/.exec(data)
-          if (b64 === null || (b64[2] !== undefined && !meshName)) {
+          // type's pair (2026-09-21, primitive ③).
+          // THE ONE CLASSIFIER (operator burn 2026-11-27, verbatim:
+          // "WHEN WE UPLOAD VOICE CLIPS IT IS THE SAME SYSTEM… QVOICE
+          // NEEDS TO WORK THE SAME WAY. ONE SYSTEM"): the family is
+          // the estate's own vocabulary answer — the filename's
+          // extension first (mediaKinds.uploadKindOf), the declared
+          // MIME second — never a MIME prefix list. A `.qvoice` picked
+          // from the OS arrives as application/octet-stream (no
+          // desktop MIME entry names it), and the old prefix-only
+          // regex refused the estate's own voice container at this
+          // door while the vocabulary had classified it audio since
+          // 2026-10-15. The whitelist stays CLOSED: the vocabulary is
+          // the closed set, and a name outside it that states no media
+          // family still refuses.
+          const b64 = /^data:([^;,]*);base64,(.+)$/.exec(data)
+          if (b64 === null || uploadKindOf(filename, b64[1]!) === undefined) {
             return fail(400, 'uploads: only image / video / audio / glb / gltf upload')
           }
-          const bytes = Buffer.from(b64[3]!, 'base64')
+          const bytes = Buffer.from(b64[2]!, 'base64')
           const dir = await inputDir()
           const fs = await import('node:fs/promises')
           const path = await import('node:path')

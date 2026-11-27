@@ -1063,7 +1063,8 @@ window.__ModuleLoader__.load({
 						"image",
 						"ref_images",
 						"ref_image",
-						"image_name"
+						"image_name",
+						"last_frame"
 					]
 				},
 				{ lane: "t4_open" }

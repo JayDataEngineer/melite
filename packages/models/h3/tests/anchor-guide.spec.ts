@@ -245,8 +245,10 @@ describe("the no-drop law (every fed input reaches the ComfyUI graph)", () => {
     const bundle = Object.values(graph).find((n) => n.class_type === "PlagueKindBundleIn")
     expect(bundle, "the bundle node rides for a fed bus").toBeDefined()
     const loaded = Object.keys(bundle!.inputs).filter((k) => k.startsWith("input_")).sort()
-    // no anchor, no end frame: the 3 refs ride input_2..4 (the slot map)
-    expect(loaded, "three fed images load exactly three bundle inputs").toEqual(["input_2", "input_3", "input_4"])
+    // THE REFERENCE BUS IS REFERENCES ONLY (2026-11-26): no anchor or
+    // end seat sits ahead of the stack, so the 3 refs ride input_1..3.
+    // (The retired map started at input_2 — a phantom anchor hole.)
+    expect(loaded, "three fed images load exactly three bundle inputs").toEqual(["input_1", "input_2", "input_3"])
     for (const v of ["c1.png", "c2.png", "c3.png"]) {
       expect(JSON.stringify(graph), `fed image '${v}' reaches the graph`).toContain(v)
     }
@@ -313,6 +315,24 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     instantiateAction(film, walk(raw), WINDOW_MODEL, g, "run_kf_gate")
     return g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>
   }
+
+  /** Every image insertion the graph will perform, read off the real
+   * serialized nodes: which window, its generation-local frame, and the
+   * image that rides the pin. */
+  const insertionArms = (graph: Record<string, { class_type: string; inputs: Record<string, unknown> }>) =>
+    Object.entries(graph)
+      .filter(([, n]) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined)
+      .map(([id, n]) => {
+        const src = (n.inputs.image as [string, number])[0]
+        const loader = graph[src]
+        return {
+          // the single-window shape composes unprefixed node ids
+          window: Number(/^window(\d+)_/.exec(id)?.[1] ?? 1),
+          frame_idx: n.inputs.frame_idx as number,
+          image: loader?.inputs.image as string,
+        }
+      })
+      .sort((a, b) => a.window - b.window || a.frame_idx - b.frame_idx)
 
   // Grid-lawful spans (the 17k+5 law): the opener 90 = 22+17·4; the
   // carried window's authored span 85 = 17·5.
@@ -386,10 +406,14 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     )).toThrow(/falls outside every window.*no windows at all/s)
   })
 
-  it("a boundary keyframe graph is BYTE-IDENTICAL to the doc stating the seats (the design's no-graph-change probe)", () => {
-    // start pin ≡ the call's image anchor (input_1); end pin ≡ the
-    // call's last_frame (input_2) — on both windows, the second of
-    // which is CARRIED (its seats ride the stanza seat-union).
+  it("a boundary pin and the row's `image`/`last_frame` compose the SAME insertion arms — one mechanism, two spellings", () => {
+    // THE SHORTHAND LAW (2026-11-26): `image` is the frame-0
+    // spelling of an insertion, `last_frame` the last-row spelling.
+    // Neither is a second mechanism: both docs must produce the
+    // identical (frame_idx, image) insertion pairs, and neither may
+    // touch the reference bus. Node counters and the orphaned i2v
+    // marker's width source are allocation artifacts, not law — the
+    // arms are what the engine runs.
     const pins = { ...FILM_DOC, keyframes: [
       { image: "a.png", frame: 0 }, { image: "b.png", frame: 89 }, { image: "c.png", frame: 174 },
     ] }
@@ -397,16 +421,31 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
       { text: "first", start_frame: 0, end_frame: 90, image: "a.png", last_frame: "b.png" },
       { text: "second", start_frame: 90, end_frame: 175, last_frame: "c.png" },
     ] }
-    expect(buildJson(pins)).toBe(buildJson(seats))
+    expect(insertionArms(buildGraph(pins))).toEqual(insertionArms(buildGraph(seats)))
+    expect(insertionArms(buildGraph(pins)), "the shortcut spellings still insert exactly these three").toEqual([
+      { window: 1, frame_idx: 0, image: "a.png" },
+      { window: 1, frame_idx: 89, image: "b.png" },
+      { window: 2, frame_idx: 106, image: "c.png" },
+    ])
+    for (const doc of [pins, seats]) {
+      const bundle = Object.values(buildGraph(doc)).find((n) => n.class_type === "PlagueKindBundleIn")
+      expect(Object.keys(bundle?.inputs ?? {}), "the seats never occupy a reference slot").toEqual([])
+    }
   })
 
-  it("the endpoint probe holds on the frozen single-window shape (the mapped seats lift through the unpack)", () => {
+  it("the endpoint shorthand holds on the frozen single-window shape — an opening and a closing insertion, no bus", () => {
     const pins = { loras: LORA, seed: 7,
       calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
       keyframes: [{ image: "a.png", frame: 0 }, { image: "b.png", frame: 89 }] }
     const seats = { loras: LORA, seed: 7,
       calls: [{ text: "solo", start_frame: 0, end_frame: 90, image: "a.png", last_frame: "b.png" }] }
-    expect(buildJson(pins)).toBe(buildJson(seats))
+    expect(insertionArms(buildGraph(pins))).toEqual(insertionArms(buildGraph(seats)))
+    expect(insertionArms(buildGraph(seats))).toEqual([
+      { window: 1, frame_idx: 0, image: "a.png" },
+      { window: 1, frame_idx: 89, image: "b.png" },
+    ])
+    const bundle = Object.values(buildGraph(seats)).find((n) => n.class_type === "PlagueKindBundleIn")
+    expect(Object.keys(bundle?.inputs ?? {}), "the single-window shorthand keeps the bus empty").toEqual([])
   })
 
   it("an interior pin composes the AddGuide IMAGE arm at its GENERATION-LOCAL frame (the carry subtracted)", () => {
@@ -450,7 +489,7 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     expect(json, "the r2v ref lane stays wired").toContain("ref_images.ref_image_0")
     const bundle = Object.values(graph).find((n) => n.class_type === "PlagueKindBundleIn")
     expect(bundle, "the bundle node rides for the fed bus").toBeDefined()
-    expect(Object.keys(bundle!.inputs), "the ref lands its bus slot").toContain("input_2")
+    expect(Object.keys(bundle!.inputs), "the ref lands its bus slot (the bus starts at input_1)").toContain("input_1")
     expect(json, "the pin rides the same window's chain").toContain("mid.png")
   })
 
@@ -490,18 +529,25 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     expect(json).toContain("mid.png")
   })
 
-  it("a second pin on an already-claimed boundary seat rides the interior arm — no pin vanishes", () => {
-    // the first pin at the start claims the anchor seat; the second
-    // rides AddGuide at row 0 — both images reach the graph
-    const doc = { loras: LORA, seed: 7,
+  it("two pins contending for ONE frame refuse loud, naming both images — one frame carries one image", () => {
+    // There is no seat for the loser to ride any more (that was the
+    // retired merge: one pin won a bus slot, the other went interior
+    // and the graph grew a guide for a frame nobody asked about). An
+    // insertion writes ONE tensor row, so two images on one frame is
+    // a contradiction the doc must resolve — refused, never half-drawn.
+    expect(() => buildGraph({ loras: LORA, seed: 7,
       calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
-      keyframes: [{ image: "a.png", frame: 0 }, { image: "b.png", frame: 0 }] }
-    const graph = buildGraph(doc)
-    const json = JSON.stringify(graph)
-    expect(json, "the seat claim rides the anchor").toContain("a.png")
-    const guides = Object.values(graph).filter((n) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined)
-    expect(guides, "the second pin rides the guide chain at row 0").toHaveLength(1)
-    expect(guides[0]!.inputs.frame_idx).toBe(0)
+      keyframes: [{ image: "a.png", frame: 0 }, { image: "b.png", frame: 0 }] }))
+      .toThrow(/keyframes: frame 0 carries 'b\.png', but another pin already carries 'a\.png' on window 1 \(generated frame 0\) — one frame carries one image/s)
+  })
+
+  it("the SAME image pinned twice on one frame is ONE seat — the doc stating a thing twice is not a contradiction", () => {
+    const graph = buildGraph({ loras: LORA, seed: 7,
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
+      keyframes: [{ image: "same.png", frame: 0 }, { image: "same.png", frame: 0 }] })
+    expect(insertionArms(graph), "one arm, not two").toEqual([
+      { window: 1, frame_idx: 0, image: "same.png" },
+    ])
   })
 
   it("a stated non-t4r family over a pin-carrying doc refuses at build — the conflict guard's pin arm", () => {
@@ -538,60 +584,63 @@ describe("the keyframe lane (placement refuses; endpoints ride the seats, interi
     expect(json).toContain("MiniMaxH3AddGuide")
   })
 
-  it("a boundary pin on a STATED seat rides the interior arm — the pin never evicts the row's own anchor (the no-drop law)", () => {
-    // THE SEAT-CLAIM LAW (applyKeyframeCompose/isSeatStated): a window
-    // that states its own anchor (image) or end anchor (last_frame)
-    // keeps it — a pin landing exactly on that boundary composes the
-    // interior AddGuide arm at the generation-local row instead, so
-    // BOTH images reach the graph (a pin never vanishes, a seat never
-    // loses its stated image).
-    const graph = buildGraph({
+  it("the row's own `image` and a pin on frame 0 CONFLICT loud — the shorthand is the same seat, not a second one", () => {
+    // THE SHORTHAND LAW: `image` IS an insertion at frame 0, so a pin
+    // there and an `image` there are two claims on one tensor row.
+    // (Retired: the merge let one ride a bus slot and pushed the other
+    // interior — the graph grew a guide for a frame nobody asked
+    // about, and the "no-drop" arm proved a mechanism that no longer
+    // exists.) A differing image refuses, naming both spellings; the
+    // same image is one seat.
+    expect(() => buildGraph({
       loras: LORA, seed: 7,
       calls: [{ text: "first", start_frame: 0, end_frame: 90, image: "stated.png" }],
       keyframes: [{ image: "pin.png", frame: 0 }],
-    })
-    const loads = Object.values(graph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
-    expect(loads).toContain("stated.png")
-    expect(loads).toContain("pin.png")
-    const guides = Object.values(graph).filter((n) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined)
-    expect(guides, "the claimed-seat pin rides the interior arm").toHaveLength(1)
-    expect(guides[0]!.inputs.frame_idx).toBe(0)
-    // the end seat: a pin on the last generated row with a stated
-    // last_frame rides interior at that row, the stated end stays
-    const endGraph = buildGraph({
+    })).toThrow(/the frame-0 shorthand \(`image`\) names 'stated\.png' at frame 0, but a keyframe pin already carries 'pin\.png' there — one frame carries one image/s)
+    expect(insertionArms(buildGraph({
       loras: LORA, seed: 7,
-      calls: [{ text: "first", start_frame: 0, end_frame: 90, last_frame: "end.png" }],
-      keyframes: [{ image: "pin_end.png", frame: 89 }],
-    })
-    const endLoads = Object.values(endGraph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
-    expect(endLoads).toContain("end.png")
-    expect(endLoads).toContain("pin_end.png")
-    const endGuides = Object.values(endGraph).filter((n) => n.class_type === "MiniMaxH3AddGuide" && n.inputs.image !== undefined)
-    expect(endGuides, "the claimed end-seat pin rides the interior arm").toHaveLength(1)
-    expect(endGuides[0]!.inputs.frame_idx).toBe(89)
+      calls: [{ text: "first", start_frame: 0, end_frame: 90, image: "same.png" }],
+      keyframes: [{ image: "same.png", frame: 0 }],
+    }))).toEqual([{ window: 1, frame_idx: 0, image: "same.png" }])
   })
 
-  it("on the single-window shape the DOC-level seats are the same seats — a stated doc image/last_frame pushes a boundary pin interior", () => {
-    // isSeatStated's second half: with one call the DOC-level image /
-    // last_frame IS the window's seat (the sole-call unpack lifts the
-    // same seats later; the mapping reads the doc spelling now), so a
-    // boundary pin still rides interior and nothing drops.
-    const anchorGraph = buildGraph({
+  it("the legacy `last_frame` key is a last-row insertion — alone it composes the arm, and it refuses a contending pin", () => {
+    // "we don't use first frame, nor last frame explicitly, we use the
+    // same frame insertion throughout" (2026-11-26). `last_frame` has
+    // no seat of its own: it translates to an insertion at the
+    // window's last generated row, which is why a doc stating ONLY it
+    // must still derive the reference arm (the derivation's
+    // callGuideKeys now names it).
+    expect(insertionArms(buildGraph({
+      loras: LORA, seed: 7,
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90, last_frame: "close.png" }],
+    })), "last_frame alone still renders its closing frame").toEqual([
+      { window: 1, frame_idx: 89, image: "close.png" },
+    ])
+    expect(() => buildGraph({
+      loras: LORA, seed: 7,
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90, last_frame: "close.png" }],
+      keyframes: [{ image: "pin_end.png", frame: 89 }],
+    })).toThrow(/the legacy `last_frame` key names 'close\.png' at frame 89, but a keyframe pin already carries 'pin_end\.png' there — one frame carries one image/s)
+  })
+
+  it("on the single-window shape the DOC-level shorthand is the same seat — it inserts, and a contending pin refuses", () => {
+    // the sole-call unpack lifts the doc-level `image` /`last_frame`
+    // onto the window, so the doc spelling inserts exactly like the
+    // call spelling (one mechanism, no doc-only seat).
+    expect(insertionArms(buildGraph({
+      loras: LORA, seed: 7, image: "doc_anchor.png",
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
+    }))).toEqual([{ window: 1, frame_idx: 0, image: "doc_anchor.png" }])
+    expect(insertionArms(buildGraph({
+      loras: LORA, seed: 7, last_frame: "doc_end.png",
+      calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
+    }))).toEqual([{ window: 1, frame_idx: 89, image: "doc_end.png" }])
+    expect(() => buildGraph({
       loras: LORA, seed: 7, image: "doc_anchor.png",
       calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
       keyframes: [{ image: "pin.png", frame: 0 }],
-    })
-    const anchorLoads = Object.values(anchorGraph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
-    expect(anchorLoads).toContain("doc_anchor.png")
-    expect(anchorLoads).toContain("pin.png")
-    const endGraph = buildGraph({
-      loras: LORA, seed: 7, last_frame: "doc_end.png",
-      calls: [{ text: "solo", start_frame: 0, end_frame: 90 }],
-      keyframes: [{ image: "pin_end.png", frame: 89 }],
-    })
-    const endLoads = Object.values(endGraph).filter((n) => n.class_type === "LoadImage").map((n) => String(n.inputs.image))
-    expect(endLoads).toContain("doc_end.png")
-    expect(endLoads).toContain("pin_end.png")
+    })).toThrow(/one frame carries one image/s)
   })
 
   it("a null-windowed pin mapping skips, then the render refuses the reversed span LOUD — the gate covers, the compose judges", () => {
