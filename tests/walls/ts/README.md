@@ -13,7 +13,17 @@ rig, no second process.
 - everything: `pnpm run test` (root vitest; this tree's
   `suites/*.spec.ts` ride the node project);
 - one suite: `npx vitest run tests/walls/ts/suites/<name>.spec.ts`;
-- types: `tsc --noEmit -p tests/walls/ts/tsconfig.json`.
+- types: the WALLS TIER of `node scripts/typecheck-tests.mjs` (the
+  typecheck-gate wall and the ship lane run the same script) — a
+  RATCHET against `scripts/walls-tsc-baseline.json`
+  (`scripts/walls-tsc-ratchet.mjs` owns the law): a suite this tree
+  has never priced types CLEAN or the push does not land; a priced
+  file carries no error above its row; a row whose file went cleaner
+  is lowered first (`node scripts/walls-tsc-ratchet.mjs
+  --write-baseline` — the baseline only shrinks). The face's paths
+  block is RENDERED from the runtime facade (`node tools/walls-face.mjs`;
+  `--check` reds a hand edit) — seat a new bare dependency there, never
+  in the tsconfig.
 
 ## Sandbox discipline (HARD BOUNDARIES, enforced by the suites)
 

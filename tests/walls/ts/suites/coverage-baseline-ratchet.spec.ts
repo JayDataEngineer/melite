@@ -16,7 +16,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { COVERAGE_BASELINE, COVERAGE_BASELINE_UNSEATED, effectiveBaseline } from "../../../../scripts/coverage-baseline.ts";
+import { COVERAGE_BASELINE, COVERAGE_BASELINE_UNSEATED, effectiveBaseline, type CoverageFloor } from "../../../../scripts/coverage-baseline.ts";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 
@@ -35,7 +35,7 @@ const ROOT = join(__dirname, "..", "..", "..", "..");
 // reviewBy re-fails the arm — forcing ratchet-back or a freshly
 // argued entry. When the ratchet-back lands (the row reaches `from`
 // again), the cleanup arm demands the entry's removal.
-const POISONED_ERA_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const POISONED_ERA_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/engines/craft/src/craft-engine.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/drafts/src/store.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/models/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -58,7 +58,7 @@ const POISONED_ERA_FLOORS: Record<string, { statements: number, branches: number
  *  per metric capped at `from` where the clean pool delivered MORE —
  *  an argued drop cannot carry to > from, and a capped metric is not
  *  a drop the monotonicity arm needs to excuse). */
-const REGENERATED_CLEAN_ERA_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const REGENERATED_CLEAN_ERA_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/engines/craft/src/craft-engine.ts': { statements: 98.69, branches: 99.18, functions: 100, lines: 98.59 },
   '**/packages/estate/drafts/src/store.ts': { statements: 98.7, branches: 94.54, functions: 100, lines: 100 },
   '**/packages/estate/models/src/index.ts': { statements: 97.59, branches: 100, functions: 90.62, lines: 97.35 },
@@ -92,7 +92,7 @@ const REGENERATED_CLEAN_ERA_FLOORS: Record<string, { statements: number, branche
 // the five load-jitter rows are pinned at their failing face (the
 // PoseViewer3D precedent). No row of this arc's own files moved —
 // trail.ts and stage-drill.tsx hold their floors.
-const LANDED_DEBT_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const LANDED_DEBT_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
   '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
   '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
@@ -139,7 +139,7 @@ const LANDED_DEBT_OLD_FLOORS: Record<string, { statements: number, branches: num
   '**/packages/web/melite-card-view/src/client/run-rescue.tsx': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
 }
 
-const LANDED_DEBT_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const LANDED_DEBT_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-execute.ts': { statements: 99.35, branches: 96.19, functions: 96.42, lines: 100.0 },
   '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 86.36, branches: 76.36, functions: 84.21, lines: 88.15 },
   '**/packages/engines/comfyui-cordis/src/comfyui-upload.ts': { statements: 98.64, branches: 97.74, functions: 100.0, lines: 98.46 },
@@ -193,7 +193,7 @@ const LANDED_DEBT_NEW_FLOORS: Record<string, { statements: number, branches: num
  *  identical 79-metric failing set with zero face drift; `to` is
  *  capped at `from` per metric. Heading: the roadmap's 2026-11-06
  *  gate regeneration section. */
-const REGEN_2026_11_06_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const REGEN_2026_11_06_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/audio/tts/src/card.ts': { statements: 91.8, branches: 86.88, functions: 92.85, lines: 92.59 },
   '**/packages/engines/comfyui-card-kit/src/facts.ts': { statements: 100.0, branches: 98.38, functions: 100.0, lines: 100.0 },
   '**/packages/engines/comfyui-card-kit/src/fields.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
@@ -233,7 +233,7 @@ const REGEN_2026_11_06_OLD_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/melite-card-view/src/client/card-labels.ts': { statements: 100.0, branches: 100.0, functions: 100.0, lines: 100.0 },
 };
 
-const REGEN_2026_11_06_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const REGEN_2026_11_06_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/audio/tts/src/card.ts': { statements: 91.8, branches: 83.95, functions: 92.85, lines: 92.59 },
   '**/packages/engines/comfyui-card-kit/src/facts.ts': { statements: 100.0, branches: 97.85, functions: 100.0, lines: 100.0 },
   '**/packages/engines/comfyui-card-kit/src/fields.ts': { statements: 100.0, branches: 96.15, functions: 100.0, lines: 100.0 },
@@ -282,12 +282,12 @@ const REGEN_2026_11_06_NEW_FLOORS: Record<string, { statements: number, branches
  *  these files; the floors ride at the scoped face and the full
  *  pool's faces sit above). Heading: the roadmap's claim CAS
  *  landing section. */
-const CAS_LANDING_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const CAS_LANDING_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 96.53, branches: 97.45, functions: 100, lines: 97.94 },
   '**/packages/estate/provisioning/src/service.ts': { statements: 95.48, branches: 92.18, functions: 93.78, lines: 97.06 },
   '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.45, branches: 86.95, functions: 100, lines: 100 },
 };
-const CAS_LANDING_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const CAS_LANDING_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
   '**/packages/estate/provisioning/src/service.ts': { statements: 94.03, branches: 91.24, functions: 91.7, lines: 95.69 },
   '**/packages/estate/provisioning/src/snapshot.ts': { statements: 95.38, branches: 86.95, functions: 100, lines: 100 },
@@ -297,10 +297,10 @@ const CAS_LANDING_NEW_FLOORS: Record<string, { statements: number, branches: num
  *  regen re-measured operation-store above the argued from face and
  *  the cleanup arm removed the entry; the consts stay as the
  *  archaeology of the face it argued (from → to). */
-const CAS_DEEPEN_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const CAS_DEEPEN_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.45, branches: 92.89, functions: 96.96, lines: 93.49 },
 };
-const CAS_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const CAS_DEEPEN_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 91.04, branches: 92.3, functions: 96.96, lines: 93.49 },
 };
 
@@ -310,10 +310,10 @@ const CAS_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches: numb
  *  retry/timeout paths it measures take different branches under
  *  the loaded pool's interleaving. The failing-face law seats the
  *  row where the gate actually red. */
-const TRANSPORT_DEEPEN_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const TRANSPORT_DEEPEN_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 90.9, branches: 80, functions: 94.73, lines: 92.1 },
 };
-const TRANSPORT_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const TRANSPORT_DEEPEN_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/engines/comfyui-cordis/src/comfyui-transport.ts': { statements: 88.63, branches: 78.18, functions: 89.47, lines: 90.78 },
 };
 
@@ -328,7 +328,7 @@ const TRANSPORT_DEEPEN_NEW_FLOORS: Record<string, { statements: number, branches
  *  three faces (scripts/coverage-regen.mjs — the mechanism seat;
  *  no hand edits). Heading: the roadmap's 2026-10-23 gate
  *  regeneration section. */
-const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/audio/tts/src/card.ts': { statements: 95.83, branches: 83.95, functions: 100, lines: 98.36 },
   '**/packages/engines/comfyui-card-kit/src/tts-segments.ts': { statements: 100, branches: 98.52, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-card-kit/src/lanes-image.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -405,7 +405,7 @@ const REGEN_2026_10_23_OLD_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/melite-estate/src/provisioning.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
 }
 
-const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
   '**/packages/audio/tts/src/card.ts': { statements: 95.55, branches: 83.95, functions: 100, lines: 97.46 },
   '**/packages/engines/comfyui-card-kit/src/tts-segments.ts': { statements: 93.33, branches: 94.78, functions: 100, lines: 93.1 },
   '**/packages/engines/comfyui-card-kit/src/lanes-image.ts': { statements: 99.25, branches: 98.42, functions: 100, lines: 99.16 },
@@ -475,7 +475,7 @@ const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: number, branches
   '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.55, branches: 95.65, functions: 100, lines: 99.46 },
 }
 
-const LANDED_DEBT2_OLD_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const LANDED_DEBT2_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
     '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 100, branches: 92.85, functions: 100, lines: 100 },
     '**/packages/models/h3/src/chainEdit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
     '**/packages/models/h3/src/extend.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -1009,7 +1009,7 @@ const LANDED_DEBT2_OLD_FLOORS: Record<string, { statements: number, branches: nu
     '**/packages/web/viewer/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
 }
 
-const LANDED_DEBT2_NEW_FLOORS: Record<string, { statements: number, branches: number, functions: number, lines: number }> = {
+const LANDED_DEBT2_NEW_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
     '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 95.83, branches: 89.29, functions: 80, lines: 95.24 },
     '**/packages/models/h3/src/chainEdit.ts': { statements: 98.44, branches: 95.45, functions: 85.71, lines: 98.33 },
     '**/packages/models/h3/src/extend.ts': { statements: 97.62, branches: 95, functions: 80, lines: 97.56 },
@@ -1552,8 +1552,8 @@ const LANDED_DEBT2_NEW_FLOORS: Record<string, { statements: number, branches: nu
 // restored-clause mirror: once the overlay row climbs back to its
 // argued `from` face the entry is void and must go.
 const OVERLAY_ARGUED_DROPS: Record<string, {
-  from: { statements: number, branches: number, functions: number, lines: number },
-  to: { statements: number, branches: number, functions: number, lines: number },
+  from: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
+  to: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
   roadmapHeading: string,
   reviewBy: string,
   reason: string,
@@ -1596,8 +1596,8 @@ const OVERLAY_ARGUED_DROPS: Record<string, {
 }
 
 const ARGUED_FLOOR_DROPS: Record<string, {
-  from: { statements: number, branches: number, functions: number, lines: number },
-  to: { statements: number, branches: number, functions: number, lines: number },
+  from: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
+  to: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
   roadmapHeading: string,
   reviewBy: string,
   reason: string,
@@ -1664,8 +1664,8 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-11-22",
     reason: "the flat-100 (or near) floors were recorded in the poisoned era — a stray /tmp/node_modules won probe resolution and a broken npm under the mise tree reshaped what the full pool executed; with both roots removed the gate delivers this stable face across runs 3, 4 and 7 (identical 16-file sets), so the rows are regenerated at the measured values per the baseline's generation contract",
   }])) as Record<string, {
-    from: { statements: number, branches: number, functions: number, lines: number },
-    to: { statements: number, branches: number, functions: number, lines: number },
+    from: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
+    to: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
     roadmapHeading: string,
     reviewBy: string,
     reason: string,
@@ -1695,8 +1695,8 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-11-23",
     reason: "rounds 10-11 landings shipped suites-green without re-running the full pool; three same-tree runs (732/732 files, 10,896 tests) agree on the stable faces, the five load-jitter rows pinned at their failing face per the PoseViewer3D precedent — re-measure or ratchet back before the review date",
   }])) as Record<string, {
-    from: { statements: number, branches: number, functions: number, lines: number },
-    to: { statements: number, branches: number, functions: number, lines: number },
+    from: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
+    to: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
     roadmapHeading: string,
     reviewBy: string,
     reason: string,
@@ -1768,8 +1768,8 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-12-06",
     reason: "the head-reds sweep and the storm-cure waves shipped suites-green without re-running the full pool; their re-pinned and cut spec arms left these rows below their committed floors — two same-tree full-gate runs (803 files, 11,699 tests) deliver the identical 79-metric failing set with zero face drift, the stable faces this regeneration pins (to capped at from per metric)",
   }])) as Record<string, {
-    from: { statements: number, branches: number, functions: number, lines: number },
-    to: { statements: number, branches: number, functions: number, lines: number },
+    from: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
+    to: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
     roadmapHeading: string,
     reviewBy: string,
     reason: string,
@@ -2447,8 +2447,8 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     reviewBy: "2026-11-30",
     reason: "three weeks of landings (tts B7/NEW-3, chain-upscale, seed-sweep, previews cures, the reshoot official rework) shipped suites-green without a fresh full-pool gate; two clean same-tree faces (A, C) agree on an identical 92-line fail-set and the third face (the proving gate) added only two load-jitter branch dips, so the regen re-seated all 617 rows at the K=1 margin mint MIN over the three faces — re-measure or ratchet back before the review date (the low tiny-file faces are the mint headroom, not loss; see the roadmap heading)",
   }])) as Record<string, {
-    from: { statements: number, branches: number, functions: number, lines: number },
-    to: { statements: number, branches: number, functions: number, lines: number },
+    from: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
+    to: { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor },
     roadmapHeading: string,
     reviewBy: string,
     reason: string,

@@ -43,6 +43,7 @@ const ROOT = resolve(import.meta.dirname, '../../../..')
 // The AST engine: package-local seat, the same resolution the
 // client-copy census rides (card-base owns node_modules/typescript;
 // the root hoists none — version floats with the workspace).
+import type * as tsType from 'typescript'
 const ts: typeof import('typescript') = createRequire(
   resolve(ROOT, 'packages/web/card-base/node_modules/typescript/package.json'),
 )('typescript')
@@ -135,7 +136,7 @@ function walkFile(source: string, kind: 'ts' | 'tsx'): Seats {
     'seat.tsx', source, ts.ScriptTarget.Latest, true,
     kind === 'tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   )
-  const visit = (node: ts.Node): void => {
+  const visit = (node: tsType.Node): void => {
     // JSX element seats (the h3/deck/view JSX idiom); the tagName
     // guard rides parse-shape quirks (a malformed node under a
     // recoverable parse has none). TS 6 seats the paired tag on
@@ -638,12 +639,12 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
       'seat.tsx', source, ts.ScriptTarget.Latest, true,
       kind === 'tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     )
-    const nameOf = (n: ts.PropertyName): string | undefined =>
+    const nameOf = (n: tsType.PropertyName): string | undefined =>
       ts.isIdentifier(n) || ts.isStringLiteral(n) ? n.text : undefined
     /** A `title` assignment (any depth — the conditional-spread
      *  seats count) or, on ELEMENT seats only, the empty/pane class
      *  seats inside the props object. */
-    const hunt = (node: ts.Node, element: boolean): void => {
+    const hunt = (node: tsType.Node, element: boolean): void => {
       if (ts.isPropertyAssignment(node)) {
         const name = nameOf(node.name)
         if (name === 'title') seats.tip++
@@ -656,7 +657,7 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
     }
     // Pane counts only NON-heading tags (an h4 with the class is the
     // cure, not the disease).
-    const huntPane = (node: ts.Node, heading: boolean): void => {
+    const huntPane = (node: tsType.Node, heading: boolean): void => {
       if (!heading && ts.isPropertyAssignment(node) && nameOf(node.name) === 'className'
         && PANE_TITLE_CLASS.test(node.initializer.getText(sf))) seats.pane++
       node.forEachChild(child => huntPane(child, heading))
@@ -664,14 +665,14 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
     /** The host element a JSX className attribute rides (opening OR
      *  self-closing — a self-closing seat is the same DOM class
      *  seat), plus its tag name; undefined for a malformed tree. */
-    const jsxClassSeat = (node: ts.JsxAttribute): { tag: string, cls: string } | undefined => {
-      let open: ts.Node | undefined = node.parent
+    const jsxClassSeat = (node: tsType.JsxAttribute): { tag: string, cls: string } | undefined => {
+      let open: tsType.Node | undefined = node.parent
       while (open !== undefined && !ts.isJsxOpeningElement(open) && !ts.isJsxSelfClosingElement(open)) open = open.parent
       if (open === undefined) return undefined
-      const el = open as ts.JsxOpeningElement | ts.JsxSelfClosingElement
+      const el = open as tsType.JsxOpeningElement | tsType.JsxSelfClosingElement
       return { tag: el.tagName.getText(sf), cls: node.initializer?.getText(sf) ?? '' }
     }
-    const visit = (node: ts.Node): void => {
+    const visit = (node: tsType.Node): void => {
       if (ts.isJsxAttribute(node)) {
         // THE F6 ARM (nativity-2026-11-05-timeline-card-b.md): the
         // empty/pane grammars ride JSX className seats too — same
@@ -687,9 +688,9 @@ describe('THE UI-PATTERN CENSUS (the playbook wall)', () => {
         }
       }
       if (ts.isJsxAttribute(node) && node.name.getText(sf) === 'title') {
-        let open: ts.Node | undefined = node.parent
+        let open: tsType.Node | undefined = node.parent
         while (open !== undefined && !ts.isJsxOpeningElement(open)) open = open.parent
-        const tag = open === undefined ? '' : (open as ts.JsxOpeningElement).tagName.getText(sf)
+        const tag = open === undefined ? '' : (open as tsType.JsxOpeningElement).tagName.getText(sf)
         if (tag !== '' && tag[0] === tag[0]!.toLowerCase()) seats.tip++ // host element only
       }
       if (ts.isCallExpression(node) && node.expression.getText(sf) === 'h' && node.arguments.length >= 2) {

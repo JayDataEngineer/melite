@@ -34,6 +34,7 @@ const ROOT = resolve(import.meta.dirname, '../../../..')
 // none — the same shape models-lib-sync rides with per-package tsc).
 // Resolving through card-base's seat keeps the wall version-floating
 // with the workspace (no pinned .pnpm path).
+import type * as tsType from 'typescript'
 const ts: typeof import('typescript') = createRequire(
   resolve(ROOT, 'packages/web/card-base/node_modules/typescript/package.json'),
 )('typescript')
@@ -110,7 +111,7 @@ function looksLikeNaturalText(text: string): boolean {
   return /\s|[\u3400-\u9fff]/u.test(normalized) || /^[A-Z]/.test(normalized)
 }
 
-function propertyName(node: ts.PropertyName | ts.BindingName): string | undefined {
+function propertyName(node: tsType.PropertyName | tsType.BindingName): string | undefined {
   return ts.isIdentifier(node) || ts.isStringLiteral(node) ? node.text : undefined
 }
 
@@ -139,7 +140,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
   // positions product copy may sit at; everything else is structure.
   const copyParamIndices = new Map<string, number[]>()
   const copyParamNames = new Map<string, string[]>()
-  const indexCopyParams = (node: ts.Node): void => {
+  const indexCopyParams = (node: tsType.Node): void => {
     if (ts.isFunctionDeclaration(node) && node.name !== undefined && ts.isIdentifier(node.name)) {
       const indices: number[] = []
       const names: string[] = []
@@ -163,7 +164,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
   }
   indexCopyParams(source)
   const violations = new Map<number, CopyViolation>()
-  const report = (node: ts.Node, text: string, reason: string, naturalOnly = false): void => {
+  const report = (node: tsType.Node, text: string, reason: string, naturalOnly = false): void => {
     if (!containsProductText(text) || (naturalOnly && !looksLikeNaturalText(text)) || violations.has(node.getStart(source))) return
     const position = source.getLineAndCharacterOfPosition(node.getStart(source))
     violations.set(node.getStart(source), {
@@ -173,7 +174,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
       text: text.replace(/\s+/g, ' ').trim().slice(0, 80),
     })
   }
-  const collectExpression = (node: ts.Expression, reason: string, naturalOnly = false): void => {
+  const collectExpression = (node: tsType.Expression, reason: string, naturalOnly = false): void => {
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
       report(node, node.text, reason, naturalOnly)
       return
@@ -225,7 +226,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
       }
     }
   }
-  const enclosingFunctionName = (node: ts.Node): string | undefined => {
+  const enclosingFunctionName = (node: tsType.Node): string | undefined => {
     let current = node.parent
     while (!ts.isSourceFile(current)) {
       if (ts.isFunctionDeclaration(current) || ts.isMethodDeclaration(current)) {
@@ -246,7 +247,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
     }
     return undefined
   }
-  const hasExplicitStringReturn = (node: ts.Node): boolean => {
+  const hasExplicitStringReturn = (node: tsType.Node): boolean => {
     let current = node.parent
     while (!ts.isSourceFile(current)) {
       if (ts.isFunctionDeclaration(current) || ts.isMethodDeclaration(current) || ts.isArrowFunction(current) || ts.isFunctionExpression(current)) {
@@ -256,7 +257,7 @@ export function findCopyViolations(file: string, sourceText: string): CopyViolat
     }
     return false
   }
-  const visit = (node: ts.Node): void => {
+  const visit = (node: tsType.Node): void => {
     if (ts.isJsxText(node)) report(node, node.text, 'JSX text')
     if (ts.isJsxAttribute(node)) {
       const name = node.name.getText(source)

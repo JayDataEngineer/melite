@@ -62,9 +62,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
-import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { loadCardDefs } from "@melite/comfyui-cordis";
-import { owningAtom, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import type { PromptGraph } from "@melite/comfyui-card-kit/graph";
+import { draftIdOf } from "@melite/contracts/benchStage";
+import { loadCardDefs, theService } from "@melite/comfyui-cordis";
+import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
+import { factsPath } from "../../../../packages/harness/estate-queue/src/cardsFacts.ts";
+import { getModel, owningAtom, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
 import { assertHermeticRode } from "../../../helpers/hermetic-engine.ts";
@@ -119,12 +122,9 @@ function declCells(): DeclCell[] {
   }));
 }
 
-type GraphNode = { class_type?: string; inputs?: Record<string, unknown> };
-type Graph = Record<string, GraphNode>;
-
 /** Every UNETLoader filename a serialized graph wires — the run
  *  plane's own verdict (an empty list composes no weights at all). */
-function unetNames(graph: Graph): string[] {
+function unetNames(graph: PromptGraph): string[] {
   const names: string[] = [];
   for (const node of Object.values(graph)) {
     if (node.class_type !== "UNETLoader") continue;
@@ -134,29 +134,18 @@ function unetNames(graph: Graph): string[] {
 }
 
 /** THE JOURNEY, one walk: the saved doc's quant through the estate's
- *  real prepare door, then the card's own compose against the row the
- * prepared address resolves to. Returns the address the door chose
- *  and the loader filenames the graph carries. */
-/** The card definition's compose face (what loadCardDefs serves). */
-type CardDef = {
-  schema: (doc: unknown) => unknown;
-  compose: (doc: unknown, model: unknown, g: GraphBuilder, seat: string) => void;
-};
-
+ *  real prepare door, then the ENGINE'S OWN COMPOSE DOOR
+ *  (ComfyUIService.compose — the door the press rides: merged params,
+ *  the mod/arm judges, the card's compose against the real ModelFacts
+ *  row the prepared address resolves to). Returns the address the
+ *  door chose and the loader filenames the graph carries. */
 function composeThroughTheDoor(
   svc: CardRegistryService,
-  defs: ReadonlyMap<string, CardDef>,
   body: Record<string, unknown>,
 ): { modelId: string; unets: string[] } {
   const prep = prepareCardParams(svc, { model: FAMILY, variant: VARIANT, ...body }, FAMILY, "admission");
-  const facts = svc.modelFacts() as Record<string, unknown>;
-  const row = facts[prep.modelId];
-  assert.ok(row, `the booted facts serve the prepared address '${prep.modelId}'`);
-  const def = defs.get(prep.card);
-  assert.ok(def, `the card defs serve '${prep.card}' (the prepared row's own card)`);
-  const g = new GraphBuilder();
-  def.compose(def.schema({ ...prep.params }), row, g, "quant-run-plane");
-  return { modelId: prep.modelId, unets: unetNames(g.toJSON() as Graph) };
+  const graph = theService().compose(prep.card, prep.modelId, prep.params, "quant-run-plane");
+  return { modelId: prep.modelId, unets: unetNames(graph) };
 }
 
 /** A composing fresh film doc (the card spec's own SHOT shape). */
@@ -166,7 +155,6 @@ function shot(): Record<string, unknown> {
 
 describe("cards-h3-quant-run-plane — the quant stamp steers the loader through the compose address", () => {
   let svc: CardRegistryService;
-  let defs: Awaited<ReturnType<typeof loadCardDefs>>;
 
   beforeAll(async () => {
     const ctx = new Context();
@@ -179,7 +167,15 @@ describe("cards-h3-quant-run-plane — the quant stamp steers the loader through
     svc = new CardRegistryService(ctx);
     await svc.prime();
     assertHermeticRode();
-    defs = await loadCardDefs();
+    await loadCardDefs();
+    // THE FACTS SEAT (the compose door's own requirement — the D5
+    // harness shape, mod-liveness's precedent): the real facts file
+    // through the kit's one loader, riding the models registry reads.
+    theService().setFacts(loadFacts(factsPath(), {
+      getModel: (id: string) => getModel(id),
+      registryIds: () => registryIds(),
+      registryModel: (id: string) => registryModel(id),
+    }));
     // THE HERMETIC STORE: this wall's subject is the ADDRESS→FILE
     // fold, never the machine's download state — seed the declared
     // rows so the presence gate judges the law on every machine.
@@ -204,7 +200,7 @@ describe("cards-h3-quant-run-plane — the quant stamp steers the loader through
     const cells = declCells();
     const mismatches: string[] = [];
     for (const cell of cells) {
-      const { modelId, unets } = composeThroughTheDoor(svc, defs, { quant: cell.quant, ...shot() });
+      const { modelId, unets } = composeThroughTheDoor(svc, { quant: cell.quant, ...shot() });
       if (modelId !== cell.route) {
         mismatches.push(`${cell.quant}: the door prepared address '${modelId}', the cell's route is '${cell.route}'`);
         continue;
@@ -227,7 +223,7 @@ describe("cards-h3-quant-run-plane — the quant stamp steers the loader through
     const cells = declCells();
     const head = cells.find((c) => c.route === FAMILY);
     assert.ok(head, `no cell routes to the family head '${FAMILY}' — the unstated pick has no lawful default`);
-    const { modelId, unets } = composeThroughTheDoor(svc, defs, shot());
+    const { modelId, unets } = composeThroughTheDoor(svc, shot());
     assert.equal(modelId, FAMILY, "the unstated doc composes under the family head's own address");
     assert.deepEqual(unets, [head.unet],
       `the unstated quant must load the head cell's file '${head.unet}' — a neighbor cell's weights under an unstated doc is the silent-default burn`);
@@ -238,7 +234,7 @@ describe("cards-h3-quant-run-plane — the quant stamp steers the loader through
     const ghost = "bf16_ghost_wall";
     assert.ok(!cells.some((c) => c.quant === ghost), "the ghost coordinate must be outside the roster");
     assert.throws(
-      () => composeThroughTheDoor(svc, defs, { quant: ghost, ...shot() }),
+      () => composeThroughTheDoor(svc, { quant: ghost, ...shot() }),
       (e: unknown) => e instanceof Error && /quant/.test(e.message) && /ghost|unknown|no quant/i.test(e.message),
       "the refusal must speak the quant coordinate in its voice",
     );
@@ -292,7 +288,7 @@ describe("cards-h3-quant-run-plane — the write→run edge: the pick lands at t
     assert.ok(cell, `no ${VARIANT} cell routes away from the family head — the write→run edge cannot be observed`);
     await live.benchRemote.ensure({ session: "qrp" }, sig);
     const added = await live.benchRemote.addStage("qrp", { card: FAMILY, expect_rev: 0 }, sig);
-    const draftId = "bench-qrp";
+    const draftId = draftIdOf("bench-qrp");
     const stageId = String(added.stage);
     // THE PICK arrives exactly as the studio's ModelAxes sends it: a
     // params merge patch carrying the axis coordinate.
@@ -306,15 +302,10 @@ describe("cards-h3-quant-run-plane — the write→run edge: the pick lands at t
     assert.equal(stored["quant"], cell.quant, "the stored row carries the picked coordinate (the write plane's cure, read back)");
     // THE RUN PLANE, from the STORED row's own params — never a re-typed
     // copy: what the next press composes is what the door saved.
-    const defs = await loadCardDefs();
     const prep = prepareCardParams(registry, { model: FAMILY, ...stored }, FAMILY, "admission");
     assert.equal(prep.modelId, cell.route, `the stored row's quant prepares the cell's route '${cell.route}'`);
-    const row = (registry.modelFacts() as Record<string, unknown>)[prep.modelId];
-    const def = defs.get(prep.card);
-    assert.ok(def, `the card defs serve '${prep.card}'`);
-    const g = new GraphBuilder();
-    def.compose(def.schema({ ...prep.params }), row, g, "quant-run-plane-write-edge");
-    assert.deepEqual(unetNames(g.toJSON() as Graph), [cell.unet],
+    const graph = theService().compose(prep.card, prep.modelId, prep.params, "quant-run-plane-write-edge");
+    assert.deepEqual(unetNames(graph), [cell.unet],
       `the stored row's quant must compose the cell's file '${cell.unet}'`);
   }, 120_000);
 

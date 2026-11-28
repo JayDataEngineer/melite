@@ -184,6 +184,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/video/trim/src/index.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
   '**/packages/web/card-base/src/abortable.ts': { statements: 90.91, branches: 50, functions: 75, lines: 80 },
   '**/packages/web/card-base/src/cards-address.ts': { statements: 0, branches: null, functions: 0, lines: 0 },
+  '**/packages/web/card-base/src/inputUrl.ts': { statements: 92.85, branches: 90, functions: 50, lines: 91.66 },
   '**/packages/web/card-base/src/locales/chromeCopy.ts': { statements: 88.89, branches: 87.5, functions: 75, lines: 87.5 },
   '**/packages/web/card-base/src/locales/square.ts': { statements: 88.89, branches: 87.5, functions: 75, lines: 87.5 },
   '**/packages/web/melite-card-view/src/chromeCopy.ts': { statements: 0, branches: 75, functions: 0, lines: 0 },

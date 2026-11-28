@@ -17,6 +17,14 @@
 // runs tsc --noEmit. The synthesis is on the fly (nothing
 // materialized to rot); the package's own compiler settings hold.
 //
+// THE THIRD TIER is the walls plane (L4721(b), 2026-11-28):
+// tests/walls/ts/tsconfig.json — the one spec tree no package owns —
+// judged as a RATCHET against scripts/walls-tsc-baseline.json
+// (scripts/walls-tsc-ratchet.mjs owns the law: a new erring file reds,
+// growth reds, a row that went stale reds until lowered). The face's
+// paths block is RENDERED from vitest.shared.ts's resolutionFacade
+// (tools/walls-face.mjs), so the net types what the runtime resolves.
+//
 // Exit 1 red, package-by-package lines on stdout, summary last.
 
 import { readdirSync, existsSync, writeFileSync, rmSync, readFileSync } from "node:fs";
@@ -24,6 +32,7 @@ import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
+import { judgeWallsTier } from "./walls-tsc-ratchet.mjs";
 
 const execFileP = promisify(execFile);
 
@@ -224,5 +233,18 @@ await Promise.all(workers);
     console.log("✓ repo tier (tools/ + tests/*.ts + tests/e2e)");
   }
 }
-console.log(`test-tier: ${checked} packages with test dirs + the repo tier, ${failed} red`);
+// THE WALLS TIER (the ratchet — see the header): one tsc run over the
+// walls face, judged against the tracked per-file rows.
+{
+  const { verdict, lines, total } = await judgeWallsTier();
+  if (!verdict.ok) {
+    failed++;
+    console.log("✗ walls tier (tests/walls/ts + tests/lane, the ratchet)");
+    for (const l of lines.slice(0, 12)) console.log(l);
+    if (lines.length > 12) console.log(`  … ${lines.length} refusing rows`);
+  } else {
+    console.log(`✓ walls tier (tests/walls/ts + tests/lane — ${verdict.priced} files priced, ${total} errors under their rows)`);
+  }
+}
+console.log(`test-tier: ${checked} packages with test dirs + the repo tier + the walls ratchet, ${failed} red`);
 process.exit(failed > 0 ? 1 : 0);
