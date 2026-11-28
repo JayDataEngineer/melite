@@ -844,7 +844,13 @@ describe("the unset's refused write and the run seat's refused sync — both spe
     // verdict is the door's, the row keeps the failure's memory.
     const doc = axisSpecDoc();
     doc.params = ["prompt", "variant", "input_image"];
-    mountBench([stage({ model: "krea-2", double_reference: true })], { throws: [{ method: "drafts/patch" }] }, doc);
+    // THE THROW IS NAMED BY CONTENT (push #4's coverage red, 2026-11-28):
+    // an any-call one-shot landed on the trailing debounced prompt write
+    // whenever the scheduler reached it before the click — the unstamp's
+    // own write then SUCCEEDED, the arm passed on the prompt write's
+    // unlanded face, and the unstamp's catch never ran under coverage.
+    // The unstamp's write is the one that carries the null.
+    mountBench([stage({ model: "krea-2", double_reference: true })], { throws: [{ method: "drafts/patch", params: { double_reference: null } }] }, doc);
     await openDrill();
     await typePrompt("a red cube");
     await pressRun();

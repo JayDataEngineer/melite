@@ -36,6 +36,10 @@
  *    against the real shape; `value` entries throw the VALUE
  *    verbatim (foreign throws — strings, numbers — for the client's
  *    non-Error fallback voices); `onCall` scripts the Nth call;
+ *    `params` scripts the call BY CONTENT — the write that carries
+ *    the given params entries (drafts/patch only: a trailing debounced
+ *    write may reach the door before the scripted act under load, and
+ *    a one-shot by clock would then land on the wrong call);
  *  - listRows serve the runs/list tail (the completed runs' SSOT —
  *    the gone-verdict's file-era arm and the newest-run bridge
  *    read here);
@@ -104,6 +108,11 @@ export interface EstateThrow {
   value?: unknown
   /** 1-based call index (same law as EstateRefusal.onCall). */
   onCall?: number
+  /** CONTENT MATCH (drafts/patch only): the entry fires on the first
+   *  call whose patch `params` carry every given key with an equal
+   *  value (Object.is). A write is named by what it writes, never by
+   *  when the scheduler reached it. */
+  params?: Record<string, unknown>
 }
 
 export interface EstateFakesOptions {
@@ -233,10 +242,17 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
    *  entries throw the VALUE verbatim (the foreign-throw arm); `onCall`
    *  entries wait for their call index; an exact-index match always
    *  beats an any-call entry. */
-  const takeThrow = (method: string): void => {
+  const takeThrow = (method: string, patch?: Record<string, unknown>): void => {
     const index = tickCall(method)
-    let hit = throwQueue.findIndex((thrown) => thrown.method === method && thrown.onCall === index)
-    if (hit === -1) hit = throwQueue.findIndex((thrown) => thrown.method === method && thrown.onCall === undefined)
+    const carries = (thrown: EstateThrow): boolean => {
+      if (thrown.params === undefined) return true
+      const params = (patch as { params?: unknown } | undefined)?.params
+      if (typeof params !== 'object' || params === null || Array.isArray(params)) return false
+      const carried = params as Record<string, unknown>
+      return Object.entries(thrown.params).every(([key, value]) => key in carried && Object.is(carried[key], value))
+    }
+    let hit = throwQueue.findIndex((thrown) => thrown.method === method && thrown.onCall === index && carries(thrown))
+    if (hit === -1) hit = throwQueue.findIndex((thrown) => thrown.method === method && thrown.onCall === undefined && carries(thrown))
     if (hit === -1) return
     const thrown = throwQueue.splice(hit, 1)[0]!
     if ('value' in thrown) throw thrown.value
@@ -461,7 +477,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         calls.push({ method: 'drafts/patch', args: { draftId, stageId, patch, expectRev } })
         opts.onPatchCall?.(stageId, patch)
         if (opts.patchGate !== undefined) await opts.patchGate()
-        takeThrow('drafts/patch')
+        takeThrow('drafts/patch', patch)
         const patchRefused = takeRefusal('drafts/patch')
         if (patchRefused !== undefined) return patchRefused
         if (opts.patchFailures !== undefined && opts.patchFailures.length > 0) {
