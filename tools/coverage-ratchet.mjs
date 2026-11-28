@@ -39,16 +39,36 @@
 // same run, the same report); only the judgment scopes to the delta.
 // CI's own red on the standing debt stays the owned roadmap item.
 //
+// THE SECOND LEDGER — CI'S OWN FLOORS, SAME LAW (2026-11-28, the
+// branch-only burn): the line ledger above is blind to a change that
+// adds bare BRANCH paths over executed lines. S1 and B4b added nine
+// such paths across three files; the ratchet read "no new debt", the
+// battery went green, and CI's coverage gate red on three per-file
+// floors (run 46112457941). The gate's own verdict cannot be the
+// local verdict — vitest's exit reds on the dev box's SEATED face by
+// design (the overlay rows of scripts/coverage-baseline.ts) — but
+// CI's face is arithmetic over the same fresh summary: every floor
+// of effectiveBaseline(false) (the UNSEATED face CI judges) is
+// compared with the summary's per-file percentages, and a breach is
+// judged by the SAME delta law as the line ledger — a package touched
+// since the baseline commit reds the push; an untouched package's
+// breach is named drift and passes. No second run, no floor moved.
+//
 // Usage: node tools/coverage-ratchet.mjs   (exit 0 = no new debt)
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, statSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { effectiveBaseline } from '../scripts/coverage-baseline.ts'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SUMMARY = resolve(REPO, 'coverage/coverage-summary.json')
 const BASELINE = resolve(REPO, 'tools/coverage-baseline.json')
+
+/** The floor metrics a baseline row carries, in the order vitest
+ *  reports them. */
+export const FLOOR_METRICS = ['statements', 'branches', 'functions', 'lines']
 
 /** The package root a tree file belongs to (packages/<genre>/<name>
  *  → its 3-segment dir), or null for files outside a package — a
@@ -76,8 +96,56 @@ export function judgeGrowth (rows, changed) {
   return { red, drift }
 }
 
+/** CI'S OWN FLOORS, read off the fresh summary (2026-11-28, the
+ *  branch-only burn). A floor row's glob is the double-star prefix
+ *  plus a repo-relative path; that path names every summary file it
+ *  ends with (summary keys are absolute), the row carries the
+ *  repo-relative file, and each non-null metric with paths on the
+ *  file is a row when the summary's percentage sits below the floor —
+ *  vitest's own comparison (pct under threshold), made arithmetic so
+ *  the battery can judge CI's face without CI's pool. A row absent
+ *  from the summary, a null floor (the null floor law: zero paths on
+ *  that metric), and a zero-total metric are not rows — vitest judges
+ *  none of them either.
+ *  @param summary the parsed coverage-summary.json of the fresh run
+ *  @param floors  one seat face of scripts/coverage-baseline.ts
+ *  @returns rows of file, metric, pct and floor */
+export function ciFloorRows (summary, floors) {
+  const rows = []
+  for (const [glob, row] of Object.entries(floors ?? {})) {
+    const tail = glob.replace(/^\*\*\//, '')
+    for (const [file, v] of Object.entries(summary ?? {})) {
+      if (file === 'total' || !file.endsWith('/' + tail)) continue
+      for (const metric of FLOOR_METRICS) {
+        const floor = row[metric]
+        const face = v?.[metric]
+        if (floor === null || floor === undefined || !face || face.total === 0) continue
+        if (face.pct < floor) rows.push({ file: file.slice(-tail.length), metric, pct: face.pct, floor })
+      }
+    }
+  }
+  return rows
+}
+
+/** THE SAME DELTA LAW over the floor rows (injectable — the wall arms
+ *  this seam): a breach in a package touched since the baseline
+ *  commit is growth and dies the push; an untouched package's is
+ *  drift, named and passed (the tree cannot have grown what the tree
+ *  did not touch — the seated face, the pool, the machine state).
+ *  A file outside every package is judged strictly. */
+export function judgeFloors (rows, changed) {
+  const red = []
+  const drift = []
+  for (const r of rows) {
+    const root = packageRootOf(r.file)
+    if (root !== null && !changed(root)) drift.push(`${r.file}: ${r.metric} ${r.pct}% below CI's floor ${r.floor}% — the package is untouched since the baseline commit; seat-face/pool drift, named, not growth`)
+    else red.push(`${r.file}: ${r.metric} ${r.pct}% below CI's floor ${r.floor}% — the package changed since the baseline commit`)
+  }
+  return { red, drift }
+}
+
 function die (rows) {
-  console.error(`coverage-ratchet: NEW DEBT — ${rows.length} file(s) grew the owned baseline:`)
+  console.error(`coverage-ratchet: NEW DEBT — ${rows.length} row(s) grew the ledgers:`)
   for (const r of rows) console.error(`  ${r}`)
   console.error('  cure: cover the lines, or move the row up in tools/coverage-baseline.json')
   console.error('  in the SAME commit as the change that grew it, with its reason.')
@@ -131,7 +199,12 @@ const changed = (root) => {
   return changedCache.get(root)
 }
 
-const { red, drift } = judgeGrowth(rows, changed)
+const grown = judgeGrowth(rows, changed)
+// THE SECOND LEDGER: CI's own floor face over the same summary —
+// the lines ledger cannot see a bare branch over an executed line.
+const floored = judgeFloors(ciFloorRows(summary, effectiveBaseline(false)), changed)
+const red = [...grown.red, ...floored.red]
+const drift = [...grown.drift, ...floored.drift]
 if (drift.length > 0) {
   console.log(`coverage-ratchet: ${drift.length} row(s) drifted on an untouched package (environment/ordering, not tree growth):`)
   for (const d of drift) console.log(`  ${d}`)
@@ -139,7 +212,9 @@ if (drift.length > 0) {
 if (red.length > 0) die(red)
 
 const total = Object.values(baseline).reduce((a, b) => a + b, 0)
-console.log(`coverage-ratchet: no new debt (owned baseline: ${Object.keys(baseline).length} files, ${total} uncovered lines — shrink-only)`)
+const floors = effectiveBaseline(false)
+const judged = Object.keys(summary).filter((f) => f !== 'total' && Object.keys(floors).some((g) => f.endsWith('/' + g.replace(/^\*\*\//, '')))).length
+console.log(`coverage-ratchet: no new debt (owned baseline: ${Object.keys(baseline).length} files, ${total} uncovered lines — shrink-only; CI's floor face: ${judged} gated file(s) judged at or above their floors)`)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()

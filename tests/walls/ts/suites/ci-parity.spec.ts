@@ -72,7 +72,7 @@ const PARITY: Record<string, {
     evidence: [{ file: "tools/hook-full-battery.mjs", contains: 'await tier("pytest"' }],
   },
   "tests.yml:coverage": {
-    seat: "the battery's coverage tier (tools/coverage-ratchet.mjs) runs the full CI coverage suite INSIDE the ratchet. DIVERGENCE, stated: CI judges the raw per-file floors; the local ratchet judges the DELTA (growth reds, shrink moves the row) because the estate carries roadmapped per-file debt that made the raw gate deadlock every push. When the debt hits zero the ratchet becomes the raw gate.",
+    seat: "the battery's coverage tier (tools/coverage-ratchet.mjs) runs the full CI coverage suite INSIDE the ratchet. DIVERGENCE, stated: CI judges the raw per-file floors; the local ratchet judges the DELTA (growth reds, shrink moves the row) because the estate carries roadmapped per-file debt that made the raw gate deadlock every push. When the debt hits zero the ratchet becomes the raw gate. CONVERGENCE RESTORED WHERE IT BURNED (2026-11-28, the branch-only burn — 569d06ea5 passed the battery and red CI on four floors): the ratchet judges CI's own UNSEATED floor face off the same summary under the same delta law (a touched package's breach reds; an untouched package's is drift) — vitest's exit stays unused (the seated face reds dev-side by design). The wall is coverage-ratchet-growth.spec.ts.",
     evidence: [{ file: "tools/hook-full-battery.mjs", contains: 'await tier("coverage"' }],
   },
   "tests.yml:tiers": {

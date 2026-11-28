@@ -420,7 +420,10 @@ await tier("coverage", async () => {
   // RUNS the full CI coverage suite inside the ratchet; the judgment
   // scopes to the delta: growth reds, shrink moves the row in the same
   // commit. When the debt hits zero the ratchet IS the raw gate.
-  const coverage = await spawnTee("node", ["tools/coverage-ratchet.mjs"], { cwd: REPO });
+  // --experimental-strip-types: the ratchet imports scripts/coverage-baseline.ts
+  // (CI's floor face, 2026-11-28); unflagged on Node 24, required across the
+  // engines range.
+  const coverage = await spawnTee("node", ["--experimental-strip-types", "--no-warnings", "tools/coverage-ratchet.mjs"], { cwd: REPO });
   return { status: coverage.status === 0 ? 0 : 1, tail: coverage.out };
 });
 // THE ONE-ENGINE LAW (2026-11-18, attempt-14's burn): the GPU rows
