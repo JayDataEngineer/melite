@@ -344,7 +344,13 @@ beforeEach(() => {
 
 afterEach(async () => {
   for (const ctx of contexts.splice(0)) await ctx.fiber.dispose();
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  // The teardown races a straggler writer: the fiber dispose settles the
+  // seats, but a provisioning arm's last fs write into its root can land
+  // after the test body and ENOTEMPTY the recursive remove under load
+  // (the pre-push battery's walls tier, 2026-11-28 — 1 in 9838). Node's
+  // own retry (linear backoff on EBUSY/ENOTEMPTY/EPERM) lets that write
+  // finish before the tree goes; a root that never quiets still throws.
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 20 });
   for (const key of ENV_KEYS) {
     if (saved[key] === undefined) delete process.env[key];
     else process.env[key] = saved[key];
