@@ -29,6 +29,7 @@ import { CardRegistryService } from "../../../../packages/harness/estate-queue/s
 // re-exports it) — type-only, erased at runtime.
 import type { BenchDoc } from "../../../../packages/estate/drafts/src/remote.ts";
 import type { DraftRecord } from "../../../../packages/estate/drafts/src/spec.js";
+import { draftIdOf } from "@melite/contracts/benchStage";
 import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
@@ -141,7 +142,7 @@ test("drafts/list serves domain rows, recency DESC", async () => {
 
 test("drafts/get serves one doc verbatim", async () => {
   const ctx = await boot();
-  const got = await ctx.draftsRemote.get("d_new", sig);
+  const got = await ctx.draftsRemote.get(draftIdOf("d_new"), sig);
   assert.equal(got["draft_id"], "d_new");
   assert.equal(got["intent"], "test d_new");
   assert.ok(Array.isArray(got["stages"]));
@@ -149,7 +150,7 @@ test("drafts/get serves one doc verbatim", async () => {
 
 test("drafts/get classifies unknown id as draft/not-found", async () => {
   const ctx = await boot();
-  const failure = await failureOf(ctx.draftsRemote.get("d_missing", sig));
+  const failure = await failureOf(ctx.draftsRemote.get(draftIdOf("d_missing"), sig));
   assert.ok(failure !== null && typeof failure === "object");
   assert.equal((failure as { code: string }).code, "draft/not-found");
   assert.deepEqual((failure as { details: unknown }).details, {
@@ -159,7 +160,7 @@ test("drafts/get classifies unknown id as draft/not-found", async () => {
 
 test("drafts/get classifies a malformed id as draft/bad-id", async () => {
   const ctx = await boot();
-  const failure = await failureOf(ctx.draftsRemote.get("bad id!", sig));
+  const failure = await failureOf(ctx.draftsRemote.get(draftIdOf("bad id!"), sig));
   assert.ok(failure !== null && typeof failure === "object");
   assert.equal((failure as { code: string }).code, "draft/bad-id");
 });
@@ -200,7 +201,7 @@ test("bench/ensure load replaces stages under CAS, rev walks", async () => {
   assert.equal(loaded.intent, "b");
   assert.equal((loaded.stages as Record<string, unknown>[])[0]!["id"], "x");
   // The bench doc IS a draft doc — the domain table carries it.
-  const got = await ctx.draftsRemote.get("bench-s1", sig);
+  const got = await ctx.draftsRemote.get(draftIdOf("bench-s1"), sig);
   assert.equal((got["bench"] as { rev: number }).rev, 1);
 });
 
@@ -275,7 +276,7 @@ test("bench/patch merges params under CAS and walks the rev", async () => {
   );
   assert.equal(out.rev, 1);
   assert.deepEqual(out.patched, ["steps"]);
-  const doc = await ctx.draftsRemote.get("bench-s1", sig);
+  const doc = await ctx.draftsRemote.get(draftIdOf("bench-s1"), sig);
   const stage = (doc["stages"] as Record<string, unknown>[])[0]!;
   assert.deepEqual(stage["params"], { steps: 30 });
 });
@@ -376,7 +377,7 @@ test("bench/remove-stage splices; rewire binds inputs", async () => {
     sig,
   );
   assert.equal(wired.rev, 2);
-  const doc = await ctx.draftsRemote.get("bench-s1", sig);
+  const doc = await ctx.draftsRemote.get(draftIdOf("bench-s1"), sig);
   const stages = doc["stages"] as Record<string, unknown>[];
   assert.equal(stages.length, 1);
   assert.equal(stages[0]!["id"], "b");
@@ -481,22 +482,22 @@ test("the tools' lane grammar rides the seats end-to-end (glue)", async () => {
 test("drafts/patch merges params per-key and persists through the domain", async () => {
   const ctx = await boot();
   await ctx.draftsRemote.patch(
-    "d_new",
+    draftIdOf("d_new"),
     "s_0",
     { params: { steps: 12, prompt: "a red cube" } },
     0, // the CAS law: a landing patch fences at the fresh doc's rev
     sig,
   );
   // The get arm reads the SAME domain — the merge is observable.
-  const doc = (await ctx.draftsRemote.get("d_new", sig)) as {
+  const doc = (await ctx.draftsRemote.get(draftIdOf("d_new"), sig)) as {
     stages: Array<{ id: string; params?: Record<string, unknown> }>;
   };
   const stage = doc.stages.find((s) => s.id === "s_0")!;
   assert.equal(stage.params?.["steps"], 12);
   assert.equal(stage.params?.["prompt"], "a red cube");
   // A second patch merges INTO the first (per-key, never replace).
-  await ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 20 } }, 1, sig);
-  const again = (await ctx.draftsRemote.get("d_new", sig)) as {
+  await ctx.draftsRemote.patch(draftIdOf("d_new"), "s_0", { params: { steps: 20 } }, 1, sig);
+  const again = (await ctx.draftsRemote.get(draftIdOf("d_new"), sig)) as {
     stages: Array<{ id: string; params?: Record<string, unknown> }>;
   };
   const stage2 = again.stages.find((s) => s.id === "s_0")!;
@@ -507,12 +508,12 @@ test("drafts/patch merges params per-key and persists through the domain", async
 test("drafts/patch answers the delivered envelope for missing doc/stage", async () => {
   const ctx = await boot();
   const noDraft = await ctx.draftsRemote.patch(
-    "d_missing", "s_0", { params: { steps: 1 } }, null, sig,
+    draftIdOf("d_missing"), "s_0", { params: { steps: 1 } }, null, sig,
   );
   assert.equal(noDraft.delivered, false);
   assert.equal(noDraft.reason, "draft not found");
   const noStage = await ctx.draftsRemote.patch(
-    "d_new", "s_absent", { params: { steps: 1 } }, null, sig,
+    draftIdOf("d_new"), "s_absent", { params: { steps: 1 } }, null, sig,
   );
   assert.equal(noStage.delivered, false);
   assert.equal(noStage.reason, "stage not found");
@@ -521,7 +522,7 @@ test("drafts/patch answers the delivered envelope for missing doc/stage", async 
 test("drafts/patch refuses unknown keys with the door's old voice", async () => {
   const ctx = await boot();
   const failure = await failureOf(
-    ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 1 }, bogus: 1 }, null, sig),
+    ctx.draftsRemote.patch(draftIdOf("d_new"), "s_0", { params: { steps: 1 }, bogus: 1 }, null, sig),
   );
   assert.equal(failure?.["code"], "draft/patch-unknown-keys");
   // B-M9 (the wall audit, 2026-09-28): the voice was re-typed here
@@ -549,11 +550,11 @@ test("drafts/patch refuses unknown keys with the door's old voice", async () => 
 test("drafts/patch refuses bad ids and bad bodies as named codes", async () => {
   const ctx = await boot();
   const badId = await failureOf(
-    ctx.draftsRemote.patch("bad id!", "s_0", { params: {} }, null, sig),
+    ctx.draftsRemote.patch(draftIdOf("bad id!"), "s_0", { params: {} }, null, sig),
   );
   assert.equal(badId?.code, "draft/bad-id");
   const badPatch = await failureOf(
-    ctx.draftsRemote.patch("d_new", "s_0", "params" as never, null, sig),
+    ctx.draftsRemote.patch(draftIdOf("d_new"), "s_0", "params" as never, null, sig),
   );
   assert.equal(badPatch?.code, "draft/bad-patch");
 });
@@ -561,9 +562,9 @@ test("drafts/patch refuses bad ids and bad bodies as named codes", async () => {
 test("drafts/patch lands the runStatus/result arms (the old door's other keys)", async () => {
   const ctx = await boot();
   await ctx.draftsRemote.patch(
-    "d_new", "s_0", { runStatus: "done", result: { url: "x.png" } }, null, sig,
+    draftIdOf("d_new"), "s_0", { runStatus: "done", result: { url: "x.png" } }, null, sig,
   );
-  const doc = (await ctx.draftsRemote.get("d_new", sig)) as {
+  const doc = (await ctx.draftsRemote.get(draftIdOf("d_new"), sig)) as {
     stages: Array<{ id: string; runStatus?: string; result?: unknown }>;
   };
   const stage = doc.stages.find((s) => s.id === "s_0")!;

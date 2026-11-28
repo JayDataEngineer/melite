@@ -38,6 +38,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { LifecycleLatch } from "../../../../packages/harness/estate-queue/src/lifecycleLatch.ts";
 import { planMerge } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
 import type { MergeRow } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
+import type { EngineJson } from "../../../../packages/engines/comfyui-cordis/src/comfyui-types.ts";
+import type { Context as CordisContext } from "@deepseek-ai/cordis";
+import type { ComfyUIHostService as HostService } from "../../../../packages/engines/comfyui-cordis/src/comfyui-host.ts";
 import {
   addStageBench,
   ensureBench,
@@ -48,6 +51,21 @@ import { boot } from "../../../../packages/estate/drafts/tests/bench-helpers.ts"
 /** The compose step, mirroring runsStart's translation (the same
  *  written-out shape bench-wire-chain.spec.ts carries — if the bench
  *  ever stores a third wiring shape, both files break together). */
+/** A planned node's inputs, narrowed from the plan's EngineJson values:
+ *  a node or an inputs member that is not an object is this spec's own
+ *  failure (the plan always writes both) — the typeof guards narrow
+ *  without a cast. */
+function inputsOf(node: EngineJson | undefined): Record<string, EngineJson> {
+  if (node === undefined || node === null || typeof node !== "object" || Array.isArray(node)) {
+    throw new Error("the plan carries no node here — the workflow key is absent or not an object");
+  }
+  const inputs = node["inputs"];
+  if (inputs === null || inputs === undefined || typeof inputs !== "object" || Array.isArray(inputs)) {
+    throw new Error("the planned node carries no inputs object");
+  }
+  return inputs;
+}
+
 const inputNamesOf = (
   stages: ReadonlyArray<Record<string, unknown>>,
 ): Record<string, Record<string, string>> => {
@@ -156,15 +174,14 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       {},
       inputNamesOf(stages),
     );
-    const sink = (plan.workflow["s_1::n"] as Record<string, { inputs: Record<string, unknown> }>)
-      .inputs;
+    const sink = inputsOf(plan.workflow["s_1::n"]);
     expect(
       sink["image"],
       "s_1::n.image resolves [s_0::save, 0] directly — the seam carries no boundary, " +
         "so the eviction is either absent or a pruned dead island (never executed)",
     ).toEqual(["__unload$0", 0]);
     expect(
-      (plan.workflow["__unload$0"] as Record<string, { inputs: Record<string, unknown> }>).inputs[
+      inputsOf(plan.workflow["__unload$0"])[
         "through"
       ],
       "the boundary's through lost the producer — the seam's eviction would not sit after stage A's compute",
@@ -222,7 +239,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
     }
     for (const key of boundaryKeysOf(plan.workflow)) {
       expect(key).toMatch(/^__unload\$\d+$/);
-      expect(Object.keys((plan.workflow[key] as Record<string, { inputs: Record<string, unknown> }>).inputs).sort())
+      expect(Object.keys(inputsOf(plan.workflow[key])).sort())
         .toEqual(["through", "unload_models"]);
     }
   });
@@ -258,10 +275,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       inputs: { image: { stage: "s_0", output: "image" } },
     });
     const stages = stagesOf(getBench(drafts, "s"));
-    expect(
-      (stages[1]!["params"] as Record<string, unknown>)["boundary_unload_models"],
-      true,
-    );
+    expect((stages[1]!["params"] as Record<string, unknown>)["boundary_unload_models"]).toBe(true);
     const downstreamParams = stages[1]!["params"] as Record<string, unknown>;
     const wired = planMerge(
       [compiled("s_0", []), compiled("s_1", ["image"], downstreamParams)],
@@ -269,7 +283,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       inputNamesOf(stages),
     );
     expect(
-      (wired.workflow["__unload$0"] as Record<string, { inputs: Record<string, unknown> }>).inputs[
+      inputsOf(wired.workflow["__unload$0"])[
         "unload_models"
       ],
       "the downstream row's knob did not ride the boundary — the trellis-class relief never arms",
@@ -281,7 +295,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       inputNamesOf(stages),
     );
     expect(
-      (quiet.workflow["__unload$0"] as Record<string, { inputs: Record<string, unknown> }>).inputs[
+      inputsOf(quiet.workflow["__unload$0"])[
         "unload_models"
       ],
     ).toBe(false);
@@ -293,7 +307,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       inputNamesOf(stages),
     );
     expect(
-      (wrongSide.workflow["__unload$0"] as Record<string, { inputs: Record<string, unknown> }>).inputs[
+      inputsOf(wrongSide.workflow["__unload$0"])[
         "unload_models"
       ],
       "the upstream stage's knob armed the seam — the gate reads the DOWNSTREAM row",
@@ -349,7 +363,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
     const prevSbx = process.env["INFERENCE_TEST_SANDBOX"];
     process.env["COMFYUI_ENDPOINT_CONFIG"] = cfgPath;
     process.env["INFERENCE_TEST_SANDBOX"] = "1";
-    const captured: Array<Record<string, unknown>> = [];
+    const captured: MergeRow[] = [];
     let capturedInputNames: Record<string, Record<string, string>> = {};
     try {
       const ctx = new Context();
@@ -402,14 +416,12 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       }
 
       class FakeEngine extends ComfyUIHostService {
-        constructor(c: Context) {
+        constructor(c: CordisContext) {
           super(c as unknown as never, {});
         }
         override executeFlow(
-          rows: Array<Record<string, unknown>>,
-          _runDir: string,
-          inputNames: Record<string, Record<string, string>>,
-        ): Promise<unknown> {
+          ...[rows, _runDir, inputNames]: Parameters<HostService["executeFlow"]>
+        ): ReturnType<HostService["executeFlow"]> {
           captured.push(...rows);
           capturedInputNames = inputNames;
           return Promise.resolve({
@@ -438,19 +450,17 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       }
       expect(settled, "the journey run settles").toBe(true);
       expect(captured.length).toBe(2);
-      const downstream = captured.find((r) => r["stageId"] === "s_1") as {
-        params: Record<string, unknown>;
-      };
+      const downstream = captured.find((r) => r.stageId === "s_1")!;
       // THE KNOB SURVIVED COMPOSITION: beside the composed graph, not
       // eaten by the params replacement, never refused by admission.
       expect(
         downstream.params["boundary_unload_models"],
         "the composed row dropped the reserved key — the carry is toggled out (the F-C red)",
       ).toBe(true);
-      expect(Object.keys(downstream.params).sort()).toEqual(
-        ["boundary_unload_models", "output_nodes", "workflow"],
+      expect(
+        Object.keys(downstream.params).sort(),
         "the carry is ADDITIVE — the composed bag carries the graph, its outputs, and the reserved key, nothing else",
-      );
+      ).toEqual(["boundary_unload_models", "output_nodes", "workflow"]);
       // THE FULL JOURNEY: the executor's own rows reach planMerge and
       // the boundary splices ARMED.
       const wired = planMergeReal(
@@ -636,7 +646,7 @@ describe("THE PASS SEAM'S WALL (F41): the merged plan carries the unload boundar
       get stateRoots(): string[] { return [state]; },
     };
     class FakeEngine extends ComfyUIHostService {
-      constructor(c: Context) {
+      constructor(c: CordisContext) {
         super(c as unknown as never, {});
       }
     }

@@ -12,10 +12,11 @@
 // (a real product break stays red), and never for foreign
 // absolute paths outside the tree.
 import { describe, expect, it } from 'vitest'
+import type { PathLike } from 'node:fs'
 import { parseWalkerFlags, pinVitestSeat, runPreflight, tmpPreflight, unsetLaneEnvs, walkerNamedPaths, walkerVerdict } from '../../../../scripts/run-walker-safe.mjs'
 
 const ROOT = '/repo'
-const exists = (p: string) => p === '/repo/packages/models/krea-2/lib/index.js' ||
+const exists = (p: PathLike): boolean => p === '/repo/packages/models/krea-2/lib/index.js' ||
   p === '/repo/packages/image/image-gen/lib/index.js'
 
 describe('walkerVerdict (run-walker-safe.mjs)', () => {

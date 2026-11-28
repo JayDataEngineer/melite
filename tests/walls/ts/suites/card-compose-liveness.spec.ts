@@ -67,7 +67,7 @@ import { ESTATE_NAMING_ROW } from "../../../../packages/web-kit/contracts/src/fo
 // tenant reds the dispatch assert until it teaches this judge.
 import { serializeLayerA, hydrateLayerA } from "../../../../packages/video/h3-timeline/src/ui/studio/docHydrate.ts";
 import { deriveWindowFamily } from "@melite/contracts/timelineContract";
-import { benchDraftIdOf } from "@melite/contracts/benchStage";
+import { benchDraftIdOf, type DraftId } from "@melite/contracts/benchStage";
 import { deriveFamilyLane, reseatDeadKeys, type FamilyLaw } from "@melite/contracts/familyLane";
 // SD-3's door rig (the commit seam OUTSIDE studio commits): the real
 // drafts/bench plugin over real DSH storage rows, and the remoteError
@@ -75,7 +75,9 @@ import { deriveFamilyLane, reseatDeadKeys, type FamilyLaw } from "@melite/contra
 // own law). The type-only BenchDoc import carries the cordis Context
 // augmentation that names `draftsRemote`/`benchRemote`.
 import draftsPlugin from "@melite/estate-drafts";
-import type { BenchDoc } from "../../../../packages/estate/drafts/src/remote.ts";
+import type { BenchDoc, JsonValue } from "../../../../packages/estate/drafts/src/remote.ts";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import Storage from "@deepseek-ai/dsh-storage";
 import {
@@ -93,7 +95,7 @@ const FACTS_PATH = join(
   "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
 );
 
-type NodeShape = { class_type?: unknown };
+type NodeShape = { class_type?: unknown; inputs?: Record<string, unknown> };
 type Graph = Record<string, NodeShape>;
 
 // THE RECORDED ENGINE BUILD for the value judge (read, never edited;
@@ -210,8 +212,8 @@ export function unknownNodeClasses(graph: Graph, vocabulary: ReadonlySet<string>
  *  instead of re-grounding per dial. An optional `seed` starts the
  *  doc from a caller-stated shape (the per-dial probe's bag arms). */
 function composeProbedRow(
-  def: { compose: (doc: unknown, model: unknown, g: GraphBuilder, seat: string) => void; schema: (doc: unknown) => unknown },
-  model: unknown,
+  def: Pick<CardDefinition, "compose" | "schema">,
+  model: ModelFacts,
   seed: Record<string, unknown> = {},
 ): { graph: Graph | null; error: string; doc: Record<string, unknown> } {
   const doc: Record<string, unknown> = { ...seed };
@@ -330,11 +332,7 @@ function declaredEnumOptions(node: DialNode): unknown[] | null {
 }
 
 /** Every dial one card declares, both planes, in declaration order. */
-function enumDialsOf(def: {
-  schemaCarrier?: { dict?: Record<string, DialNode> };
-  schema: ((v: unknown) => unknown) & { dict?: Record<string, DialNode> };
-  mods?: ReadonlyArray<{ kind?: string; param_key?: string; entry?: string; options?: unknown; fields?: ReadonlyArray<Record<string, unknown>> }>;
-}): EnumDial[] {
+function enumDialsOf(def: Pick<CardDefinition, "schemaCarrier" | "schema" | "mods">): EnumDial[] {
   const dials: EnumDial[] = [];
   const carrier = def.schemaCarrier ?? def.schema;
   for (const [name, node] of Object.entries(carrier?.dict ?? {})) {
@@ -400,8 +398,8 @@ function stanzaSeatFill(fields: ReadonlyArray<Record<string, unknown>>, name: st
  *  named param is one of the kind's declared fields (a stanza
  *  refusal's names are entry seats, not doc keys). */
 function composeProbedBagDial(
-  def: { compose: (doc: unknown, model: unknown, g: GraphBuilder, seat: string) => void; schema: (doc: unknown) => unknown },
-  model: unknown,
+  def: Pick<CardDefinition, "compose" | "schema">,
+  model: ModelFacts,
   dial: Extract<EnumDial, { plane: "bag" }>,
   option: unknown,
   base: Record<string, unknown>,
@@ -521,7 +519,7 @@ export function scanGraphKeys(
     const declared = roster.get(ct) ?? null;
     if (seen !== null) seen.add(ct);
     if (declared === null) continue; // the judge-gap seat: the caller owns the voice
-    const inputs = (node as { inputs?: Record<string, unknown> }).inputs ?? {};
+    const inputs = node.inputs ?? {};
     for (const key of Object.keys(inputs)) {
       if (declared.has(key)) continue;
       const prefix = key.split(".")[0] ?? key;
@@ -1033,7 +1031,7 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
       // unserved spelling riding the graph exactly as a card typo
       // would (the legal key absent, the misspelling present).
       const [nid, node] = Object.entries(composed)[0]!;
-      const inputs = (node.inputs ?? {}) as Record<string, unknown>;
+      const inputs = node.inputs ?? {};
       const legal = Object.keys(inputs)[0];
       assert.ok(typeof legal === "string" && legal.length > 1, `${family}: the probed node carries no input key to typo`);
       const typo = legal.slice(0, -1);
@@ -1041,7 +1039,7 @@ describe("every facts row composes its card alive (the dead-card wall)", () => {
         ...composed,
         [nid!]: { ...node, inputs: { ...inputs, [typo]: inputs[legal!] } },
       };
-      delete (typoGraph[nid!]!.inputs as Record<string, unknown>)[legal!];
+      delete typoGraph[nid!]!.inputs![legal!];
       const findings = scanGraphKeys(typoGraph, roster, null, family);
       assert.ok(
         findings.length === 1 && findings[0]!.includes(`.${typo} `),
@@ -1809,7 +1807,7 @@ describe("every studio tenant's persisted key set composes on its own derived la
         staged,
         `${tenant}: WRITES_EXEMPT seat '${entry.key}' (${entry.why}) — the cited serialize round-trip does NOT fire: the staged value did not survive the emit`,
       );
-      const back = hydrateLayerA(saved as never) as Record<string, unknown>;
+      const back: Record<string, unknown> = Object.fromEntries(Object.entries(hydrateLayerA(saved as never)));
       assert.deepEqual(
         back[entry.key],
         staged,
@@ -1842,10 +1840,10 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
    *  door's answer (rev + minted stage id). */
   async function seedStage(
     ctx: Context, session: string, card: string,
-  ): Promise<{ draftId: string; stageId: string; rev: number }> {
+  ): Promise<{ draftId: DraftId; stageId: string; rev: number }> {
     await ctx.benchRemote.ensure({ session }, sig);
     const added = await ctx.benchRemote.addStage(session, { card, expect_rev: 0 }, sig);
-    return { draftId: "bench-" + session, stageId: String(added.stage), rev: added.rev };
+    return { draftId: benchDraftIdOf(session), stageId: String(added.stage), rev: added.rev };
   }
 
   async function failureOf(p: Promise<unknown>): Promise<Record<string, unknown> | null> {
@@ -1972,7 +1970,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
     // value-blind presence walk): a guided single-call doc derives
     // t4r, and since the 2026-11-15 chain hoist the sr_switch stamp is
     // a LAWFUL key there — the engine mounts the chain it arms.
-    const t4rBody: Record<string, unknown> = {
+    const t4rBody: Record<string, JsonValue> = {
       model: "h3",
       variant: "timeline",
       quant: "int8",
@@ -1990,7 +1988,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
     assert.ok(Array.isArray(params["calls"]), "the landed body's own plane rides");
     // THE PRESENCE, NOT THE SHAPE: the identical body MINUS the stamp
     // still lands — the door judged nothing that would split it.
-    const clean = { ...t4rBody };
+    const clean: Record<string, JsonValue> = { ...t4rBody };
     delete clean["sr_switch"];
     const rev2 = (await live.draftsRemote.get(draftId, sig)) as { rev?: number };
     const ok = await live.draftsRemote.remoteExportPatch(draftId, stageId, { params: clean }, rev2.rev ?? rev + 1, sig);
@@ -2030,7 +2028,7 @@ describe("presence-at-door: the commit seam outside studio commits refuses an il
     );
     assert.equal(refused, null,
       "the agent's door LANDS the authored finish doc exactly as the GUI's door does — one law, both transports: " + JSON.stringify(refused));
-    const after = await live.draftsRemote.get(benchDraftIdOf("sd3t4rb") as never, sig);
+    const after = await live.draftsRemote.get(benchDraftIdOf("sd3t4rb"), sig);
     assert.equal(stageParamsOf(after, String(seeded.stage))["sr_switch"], true,
       "the agent's land stores the same stamped row the GUI's door stores");
   });

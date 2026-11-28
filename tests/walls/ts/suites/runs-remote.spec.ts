@@ -37,6 +37,8 @@ import queuePlugin, {
 // its defining file; type-only, erased at runtime.
 import type { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
 import { notifyRunChanged } from "../../../../packages/harness/estate-queue/src/runsChange.ts";
+import { newRunId } from "../../../../packages/harness/estate-queue/src/queueCore.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 import { runsRemotePlugin, RunsRemoteService } from '@melite/estate-runs';
 import type { RunStartDoc } from '@melite/estate-runs';
 
@@ -294,7 +296,7 @@ test("W4 THE SETTLE WRITE-BACK (the stuck-row cure): the seat itself flips the d
   // poll the DRAFT doc until the mirror lands (or the wall reds)
   let row: Record<string, unknown> = {};
   for (let i = 0; i < 100; i++) {
-    const doc = await ctx.draftsRemote.get("d_ok", sig) as Record<string, unknown>;
+    const doc = await ctx.draftsRemote.get(draftIdOf("d_ok"), sig) as Record<string, unknown>;
     row = ((doc["stages"] as Array<Record<string, unknown>>).find((s) => s["id"] === "s_0"))!;
     if (row["runStatus"] === "failed") break;
     await new Promise((r) => setTimeout(r, 20));
@@ -1015,7 +1017,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
       { flow: "fit-seat", test: true, draft_id: "d_ok", bone: "hand_r",
         body: bodyFile, prop: propFile },
       sig,
-    )) as Record<string, unknown>;
+    ));
     assert.match(String(fitStarted["run_id"]), /^run-/);
   } finally {
     rmSync(bodyFile, { force: true });
@@ -1030,7 +1032,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   const started = (await runs.start(
     { flow: "anny-hmr-estimator", test: true, draft_id: "d_ok",
       photo: estimatePhoto, person_index: 0 }, sig,
-  )) as Record<string, unknown>;
+  ));
   assert.match(String(started["run_id"]), /^run-/);
   } finally {
     rmSync(estimatePhoto, { force: true });
@@ -1053,7 +1055,7 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   try {
     const r = (await runs.start(
       { flow: "image-upscale", test: true, draft_id: "d_ok" }, sig,
-    )) as Record<string, unknown>;
+    ));
     startAnswer = { queued: true, message: String(r["run_id"] ?? "") };
   } catch (e) {
     const re = remoteErrorOf(e);
@@ -1242,7 +1244,7 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
 // WIRED bench (the only bench shape that takes the composed-run
 // path), through the real start door, and the composition must land.
 test("the whole-bench run composes every card stage (the row's own coordinates never ride a card)", { timeout: 60_000 }, async () => {
-  const { ctx, runs, fiber } = await boot();
+  const { ctx, runs, fiber, root } = await boot();
   const sig = new AbortController().signal;
   // a bench with a cross-stage wire: s_1 takes s_0's image. The
   // wire is what routes the door through composeBenchStages — the
@@ -1367,7 +1369,7 @@ test("every coordinate the bench run injects is an ENVELOPE key (the same law, w
   // `model` is a DOOR key (it selects the family) and `params` is the
   // container the stanza law unwraps — neither is a knob that rides.
   const knobs = { prompt: "a red boat" };
-  const body = { ...knobs, ...Object.fromEntries(
+  const body: Record<string, unknown> = { ...knobs, ...Object.fromEntries(
     WIRE_STAGE_KEYS.map((k) => [k, k === "card" ? "image-gen" : k === "id" ? "s_0" : undefined]),
   ) };
   const lifted = Object.fromEntries(Object.entries(body)
@@ -1627,10 +1629,11 @@ test("the runtime service's onRunChange seats the seam (the service wiring, not 
   try {
     const seen: string[] = [];
     const off = runs.onRunChange((runId) => { seen.push(runId); });
-    notifyRunChanged("run-z");
+    const probe = newRunId();
+    notifyRunChanged(probe);
     off();
-    notifyRunChanged("run-z");
-    assert.deepEqual(seen, ["run-z"]);
+    notifyRunChanged(probe);
+    assert.deepEqual(seen, [probe]);
   } finally {
     await fiber.dispose();
   }

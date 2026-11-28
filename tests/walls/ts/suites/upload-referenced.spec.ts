@@ -31,7 +31,7 @@ import "../../../helpers/boot-models.ts";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
-import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
@@ -127,9 +127,9 @@ describe("resolveLinkedInput root-relative rewrite", () => {
   });
 
   it("absolute URLs, spells, and estate paths ride verbatim", () => {
-    assert.equal(resolveLinkedInput("http://h:1/v1/assets/runs/r1/o.png"), "http://h:1/v1/assets/runs/r1/o.png");
-    assert.equal(resolveLinkedInput("$image"), "$image");
-    assert.equal(resolveLinkedInput("/mnt/estate/in.png"), "/mnt/estate/in.png");
+    assert.equal(resolveLinkedInput("http://h:1/v1/assets/runs/r1/o.png", "/tmp/linked-state"), "http://h:1/v1/assets/runs/r1/o.png");
+    assert.equal(resolveLinkedInput("$image", "/tmp/linked-state"), "$image");
+    assert.equal(resolveLinkedInput("/mnt/estate/in.png", "/tmp/linked-state"), "/mnt/estate/in.png");
   });
 
   it("a rewritten path escaping the runs root refuses loud", () => {

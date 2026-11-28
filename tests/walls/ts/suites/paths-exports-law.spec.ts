@@ -19,7 +19,7 @@
 //    wildcard; every concrete row it can hit (., ./engines, ./types,
 //    ./vocabulary) IS declared in the package's exports map.
 import { describe, expect, it } from 'vitest'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, type Dirent } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..', '..', '..', '..')
@@ -36,7 +36,7 @@ const PINNED: Record<string, string> = {
 function workspaceExports(): Map<string, Record<string, unknown>> {
   const out = new Map<string, Record<string, unknown>>()
   const walk = (dir: string): void => {
-    let ents: Array<{ name: string, isDirectory: boolean }>
+    let ents: Dirent[]
     try {
       ents = readdirSync(dir, { withFileTypes: true })
     } catch {
@@ -83,7 +83,7 @@ function aliasKeys(): Map<string, number> {
     }
   }
   const walk = (f: string): void => {
-    let ents: Array<{ name: string, isDirectory: boolean }>
+    let ents: Dirent[]
     try {
       ents = readdirSync(f, { withFileTypes: true })
     } catch {

@@ -75,7 +75,8 @@ import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
 } from "@deepseek-ai/dsh-storage-domain";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
-import { DraftsRemoteService, BenchRemoteService, installBenchChangeSeam } from "../../../../packages/estate/drafts/src/remote.ts";
+import { DraftsRemoteService, BenchRemoteService, installBenchChangeSeam, type JsonValue } from "../../../../packages/estate/drafts/src/remote.ts";
+import { benchDraftIdOf, type DraftId } from "@melite/contracts/benchStage";
 import { openDraftsDomain, DraftsDomainSeatService } from "../../../../packages/estate/drafts/src/store.ts";
 import { benchBlockOf } from "../../../../packages/estate/drafts/src/bench.ts";
 import type { DraftsDomainSpec } from "../../../../packages/estate/drafts/src/spec.js";
@@ -174,14 +175,22 @@ function seatsOf(family: string): Seat[] {
   return out;
 }
 
+/** The body as the wire carries it: the bench door takes JsonValue, the
+ *  patch builder returns what the form-spec arm serves (unknown); the
+ *  JSON round-trip IS the serialization the door performs — the parse
+ *  edge, where the cast is the construction door. */
+function wireJson(body: unknown): JsonValue {
+  return JSON.parse(JSON.stringify(body)) as JsonValue;
+}
+
 interface SeededDoc {
-  docId: string;
+  docId: DraftId;
   session: string;
   rev: number;
   burned: string | null;
 }
 
-async function revOf(docId: string): Promise<number> {
+async function revOf(docId: DraftId): Promise<number> {
   const row = await drafts.table("docs").get(docId);
   return benchBlockOf((row?.doc ?? {}) as Record<string, unknown>).rev;
 }
@@ -223,7 +232,7 @@ async function classifySeat(
   const key = `${card}\u0000${family}\u0000${seat.variantId}\u0000${seat.quant}`;
   const cached = seatClasses.get(key);
   if (cached !== undefined) return cached;
-  const docId = `bench-${tag}`;
+  const docId = benchDraftIdOf(tag);
   const axis: Record<string, unknown> = { model: family, variant: seat.variantId };
   if (seat.quant !== "") axis["quant"] = seat.quant;
   await drafts.table("docs").put(docId, {
@@ -288,7 +297,7 @@ async function seedThroughDoor(
   card: string, family: string, seat: Seat, tag: string,
 ): Promise<SeededDoc> {
   const cls = await classifySeat(card, family, seat, `vs-c${tag}`);
-  const docId = `bench-${tag}`;
+  const docId = benchDraftIdOf(tag);
   const axis: Record<string, unknown> = { model: family, variant: seat.variantId };
   if (seat.quant !== "") axis["quant"] = seat.quant;
   await drafts.table("docs").put(docId, {
@@ -457,7 +466,7 @@ describe("THE VARIANT-SWITCH GESTURE — every card, every transition, both door
       const seeded = await seedThroughDoor(t.card, t.family, t.from, `vs-b-${n++}`);
       if (seeded.burned !== null) continue;
       try {
-        await bench.patch(seeded.session, { stage: "s_0", params: { ...t.pick }, expect_rev: seeded.rev }, sig);
+        await bench.patch(seeded.session, { stage: "s_0", params: wireJson(t.pick), expect_rev: seeded.rev }, sig);
       } catch (err) {
         bad.push(`${t.card} / ${t.family} / ${t.from.variantId}${t.from.quant} → ${t.to.variantId}${t.to.quant}: ${err instanceof Error ? err.message : String(err)}`);
       }

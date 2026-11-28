@@ -177,7 +177,8 @@ describe.skipIf(DELEGATED)("the boot legs (the engine process's own truths)", ()
       return execFileSync("systemctl", ["--user", "show", "-p", "MainPID", "--value", ENGINE_UNIT],
         { encoding: "utf8" }).trim();
     } catch {
-      const uid = process.getuid();
+      const uid = process.getuid?.();
+      if (uid === undefined) throw new Error("process.getuid is absent on this platform — the user bus cannot be addressed");
       const out = execFileSync("busctl", ["--user", "call", "org.freedesktop.systemd1",
         `/org/freedesktop/systemd1/unit/${ENGINE_UNIT.replaceAll(".", "_2e").replaceAll("-", "_2d")}`,
         "org.freedesktop.DBus.Properties", "GetAll", "s", "org.freedesktop.systemd1.Service"], {
@@ -209,7 +210,8 @@ describe.skipIf(DELEGATED)("the boot legs (the engine process's own truths)", ()
       // so the fragment's WorkingDirectory IS the booted cwd; the
       // /proc read stays first because it also catches a chdir'd
       // process on boxes that can see it.
-      const uid = process.getuid();
+      const uid = process.getuid?.();
+      if (uid === undefined) throw new Error("process.getuid is absent on this platform — the user bus cannot be addressed");
       const unit = execFileSync("busctl", ["--user", "call", "org.freedesktop.systemd1",
         `/org/freedesktop/systemd1/unit/${ENGINE_UNIT.replaceAll(".", "_2e").replaceAll("-", "_2d")}`,
         "org.freedesktop.DBus.Properties", "GetAll", "s", "org.freedesktop.systemd1.Unit"], {

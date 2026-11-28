@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { EngineParamValue } from "../../../../packages/engines/contract/src/types.ts";
 import { AUTHORSHIP_KEY, AUTHORSHIP_LEGACY_KEY, LOAD_CARRY_KEYS, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, normalizeBenchStage } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 import { TERMINAL_RUN_STATUSES, RUN_STATUS_WORDS } from "../../../../packages/web/melite-run-wire/src/index.ts";
 import { RUN_STATUSES as ESTATE_RUN_STATUSES } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
@@ -81,10 +82,10 @@ describe("the boundary laws", () => {
     } as never;
     const { executeStages } = mcpExecutor(tools, "mcp:unity");
     const runDir = mkdtempSync(join(tmpdir(), "mcp-args-"));
-    const row = (args: unknown) => [{ stageId: "s_0", outputs: {}, params: { tool: "scene_info", args } }];
+    const row = (args: EngineParamValue) => [{ stageId: "s_0", outputs: {}, params: { tool: "scene_info", args } }];
     const opts = { report: () => {}, shouldStop: () => false };
-    await executeStages(row({ limit: 8 }), runDir, [], opts as never);
-    await executeStages(row(JSON.stringify({ limit: 8 })), runDir, [], opts as never);
+    await executeStages(row({ limit: 8 }), runDir, {}, opts as never);
+    await executeStages(row(JSON.stringify({ limit: 8 })), runDir, {}, opts as never);
     expect(seen).toHaveLength(2);
     expect(seen[1]).toEqual(seen[0]);
     expect(seen[0]).toEqual({ limit: 8 });
@@ -94,13 +95,13 @@ describe("the boundary laws", () => {
     // `if (text === "") return { garbage_injected: true }` composed
     // poison onto the wire and 7/7 stayed green). The assertion is on
     // the COMPOSED CALL, not on the fact that a promise settled.
-    await executeStages(row(""), runDir, [], opts as never);
+    await executeStages(row(""), runDir, {}, opts as never);
     expect(seen).toHaveLength(3);
     expect(seen[2]).toEqual({});
-    await expect(executeStages(row("{nope"), runDir, [], opts as never))
+    await expect(executeStages(row("{nope"), runDir, {}, opts as never))
       .rejects.toThrow(/mcp 'args' is not valid JSON/);
     // a JSON array is not a JSON object — refused by name too
-    await expect(executeStages(row("[1,2]"), runDir, [], opts as never))
+    await expect(executeStages(row("[1,2]"), runDir, {}, opts as never))
       .rejects.toThrow(/mcp 'args' is not valid JSON/);
     rmSync(runDir, { recursive: true, force: true });
   });

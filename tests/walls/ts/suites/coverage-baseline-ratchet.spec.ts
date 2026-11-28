@@ -475,6 +475,13 @@ const REGEN_2026_10_23_NEW_FLOORS: Record<string, { statements: CoverageFloor, b
   '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.55, branches: 95.65, functions: 100, lines: 99.46 },
 }
 
+/** A null floor (a metric the file cannot measure) compares as zero —
+ *  the coercion the hand tables always ran on under `<=`, `>=` and
+ *  Math.min; stated once, so the typed arms compute the same numbers. */
+function floorN(floor: CoverageFloor): number {
+  return floor ?? 0;
+}
+
 const LANDED_DEBT2_OLD_FLOORS: Record<string, { statements: CoverageFloor, branches: CoverageFloor, functions: CoverageFloor, lines: CoverageFloor }> = {
     '**/packages/engines/comfyui-cordis/src/comfyui-vram.ts': { statements: 100, branches: 92.85, functions: 100, lines: 100 },
     '**/packages/models/h3/src/chainEdit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -2438,10 +2445,10 @@ const ARGUED_FLOOR_DROPS: Record<string, {
     // argued-drops law refuses to > from — the entry excuses exactly
     // the metrics that dropped.
     to: {
-      statements: Math.min(LANDED_DEBT2_NEW_FLOORS[key]!.statements, LANDED_DEBT2_OLD_FLOORS[key]!.statements),
-      branches: Math.min(LANDED_DEBT2_NEW_FLOORS[key]!.branches, LANDED_DEBT2_OLD_FLOORS[key]!.branches),
-      functions: Math.min(LANDED_DEBT2_NEW_FLOORS[key]!.functions, LANDED_DEBT2_OLD_FLOORS[key]!.functions),
-      lines: Math.min(LANDED_DEBT2_NEW_FLOORS[key]!.lines, LANDED_DEBT2_OLD_FLOORS[key]!.lines),
+      statements: Math.min(floorN(LANDED_DEBT2_NEW_FLOORS[key]!.statements), floorN(LANDED_DEBT2_OLD_FLOORS[key]!.statements)),
+      branches: Math.min(floorN(LANDED_DEBT2_NEW_FLOORS[key]!.branches), floorN(LANDED_DEBT2_OLD_FLOORS[key]!.branches)),
+      functions: Math.min(floorN(LANDED_DEBT2_NEW_FLOORS[key]!.functions), floorN(LANDED_DEBT2_OLD_FLOORS[key]!.functions)),
+      lines: Math.min(floorN(LANDED_DEBT2_NEW_FLOORS[key]!.lines), floorN(LANDED_DEBT2_OLD_FLOORS[key]!.lines)),
     },
     roadmapHeading: "The landed-debt floor regeneration, round two — 533 rows re-pinned at the K=1 mint over the stable A/C faces (2026-10-30)",
     reviewBy: "2026-11-30",
@@ -2581,7 +2588,7 @@ const ARGUED_FLOOR_DROPS: Record<string, {
 function includeGlobFiles(): string[] {
   const out: string[] = [];
   const walk = (rel: string): void => {
-    let entries: ReturnType<typeof readdirSync<{ withFileTypes: true }>>;
+    let entries: Dirent[];
     try {
       entries = readdirSync(join(ROOT, rel), { withFileTypes: true });
     } catch {
@@ -2745,7 +2752,7 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
         const argued = ARGUED_FLOOR_DROPS[key];
         if (argued !== undefined
           && was[metric] === argued.from[metric]
-          && now >= argued.to[metric]) continue;
+          && now >= floorN(argued.to[metric])) continue;
         expect(
           deleted,
           `${key} ${metric} moved down from ${was[metric]} to ${now}, and the landing deleted ` +
@@ -2779,12 +2786,12 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
         `${key}'s argued drop expired (reviewBy ${entry.reviewBy} < ${today}) — ratchet the floor back or re-argue with fresh evidence`).toBe(true);
       expect(entry.reason.length, `${key}'s reason carries the evidence`).toBeGreaterThan(20);
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
-        expect(entry.to[metric] <= entry.from[metric],
+        expect(floorN(entry.to[metric]) <= floorN(entry.from[metric]),
           `${key} ${metric}: an argued DROP cannot have to > from`).toBe(true);
       }
       if (row !== undefined) {
         const restored = (["statements", "branches", "functions", "lines"] as const)
-          .every((m) => (row as Record<string, number>)[m] >= entry.from[m]);
+          .every((m) => (row as Record<string, number>)[m] >= floorN(entry.from[m]));
         expect(restored,
           `${key} reached the argued 'from' face again — the ratchet-back landed; remove the ARGUED_FLOOR_DROPS entry in the same commit`).toBe(false);
       }
@@ -2816,7 +2823,7 @@ function assert(condition: boolean, message: string): void {
 }
 
 import { execFileSync } from "node:child_process";
-import { readdirSync } from "node:fs";
+import { readdirSync, type Dirent } from "node:fs";
 import { emptyTableVerdict } from "../../../../scripts/coverage-rows-tripwire.mjs";
 
 // THE COVERAGE EMPTY-TABLE TRIPWIRE (journey E5, 2026-10-17): a
@@ -2944,12 +2951,12 @@ describe("THE UNSEATED OVERLAY (two seat faces, one gate — the 2026-11-09 marg
         `${key}'s overlay-argued fence expired (reviewBy ${entry.reviewBy} < ${today}) — lift the fence or re-argue with fresh evidence`).toBe(true);
       expect(entry.reason.length, `${key}'s reason carries the evidence`).toBeGreaterThan(20);
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
-        expect(entry.to[metric] <= entry.from[metric],
+        expect(floorN(entry.to[metric]) <= floorN(entry.from[metric]),
           `${key} ${metric}: an argued fence cannot have to > from`).toBe(true);
       }
       if (row !== undefined) {
         const lifted = (["statements", "branches", "functions", "lines"] as const)
-          .every((m) => (row as Record<string, number>)[m] >= entry.from[m]);
+          .every((m) => (row as Record<string, number>)[m] >= floorN(entry.from[m]));
         expect(lifted,
           `${key} climbed back to its argued 'from' face — the fence lifted; remove the OVERLAY_ARGUED_DROPS entry in the same commit`).toBe(false);
       }
