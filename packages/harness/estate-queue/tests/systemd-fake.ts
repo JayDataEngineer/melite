@@ -9,9 +9,17 @@
 // under LC_ALL=C / TZ=UTC, the one form the census parses.
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+/** Where the fakes can execute at all. Windows' CreateProcess runs
+ *  neither a `#!/bin/sh` file nor a `.cmd` without a shell (Node's
+ *  EINVAL law for the latter), so every arm that CONSULTS the fakes
+ *  is gated on this and the pure-parse arms judge on every lane. The
+ *  ungated seat reds as a silent unknown: the CI windows leg failed
+ *  two settle arms on 2026-11-28 over a fake that never ran. */
+export const SYSTEMD_FAKE_SEATS: boolean = process.platform !== "win32";
 
 /** @param ms - the instant.
  *  @returns systemd's `Fri 2026-11-27 11:00:20 UTC` word for it. */
@@ -41,7 +49,7 @@ export function fakeSystemd(): FakeSystemd {
   };
   const seat = (startedMs: number | null): void => {
     write("systemctl", "cat <<'PROPS'\nNRestarts=0\nExecMainStatus=0\nExecMainCode=n/a\nExecMainStartTimestamp=" + (startedMs === null ? "" : systemdStamp(startedMs)) + "\nPROPS\nexit 0\n");
-    process.env.PATH = dir + ":" + realPath;
+    process.env.PATH = dir + delimiter + realPath;
   };
   write("journalctl", "exit 0\n");
   seat(null);

@@ -287,6 +287,15 @@ describe("submitPrompt (the receipt law)", () => {
     await expect(submitPrompt(fakeClient({ queuePrompt: async () => { throw slow; } }), { n: {} }))
       .rejects.toThrow(/^fetch failed$/);
   });
+  it("a dead engine whose socket error carries no errno code still gets the dead-engine voice — no code is invented beside it", async () => {
+    // a kernel/socket layer that spells the refusal in prose only: the
+    // classifier reads the text, and the voice carries no (ERRNO)
+    const dead = new TypeError("fetch failed", { cause: new Error("connect ECONNREFUSED 127.0.0.1:8188") });
+    const caught = await submitPrompt(fakeClient({ queuePrompt: async () => { throw dead; } }), { n: {} })
+      .then(() => null, (e: unknown) => e as Error);
+    expect(caught).toBeInstanceOf(ComfyError);
+    expect(caught?.message).toMatch(/^engine unreachable at the press — the engine process is down/);
+  });
   it("THE SILENT-TRUNCATION REFUSAL (the red-box hunt, 2026-10-08): a 200 answer carrying node_errors REFUSES LOUD — the node, its message, and the outputs that would have silently vanished — never a success with half the artifacts", async () => {
     const dropped = {
       queuePrompt: async () => ({
@@ -427,6 +436,39 @@ describe("waitTerminal (verdict order + the loop)", () => {
     const c2 = fakeClient();
     await expect(waitTerminal(c2, "p-1", Date.now() + 5000, () => false))
       .rejects.toThrow("plain string");
+  });
+  it("a stranger read error carries undici's reason into the row — the errno on .cause, else the cause's message (B4b: never the bare `fetch failed`)", async () => {
+    // neither reason is a dead-engine code: the live-signal law holds
+    // (the loop neither counts a down streak nor names the unit), and
+    // the row still says more than `fetch failed`
+    wireDeath = new TypeError("fetch failed", {
+      cause: Object.assign(new Error("Connect Timeout Error"), { code: "UND_ERR_CONNECT_TIMEOUT" }),
+    });
+    await expect(waitTerminal(fakeClient(), "p-1", Date.now() + 5000, () => false))
+      .rejects.toThrow(/^fetch failed \(UND_ERR_CONNECT_TIMEOUT\)$/);
+    wireDeath = new TypeError("fetch failed", { cause: new Error("socket hang up") });
+    await expect(waitTerminal(fakeClient(), "p-1", Date.now() + 5000, () => false))
+      .rejects.toThrow(/^fetch failed \(socket hang up\)$/);
+  });
+  it("a queue of strange shape holds no prompt — rows without a prompt array and a missing pending list never throw, never claim", async () => {
+    // the membership read judges what is there: a row that carries no
+    // prompt array names no id, and an absent list is an empty one
+    const queueOf = (body: () => Record<string, unknown>): Client => fakeClient({
+      fetchApi: (route: string): Promise<{ ok: boolean; json: () => Promise<unknown> }> =>
+        Promise.resolve({
+          ok: true,
+          json: async () => (route.startsWith("/queue") ? body() : historyBody ?? {}),
+        }),
+    });
+    const noPendingList = queueOf(() => ({ queue_running: [{ number: 1 }, "junk", { prompt: "not-an-array" }] }));
+    await expect(waitTerminal(noPendingList, "p-1", Date.now() + 5000, () => false)).resolves.toBeTruthy();
+    // a pending row that DOES carry the id keeps the prompt (the loop
+    // turns) until the queue lets it go — the absent running list
+    // never throws on the first read
+    let queueReads = 0;
+    const noRunningList = queueOf(() => ({ queue_pending: ++queueReads === 1 ? [{ prompt: ["x", "p-1"] }] : [] }));
+    await expect(waitTerminal(noRunningList, "p-1", Date.now() + 5000, () => false)).resolves.toBeTruthy();
+    expect(queueReads).toBe(2);
   });
   it("not-terminal-yet loops until the verdict lands (queue keeps the prompt, verdict goes pending once)", async () => {
     let calls = 0;

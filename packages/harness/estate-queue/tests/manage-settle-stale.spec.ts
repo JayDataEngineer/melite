@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, utimesSync } from "node:fs";
-import { fakeSystemd } from "./systemd-fake.ts";
+import { fakeSystemd, SYSTEMD_FAKE_SEATS } from "./systemd-fake.ts";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
@@ -149,7 +149,7 @@ describe("the settle_stale action (tts NEW-2: pre-rebuild claims retire by opera
     }
   });
 
-  it("the unit's own start ranks over a stale receipt (S1): a sidecar older than the running engine settles, one younger than it stays", async () => {
+  it.skipIf(!SYSTEMD_FAKE_SEATS)("the unit's own start ranks over a stale receipt (S1): a sidecar older than the running engine settles, one younger than it stays", async () => {
     root = mkdtempSync(join(tmpdir(), "settle-unit-boot-"));
     try {
       const now = Date.now();
@@ -176,7 +176,7 @@ describe("the settle_stale action (tts NEW-2: pre-rebuild claims retire by opera
     }
   });
 
-  it("no receipt at all, systemd answering: the unit's start is the boot the judge lacked", async () => {
+  it.skipIf(!SYSTEMD_FAKE_SEATS)("no receipt at all, systemd answering: the unit's start is the boot the judge lacked", async () => {
     root = mkdtempSync(join(tmpdir(), "settle-unit-only-"));
     try {
       const now = Date.now();

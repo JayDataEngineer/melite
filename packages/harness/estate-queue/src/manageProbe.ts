@@ -355,6 +355,20 @@ export function systemdStampIso(word: string | undefined): string | undefined {
 const DEGRADE_RESTART_FLOOR = 2;
 const KILL_SIGNAL = 9;
 
+/** An exec's own word for its failure: the stderr it wrote, else its
+ *  message. The promise form of execFile (util.promisify.custom) sets
+ *  `stdout`/`stderr` on its rejection too, and a spawn ENOENT carries
+ *  an EMPTY stderr beside a message that names the missing binary —
+ *  an empty word is no reason (the unknown-census note read `cannot
+ *  answer on this lane:  (XDG_RUNTIME_DIR=unset)` over a lane with no
+ *  systemctl; the never-ran census arm found it, 2026-11-28).
+ *  @param reason - the exec's rejection.
+ *  @returns the reason's own text, trimmed, at most 120 characters. */
+function execFailureText(reason: unknown): string {
+  const err = reason as { message?: unknown; stderr: string };
+  return (err.stderr.trim() !== "" ? err.stderr : String(err.message)).trim().slice(0, 120);
+}
+
 /** @param mctx - the manage context (unit + signal).
  *  @returns the unit census; `known:false` + note when systemd or the
  *  journal cannot answer (BYO lane, bus-less box) — never invented
@@ -385,9 +399,7 @@ export async function engineUnitCensus(mctx: ManageCtx): Promise<EngineUnitCensu
     }
   }
   if (props["NRestarts"] === undefined && props["ExecMainCode"] === undefined) {
-    const why = propsResult.status === "rejected"
-      ? String((propsResult.reason as { message?: string; stderr?: string }).stderr ?? (propsResult.reason as Error).message).trim().slice(0, 120)
-      : "systemd answered nothing parseable";
+    const why = propsResult.status === "rejected" ? execFailureText(propsResult.reason) : "systemd answered nothing parseable";
     return { known: false, unit, verdict: "unknown", note: "the unit census cannot answer on this lane: " + why + " (XDG_RUNTIME_DIR=" + String(env["XDG_RUNTIME_DIR"] ?? "unset") + ")" };
   }
   let oomKills: number | undefined;

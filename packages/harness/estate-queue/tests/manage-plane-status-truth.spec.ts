@@ -14,8 +14,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
-import { countOomLines, systemdStampIso } from "../src/manageProbe.ts";
-import { systemdStamp } from "./systemd-fake.ts";
+import { censusEnv, countOomLines, systemdStampIso } from "../src/manageProbe.ts";
+import { SYSTEMD_FAKE_SEATS, systemdStamp } from "./systemd-fake.ts";
 
 const realPath = process.env.PATH ?? "";
 const realFetch = globalThis.fetch;
@@ -103,11 +103,12 @@ const manage = (doc: unknown, ctx?: ManageCtx): Promise<[number, { ok: boolean; 
     [number, { ok: boolean; detail: string; action: string; state?: string; data?: unknown }]
   >;
 
-// No systemd/journal on Windows: the census consult (systemctl) and
-// the journal tails (journalctl) ride #!/bin/sh fake bins on PATH
-// that cannot execute there — every arm consulting them is gated on
-// this, while the pure-parse arms judge on every lane.
-const WIN_NO_SYSTEMD = process.platform === "win32";
+// No systemd/journal where the #!/bin/sh fakes cannot execute: the
+// census consult (systemctl) and the journal tails (journalctl)
+// ride fake bins on PATH — every arm consulting them is gated on
+// this (the seat is the fake's own, one home), while the pure-parse
+// arms judge on every lane.
+const WIN_NO_SYSTEMD = !SYSTEMD_FAKE_SEATS;
 
 interface StatusData {
   state: string;
@@ -288,6 +289,39 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
     }
   });
 
+  it.skipIf(WIN_NO_SYSTEMD)("a census whose systemctl never ran names the spawn's own message and the unset runtime dir (S1)", async () => {
+    mkRoot();
+    // journalctl alone is seated and PATH carries nothing else: the
+    // systemctl exec rejects with ENOENT — an error with no stderr
+    // to quote, so the note speaks the spawn's own message
+    fakeBin({ journalctl: { out: "", code: 0 } });
+    process.env.PATH = BINS ?? realPath;
+    const savedXdg = process.env.XDG_RUNTIME_DIR;
+    const savedBus = process.env.DBUS_SESSION_BUS_ADDRESS;
+    const savedGetuid = process.getuid;
+    delete process.env.XDG_RUNTIME_DIR;
+    delete process.env.DBUS_SESSION_BUS_ADDRESS;
+    // a uid with no /run/user seat: the uid rule derives nothing, so
+    // the note's runtime-dir word is the honest `unset`
+    process.getuid = () => 4294967294;
+    try {
+      routeEngineUp();
+      const [code, env] = await manage({ action: "status" });
+      assert.equal(code, 200);
+      const data = env.data as unknown as StatusData;
+      assert.equal(data.engine_unit.known, false);
+      assert.equal(data.engine_unit.verdict, "unknown");
+      assert.equal(
+        String(data.engine_unit.note),
+        "the unit census cannot answer on this lane: spawn systemctl ENOENT (XDG_RUNTIME_DIR=unset)",
+      );
+    } finally {
+      if (savedXdg === undefined) delete process.env.XDG_RUNTIME_DIR; else process.env.XDG_RUNTIME_DIR = savedXdg;
+      if (savedBus === undefined) delete process.env.DBUS_SESSION_BUS_ADDRESS; else process.env.DBUS_SESSION_BUS_ADDRESS = savedBus;
+      process.getuid = savedGetuid;
+    }
+  });
+
   it("an unanswerable census is honest absence — the answer never invents a degradation", async () => {
     mkRoot();
     fakeBin({
@@ -401,6 +435,70 @@ describe("the status truth — the census consult (D3-02 / R-2)", () => {
 });
 
 // ── the census's unset words and silent journal (the unset-enum
+// THE UID RULE ITSELF (S1): the unit judge is pure — the process
+// env and getuid are its only inputs — so the arms state them
+// directly: what is kept, what is derived, and what is never
+// invented. These judge on every lane (a Windows leg has no getuid
+// at all, which is the no-uid arm by nature).
+describe("censusEnv — the user bus's seat (S1): the exec env the census rides", () => {
+  const realXdg = process.env.XDG_RUNTIME_DIR;
+  const realBus = process.env.DBUS_SESSION_BUS_ADDRESS;
+  const realGetuid = process.getuid;
+  // no /run/user/<uid> directory carries this uid
+  const NO_SEAT_UID = 4294967294;
+  const restore = (): void => {
+    if (realXdg === undefined) delete process.env.XDG_RUNTIME_DIR; else process.env.XDG_RUNTIME_DIR = realXdg;
+    if (realBus === undefined) delete process.env.DBUS_SESSION_BUS_ADDRESS; else process.env.DBUS_SESSION_BUS_ADDRESS = realBus;
+    process.getuid = realGetuid;
+  };
+  const scrub = (): void => {
+    delete process.env.XDG_RUNTIME_DIR;
+    delete process.env.DBUS_SESSION_BUS_ADDRESS;
+  };
+  afterEach(restore);
+
+  it("a runtime dir already on the env is kept; the locale pins ride regardless", () => {
+    process.env.XDG_RUNTIME_DIR = "/run/user/kept";
+    const env = censusEnv();
+    assert.equal(env["XDG_RUNTIME_DIR"], "/run/user/kept");
+    assert.equal(env["DBUS_SESSION_BUS_ADDRESS"], realBus, "a kept dir derives no bus");
+    assert.equal(env["LC_ALL"], "C");
+    assert.equal(env["TZ"], "UTC");
+  });
+
+  it("no runtime dir and a uid with no /run/user seat: nothing is derived, nothing invented", () => {
+    scrub();
+    process.getuid = () => NO_SEAT_UID;
+    const env = censusEnv();
+    assert.equal(env["XDG_RUNTIME_DIR"], undefined);
+    assert.equal(env["DBUS_SESSION_BUS_ADDRESS"], undefined);
+  });
+
+  it("no uid at all (a lane without getuid): the uid rule has nothing to derive from", () => {
+    scrub();
+    process.getuid = undefined;
+    const env = censusEnv();
+    assert.equal(env["XDG_RUNTIME_DIR"], undefined);
+    assert.equal(env["DBUS_SESSION_BUS_ADDRESS"], undefined);
+  });
+
+  const uidSeat = "/run/user/" + String(process.getuid?.());
+  it.skipIf(WIN_NO_SYSTEMD || !existsSync(uidSeat))("the uid rule seats the runtime dir and its bus where systemd's own seat exists", () => {
+    scrub();
+    const env = censusEnv();
+    assert.equal(env["XDG_RUNTIME_DIR"], uidSeat);
+    assert.equal(env["DBUS_SESSION_BUS_ADDRESS"], "unix:path=" + uidSeat + "/bus");
+  });
+
+  it.skipIf(WIN_NO_SYSTEMD || !existsSync(uidSeat))("a bus address already on the env is kept while the runtime dir is derived", () => {
+    delete process.env.XDG_RUNTIME_DIR;
+    process.env.DBUS_SESSION_BUS_ADDRESS = "unix:path=/tmp/kept-bus";
+    const env = censusEnv();
+    assert.equal(env["XDG_RUNTIME_DIR"], uidSeat);
+    assert.equal(env["DBUS_SESSION_BUS_ADDRESS"], "unix:path=/tmp/kept-bus");
+  });
+});
+
 // law's other half): a property systemd did not print stays ABSENT on
 // the row (no invented 0/0 pair, no invented restart count), and a
 // journal tail that cannot be read is NAMED — never silent oom

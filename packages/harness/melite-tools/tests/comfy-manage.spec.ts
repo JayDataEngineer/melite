@@ -1126,6 +1126,34 @@ describe('comfy_manage render — the engine truth rows (D3-02 / R-2)', () => {
     assert.match(truth, /resource: model\/family\/x · unknown · started not-a-date\n/)
   })
 
+  test('the age reads in the face\'s own words — seconds, minutes, hours, then days — and an item\'s cause is its code alone or its detail alone (S1)', () => {
+    const tool = comfyManage(stubEstate())
+    const at = (msAgo: number): string => new Date(Date.now() - msAgo).toISOString()
+    const codeOnly = { key: '["extension","melite-audio-nodes",null,null,null]', kind: 'extension', state: 'failed', errorCode: 'manager/refused' }
+    const detailOnly = { key: '["model","family","rig-any",null,null,null]', kind: 'model', state: 'blocked', detail: 'the family declares no fetchable row' }
+    const truth = text(tool, {
+      ok: true,
+      action: 'status',
+      detail: 'server up',
+      data: {
+        state: 'up',
+        resources: [
+          { ref: { kind: 'model', owner: 'family', id: 'just-settled' }, state: 'blocked', finished_at: at(45_000) },
+          { ref: { kind: 'model', owner: 'family', id: 'lunch-ago' }, state: 'failed', finished_at: at(30 * 60_000) },
+          { ref: { kind: 'model', owner: 'family', id: 'shift-ago' }, state: 'failed', started_at: at(5 * 3_600_000) },
+          { ref: { kind: 'extension', id: 'melite-audio-nodes' }, state: 'failed', items: [codeOnly] },
+          { ref: { kind: 'model', owner: 'family', id: 'rig-any' }, state: 'blocked', items: [detailOnly] },
+        ],
+        operations: [],
+      },
+    })
+    assert.match(truth, /resource: model\/family\/just-settled · blocked · settled \S+ \(4[3-7]s ago\)\n/, 'under two minutes reads in seconds')
+    assert.match(truth, /resource: model\/family\/lunch-ago · failed · settled \S+ \(30m ago\)\n/, 'under two hours reads in minutes')
+    assert.match(truth, /resource: model\/family\/shift-ago · failed · started \S+ \(5h ago\)\n/, 'under two days reads in hours')
+    assert.match(truth, /resource: extension\/melite-audio-nodes · failed — manager\/refused\n/, 'an item with a code alone speaks the code')
+    assert.match(truth, /resource: model\/family\/rig-any · blocked — the family declares no fetchable row\n/, 'an item with a detail alone speaks the detail')
+  })
+
   test('the logs render keeps the source stamp above the nested lines it unwraps', () => {
     const tool = comfyManage(stubEstate())
     const out = text(tool, {
