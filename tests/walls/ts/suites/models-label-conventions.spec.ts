@@ -76,7 +76,7 @@ function labelRowsOf(family: string): LabelRow[] {
   for (const v of d.variants) {
     rows.push({ family, where: `variant ${String(v.id)}`, label: String(v.label) });
     for (const c of v.cells) {
-      if (c.label !== undefined) rows.push({ family, where: `cell ${String(c.id)}`, label: String(c.label) });
+      if (c.label !== undefined) rows.push({ family, where: `cell ${c.quant}`, label: String(c.label) });
     }
   }
   return rows;
@@ -91,7 +91,7 @@ function declaredModIds(family: string): Set<string> {
   const ids = new Set<string>();
   const d = registryModel(family);
   for (const p of d.provisions ?? []) {
-    if (p.id !== undefined) ids.add(String(p.id));
+    ids.add(p.name);
   }
   const modsDir = join(REPO_ROOT, "packages", "models", family, "mods");
   if (existsSync(modsDir)) {

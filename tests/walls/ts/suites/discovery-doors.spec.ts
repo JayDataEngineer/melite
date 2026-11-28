@@ -42,6 +42,15 @@ import { owningAtom } from "../../../../packages/engines/comfyui-cordis/src/mode
 import { KREA_ROWS } from "../../../../packages/models/krea-2/mods/loras.ts";
 import { ZIMAGE_CONTROLNET_ROWS } from "../../../../packages/models/z-image/mods/controlnet.ts";
 import { ZIMAGE_IPADAPTER_ROWS } from "../../../../packages/models/z-image/mods/ip_adapter.ts";
+import type { FormSpecDoc, ModifierKind } from "../../../../packages/web-kit/contracts/src/formSpec.ts";
+
+/** The served mod kinds of a resolved form spec — the typed seat of
+ *  the old hand-shape cast (`features.modifiers` is optional on the
+ *  doc; a family without mod packs serves none). */
+function modifiersOf(spec: FormSpecDoc | null): readonly ModifierKind[] {
+  assert.ok(spec !== null, "the form spec must resolve");
+  return spec.features?.modifiers ?? [];
+}
 
 describe("the discovery door arms (live /v1 derivation)", () => {
   it("a card that boards no models NEVER mints a model seat (THE MINTED-MODEL KILL, 2026-10-12)", async () => {
@@ -101,8 +110,7 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     // oracle is KREA_ROWS — packages/models/krea-2/mods/loras.ts —
     // not the service's own catalog, which would agree with the door
     // even when both are wrong together).
-    const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
-      .features.modifiers);
+    const modifiers = modifiersOf(spec);
     const lora = modifiers.find((m) => m.kind === "lora");
     assert.notEqual(lora, undefined, "the lora modifier pack rides the spec");
     assert.ok(KREA_ROWS.length > 0, "krea-2 declares lora rows (census floor — the import rotted)");
@@ -269,7 +277,7 @@ describe("the discovery door arms (live /v1 derivation)", () => {
       assert.deepEqual(row!.families, [], `card-tools['${id}'].families is EMPTY`);
     }
     const boardedTool = tools.find((t) => t.name === "image-gen");
-    assert.ok(boardedTool !== null && typeof boardedTool.model === "string", "a boarded card still serves its model pick");
+    assert.ok(boardedTool !== undefined && typeof boardedTool.model === "string", "a boarded card still serves its model pick");
   });
 
   it("serves the z-image envelope with the hybrid controlnet entry (THE HYBRID LAW)", async () => {
@@ -281,8 +289,7 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     // strength default.
     const spec = await formSpecArm("z-image");
     assert.notEqual(spec, null, "z-image must resolve");
-    const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
-      .features.modifiers);
+    const modifiers = modifiersOf(spec);
     const cn = modifiers.find((m) => m.kind === "controlnet");
     assert.notEqual(cn, undefined, "the controlnet modifier pack rides the spec");
     assert.equal(cn!.param_key, "controlnets");
@@ -326,8 +333,7 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     // gate refuses every stated entry loud — the offer is truth,
     // not a promise of execution.
     const spec = await formSpecArm("z-image");
-    const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
-      .features.modifiers);
+    const modifiers = modifiersOf(spec);
     const ipa = modifiers.find((m) => m.kind === "ip_adapter");
     assert.notEqual(ipa, undefined, "the ip_adapter modifier pack rides the spec");
     assert.equal(ipa!.param_key, "ip_adapters");

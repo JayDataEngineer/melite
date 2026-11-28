@@ -55,7 +55,8 @@ import { loadCardDefs, owningAtom } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-card-kit/card-definition";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { prepareCardParams } from "../../../../packages/harness/estate-queue/src/cardsCompose.ts";
-import { modelIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { modelIds, getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { formSpecArm } from "../../../../packages/harness/melite-tools/src/discovery.ts";
 // THE ONE SPELLING (the twin-kill): the same source the client
 // leaf imports — never a wall-local re-type of the commit shape.
@@ -77,6 +78,21 @@ process.env["MELITE_REPO_ROOT"] = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..", "..", "..", "..",
 );
+
+// THE KIT'S FACTS (the compose door's own model seat — the same
+// loadFacts the run path seats at cardsCompose.ts:137), read once
+// per file on first use: the models table is booted by then.
+let kitFactsCache: ReturnType<typeof loadFacts> | null = null;
+function kitFacts(): ReturnType<typeof loadFacts> {
+  if (kitFactsCache === null) {
+    kitFactsCache = loadFacts(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..",
+        "packages", "engines", "comfyui-cordis", "data", "model-facts.json"),
+      { getModel, registryIds, registryModel },
+    );
+  }
+  return kitFactsCache;
+}
 
 /** A stated value for one served field — the leaf's own coercion
  *  class (a number knob takes a number, everything else a string;
@@ -145,7 +161,7 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
         // fill derives from the SAME rows the leaf renders.
         const fields = (kind.fields ?? []).length > 0
           ? kind.fields ?? []
-          : fieldsOfEnvelope(doc.mod_schemas?.[kind.schema_key] ?? null, fam);
+          : fieldsOfEnvelope(doc.mod_schemas?.[kind.schema_key ?? kind.param_key] ?? null, fam);
         // THE LEAF'S COMMIT SHAPE — the ONE shared spelling the
         // client's own commit calls (flat fields at the root for a
         // flat kind, the param_key bag otherwise; entry seeded from
@@ -362,6 +378,7 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
         // own facts row keeps it — the card's lane derivation keys on
         // the resolved row's defaults.variant, never the atom's.
         const row = facts[mid] ?? facts[atom];
+        const kitRow = kitFacts().models[mid] ?? kitFacts().models[atom]!;
         const verdict = svc.admitStageRelations(arm.card, {
           model: mid,
           variant: variant.id,
@@ -386,7 +403,7 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
             ...arm.write,
           }, mid, "mod-write-parity:probe").params;
           const g = new GraphBuilder();
-          def.compose(def.schema({ ...preparedProbe }), row, g, "mod-write-parity:probe");
+          def.compose(def.schema({ ...preparedProbe }), kitRow, g, "mod-write-parity:probe");
           if (Object.keys(g.toJSON() as Record<string, unknown>).length === 0) { witnessRefusals.push(`${mid}/${variant.id}: compose — empty graph`); continue }
         } catch (e) {
           witnessRefusals.push(`${mid}/${variant.id}: compose — ${e instanceof Error ? e.message : String(e)}`);
@@ -412,6 +429,7 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
     // THE RESOLVED ROW (the run path's own): the lane derives from the
     // resolved cell row, never the atom's defaults.
     const row = facts[cell.mid] ?? facts[atom]!;
+    const kitRow = kitFacts().models[cell.mid] ?? kitFacts().models[atom]!;
     // THE RUN PATH'S OWN MERGED VIEW (the run press's prepare, not a
     // hand-built doc): the operator's admitted write rides it whole.
     const prepared = prepareCardParams(svc, {
@@ -430,7 +448,7 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
     // persona description (the lane's own design_prompt) rides the
     // wire the engine reads.
     const g = new GraphBuilder();
-    def.compose(def.schema({ ...prepared }), row, g, "mod-write-parity:witness");
+    def.compose(def.schema({ ...prepared }), kitRow, g, "mod-write-parity:witness");
     const graph = g.toJSON() as Record<string, unknown>;
     expect(Object.keys(graph).length, "the Design save composes a non-empty graph").toBeGreaterThan(0);
     expect(JSON.stringify(graph), "the persona description rides the serialized graph (the engine's instruct input)").toContain("a warm, unhurried narrator with gravel in the low end");
@@ -459,7 +477,7 @@ describe("THE MOD-WRITE PARITY — every served modifier kind's studio commit wr
       voice_name: "",
     }, cell.mid, "mod-write-parity").params;
     const gMint = new GraphBuilder();
-    def.compose(def.schema({ ...preparedMint }), row, gMint, "mod-write-parity:witness");
+    def.compose(def.schema({ ...preparedMint }), kitRow, gMint, "mod-write-parity:witness");
     const graphMint = gMint.toJSON() as Record<string, unknown>;
     const studioMint = (graphMint["AudiocoreVoiceStudio.0"] as { inputs: Record<string, unknown> }).inputs;
     const copyMint = (graphMint["MeliteQVoiceCopy.0"] as { inputs: Record<string, unknown> }).inputs;

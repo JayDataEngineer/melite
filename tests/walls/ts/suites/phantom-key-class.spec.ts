@@ -180,8 +180,8 @@ function settled<H extends (d: unknown) => unknown, S extends (h: never) => unkn
 //    hand transcription); the battery is the fixed adversarial set
 //    the sweep pinned. Deterministic: no randomness, no dates.
 const h3BagStamps: Array<Record<string, unknown>> = []
-for (const row of (h3Decl as { variants?: Array<Record<string, unknown>> }).variants ?? []) {
-  const wd = row["wire_defaults"] as Record<string, unknown> | undefined
+for (const row of h3Decl.variants ?? []) {
+  const wd = row.wire_defaults ?? undefined
   const loras = wd?.["loras"]
   if (Array.isArray(loras)) for (const e of loras) h3BagStamps.push(e as Record<string, unknown>)
 }
@@ -348,7 +348,8 @@ describe("THE PHANTOM-KEY LAW (the class wall — no hydrate map materializes an
     const projected = projectMotionDoc(undefined, 30, 300)
     const motionParams: Record<string, unknown> = {
       ...serializePromptsParams(projected.prompts, 30),
-      motion_constraints: serializeChannel(projected, "constraints"),
+      // the settle ctx is the projection's own pair (the constraints channel ignores it)
+      motion_constraints: serializeChannel(projected, "constraints", { fps: 30, targetT: 300 }),
     }
     expect(
       Object.keys(motionParams).sort(),
@@ -360,8 +361,8 @@ describe("THE PHANTOM-KEY LAW (the class wall — no hydrate map materializes an
     // or the stamp must move). Derived over the real DECL variants.
     const h3Emit = new Set(h3Added)
     const stampCollisions: string[] = []
-    for (const row of (h3Decl as { variants?: Array<Record<string, unknown>> }).variants ?? []) {
-      const wd = row["wire_defaults"] as Record<string, unknown> | undefined
+    for (const row of h3Decl.variants ?? []) {
+      const wd = row.wire_defaults ?? undefined
       for (const key of wd === undefined || wd === null || typeof wd !== "object" ? [] : Object.keys(wd)) {
         if (h3Emit.has(key)) stampCollisions.push(`${row["id"]}:${key}`)
       }

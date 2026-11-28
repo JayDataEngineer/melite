@@ -24,7 +24,7 @@
 // package graph's source planes, derived by walking the tree (never a
 // hand list). Test suites and walls fake the seam BY DESIGN (fakes
 // are structural stands, not boundary casts) and sit out of scope.
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, type Dirent } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
@@ -69,7 +69,7 @@ const BASELINE: Record<string, number> = {
 const PROBE_PATTERN = /\bas \{\s*\r?\n?\s*get\s*\(/g
 
 function* walkSources(dir: string): Generator<string> {
-  let ents: Array<{ name: string, isDirectory: boolean }>
+  let ents: Dirent[]
   try {
     ents = readdirSync(dir, { withFileTypes: true })
   } catch {

@@ -43,10 +43,26 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { DECL, edit, parseEditFacts } from "@melite/models-fibo2-edit";
-import { getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import type { CellRow } from "@melite/comfyui-card-kit/model-contract";
 import type { LaneInputsFacts, ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+
+// THE KIT'S FACTS (the build door's own model seat — the same loadFacts
+// the run path seats at cardsCompose.ts:137), read once per file on
+// first use: the models table is booted by then.
+let kitFactsCache: ReturnType<typeof loadFacts> | null = null;
+function kitFacts(): ReturnType<typeof loadFacts> {
+  if (kitFactsCache === null) {
+    kitFactsCache = loadFacts(
+      join(ROOT, "packages", "engines", "comfyui-cordis", "data", "model-facts.json"),
+      { getModel, registryIds, registryModel },
+    );
+  }
+  return kitFactsCache;
+}
 const HF = "https://huggingface.co/Comfy-Org/Fibo-2.0/resolve/main";
 
 interface ArtifactRow {
@@ -91,11 +107,10 @@ const variants = DECL.variants ?? [];
 const groups = ((DECL.variant_groups ?? []) as Array<{ id: string }>).map((g) => g.id);
 
 /** A variant's int8/bf16 cell rows by quant spelling. */
-function cellOf(variantId: string, quant: string): Record<string, unknown> {
+function cellOf(variantId: string, quant: string): CellRow {
   const v = variants.find((r) => r.id === variantId);
   expect(v, `variant '${variantId}' exists`).toBeDefined();
-  const cells = (v!.cells ?? []) as Array<Record<string, unknown>>;
-  const row = cells.find((c) => c.quant === quant);
+  const row = (v!.cells ?? []).find((c) => c.quant === quant);
   expect(row, `variant '${variantId}' carries the '${quant}' cell`).toBeDefined();
   return row!;
 }
@@ -118,16 +133,16 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
       { cell: cellOf("edit-turbo", "int8_convrot"), want: DIFFUSION[3] },
     ];
     for (const { cell, want } of cellArtifacts) {
-      const a = cell.artifact as Record<string, unknown> | undefined;
+      const a = cell.artifact ?? undefined;
       expect(a, `${want.file} cell declares its artifact`).toBeDefined();
-      expect(a!["source_url"]).toBe(`${HF}/${want.file}`);
-      expect(a!["sha256"]).toBe(want.sha256);
-      expect(a!["size_bytes"]).toBe(want.size_bytes);
+      expect(a?.source_url).toBe(`${HF}/${want.file}`);
+      expect(a?.sha256).toBe(want.sha256);
+      expect(a?.size_bytes).toBe(want.size_bytes);
     }
   });
 
   it("ARTIFACTS: provisions carry the BF16 encoder and the VAE — never the int8 encoder", () => {
-    const rows = (DECL.provisions ?? []) as Array<Record<string, unknown>>;
+    const rows = DECL.provisions ?? [];
     const byName = new Map(rows.map((r) => [r.name, r]));
     expect(byName.get("qwen3vl_4b_bf16.safetensors")).toMatchObject({
       url: `${HF}/${TEXT_ENCODER_BF16.file}`,
@@ -221,7 +236,7 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
   });
 
   it("GRAPH: the plain edit arm — encoder-emitted latent, no EmptyLatentImage", () => {
-    const model = getModel("fibo2-edit");
+    const model = kitFacts().models["fibo2-edit"]!;
     const g = new GraphBuilder();
     edit.build({
       p: {
@@ -239,7 +254,7 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
       g,
       runId: "fibo-wall/plain",
     });
-    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const graph = g.toJSON();
     const classes = Object.values(graph).map((n) => n.class_type);
     // THE LATENT LAW: the KSampler samples TextEncodeFibo2's OWN
     // third output — the node emits the trained-size zero latent;
@@ -277,7 +292,7 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
   });
 
   it("GRAPH: the crop_stitch arm — mask → SEGS → DetailerForEach, no KSampler", () => {
-    const model = getModel("fibo2-edit");
+    const model = kitFacts().models["fibo2-edit"]!;
     const g = new GraphBuilder();
     edit.build({
       p: {
@@ -294,17 +309,17 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
       g,
       runId: "fibo-wall/stitch",
     });
-    const graph = g.toJSON() as Record<string, { class_type: string }>;
+    const graph = g.toJSON();
     const classes = Object.values(graph).map((n) => n.class_type);
     expect(classes).toEqual(expect.arrayContaining(["LoadImageMask", "GrowMask", "MaskToSEGS", "DetailerForEach", "SaveImage"]));
     expect(classes).not.toContain("KSampler");
     expect(classes).not.toContain("VAEDecode");
     const save = Object.values(graph).find((n) => n.class_type === "SaveImage")!;
-    expect((save.inputs as Record<string, unknown>)["filename_prefix"]).toBe("fibo-wall/stitch/edit");
+    expect(save.inputs["filename_prefix"]).toBe("fibo-wall/stitch/edit");
   });
 
   it("REFUSALS: match-ON stated sizes and over-cap lists refuse field-named — and match OFF + both axes builds the ImageScale deliverable tail", () => {
-    const model = getModel("fibo2-edit");
+    const model = kitFacts().models["fibo2-edit"]!;
     const base = { input_images: ["a.png"], prompt: "x", seed: 1, steps: 30, cfg: 5 };
     expect(() =>
       edit.build({ p: { ...base, width: 1024 }, facts: lane, model, g: new GraphBuilder(), runId: "r" }),
@@ -315,7 +330,7 @@ describe("THE FIBO 2.0 EDIT FACTS — the third image-edit family's pinned truth
     ).toThrow(/16 input images total/);
     const g = new GraphBuilder();
     edit.build({ p: { ...base, match_input_resolution: false, width: 1024, height: 1024 }, facts: lane, model, g, runId: "r-sized" });
-    const tails = Object.values(g.toJSON() as Record<string, { class_type: string }>).filter((n) => n.class_type === "ImageScale");
+    const tails = Object.values(g.toJSON()).filter((n) => n.class_type === "ImageScale");
     expect(tails).toHaveLength(1);
   });
 

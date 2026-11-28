@@ -63,6 +63,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schema as h3schemaFn } from "@melite/models-h3/schema";
 import { deriveWindowFamily, FAMILY_LAW } from "@melite/contracts/timelineContract";
+import type { FamilyLaw } from "@melite/contracts/familyLane";
 import { axisPickPatch, composeValidate } from "@melite/card-base/client";
 import type { FormSpecDoc, FormVariantRow } from "@melite/card-base/client";
 import { omitFilmOnlyField, omitFilmRecipeRow } from "../../../../packages/video/h3-timeline/src/ui/studio/omitLaneRecipe.ts";
@@ -157,7 +158,7 @@ function filmOnlyLetter(doc: Record<string, unknown>): boolean {
 describe("THE PRE-VALIDATION SEAT, re-aimed (the matrix — no served cell refuses; the film-only letter keeps its teeth; the flip keeps its stamps)", () => {
   let svc: CardRegistryService;
   let spec: NonNullable<Awaited<ReturnType<typeof formSpecArm>>>;
-  let def: NonNullable<Awaited<ReturnType<typeof loadCardDefs>>["get"]>;
+  let def: NonNullable<ReturnType<Awaited<ReturnType<typeof loadCardDefs>>["get"]>>;
 
   beforeAll(async () => {
     const ctx = new Context();
@@ -422,7 +423,7 @@ describe("THE PRE-VALIDATION SEAT, re-aimed (the matrix — no served cell refus
     // finish quartet under a keyframe pin — the merged view derives
     // t4r, and nothing drops.
     const open = LANES[0]!;
-    const era = cell(open.assemble, null, null, null);
+    const era = cell(open.assemble, null, null, {});
     const prior: Record<string, unknown> = { ...era, ...Object.fromEntries(FINISH.map((k) => [k, true])) };
     const flip = { ...prior, keyframes: [{ image: "anchor.png", frame: 0 }] };
     const seat = svc.reseatStageFamily("h3-timeline", flip, prior);
@@ -440,7 +441,7 @@ describe("THE PRE-VALIDATION SEAT, re-aimed (the matrix — no served cell refus
     // deadKeys lane is named, and an empty lane list is named. This
     // is the judge's OWN firing arm — gutting it reds here AND
     // silences prime's boot gate.
-    const laws = new Map<string, typeof FAMILY_LAW>();
+    const laws = new Map<string, FamilyLaw>();
     for (const [, d] of await loadCardDefs()) {
       for (const family of d.boarded) {
         const law = getModel(family).familyLaw;

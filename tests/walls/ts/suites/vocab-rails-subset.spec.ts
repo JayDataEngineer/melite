@@ -25,7 +25,7 @@ import { parseInputSpec } from "../../../../packages/engines/comfyui-cordis/src/
 const FIXTURE = new URL("../../fixtures/pinned-combos.min.json", import.meta.url);
 const LIVE = join(process.cwd(), "data", "tmp", "object_info_prod.json");
 
-const pkg = (...p: string) => join(process.cwd(), "packages", ...p);
+const pkg = (...p: string[]) => join(process.cwd(), "packages", ...p);
 
 /** One inline `param: vocabulary([...])` site — extracted from its
  *  source line at run time (the file is the SSOT, never this

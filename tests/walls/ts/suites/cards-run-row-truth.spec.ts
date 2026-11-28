@@ -43,6 +43,7 @@ import { QueueCore } from "../../../../packages/harness/estate-queue/src/queue.t
 import { FlowsSeatService } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
 import type { RunRecord } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
 import type { RunId } from "../../../../packages/harness/estate-queue/src/queueCore.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -126,7 +127,7 @@ const seedZombie = (s: Seat, runId: string): RunRecord => {
     skippedStages: [],
     artifacts: [],
     error: "",
-    draftId: "d1",
+    draftId: draftIdOf("d1"),
     dir: join(s.state, "output", runId),
     testFlag: false,
     stopFlag: false,
@@ -215,7 +216,7 @@ describe("cards-run-row-truth: the row never outlives the run tree's verdict", (
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir: join(s.state, "output", runId),
       testFlag: false,
       stopFlag: false,
@@ -259,7 +260,7 @@ describe("cards-run-row-truth: the row never outlives the run tree's verdict", (
       skippedStages: [],
       artifacts: [],
       error: "",
-      draftId: "d1",
+      draftId: draftIdOf("d1"),
       dir,
       testFlag: false,
       stopFlag: false,

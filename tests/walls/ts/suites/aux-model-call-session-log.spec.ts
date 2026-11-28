@@ -50,7 +50,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { Session, SessionId } from "@deepseek-ai/dsh-session";
+import { Session, SessionId, pluginRecordOf } from "@deepseek-ai/dsh-session";
 import type { SessionEvent } from "@deepseek-ai/dsh-session";
 import type { GenerateOptions } from "@deepseek-ai/dsh-llm";
 import type { ImageAttachmentRef } from "@deepseek-ai/dsh-attachment";
@@ -72,7 +72,8 @@ import {
   unsessionedAuxCallLog,
 } from "../../../../packages/harness/melite-tools/src/aux-session-log.ts";
 import { viewStillArtifact } from "../../../../packages/harness/melite-tools/src/tools/melite-view.ts";
-import type { MediaListRow, ViewExec } from "../../../../packages/harness/melite-tools/src/tools/melite-view.ts";
+import type { ViewExec } from "../../../../packages/harness/melite-tools/src/tools/melite-view.ts";
+import type { MediaListRow } from "@melite/estate-media";
 
 // ── the real log home ──────────────────────────────────────────────
 
@@ -93,7 +94,9 @@ function auxRecords(session: Session): Array<SessionEvent & { data: Record<strin
   return session
     .snapshotEvents()
     .filter((event): event is SessionEvent & { data: Record<string, unknown> } =>
-      event.type === AUX_MODEL_CALL_RECORD,
+      // the typed door judges record-ness (an ignorable `plugin:` event);
+      // the arms read the raw event — `ignorable` is the envelope law they assert
+      pluginRecordOf(event)?.type === AUX_MODEL_CALL_RECORD,
     );
 }
 

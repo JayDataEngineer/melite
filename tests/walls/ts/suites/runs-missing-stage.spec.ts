@@ -5,7 +5,9 @@
 import { describe, it, expect } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIHostService } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
-import type { EngineJson, FlowResult, MergeRow } from "../../../../packages/engines/comfyui-cordis/src/comfyui-types.ts";
+import type { EngineJson } from "../../../../packages/engines/comfyui-cordis/src/comfyui-types.ts";
+import type { FlowResult, MergeRow } from "../../../../packages/engines/comfyui-cordis/src/comfyui-merge.ts";
+import { draftIdOf } from "@melite/contracts/benchStage";
 import type { RunRecord } from "../../../../packages/harness/estate-queue/src/runsTypes.ts";
 import type { RunId } from "../../../../packages/harness/estate-queue/src/queueCore.ts";
 import { runOne } from "../../../../packages/harness/estate-queue/src/runsExecute.ts";
@@ -41,7 +43,7 @@ const runFixture = (): RunRecord => ({
   skippedStages: [],
   artifacts: [],
   error: "",
-  draftId: "d",
+  draftId: draftIdOf("d"),
   dir: "/tmp/run-missing-stage",
   testFlag: false,
   stopFlag: false,

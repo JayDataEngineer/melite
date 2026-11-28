@@ -31,6 +31,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it, afterAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { BenchRemoteService, DraftsRemoteService } from "@melite/estate-drafts";
+import { type JsonValue } from "../../../../packages/estate/drafts/src/remote.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
 import { getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
@@ -44,7 +45,7 @@ import { shedPressWords } from "@melite/estate-drafts";
 
 isolateOperatorModState();
 
-type Row = Record<string, unknown>;
+type Row = Record<string, JsonValue>;
 
 const GUI_DRAFT = draftIdOf("bench-sweep-gui");
 

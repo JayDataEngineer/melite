@@ -38,7 +38,7 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
   it("ARM 1 — THE DECL LAW: the first declared Variant row IS the turbo (first declared = the default)", () => {
     const decl = getModel(FAMILY);
     assert.ok(decl, `the booted registry serves ${FAMILY}`);
-    const variants = (decl as { variants?: VariantRow[] }).variants ?? [];
+    const variants = decl.variants ?? [];
     const variantRows = variants.filter((v) => v.group === "Variant");
     assert.ok(variantRows.length >= 2, "the family declares its variant pair (base + turbo)");
     assert.equal(variantRows[0]?.id, "turbo",
@@ -48,7 +48,7 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
   it("ARM 2 — THE RESOLVER: an UNSTATED variant doc resolves the turbo route through the door's own resolveVariantRow", () => {
     const decl = getModel(FAMILY);
     assert.ok(decl);
-    const variants = (decl as { variants?: VariantRow[] }).variants ?? [];
+    const variants = decl.variants ?? [];
     const r = resolveVariantRow(
       variants as never,
       { variant: null },
@@ -65,7 +65,7 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
   it("ARM 3 — THE LANES: the turbo default carries the turbo weights (its int8_convrot cell's unet is the turbo file)", () => {
     const decl = getModel(FAMILY);
     assert.ok(decl);
-    const variants = (decl as { variants?: VariantRow[] }).variants ?? [];
+    const variants = decl.variants ?? [];
     const turbo = variants.find((v) => v.id === "turbo");
     assert.ok(turbo, "the turbo row declares");
     const int8Cell = (turbo.cells ?? []).find(
@@ -97,7 +97,7 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
     const ctx = new Context();
     const svc = new CardRegistryService(ctx);
     await svc.prime();
-    const facts = svc.modelFacts() as Record<string, { variants?: VariantRow[] }>;
+    const facts = svc.modelFacts();
     // THE BURN'S OWN FAMILY, named: the door resolves the turbo.
     const editRow = facts[FAMILY];
     assert.ok(editRow, `the booted facts serve ${FAMILY}`);
@@ -140,9 +140,9 @@ describe("the image edit family's default variant is the turbo (burn c)", () => 
     // law arm 1 pins — so the real derivation over the booted DECL
     // must head the enum with the turbo.
     const { semanticModelEntries } = await import("../../../../packages/engines/comfyui-card-kit/src/semanticModelKnob.ts");
-    const decl = getModel(FAMILY) as unknown as { id: string; label: string; variants: Array<{ id: string; label?: string; route?: string; cells?: Array<{ quant: string; label?: string; route?: string; hide_from_dropdown?: boolean }> }> };
+    const decl = getModel(FAMILY);
     assert.ok(decl, `the booted registry serves ${FAMILY}`);
-    const entries = semanticModelEntries([{ id: decl.id, label: decl.label, variants: decl.variants }]);
+    const entries = semanticModelEntries([{ id: decl.id, label: decl.label, variants: decl.variants ?? [] }]);
     assert.ok(entries.length >= 2, `the enum serves the family's visible cells (saw ${entries.length})`);
     assert.equal(entries[0]!.value, `${FAMILY}:turbo:int8_convrot`,
       `the served enum's first entry is the default row's first visible cell — saw '${entries[0]!.value}'; a numeric order hint never re-seats the default pick`);

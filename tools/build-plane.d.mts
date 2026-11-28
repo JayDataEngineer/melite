@@ -15,3 +15,19 @@ export function rewriteDeclSpecifiers(libDir: string): number
  * exactly one trailing newline; returns the number of files
  * corrected. */
 export function ensureFinalNewlines(libDir: string): number
+
+/** Raised when a LIVE build-plane process holds the tree lock;
+ * `pid` is the live holder. */
+export class TreeLockHeld extends Error {
+  constructor(pid: number, lockDir: string)
+  readonly pid: number
+}
+
+/** Acquire `<root>`'s one-writer build lock, creating the runtime
+ * parent dirs a fresh clone lacks; returns the lock directory path.
+ * `pid` is the holder (defaults to this process). */
+export function acquireTreeLock(root: string, pid?: number): string
+
+/** Release a lock acquired by acquireTreeLock; `lockDir` is the path
+ * it returned. */
+export function releaseTreeLock(lockDir: string): void

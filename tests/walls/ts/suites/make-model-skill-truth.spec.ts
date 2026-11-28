@@ -23,8 +23,7 @@ describe("the make-model skill teaches the live tree (F4)", () => {
   it("Face 1 is the FAMILY_ROWS row table with dynamic import — and the retired barrel spelling is gone", () => {
     // the live mechanism, named
     expect(skill).toContain("FAMILY_ROWS");
-    expect(skill).toMatch(/dynamic\s+`?import/u,
-      "the skill must teach the dynamic-import load (the cycle cure), not a static barrel");
+    expect(skill, "the skill must teach the dynamic-import load (the cycle cure), not a static barrel").toMatch(/dynamic\s+`?import/u);
     // the retired mechanism, absent — a comment may not even name
     // FAMILY_PLUGINS as the thing to edit (code lines only is the
     // closure-gate idiom; here the DOC is the artifact, so the
@@ -33,8 +32,7 @@ describe("the make-model skill teaches the live tree (F4)", () => {
     expect(skill, "the static barrel import is the retired Face 1 — the row table replaced it").not.toMatch(/import \{ family as/u);
     // and the teaching target is REAL (the wall rides the live door)
     expect(table).toMatch(/export const FAMILY_ROWS: readonly FamilyRow\[\]/u);
-    expect(table).toMatch(/await import\(row\.pkg\)/u,
-      "families/index.ts must load through dynamic import — the skill's claim must stay true");
+    expect(table, "families/index.ts must load through dynamic import — the skill's claim must stay true").toMatch(/await import\(row\.pkg\)/u);
     expect(table).not.toMatch(/FAMILY_PLUGINS/u);
   });
 

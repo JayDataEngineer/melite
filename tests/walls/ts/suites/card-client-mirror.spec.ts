@@ -74,7 +74,7 @@ const PHASE = 'd4-card-client-mirror'
 const reads: FactsReads = { getModel, registryIds, registryModel }
 const factsFile = loadFacts(factsPath(), reads)
 const facts = factsFile.models
-const owners = factsFile.owners
+const owners = factsFile.owners ?? {} // absent on old literals = identity
 
 const defs = await loadCardDefs()
 
