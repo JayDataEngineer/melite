@@ -5,6 +5,18 @@
 // QUIET engine: the engine's own queue empty and staying empty for
 // the window, and no live run sidecar under any lane's declared state
 // root. The wall drives tools/engine-idle.mjs on a virtual clock with
+//
+// DEAD IS POSITIVE EVIDENCE (2026-11-28, the browser-tier red): the
+// first face of the stand-down arm modeled a DEAD engine as
+// /system_stats answering 503 — an answering server — and the tool
+// read every failed liveness read as death. On a box at 56/59 GB with
+// a four-job queue on the engine both reads TIMED OUT; the handoff
+// said "the engine went down" over a unit that had run untouched for
+// twenty hours and stood down at once, the browser tier started
+// against the still-busy engine, its host's seats never settled, and
+// the tier red. Death is now the transport's own word (the B4b law's
+// code set, parity pinned against the real classifier below); a
+// timeout is unknown and rides the fail-closed wait.
 // a scripted queue and real temp sidecars: the lane-root declaration
 // reader (every profile spelling, unknown ⇒ stand down), the census
 // (fail-closed like the plane's own), the wait (re-arm on a press,
@@ -19,8 +31,10 @@ import { dirname, join } from 'node:path'
 import {
   HANDOFF_QUIESCE_MS, HANDOFF_WAIT_MS, QUIET_POLL_MS,
   awaitEngineIdle, coldCardHandoff, laneStateRoots, liveRunClaims, readQueue,
+  GONE_CODES, goneCode,
 } from '../../../../tools/engine-idle.mjs'
 import { ManageConfig } from '../../../../packages/harness/estate-queue/src/manageRegistry.ts'
+import { isTransportDownError } from '../../../../packages/engines/comfyui-cordis/src/supervisor.ts'
 
 type Queue = { queue_running: unknown[]; queue_pending: unknown[] }
 const EMPTY: Queue = { queue_running: [], queue_pending: [] }
@@ -175,20 +189,77 @@ describe('awaitEngineIdle — the quiet verdict', () => {
     expect(waits.some((w) => /engine queue busy — 1 running, 2 pending/.test(w))).toBe(true)
   })
 
-  it('an unanswerable queue on a LIVE engine is unknown ⇒ busy (fail-closed); on a DEAD engine the wait stands down at once', async () => {
+  it('an unanswerable queue on an engine that ANSWERS — ok or 503, a server that listens is alive — is unknown ⇒ busy (fail-closed): the wait runs its budget', async () => {
+    for (const status of [200, 503]) {
+      const ck = clock()
+      const fetchImpl = async (url: URL): Promise<Response> =>
+        url.pathname === '/system_stats' ? json({}, status) : json({ error: 'no queue' }, 500)
+      const v = await awaitEngineIdle({ fetchImpl, baseUrl: BASE, stateRoots: [], sleep: ck.sleep, now: ck.now, budgetMs: 10_000 })
+      expect(v.idle).toBe(false)
+      expect(v.reason).toBe('busy')
+      expect(v.waitedMs).toBeGreaterThanOrEqual(10_000)
+    }
+  })
+
+  it('THE 2026-11-28 BURN: a SLOW engine — every read times out — is NOT dead; unknown ⇒ busy, the budget runs, the handoff waits, and no voice says gone', async () => {
     const ck = clock()
-    const alive = { ok: true }
-    const fetchImpl = async (url: URL): Promise<Response> =>
-      url.pathname === '/system_stats' ? (alive.ok ? json({}) : json({}, 503)) : json({ error: 'no queue' }, 500)
-    const live = await awaitEngineIdle({ fetchImpl, baseUrl: BASE, stateRoots: [], sleep: ck.sleep, now: ck.now, budgetMs: 10_000 })
-    expect(live.idle).toBe(false)
-    expect(live.reason).toBe('busy')
-    expect(live.waitedMs).toBeGreaterThanOrEqual(10_000)
-    alive.ok = false
-    const dead = await awaitEngineIdle({ fetchImpl, baseUrl: BASE, stateRoots: [], sleep: ck.sleep, now: ck.now, budgetMs: HANDOFF_WAIT_MS })
-    expect(dead.idle).toBe(false)
-    expect(dead.reason).toBe('engine-down')
-    expect(dead.waitedMs).toBe(0)
+    const timedOut = async (): Promise<Response> => { throw new DOMException('The operation was aborted due to timeout', 'TimeoutError') }
+    const v = await awaitEngineIdle({ fetchImpl: timedOut, baseUrl: BASE, stateRoots: [], sleep: ck.sleep, now: ck.now, budgetMs: 10_000 })
+    expect(v.idle).toBe(false)
+    expect(v.reason).toBe('busy')
+    expect(v.waitedMs).toBeGreaterThanOrEqual(10_000)
+    expect('goneCode' in v).toBe(false)
+    const waits: string[] = []
+    await awaitEngineIdle({ fetchImpl: timedOut, baseUrl: BASE, stateRoots: [], sleep: ck.sleep, now: ck.now, budgetMs: 10_000, onWait: (l: string) => waits.push(l) })
+    expect(waits.some((w) => /engine queue unreadable — the engine answers nothing in time \(slow, or gone unproven\); unknown counts as busy/.test(w))).toBe(true)
+    const notes: string[] = []
+    const out = await coldCardHandoff({
+      fetchImpl: timedOut, baseUrl: BASE, stateRoots: [], unknown: [],
+      spawn: async () => ({ status: 0 }), log: (l: string) => notes.push(l), sleep: ck.sleep, now: ck.now, budgetMs: 6_000,
+    })
+    expect(out.restarted).toBe(false)
+    expect(out.reason).toBe('busy')
+    expect(notes.at(-1)).toMatch(/SKIP-LOUD: engine busy for 6s/)
+    expect(notes.some((n) => /went down|GONE/.test(n))).toBe(false)
+  })
+
+  it('a GONE engine — the transport REFUSES on undici\'s cause hop — stands the wait down at once, carrying the code; the note names the address and the code', async () => {
+    const ck = clock()
+    const refused = async (): Promise<Response> => {
+      throw new TypeError('fetch failed', { cause: Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:8188'), { code: 'ECONNREFUSED' }) })
+    }
+    const v = await awaitEngineIdle({ fetchImpl: refused, baseUrl: BASE, stateRoots: [], sleep: ck.sleep, now: ck.now, budgetMs: HANDOFF_WAIT_MS })
+    expect(v.idle).toBe(false)
+    expect(v.reason).toBe('engine-down')
+    expect(v.goneCode).toBe('ECONNREFUSED')
+    expect(v.waitedMs).toBe(0)
+    const calls: Array<[string, string[]]> = []
+    const notes: string[] = []
+    const out = await coldCardHandoff({
+      fetchImpl: refused, baseUrl: BASE, stateRoots: [], unknown: [],
+      spawn: async (cmd: string, args: string[]) => { calls.push([cmd, args]); return { status: 0 } }, log: (l: string) => notes.push(l), sleep: ck.sleep, now: ck.now,
+    })
+    expect(out.restarted).toBe(false)
+    expect(calls).toEqual([])
+    expect(notes.at(-1)).toBe('SKIP-LOUD: the engine is GONE at ' + BASE + ' (ECONNREFUSED) — nobody listens, nothing to restart; the browser tier runs against whatever answers (its own boot grace covers a re-spawn)')
+  })
+
+  it('goneCode reads the code on the error itself or on the cause hop, and says nothing for a timeout, an abort, or a code-less failure', () => {
+    expect(goneCode(Object.assign(new Error('x'), { code: 'ECONNRESET' }))).toBe('ECONNRESET')
+    expect(goneCode(new TypeError('fetch failed', { cause: Object.assign(new Error('x'), { code: 'EPIPE' }) }))).toBe('EPIPE')
+    expect(goneCode(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))).toBeNull()
+    expect(goneCode(new DOMException('This operation was aborted', 'AbortError'))).toBeNull()
+    expect(goneCode(new TypeError('fetch failed'))).toBeNull()
+    expect(goneCode(Object.assign(new Error('x'), { code: 'UND_ERR_CONNECT_TIMEOUT' }))).toBeNull()
+    expect(goneCode(undefined)).toBeNull()
+  })
+
+  it('PARITY WITH THE B4b LAW (the real classifier, imported): every gone code is transport-dead there, and the timeout codes are in neither set', () => {
+    expect([...GONE_CODES].sort()).toEqual(['EAI_AGAIN', 'ECONNREFUSED', 'ECONNRESET', 'EHOSTDOWN', 'EHOSTUNREACH', 'ENETDOWN', 'ENETUNREACH', 'ENOTFOUND', 'EPIPE'])
+    for (const code of GONE_CODES) expect(isTransportDownError({ code }), code).toBe(true)
+    expect(GONE_CODES.has('UND_ERR_CONNECT_TIMEOUT')).toBe(false)
+    expect(isTransportDownError({ code: 'UND_ERR_CONNECT_TIMEOUT' })).toBe(false)
+    expect(isTransportDownError(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))).toBe(false)
   })
 })
 
@@ -238,7 +309,7 @@ describe('coldCardHandoff — the spawn discipline', () => {
     expect(notes.at(-1)).toMatch(/SKIP-LOUD: a lane's declared state root is unreadable/)
   })
 
-  it('an absent unit is the warm-card skip (spawn non-zero), a dead engine mid-wait the down skip', async () => {
+  it('an absent unit is the warm-card skip (spawn non-zero), a GONE engine mid-wait — the transport refuses — the down skip', async () => {
     const ck = clock()
     const e = engine([EMPTY])
     const absent = await coldCardHandoff({
@@ -246,8 +317,10 @@ describe('coldCardHandoff — the spawn discipline', () => {
       spawn: async () => ({ status: 1 }), log: () => {}, sleep: ck.sleep, now: ck.now, quiesceMs: 0,
     })
     expect(absent.reason).toBe('unit-absent')
+    // death is the transport's word — a 503 is an answering server (alive ⇒ busy, the arm above)
     const dead = await coldCardHandoff({
-      fetchImpl: async () => json({}, 503), baseUrl: BASE, stateRoots: [], unknown: [],
+      fetchImpl: async () => { throw new TypeError('fetch failed', { cause: Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' }) }) },
+      baseUrl: BASE, stateRoots: [], unknown: [],
       spawn: async () => ({ status: 0 }), log: () => {}, sleep: ck.sleep, now: ck.now,
     })
     expect(dead.reason).toBe('engine-down')
@@ -276,5 +349,13 @@ describe('the pair with the manage plane + the hook\'s wiring', () => {
     expect(hook).not.toMatch(/spawnTee\("systemctl"/)
     const leases = readFileSync(join(process.cwd(), 'tools/battery-leases.mjs'), 'utf8')
     expect(leases).toContain('"tools/engine-idle.mjs"')
+  })
+
+  it('the wait reads liveness through the cause-hop reader only — a failed read is never read as death by itself', () => {
+    const tool = readFileSync(join(process.cwd(), 'tools/engine-idle.mjs'), 'utf8')
+    expect(tool).toContain('const liveness = await engineLiveness(fetchImpl, baseUrl);')
+    expect(tool).toContain('if (liveness.state === "gone") {')
+    expect(tool).not.toMatch(/\bengineAlive\b/)
+    expect(tool).not.toMatch(/catch\s*\{\s*return false;/)
   })
 })

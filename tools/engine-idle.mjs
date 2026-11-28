@@ -23,6 +23,19 @@
 // from its config counts as UNKNOWN and is named — the handoff
 // stands down rather than guess. Absent state (ENOENT/ENOTDIR) is
 // honestly inactive — nothing exists to protect.
+//
+// DEAD IS POSITIVE EVIDENCE (2026-11-28, the browser-tier red): the
+// first face of this handoff read "the engine went down" whenever
+// /queue AND /system_stats both failed inside 4s — and on a box at
+// 56/59 GB with swap in use and a four-job queue on the engine, both
+// reads TIMED OUT while melite-comfyui.service had run untouched for
+// twenty hours. A slow engine is not a dead one. Death is the
+// transport's own word — a refused or reset connection, a dropped
+// pipe, a name or route that resolves to no one (the B4b law:
+// packages/engines/comfyui-cordis/src/supervisor.ts TRANSPORT_DEAD_CODES);
+// a timeout, an abort or a code-less failure is UNKNOWN and rides the
+// fail-closed path like any unreadable queue. The wall pins the
+// parity (tests/walls/ts/suites/engine-idle-law.spec.ts).
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -59,18 +72,47 @@ export async function readQueue(fetchImpl, baseUrl) {
   }
 }
 
+export const GONE_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "EHOSTDOWN",
+  "ENETUNREACH",
+  "ENETDOWN",
+  "EPIPE",
+]);
+
+/** The gone-code of a failed read — on the error or on undici's cause
+ *  hop (fetch wraps the socket error) — or null when the failure says
+ *  nothing about death (a timeout, an abort, anything code-less).
+ *  @param error - the rejected read's error.
+ *  @returns the transport code, or null. */
+export function goneCode(error) {
+  for (const e of [error, error?.cause]) {
+    const code = typeof e === "object" && e !== null ? e.code : undefined;
+    if (typeof code === "string" && GONE_CODES.has(code)) return code;
+  }
+  return null;
+}
+
 /** The engine's liveness (/system_stats) — read only when the queue
- *  did not answer, to tell a DEAD engine (nothing to protect, nothing
- *  to restart) from a malformed queue (unknown ⇒ busy).
+ *  did not answer, to tell a GONE engine (the transport says nobody
+ *  listens: nothing to protect, nothing to restart) from an unreadable
+ *  one (unknown ⇒ busy). ANY answer — ok or not — is a server that
+ *  listens: alive.
  *  @param fetchImpl - fetch (injectable for the wall).
  *  @param baseUrl - the engine's base URL.
- *  @returns true when /system_stats answered. */
-export async function engineAlive(fetchImpl, baseUrl) {
+ *  @returns { state: "alive" | "gone" | "unknown", code } — the
+ *  transport's word when gone, else a null code. */
+export async function engineLiveness(fetchImpl, baseUrl) {
   try {
-    const r = await fetchImpl(new URL("/system_stats", baseUrl), { signal: AbortSignal.timeout(4_000) });
-    return r.ok;
-  } catch {
-    return false;
+    await fetchImpl(new URL("/system_stats", baseUrl), { signal: AbortSignal.timeout(4_000) });
+    return { state: "alive", code: null };
+  } catch (error) {
+    const code = goneCode(error);
+    return code === null ? { state: "unknown", code: null } : { state: "gone", code };
   }
 }
 
@@ -186,7 +228,9 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  *  window re-arms the clock.
  *  @param opts - fetchImpl, baseUrl, stateRoots, quiesceMs, budgetMs,
  *  sleep (injectable), onWait (progress, injectable).
- *  @returns the verdict: idle, or the busy truth it waited on. */
+ *  @returns the verdict: idle, or the busy truth it waited on —
+ *  `{ idle, reason, goneCode?, running, pending, claims, busyReads,
+ *  waitedMs }`; goneCode rides only an engine-down verdict. */
 export async function awaitEngineIdle(opts) {
   const fetchImpl = opts.fetchImpl;
   const baseUrl = opts.baseUrl;
@@ -206,14 +250,18 @@ export async function awaitEngineIdle(opts) {
   for (;;) {
     const answer = await readQueue(fetchImpl, baseUrl);
     if (answer !== null) last = answer;
-    // an unanswerable queue: a DEAD engine has nothing left to protect
-    // and nothing to restart (stand down at once, never a 30-minute
-    // stall); a LIVE engine with an unreadable queue is UNKNOWN —
-    // busy, fail-closed (the last answerable reading is what the
-    // verdict reports)
+    // an unanswerable queue: a GONE engine — the transport's own word,
+    // never a timeout — has nothing left to protect and nothing to
+    // restart (stand down at once, never a 30-minute stall); an engine
+    // that answers, or whose reads merely time out, with an unreadable
+    // queue is UNKNOWN — busy, fail-closed (the last answerable
+    // reading is what the verdict reports)
     const unknown = answer === null;
-    if (unknown && !(await engineAlive(fetchImpl, baseUrl))) {
-      return { idle: false, reason: "engine-down", running: last.running, pending: last.pending, claims, busyReads, waitedMs: now() - started };
+    if (unknown) {
+      const liveness = await engineLiveness(fetchImpl, baseUrl);
+      if (liveness.state === "gone") {
+        return { idle: false, reason: "engine-down", goneCode: liveness.code, running: last.running, pending: last.pending, claims, busyReads, waitedMs: now() - started };
+      }
     }
     const busy = unknown || answer.running > 0 || answer.pending > 0;
     const tick = now();
@@ -223,7 +271,7 @@ export async function awaitEngineIdle(opts) {
       if (tick - lastNote >= 30_000) {
         lastNote = tick;
         onWait(unknown
-          ? "engine queue unreadable — unknown counts as busy (" + Math.round((tick - started) / 1000) + "s waited)"
+          ? "engine queue unreadable — the engine answers nothing in time (slow, or gone unproven); unknown counts as busy (" + Math.round((tick - started) / 1000) + "s waited)"
           : "engine queue busy — " + answer.running + " running, " + answer.pending + " pending (" + Math.round((tick - started) / 1000) + "s waited)");
       }
     } else if (emptySince === null) {
@@ -283,7 +331,7 @@ export async function coldCardHandoff(opts) {
     onWait: (line) => log("HANDOFF WAIT: " + line),
   });
   if (!verdict.idle && verdict.reason === "engine-down") {
-    const note = "SKIP-LOUD: the engine went down during the quiet wait — nothing to restart; the browser tier runs against whatever answers (its own boot grace covers a re-spawn)";
+    const note = "SKIP-LOUD: the engine is GONE at " + opts.baseUrl + " (" + verdict.goneCode + ") — nobody listens, nothing to restart; the browser tier runs against whatever answers (its own boot grace covers a re-spawn)";
     log(note);
     return { restarted: false, reason: "engine-down", note, verdict };
   }
