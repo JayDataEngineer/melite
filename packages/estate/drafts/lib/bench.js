@@ -1380,13 +1380,17 @@ const CURRENCY_EXT = /\.(?:png|jpe?g|webp|mp4|webm|mov|mp3|wav|ogg|flac|glb|gltf
 /** The uploads tree's root — MELITE_REPO_ROOT override, else the
  *  source-relative repo root (mirrors resolveRepoRoot's law in
  *  @melite/comfyui-cordis/comfyui-config; a local mirror, not a
- *  cross-layer dependency). */
-function inputTreeRoot() {
+ *  cross-layer dependency). Exported for the currency wall's root-law
+ *  arm: the no-override branch resolves from a module url, so the
+ *  wall judges the hop law without writing into a real tree.
+ *  @param moduleUrl the module whose repo is resolved (this module
+ *  by default — src → drafts → estate → packages → repo, 4 hops).
+ *  @returns the absolute path of the estate's data/input tree. */
+export function inputTreeRoot(moduleUrl = import.meta.url) {
     const override = process.env["MELITE_REPO_ROOT"] ?? "";
     if (override !== "")
         return resolve(join(override, "data", "input"));
-    const here = dirname(fileURLToPath(import.meta.url));
-    // src→drafts→estate→packages→repo (4 hops), then data/input.
+    const here = dirname(fileURLToPath(moduleUrl));
     return resolve(here, "..", "..", "..", "..", "data", "input");
 }
 /** One host-absolute media path → uploads-door currency. The one

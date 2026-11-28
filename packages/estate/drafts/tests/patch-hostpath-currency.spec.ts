@@ -25,10 +25,15 @@
 //     patch can store sits in the exact grammar the preview door
 //     serves (estateInputUrl's frozen pattern) — the stored row is
 //     previewable the same breath it is composable.
+//   ARM 6 — THE ROOT LAW: the uploads tree is <repo>/data/input —
+//     the MELITE_REPO_ROOT override names the repo, else the module's
+//     own four hops up (src → drafts → estate → packages → repo).
+//     Judged off a module url, so the arm writes into no real tree.
 import { describe, expect, test } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import { ensureBench } from "../src/bench.ts";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { ensureBench, inputTreeRoot } from "../src/bench.ts";
 import { DraftsRemoteService } from "../src/remote.ts";
 import { bootCtx, mintRoot, sig } from "./bench-helpers.ts";
 import { draftIdOf } from "@melite/contracts/benchStage";
@@ -185,6 +190,25 @@ describe("the drafts/patch door: the host-path currency arm", () => {
       expect(PREVIEWABLE.exec(String(params["a"]))![1]).toBe("shot0.png");
     } finally {
       delete process.env["MELITE_REPO_ROOT"];
+    }
+  });
+
+  test("ARM 6 — THE ROOT LAW: the override names the repo; without it the module's own four hops up", () => {
+    const saved = process.env["MELITE_REPO_ROOT"];
+    try {
+      // the real module beside this spec (tests/ → ../src/bench.ts)
+      const moduleUrl = new URL("../src/bench.ts", import.meta.url);
+      delete process.env["MELITE_REPO_ROOT"];
+      // src → drafts → estate → packages → repo, then data/input — the
+      // resolved repo proves itself by its landmarks (a read, never a write)
+      const expected = resolve(dirname(fileURLToPath(moduleUrl)), "..", "..", "..", "..", "data", "input");
+      expect(inputTreeRoot(moduleUrl.href)).toBe(expected);
+      expect(existsSync(join(expected, "..", "..", "pnpm-workspace.yaml")), "the four hops land on the repo").toBe(true);
+      process.env["MELITE_REPO_ROOT"] = "/srv/elsewhere";
+      expect(inputTreeRoot(moduleUrl.href)).toBe(resolve("/srv/elsewhere", "data", "input"));
+    } finally {
+      if (saved === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = saved;
     }
   });
 });

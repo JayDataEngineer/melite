@@ -372,6 +372,16 @@ export type FamilyReseat = (card: string, params: Record<string, unknown>, prior
     params: Record<string, unknown>;
     dropped: readonly string[];
 } | null;
+/** The uploads tree's root — MELITE_REPO_ROOT override, else the
+ *  source-relative repo root (mirrors resolveRepoRoot's law in
+ *  @melite/comfyui-cordis/comfyui-config; a local mirror, not a
+ *  cross-layer dependency). Exported for the currency wall's root-law
+ *  arm: the no-override branch resolves from a module url, so the
+ *  wall judges the hop law without writing into a real tree.
+ *  @param moduleUrl the module whose repo is resolved (this module
+ *  by default — src → drafts → estate → packages → repo, 4 hops).
+ *  @returns the absolute path of the estate's data/input tree. */
+export declare function inputTreeRoot(moduleUrl?: string): string;
 /** The currency walk over a param value: strings convert, arrays of
  *  strings convert item-wise, every other shape rides untouched.
  *  @param v the authored param value.
