@@ -42,6 +42,10 @@
       # the same drafts domain's emitted typert remote-client adapter
       # (the sibling of typert.host.js) — generated reference tables.
       '''packages/estate/drafts/lib/typert\.remote-client\.js$''',
+      # the walls tsc face renderer: its BORROWED table carries
+      # slash-bearing node_modules paths and its rendered compiler
+      # options carry 32-char camelCase names — references, never keys.
+      '''tools/walls-face\.mjs$''',
     ]
 
   [[rules.allowlists]]

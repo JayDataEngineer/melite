@@ -853,7 +853,11 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   // lib/audioStamp.js (the h3 lane-stamp sentences' one owner — the
   // film loop and the extension read the same words). Zero deletions;
   // --diff-filter=A is exactly these two files.
-  const LIB_CENSUS_PIN = 685;
+  // (2026-11-28) 685 → 686: +1 — packages/web/card-base/lib/inputUrl.js
+  // joins (the host-path currency cure, c43135373: every input seat
+  // resolves a host path through the one owner). Zero deletions;
+  // --diff-filter=A over 2554ed6ec..HEAD is exactly this one file.
+  const LIB_CENSUS_PIN = 686;
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is exact (a deletion OR a lowered floor reds — the count is pinned, not floored)", () => {
