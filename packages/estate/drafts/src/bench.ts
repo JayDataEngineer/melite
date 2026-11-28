@@ -15,6 +15,9 @@
 import { promoteQvoiceBag, unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, liveBenchRows, normalizeBenchStage, projectStages, SELF_NAMED_FAMILIES, stripKeys, type DraftId } from '@melite/contracts/benchStage'
 import { isLiveRunStatus } from '@melite/contracts/stageView'
+import { segmentConfined } from '@melite/contracts/mediaKinds'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
@@ -1353,6 +1356,11 @@ export async function patchBench(
     if (!isRecord(paramsIn)) {
       throw new RemoteError("bench/bad-body", "params must be an object", {});
     }
+    // THE HOST-PATH CURRENCY WALK (every write transport, 2026-11-28):
+    // the bench verb's patch buys what drafts/patch always bought —
+    // before the admission below judges, so the judged view is the
+    // stored view (the same order the drafts door runs).
+    const bought: Record<string, unknown> = await buyHostPaths(paramsIn);
     // THE MERGE IS A COPY (2026-09-15, the no-leak law): the merged
     // view is a NEW object — a refused admission must not leave the
     // patch's writes on the domain's cached doc (the live record is
@@ -1371,7 +1379,7 @@ export async function patchBench(
     // pre-patch view is kept whole (params are JSON; a structural
     // clone is the exact copy).
     const prePatch = structuredClone(cur);
-    for (const k of Object.keys(paramsIn)) {
+    for (const k of Object.keys(bought)) {
       if (Object.prototype.hasOwnProperty.call(cur, k)) before[k] = cur[k];
       else added.push(k);
       // THE NULL-UNSET ARM (2026-09-24, commission 033's gap: "patch
@@ -1384,7 +1392,7 @@ export async function patchBench(
       // never be cleared, only overwritten. Null now deletes here
       // too: one law, two doors. The inverse restores from
       // params_before, so undo resurrects a deleted key.
-      const v: unknown = (paramsIn as Record<string, unknown>)[k];
+      const v: unknown = bought[k];
       if (v === null) delete cur[k];
       else cur[k] = mergeParamValue(cur[k], v);
     }
@@ -1810,6 +1818,116 @@ const wireParams = (v: unknown): unknown =>
   isRecord(v)
     ? promoteQvoiceBag(unwrapItemArrays(v) as Record<string, unknown>)
     : v
+
+// ── THE HOST-PATH CURRENCY ARM (minor-a, 2026-11-12) ──────────────
+// An author pasting a HOST-ABSOLUTE media path ("/home/…/foo.png")
+// into a params slot left a row no reader could serve: the compose
+// door wants uploads-door currency, the drilled-out card's preview
+// (estateInputUrl) maps ONLY data/input/<name> to /v1/assets/inputs.
+// The write seam buys the currency itself: copy the host file into
+// the estate's data/input tree (the uploads rail's own root), rewrite
+// the value to "data/input/<name>" — one truth for compose and
+// preview. Judged per VALUE (any key, string or string-array), never
+// per key name: absolute path + media extension + the file exists on
+// host. Anything else rides VERBATIM — a missing file or non-media
+// path is the compose door's refusal to make, not a new voice here.
+//
+// EVERY WRITE TRANSPORT (2026-11-28, the D11 source-photo row —
+// ROADMAP L2370-rem): the arm lived in ONE door, drafts/patch, while
+// the three authoring doors beside it — the bench verb's patch, the
+// add-stage press, the add-stages batch — stored the same path raw.
+// The run staged it (the engine walk reads any host file), so the
+// operator pressed Run and the drill's source-photo badge built an
+// <img src="/home/…"> the host answered 404. The walk rides all four
+// doors now, BEFORE the shape normalizers and every admission judge
+// (the judged view is the stored view), and this module is its one
+// home: a params-bearing write that skips it is a row the next run
+// composes and no browser can show.
+
+/** Media extensions the currency arm boards (the uploads rail's
+ *  any-media law: image / video / audio + the mesh pair). */
+const CURRENCY_EXT = /\.(?:png|jpe?g|webp|mp4|webm|mov|mp3|wav|ogg|flac|glb|gltf)$/i;
+
+/** The uploads tree's root — MELITE_REPO_ROOT override, else the
+ *  source-relative repo root (mirrors resolveRepoRoot's law in
+ *  @melite/comfyui-cordis/comfyui-config; a local mirror, not a
+ *  cross-layer dependency). */
+function inputTreeRoot(): string {
+  const override = process.env["MELITE_REPO_ROOT"] ?? "";
+  if (override !== "") return resolve(join(override, "data", "input"));
+  const here = dirname(fileURLToPath(import.meta.url));
+  // src→drafts→estate→packages→repo (4 hops), then data/input.
+  return resolve(here, "..", "..", "..", "..", "data", "input");
+}
+
+/** One host-absolute media path → uploads-door currency. The one
+ *  name = one file law rides: a taken name with identical bytes
+ *  reuses the seat; different bytes take a hash-suffixed seat (the
+ *  uploads door's SEG grammar judged on the basename).
+ *  @param value the param value as authored.
+ *  @returns the currency path, or the value verbatim when it is
+ *  not a convertible host path. */
+async function hostPathToCurrency(value: string): Promise<string> {
+  // WINDOWS-PORTABILITY: a host-absolute path is isAbsolute, never
+  // startsWith("/") — posix literals (/home/…/foo.png) and win32
+  // drives (C:\…) both board; the stored currency stays posix
+  // data/input/<name> on every lane (the preview door's grammar).
+  if (!isAbsolute(value) || !CURRENCY_EXT.test(value)) return value;
+  const path = await import("node:path");
+  const name = path.basename(value);
+  if (name.includes("/") || name.includes("\\") || !segmentConfined(name)) return value;
+  const fs = await import("node:fs/promises");
+  let bytes: Buffer;
+  try {
+    bytes = await fs.readFile(value);
+  } catch {
+    return value; // not on host — the compose door's refusal owns it
+  }
+  const dir = inputTreeRoot();
+  await fs.mkdir(dir, { recursive: true });
+  let seat = name;
+  try {
+    const existing = await fs.readFile(path.join(dir, name));
+    if (!existing.equals(bytes)) {
+      const { createHash } = await import("node:crypto");
+      const dot = name.lastIndexOf(".");
+      const stem = dot === -1 ? name : name.slice(0, dot);
+      const ext = dot === -1 ? "" : name.slice(dot);
+      seat = `${stem}-${createHash("sha256").update(bytes).digest("hex").slice(0, 8)}${ext}`;
+    }
+  } catch {
+    // seat free — the basename lands under its own name
+  }
+  await fs.writeFile(path.join(dir, seat), bytes);
+  return `data/input/${seat}`;
+}
+
+/** The currency walk over a param value: strings convert, arrays of
+ *  strings convert item-wise, every other shape rides untouched.
+ *  @param v the authored param value.
+ *  @returns the value with any host-absolute media paths bought
+ *  into uploads-door currency. */
+export async function currencyWalk(v: unknown): Promise<unknown> {
+  if (typeof v === "string") return await hostPathToCurrency(v);
+  if (Array.isArray(v) && v.every((x): x is string => typeof x === "string")) {
+    return await Promise.all(v.map((s) => hostPathToCurrency(s)));
+  }
+  return v;
+}
+
+/** The currency walk over a whole params record (a NEW record — the
+ *  authored one is never mutated: the merge loops copy, the no-leak
+ *  law). The door calls this after its container checks pass, so a
+ *  record is all it ever sees.
+ *  @param params the unwrapped params record as authored.
+ *  @returns the record with every value walked. */
+export async function buyHostPaths(
+  params: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(params)) out[k] = await currencyWalk(params[k]);
+  return out;
+}
 
 /** Admit one RESTORED stage state (the undo arms): the same seat,
  *  NO restored carve — the audit's GAP 6 caught the lie: the comment
@@ -2272,12 +2390,17 @@ export async function addStageBench(
       {},
     );
   }
+  // THE HOST-PATH CURRENCY WALK (every write transport, 2026-11-28):
+  // bought BEFORE the row is shaped and judged — the admission
+  // below sees the currency the store keeps (the judged view is
+  // the stored view, the same order the patch doors run).
+  const params: unknown = isRecord(rawParams) ? await buyHostPaths(rawParams) : rawParams;
   const admitted: Record<string, unknown> = normalizeBenchStage(
     {
       id: stageIdForAdmit,
       card: cardForRow,
       ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
-      ...(rawParams !== undefined ? { params: rawParams } : {}),
+      ...(params !== undefined ? { params } : {}),
       ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
       ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
     },
@@ -2318,7 +2441,7 @@ export async function addStageBench(
       id: stageId,
       card,
       ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
-      ...(rawParams !== undefined ? { params: rawParams } : {}),
+      ...(params !== undefined ? { params } : {}),
       ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
       ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
     },
@@ -2467,7 +2590,21 @@ export async function addStagesBench(
   const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
   const minted: string[] = [];
   const rows: Record<string, unknown>[] = [];
-  rawList.forEach((raw: unknown, i: number): void => {
+  // THE HOST-PATH CURRENCY WALK (every write transport, 2026-11-28):
+  // the batch is ONE write, so the walk runs once over the whole
+  // batch before the per-row loop shapes and judges each row — the
+  // loop sees the currency the store keeps (the judged view is the
+  // stored view). The walk rewrites VALUES, never container shapes:
+  // a malformed row or params container rides verbatim here and the
+  // loop refuses it in its own voice below.
+  const boughtList: unknown[] = await Promise.all(
+    rawList.map(async (raw: unknown): Promise<unknown> => {
+      if (!isRecord(raw)) return raw;
+      const rowParams: unknown = wireParams(raw["params"]);
+      return isRecord(rowParams) ? { ...raw, params: await buyHostPaths(rowParams) } : raw;
+    }),
+  );
+  boughtList.forEach((raw: unknown, i: number): void => {
     const pos: string = "stage " + String(i) + " of the batch: ";
     if (!isRecord(raw)) {
       throw new RemoteError("bench/bad-body", pos + "must be an object (got " + typeof raw + ")", {});

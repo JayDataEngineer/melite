@@ -372,6 +372,19 @@ export type FamilyReseat = (card: string, params: Record<string, unknown>, prior
     params: Record<string, unknown>;
     dropped: readonly string[];
 } | null;
+/** The currency walk over a param value: strings convert, arrays of
+ *  strings convert item-wise, every other shape rides untouched.
+ *  @param v the authored param value.
+ *  @returns the value with any host-absolute media paths bought
+ *  into uploads-door currency. */
+export declare function currencyWalk(v: unknown): Promise<unknown>;
+/** The currency walk over a whole params record (a NEW record — the
+ *  authored one is never mutated: the merge loops copy, the no-leak
+ *  law). The door calls this after its container checks pass, so a
+ *  record is all it ever sees.
+ *  @param params the unwrapped params record as authored.
+ *  @returns the record with every value walked. */
+export declare function buyHostPaths(params: Record<string, unknown>): Promise<Record<string, unknown>>;
 /** The store's view of a params bag: the card's knobs and the lawful
  *  lane words only. Idempotent — a row already shed sheds to itself.
  *  @param params the bag as it arrived at a store or reader seat

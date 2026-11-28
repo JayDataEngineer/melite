@@ -1,12 +1,11 @@
 // upload-to-estate.spec.ts — the browser-file → estate-path rail: the
 // image-type refusal, the read-error guidance, the upload POST arms,
-// and the preview-URL mapping. FileReader is scripted (the one browser
+// FileReader is scripted (the one browser
 // call on the read path).
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import {
   UploadRefusedError,
-  estateInputUrl,
   uploadToEstate,
 } from "../src/uploadToEstate.ts";
 
@@ -112,37 +111,5 @@ describe("uploadToEstate POST arms", () => {
     await assert.rejects(uploadToEstate(file("a.png", "image/png")), /Upload failed \(HTTP 500\)/);
     globalThis.fetch = (async () => new Response(JSON.stringify({}), { status: 200 })) as typeof fetch;
     await assert.rejects(uploadToEstate(file("a.png", "image/png")), /Upload failed \(HTTP 200\)/);
-  });
-});
-
-describe("estateInputUrl", () => {
-  it("passes servable shapes through untouched", () => {
-    assert.equal(estateInputUrl("data:image/png;base64,AA=="), "data:image/png;base64,AA==");
-    assert.equal(estateInputUrl("blob:https://h/u"), "blob:https://h/u");
-    assert.equal(estateInputUrl("https://h/a.png"), "https://h/a.png");
-    assert.equal(estateInputUrl("http://h/a.png"), "http://h/a.png");
-    assert.equal(estateInputUrl("/assets/a.png"), "/assets/a.png");
-    assert.equal(estateInputUrl("/api/x"), "/api/x");
-    assert.equal(estateInputUrl("/v1/assets/runs/r/a.png"), "/v1/assets/runs/r/a.png");
-  });
-
-  it("maps estate input paths onto the preview door, else null", () => {
-    assert.equal(estateInputUrl("data/input/photo.PNG"), "/v1/assets/inputs/photo.PNG");
-    assert.equal(estateInputUrl("data/input/a.jpeg"), "/v1/assets/inputs/a.jpeg");
-    assert.equal(estateInputUrl("data/input/a.webp"), "/v1/assets/inputs/a.webp");
-    assert.equal(estateInputUrl("/mnt/data/a.png"), null);
-    assert.equal(estateInputUrl("data/input/a.gif"), null);
-    assert.equal(estateInputUrl("data/input/../x.png"), null);
-    assert.equal(estateInputUrl("data/input/sub/a.png"), null);
-  });
-
-  it("heals the agent-landed host spelling of the same uploads leaf (the 2026-11-22 burn)", () => {
-    // The absolute-tail arm: '/home/…/data/input/x.png' is the same
-    // uploads leaf the preview door serves — the host segments are
-    // address, the leaf is the file.
-    assert.equal(estateInputUrl("/home/user/estate/data/input/x.png"), "/v1/assets/inputs/x.png");
-    assert.equal(estateInputUrl("/mnt/data/input/a.jpeg"), "/v1/assets/inputs/a.jpeg");
-    assert.equal(estateInputUrl("/srv/data/input/sub/a.png"), null);
-    assert.equal(estateInputUrl("/mnt/data/a.png"), null);
   });
 });

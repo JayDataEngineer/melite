@@ -12744,6 +12744,45 @@ window.__ModuleLoader__.load({
 				children
 			});
 		}
+		// src/inputUrl.ts
+		const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
+		/** An image extension at the value's end (a query or fragment may
+		*  follow it) — the shared vocabulary's image face. */
+		const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
+		/** THE INPUT-PATH DISPLAY MIRROR (2026-10-13, the operator's live
+		*  burn: uploads persist as estate paths — 'data/input/x.png', the
+		*  uploads door's own param currency — and the square rendered a
+		*  BLANK face because no isImageUrl arm matches a relative path).
+		*  The uploads door's contract already serves the bytes for the img
+		*  tags (GET /v1/assets/inputs/<name>, doors.ts's own doc line);
+		*  this resolver is the display half: an estate input path with an
+		*  image extension renders from the assets door. DISPLAY ONLY —
+		*  the param keeps the estate path verbatim (the run stages it
+		*  into the engine's input dir; the currency law, wire.ts).
+		*
+		*  THE ONE DERIVATION (2026-11-28, the source-photo row's cure):
+		*  this module is the single home of the grammar — the square, the
+		*  rail, and the mesh stage's source-photo badge all resolve through
+		*  it. The badge used to carry its own copy (meshAssetUrl) that never
+		*  received the absolute-tail arm, so a stage doc holding the HOST
+		*  spelling of an uploads leaf previewed on the square and 404'd on
+		*  the badge in the same card. */
+		/**
+		* @param value - the attached value (an estate input path or any other string).
+		* @returns the assets-door display URL for an estate input path, else null.
+		*/
+		function estateInputUrl(value) {
+			const tail = value.lastIndexOf("data/input/");
+			if (tail > 0) {
+				const leaf = value.slice(tail + 11);
+				if (/^[^/]+$/.test(leaf) && IMAGE_EXT_RE.test(leaf)) return "/v1/assets/inputs/" + encodeURIComponent(leaf);
+				return null;
+			}
+			const m = /^data\/input\/([^/]+)$/.exec(value);
+			if (m === null) return null;
+			const name = m[1];
+			return IMAGE_EXT_RE.test(name) ? "/v1/assets/inputs/" + encodeURIComponent(name) : null;
+		}
 		// \0dsh-css:packages/web/card-base/src/preview.module.css.mjs
 		const css$3 = ".oHl7Va_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.oHl7Va_inputPin{z-index:3;position:absolute;top:8px;right:8px}.oHl7Va_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.oHl7Va_hero,.oHl7Va_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsh-alias-border-l2);border-radius:6px;flex:none;width:auto;min-width:0;max-width:100%;height:46vh;margin:0 auto;display:block}.oHl7Va_heroAudio{flex:none;width:100%;min-height:48px;margin:auto 0}.oHl7Va_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsh-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;gap:6px;font-size:11px;display:flex}.oHl7Va_emptyGlyph{opacity:.7;flex:none;width:14px;height:14px}.oHl7Va_textSeat{flex-direction:column;flex:1;justify-content:center;gap:6px;min-height:0;display:flex}.oHl7Va_textHero{max-height:320px;color:var(--dsh-alias-text-primary);white-space:pre-wrap;word-break:break-word;text-align:left;border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:6px;flex:0 auto;margin:auto 0;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;overflow:auto}.oHl7Va_textCopy{flex:none;align-self:flex-end}.oHl7Va_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsh-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.oHl7Va_stripHint{color:var(--dsh-alias-text-secondary,#888);white-space:nowrap;align-self:center;font-size:10px}.oHl7Va_thumbVideoBtn{box-sizing:border-box;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:8px;flex-direction:column;gap:2px;width:128px;padding:2px;display:flex}.oHl7Va_thumbVideoBtn:hover{border-color:var(--dsh-alias-border-l2)}.oHl7Va_thumbVideoActive{border-color:var(--dsw-alias-brand-primary)}.oHl7Va_thumbVideo{background:var(--dsw-alias-bg-base);object-fit:contain;border-radius:6px;width:100%;height:66px;display:block}.oHl7Va_thumbVideoName{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;overflow:hidden}.oHl7Va_thumbRow{overscroll-behavior:contain;flex-wrap:wrap;flex:none;gap:6px;display:flex;overflow-x:auto}.oHl7Va_thumb{border:1px solid var(--dsh-alias-border-l2);border-radius:4px;height:48px}.oHl7Va_thumbFace{box-sizing:content-box;border:1px solid var(--dsh-alias-border-l2);width:16px;height:16px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);border-radius:4px;flex:none;padding:15px}.oHl7Va_historyBlock{overscroll-behavior:contain;flex-direction:column;flex:none;gap:4px;max-height:240px;padding-top:4px;display:flex;overflow-y:auto}.oHl7Va_historyTitle{color:var(--dsw-alias-label-secondary);font-size:11px}.oHl7Va_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.oHl7Va_historyTile:hover,.oHl7Va_historyTileActive{border-color:var(--dsh-alias-border-l2)}.oHl7Va_staleBadge{flex:none;align-self:flex-start}.oHl7Va_layerRow{flex:none;gap:6px;display:flex}.oHl7Va_layerChip{flex:none}.oHl7Va_reportCard{border:1px solid var(--dsh-alias-border-l2);background:var(--dsw-alias-bg-base);text-align:left;border-radius:8px;flex-direction:column;gap:6px;padding:8px 10px;display:flex}.oHl7Va_reportHead{align-items:center;gap:6px;min-width:0;display:flex}.oHl7Va_reportStatus{letter-spacing:.04em;color:var(--dsw-alias-label-secondary);font-size:10px}.oHl7Va_reportTitle{color:var(--dsw-alias-label-primary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.oHl7Va_reportChips{flex-wrap:wrap;gap:4px;display:flex}.oHl7Va_reportChip{color:var(--dsw-alias-label-tertiary);border:1px solid var(--dsw-alias-border-l1);border-radius:6px;flex:none;padding:1px 6px;font-size:10px}.oHl7Va_reportRows{flex-direction:column;gap:2px;margin:0;display:flex}.oHl7Va_reportRow{justify-content:space-between;gap:12px;min-width:0;display:flex}.oHl7Va_reportKey{overflow-wrap:anywhere;min-width:0;color:var(--dsw-alias-label-dimmed);flex:0 auto;font-size:10px}.oHl7Va_reportVal{font-family:var(--dsw-alias-font-mono);color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;margin:0;font-size:10px}.oHl7Va_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}.oHl7Va_heroIncoming{opacity:0;pointer-events:none;width:100%;height:100%;position:absolute;inset:0}";
 		const tagId$3 = "@melite/card-base/preview.module.css@b08b3760";
@@ -12879,7 +12918,7 @@ window.__ModuleLoader__.load({
 				if (typeof v !== "string" || v.trim() === "") continue;
 				return {
 					id: f.name,
-					url: meshAssetUrl(v)
+					url: estateInputUrl(v) ?? v
 				};
 			}
 			return null;
@@ -13416,40 +13455,12 @@ window.__ModuleLoader__.load({
 		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 		*  artifact URLs. Every slot-shaped value renders the same way. */
-		const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
-		const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
 		/**
 		* @param value - the attached value to test (estate path, artifact URL, or data URL).
 		* @returns true when the value renders an image thumbnail on the square.
 		*/
 		function isImageUrl(value) {
 			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\./i.test(value) && IMAGE_EXT_RE.test(value);
-		}
-		/** THE INPUT-PATH DISPLAY MIRROR (2026-10-13, the operator's live
-		*  burn: uploads persist as estate paths — 'data/input/x.png', the
-		*  uploads door's own param currency — and the square rendered a
-		*  BLANK face because no isImageUrl arm matches a relative path).
-		*  The uploads door's contract already serves the bytes for the img
-		*  tags (GET /v1/assets/inputs/<name>, doors.ts's own doc line);
-		*  this resolver is the display half: an estate input path with an
-		*  image extension renders from the assets door. DISPLAY ONLY —
-		*  the param keeps the estate path verbatim (the run stages it
-		*  into the engine's input dir; the currency law, wire.ts). */
-		/**
-		* @param value - the attached value (an estate input path or any other string).
-		* @returns the assets-door display URL for an estate input path, else null.
-		*/
-		function estateInputUrl(value) {
-			const tail = value.lastIndexOf("data/input/");
-			if (tail > 0) {
-				const leaf = value.slice(tail + 11);
-				if (/^[^/]+$/.test(leaf) && IMAGE_EXT_RE.test(leaf)) return "/v1/assets/inputs/" + encodeURIComponent(leaf);
-				return null;
-			}
-			const m = /^data\/input\/([^/]+)$/.exec(value);
-			if (m === null) return null;
-			const name = m[1];
-			return IMAGE_EXT_RE.test(name) ? "/v1/assets/inputs/" + encodeURIComponent(name) : null;
 		}
 		/** THE VIDEO FACE of the same rule (the operator's live burn,
 		*  2026-10-28: a clip value — `data/input/Makhna clip.webm`, the

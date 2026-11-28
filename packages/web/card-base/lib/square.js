@@ -29,7 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, useRef, useState } from 'react';
-import { isModelUrl, mediaKindOf, mediaVocab } from '@melite/contracts/mediaKinds';
+import { isModelUrl, mediaKindOf } from '@melite/contracts/mediaKinds';
 import { runHostMediaUrl } from '@melite/contracts/benchStage';
 import { IconPlusOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 import { GlbStagePreview } from "./glb-stage.js";
@@ -37,22 +37,15 @@ import { ASSET_DRAG_MIME, parseAssetDrop } from "./chrome.js";
 import { Upload } from "./icons.js";
 import css from './card.module.css';
 import { t } from "./locales/square.js";
+import { IMAGE_EXT_RE, estateInputUrl } from "./inputUrl.js";
 export { ASSET_DRAG_MIME } from "./chrome.js";
+// the display mirror's public path stays here (atoms, the studio ref
+// utils, the specs import it from this module); its one home is
+// inputUrl.ts — the mesh stage's badge resolves through the same home.
+export { estateInputUrl } from "./inputUrl.js";
 /** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
  *  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
  *  artifact URLs. Every slot-shaped value renders the same way. */
-// THE IMAGE FACE IS THE SHARED VOCABULARY, MINUS SVG (the
-// MCP/media audit's M1): these predicates used to retype their own
-// extension list, so an extension the classifier knows (svg) never
-// rendered, one it does not (avif) rendered but never listed, and
-// neither was a bug anyone could see. The list is the media
-// contract's now, plus avif (which the square has always rendered)
-// MINUS svg — a DELIBERATE divergence, pinned by the square wall:
-// an svg is classified as an image (it IS one) but a square would
-// embed it as a document, so the thumbnail face refuses it and the
-// picker offers it as a file.
-const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
-const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
 /**
  * @param value - the attached value to test (estate path, artifact URL, or data URL).
  * @returns true when the value renders an image thumbnail on the square.
@@ -61,45 +54,6 @@ export function isImageUrl(value) {
     return (/^data:image\//i.test(value) ||
         /^blob:/i.test(value) ||
         /^(?:https?:)?\/[^"'<>]*\./i.test(value) && IMAGE_EXT_RE.test(value));
-}
-/** THE INPUT-PATH DISPLAY MIRROR (2026-10-13, the operator's live
- *  burn: uploads persist as estate paths — 'data/input/x.png', the
- *  uploads door's own param currency — and the square rendered a
- *  BLANK face because no isImageUrl arm matches a relative path).
- *  The uploads door's contract already serves the bytes for the img
- *  tags (GET /v1/assets/inputs/<name>, doors.ts's own doc line);
- *  this resolver is the display half: an estate input path with an
- *  image extension renders from the assets door. DISPLAY ONLY —
- *  the param keeps the estate path verbatim (the run stages it
- *  into the engine's input dir; the currency law, wire.ts). */
-/**
- * @param value - the attached value (an estate input path or any other string).
- * @returns the assets-door display URL for an estate input path, else null.
- */
-export function estateInputUrl(value) {
-    // THE ABSOLUTE-TAIL ARM (the agent-refs burn, 2026-11-22): an
-    // agent-landed ref arrives as the HOST spelling of the same
-    // uploads currency — '/home/…/data/input/x.png' — a path no <img>
-    // can fetch and no earlier arm healed (runHostMediaUrl needs a
-    // run-id segment; isImageUrl passed the raw path and the browser's
-    // broken-image glyph flipped the face to the HELD text). The
-    // uploads tree is the leaf: every leading segment up to the LAST
-    // 'data/input/' pair is address, and the single-segment grammar
-    // the door enforces (doors.ts SEG) rides the leaf. A value whose
-    // tail is not the uploads tree still heals nothing.
-    const tail = value.lastIndexOf('data/input/');
-    if (tail > 0) {
-        const leaf = value.slice(tail + 'data/input/'.length);
-        if (/^[^/]+$/.test(leaf) && IMAGE_EXT_RE.test(leaf)) {
-            return '/v1/assets/inputs/' + encodeURIComponent(leaf);
-        }
-        return null;
-    }
-    const m = /^data\/input\/([^/]+)$/.exec(value);
-    if (m === null)
-        return null;
-    const name = m[1];
-    return IMAGE_EXT_RE.test(name) ? '/v1/assets/inputs/' + encodeURIComponent(name) : null;
 }
 /** THE VIDEO FACE of the same rule (the operator's live burn,
  *  2026-10-28: a clip value — `data/input/Makhna clip.webm`, the

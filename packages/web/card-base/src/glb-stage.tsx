@@ -33,6 +33,7 @@ import { chromeCopy } from './locales/chromeCopy.ts'
 import { Box } from './icons.tsx'
 import { EmptyState } from './layout.tsx'
 import { fieldsOf, type FormSpecDoc, type SpecValues } from './spec.ts'
+import { estateInputUrl } from './inputUrl.ts'
 import s from './preview.module.css'
 
 let draco: DRACOLoader | null = null
@@ -101,7 +102,15 @@ export function attachedImageOf(
     if (f.type !== 'image') continue
     const v = value[f.name]
     if (typeof v !== 'string' || v.trim() === '') continue
-    return { id: f.name, url: meshAssetUrl(v) }
+    // THE ONE DERIVATION (2026-11-28, the source-photo row's cure):
+    // the badge resolves through the display mirror the square and
+    // the rail use (inputUrl.ts) — uploads currency AND the HOST
+    // spelling of an uploads leaf (the absolute-tail arm) — and a
+    // value already servable rides verbatim. The badge used to ride
+    // meshAssetUrl, a second copy of the grammar that never received
+    // the tail arm: a stage doc holding '/home/…/data/input/x.png'
+    // previewed on the square and 404'd on the badge of the same card.
+    return { id: f.name, url: estateInputUrl(v) ?? v }
   }
   return null
 }
