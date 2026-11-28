@@ -977,10 +977,16 @@ export function registerCard(ctx, comfy) {
         // retired row's admits minus the boarded families' studio
         // writes, which the projection unions from the facts file —
         // trailing-* ride verbatim, the gate matches them as prefixes).
-        // + the AXIS KEYS this card's own families stamp (the h3-timeline
-        // family declares Variant/Quant groups — the axis seeding writes
-        // `variant`/`quant` onto every fresh stage; the admission covers
-        // the card's own served surface, image-gen's recipe-knob law).
+        // THE AXIS KEYS LEFT THIS LIST (2026-11-28, the run-plane wall's
+        // finding, cards-h3-quant-run-plane): `variant`/`quant` are the R1
+        // contract keys — liftCardParams consumes both before every
+        // admission judge (the write door's undeclared-key gate and the
+        // compose door's) reads the view, and the client mirror consumes
+        // them as axis keys the same way; the quant coordinate's gate at
+        // the write door is selectCardVariant's resolveCellRow. Admitting
+        // them here was dead surface advertising a key no judge ever
+        // sees — the `recipe` class above. The axis seeding still writes
+        // both onto every fresh stage; that is the contract's business.
         // `recipe` LEFT THIS LIST (2026-10-16, audit 0be61df8 F5): the
         // prose here used to claim the axis seeding writes it, but the
         // RECIPE-AXIS YIELD forbids the key (spec.ts axisGroups filters
@@ -1017,7 +1023,7 @@ export function registerCard(ctx, comfy) {
         // any doc carrying them while the compose mirror bannered them
         // 'fires nothing on this lane'. cards-mirror-door-parity reds on
         // exactly that drift; the admission declares the truth.
-        admits: ['ctx_*', 'draft', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'prompt_waivers', 'quant', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'speech_language', 'upscale', 'variant'],
+        admits: ['ctx_*', 'draft', 'edit', 'extend', 'fps_seconds', 'image_name', 'k', 'last_frame', 'noise_seed', 'prompt_waivers', 'ref_image_size', 'refine', 'repair', 'replace', 'reshoot', 'sla_*', 'speech_language', 'upscale'],
         // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the
         // features.modifiers channel): the swap + repair + extend arms.
         // The mask card's sam3/sam2/draw precedent — one kind per arm,
