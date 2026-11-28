@@ -43,6 +43,14 @@ const STAGE_POLICY_WORDS = {
     execute_ceil_ms: () => "STAGE POLICY — the run's own execute ceiling in milliseconds (<= 0 disables the hung-run fuse), read by the queue's start door for the whole run, and this press composes one card alone and starts nothing. State it on a bench stage's params, or drop it",
     default: () => "STAGE POLICY (STAGE_RESERVED_PARAMS) — read by the merge plane between stages, and this press composes one card alone. State it on a bench stage, or drop it",
 };
+/** The stage-policy words for one reserved key — its own sentence when
+ *  the table has the key, the generic sentence otherwise. Every key of
+ *  STAGE_RESERVED_PARAMS carries its own words (the admission matrix
+ *  judges that: a new reserved key without its sentence reds there),
+ *  so the generic sentence is reached by no key the merge declares. */
+export function stagePolicyWords(key) {
+    return (STAGE_POLICY_WORDS[key] ?? STAGE_POLICY_WORDS["default"])();
+}
 export async function composeOnce(deps, card, fam, params, runId, phase) {
     // R3 (live): the engine's own node set arms the gate — an
     // unreachable engine refuses CLOSED, never composes blind.
@@ -243,7 +251,7 @@ export function admissionRefusal(deps, card, fam, lifted, phase, facts) {
         // key the merge plane declares.
         const policyHints = unknown
             .filter((k) => stageReservedKeyLifts(decl, k))
-            .map((k) => " '" + k + "' is " + (STAGE_POLICY_WORDS[k] ?? STAGE_POLICY_WORDS["default"])());
+            .map((k) => " '" + k + "' is " + stagePolicyWords(k));
         throw phaseRefusal(phase, "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
             " (admission is the declared surface — knobs + contract admits; see the card's TS definition)" +
             (hints.length > 0 ? " Mod-pack keys:" + hints.join(";") : "") +

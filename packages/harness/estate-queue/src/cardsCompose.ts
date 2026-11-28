@@ -4,6 +4,7 @@
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
 import { cardAdmits, familyLanesOf, stageReservedKeyLifts } from "./cardsFacts.ts";
+import { STAGE_RESERVED_PARAMS } from "@melite/comfyui-cordis";
 import { ESTATE_NAMING_ROW } from "@melite/contracts/formSpec";
 export { cardAdmits };
 import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
@@ -79,6 +80,15 @@ const STAGE_POLICY_WORDS: Readonly<Record<string, () => string>> = {
     "STAGE POLICY — the run's own execute ceiling in milliseconds (<= 0 disables the hung-run fuse), read by the queue's start door for the whole run, and this press composes one card alone and starts nothing. State it on a bench stage's params, or drop it",
   default: (): string =>
     "STAGE POLICY (STAGE_RESERVED_PARAMS) — read by the merge plane between stages, and this press composes one card alone. State it on a bench stage, or drop it",
+}
+
+/** The stage-policy words for one reserved key — its own sentence when
+ *  the table has the key, the generic sentence otherwise. Every key of
+ *  STAGE_RESERVED_PARAMS carries its own words (the admission matrix
+ *  judges that: a new reserved key without its sentence reds there),
+ *  so the generic sentence is reached by no key the merge declares. */
+export function stagePolicyWords(key: string): string {
+  return (STAGE_POLICY_WORDS[key] ?? STAGE_POLICY_WORDS["default"])();
 }
 
 export async function composeOnce(
@@ -298,7 +308,7 @@ export function admissionRefusal(
       // key the merge plane declares.
       const policyHints = unknown
         .filter((k) => stageReservedKeyLifts(decl, k))
-        .map((k) => " '" + k + "' is " + (STAGE_POLICY_WORDS[k] ?? STAGE_POLICY_WORDS["default"])())
+        .map((k) => " '" + k + "' is " + stagePolicyWords(k))
       throw phaseRefusal(
         phase,
         "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +

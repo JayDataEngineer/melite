@@ -36,6 +36,12 @@ export interface ComposeSeat {
  *  siblings merge over it. Exported so the phase-1 admission seat
  *  gates the LIFTED body, never the raw stanza shell. */
 export declare function liftStanza(params: Record<string, unknown>): Record<string, unknown>;
+/** The stage-policy words for one reserved key — its own sentence when
+ *  the table has the key, the generic sentence otherwise. Every key of
+ *  STAGE_RESERVED_PARAMS carries its own words (the admission matrix
+ *  judges that: a new reserved key without its sentence reds there),
+ *  so the generic sentence is reached by no key the merge declares. */
+export declare function stagePolicyWords(key: string): string;
 export declare function composeOnce(deps: ComposeSeat, card: string, fam: string, params: Record<string, unknown>, runId: string, phase: string): Promise<Record<string, unknown>>;
 /** THE ADMISSION CONTRACT GATE (one function, two seats — the
  *  phase-1 pre-compose seat and composeOnce's own re-run). Every

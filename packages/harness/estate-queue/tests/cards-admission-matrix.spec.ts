@@ -48,6 +48,8 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { stagePolicyWords } from "../src/cardsCompose.ts";
+import { STAGE_RESERVED_PARAMS } from "@melite/comfyui-cordis";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService, CardArmError } from "../src/cardsRegistry.ts";
 import { admissionRefusal } from "../src/cardsCompose.ts";
@@ -364,6 +366,29 @@ describe("T6 — THE NO-SEAM VOICE (B5, 2026-11-27: a stage-policy key at the lo
     expect(cells, "the matrix went vacuous").toBeGreaterThan(0);
     expect(matrixRows().some((r) => r.card === "h3-timeline"), "the burn's card left the matrix").toBe(true);
     expect(failures).toEqual([]);
+  });
+
+  it("every reserved key the lone-card door can REFUSE carries its OWN sentence (a new STAGE_RESERVED_PARAMS key without words reds here); a key that admits everywhere needs none", () => {
+    const facts = svc.modelFacts();
+    const generic = stagePolicyWords("__a key the table has not met__");
+    expect(generic).toMatch(/^STAGE POLICY \(STAGE_RESERVED_PARAMS\) — /);
+    for (const key of STAGE_RESERVED_PARAMS) {
+      // can THIS door refuse the key anywhere on the matrix? (output_name
+      // admits on every card — the estate naming row — so it never
+      // meets the refusal and carries no fault sentence)
+      let refusable = false;
+      for (const { card, families } of matrixRows()) {
+        for (const fam of families) if (!verdict(card, fam, key, facts).admitted) refusable = true;
+      }
+      const own = stagePolicyWords(key);
+      if (refusable) {
+        expect(own, key + " is refused at the lone-card door but rides the generic sentence — give it its own fault").not.toBe(generic);
+        expect(own.startsWith("STAGE POLICY — "), key + "'s sentence names the class first").toBe(true);
+        expect(own.includes("or drop it"), key + "'s sentence names the way out").toBe(true);
+      } else {
+        expect(own, key + " admits everywhere; a fault sentence would describe a refusal that never fires").toBe(generic);
+      }
+    }
   });
 });
 
