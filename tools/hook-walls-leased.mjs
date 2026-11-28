@@ -42,6 +42,14 @@ const tmp = mkdtempSync(join(tmpdir() === "/tmp" ? "/var/tmp" : tmpdir(), "melit
 const env = { ...process.env, TMPDIR: tmp };
 delete env.MELITE_MCP_ENGINES;
 delete env.MELITE_AGENT_ROUTE;
+// THE QUICK-SEAT CEILING (2026-11-28, push #4): this seat runs the
+// whole node project beside the box's standing load — three boot-heavy
+// arms starved past the scoped 30s ceiling in one run while the
+// coverage seat passed them at its stretched one. The seat declares
+// its pool through loaded-wait's slower-box door: the default budget
+// (vitest.config.ts BOOT_BUDGET) and every LOADED_WAIT-keyed arm
+// follow it. An operator-set ceiling stands.
+env.MELITE_LOADED_WAIT_MS ??= "60000";
 
 const vitest = join(REPO, "node_modules/vitest/vitest.mjs");
 const run = spawnSync(process.execPath, [vitest, "run", "--config", "vitest.config.ts", "--project", "node"], {

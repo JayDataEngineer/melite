@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
 import { CardRegistryService } from '@melite/estate-queue'
+import { LOADED_WAIT } from "../../../../tests/helpers/loaded-wait.ts"
 // THE PERSISTED-STATE SWEEP (2026-10-10): the write doors guard
 // writes, getBench re-admits at serve — this sweep holds the LIVE
 // ESTATE's stored bench docs to the current laws at CI time, so a
@@ -84,7 +85,7 @@ test('sweep every tracked bench doc against the current admission laws', async (
   console.log(crimes.length ? crimes.join('\n') : 'clean')
   expect(files.length, 'the tracked bench corpus is empty — the sweep went vacuous').toBeGreaterThan(0)
   expect(crimes, `tracked bench docs hold current-law crimes:\n${crimes.join('\n')}`).toEqual([])
-}, 30000)
+}, LOADED_WAIT())
 
 test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {
   const dir = join(tmpdir(), 'melite-sweep-wall-' + String(process.pid))
@@ -111,4 +112,4 @@ test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
-}, 30000)
+}, LOADED_WAIT())

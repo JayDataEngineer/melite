@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { effectiveBaseline } from './scripts/coverage-baseline.ts'
 import { ESTATE_STORE_SEATED } from './tests/helpers/estate-store-seat.ts'
+import { LOADED_WAIT } from './tests/helpers/loaded-wait.ts'
 import {
   PROXY_SETUP,
   resolutionFacade,
@@ -86,9 +87,20 @@ const uncoveredLocationsReporter = fileURLToPath(new URL('./scripts/coverage-unc
  *  and the per-arm LOADED_WAIT multiples keep their relative
  *  meaning (explicit arm timeouts are absolute and untouched). */
 const BOOT_POOL_STRETCH = process.env.MELITE_COVERAGE_SHARED === "1" ? 2 : 1;
+// THE SLOWER-BOX FLOOR (2026-11-28, push #4's quick-seat starvation):
+// the pre-push node seat (tools/hook-walls-leased.mjs) runs the WHOLE
+// node project beside the owner's standing load — three boot-heavy
+// arms starved past the scoped 30s ceiling in one run (each a
+// different victim, the wave3 signature above), while the coverage
+// seat passed the same arms at its stretched ceiling. The quick seat
+// declares its pool through loaded-wait's slower-box door
+// (MELITE_LOADED_WAIT_MS): the default budget follows that door when
+// it names a ceiling above the stretched one, so the quick seat, the
+// coverage seat and every LOADED_WAIT-keyed arm agree on one budget.
+// An unset or lower override changes nothing.
 const BOOT_BUDGET = {
-  testTimeout: 30_000 * BOOT_POOL_STRETCH,
-  hookTimeout: 30_000 * BOOT_POOL_STRETCH,
+  testTimeout: Math.max(30_000 * BOOT_POOL_STRETCH, LOADED_WAIT()),
+  hookTimeout: Math.max(30_000 * BOOT_POOL_STRETCH, LOADED_WAIT()),
 } as const;
 
 // WIN32-PORTABILITY (2026-11-06, the windows 37-ReferenceError

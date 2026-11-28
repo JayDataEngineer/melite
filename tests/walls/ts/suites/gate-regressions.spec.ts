@@ -114,6 +114,21 @@ describe("THE FRESH-CLONE HOOK (GT-01/GT-02, the round-5 gate audit)", () => {
       .toBeLessThan(redirectAt);
   });
 
+  // THE QUICK-SEAT CEILING (2026-11-28, push #4): the leased seat runs
+  // the WHOLE node project beside the box's standing load — three
+  // boot-heavy arms (sweep-benches, cardsCompose, manage-lora-fetch)
+  // starved past the scoped 30s ceiling in one run, each a different
+  // victim, while the coverage seat passed them at its stretched one.
+  // The seat declares its pool through loaded-wait's slower-box door
+  // and the config's default budget follows that door — two seats,
+  // one law; either half missing rebuilds the starvation.
+  it("the leased quick seat declares its ceiling through the slower-box door, and the boot budget follows it", () => {
+    expect(hook).toMatch(/env\.MELITE_LOADED_WAIT_MS \?\?= "60000"/);
+    const config = read("vitest.config.ts");
+    expect(config).toMatch(/testTimeout: Math\.max\(30_000 \* BOOT_POOL_STRETCH, LOADED_WAIT\(\)\)/);
+    expect(config).toMatch(/hookTimeout: Math\.max\(30_000 \* BOOT_POOL_STRETCH, LOADED_WAIT\(\)\)/);
+  });
+
   it("the walls job stages the whole tree (no glob:) and keeps the log on red", () => {
     // GT-01: a `glob:` key on the job narrows lefthook's file set —
     // most commits would skip the walls entirely while the job name
@@ -1380,8 +1395,10 @@ describe("THE BOOT BUDGET REACHES EVERY PROJECT (the hook's 5s bounces, 2026-09-
     // and the budget is the honest one, not a token value: the base
     // is 30_000 and only the wave3 load stretch may multiply it (the
     // stretch is keyed on the same MELITE_COVERAGE_SHARED signal
-    // loaded-wait.ts keys on — a bigger literal here is still a wall)
-    expect(src).toMatch(/testTimeout: 30_000 \* BOOT_POOL_STRETCH/);
+    // loaded-wait.ts keys on — a bigger literal here is still a
+    // wall); the slower-box floor rides LOADED_WAIT's validated door
+    // (2026-11-28), never a second literal
+    expect(src).toMatch(/testTimeout: Math\.max\(30_000 \* BOOT_POOL_STRETCH, LOADED_WAIT\(\)\)/);
     expect(src).toMatch(/BOOT_POOL_STRETCH = process\.env\.MELITE_COVERAGE_SHARED === "1" \? 2 : 1/);
     // the root's own copy is kept for anything that reads it, and
     // the correction is written down where the next reader looks
