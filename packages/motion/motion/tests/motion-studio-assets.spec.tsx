@@ -24,6 +24,10 @@ import { runCompiledGeneration } from '@melite/catalog'
 
 afterEach(() => resetStudio())
 
+// the fetch ledger of the current test's stub (every mount helper below
+// re-seats it) — the deterministic gate for the fallback-toast arms
+let loads: ReturnType<typeof stubLoads> = undefined as never
+
 describe('background + body slot (drops / picks / wire)', () => {
   const MIME = 'application/tech-noir-asset'
 
@@ -43,7 +47,7 @@ describe('background + body slot (drops / picks / wire)', () => {
    *  separate panes — drops on them never reach the frame's onDrop).
    *  The export rect renders only in-stage, so open it on a run. */
   async function stageTarget(): Promise<HTMLElement> {
-    stubLoads()
+    loads = stubLoads()
     mountEditor({ result: { artifacts: { motion_npz: MOTION_URL } } })
     await waitForText('30 fps · 4f')
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
@@ -54,7 +58,7 @@ describe('background + body slot (drops / picks / wire)', () => {
   }
 
   async function mountedNoRun(params: Record<string, unknown> = {}, props: Record<string, unknown> = {}) {
-    stubLoads()
+    loads = stubLoads()
     const m = mountEditor({ params }, props)
     await waitForText('No motion yet')
     return m
@@ -66,10 +70,11 @@ describe('background + body slot (drops / picks / wire)', () => {
     fireEvent.drop(target, {
       dataTransfer: assetTransfer('https://host/dropped.glb'),
     })
-    await vi.waitFor(() => {
-      const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
-      if (!fell) throw new Error('no body fallback toast yet')
-    }, { timeout: LOADED_WAIT() * 2 / 3 })
+    // THE FALLBACK TOAST IS TRANSIENT (the store dismisses on its own
+    // timer): await the one async edge — the fake fetch's settled 404 —
+    // and assert at once; a poll sampling the toast was the load-6 flake.
+    await loads.settledFor('dropped.glb')
+    expect(useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))).toBe(true)
   }, 30000)
 
   test('stage drop of an image sets the background, clear removes it', async () => {
@@ -179,10 +184,11 @@ describe('background + body slot (drops / picks / wire)', () => {
     const file = new File(['glb-bytes'], 'body.glb', { type: 'model/gltf-binary' })
     Object.defineProperty(input, 'files', { value: [file], configurable: true })
     fireEvent.change(input)
-    await vi.waitFor(() => {
-      const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
-      if (!fell) throw new Error('no attach fallback toast yet')
-    }, { timeout: LOADED_WAIT() * 2 / 3 })
+    // the pick reads the file to a data: URL (typed by the file's MIME —
+    // the mannequin's own data: skin fetch never matches) and the fake
+    // fetch 404s it
+    await loads.settledFor('data:model/gltf-binary')
+    expect(useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))).toBe(true)
   }, 30000)
 
   test('bg file pick reads and persists', async () => {
@@ -256,7 +262,7 @@ describe('background + body slot (drops / picks / wire)', () => {
 
   /** Stage-level mount (inputs live beside params, not inside them). */
   async function mountedWired(wireInputs: string[], params: Record<string, unknown>, props: Record<string, unknown>) {
-    stubLoads()
+    loads = stubLoads()
     const m = mountEditor({ params, inputs: wireInputs }, props)
     await waitForText('No motion yet')
     return m
@@ -340,10 +346,8 @@ describe('background + body slot (drops / picks / wire)', () => {
       { preview_glb: null },
       { onWireSlot: vi.fn(), upstreams: [up1({ artifacts: { rig: 'https://host/up.glb' }, assetUrls: [] })] },
     )
-    await vi.waitFor(() => {
-      const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
-      if (!fell) throw new Error('no wired fallback toast yet')
-    }, { timeout: LOADED_WAIT() * 2 / 3 })
+    await loads.settledFor('up.glb')
+    expect(useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))).toBe(true)
   }, 30000)
 
   test('wired detach unwires the slot', { timeout: LOADED_WAIT() * 3 }, async () => {
@@ -458,7 +462,7 @@ describe('preview body (attach / convert / fall back)', () => {
 
   test('an unfetchable body falls back without touching the queue', async () => {
     const seen: string[] = []
-    stubLoads({ bodies: { 'missing.glb': 404 } })
+    loads = stubLoads({ bodies: { 'missing.glb': 404 } })
     const origFetch = globalThis.fetch
     vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
       const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
@@ -467,10 +471,8 @@ describe('preview body (attach / convert / fall back)', () => {
     })
     mountEditor({ params: { preview_glb: 'https://host/missing.glb' } })
     await waitForText('No motion yet')
-    await vi.waitFor(() => {
-      const fell = useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))
-      if (!fell) throw new Error('no fallback toast yet')
-    }, { timeout: LOADED_WAIT() * 2 / 3 })
+    await loads.settledFor('missing.glb')
+    expect(useToastStore.getState().toasts.some((t) => t.message.includes('Preview body not loaded'))).toBe(true)
     expect(seen.some((u) => u.includes('/v1/flows/'))).toBe(false)
   }, 30000)
 })

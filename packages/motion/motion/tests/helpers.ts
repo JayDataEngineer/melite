@@ -5,6 +5,7 @@
  * per-test teardown body.
  */
 import { vi } from 'vitest'
+import { LOADED_WAIT } from '../../../../tests/helpers/loaded-wait.ts'
 import { createElement as h } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { existsSync } from 'node:fs'
@@ -123,19 +124,39 @@ function motionFormAxes(): Promise<{ variants: unknown[], groups: Record<string,
 }
 
 
+/** The fake fetch's ledger (the FLAKE-4 cure, 2026-11-28 —
+ *  dev_docs/audits/flakes-2026-10-30-estate-audit.md): every call the
+ *  stub answers is latched with its settled promise. A test awaits the
+ *  ONE async edge its assertion rides — the fake's response settling —
+ *  and asserts at once, instead of polling a transient (toasts
+ *  auto-dismiss on the store's own timer; a poll sampling one is a race
+ *  under the loaded gate). Latched calls never expire, so waiting for a
+ *  call is not a sampling window. */
+export interface StubLoads {
+  /** Resolves once a call whose URL contains `sub` has settled AND the
+   *  consumer's continuation has drained (one macrotask: every microtask
+   *  the settled response queued runs before it). A call that never comes
+   *  rejects after `timeout` ms — the failure voice, never the happy
+   *  path's budget. */
+  settledFor(sub: string, timeout?: number): Promise<void>;
+}
+
+interface FetchCall { url: string; done: Promise<unknown> }
+
 /** Skin always serves; motion serves only when the stage has a result.
  *  Body/flow lanes opt in per test: bodies maps a URL substring to the
- *  served bytes ('glb' = the rigless mesh) or an HTTP status. */
+ *  served bytes ('glb' = the rigless mesh) or an HTTP status. Returns the
+ *  fetch ledger (see StubLoads). */
 export function stubLoads(opts: {
   motionT?: number; motionStatus?: number; skinStatus?: number;
   bodies?: Record<string, 'glb' | number>;
   draftsStatus?: number; startStatus?: number; startRaw?: string; startEmptyBody?: boolean;
   validateStatus?: number; validateRaw?: string;
   flow?: 'completed' | 'completed-noglb' | 'failed' | 'slow' | number;
-} = {}): void {
+} = {}): StubLoads {
   let statusCalls = 0
-  vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
-    const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
+  const calls: FetchCall[] = []
+  const answer = async (u: string) => {
     // RULE B: the kimodo form-spec door — the rail's SpecPanel fetches
     // the card family's served schema. THE SERVED DOC IS THE
     // DECLARATION (the motion-params journey audit's split-brain cure,
@@ -209,9 +230,31 @@ export function stubLoads(opts: {
       })
     }
     return new Response('nope', { status: 404 })
+  }
+  vi.stubGlobal('fetch', (input: unknown) => {
+    const u = typeof input === 'string' ? input : (input as Request).url ?? String(input)
+    const done = answer(u)
+    calls.push({ url: u, done })
+    return done
   })
   vi.stubGlobal('requestIdleCallback', (cb: () => void) => setTimeout(cb, 0) as never)
   vi.stubGlobal('cancelIdleCallback', (id: number) => clearTimeout(id))
+  return {
+    async settledFor(sub, timeout = LOADED_WAIT()) {
+      const deadline = Date.now() + timeout
+      let call = calls.find((c) => c.url.includes(sub))
+      while (call === undefined) {
+        if (Date.now() > deadline) {
+          const seen = calls.map((c) => c.url).join(', ') || 'none'
+          throw new Error(`stubLoads: no fetch call matched "${sub}" within ${timeout}ms (calls seen: ${seen})`)
+        }
+        await new Promise<void>((resolve) => setTimeout(resolve, 5))
+        call = calls.find((c) => c.url.includes(sub))
+      }
+      await call.done
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    },
+  }
 }
 
 /** No-act mount: render outside act, wait for settled content via polling. */
