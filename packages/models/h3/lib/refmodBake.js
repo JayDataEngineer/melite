@@ -1,6 +1,6 @@
 import { mediaKindOf } from '@melite/contracts/mediaKinds';
-import { wireList } from './schema.js';
-import { REF_CAPS } from './timelineContract.js';
+import { wireList } from "./schema.js";
+import { REF_CAPS } from "./timelineContract.js";
 /** Mount the ref_mods bake onto a conditioning handle.
  *
  * The merge law (2026-11-08, study §2b / G7): the run-level

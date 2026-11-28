@@ -1,7 +1,7 @@
-import { LANE_FILES, h3LoraStackOf, h3ShiftVideoOf } from './actions.js';
-import { mountRefModBake } from './refmodBake.js';
-import { wireList } from './schema.js';
-import { REF_CAPS } from './timelineContract.js';
+import { LANE_FILES, h3LoraStackOf, h3ShiftVideoOf } from "./actions.js";
+import { mountRefModBake } from "./refmodBake.js";
+import { wireList } from "./schema.js";
+import { REF_CAPS } from "./timelineContract.js";
 /** The VHS source loader the slice + timeline read (reference node 5
  *  verbatim: force_rate 24 — the film clock — and the zero/one
  *  passthrough knobs; format 'None'). Slot 0 frames, slot 2 audio.

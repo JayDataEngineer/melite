@@ -41,8 +41,8 @@
 // ComfyUI-KJNodes ColorToMask) died with the rework.
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import { SAM3_CKPT } from './edit.js'
-import { outputNameTailOf } from './schema.js'
+import { SAM3_CKPT } from './edit.ts'
+import { outputNameTailOf } from './schema.ts'
 
 /** The pack's clip-normalization node (the official chain's first
  *  stage — resamples to 24 fps, snaps the frame count to H3's 17k+5

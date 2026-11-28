@@ -21,18 +21,18 @@
 // discard it — the card's compose is void; the action spec's build
 // hands its caller the delivered artifact's wire). Graph bytes are
 // untouched by the change.
-import { planTierShape, RESOLUTION_SHORT_EDGE } from './chainEdit.js';
+import { planTierShape, RESOLUTION_SHORT_EDGE } from "./chainEdit.js";
 import { fireControlNets } from '@melite/comfyui-card-kit/guard';
 import { saveAudio } from '@melite/comfyui-card-kit';
-import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT, outputNameTailOf } from './schema.js';
+import { assertKeyframeRowShape, FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS, REFINE_DENOISE_DEFAULT, outputNameTailOf } from "./schema.js";
 import { H3_LORA_ROWS } from '@melite/models-h3/mods/loras';
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab';
-import { computeFilmMix, laneStamps, parseFilmMixClips, spanOverlap, stanzaSecs } from './filmMix.js';
-import { lanePromptText, speechLanguageOf } from './audioStamp.js';
-import { SECOND_PASS_WINDOW } from './secondPass.js';
-import { mountRefModBake } from './refmodBake.js';
-import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, bookSeconds, retimeRowsToRendered, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from './timelineContract.js';
-import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from './reshoot.js';
+import { computeFilmMix, laneStamps, parseFilmMixClips, spanOverlap, stanzaSecs } from "./filmMix.js";
+import { lanePromptText, speechLanguageOf } from "./audioStamp.js";
+import { SECOND_PASS_WINDOW } from "./secondPass.js";
+import { mountRefModBake } from "./refmodBake.js";
+import { DOC_FPS_DEFAULT, GRID_REMAINDER, GRID_STEP_FRAMES, IMAGE_BUS_SLOTS, LAST_FRAME_BATCH_INDEX, REF_CAPS, SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT, admitCallSpans, assertGridLength, bookSeconds, retimeRowsToRendered, isGridLength, isMediaRef, spanStanzaFrames, transitionOverlap } from "./timelineContract.js";
+import { applyH3ReshootCond, applyH3ReshootModel, buildH3Reshoot, reshootArmed, reshootPrompt, } from "./reshoot.js";
 // THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12; bytedance DMAD row
 // 2026-10-11 → the LightX2V Turbo 8-Step v1.0 row 2026-11-07 → the
 // SILVER MERGE row 2026-11-01 — operator, verbatim: "switch the
@@ -59,7 +59,7 @@ export const H3_DEFAULT_LORA_ID = 'h3_silver_dareties';
  *  lives in timelineContract.ts (the law's home) — re-exported here
  *  for the compose's own reads; see the contract module for the
  *  provenance. */
-export { SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT } from './timelineContract.js';
+export { SILENT_TAIL_FRAMES, SILENT_TAIL_TEXT } from "./timelineContract.js";
 /** The absent-bag default as a RESOLVED ROW — the same catalog row the
  *  compose default builds, exposed so the card can serve it as the
  *  ghost chip: the face then shows the adapter the film will actually

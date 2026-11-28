@@ -68,11 +68,11 @@
 // multi-window film).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
-import type { H3Facts } from './actions.js'
-import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js'
-import { contexMaskedTarget, h3MaskedEditPlane, loadVideo } from './chainEdit.js'
-import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.js'
-import { DOC_FPS_DEFAULT, MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from './timelineContract.js'
+import type { H3Facts } from './actions.ts'
+import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.ts'
+import { contexMaskedTarget, h3MaskedEditPlane, loadVideo } from './chainEdit.ts'
+import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.ts'
+import { DOC_FPS_DEFAULT, MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES } from './timelineContract.ts'
 
 /** The learned 3D-conv upscale weights (the schema's upscale_model
  *  seat carries this same single option — one file, one spelling, no

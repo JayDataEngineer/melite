@@ -1,13 +1,13 @@
-import { audioSliceSeat, chainSaveBoundaries, concatSavedFilms, filmJoinAudio, filmMixNode } from './actions.js';
-import { lanePromptText, speechLanguageOf } from './audioStamp.js';
-import { chooseLaneClips, computeFilmMix, laneStamps, parseFilmMixClips } from './filmMix.js';
-import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from './timelineContract.js';
-import { outputNameTailOf } from './schema.js';
-export { solveWindowComposition } from './timelineContract.js';
+import { audioSliceSeat, chainSaveBoundaries, concatSavedFilms, filmJoinAudio, filmMixNode } from "./actions.js";
+import { lanePromptText, speechLanguageOf } from "./audioStamp.js";
+import { chooseLaneClips, computeFilmMix, laneStamps, parseFilmMixClips } from "./filmMix.js";
+import { assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from "./timelineContract.js";
+import { outputNameTailOf } from "./schema.js";
+export { solveWindowComposition } from "./timelineContract.js";
 // the last-frame spelling re-exported from its ONE home (timelineContract —
 // actions.ts reads it there too; the public face keeps this name)
-export { LAST_FRAME_BATCH_INDEX } from './timelineContract.js';
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js';
+export { LAST_FRAME_BATCH_INDEX } from "./timelineContract.js";
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from "./chainEdit.js";
 /** The tail-frame picker's index: the boot census's OWN max for
  * ImageFromBatch.batch_index (16384 today — the wall derives it from
  * tests/walls/fixtures/object_info.boot.json, never a frozen literal).

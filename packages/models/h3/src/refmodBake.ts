@@ -11,8 +11,8 @@
 // conditioning through MiniMaxH3RefModApply in fixed order.
 import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
-import { wireList } from './schema.js'
-import { REF_CAPS } from './timelineContract.js'
+import { wireList } from './schema.ts'
+import { REF_CAPS } from './timelineContract.ts'
 
 /** Mount the ref_mods bake onto a conditioning handle.
  *

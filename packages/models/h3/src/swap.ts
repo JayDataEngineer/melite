@@ -56,9 +56,9 @@
 // one clock — the reference's 15 packs many 6s clips; ours renders
 // the clip itself).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import { resolveCarryOverlap } from './timelineContract.js'
-import type { H3Facts } from './actions.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
+import { resolveCarryOverlap } from './timelineContract.ts'
+import type { H3Facts } from './actions.ts'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.ts'
 
 /** The swap entry's required media + text seats (the reshoot idiom:
  *  an armed doc with an empty seat refuses loud naming the seat). */

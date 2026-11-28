@@ -3,6 +3,9 @@
     "target": "ES2023",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    // local imports name .ts (the repo convention); the emit rewrites them
+    // to .js for the Node ESM lib face.
+    "rewriteRelativeImportExtensions": true,
     "lib": [
       "ES2023"
     ],

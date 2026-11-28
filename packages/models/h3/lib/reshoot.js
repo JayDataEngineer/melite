@@ -1,5 +1,5 @@
-import { SAM3_CKPT } from './edit.js';
-import { outputNameTailOf } from './schema.js';
+import { SAM3_CKPT } from "./edit.js";
+import { outputNameTailOf } from "./schema.js";
 /** The pack's clip-normalization node (the official chain's first
  *  stage — resamples to 24 fps, snaps the frame count to H3's 17k+5
  *  grid, centre-crops to the requested aspect at the pixel budget).

@@ -42,10 +42,10 @@
 //     posture); the entry's prompt, when bound, overrides every
 //     scene's pass-2 text.
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { H3Facts } from './actions.js'
-import { h3MaskedEditPlane } from './chainEdit.js'
-import { REFINE_UPSCALE_MODEL } from './refine.js'
-import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.js'
+import type { H3Facts } from './actions.ts'
+import { h3MaskedEditPlane } from './chainEdit.ts'
+import { REFINE_UPSCALE_MODEL } from './refine.ts'
+import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.ts'
 
 /** The upscale entry's required seats (the reshoot idiom: an armed
  *  doc with an empty seat refuses loud naming the seat). */

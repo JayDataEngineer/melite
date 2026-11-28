@@ -6,7 +6,7 @@
 // and their ASSEMBLY onto a window's text (lanePromptText) live
 // here, so a film window and an extension cannot drift into telling
 // the model two different things about one row.
-import type { FilmMixClipClass, LaneStamp } from './filmMix.js'
+import type { FilmMixClipClass, LaneStamp } from './filmMix.ts'
 
 /** The stamp fields the sentences read — the film loop's Stamp and
  *  the extension's single-window stamp both carry exactly these. */

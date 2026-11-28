@@ -9,7 +9,7 @@ import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { samplingExtra } from '@melite/comfyui-card-kit/fields';
 import { bag } from '@melite/contracts/extraKeys';
 import { coerceWireArrays } from '@melite/comfyui-card-kit';
-import { CALL_KEYS, CALL_TRANSITIONS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, admitSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from './timelineContract.js';
+import { CALL_KEYS, CALL_TRANSITIONS, DOC_FPS_DEFAULT, FILM_ONLY_KEYS, GRID_BASE_FRAMES, GRID_MAX_FRAMES, GRID_STEP_FRAMES, REF_CAPS, bookSeconds, assertGridLength, admitSpanGrid, deriveWindowFamily, isMediaRef, normalizeDeclaredRefs, transitionOverlap } from "./timelineContract.js";
 // the window families this renderer builds (three shapes:
 // t4r opener / t4_open window / t4_chain window).
 export const FAMILIES = ['t4r', 't4_open', 't4_chain'];

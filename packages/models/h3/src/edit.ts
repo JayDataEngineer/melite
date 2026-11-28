@@ -28,13 +28,13 @@
  * correct by hand; the seat resizes in-graph, never trusts the
  * PNG's own shape). */
 import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
-import type { H3Facts } from './actions.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
-import { renderH3ChainUpscale } from './chainUpscale.js'
-import { renderH3Extend } from './extend.js'
-import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL, REGION_REPAIR_GREEN_FRAMES } from './refine.js'
-import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.js'
-import { assertGridLength, resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES, solveWindowComposition } from './timelineContract.js'
+import type { H3Facts } from './actions.ts'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.ts'
+import { renderH3ChainUpscale } from './chainUpscale.ts'
+import { renderH3Extend } from './extend.ts'
+import { REFINE_2X_OOM_FRAMES, REFINE_UPSCALE_MODEL, REGION_REPAIR_GREEN_FRAMES } from './refine.ts'
+import { FULL_NOISE_REASON, fullNoiseClause, refuseCompetingSecondPass } from './secondPass.ts'
+import { assertGridLength, resolveCarryOverlap, entryCarries, isGridLength, gridSnap, GRID_BASE_FRAMES, GRID_MAX_FRAMES, solveWindowComposition } from './timelineContract.ts'
 
 /** SAM3's checkpoint row — repair.ts's own spelling (the family's
  * one tracked-mask door; the card's constant cites the same file). */

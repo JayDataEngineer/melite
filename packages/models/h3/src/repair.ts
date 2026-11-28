@@ -40,11 +40,11 @@
 // frames — the loader's cap and the plan's clip_seconds are the one
 // clock).
 import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
-import type { H3Facts } from './actions.js'
-import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
-import type { MaskedChainSeat } from './chainEdit.js'
-import { assertGridLength, MAX_COMPOSED_WINDOWS, resolveCarryOverlap } from './timelineContract.js'
+import type { H3Facts } from './actions.ts'
+import { chainSaveBoundaries, concatSavedFilms, filmJoinAudio } from './actions.ts'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.ts'
+import type { MaskedChainSeat } from './chainEdit.ts'
+import { assertGridLength, MAX_COMPOSED_WINDOWS, resolveCarryOverlap } from './timelineContract.ts'
 
 /** The repair entry's required seats (the reshoot idiom: an armed
  * doc with an empty seat refuses loud naming the seat). The third

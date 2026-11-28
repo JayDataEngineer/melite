@@ -1,6 +1,6 @@
-import { h3MaskedEditPlane } from './chainEdit.js';
-import { REFINE_UPSCALE_MODEL } from './refine.js';
-import { FULL_NOISE_REASON, fullNoiseClause } from './secondPass.js';
+import { h3MaskedEditPlane } from "./chainEdit.js";
+import { REFINE_UPSCALE_MODEL } from "./refine.js";
+import { FULL_NOISE_REASON, fullNoiseClause } from "./secondPass.js";
 /** The upscale entry's required seats (the reshoot idiom: an armed
  *  doc with an empty seat refuses loud naming the seat). */
 const REQUIRED_SEATS = [

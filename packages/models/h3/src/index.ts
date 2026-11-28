@@ -23,8 +23,8 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import { ModelsServiceFace } from '@melite/comfyui-card-kit/service-faces'
 import type { ModelDecl } from '@melite/comfyui-card-kit/model-contract'
-import { FAMILY_LAW } from "./timelineContract.js"
-import { film } from "./actions.js";
+import { FAMILY_LAW } from "./timelineContract.ts"
+import { film } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "h3",
@@ -628,31 +628,31 @@ export const family: Plugin = {
   },
 };
 
-export { finalizeH3, H3_T4_STRIP } from "./finalize.js"
-export { renderH3Swap } from "./swap.js"
-export { renderH3Repair, renderH3RepairBag } from "./repair.js"
+export { finalizeH3, H3_T4_STRIP } from "./finalize.ts"
+export { renderH3Swap } from "./swap.ts"
+export { renderH3Repair, renderH3RepairBag } from "./repair.ts"
 export {
   renderH3Edit,
   EDIT_IDENTITY_BOIL_FLOOR,
   type EditMaskDial,
   type EditReferenceDial,
-} from "./edit.js"
-export { renderH3Extend, LAST_FRAME_BATCH_INDEX } from "./extend.js"
-export { refineArmed, renderH3Refine, renderH3RefineBag, renderH3RefineCarry, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, tokenExactCarry, nextTokenExact, lawfulCarryStart, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES, REFINE_WORKAROUND_WIDE_FRAMES } from "./refine.js"
-export { refinePlaneSchema, REFINE_PLANE_KEYS } from "./schema.js"
-export { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES, SNAP_FLOOR_FRAMES, SILENT_WINDOW_WARN_FRAMES, admitCallSpans, admitSpanGrid, filmAdmissionNotices } from "./timelineContract.js"
-export type { RefineWindowSeat } from "./refine.js"
-export { H3_DEFAULT_LORA_ID, h3DefaultLoraEntry } from "./actions.js"
+} from "./edit.ts"
+export { renderH3Extend, LAST_FRAME_BATCH_INDEX } from "./extend.ts"
+export { refineArmed, renderH3Refine, renderH3RefineBag, renderH3RefineCarry, renderH3RefineWindow, renderH3RefineWindows, refineWindowCount, refineWindowStarts, tokenExactCarry, nextTokenExact, lawfulCarryStart, REFINE_UPSCALE_MODEL, REFINE_2X_OOM_FRAMES, REFINE_DEFAULT_CLIP_SECONDS, REFINE_DEFAULT_OVERLAP_FRAMES, REFINE_WORKAROUND_WIDE_FRAMES } from "./refine.ts"
+export { refinePlaneSchema, REFINE_PLANE_KEYS } from "./schema.ts"
+export { MAX_COMPOSED_WINDOWS, SEAM_OVERLAP_FRAMES, SNAP_FLOOR_FRAMES, SILENT_WINDOW_WARN_FRAMES, admitCallSpans, admitSpanGrid, filmAdmissionNotices } from "./timelineContract.ts"
+export type { RefineWindowSeat } from "./refine.ts"
+export { H3_DEFAULT_LORA_ID, h3DefaultLoraEntry } from "./actions.ts"
 // F19 — the whole-film deferred ChainUpscale loop over a prior run.
-export { upscaleArmed, renderH3ChainUpscale } from "./chainUpscale.js"
-export { reshootArmed } from "./reshoot.js"
+export { upscaleArmed, renderH3ChainUpscale } from "./chainUpscale.ts"
+export { reshootArmed } from "./reshoot.ts"
 // F18 — the cross-regime join admission (the two resolution regimes
 // in one family: film width/height vs the mod bags' plan tiers).
 export {
   RESOLUTION_SHORT_EDGE, planTierShape, admitCrossRegimeJoin,
-} from "./chainEdit.js"
-export { assertOverlayGated } from "./actions.js"
-export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.js"
+} from "./chainEdit.ts"
+export { assertOverlayGated } from "./actions.ts"
+export { serveWindowSpec, type WindowSpecProjection } from "./windowSpec.ts"
 
 // The Loader-row face: DSH loads plugin rows by bare specifier and
 // unwraps `exports.default ?? exports` (vendor/cordis_plugins/loader

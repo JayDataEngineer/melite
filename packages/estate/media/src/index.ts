@@ -402,8 +402,8 @@ export function mediaUrl(runId: string, name: string): string {
 
 // MediaListRow lives in ./types.ts (the typert generator's law:
 // remote boundary types export from a public non-root type subpath).
-export type { MediaListRow } from "./types.js";
-import type { MediaListRow } from "./types.js";
+export type { MediaListRow } from "./types.ts";
+import type { MediaListRow } from "./types.ts";
 
 /** The kinds the list door names (mediaVocab's families + all). */
 const LIST_KINDS = ["image", "audio", "video", "model", "text", "all"] as const;

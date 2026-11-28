@@ -94,19 +94,19 @@
 // file-join primitive (actions.ts chainSaveBoundaries +
 // concatSavedFilms).
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
-import type { H3Facts } from './actions.js'
-import { audioSliceSeat, chainSaveBoundaries, concatSavedFilms, filmJoinAudio, filmMixNode } from './actions.js'
-import { lanePromptText, speechLanguageOf } from './audioStamp.js'
-import { chooseLaneClips, computeFilmMix, laneStamps, parseFilmMixClips } from './filmMix.js'
-import type { FilmMixClipClass, LaneStamp } from './filmMix.js'
+import type { H3Facts } from './actions.ts'
+import { audioSliceSeat, chainSaveBoundaries, concatSavedFilms, filmJoinAudio, filmMixNode } from './actions.ts'
+import { lanePromptText, speechLanguageOf } from './audioStamp.ts'
+import { chooseLaneClips, computeFilmMix, laneStamps, parseFilmMixClips } from './filmMix.ts'
+import type { FilmMixClipClass, LaneStamp } from './filmMix.ts'
 import {
-  assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from './timelineContract.js'
-import { outputNameTailOf } from './schema.js'
-export { solveWindowComposition, type WindowComposition } from './timelineContract.js'
+  assertGridLength, solveWindowComposition, CONTEXT_OVERLAP_FRAMES, GRID_MAX_FRAMES, LAST_FRAME_BATCH_INDEX, resolveCarryOverlap } from './timelineContract.ts'
+import { outputNameTailOf } from './schema.ts'
+export { solveWindowComposition, type WindowComposition } from './timelineContract.ts'
 // the last-frame spelling re-exported from its ONE home (timelineContract —
 // actions.ts reads it there too; the public face keeps this name)
-export { LAST_FRAME_BATCH_INDEX } from './timelineContract.js'
-import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.js'
+export { LAST_FRAME_BATCH_INDEX } from './timelineContract.ts'
+import { contexMaskedTarget, loadVideo, renderMaskedEditChain, resolvePlanTier, sheetRefSlots } from './chainEdit.ts'
 
 /** The tail-frame picker's index: the boot census's OWN max for
  * ImageFromBatch.batch_index (16384 today — the wall derives it from

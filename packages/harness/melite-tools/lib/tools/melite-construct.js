@@ -55,7 +55,7 @@ export const CONSTRUCT_VERBS = [
 import { createHash } from 'node:crypto';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
-import { faceStamp } from '../faceStamp.js';
+import { faceStamp } from "../faceStamp.js";
 import { jsonClean } from "../json-clean.js";
 import { coerceWireArrays, foldLegacyAliases, unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { h3TimelineContractSeat } from "./h3-lane-seats.js";

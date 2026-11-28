@@ -29,11 +29,11 @@
 // walls pin node presence and values; this extraction changes no
 // node's parameters — the suites are the proof).
 import type { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
-import type { H3Facts } from './actions.js'
-import { LANE_FILES, h3LoraStackOf, h3ShiftVideoOf } from './actions.js'
-import { mountRefModBake } from './refmodBake.js'
-import { wireList } from './schema.js'
-import { REF_CAPS } from './timelineContract.js'
+import type { H3Facts } from './actions.ts'
+import { LANE_FILES, h3LoraStackOf, h3ShiftVideoOf } from './actions.ts'
+import { mountRefModBake } from './refmodBake.ts'
+import { wireList } from './schema.ts'
+import { REF_CAPS } from './timelineContract.ts'
 
 /** The VHS source loader the slice + timeline read (reference node 5
  *  verbatim: force_rate 24 — the film clock — and the zero/one
